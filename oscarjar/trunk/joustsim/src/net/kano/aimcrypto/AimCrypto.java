@@ -93,7 +93,7 @@ public final class AimCrypto {
                     || laf.endsWith(".MetalLookAndFeel")) {
                 Plastic3DLookAndFeel plastic = new Plastic3DLookAndFeel();
                 Plastic3DLookAndFeel.setMyCurrentTheme(new SkyBluer());
-                ClearLookManager.installDefaultMode();
+//                ClearLookManager.installDefaultMode();
                 UIManager.setLookAndFeel(plastic);
             } else {
                 UIManager.setLookAndFeel(laf);

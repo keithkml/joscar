@@ -35,9 +35,11 @@
 
 package net.kano.aimcrypto.connection.oscar.service.info;
 
-import net.kano.aimcrypto.config.BuddySecurityInfo;
 import net.kano.aimcrypto.Screenname;
+import net.kano.aimcrypto.AppSession;
 import net.kano.aimcrypto.config.BuddySecurityInfo;
+import net.kano.aimcrypto.config.SignerTrustManager;
+import net.kano.aimcrypto.config.CertificateTrustManager;
 import net.kano.aimcrypto.connection.AimConnection;
 import net.kano.aimcrypto.connection.BuddyInfo;
 import net.kano.aimcrypto.connection.BuddyInfoManager;
@@ -54,26 +56,17 @@ import java.util.Map;
 import java.util.Set;
 
 public class BuddyCertificateManager {
-    private final BuddyCertificateManager parent;
-
-    private AimConnection conn = null;
+    private final CertificateTrustManager certTrustMgr;
+    private final SignerTrustManager signerTrustMgr;
+    private final AimConnection conn;
 
     private Set trusted = new HashSet();
     private Map hashes = new HashMap();
     private Map securityInfos = new HashMap();
     private CopyOnWriteArrayList listeners = new CopyOnWriteArrayList();
 
-    public BuddyCertificateManager() {
-        this(null, null);
-    }
-
-    public BuddyCertificateManager(BuddyCertificateManager parent) {
-        this.parent = parent;
-    }
-
     public BuddyCertificateManager(AimConnection conn, BuddyCertificateManager parent) {
-        if (conn != null) bind(conn);
-        this.parent = parent;
+        bind(conn);
     }
 
     public boolean trust(BuddySecurityInfo info) {

@@ -55,8 +55,6 @@ public class ImWindow extends JFrame {
         };
         tabs.addChangeListener(cl);
         tabs.getModel().addChangeListener(cl);
-        LayoutManager layout = tabs.getLayout();
-        System.out.println(layout.getClass().getName() + ": " + layout);
     }
 
     private final GuiSession guiSession;
@@ -80,4 +78,5 @@ public class ImWindow extends JFrame {
 //            setTitle(sn);
         }
     }
+
 }

@@ -85,6 +85,7 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Image;
+import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
@@ -92,7 +93,11 @@ import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.util.Arrays;
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeEvent;
 
 public class SignonWindow extends JFrame {
     private static final Object ITEM_DELETE = new Object();
@@ -148,6 +153,8 @@ public class SignonWindow extends JFrame {
 
     {
         localPanel.setBorder(new TitledBorder((String) null));
+        screennameLabel.setLabelFor(screennameBox);
+        screennameLabel.setDisplayedMnemonic('N');
         screennameBox.setModel(knownScreennamesModel);
         Component snEditor = screennameBoxEditor.getEditorComponent();
         if (snEditor instanceof JTextComponent) {
@@ -223,37 +230,39 @@ public class SignonWindow extends JFrame {
         });
 
         getContentPane().add(mainPanel);
+        passwordLabel.setDisplayedMnemonic('W');
+        passwordLabel.setLabelFor(passwordBox);
         passwordBox.getDocument().addDocumentListener(new InputFieldChangeListener());
+        passwordBox.addFocusListener(new OnFocusSelector());
 
         signonButton.setAction(signonAction);
         prefsButton.setAction(showPrefsAction);
         closeButton.setAction(closeAction);
-//        clearButton.setAction(clearAction);
-
-        passwordBox.addFocusListener(new OnFocusSelector());
+        closeButton.setVerifyInputWhenFocusTarget(false);
 
         rememberPassBox.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                if (!rememberPassBox.isSelected()) {
-                    Screenname sn = new Screenname(getScreenname());
-                    LocalPreferencesManager prefs
-                            = appSession.getLocalPrefsIfExist(sn);
-                    if (prefs != null) {
-                        prefs.getGeneralPrefs().setSavedPassword(null);
-                    }
+                Screenname sn = new Screenname(getScreenname());
+                LocalPreferencesManager prefs
+                        = appSession.getLocalPrefsIfExist(sn);
+                if (prefs != null) {
+                    String pass;
+                    if (!rememberPassBox.isSelected()) pass = null;
+                    else pass = new String(passwordBox.getPassword());
+                    
+                    prefs.getGeneralPrefs().setSavedPassword(pass);
                 }
             }
         });
 
         setResizable(false);
 
-        addWindowListener(new WindowAdapter() {
-            public void windowOpened(WindowEvent e) {
-                setEnabled(true);
-                reloadScreennames();
-                updateButtons();
-                updateSize();
+        addComponentListener(new ComponentAdapter() {
+            public void componentShown(ComponentEvent e) {
+                madeVisible();
             }
+        });
+        addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent e) {
                 guiSession.close();
             }
@@ -271,6 +280,13 @@ public class SignonWindow extends JFrame {
         setIconImage(image);
 
         updateButtons();
+    }
+
+    private void madeVisible() {
+        setEnabled(true);
+        reloadScreennames();
+        updateButtons();
+        updateSize();
     }
 
     private void updateSize() {
@@ -294,19 +310,33 @@ public class SignonWindow extends JFrame {
     private void updateButtons() {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
-                boolean snempty = OscarTools.normalize(getScreenname()).length() == 0;
+                boolean snvalid = OscarTools.normalize(getScreenname()).length() != 0
+                        && isScreennameValid();
                 boolean passempty = passwordBox.getDocument().getLength() == 0;
 
                 screennameLabel.setEnabled(!disabled);
                 screennameBox.setEnabled(!disabled);
-                passwordLabel.setEnabled(!disabled && !snempty);
-                passwordBox.setEnabled(!disabled && !snempty);
-                rememberPassBox.setEnabled(!disabled && !snempty && !passempty);
+                passwordLabel.setEnabled(!disabled && snvalid);
+                passwordBox.setEnabled(!disabled && snvalid);
+                rememberPassBox.setEnabled(!disabled && snvalid && !passempty);
 
-                signonAction.setEnabled(!disabled && !snempty && !passempty);
-                showPrefsAction.setEnabled(!disabled && !snempty);
+                signonAction.setEnabled(!disabled && snvalid && !passempty);
+                showPrefsAction.setEnabled(!disabled && snvalid);
             }
         });
+    }
+
+    private boolean isScreennameValid() {
+        String sn = getScreenname();
+        for (int i = 0; i < sn.length(); i++) {
+            char ch = sn.charAt(i);
+            boolean valid = (ch >= 'a' && ch <= 'z')
+                    || (ch >= 'A' && ch <= 'Z')
+                    || (ch >= '0' && ch <= '9')
+                    || ch == ' ';
+            if (!valid) return false;
+        }
+        return true;
     }
 
     public String getScreenname() {
@@ -342,11 +372,11 @@ public class SignonWindow extends JFrame {
                         + cfsi.getPort();
 
             } else {
-//                msg = sinfo.toString();
+                msg = null;
                 System.err.println("unknown error: " + sinfo.getClass().getName());
                 return;
             }
-            errorText = "<b>Could not sign on:</b> " + msg;
+            if (msg != null) errorText = "<b>Could not sign on:</b> " + msg;
         }
         if (errorText != null) {
             setErrorText("Sign-on failed", errorText);

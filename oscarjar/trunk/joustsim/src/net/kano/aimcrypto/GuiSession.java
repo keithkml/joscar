@@ -51,7 +51,9 @@ import net.kano.aimcrypto.forms.DummyOnlineWindow;
 import net.kano.aimcrypto.forms.ImBox;
 import net.kano.aimcrypto.forms.SignonProgressWindow;
 import net.kano.aimcrypto.forms.SignonWindow;
-import net.kano.aimcrypto.forms.TrustPrefsPanel;
+import net.kano.aimcrypto.forms.prefs.TrustPrefsPane;
+import net.kano.aimcrypto.forms.prefs.AccountPrefsWindow;
+import net.kano.aimcrypto.forms.prefs.LocalCertificatesPrefsPane;
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 
@@ -141,12 +143,6 @@ public class GuiSession {
             dummyOnlineWindow = new DummyOnlineWindow(this);
             dummyOnlineWindow.pack();
             dummyOnlineWindow.setSize(dummyOnlineWindow.getPreferredSize());
-            dummyOnlineWindow.addWindowListener(new WindowAdapter() {
-                public void windowClosing(WindowEvent e) {
-                    dummyOnlineWindow.setVisible(false);
-                    disconnect();
-                }
-            });
         }
     }
 
@@ -204,10 +200,7 @@ public class GuiSession {
             box.pack();
             box.setSize(box.getPreferredSize());
             box.setVisible(true);
-//            initImWindow();
-//            imWindow.addConversation(box);
         }
-//        imWindow.setVisible(true);
         final ImBox fbox = box;
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
@@ -217,14 +210,6 @@ public class GuiSession {
         return box;
     }
 
-//    private void initImWindow() {
-//        if (imWindow == null) {
-//            imWindow = new ImWindow(this);
-//            imWindow.pack();
-//            imWindow.setSize(imWindow.getPreferredSize());
-//        }
-//    }
-
     private synchronized ImBox createBox(Screenname sn) {
         DefensiveTools.checkNull(sn, "sn");
         if (imBoxes.containsKey(sn)) {
@@ -232,7 +217,6 @@ public class GuiSession {
         }
         ImBox box = new ImBox(this, sn);
         imBoxes.put(sn, box);
-//        box.handleConversation(conv);
         return box;
     }
 
@@ -241,18 +225,11 @@ public class GuiSession {
     }
 
     public void showPrefsWindow(Screenname sn) {
-        JFrame frame = new JFrame();
-        LocalPreferencesManager prefs = appSession.getLocalPrefs(sn);
-        TrustPrefsPanel panel = new TrustPrefsPanel(appSession, sn);
-        frame.getContentPane().add(panel);
-        frame.pack();
-        frame.setSize(frame.getPreferredSize());
+        AccountPrefsWindow frame = new AccountPrefsWindow(appSession, sn);
+        frame.addPrefsPane(new LocalCertificatesPrefsPane(appSession, sn));
+        frame.addPrefsPane(new TrustPrefsPane(appSession, sn));
+        frame.setSize(640, 480);
         frame.setVisible(true);
-
-//        LocalCertificatesPrefsPane pane = new LocalCertificatesPrefsPane(appSession, sn);
-//        pane.pack();
-//        pane.setSize(pane.getPreferredSize());
-//        pane.setVisible(true);
     }
 
     public AppSession getAppSession() {

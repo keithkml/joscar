@@ -35,14 +35,13 @@
 
 package net.kano.aimcrypto.config;
 
+import net.kano.aimcrypto.KeyPair;
+import net.kano.aimcrypto.Screenname;
 import net.kano.aimcrypto.exceptions.BadKeyPrefsException;
 import net.kano.aimcrypto.exceptions.BadKeysException;
 import net.kano.aimcrypto.exceptions.InsufficientKeysException;
 import net.kano.aimcrypto.exceptions.NoSuchAliasException;
 import net.kano.aimcrypto.exceptions.WrongKeyTypesException;
-import net.kano.aimcrypto.config.DefaultFileBasedResource;
-import net.kano.aimcrypto.Screenname;
-import net.kano.aimcrypto.KeyPair;
 import net.kano.joscar.DefensiveTools;
 
 import java.io.File;
@@ -50,7 +49,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.channels.FileChannel;
 import java.security.Key;
 import java.security.KeyStore;
@@ -73,6 +71,7 @@ public final class LocalKeysManager
     private static final String PROP_SIGNALIAS = "signing-alias";
     private static final String PROP_ENCALIAS = "encryption-alias";
     private static final String PROP_PASSWORD = "password";
+
     private static final String[] NAMES_EMPTY = new String[0];
 
     private final Screenname screenname;
@@ -128,7 +127,7 @@ public final class LocalKeysManager
         setCertificateFilename(fn);
         signingAlias = props.getProperty(PROP_SIGNALIAS);
         encryptionAlias = props.getProperty(PROP_ENCALIAS);
-        password = props.getProperty(PROP_PASSWORD);
+        password = PrefTools.getBase64Decoded(props.getProperty(PROP_PASSWORD));
         savePassword = (password != null);
     }
 
@@ -158,7 +157,9 @@ public final class LocalKeysManager
         if (certfile != null) props.setProperty(PROP_CERTFILE, certfile);
         if (signAlias != null) props.setProperty(PROP_SIGNALIAS, signAlias);
         if (encAlias != null) props.setProperty(PROP_ENCALIAS, encAlias);
-        if (pass != null) props.setProperty(PROP_PASSWORD, pass);
+        if (pass != null) {
+            props.setProperty(PROP_PASSWORD, PrefTools.getBase64Encoded(pass));
+        }
 
         return props;
     }

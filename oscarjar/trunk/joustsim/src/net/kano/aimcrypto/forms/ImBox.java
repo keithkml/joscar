@@ -66,6 +66,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTextPane;
 import javax.swing.SwingUtilities;
+import javax.swing.ImageIcon;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
@@ -96,6 +97,8 @@ public class ImBox extends JFrame {
 
     {
         getContentPane().add(splitPane);
+        //TODO: resize weight?
+        System.out.println(splitPane.getResizeWeight());
 
         inputBox.setEditorKit(inputKit);
         inputDoc = (ConversationDocument) inputBox.getDocument();
@@ -107,6 +110,9 @@ public class ImBox extends JFrame {
 
         typeBox.setModel(typesModel);
         typeBox.setRenderer(new TypesBoxRenderer());
+
+        setIconImage(new ImageIcon(getClass().getClassLoader().getResource(
+                "icons/im-window-small.png")).getImage());
     }
 
     public ImBox(GuiSession guiSession, Screenname buddy) {

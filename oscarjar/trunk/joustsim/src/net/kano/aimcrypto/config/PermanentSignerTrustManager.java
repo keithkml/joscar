@@ -39,15 +39,13 @@ import net.kano.aimcrypto.Screenname;
 import net.kano.joscar.DefensiveTools;
 
 import java.io.File;
-import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
+import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.List;
 
 public class PermanentSignerTrustManager
-        extends PermanentCertificateTrustManager {
-    public static boolean isValidSignerCertificate(
-            X509Certificate certificate) {
-        return certificate.getBasicConstraints() != -1;
-    }
+        extends PermanentCertificateTrustManager implements SignerTrustManager {
 
     public PermanentSignerTrustManager(Screenname buddy, File trustedCertsDir) {
         super(buddy, trustedCertsDir);
@@ -56,10 +54,12 @@ public class PermanentSignerTrustManager
     protected boolean canBeAdded(X509Certificate certificate) {
         DefensiveTools.checkNull(certificate, "certificate");
 
-        return isValidSignerCertificate(certificate);
+        return TrustTools.isCertificateAuthority(certificate);
     }
 
-    public synchronized boolean isSignedByTrustedSigner(Certificate cert) {
+    public synchronized boolean isSignedByTrustedSigner(X509Certificate cert) {
+        DefensiveTools.checkNull(cert, "cert");
+
         X509Certificate[] certs = getTrustedCertificates();
         for (int i = 0; i < certs.length; i++) {
             X509Certificate signer = certs[i];
@@ -68,8 +68,28 @@ public class PermanentSignerTrustManager
 
                 // if no exception was thrown, this certificate is verified
                 return true;
-            } catch (Exception ignored) { }
+            } catch (Exception ignored) {
+                return false;
+            }
         }
         return false;
+    }
+
+    public synchronized X509Certificate[] getTrustedSigners(X509Certificate cert) {
+        DefensiveTools.checkNull(cert, "cert");
+
+        List signed = new ArrayList();
+        X509Certificate[] certs = getTrustedCertificates();
+        for (int i = 0; i < certs.length; i++) {
+            X509Certificate signer = certs[i];
+            try {
+                cert.verify(signer.getPublicKey());
+
+                // if no exception was thrown, this certificate is verified
+                signed.add(cert);
+            } catch (Exception ignored) { }
+        }
+
+        return (X509Certificate[]) signed.toArray(new X509Certificate[signed.size()]);
     }
 }

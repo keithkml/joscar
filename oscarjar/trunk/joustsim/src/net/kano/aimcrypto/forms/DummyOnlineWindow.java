@@ -51,6 +51,8 @@ import javax.swing.event.DocumentListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.FocusListener;
 import java.awt.event.FocusEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 public class DummyOnlineWindow extends JFrame {
     private JPanel mainPanel;
@@ -84,6 +86,12 @@ public class DummyOnlineWindow extends JFrame {
                 updateButtons();
             }
         });
+        addWindowListener(new WindowAdapter() {
+            public void windowClosing(WindowEvent e) {
+                conn.disconnect();
+            }
+        });
+
     }
 
     public DummyOnlineWindow(GuiSession session) {

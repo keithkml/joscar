@@ -47,6 +47,7 @@ import java.security.NoSuchProviderException;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -58,7 +59,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 public class PermanentCertificateTrustManager
-        extends CertificateTrustManager implements FileBasedResource {
+        extends DefaultCertificateTrustManager implements FileBasedResource {
     private static TrustedCertInfo loadCertificatePermanently(File loadedFromFile)
             throws NoSuchProviderException, CertificateException,
             IOException, IllegalArgumentException {
@@ -70,7 +71,7 @@ public class PermanentCertificateTrustManager
                     + "date: " + lastmod);
         }
 
-        X509Certificate xcert = loadX509Certificate(loadedFromFile);
+        X509Certificate xcert = TrustTools.loadX509Certificate(loadedFromFile);
 
         return new TrustedCertInfo(loadedFromFile, lastmod, xcert);
     }

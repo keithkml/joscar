@@ -37,12 +37,12 @@ package net.kano.aimcrypto.config;
 
 import net.kano.joscar.DefensiveTools;
 
+import java.math.BigInteger;
+import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
-import java.security.PublicKey;
-import java.math.BigInteger;
 
-public final class CertificateHolder {
+public class CertificateHolder {
     private final X509Certificate certificate;
     private final BigInteger mod;
     private final BigInteger exp;
@@ -67,15 +67,13 @@ public final class CertificateHolder {
         }
     }
 
-    public X509Certificate getCertificate() {
-        return certificate;
-    }
+    public final X509Certificate getCertificate() { return certificate; }
 
-    public int hashCode() {
+    public final int hashCode() {
         return mod.hashCode() ^ exp.hashCode();
     }
 
-    public boolean equals(Object obj) {
+    public final boolean equals(Object obj) {
         if (this == obj) return true;
         if (!(obj instanceof CertificateHolder)) return false;
 

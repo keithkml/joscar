@@ -37,6 +37,7 @@ package net.kano.aimcrypto.config;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import org.bouncycastle.util.encoders.Base64;
 
 import java.util.Properties;
@@ -51,11 +52,20 @@ import java.nio.channels.FileChannel;
 public final class PrefTools {
     private PrefTools() { }
 
-    public static String getBase64Decoded(String pass) {
-        return BinaryTools.getAsciiString(ByteBlock.wrap(Base64.decode(pass)));
+    public static String getBase64Decoded(String encoded) {
+        if (encoded == null) return null;
+
+        try {
+            return BinaryTools.getAsciiString(
+                    ByteBlock.wrap(Base64.decode(encoded)));
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     public static String getBase64Encoded(String pass) {
+        DefensiveTools.checkNull(pass, "pass");
+
         byte[] encoded = Base64.encode(BinaryTools.getAsciiBytes(pass));
         return BinaryTools.getAsciiString(ByteBlock.wrap(encoded));
     }
@@ -127,8 +137,8 @@ public final class PrefTools {
                 // in case this directory is actually a symbolic link, or it's
                 // empty, we want to try to delete the link before we try
                 // anything
-                boolean deleted = !deleteFile(file);
-                if (deleted) {
+                boolean deleted = deleteFile(file);
+                if (!deleted) {
                     // deleting the file failed, so maybe it's a non-empty
                     // directory
                     if (file.isDirectory()) deleteDir(file);
