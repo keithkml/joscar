@@ -40,11 +40,29 @@ import net.kano.joscar.flapcmd.SnacPacket;
 import java.io.IOException;
 import java.io.OutputStream;
 
+/**
+ * A SNAC command used to request the user's server-stored information. This
+ * command is not usually necessary if the client stores the SSI data to disk
+ * between sessions; see {@link SsiDataCheck} for details. This command is
+ * normally responded-to with a {@link SsiDataCmd}.
+ *
+ * @snac.src client
+ * @snac.cmd 0x13 0x04
+ */
 public class SsiDataRequest extends SsiCommand {
+    /**
+     * Generates an SSI data request command from the given incoming SNAC
+     * packet.
+     *
+     * @param packet an incoming SSI data request packet
+     */
     protected SsiDataRequest(SnacPacket packet) {
         super(CMD_DATA_REQ);
     }
 
+    /**
+     * Creates a new outgoing SNAC data request.
+     */ 
     public SsiDataRequest() {
         super(CMD_DATA_REQ);
     }

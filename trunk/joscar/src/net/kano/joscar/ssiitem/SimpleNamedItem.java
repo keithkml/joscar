@@ -40,7 +40,7 @@ import net.kano.joscar.tlv.MutableTlvChain;
 import net.kano.joscar.tlv.TlvChain;
 import net.kano.joscar.MiscTools;
 
-abstract class SimpleNamedItem extends AbstractItem {
+public abstract class SimpleNamedItem extends AbstractItem {
     protected static final int GROUPID_DEFAULT = 0;
 
     private final String sn;

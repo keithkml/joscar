@@ -57,7 +57,7 @@ public class GroupItem extends AbstractItem {
     public static GroupItem readGroupItem(SsiItem item) {
         String name = item.getName();
 
-        int id = item.getGroupId();
+        int id = item.getParentId();
 
         TlvChain chain = TlvChain.readChain(item.getData());
 

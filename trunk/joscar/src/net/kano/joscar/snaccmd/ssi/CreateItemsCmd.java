@@ -37,11 +37,30 @@ package net.kano.joscar.snaccmd.ssi;
 
 import net.kano.joscar.flapcmd.SnacPacket;
 
+/**
+ * A SNAC command sent to create new server-stored "items." Normally
+ * responded-to with a {@link SsiDataModResponse}.
+ *
+ * @snac.src client
+ * @snac.cmd 0x13 0x08
+ *
+ * @see SsiDataModResponse
+ */
 public class CreateItemsCmd extends ItemsCmd {
+    /**
+     * Generates a new create-items command from the given incoming SNAC packet.
+     *
+     * @param packet an incoming create-items packet
+     */
     protected CreateItemsCmd(SnacPacket packet) {
         super(CMD_CREATE_ITEMS, packet);
     }
 
+    /**
+     * Creates a new outgoing create-items request with the given list of items.
+     *
+     * @param items the items to create on the server
+     */
     public CreateItemsCmd(SsiItem[] items) {
         super(CMD_CREATE_ITEMS, items);
     }

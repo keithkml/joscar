@@ -338,23 +338,19 @@ public class JoscarTester implements CmdLineListener {
         });
         cmdMap.put("searchbyname", new CLCommand() {
             public void handle(String line, String cmd, String[] args) {
-                request(new SearchBuddiesCmd(new DirInfo(null, null, args[0],
-                        null, null, null, null, null, null, null, null, null,
-                        null)));
+                request(SearchBuddiesCmd.createSearchByDirInfoCmd(new DirInfo(
+                        null, null, args[0], null, null, null, null, null, null,
+                        null, null, null, null)));
             }
         });
         cmdMap.put("searchbyemail", new CLCommand() {
             public void handle(String line, String cmd, String[] args) {
-                request(new SearchBuddiesCmd(
-                        SearchBuddiesCmd.TYPE_BY_EMAIL_OR_INTEREST, args[0],
-                        null, null));
+                request(SearchBuddiesCmd.createSearchByEmailCmd(args[0]));
             }
         });
         cmdMap.put("searchbyinterest", new CLCommand() {
             public void handle(String line, String cmd, String[] args) {
-                request(new SearchBuddiesCmd(
-                        SearchBuddiesCmd.TYPE_BY_EMAIL_OR_INTEREST, null,
-                        args[0], null));
+                request(SearchBuddiesCmd.createSearchByInterestCmd(args[0]));
             }
         });
         cmdMap.put("setdir", new CLCommand() {

@@ -37,11 +37,31 @@ package net.kano.joscar.snaccmd.ssi;
 
 import net.kano.joscar.flapcmd.SnacPacket;
 
+/**
+ * A SNAC command used to delete specific server-stored "items." Normally
+ * responded-to with a {@link SsiDataModResponse}.
+ *
+ * @snac.src client
+ * @snac.cmd 0x13 0x0a
+ */
 public class DeleteItemsCmd extends ItemsCmd {
+    /**
+     * Generates a new item deletion command from the given incoming SNAC
+     * packet.
+     *
+     * @param packet an incoming SSI item deletion packet
+     */
     protected DeleteItemsCmd(SnacPacket packet) {
         super(CMD_DELETE_ITEMS, packet);
     }
 
+    /**
+     * Creates a new outgoing item deletion command with the given list of items
+     * to delete. Note that normally only the group ID, buddy ID, and item type
+     * need to be set in each item, though this is certainly not required.
+     *
+     * @param items the items to delete from the server
+     */
     public DeleteItemsCmd(SsiItem[] items) {
         super(CMD_DELETE_ITEMS, items);
     }

@@ -40,7 +40,12 @@ import net.kano.joscar.snac.CmdType;
 import net.kano.joscar.snac.SnacCmdFactory;
 import net.kano.joscar.snac.SnacCommand;
 
+/**
+ * A SNAC command factory for the server-bound commands provided in this
+ * package, appropriate for use by an AIM server.
+ */
 public class ServerSsiCmdFactory implements SnacCmdFactory {
+    /** The SNAC command types supported by this factory. */
     private static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
         new CmdType(SsiCommand.FAMILY_SSI, SsiCommand.CMD_RIGHTS_REQ),
         new CmdType(SsiCommand.FAMILY_SSI, SsiCommand.CMD_DATA_REQ),

@@ -45,7 +45,7 @@ public class PermitItem extends SimpleNamedItem {
 
         MutableTlvChain mutey = new MutableTlvChain(chain);
 
-        return new PermitItem(item.getName(), item.getBuddyId(), mutey);
+        return new PermitItem(item.getName(), item.getSubId(), mutey);
     }
 
     public PermitItem(PermitItem other) {

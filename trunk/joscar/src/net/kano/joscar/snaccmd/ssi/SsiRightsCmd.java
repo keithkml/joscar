@@ -45,11 +45,30 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
+/**
+ * A SNAC command containing a set of "rights" associated with server-stored
+ * information. Normally sent in response to a {@link SsiRightsRequest}.
+ *
+ * @snac.src server
+ * @snac.cmd 0x13 0x03
+ *
+ * @see SsiRightsRequest
+ */
 public class SsiRightsCmd extends SsiCommand {
+    /** A TLV type containing the maximum numbers of each SSI item type. */
     private static final int TYPE_MAXIMA = 0x0004;
 
+    /**
+     * The maximum numbers of each SSI item type, where the index of the array
+     * is the SSI item type.
+     */
     private final int[] maxima;
 
+    /**
+     * Generates a new SSI rights command from the given incoming SNAC packet.
+     *
+     * @param packet an incoming SSI rights packet
+     */
     protected SsiRightsCmd(SnacPacket packet) {
         super(CMD_RIGHTS);
 
@@ -72,12 +91,32 @@ public class SsiRightsCmd extends SsiCommand {
         }
     }
 
+    /**
+     * Creates a new outgoing SSI rights command with the given list of maxima.
+     * See {@link #getMaxima() getMaxima} for details on the format of the given
+     * array. Note that <code>maxima</code> can be <code>null</code>.
+     *
+     * @param maxima a list of maximum numbers of SSI item types
+     */
     public SsiRightsCmd(int[] maxima) {
         super(CMD_RIGHTS);
 
         this.maxima = maxima;
     }
 
+    /**
+     * Returns a list of maximum numbers of each SSI item type. The format of
+     * this array is such that the maximum number of items of type
+     * <code><i>i</i></code> is <code>ssiRightsCmd.getMaxima()[<i>i</i>]</code>.
+     * Thus, the maximum number of buddies allowed on one's buddy list, where
+     * buddy items are type {@link SsiItem#TYPE_BUDDY} (<code>0x00</code>), is
+     * <code>ssiRightsCmd.getMaxima()[SsiItem.TYPE_BUDDY]</code>. You may notice
+     * that AOL's AIM servers will send a list of many more than the eight types
+     * supported by joscar. Some of those types are used for ICQ; others are
+     * undocumented and, as far as I have seen, never used by WinAIM.
+     *
+     * @return a list of the maximum numbers of items of each item type
+     */
     public final int[] getMaxima() {
         return maxima;
     }

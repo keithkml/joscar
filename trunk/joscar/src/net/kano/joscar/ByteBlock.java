@@ -518,6 +518,7 @@ public final class ByteBlock implements Writable, Serializable {
         // when it is read back in, it will read only the portion of the backing
         // array that we wrote out, so the offset into it should be zero
         fields.put("offset", 0);
+        fields.put("len", len);
 
         // only write the bytes that this block represents -- not the entire
         // backing array, *unless* this block represents the entire backing

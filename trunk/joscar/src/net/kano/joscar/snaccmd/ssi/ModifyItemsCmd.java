@@ -37,11 +37,35 @@ package net.kano.joscar.snaccmd.ssi;
 
 import net.kano.joscar.flapcmd.SnacPacket;
 
+/**
+ * A SNAC command used to modify server-stored "items" that already exist on the
+ * server. Normally responded-to with a {@link SsiDataModResponse}.
+ *
+ * @snac.src client
+ * @snac.cmd 0x13 0x09
+ *
+ * @see SsiDataModResponse
+ */
 public class ModifyItemsCmd extends ItemsCmd {
+    /**
+     * Generates a new modify-SSI-items command from the given incoming SNAC
+     * packet.
+     *
+     * @param packet an incoming SSI modification packet
+     */
     protected ModifyItemsCmd(SnacPacket packet) {
         super(CMD_MODIFY_ITEMS, packet);
     }
 
+    /**
+     * Creates a new SSI modification command with the given items. Note that,
+     * in essence, this command will <i>replace</i> items with the same
+     * type/parentID/subID with the corresponding items you provide here. In
+     * other words, this command does not actually "modify" the given items
+     * but rather "replaces" them.
+     *
+     * @param items a list of items to "modify"
+     */
     public ModifyItemsCmd(SsiItem[] items) {
         super(CMD_MODIFY_ITEMS, items);
     }

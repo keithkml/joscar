@@ -40,11 +40,28 @@ import net.kano.joscar.flapcmd.SnacPacket;
 import java.io.IOException;
 import java.io.OutputStream;
 
+/**
+ * A SNAC command sent to "activate" the current server-stored data. Once this
+ * command is sent, buddies on the server-stored buddy list will appear online,
+ * users on the server-stored block list will be blocked, and so on.
+ *
+ * @snac.src client
+ * @snac.cmd 0x13 0x07
+ */
 public class ActivateSsiCmd extends SsiCommand {
+    /**
+     * Generates a new SSI activation command from the given incoming SNAC
+     * packet.
+     *
+     * @param packet an incoming SSI activation packet
+     */
     protected ActivateSsiCmd(SnacPacket packet) {
         super(CMD_ACTIVATE);
     }
 
+    /**
+     * Creates a new outgoing SSI activation request.
+     */
     public ActivateSsiCmd() {
         super(CMD_ACTIVATE);
     }

@@ -69,8 +69,8 @@ public class BuddyItem extends AbstractItem {
     public static BuddyItem readBuddyItem(SsiItem item) {
         String sn = item.getName();
 
-        int parent = item.getGroupId();
-        int id = item.getBuddyId();
+        int parent = item.getParentId();
+        int id = item.getSubId();
 
         TlvChain chain = TlvChain.readChain(item.getData());
 

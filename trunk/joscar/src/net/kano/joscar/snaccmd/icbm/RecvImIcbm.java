@@ -132,4 +132,9 @@ public class RecvImIcbm extends AbstractImIcbm {
 
         writeImTlvs(out);
     }
+
+    public String toString() {
+        return "RecvImIcbm: message from " + userInfo.getScreenname() + ": "
+                + getMessage();
+    }
 }
