@@ -37,6 +37,7 @@ package net.kano.joscar.snaccmd.auth;
 
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.BinaryTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
@@ -115,10 +116,7 @@ public class AuthRequest extends AuthCommand {
      */
     private static byte[] encryptPassword(String pass, ByteBlock key,
             boolean hashedPass) {
-        byte[] passBytes;
-        try {
-            passBytes = pass.getBytes("US-ASCII");
-        } catch (UnsupportedEncodingException impossible) { return null; }
+        byte[] passBytes = BinaryTools.getAsciiBytes(pass);
 
         if (hashedPass) {
             MessageDigest digest;

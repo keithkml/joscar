@@ -40,6 +40,8 @@ import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 /**
  * Provides a set of methods for converting binary data sent over an OSCAR
@@ -542,5 +544,16 @@ public final class BinaryTools {
         } else {
             block.subBlock(0, len).write(out);
         }
+    }
+
+    public static ByteBlock getMD5(ByteBlock block) {
+        MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance("MD5");
+        } catch (NoSuchAlgorithmException impossible) {
+            throw new UnknownError("no such algorithm: MD5");
+        }
+
+        return ByteBlock.wrap(digest.digest(block.toByteArray()));
     }
 }

@@ -38,6 +38,7 @@ package net.kano.joscar.snaccmd;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.LiveWritable;
+import net.kano.joscar.BinaryTools;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
 import net.kano.joscar.tlv.TlvTools;
@@ -157,11 +158,13 @@ public class CertificateInfo implements LiveWritable {
         Tlv signCertTlv = chain.getLastTlv(TYPE_SIGNCERTDATA);
         if (signCertTlv != null) signCertData = signCertTlv.getData();
 
+        ByteBlock certHash = BinaryTools.getMD5(block.subBlock(chain.getTotalSize()));
+
         if (signCertData == null) {
             // the encryption cert is probably the common cert (or null)
-            return new CertificateInfo(encCertData, hashA, hashB);
+            return new CertificateInfo(certHash, encCertData, null, null, hashA, hashB);
         } else {
-            return new CertificateInfo(encCertData, signCertData, hashA, hashB);
+            return new CertificateInfo(certHash, encCertData, signCertData, hashA, hashB);
         }
     }
 
@@ -183,6 +186,8 @@ public class CertificateInfo implements LiveWritable {
 
     /** Whether or not this certificate contains a common certificate. */
     private final boolean common;
+    /** An MD5 hash of this object, as read from an incoming byte stream. */
+    private final ByteBlock certInfoHash;
     /**
      * The certificate the user uses to sign and encrypt data, if there is only
      * one certificate present in this block.
@@ -228,6 +233,7 @@ public class CertificateInfo implements LiveWritable {
     public CertificateInfo(ByteBlock commonCertData, ByteBlock hashA,
             ByteBlock hashB) {
         this.common = true;
+        this.certInfoHash = null;
         this.commonCertData = commonCertData;
         this.encCertData = null;
         this.signCertData = null;
@@ -270,16 +276,57 @@ public class CertificateInfo implements LiveWritable {
      */
     public CertificateInfo(ByteBlock encCertData, ByteBlock signCertData,
             ByteBlock hashA, ByteBlock hashB) {
-        DefensiveTools.checkNull(encCertData, "encCertData");
-        DefensiveTools.checkNull(signCertData, "signCertData");
+        this(null, encCertData, signCertData, hashA, hashB);
+    }
 
-        this.common = false;
-        this.commonCertData = null;
-        this.encCertData = encCertData;
-        this.signCertData = signCertData;
+    private CertificateInfo(ByteBlock certInfoHash, ByteBlock encCertData,
+            ByteBlock signCertData, ByteBlock hashA, ByteBlock hashB) {
+        this(certInfoHash, null, encCertData, signCertData, hashA, hashB);
+    }
+
+    private CertificateInfo(ByteBlock certInfoHash, ByteBlock commonCertData,
+            ByteBlock encCertData, ByteBlock signCertData, ByteBlock hashA,
+            ByteBlock hashB) {
+
+        if (commonCertData == null) {
+            DefensiveTools.checkNull(signCertData, "signCertData");
+            DefensiveTools.checkNull(encCertData, "encCertData");
+
+            this.common = false;
+            this.commonCertData = null;
+            this.encCertData = encCertData;
+            this.signCertData = signCertData;
+
+        } else {
+            if (signCertData != null || encCertData != null) {
+                throw new IllegalArgumentException("commonCertData is not "
+                        + "null, but signCertData=" + signCertData
+                        + " and encCertData=" + encCertData);
+            }
+
+            this.common = true;
+            this.commonCertData = commonCertData;
+            this.encCertData = null;
+            this.signCertData = null;
+        }
+
+        this.certInfoHash = certInfoHash;
         this.hashA = hashA;
         this.hashB = hashB;
     }
+
+
+    /**
+     * Returns the MD5 hash of this object's binary form, if this object was
+     * read in from an incoming block of binary data. If this certificate
+     * information object was created manually instead of being read with the
+     * {@link #readCertInfoBlock(ByteBlock) readCertInfoBlock} method, this
+     * method will return <code>null</code>.
+     *
+     * @return the MD5 hash of this object's binary form, or <code>null</code>
+     *         if this object was not read from an incoming block of data
+     */
+    public final ByteBlock getCertInfoHash() { return certInfoHash; }
 
     /**
      * Returns whether this certificate information block contains a "common

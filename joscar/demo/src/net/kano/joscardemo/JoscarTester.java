@@ -450,4 +450,13 @@ public class JoscarTester implements CmdLineListener, ServiceListener {
         },
                 30*1000, 5*60*1000);
     }
+
+//    static void something(int x, ByteBuffer buffer) {}
+//    static void something(int x, String buffer) {}
+//
+//    private static void x() {
+//        byte[] x = null;
+//        something(5, x)
+//
+//    }
 }
