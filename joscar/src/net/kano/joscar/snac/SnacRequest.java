@@ -46,7 +46,7 @@ import java.util.logging.Logger;
 
 /**
  * Encapsulates a single outgoing SNAC request and its corresponding incoming
- * responses. See {@link SnacProcessor} for details on the request system.
+ * responses. See {@link ClientSnacProcessor} for details on the request system.
  * The general procedure for using a <code>SnacRequest</code> is to create a
  * <code>SnacRequest</code> containing the outgoing request you want to send
  * to the server; adding one or more listeners for future responses; and sending

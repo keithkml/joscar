@@ -65,7 +65,7 @@ import java.util.Map;
  * <br>
  * <br>
  * <code> RateMonitor mon = rateLimitingQueueMgr.{@linkplain
- * #getQueueMgr(SnacProcessor) getQueueMgr}(snacProcessor).{@linkplain
+ * #getQueueMgr(ClientSnacProcessor) getQueueMgr}(snacProcessor).{@linkplain
  * ConnectionQueueMgr#getRateMonitor getRateMonitor}() </code></li>
  * </ul>
  *

@@ -44,8 +44,8 @@ package net.kano.joscar.snac;
  * <br>
  * This class effectively handles several different "levels" of SNAC factories,
  * digging deeper and deeper until an appropriate factory for a given command
- * type is found. When {@link #findFactory findFactory} is called, the following
- * takes place:
+ * type is found. When attempting to find a SNAC command factory for a given
+ * command type, the following takes place:
  * 
  * <ol>
  * <li> If a command factory has been registered for this exact command type,
@@ -62,7 +62,7 @@ package net.kano.joscar.snac;
  * <li> Otherwise, a similar three-step process occurs using the <i>default
  * factory list</i> specified by <code>setDefaultFactoryList</code> </li>
  * </ol>
- * For more details on how this class is used, see {@link SnacProcessor}.
+ * For more details on how this class is used, see {@link ClientSnacProcessor}.
  */
 public final class CmdFactoryMgr extends SnacCmdFactoryList {
     /**
