@@ -55,12 +55,12 @@ AIM 5.2 SECURE IM / PERSONAL CERTIFICATES
 joscar implements the necessary data structures and SNAC commands used in AIM's
 new secure IM / personal certificates feature.
 
-To test the new secure IM/file transfer/direct IM/chat room features in the
-JoscarTester demo, you must create a PKCS12 keystore containing a signed X509v3 
-certificate and private RSA key in the same format as AIM itself requires. (See
-http://ragweed.net/aimcrypt for details on how to make your own.) This PKCS12
-store must be called "certificate-info.p12" and must reside in the current
-working directory of JoscarTester.
+To test the new secure IM, direct connection, file transfer, and chat room 
+features in the JoscarTester demo, you must create a PKCS12 keystore containing
+a signed X509v3 certificate and private RSA key in the same format as AIM 
+itself requires. (See http://ragweed.net/aimcrypt for details on how to make 
+your own.) This PKCS12 store must be called "certificate-info.p12" and must 
+reside in the current working directory of JoscarTester.
 
 In addition, you must download the joscar-extras package from the Joust website
 and extract it to the same directory in which the joscar package was extracted.
@@ -68,5 +68,13 @@ Your joscar distribution should have a demo/extras/ directory containing source
 files in src/ and two jar files in lib/. You will need to recompile the demo
 (with 'ant demo') and add the two jars in demo/extras/lib/ to the classpath when
 running JoscarTester. (Note that 'ant run-demo' does this for you.)
+
+When running under these conditions, the screenname on which JoscarTester is
+running should appear on AIM 5.2 users' buddy lists with a padlock icon next to
+his name. Buddies using AIM 5.2 (or JoscarTester) who also have certificates
+loaded will be able to talk to him securely (over RSA PKI encryption), send him
+files over SSL, and invite him to "Secure Chat Rooms." JoscarTester can also
+initiate all of these things; you can look at the JoscarTester source for the
+commands if you are curious.
 
 --------------------------------------------------------------------------------
