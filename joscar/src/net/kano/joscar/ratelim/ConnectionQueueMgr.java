@@ -45,14 +45,10 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Iterator;
 
-public final class ConnectionQueueMgr implements SingleQueueMgr {
+public final class ConnectionQueueMgr {
     private final RateLimitingQueueMgr queueMgr;
 
     private final SnacProcessor snacProcessor;
-
-    private Map classToQueue = new HashMap();
-    private Map typeToQueue = new HashMap(500);
-    private RateQueue defaultQueue = null;
 
     private boolean avoidLimiting = true;
     private boolean paused = false;
@@ -64,6 +60,7 @@ public final class ConnectionQueueMgr implements SingleQueueMgr {
 
         this.queueMgr = queueMgr;
         this.snacProcessor = snacProcessor;
+        this.avoidLimiting = queueMgr.getDefaultAvoidLimiting();
     }
 
     public RateLimitingQueueMgr getParentQueueMgr() { return queueMgr; }
@@ -98,69 +95,6 @@ public final class ConnectionQueueMgr implements SingleQueueMgr {
     }
 
 
-    public void setRateClasses(RateClassInfo[] rateInfos) {
-        DefensiveTools.checkNull(rateInfos, "rateInfos");
-
-        rateInfos = (RateClassInfo[]) rateInfos.clone();
-
-        DefensiveTools.checkNullElements(rateInfos, "rateInfos");
-
-        for (int i = 0; i < rateInfos.length; i++) {
-            RateClassInfo rateInfo = rateInfos[i];
-
-            setRateClass(rateInfo);
-        }
-    }
-
-    public synchronized void setRateClass(RateClassInfo rateInfo) {
-        DefensiveTools.checkNull(rateInfo, "rateInfo");
-
-        RateQueue queue = updateRateQueue(rateInfo);
-
-        CmdType[] cmdTypes = rateInfo.getCommands();
-        if (cmdTypes != null) {
-            if (cmdTypes.length == 0) {
-                // if there aren't any member SNAC commands for this rate
-                // class, this is the "fallback" rate class, or the
-                // "default queue"
-                if (defaultQueue == null) defaultQueue = queue;
-            } else {
-                // there are command types associated with this rate class,
-                // so, for speed, we put them into a map
-                for (int i = 0; i < cmdTypes.length; i++) {
-                    typeToQueue.put(cmdTypes[i], queue);
-                }
-            }
-        }
-
-        // something most likely changed.
-        queueMgr.getRunner().update(queue);
-    }
-
-    public void updateRateClass(int changeCode, RateClassInfo rateInfo) {
-        DefensiveTools.checkNull(rateInfo, "rateInfo");
-
-        RateQueue queue = updateRateQueue(rateInfo);
-
-        if (changeCode != -1) {
-            queue.setChangeCode(changeCode);
-        }
-    }
-
-    private synchronized RateQueue updateRateQueue(RateClassInfo rateInfo) {
-        Integer key = new Integer(rateInfo.getRateClass());
-        RateQueue queue = (RateQueue) classToQueue.get(key);
-
-        if (queue == null) {
-            queue = new RateQueue(this, rateInfo);
-            classToQueue.put(key, queue);
-            queueMgr.getRunner().addQueue(queue);
-        } else {
-            queue.setRateInfo(rateInfo);
-        }
-
-        return queue;
-    }
 
     public synchronized void clearQueue() {
         for (Iterator it = this.classToQueue.values().iterator();
@@ -195,7 +129,6 @@ public final class ConnectionQueueMgr implements SingleQueueMgr {
     public synchronized boolean isPaused() { return paused; }
 
 
-
     public synchronized final boolean isAvoidingLimiting() {
         return avoidLimiting;
     }
@@ -217,6 +150,8 @@ public final class ConnectionQueueMgr implements SingleQueueMgr {
     }
 
     public long getCurrentRate(CmdType cmdType) {
+        DefensiveTools.checkNull(cmdType, "cmdType");
+
         RateQueue queue = getRateQueue(cmdType);
 
         if (queue == null) return -1;
@@ -225,6 +160,8 @@ public final class ConnectionQueueMgr implements SingleQueueMgr {
     }
 
     public long getPotentialRate(CmdType cmdType) {
+        DefensiveTools.checkNull(cmdType, "cmdType");
+
         RateQueue queue = getRateQueue(cmdType);
 
         if (queue == null) return -1;
@@ -233,6 +170,8 @@ public final class ConnectionQueueMgr implements SingleQueueMgr {
     }
 
     public long getLimitAvoidanceWaitTime(CmdType cmdType) {
+        DefensiveTools.checkNull(cmdType, "cmdType");
+
         RateQueue queue = getRateQueue(cmdType);
 
         if (queue == null) return -1;
@@ -241,6 +180,8 @@ public final class ConnectionQueueMgr implements SingleQueueMgr {
     }
 
     public int getPossibleCmdCount(CmdType cmdType) {
+        DefensiveTools.checkNull(cmdType, "cmdType");
+
         RateQueue queue = getRateQueue(cmdType);
 
         if (queue == null) return -1;
@@ -249,6 +190,8 @@ public final class ConnectionQueueMgr implements SingleQueueMgr {
     }
 
     public int getMaxCmdCount(CmdType cmdType) {
+        DefensiveTools.checkNull(cmdType, "cmdType");
+
         RateQueue queue = getRateQueue(cmdType);
 
         if (queue == null) return -1;
@@ -257,6 +200,8 @@ public final class ConnectionQueueMgr implements SingleQueueMgr {
     }
 
     public int getQueueSize(CmdType cmdType) {
+        DefensiveTools.checkNull(cmdType, "cmdType");
+
         RateQueue queue = getRateQueue(cmdType);
 
         if (queue == null) return -1;
