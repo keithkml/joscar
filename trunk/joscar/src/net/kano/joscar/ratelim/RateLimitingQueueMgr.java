@@ -52,14 +52,11 @@ public class RateLimitingQueueMgr extends AbstractSnacQueueMgr {
     public static final int ERRORMARGIN_DEFAULT = 100;
 
     private int errorMargin = ERRORMARGIN_DEFAULT;
+    private boolean avoidLimiting = true;
 
     private Map conns = new IdentityHashMap();
 
-    private final QueueRunner runner = new QueueRunner();
-
-    { // init
-        runner.start();
-    }
+    private QueueRunner runner = null;
 
     private SnacPacketListener packetListener = new SnacPacketListener() {
         public void handleSnacPacket(SnacPacketEvent e) {
@@ -97,19 +94,18 @@ public class RateLimitingQueueMgr extends AbstractSnacQueueMgr {
                         "processor " + processor);
             }
 
-            conns.put(processor, new RateClassSet(this, processor));
+            conns.put(processor, new ConnectionQueueMgr(this, processor));
 
             processor.setSnacQueueManager(this);
-            assert processor.getSnacQueueManager() == this;
             processor.addPacketListener(packetListener);
             processor.addGlobalResponseListener(responseListener);
         }
     }
 
-    private RateClassSet getSet(SnacProcessor processor) {
-        RateClassSet rcs;
+    private ConnectionQueueMgr getQueueMgr(SnacProcessor processor) {
+        ConnectionQueueMgr rcs;
         synchronized(conns) {
-            rcs = (RateClassSet) conns.get(processor);
+            rcs = (ConnectionQueueMgr) conns.get(processor);
         }
         if (rcs == null) {
             throw new IllegalArgumentException("this rate manager is not " +
@@ -143,16 +139,13 @@ public class RateLimitingQueueMgr extends AbstractSnacQueueMgr {
 
         DefensiveTools.checkNullElements(rateInfos, "rateInfos");
 
+        ConnectionQueueMgr mgr = getQueueMgr(processor);
+
         for (int i = 0; i < rateInfos.length; i++) {
-            setRateClass(processor, rateInfos[i]);
+            RateClassInfo rateInfo = rateInfos[i];
+
+            mgr.setRateClass(rateInfo);
         }
-    }
-
-    private void setRateClass(SnacProcessor processor, RateClassInfo rateInfo) {
-        DefensiveTools.checkNull(processor, "processor");
-        DefensiveTools.checkNull(rateInfo, "rateInfo");
-
-        getSet(processor).setRateClass(rateInfo);
     }
 
     public void updateRateClass(SnacProcessor processor, int changeCode,
@@ -160,35 +153,46 @@ public class RateLimitingQueueMgr extends AbstractSnacQueueMgr {
         DefensiveTools.checkNull(processor, "processor");
         DefensiveTools.checkNull(rateInfo, "rateInfo");
 
-        getSet(processor).updateRateClass(changeCode, rateInfo);
+        getQueueMgr(processor).updateRateClass(changeCode, rateInfo);
     }
 
-    public final void setErrorMargin(int errorMargin) {
+    public synchronized final boolean isAvoidingLimiting() {
+        return avoidLimiting;
+    }
+
+    public synchronized final void setAvoidingLimiting(boolean avoidLimiting) {
+        if (avoidLimiting = this.avoidLimiting) return;
+
+        this.avoidLimiting = avoidLimiting;
+
+        if (!avoidLimiting) runner.update();
+    }
+
+    public synchronized final void setErrorMargin(int errorMargin) {
         DefensiveTools.checkRange(errorMargin, "errorMargin", 0);
 
         this.errorMargin = errorMargin;
     }
 
-    public final int getErrorMargin() { return errorMargin; }
+    public final synchronized int getErrorMargin() { return errorMargin; }
+
 
     public void queueSnac(SnacProcessor processor, SnacRequest request) {
         DefensiveTools.checkNull(request, "request");
 
-        System.out.println("queueing..");
-
-        getSet(processor).queueSnac(request);
+        getQueueMgr(processor).queueSnac(request);
     }
 
     public void clearQueue(SnacProcessor processor) {
-        getSet(processor).clearQueue();
+        getQueueMgr(processor).clearQueue();
     }
 
     public void pause(SnacProcessor processor) {
-        getSet(processor).pause();
+        getQueueMgr(processor).pause();
     }
 
     public void unpause(SnacProcessor processor) {
-        getSet(processor).unpause();
+        getQueueMgr(processor).unpause();
     }
 
     protected void sendSnac(SnacProcessor processor, SnacRequest request) {
@@ -196,14 +200,26 @@ public class RateLimitingQueueMgr extends AbstractSnacQueueMgr {
         super.sendSnac(processor, request);
     }
 
-    class QueueRunner extends Thread {
+    class QueueRunner implements Runnable {
+        private boolean started = false;
+
         private final Object lock = new Object();
 
         private boolean updated = false;
         private Set queues = new HashSet();
 
-        public QueueRunner() {
-            super("SNAC queue manager");
+        public synchronized void start() {
+            if (started) {
+                throw new IllegalStateException("already started queue " +
+                        "manager");
+            }
+            started = true;
+
+            // I think this is correct
+            updated = true;
+
+            Thread thread = new Thread(this, "SNAC queue manager");
+            thread.start();
         }
 
         public void run() {
@@ -244,14 +260,14 @@ public class RateLimitingQueueMgr extends AbstractSnacQueueMgr {
                     synchronized(queue) {
                         // if the queue is paused or there aren't any requests,
                         // we can skip it
-                        if (queue.getParentSet().isPaused()
+                        if (queue.getParentMgr().isPaused()
                                 || !queue.hasRequests()) {
                             continue;
                         }
 
                         // if there are one or more commands that can be sent
                         // right now, dequeue them
-                        if (isReady(queue)) reqs = flushQueue(queue);
+                        if (isReady(queue)) reqs = dequeueAll(queue);
 
                         // see whether the queue needs to be waited upon (if it
                         // doesn't have any queued commands, there's nothing to
@@ -294,20 +310,22 @@ public class RateLimitingQueueMgr extends AbstractSnacQueueMgr {
             return getWaitTime(queue) <= 0;
         }
 
-        private List flushQueue(RateQueue queue) {
+        private List dequeueAll(RateQueue queue) {
             List reqs = null;
-            for (;;) {
-                if (!queue.hasRequests() || !isReady(queue)) break;
+            synchronized(queue) {
+                for (;;) {
+                    if (!queue.hasRequests() || !isReady(queue)) break;
 
-                if (reqs == null) reqs = new ArrayList(5);
-                reqs.add(queue.dequeue());
+                    if (reqs == null) reqs = new ArrayList(5);
+                    reqs.add(queue.dequeue());
+                }
             }
 
             return reqs;
         }
 
         private void sendRequests(RateQueue queue, List reqs) {
-            SnacProcessor processor = queue.getParentSet().getSnacProcessor();
+            SnacProcessor processor = queue.getParentMgr().getSnacProcessor();
 
             for (Iterator it = reqs.iterator(); it.hasNext();) {
                 SnacRequest req = (SnacRequest) it.next();
@@ -316,11 +334,42 @@ public class RateLimitingQueueMgr extends AbstractSnacQueueMgr {
             }
         }
 
+        public void update(RateQueue updated) {
+            if (isAvoidingLimiting()) {
+                forceUpdate();
+            } else {
+                sendRequests(updated, dequeueAll(updated));
+            }
+        }
 
         public void update() {
+            if (isAvoidingLimiting()) {
+                forceUpdate();
+            } else {
+                flushAllQueues();
+            }
+        }
+
+        private void forceUpdate() {
             synchronized(lock) {
                 updated = true;
                 lock.notifyAll();
+            }
+        }
+
+        private void flushAllQueues() {
+            // we make a copy of the queue list since we'd need to make a copy
+            // of something anyway (SNAC requests can't be sent inside a lock)
+            // and there's no reason to not just copy the queue list itself
+            List queues;
+            synchronized(this.queues) {
+                 queues = new ArrayList(this.queues);
+            }
+
+            for (Iterator it = queues.iterator(); it.hasNext();) {
+                RateQueue queue = (RateQueue) it.next();
+
+                sendRequests(queue, dequeueAll(queue));
             }
         }
 
@@ -329,7 +378,7 @@ public class RateLimitingQueueMgr extends AbstractSnacQueueMgr {
 
             synchronized(lock) {
                 queues.add(queue);
-                update();
+                update(queue);
             }
         }
     }

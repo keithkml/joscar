@@ -864,6 +864,8 @@ public class SnacProcessor {
     /**
      * Sends the given SNAC request to the server, bypassing the SNAC request
      * queue and any {@linkplain #pause pausing} status that may be present.
+     * Note that using this method for normal SNAC command sending is not
+     * recommended for the reasons above.
      *
      * @param request the request to send
      *
