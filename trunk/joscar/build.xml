@@ -87,7 +87,7 @@
     <joscar-version property="joscar.ver" />
     <property name="fullpkg" value="${project}-${joscar.ver}" />
     <property name="dist.pkgname" value="${fullpkg}-src" />
-    <property name="dist.extrasname" value="${fullpkg}-extras" />
+    <property name="dist.extrasname" value="${project}-extras-${joscar.ver}" />
     <property name="dist.home" location="${fullpkg}" />
     <property name="distextras.dir" value="${fullpkg}" />
     <property name="distextras.home" location="${distextras.dir}" />
@@ -235,7 +235,7 @@
   </target>
 
 
-  <target name="dist-clean" depends="version,dist-extras-clean">
+  <target name="dist-clean" depends="version">
     <delete dir="${dist.home}" />
     <delete file="${dist.pkgname}.tar.gz" />
     <delete file="${dist.pkgname}.tar.bz2" />
