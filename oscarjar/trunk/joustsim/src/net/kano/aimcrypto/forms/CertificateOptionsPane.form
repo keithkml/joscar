@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="net.kano.aimcrypto.forms.CertificateOptionsPane">
+  <grid id="ee94c" binding="mainPanel" row-count="3" column-count="1" hgap="10" vgap="10">
+    <margin top="5" left="5" bottom="5" right="5"/>
+    <constraints>
+      <xy x="49" y="33" width="338" height="348"/>
+      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3"/>
+    </constraints>
+    <properties/>
+    <border type="none"/>
+    <children>
+      <grid id="ea381" row-count="2" column-count="1" hgap="10" vgap="5">
+        <margin top="5" left="5" bottom="5" right="5"/>
+        <constraints>
+          <xy x="5" y="5" width="328" height="87"/>
+          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="1" anchor="0" fill="3"/>
+        </constraints>
+        <properties/>
+        <border type="none" title="Personal Certificate File"/>
+        <children>
+          <grid id="b96a3" row-count="1" column-count="3" hgap="10" vgap="10">
+            <margin top="0" left="0" bottom="0" right="0"/>
+            <constraints>
+              <xy x="10" y="25" width="308" height="24"/>
+              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3"/>
+            </constraints>
+            <properties/>
+            <border type="none"/>
+            <children>
+              <component id="20085" class="javax.swing.JLabel" binding="myCertLabel">
+                <constraints>
+                  <xy x="0" y="4" width="156" height="15"/>
+                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="1" anchor="8" fill="0"/>
+                </constraints>
+                <properties>
+                  <text value="My Personal Certificate file:"/>
+                </properties>
+              </component>
+              <component id="49451" class="javax.swing.JComboBox" binding="certFileBox">
+                <constraints>
+                  <xy x="166" y="0" width="32" height="24"/>
+                  <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="1" anchor="8" fill="1"/>
+                </constraints>
+                <properties>
+                  <editable value="false"/>
+                </properties>
+              </component>
+              <hspacer id="e9c9">
+                <constraints>
+                  <xy x="198" y="6" width="110" height="11"/>
+                  <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="1" hsize-policy="7" anchor="0" fill="1"/>
+                </constraints>
+              </hspacer>
+            </children>
+          </grid>
+          <grid id="409ed" row-count="1" column-count="5" hgap="-1" vgap="0">
+            <margin top="0" left="0" bottom="0" right="0"/>
+            <constraints>
+              <xy x="10" y="54" width="308" height="23"/>
+              <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3"/>
+            </constraints>
+            <properties/>
+            <border type="none"/>
+            <children>
+              <component id="c5fb3" class="javax.swing.JLabel" binding="passwordLabel">
+                <constraints>
+                  <xy x="0" y="4" width="108" height="15"/>
+                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="1" anchor="8" fill="0"/>
+                </constraints>
+                <properties>
+                  <text value="Security password:"/>
+                </properties>
+              </component>
+              <component id="c623c" class="javax.swing.JPasswordField" binding="passwordBox">
+                <constraints>
+                  <xy x="118" y="0" width="29" height="22"/>
+                  <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="1" anchor="8" fill="1"/>
+                </constraints>
+                <properties>
+                  <columns value="8"/>
+                </properties>
+              </component>
+              <component id="e57a8" class="javax.swing.JCheckBox" binding="savePasswordBox">
+                <constraints>
+                  <xy x="177" y="0" width="111" height="23"/>
+                  <grid row="0" column="3" row-span="1" col-span="1" vsize-policy="0" hsize-policy="1" anchor="8" fill="0"/>
+                </constraints>
+                <properties>
+                  <text value="Save password"/>
+                </properties>
+              </component>
+              <hspacer id="e4de1">
+                <constraints>
+                  <xy x="288" y="6" width="20" height="11"/>
+                  <grid row="0" column="4" row-span="1" col-span="1" vsize-policy="1" hsize-policy="6" anchor="0" fill="1"/>
+                </constraints>
+              </hspacer>
+              <hspacer id="c3c37">
+                <constraints>
+                  <xy x="157" y="6" width="20" height="11"/>
+                  <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="1" hsize-policy="0" anchor="0" fill="1">
+                    <minimum-size width="15" height="-1"/>
+                  </grid>
+                </constraints>
+              </hspacer>
+            </children>
+          </grid>
+        </children>
+      </grid>
+      <grid id="7959a" binding="chooseCertsPanel" row-count="2" column-count="1" hgap="-1" vgap="-1">
+        <margin top="5" left="5" bottom="5" right="5"/>
+        <constraints>
+          <xy x="5" y="102" width="328" height="123"/>
+          <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="1" anchor="0" fill="3"/>
+        </constraints>
+        <properties/>
+        <border type="none" title="Choose Certificates"/>
+        <children>
+          <component id="8cecd" class="javax.swing.JLabel" binding="aliasesInfoLabel">
+            <constraints>
+              <xy x="10" y="27" width="239" height="15"/>
+              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="1" anchor="8" fill="0"/>
+            </constraints>
+            <properties>
+              <text value="This certificate file contains N certificates."/>
+              <visible value="true"/>
+            </properties>
+          </component>
+          <grid id="3421d" row-count="2" column-count="3" hgap="10" vgap="10">
+            <margin top="0" left="0" bottom="0" right="0"/>
+            <constraints>
+              <xy x="10" y="55" width="308" height="58"/>
+              <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="3"/>
+            </constraints>
+            <properties>
+              <visible value="true"/>
+            </properties>
+            <border type="none"/>
+            <children>
+              <component id="cc664" class="javax.swing.JLabel" binding="signWithLabel">
+                <constraints>
+                  <xy x="0" y="4" width="185" height="15"/>
+                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="1" anchor="4" fill="0"/>
+                </constraints>
+                <properties>
+                  <text value="Digitally sign my messages with:"/>
+                </properties>
+              </component>
+              <component id="7846d" class="javax.swing.JComboBox" binding="signWithBox">
+                <constraints>
+                  <xy x="195" y="0" width="93" height="24"/>
+                  <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="1" anchor="8" fill="1">
+                    <preferred-size width="100" height="-1"/>
+                  </grid>
+                </constraints>
+                <properties>
+                  <editable value="false"/>
+                </properties>
+              </component>
+              <component id="45693" class="javax.swing.JComboBox" binding="encryptWithBox">
+                <constraints>
+                  <xy x="195" y="34" width="93" height="24"/>
+                  <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="1" anchor="8" fill="1">
+                    <preferred-size width="100" height="-1"/>
+                  </grid>
+                </constraints>
+                <properties/>
+              </component>
+              <component id="7153f" class="javax.swing.JLabel" binding="encryptWithLabel">
+                <constraints>
+                  <xy x="29" y="38" width="156" height="15"/>
+                  <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="1" anchor="4" fill="0"/>
+                </constraints>
+                <properties>
+                  <text value="Encrypt my messages with:"/>
+                </properties>
+              </component>
+              <hspacer id="78ce8">
+                <constraints>
+                  <xy x="288" y="6" width="20" height="11"/>
+                  <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="1" hsize-policy="7" anchor="0" fill="1"/>
+                </constraints>
+              </hspacer>
+            </children>
+          </grid>
+        </children>
+      </grid>
+      <grid id="2ec5c" row-count="1" column-count="2" hgap="-1" vgap="-1">
+        <margin top="5" left="5" bottom="5" right="5"/>
+        <constraints>
+          <xy x="5" y="235" width="328" height="108"/>
+          <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3"/>
+        </constraints>
+        <properties/>
+        <border type="none" title="Current Certificates"/>
+        <children>
+          <component id="d843c" class="javax.swing.JTextPane" binding="currentCertsPane">
+            <constraints>
+              <xy x="51" y="25" width="267" height="73"/>
+              <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3"/>
+            </constraints>
+            <properties>
+              <contentType value="text/plain"/>
+              <editable value="false"/>
+              <focusCycleRoot value="false"/>
+              <focusable value="false"/>
+              <opaque value="false"/>
+              <requestFocusEnabled value="true"/>
+              <text value="Outgoing messages blah blah.."/>
+            </properties>
+          </component>
+          <component id="75f02" class="javax.swing.JLabel" binding="certInfoIconLabel">
+            <constraints>
+              <xy x="10" y="25" width="31" height="15"/>
+              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="1" fill="0"/>
+            </constraints>
+            <properties>
+              <iconTextGap value="4"/>
+              <requestFocusEnabled value="true"/>
+              <text value="(icon)"/>
+              <visible value="true"/>
+            </properties>
+          </component>
+        </children>
+      </grid>
+    </children>
+  </grid>
+</form>
