@@ -39,11 +39,13 @@ import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.Writable;
+import net.kano.joscar.MiscTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * Represents an "extra information block," as I call it, which contains a
@@ -217,8 +219,12 @@ public final class ExtraInfoBlock implements Writable {
         if (extraData != null) extraData.write(out);
     }
 
+    private static final Pattern typeFieldRE = Pattern.compile("TYPE_.*");
+
     public String toString() {
-        return "ExtraInfoBlock: type=0x" + Long.toHexString(type)
+        return "ExtraInfoBlock: type=0x" + Long.toHexString(type) + " ("
+                + MiscTools.findIntField(ExtraInfoBlock.class, type,
+                        typeFieldRE)+ ")"
                 + ", extraData=<" + extraData + ">";
     }
 }

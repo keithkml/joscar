@@ -37,8 +37,8 @@ package net.kano.joscar.rvproto.getfile;
 
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.LiveWritable;
+import net.kano.joscar.MiscTools;
 import net.kano.joscar.rvcmd.SegmentedFilename;
-import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
 import net.kano.joscar.tlv.TlvTools;
@@ -47,6 +47,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Date;
+import java.util.regex.Pattern;
 
 /**
  * A data structure representing a single file or directory in a "Get File"
@@ -84,6 +85,7 @@ public class GetFileEntry implements LiveWritable {
         boolean gotLastmod = false;
         int lastTlv = -1;
         for (int i = offset; i < tlvs.length; i++) {
+            DefensiveTools.checkNull(tlvs[i], "tlvs elements");
             int type = tlvs[i].getType();
             if (type == TYPE_LASTMOD) {
                 if (!gotLastmod) {
@@ -295,10 +297,14 @@ public class GetFileEntry implements LiveWritable {
         new Tlv(TYPE_SENTINEL).write(out);
     }
 
+    private static final Pattern flagFieldRE = Pattern.compile("FLAG_.*");
+
     public String toString() {
         return "GetFileEntry: file=<" + filename + ">, "
                 + ((float) filesize / 1024)
                 + " KB, last modified " + new Date(lastmod * 1000)
-                + " (flags=" + flags + ")";
+                + " (flags=" + flags + " - "
+                + MiscTools.getFlagFieldsString(GetFileEntry.class, flags,
+                        flagFieldRE) + ")";
     }
 }

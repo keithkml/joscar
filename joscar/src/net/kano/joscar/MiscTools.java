@@ -35,9 +35,12 @@
 
 package net.kano.joscar;
 
-import java.util.regex.Pattern;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.Collections;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.regex.Pattern;
 
 /**
  * Provides a set of miscellaneous tools used throughout joscar.
@@ -162,5 +165,67 @@ public final class MiscTools {
 
         // we didn't find anything
         return null;
+    }
+
+    public static String[] findFlagFields(Class cl, long value, Pattern p) {
+        Field[] fields = cl.getFields();
+        SortedMap matches = new TreeMap(Collections.reverseOrder());
+
+        for (int i = 0; i < fields.length; i++) {
+            Field field = fields[i];
+
+            int modifiers = field.getModifiers();
+
+            // only accept static final fields
+            if (!Modifier.isStatic(modifiers) || !Modifier.isFinal(modifiers)) {
+                continue;
+            }
+
+            String fieldName = field.getName();
+            if (p != null && !p.matcher(fieldName).matches()) continue;
+
+            long fieldValue;
+            try {
+                fieldValue = field.getLong(null);
+            } catch (IllegalAccessException e) {
+                continue;
+            }
+
+            if ((value & fieldValue) == fieldValue) {
+                matches.put(new Long(fieldValue), fieldName);
+            }
+        }
+
+        return (String[]) matches.values().toArray(new String[0]);
+    }
+
+    public static String getFlagFieldsString(Class cl, long value, Pattern p) {
+        String[] fields = findFlagFields(cl, value, p);
+
+        StringBuffer b = new StringBuffer();
+        long covered = 0;
+        for (int i = 0; i < fields.length; i++) {
+            String field = fields[i];
+            long fieldValue = 0;
+            try {
+                fieldValue = cl.getField(field).getLong(null);
+            } catch (NoSuchFieldException ignored) {
+            } catch (SecurityException ignoredToo) {
+            } catch (IllegalAccessException ignoredThree) {
+            }
+            if ((covered | fieldValue) == covered) continue;
+
+            covered |= fieldValue;
+
+            if (i != 0) b.append(" | ");
+            b.append(field);
+        }
+
+        if (covered != 0 && (value & ~covered) != 0) {
+            b.append(" | 0x");
+            b.append(Long.toHexString(value & ~covered));
+        }
+
+        return b.toString();
     }
 }

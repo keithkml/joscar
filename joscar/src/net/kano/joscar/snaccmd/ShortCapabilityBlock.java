@@ -39,11 +39,13 @@ import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.Writable;
+import net.kano.joscar.MiscTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * Short capability blocks are means of storing a capability block in two bytes
@@ -214,7 +216,12 @@ public class ShortCapabilityBlock implements Writable {
         return BinaryTools.getUShort(data, 0);
     }
 
+
+    private static final Pattern blockFieldRE = Pattern.compile("BLOCK_.*");
+
     public String toString() {
-        return "ShortCapabilityBlock: " + BinaryTools.describeData(data);
+        String name = MiscTools.findEqualField(CapabilityBlock.class, toCapabilityBlock(),
+                blockFieldRE);
+        return "ShortCapabilityBlock: " + BinaryTools.describeData(data) + " (" + name + ")";
     }
 }

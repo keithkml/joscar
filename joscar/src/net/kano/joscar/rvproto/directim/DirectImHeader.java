@@ -41,11 +41,13 @@ import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.ImEncodedString;
 import net.kano.joscar.ImEncodingParams;
 import net.kano.joscar.LiveWritable;
+import net.kano.joscar.MiscTools;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.regex.Pattern;
 
 /**
  * A data structure containing information about a Direct IM message or typing
@@ -526,13 +528,17 @@ header.setScreenname("");
         hout.writeTo(out);
     }
 
+    private static final Pattern flagFieldRE = Pattern.compile("FLAG_.*");
+
     public synchronized String toString() {
         return "DirectIMHeader: " +
                 "msgid=" + messageId +
                 ", dataLen=" + dataLength +
                 ", encoding=" + encoding +
-                ", flags=0x" + Long.toHexString(flags) +
-                ", sn='" + sn + "'" +
+                ", flags=0x" + Long.toHexString(flags)
+                + " (" + MiscTools.getFlagFieldsString(DirectImHeader.class,
+                        flags, flagFieldRE)
+                + "), sn='" + sn + "'" +
                 ", headerSize=" + headerSize;
     }
 }

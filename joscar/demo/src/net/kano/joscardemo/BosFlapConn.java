@@ -213,7 +213,7 @@ public class BosFlapConn extends BasicConn {
 
                     tester.getSecureSession().setCert(sn, cert);
 
-                    X509Certificate x = (X509Certificate) cert;
+                    X509Certificate x = cert;
                     System.out.println("got certificate for " + sn + ": "
                             + x.getSubjectX500Principal().getName());
 
@@ -250,7 +250,7 @@ public class BosFlapConn extends BasicConn {
                         : (Object) obj));
             }
 
-            if (sdc.getLastModDate() != 0) {
+            if (items.length == 0 || sdc.getLastModDate() != 0) {
                 System.out.println("done with SSI");
                 request(new ActivateSsiCmd());
                 clientReady();
@@ -258,13 +258,13 @@ public class BosFlapConn extends BasicConn {
         } else if (cmd instanceof SsiRightsCmd) {
             SsiRightsCmd src = (SsiRightsCmd) cmd;
 
-            System.out.println("SSI maxima:");
-            int[] maxima = src.getMaxima();
-            for (int i = 0; i < maxima.length; i++) {
-                int max = maxima[i];
-
-                System.out.println("- 0x" + Integer.toHexString(i) + ": " + max);
-            }
+//            System.out.println("SSI maxima:");
+//            int[] maxima = src.getMaxima();
+//            for (int i = 0; i < maxima.length; i++) {
+//                int max = maxima[i];
+//
+//                System.out.println("- 0x" + Integer.toHexString(i) + ": " + max);
+//            }
         }
     }
 }

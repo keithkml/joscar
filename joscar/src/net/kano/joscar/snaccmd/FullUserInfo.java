@@ -41,12 +41,14 @@ import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.LiveWritable;
 import net.kano.joscar.OscarTools;
 import net.kano.joscar.StringBlock;
+import net.kano.joscar.MiscTools;
 import net.kano.joscar.tlv.*;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.regex.Pattern;
 
 /**
  * A very widely used structure that represents a single screen name and various
@@ -803,20 +805,24 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
         chain.write(out);
     }
 
+    private static final Pattern flagFieldRE = Pattern.compile("MASK_.*");
+
     public String toString() {
         return "UserInfo for " + sn + 
-                (warningLevel != 0 ? (warningLevel/10) + "%"  : "") +
-                ", flags=" + flags +
+                (warningLevel != 0 ? " <" + (warningLevel/10) + "%>"  : "") +
+                ": flags=0x" + Integer.toHexString(flags) + " ("
+                + MiscTools.getFlagFieldsString(FullUserInfo.class, flags,
+                        flagFieldRE) + ")" +
 
                 (accountCreated != null ? ", acctCrtd=" + accountCreated : "") +
 
                 (memberSince != null ? ", memberSince=" + memberSince : "") +
 
                 (sessionLengthAIM != -1
-                ? ", sessLen=" + sessionLengthAIM / 60 + "min" : "") +
+                ? ", sessLenAim=" + sessionLengthAIM / 60 + "min" : "") +
 
                 (sessionLengthAOL != -1
-                ? ", sessLen=" + sessionLengthAOL / 60 + "min" : "") +
+                ? ", sessLenAol=" + sessionLengthAOL / 60 + "min" : "") +
 
                 (onSince != null ? ", onSince=" + onSince  : "") +
 
@@ -832,7 +838,10 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
                 (extraTlvs != null && extraTlvs.getTlvCount() > 0
                 ? ", extraTlvs=" + Arrays.asList(extraTlvs.getTlvs()) : "")
 
-                + (shortCaps != null ? ", shortcaps: " + Arrays.asList(shortCaps) : "")
-                + (capabilityBlocks != null ? ", longcaps: " + Arrays.asList(capabilityBlocks) : "");
+                + (shortCaps != null ? ", shortcaps: "
+                + Arrays.asList(shortCaps) : "")
+
+                + (capabilityBlocks != null ? ", longcaps: "
+                + Arrays.asList(capabilityBlocks) : "");
     }
 }

@@ -60,6 +60,8 @@ public abstract class AbstractItemObj implements SsiItemObj {
      */
     public static SsiItem[] generateSsiItems(SsiItemObj[] itemObjs) {
         DefensiveTools.checkNull(itemObjs, "itemObjs");
+        itemObjs = (SsiItemObj[]) DefensiveTools.getNonnullArray(
+                itemObjs, "itemObjs");
 
         SsiItem[] items = new SsiItem[itemObjs.length];
         for (int i = 0; i < itemObjs.length; i++) {

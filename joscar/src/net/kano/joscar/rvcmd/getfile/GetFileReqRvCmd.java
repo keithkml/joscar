@@ -38,6 +38,7 @@ package net.kano.joscar.rvcmd.getfile;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.MiscTools;
 import net.kano.joscar.rvcmd.AbstractRequestRvCmd;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joscar.snaccmd.CapabilityBlock;
@@ -47,6 +48,7 @@ import net.kano.joscar.tlv.TlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.regex.Pattern;
 
 /**
  * A rendezvous command used to request browsing another user's files via a
@@ -331,11 +333,24 @@ if ((getFileReq.getFlags() & GetFileReqRvCmd.FLAG_EXPAND_DYNAMIC) != 0) {
         }
     }
 
+    private static final Pattern codeFieldRE = Pattern.compile("CODE_.*");
+    private static final Pattern protoFieldRE = Pattern.compile("PROTOVERSION_.*");
+    private static final Pattern flagFieldRE = Pattern.compile("FLAG_.*");
+
     public String toString() {
         return "GetFileReqRvCmd: connInfo=<" + connInfo + ">, code=0x"
-                + Integer.toHexString(code) + ", proto=0x"
-                + Integer.toHexString(protoVersion) + ", flags=0x"
-                + Long.toHexString(flags) + ", extraBlock="
+                + Integer.toHexString(code) + " ("
+                + MiscTools.findIntField(GetFileReqRvCmd.class, code,
+                        codeFieldRE)
+                + "), proto=0x"
+                + Integer.toHexString(protoVersion) + " ("
+                + MiscTools.findIntField(GetFileReqRvCmd.class, protoVersion,
+                        protoFieldRE)
+                + "), flags=0x"
+                + Long.toHexString(flags) + " ("
+                + MiscTools.getFlagFieldsString(GetFileReqRvCmd.class, flags,
+                        flagFieldRE)
+                + "), extraBlock="
                 + (extraBlock == null ? null
                 : BinaryTools.describeData(extraBlock));
     }

@@ -234,6 +234,8 @@ class QueueRunner implements Runnable {
      */
     public void addQueues(RateQueue[] rateQueues) {
         DefensiveTools.checkNull(rateQueues, "rateQueues");
+        rateQueues = (RateQueue[]) DefensiveTools.getNonnullArray(
+                rateQueues, "rateQueues");
 
         queues.addAll(Arrays.asList(rateQueues));
     }

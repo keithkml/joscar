@@ -350,13 +350,19 @@ if ((privacyItem.getVisibleMask() & PrivacyItem.VISMASK_HIDE_WIRELESS) != 0) {
 
     /** A pattern matching the MODE_* fields of this class. */
     private static final Pattern modeFieldRE = Pattern.compile("MODE_.*");
+    private static final Pattern vismaskFieldRE = Pattern.compile("VISMASK_.*");
+    private static final Pattern classmaskFieldRE = Pattern.compile("MASK_.*");
 
     public synchronized String toString() {
         return "PrivacyItem: id=0x" + Integer.toHexString(id)
                 + ", mode=" + privacyMode
-                + "(" + MiscTools.findIntField(PrivacyItem.class, privacyMode,
+                + " (" + MiscTools.findIntField(PrivacyItem.class, privacyMode,
                         modeFieldRE) + ")"
                 + ", classMask=0x" + Long.toHexString(classMask)
-                + ", visMask=0x" + Long.toHexString(visibleMask);
+                + " (" + MiscTools.getFlagFieldsString(FullUserInfo.class,
+                        classMask, classmaskFieldRE) + ")"
+                + ", visMask=0x" + Long.toHexString(visibleMask)
+                + " (" + MiscTools.getFlagFieldsString(FullUserInfo.class,
+                        visibleMask, vismaskFieldRE) + ")";
     }
 }
