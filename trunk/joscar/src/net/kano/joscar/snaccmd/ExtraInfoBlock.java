@@ -66,9 +66,14 @@ public final class ExtraInfoBlock implements Writable {
 
     /**
      * An extra info block type indicating that the block contains AIM
-     * Expression information.
+     * Expressions information.
      */
-    public static final int TYPE_AIMEXPINFO = 0x0080;
+    public static final int TYPE_AIMEXPINFO_A = 0x0080;
+    /**
+     * An extra info block type indicating that the block contains AIM
+     * Expressions information.
+     */
+    public static final int TYPE_AIMEXPINFO_B = 0x0082;
 
     /**
      * An extra info block type indicating that the block contains a

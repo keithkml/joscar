@@ -36,13 +36,10 @@
 package net.kano.joscardemo;
 
 import net.kano.joscar.ByteBlock;
-import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.TlvTools;
 import net.kano.joscar.flap.ClientFlapConn;
 import net.kano.joscar.flap.FlapPacketEvent;
 import net.kano.joscar.flapcmd.LoginFlapCmd;
 import net.kano.joscar.flapcmd.SnacCommand;
-import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.net.ClientConnEvent;
 import net.kano.joscar.snac.SnacPacketEvent;
 import net.kano.joscar.snac.SnacResponseEvent;
@@ -51,8 +48,6 @@ import net.kano.joscar.snaccmd.auth.AuthResponse;
 import net.kano.joscar.snaccmd.auth.ClientVersionInfo;
 import net.kano.joscar.snaccmd.auth.KeyRequest;
 import net.kano.joscar.snaccmd.auth.KeyResponse;
-import net.kano.joscar.snaccmd.chat.ChatMsg;
-import net.kano.joscar.snaccmd.chat.SendChatMsgIcbm;
 
 import java.net.InetAddress;
 

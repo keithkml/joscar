@@ -235,7 +235,7 @@ public class BCSecureSession extends SecureSession {
             if (cert == null) return null;
 
             ByteArrayOutputStream bout = new ByteArrayOutputStream();
-            OutputStreamWriter osw = new OutputStreamWriter(bout);
+            OutputStreamWriter osw = new OutputStreamWriter(bout, "US-ASCII");
             osw.write("Content-Transfer-Encoding: binary\r\n"
                     + "Content-Type: text/x-aolrtf; charset=us-ascii\r\n"
                     + "Content-Language: en\r\n"
@@ -247,7 +247,7 @@ public class BCSecureSession extends SecureSession {
             byte[] signedData = signData(dataToSign);
 
             bout = new ByteArrayOutputStream();
-            osw = new OutputStreamWriter(bout);
+            osw = new OutputStreamWriter(bout, "US-ASCII");
             osw.write("Content-Transfer-Encoding: binary\r\n"
                     + "Content-Type: application/pkcs7-mime; charset=us-ascii\r\n"
                     + "Content-Language: en\r\n"
@@ -402,7 +402,7 @@ public class BCSecureSession extends SecureSession {
             throws SecureSessionException {
         try {
             ByteArrayOutputStream bout = new ByteArrayOutputStream();
-            OutputStreamWriter osw = new OutputStreamWriter(bout);
+            OutputStreamWriter osw = new OutputStreamWriter(bout, "US-ASCII");
             osw.write("Content-Transfer-Encoding: binary\r\n"
                     + "Content-Type: text/x-aolrtf; charset=us-ascii\r\n"
                     + "Content-Language: en\r\n"
@@ -414,7 +414,7 @@ public class BCSecureSession extends SecureSession {
             byte[] signedData = signData(dataToSign);
 
             bout = new ByteArrayOutputStream();
-            osw = new OutputStreamWriter(bout);
+            osw = new OutputStreamWriter(bout, "US-ASCII");
             osw.write("Content-Transfer-Encoding: binary\r\n"
                     + "Content-Type: application/pkcs7-mime; charset=us-ascii\r\n"
                     + "Content-Language: en\r\n"
@@ -516,36 +516,29 @@ public class BCSecureSession extends SecureSession {
             context.init(
                     new KeyManager[] {new X509KeyManager() {
                             public PrivateKey getPrivateKey(String string) {
-                                System.out.println("getPrivateKey:" + string);
                                 return xkm1.getPrivateKey(string);
                             }
 
                             public X509Certificate[] getCertificateChain(String string) {
-                                System.out.println("getCertificateChain:" + string);
                                 return xkm1.getCertificateChain(string);
                             }
 
                             public String[] getClientAliases(String string, Principal[] principals) {
-                                System.out.println("getClientAliases:" + string + ", " + Arrays.asList(principals));
                                 return xkm1.getClientAliases(string, principals);
                             }
 
                             public String[] getServerAliases(String string, Principal[] principals) {
-                                System.out.println("getServerAliases:" + string + ", " + Arrays.asList(principals));
                                 return xkm1.getServerAliases(string, principals);
                             }
 
                             public String chooseServerAlias(String string, Principal[] principals,
                                     Socket socket) {
-                                System.out.println("chooseServerAlias:" + string + ", " + Arrays.asList(principals));
                                 return xkm1.chooseServerAlias(string, principals, socket);
                             }
 
                             public String chooseClientAlias(String[] strings, Principal[] principals,
                                     Socket socket) {
-                                System.out.println("chooseClientAlias:" + Arrays.asList(strings) + ", " + Arrays.asList(principals));
                                 String alias = xkm1.chooseClientAlias(strings, null, socket);
-                                System.out.println("chose " + alias);
                                 return alias;
                             }
                         }},

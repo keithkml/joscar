@@ -89,7 +89,6 @@ import net.kano.joscar.snaccmd.icbm.RecvImIcbm;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.snaccmd.icbm.RvCommand;
 import net.kano.joscar.snaccmd.icbm.RvResponse;
-import net.kano.joscar.snaccmd.icbm.SendImIcbm;
 import net.kano.joscar.snaccmd.rooms.RoomInfoReq;
 import net.kano.joscardemo.security.SecureSession;
 import net.kano.joscardemo.security.SecureSessionException;
@@ -334,7 +333,7 @@ public abstract class BasicConn extends AbstractFlapConn {
 //                            + " has a buddy icon: " + iconInfo + ")");
 //                }
 
-                sendRequest(new SnacRequest(new SendImIcbm(sn, msg), null));
+//                sendRequest(new SnacRequest(new SendImIcbm(sn, msg), null));
             }
             String str = dateFormat.format(new Date()) + " IM from "
                     + sn + ": " + msg;
