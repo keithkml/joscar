@@ -34,9 +34,9 @@
  */
 package net.kano.joscar.tlv;
 
+import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.BinaryTools;
 
 /**
  * Provides a set of utilites for working with TLV chains.

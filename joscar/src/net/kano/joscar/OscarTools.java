@@ -35,27 +35,28 @@
 
 package net.kano.joscar;
 
+import net.kano.joscar.logging.Logger;
+import net.kano.joscar.logging.LoggingSystem;
 import net.kano.joscar.snaccmd.MiniRoomInfo;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.nio.charset.IllegalCharsetNameException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Collections;
-import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.net.URLDecoder;
 
 /**
  * Provides a set of tools for performing OSCAR-specific functions.
  */
 public final class OscarTools {
     /** A logger for errors caused in the methods this class. */
-    private static final Logger logger = Logger.getLogger("net.kano.joscar");
+    private static final Logger logger = LoggingSystem.getLogger("net.kano.joscar");
 
     /**
      * A private constructor that is never called ensures that this class cannot
@@ -292,7 +293,7 @@ public final class OscarTools {
                 }
             } catch (IllegalCharsetNameException e) {
                 // this shouldn't happen, so be very loud and angry about it
-                logger.warning("Illegal charset name: " + goodCharset + ": "
+                logger.logWarning("Illegal charset name: " + goodCharset + ": "
                         + e.getMessage());
 
                 // and default to ASCII

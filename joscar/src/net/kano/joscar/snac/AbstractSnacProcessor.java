@@ -37,17 +37,18 @@ package net.kano.joscar.snac;
 
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.net.ConnProcessor;
 import net.kano.joscar.flap.FlapPacketEvent;
 import net.kano.joscar.flap.FlapProcessor;
 import net.kano.joscar.flap.VetoableFlapPacketListener;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.flapcmd.SnacFlapCmd;
 import net.kano.joscar.flapcmd.SnacPacket;
+import net.kano.joscar.logging.Logger;
+import net.kano.joscar.logging.LoggingSystem;
+import net.kano.joscar.net.ConnProcessor;
 
 import java.util.Iterator;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
 
 /**
  * Provides an easy interface to listening for incoming SNAC packets as well as
@@ -158,7 +159,7 @@ public abstract class AbstractSnacProcessor {
 
     /** A logger for logging SNAC-related events. */
     private static final Logger logger
-            = Logger.getLogger("net.kano.joscar.snac");
+            = LoggingSystem.getLogger("net.kano.joscar.snac");
 
     /** Whether or not this SNAC processor is attached to a FLAP processor. */
     private boolean attached = false;
@@ -201,8 +202,8 @@ public abstract class AbstractSnacProcessor {
             = new VetoableFlapPacketListener() {
                 public Object handlePacket(FlapPacketEvent e) {
                     if (e.getFlapCommand() instanceof SnacFlapCmd) {
-                        if (logger.isLoggable(Level.FINER)) {
-                            logger.finer("SnacProcessor intercepted channel-2 snac "
+                        if (logger.logFinerEnabled()) {
+                            logger.logFiner("SnacProcessor intercepted channel-2 snac "
                                     + "command");
                         }
 
@@ -394,8 +395,8 @@ public abstract class AbstractSnacProcessor {
      * @param e the FLAP packet event to process
      */
     private void processPacket(FlapPacketEvent e) {
-        boolean logFine = logger.isLoggable(Level.FINE);
-        boolean logFiner = logger.isLoggable(Level.FINER);
+        boolean logFine = logger.logFineEnabled();
+        boolean logFiner = logger.logFinerEnabled();
 
         FlapProcessor processor;
         synchronized(this) {
@@ -416,7 +417,7 @@ public abstract class AbstractSnacProcessor {
                 }
 
                 if (logFiner) {
-                    logger.finer("Running snac preprocessor " + preprocessor);
+                    logger.logFiner("Running snac preprocessor " + preprocessor);
                 }
 
                 try {
@@ -424,7 +425,7 @@ public abstract class AbstractSnacProcessor {
 
                 } catch (Throwable t) {
                     if (logFiner) {
-                        logger.finer("Preprocessor " + preprocessor
+                        logger.logFiner("Preprocessor " + preprocessor
                                 + " threw exception " + t);
                     }
                     processor.handleException(ERRTYPE_SNAC_PACKET_PREPROCESSOR,
@@ -440,7 +441,7 @@ public abstract class AbstractSnacProcessor {
             SnacCommand cmd = generateSnacCommand(snacPacket);
 
             if (logFine) {
-                logger.fine("Converted Snac packet " + snacPacket + " to "
+                logger.logFine("Converted Snac packet " + snacPacket + " to "
                         + cmd);
             }
 
@@ -453,7 +454,7 @@ public abstract class AbstractSnacProcessor {
                         = (VetoableSnacPacketListener) it.next();
 
                 if (logFiner) {
-                    logger.finer("Running vetoable Snac packet listener "
+                    logger.logFiner("Running vetoable Snac packet listener "
                             + listener);
                 }
 
@@ -474,7 +475,7 @@ public abstract class AbstractSnacProcessor {
                 SnacPacketListener listener = (SnacPacketListener) it.next();
 
                 if (logFiner) {
-                    logger.finer("Running Snac packet listener " + listener);
+                    logger.logFiner("Running Snac packet listener " + listener);
                 }
 
                 try {
@@ -485,7 +486,7 @@ public abstract class AbstractSnacProcessor {
                 }
             }
 
-            if (logFiner) logger.finer("Finished processing Snac");
+            if (logFiner) logger.logFiner("Finished processing Snac");
         }
     }
 

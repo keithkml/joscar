@@ -1075,7 +1075,11 @@ header.setTotalFileSize(0);
         fullBuffer.writeTo(out);
     }
 
+    /**
+     * A regular expression pattern matching HEADERTYPE_* flags of this class.
+     */
     private static final Pattern headerFieldRE = Pattern.compile("HEADERTYPE_.*");
+    /** A regular expression pattern matching FLAG_* flags of this class. */
     private static final Pattern flagFieldRE = Pattern.compile("FLAG_.*");
 
     public synchronized String toString() {

@@ -38,8 +38,8 @@ package net.kano.joscar.snaccmd.icbm;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.Writable;
 import net.kano.joscar.MiscTools;
+import net.kano.joscar.Writable;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -276,6 +276,7 @@ if ((paramInfo.getFlags() & ParamInfo.FLAG_TYPING_NOTIFICATION) != 0) {
         BinaryTools.writeUInt(out, minMsgInterval);
     }
 
+    /** A regular expression pattern matching FLAG_* fields in this class. */
     private static final Pattern flagFieldRE = Pattern.compile("FLAG_.*");
 
     public String toString() {

@@ -39,7 +39,10 @@ import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.ssi.SsiItem;
-import net.kano.joscar.tlv.*;
+import net.kano.joscar.tlv.MutableTlvChain;
+import net.kano.joscar.tlv.Tlv;
+import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.TlvTools;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -196,7 +199,7 @@ public class GroupItem extends AbstractItemObj {
      *        <code>null</code> to erase this group's child buddy list
      */
     public synchronized final void setBuddies(int[] buddies) {
-        this.buddies = DefensiveTools.getSafeNonnullArrayCopy(buddies, "buddies", 0);
+        this.buddies = DefensiveTools.getSafeMinArrayCopy(buddies, "buddies", 0);
     }
 
     public synchronized SsiItem toSsiItem() {

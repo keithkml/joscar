@@ -39,9 +39,11 @@ import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.OscarTools;
 import net.kano.joscar.SeqNum;
-import net.kano.joscar.net.ConnProcessor;
 import net.kano.joscar.flap.FlapProcessor;
 import net.kano.joscar.flapcmd.SnacCommand;
+import net.kano.joscar.logging.Logger;
+import net.kano.joscar.logging.LoggingSystem;
+import net.kano.joscar.net.ConnProcessor;
 import net.kano.joscar.snac.ClientSnacProcessor;
 import net.kano.joscar.snac.SnacPacketEvent;
 import net.kano.joscar.snac.SnacRequest;
@@ -61,8 +63,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
 
 /**
  * Provides an easy interface for creating and manipulating "rendezvous
@@ -157,7 +158,7 @@ public class RvProcessor {
             = new ConnProcessor.ErrorType("ERRTYPE_RV_SESSION_LISTENER");
 
     /** A logger used to log RV-related events. */
-    private static final Logger logger = Logger.getLogger("net.kano.joscar.rv");
+    private static final Logger logger = LoggingSystem.getLogger("net.kano.joscar.rv");
 
     /** The SNAC processor to which this RV processor is attached. */
     private ClientSnacProcessor snacProcessor = null;
@@ -188,8 +189,8 @@ public class RvProcessor {
             SnacCommand cmd = event.getSnacCommand();
 
             if (cmd instanceof RecvRvIcbm) {
-                if (logger.isLoggable(Level.FINER)) {
-                    logger.finer("RvProcessor got RecvRvIcbm: " + cmd);
+                if (logger.logFinerEnabled()) {
+                    logger.logFiner("RvProcessor got RecvRvIcbm: " + cmd);
                 }
 
                 processRv(event);
@@ -197,8 +198,8 @@ public class RvProcessor {
                 return STOP_PROCESSING_LISTENERS;
 
             } else if (cmd instanceof RvResponse) {
-                if (logger.isLoggable(Level.FINER)) {
-                    logger.finer("RvProcessor got RvResponse: " + cmd);
+                if (logger.logFinerEnabled()) {
+                    logger.logFiner("RvProcessor got RvResponse: " + cmd);
                 }
 
                 processResponse(event);
@@ -469,8 +470,8 @@ public class RvProcessor {
         RvSessionImpl session = getSession(sessionId, sn);
 
         if (session == null) {
-            if (logger.isLoggable(Level.FINE)) {
-                logger.fine("Creating new incoming RV session for " + sn
+            if (logger.logFineEnabled()) {
+                logger.logFine("Creating new incoming RV session for " + sn
                         + ", id=0x" + Long.toHexString(sessionId));
             }
             synchronized(sessionLock) {
@@ -500,8 +501,8 @@ public class RvProcessor {
         DefensiveTools.checkNull(type, "type");
         DefensiveTools.checkNull(t, "t");
 
-        if (logger.isLoggable(Level.FINE)) {
-            logger.finer("RV processor got exception type " + type + ": " + t
+        if (logger.logFineEnabled()) {
+            logger.logFiner("RV processor got exception type " + type + ": " + t
                     + " - " + info);
         }
 
@@ -519,9 +520,9 @@ public class RvProcessor {
         }
 
         // okay. we were forced into this. I swear.
-        logger.warning("RV processor got exception; no exception handlers" +
+        logger.logWarning("RV processor got exception; no exception handlers" +
                 "present (type=" + type + ", info=" + info + ")");
-        logger.warning(Arrays.asList(t.getStackTrace()).toString());
+        logger.logWarning(Arrays.asList(t.getStackTrace()).toString());
     }
 
     /**
@@ -582,8 +583,8 @@ public class RvProcessor {
     private void processRv(SnacPacketEvent e) {
         RecvRvIcbm cmd = (RecvRvIcbm) e.getSnacCommand();
 
-        if (logger.isLoggable(Level.FINE)) {
-            logger.fine("Generating RV for <" + cmd.getCapability() + "> from "
+        if (logger.logFineEnabled()) {
+            logger.logFine("Generating RV for <" + cmd.getCapability() + "> from "
                     + cmd.getSender().getScreenname());
         }
 
@@ -600,12 +601,12 @@ public class RvProcessor {
             return;
         }
 
-        boolean logFiner = logger.isLoggable(Level.FINER);
+        boolean logFiner = logger.logFinerEnabled();
         if (logFiner) {
             if (rvCommand == null) {
-                logger.finer("Couldn't generate RV command, data was:" + cmd.getRvData());
+                logger.logFiner("Couldn't generate RV command, data was:" + cmd.getRvData());
             } else {
-                logger.finer("Generated RV command: " + rvCommand);
+                logger.logFiner("Generated RV command: " + rvCommand);
             }
         }
 
@@ -614,7 +615,7 @@ public class RvProcessor {
         session.processRv(event);
 
         if (logFiner) {
-            logger.finer("Done processing RV");
+            logger.logFiner("Done processing RV");
         }
     }
 
@@ -636,8 +637,8 @@ public class RvProcessor {
                 cmd.getResultCode());
         session.processRv(event);
 
-        if (logger.isLoggable(Level.FINER)) {
-            logger.finer("Done processing RV response");
+        if (logger.logFinerEnabled()) {
+            logger.logFiner("Done processing RV response");
         }
     }
 
@@ -673,8 +674,8 @@ public class RvProcessor {
     public final RvSession createRvSession(String sn, long sessionID) {
         DefensiveTools.checkNull(sn, "sn");
 
-        if (logger.isLoggable(Level.FINER)) {
-            logger.finer("Creating new outgoing RV session for " + sn);
+        if (logger.logFinerEnabled()) {
+            logger.logFiner("Creating new outgoing RV session for " + sn);
         }
 
         RvSessionImpl session;
@@ -849,8 +850,8 @@ public class RvProcessor {
         public void sendRv(RvCommand command, long icbmMessageId) {
             DefensiveTools.checkNull(command, "command");
 
-            if (logger.isLoggable(Level.FINE)) {
-                logger.fine("Sending RV to " + sn + ": " + command);
+            if (logger.logFineEnabled()) {
+                logger.logFine("Sending RV to " + sn + ": " + command);
             }
 
             SnacCommand cmd = new SendRvIcbm(sn, icbmMessageId, rvSessionId,
@@ -863,8 +864,8 @@ public class RvProcessor {
             RvResponse cmd = new RvResponse(rvSessionId,
                     AbstractIcbm.CHANNEL_RV, sn, code);
 
-            if (logger.isLoggable(Level.FINE)) {
-                logger.fine("Sending RV response to " + sn + ": " + code);
+            if (logger.logFineEnabled()) {
+                logger.logFine("Sending RV response to " + sn + ": " + code);
             }
 
             sendSnac(new SnacRequest(cmd, reqListener));

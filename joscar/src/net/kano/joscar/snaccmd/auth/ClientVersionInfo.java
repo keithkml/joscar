@@ -87,7 +87,7 @@ public final class ClientVersionInfo implements LiveWritable {
      * @return a client version information object read from the given TLV
      *         chain
      */
-    static ClientVersionInfo readClientVersionInfo(TlvChain chain) {
+    public static ClientVersionInfo readClientVersionInfo(TlvChain chain) {
         DefensiveTools.checkNull(chain, "chain");
 
         String verString = chain.getString(TYPE_VERSION_STRING);

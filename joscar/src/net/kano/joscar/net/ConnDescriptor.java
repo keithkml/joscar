@@ -39,11 +39,27 @@ import net.kano.joscar.DefensiveTools;
 
 import java.net.InetAddress;
 
+/**
+ * A class describing a destination host and port, for making an outgoing TCP
+ * connection. An instance of this class contains either a host or an IP address
+ * along with a port. No instance of this class will contain both a host and an
+ * IP address.
+ */
 public class ConnDescriptor {
+    /** The host to connect to, if any. */
     private final String host;
+    /** The IP address to connect to, if any. */
     private final InetAddress address;
+    /** The port to connect to. */
     private final int port;
 
+    /**
+     * Creates a new connection descriptor instance for the given hostname and
+     * port.
+     *
+     * @param host a hostname
+     * @param port a port number
+     */
     public ConnDescriptor(String host, int port) {
         DefensiveTools.checkNull(host, "host");
         DefensiveTools.checkRange(port, "port", 0);
@@ -53,6 +69,13 @@ public class ConnDescriptor {
         this.port = port;
     }
 
+    /**
+     * Creates a new connection descriptor instance for the given IP address and
+     * port.
+     *
+     * @param address an IP address
+     * @param port a port number
+     */
     public ConnDescriptor(InetAddress address, int port) {
         DefensiveTools.checkNull(address, "address");
         DefensiveTools.checkRange(port, "port", 0);
@@ -62,10 +85,30 @@ public class ConnDescriptor {
         this.port = port;
     }
 
+    /**
+     * Returns this connection descriptor's hostname, if any. If this method
+     * returns <code>null</code>, {@link #getAddress()} will not return
+     * <code>null</code>.
+     *
+     * @return this connection descriptor's hostname, or <code>null</code>
+     */
     public final String getHost() { return host; }
 
+    /**
+     * Returns this connection descriptor's IP address, if any. If this method
+     * returns <code>null</code>, {@link #getHost()} will not return
+     * <code>null</code>.
+     *
+     * @return this connection descriptor's hostname, or <code>null</code>
+     */
     public final InetAddress getAddress() { return address; }
 
+    /**
+     * Returns this connection descriptor's destination port. The returned value
+     * will never be negative.
+     *
+     * @return this connection descriptor's destination port
+     */
     public final int getPort() { return port; }
 
     public boolean equals(Object o) {

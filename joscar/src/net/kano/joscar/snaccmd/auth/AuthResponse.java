@@ -38,8 +38,8 @@ package net.kano.joscar.snaccmd.auth;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.MiscTools;
-import net.kano.joscar.snaccmd.acct.AcctModCmd;
 import net.kano.joscar.flapcmd.SnacPacket;
+import net.kano.joscar.snaccmd.acct.AcctModCmd;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
 import net.kano.joscar.tlv.TlvTools;
@@ -337,7 +337,11 @@ public class AuthResponse extends AuthCommand {
         }
     }
 
+    /** A regular expression pattern matching ERROR_* fields in this class. */
     private static final Pattern errorFieldRE = Pattern.compile("ERROR_.*");
+    /**
+     * A regular expression pattern matching REGSTATUS_* fields in this class.
+     */
     private static final Pattern regFieldRE = Pattern.compile("REGSTATUS_.*");
 
     public String toString() {

@@ -37,9 +37,11 @@ package net.kano.joscar.ratelim;
 
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.net.ConnProcessor;
 import net.kano.joscar.flap.FlapProcessor;
 import net.kano.joscar.flapcmd.SnacCommand;
+import net.kano.joscar.logging.Logger;
+import net.kano.joscar.logging.LoggingSystem;
+import net.kano.joscar.net.ConnProcessor;
 import net.kano.joscar.snac.ClientSnacProcessor;
 import net.kano.joscar.snac.CmdType;
 import net.kano.joscar.snac.OutgoingSnacRequestListener;
@@ -53,12 +55,11 @@ import net.kano.joscar.snaccmd.conn.RateChange;
 import net.kano.joscar.snaccmd.conn.RateClassInfo;
 import net.kano.joscar.snaccmd.conn.RateInfoCmd;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Collection;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
 
 /**
  * Keeps track of the current "rate" on a SNAC connection. See {@link
@@ -155,7 +156,7 @@ public class RateMonitor {
 
     /** A logger object for this class. */
     private static final Logger logger
-            = Logger.getLogger("net.kano.joscar.ratelim");
+            = LoggingSystem.getLogger("net.kano.joscar.ratelim");
 
     /** The SNAC processor to which this rate monitor is attached. */
     private ClientSnacProcessor snacProcessor;
@@ -334,8 +335,8 @@ public class RateMonitor {
                 (RateClassInfo[]) DefensiveTools.getSafeNonnullArrayCopy(
                 rateInfos, "rateInfos");
 
-        if (logger.isLoggable(Level.FINE)) {
-            logger.fine("Got rate classes for monitor " + this);
+        if (logger.logFineEnabled()) {
+            logger.logFine("Got rate classes for monitor " + this);
         }
 
         synchronized(this) {
@@ -448,7 +449,7 @@ public class RateMonitor {
             processor.getFlapProcessor().handleException(type, t, info);
 
         } else {
-            logger.warning("Rate monitor couldn't process error because "
+            logger.logWarning("Rate monitor couldn't process error because "
                     + "not attached to SNAC processor: " + t.getMessage()
                     + " (reason obj: " + info + ")");
         }

@@ -37,8 +37,8 @@ package net.kano.joscardemo;
 
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.OscarTools;
-import net.kano.joscar.net.ConnDescriptor;
 import net.kano.joscar.flapcmd.SnacCommand;
+import net.kano.joscar.net.ConnDescriptor;
 import net.kano.joscar.snac.SnacRequest;
 import net.kano.joscar.snac.SnacRequestListener;
 import net.kano.joscar.snaccmd.FullRoomInfo;
@@ -54,8 +54,8 @@ import net.kano.joscardemo.security.SecureSessionException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -67,16 +67,15 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
-import java.util.StringTokenizer;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.logging.ConsoleHandler;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
 import java.util.logging.Formatter;
+import java.util.logging.Level;
 import java.util.logging.LogRecord;
-import java.util.logging.Handler;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class JoscarTester implements CmdLineListener, ServiceListener {
     public static byte[] hashIcon(String filename) throws IOException {
@@ -143,7 +142,8 @@ public class JoscarTester implements CmdLineListener, ServiceListener {
     public String getPassword() { return pass; }
 
     public void connect() {
-        ConnDescriptor cd = new ConnDescriptor("login.oscar.aol.com", DEFAULT_SERVICE_PORT);
+        ConnDescriptor cd = new ConnDescriptor("login.oscar.aol.com",
+                DEFAULT_SERVICE_PORT);
         loginConn = new LoginConn(cd, this);
         loginConn.connect();
     }
@@ -152,7 +152,7 @@ public class JoscarTester implements CmdLineListener, ServiceListener {
         System.err.println("login failed: " + reason);
     }
 
-    public void setScreennameFormat(String screenname) {
+    void setScreennameFormat(String screenname) {
         sn = screenname;
     }
 
@@ -276,19 +276,27 @@ public class JoscarTester implements CmdLineListener, ServiceListener {
 
     public OldIconHashInfo getOldIconInfo() { return oldIconInfo; }
 
+    private static final Pattern cmdRE = Pattern.compile(
+            "\\s*(?:\"(.*?[^\\\\]?)\"|(\\S+))(?:\\s|$)");
+
     public void processCmd(CmdLineReader reader, String line) {
-        StringTokenizer tokenizer = new StringTokenizer(line, " ");
-        LinkedList cmds = new LinkedList();
-        while (tokenizer.hasMoreTokens()) {
-            cmds.add(tokenizer.nextToken());
+        Matcher m = cmdRE.matcher(line);
+        LinkedList arglist = new LinkedList();
+        while (m.find()) {
+            String arg = m.group(1);
+            if (arg == null) arg = m.group(2);
+            if (arg == null) {
+                System.err.println("Error: line parser failed to read "
+                        + "arguments");
+                return;
+            }
+            arglist.add(arg);
         }
 
-        if (cmds.isEmpty()) {
-            return;
-        }
+        if (arglist.isEmpty()) return;
 
-        String cmd = (String) cmds.removeFirst();
-        String[] args = (String[]) cmds.toArray(new String[0]);
+        String cmd = (String) arglist.removeFirst();
+        String[] args = (String[]) arglist.toArray(new String[0]);
 
         CLCommand handler = clHandler.getCommand(cmd);
 

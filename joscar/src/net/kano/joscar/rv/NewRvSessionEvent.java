@@ -122,9 +122,18 @@ public class NewRvSessionEvent {
                 + ", sessionType=" + sessionType;
     }
 
-    public static class EventType {
+    /**
+     * An enumeration class for rendezvous event types.
+     */
+    public static final class EventType {
+        /** The name of this event type. */
         private final String name;
 
+        /**
+         * Creates a new event type object with the given name.
+         *
+         * @param name the name of this event type
+         */ 
         private EventType(String name) {
             this.name = name;
         }

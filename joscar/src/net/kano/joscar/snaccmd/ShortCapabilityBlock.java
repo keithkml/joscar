@@ -38,8 +38,8 @@ package net.kano.joscar.snaccmd;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.Writable;
 import net.kano.joscar.MiscTools;
+import net.kano.joscar.Writable;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -65,6 +65,16 @@ import java.util.regex.Pattern;
  */
 public class ShortCapabilityBlock implements Writable {
 
+    /**
+     * Creates a new <code>CapabilityBlock</code> whose data is a short
+     * capability block with the given two bytes in positions 3 and 4 in the
+     * data block.
+     *
+     * @param byte1 the first byte of the short capability block
+     * @param byte2 the second byte of the short capability block
+     * @return a new <code>CapabilityBlock</code> representing the given short
+     *         capability block data
+     */
     public static CapabilityBlock getCapFromShortBytes(int byte1, int byte2) {
         byte[] bytes = CAP_TEMPLATE.toByteArray();
         bytes[2] = (byte) byte1;
@@ -226,7 +236,7 @@ public class ShortCapabilityBlock implements Writable {
         return BinaryTools.getUShort(data, 0);
     }
 
-
+    /** A regular expression pattern matching BLOCK_* fields in this class. */
     private static final Pattern blockFieldRE = Pattern.compile("BLOCK_.*");
 
     public String toString() {

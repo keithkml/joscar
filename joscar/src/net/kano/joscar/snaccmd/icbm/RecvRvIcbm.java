@@ -41,7 +41,6 @@ import net.kano.joscar.LiveWritable;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.FullUserInfo;
-import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.TlvChain;
 import net.kano.joscar.tlv.TlvTools;
 
@@ -52,7 +51,7 @@ import java.io.OutputStream;
  * A SNAC command containing rendezvous information.
  *
  * @snac.src server
- * @snac.cmd 0x01 0x07
+ * @snac.cmd 0x04 0x07
  *
  * @see SendRvIcbm
  */

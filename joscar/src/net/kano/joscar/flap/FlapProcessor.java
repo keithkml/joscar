@@ -39,18 +39,17 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.SeqNum;
+import net.kano.joscar.logging.Logger;
+import net.kano.joscar.logging.LoggingSystem;
 import net.kano.joscar.net.ConnProcessor;
 import net.kano.joscar.net.ConnProcessorExceptionEvent;
-import net.kano.joscar.net.ConnProcessorExceptionHandler;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.util.Arrays;
 import java.util.Iterator;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
 
 /**
  * Represents a FLAP connection that manages an outgoing FLAP queue as well
@@ -90,7 +89,7 @@ public class FlapProcessor extends ConnProcessor {
      * activities.
      */
     private static final Logger logger
-            = Logger.getLogger("net.kano.joscar.flap");
+            = LoggingSystem.getLogger("net.kano.joscar.flap");
 
     /**
      * Represents the maximum value of a FLAP sequence number.
@@ -225,10 +224,10 @@ public class FlapProcessor extends ConnProcessor {
     private final void handlePacket(FlapPacket packet) {
         DefensiveTools.checkNull(packet, "packet");
 
-        boolean logFine = logger.isLoggable(Level.FINE);
-        boolean logFiner = logger.isLoggable(Level.FINER);
+        boolean logFine = logger.logFineEnabled();
+        boolean logFiner = logger.logFinerEnabled();
 
-        if (logFine) logger.fine("FlapProcessor received packet: " + packet);
+        if (logFine) logger.logFine("FlapProcessor received packet: " + packet);
 
         FlapCommandFactory factory;
         synchronized(this) {
@@ -244,7 +243,7 @@ public class FlapProcessor extends ConnProcessor {
                         packet);
             }
         }
-        if (logFine) logger.fine("Flap command for " + packet + ": " + cmd);
+        if (logFine) logger.logFine("Flap command for " + packet + ": " + cmd);
 
         FlapPacketEvent event = new FlapPacketEvent(this, packet, cmd);
 
@@ -253,7 +252,7 @@ public class FlapProcessor extends ConnProcessor {
                     = (VetoableFlapPacketListener) it.next();
 
             if (logFiner) {
-                logger.finer("Running vetoable flap packet listener: "
+                logger.logFiner("Running vetoable flap packet listener: "
                         + listener);
             }
 
@@ -268,7 +267,7 @@ public class FlapProcessor extends ConnProcessor {
             }
             if (result != VetoableFlapPacketListener.CONTINUE_PROCESSING) {
                 if (logFiner) {
-                    logger.finer("Flap packet listener vetoed further " +
+                    logger.logFiner("Flap packet listener vetoed further " +
                             "processing: " + listener);
                 }
                 return;
@@ -279,7 +278,7 @@ public class FlapProcessor extends ConnProcessor {
             FlapPacketListener listener = (FlapPacketListener) it.next();
 
             if (logFiner) {
-                logger.finer("Running Flap packet listener " + listener);
+                logger.logFiner("Running Flap packet listener " + listener);
             }
 
             try {
@@ -291,7 +290,7 @@ public class FlapProcessor extends ConnProcessor {
             }
         }
 
-        if (logFiner) logger.finer("Finished handling Flap packet");
+        if (logFiner) logger.logFiner("Finished handling Flap packet");
     }
 
     /**
@@ -304,14 +303,14 @@ public class FlapProcessor extends ConnProcessor {
     public final void sendFlap(FlapCommand command) {
         DefensiveTools.checkNull(command, "command");
 
-        boolean logFine = logger.isLoggable(Level.FINE);
-        boolean logFiner = logger.isLoggable(Level.FINER);
+        boolean logFine = logger.logFineEnabled();
+        boolean logFiner = logger.logFinerEnabled();
 
         OutputStream out = getOutputStream();
 
         if (out == null) return;
 
-        if (logFiner) logger.finer("Sending Flap command " + command);
+        if (logFiner) logger.logFiner("Sending Flap command " + command);
 
         synchronized(writeLock) {
             int seq = (int) seqNum.next();
@@ -328,7 +327,7 @@ public class FlapProcessor extends ConnProcessor {
             }
 
             if (logFine) {
-                logger.fine("Sending Flap packet " + packet + ": "
+                logger.logFine("Sending Flap packet " + packet + ": "
                         + block.getLength() + " total bytes");
             }
 
@@ -344,7 +343,7 @@ public class FlapProcessor extends ConnProcessor {
             }
         }
 
-        if (logFiner) logger.finer("Finished sending Flap command");
+        if (logFiner) logger.logFiner("Finished sending Flap command");
     }
 
     /**
@@ -371,7 +370,7 @@ public class FlapProcessor extends ConnProcessor {
      * @throws IOException if an I/O error occurs
      */
     public final boolean readNextFlap() throws IOException {
-        boolean logFiner = logger.isLoggable(Level.FINER);
+        boolean logFiner = logger.logFinerEnabled();
 
         InputStream inputStream = getInputStream();
         if (inputStream == null) return false;
@@ -379,13 +378,13 @@ public class FlapProcessor extends ConnProcessor {
         synchronized(readLock) {
             FlapHeader header = FlapHeader.readFLAPHeader(inputStream);
 
-            if (logFiner) logger.finer("Read flap header " + header);
+            if (logFiner) logger.logFiner("Read flap header " + header);
 
             if (header == null) return false;
 
             FlapPacket packet = FlapPacket.readRestOfFlap(header, inputStream);
 
-            if (logFiner) logger.finer("Read flap packet " + packet);
+            if (logFiner) logger.logFiner("Read flap packet " + packet);
 
             if (packet == null) return false;
 

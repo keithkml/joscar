@@ -41,7 +41,11 @@ import net.kano.joscar.OscarTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.*;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A base class for TLV chains, implementing basic functionality while leaving
@@ -52,6 +56,7 @@ import java.util.*;
  * See {@link #getTlvList} and {@link #getTlvMap} for details.
  */
 public abstract class AbstractTlvChain implements TlvChain {
+    /** An empty array of TLV's. */
     private static final Tlv[] TLVARRAY_EMPTY = new Tlv[0];
 
     /** The total size of this chain, as read from an incoming stream. */

@@ -106,6 +106,7 @@ public class SendImIcbm extends AbstractImIcbm {
     }
 
     /**
+     * TODO: uses FEATURES_DEFAULT
      * Creates a new unencrypted outgoing IM with the given message text to
      * the given screenname. No icon is requested, no icon hash data are
      * provided, and an {@link MessageAck acknowledgement packet} <i>is</i>
@@ -117,10 +118,11 @@ public class SendImIcbm extends AbstractImIcbm {
      */
     public SendImIcbm(String sn, String message, boolean autoresponse) {
         this(sn, new InstantMessage(message), autoresponse, 0, false, null,
-                null, true);
+                null, FEATURES_DEFAULT, true);
     }
 
     /**
+     * TODO: uses FEATURES_DEFAULT
      * Creates a new unencrypted outgoing IM with the given properties. Test
      *
      * @param sn the screenname to whom to send the given message
@@ -138,7 +140,8 @@ public class SendImIcbm extends AbstractImIcbm {
             long messageId, boolean wantsIcon, OldIconHashInfo iconInfo,
             ExtraInfoBlock[] expInfoBlocks, boolean ackRequested) {
         this(sn, new InstantMessage(message), autoResponse, messageId,
-                wantsIcon, iconInfo, expInfoBlocks, ackRequested);
+                wantsIcon, iconInfo, expInfoBlocks, FEATURES_DEFAULT,
+                ackRequested);
     }
     /**
      * Creates a new outgoing IM with the given properties.
@@ -157,8 +160,31 @@ public class SendImIcbm extends AbstractImIcbm {
     public SendImIcbm(String sn, InstantMessage message, boolean autoResponse,
             long messageId, boolean wantsIcon, OldIconHashInfo iconInfo,
             ExtraInfoBlock[] expInfoBlocks, boolean ackRequested) {
+        this(sn, message, autoResponse, messageId, wantsIcon, iconInfo,
+                expInfoBlocks, FEATURES_DEFAULT, ackRequested);
+    }
+    /**
+     * Creates a new outgoing IM with the given properties.
+     *
+     * @param sn the screenname to hom to send the given message
+     * @param message the message to send
+     * @param autoResponse whether this message is an "auto-response" or not
+     * @param messageId an ICBM message ID to attach to this message
+     * @param wantsIcon whether or not to request the receiver's buddy icon
+     * @param iconInfo a block of buddy icon hash information to "advertise" to
+     *        the receiver
+     * @param expInfoBlocks a list of AIM Expression information blocks
+     * @param featuresBlock an IM "features" block, like {@link
+     *        #FEATURES_DEFAULT}
+     * @param ackRequested whether a {@link MessageAck} should be sent in
+     *        response to this command
+     */
+    public SendImIcbm(String sn, InstantMessage message, boolean autoResponse,
+            long messageId, boolean wantsIcon, OldIconHashInfo iconInfo,
+            ExtraInfoBlock[] expInfoBlocks, ByteBlock featuresBlock,
+            boolean ackRequested) {
         super(IcbmCommand.CMD_SEND_ICBM, messageId, message, autoResponse,
-                wantsIcon, iconInfo, expInfoBlocks);
+                wantsIcon, iconInfo, expInfoBlocks, featuresBlock);
 
         DefensiveTools.checkNull(sn, "sn");
 

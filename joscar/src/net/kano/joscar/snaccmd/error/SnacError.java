@@ -44,8 +44,6 @@ import net.kano.joscar.flapcmd.SnacPacket;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.util.regex.Pattern;
 
 /**
@@ -199,6 +197,7 @@ public class SnacError extends SnacCommand {
         BinaryTools.writeUShort(out, code);
     }
 
+    /** A regular expression pattern matching CODE_* fields in this class. */
     private static final Pattern codeFieldRE = Pattern.compile("CODE_.*");
 
     public String toString() {

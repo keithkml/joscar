@@ -38,8 +38,8 @@ package net.kano.joscar.snaccmd;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.Writable;
 import net.kano.joscar.MiscTools;
+import net.kano.joscar.Writable;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -220,6 +220,7 @@ public final class ExtraInfoBlock implements Writable {
         if (extraData != null) extraData.write(out);
     }
 
+    /** A regular expression pattern matching TYPE_* fields in this class. */
     private static final Pattern typeFieldRE = Pattern.compile("TYPE_.*");
 
     public String toString() {

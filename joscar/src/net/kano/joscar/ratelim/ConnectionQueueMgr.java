@@ -42,12 +42,12 @@ import net.kano.joscar.snac.SnacQueueManager;
 import net.kano.joscar.snac.SnacRequest;
 import net.kano.joscar.snaccmd.conn.RateClassInfo;
 
+import java.util.Collection;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Collection;
 
 /**
  * Manages the SNAC queue for a single SNAC processor (or "connection").

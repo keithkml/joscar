@@ -120,7 +120,7 @@ public class CLHandler {
         return (CLCommand) cmdMap.get(cmd);
     }
 
-    private static final Pattern wrapRE = Pattern.compile(".{0,79}(?:\\S(?:-| |$)|$)");
+    private static final Pattern wrapRE = Pattern.compile(".{0,79}(?:\\S(?:-| |$)|$)|.{0,80}");
 
     private static String[] wordWrap(String str) {
         List list = new LinkedList();
@@ -173,7 +173,7 @@ public class CLHandler {
                 System.arraycopy(textBytes, 0, data, 1, textBytes.length);
                 ByteBlock block = ByteBlock.wrap(data);
 
-                tester.request(new SendImIcbm(args[0], new InstantMessage(args[1]),
+                tester.request(new SendImIcbm(args[0], args[1],
                         false, 0, false, tester.getOldIconInfo(), new ExtraInfoBlock[] {
                             new ExtraInfoBlock(0x0080, new ExtraInfoData(0, block)),
                             new ExtraInfoBlock(0x0082, new ExtraInfoData(0, block))
@@ -218,7 +218,7 @@ public class CLHandler {
         });
         cmdMap.put("reformat", new CLCommand() {
             public String getArgumentsUsage() {
-                return "<your new single-word screenname format>";
+                return "<your new screenname format>";
             }
 
             public String getDescription() {
@@ -226,7 +226,7 @@ public class CLHandler {
             }
 
             public String getExampleArgs() {
-                return "JoUsTaCuLaR";
+                return "\"JoUsT aC uLaR\"";
             }
 
             public void handle(JoscarTester tester, String line, String cmd, String[] args) {
@@ -323,7 +323,7 @@ public class CLHandler {
         });
         cmdMap.put("joinroom", new CLCommand() {
             public String getArgumentsUsage() {
-                return "<chat exchange number> <single-word chat room name>";
+                return "<chat exchange number> <chat room name>";
             }
 
             public String getDescription() {
@@ -332,7 +332,7 @@ public class CLHandler {
             }
 
             public String getExampleArgs() {
-                return "4 Movies";
+                return "4 \"Movies\"";
             }
 
             public void handle(JoscarTester tester, String line, String cmd, String[] args) {
@@ -358,7 +358,7 @@ public class CLHandler {
         });
         cmdMap.put("chatsay", new CLCommand() {
             public String getArgumentsUsage() {
-                return "<single-word chat room name> <single-word message>";
+                return "<chat room name> <message>";
             }
 
             public String getDescription() {
@@ -368,7 +368,7 @@ public class CLHandler {
             }
 
             public String getExampleArgs() {
-                return "Movies hey";
+                return "\"My Chat Room\" \"hey guys\"";
             }
 
             public void handle(JoscarTester tester, String line, String cmd, String[] args) {
@@ -377,8 +377,7 @@ public class CLHandler {
         });
         cmdMap.put("inviteafriend", new CLCommand() {
             public String getArgumentsUsage() {
-                return "<email address to invite> "
-                        + "<single-word invitation message>";
+                return "<email address to invite> <invitation message>";
             }
 
             public String getDescription() {
@@ -387,7 +386,7 @@ public class CLHandler {
             }
 
             public String getExampleArgs() {
-                return "user@something.com Hey";
+                return "user@something.com \"Use AIM\"";
             }
 
             public void handle(JoscarTester tester, String line, String cmd, String[] args) {
@@ -413,16 +412,16 @@ public class CLHandler {
         });
         cmdMap.put("searchbyname", new CLCommand() {
             public String getArgumentsUsage() {
-                return "<single-word name to search for>";
+                return "<name to search for>";
             }
 
             public String getDescription() {
                 return "Searches the buddy directory for a user with the given "
-                        + "first or last name.";
+                        + "name.";
             }
 
             public String getExampleArgs() {
-                return "John";
+                return "\"Donnie Darko\"";
             }
 
             public void handle(JoscarTester tester, String line, String cmd, String[] args) {
@@ -460,8 +459,7 @@ public class CLHandler {
             }
 
             public String getExampleArgs() {
-                //TODO: is Books a valid chat interest?
-                return "Books";
+                return "Games";
             }
 
             public void handle(JoscarTester tester, String line, String cmd, String[] args) {
@@ -519,8 +517,7 @@ public class CLHandler {
             }
 
             public String getExampleArgs() {
-                //TODO: are Books, Movies, and Health valid interest names?
-                return "Books Movies Health";
+                return "Games Movies Travel";
             }
 
             public void handle(JoscarTester tester, String line, String cmd, String[] args) {
@@ -529,7 +526,7 @@ public class CLHandler {
         });
         cmdMap.put("setavail", new CLCommand() {
             public String getArgumentsUsage() {
-                return "[single-word iChat availability message]";
+                return "[iChat availability message]";
             }
 
             public String getDescription() {
@@ -539,7 +536,7 @@ public class CLHandler {
             }
 
             public String getExampleArgs() {
-                return "Busy";
+                return "\"At work\"";
             }
 
             public void handle(JoscarTester tester, String line, String cmd, String[] args) {
@@ -883,7 +880,7 @@ public class CLHandler {
         cmdMap.put("seticon", new CLCommand() {
             public String getArgumentsUsage() {
                 return "<icon number> <icon item ID> "
-                        + "<single-word local icon filename>";
+                        + "<local icon filename>";
             }
 
             public String getDescription() {
@@ -893,7 +890,7 @@ public class CLHandler {
             }
 
             public String getExampleArgs() {
-                return "1 309 /home/keith/in/icon.gif";
+                return "1 309 \"/home/keith/in/icon.gif\"";
             }
 
             public void handle(JoscarTester tester, String line, String cmd, String[] args) {
@@ -913,7 +910,7 @@ public class CLHandler {
         cmdMap.put("addicon",  new CLCommand() {
             public String getArgumentsUsage() {
                 return "<icon number> <icon item ID> "
-                        + "<single-word local icon filename>";
+                        + "<local icon filename>";
             }
 
             public String getDescription() {
@@ -923,7 +920,7 @@ public class CLHandler {
             }
 
             public String getExampleArgs() {
-                return "2 905 /home/keith/in/icon.gif";
+                return "2 905 \"/home/keith/in/icon.gif\"";
             }
 
             public void handle(JoscarTester tester, String line, String cmd, String[] args) {
@@ -962,7 +959,7 @@ public class CLHandler {
         });
         cmdMap.put("uploadicon", new CLCommand() {
             public String getArgumentsUsage() {
-                return "<single-word local icon filename>";
+                return "<local icon filename>";
             }
 
             public String getDescription() {
@@ -971,7 +968,7 @@ public class CLHandler {
             }
 
             public String getExampleArgs() {
-                return "/home/keith/in/icon.gif";
+                return "\"/home/keith/in/icon.gif\"";
             }
 
             public void handle(JoscarTester tester, String line, String cmd, String[] args) {
@@ -1123,8 +1120,7 @@ public class CLHandler {
         });
         cmdMap.put("sendsim", new CLCommand() {
             public String getArgumentsUsage() {
-                return "<screenname with secureim session open> "
-                        + "<single-word message>";
+                return "<screenname with secureim session open> <message>";
             }
 
             public String getDescription() {
@@ -1135,7 +1131,7 @@ public class CLHandler {
             }
 
             public String getExampleArgs() {
-                return "joustacular hey";
+                return "joustacular \"Hey what's up\"";
             }
 
             public void handle(JoscarTester tester, String line, String cmd, String[] args) {
@@ -1180,7 +1176,7 @@ public class CLHandler {
         });
         cmdMap.put("invite", new CLCommand() {
             public String getArgumentsUsage() {
-                return "<screenname to invite> <single-word chat room name>";
+                return "<screenname to invite> <chat room name>";
             }
 
             public String getDescription() {
@@ -1190,7 +1186,7 @@ public class CLHandler {
             }
 
             public String getExampleArgs() {
-                return "joustacular Movies";
+                return "joustacular \"Movies\"";
             }
 
             public void handle(JoscarTester tester, String line, String cmd, String[] args) {
@@ -1310,7 +1306,7 @@ public class CLHandler {
         });
         cmdMap.put("encim", new CLCommand() {
             public String getArgumentsUsage() {
-                return "<screenname> <single-word message>";
+                return "<screenname> <message>";
             }
 
             public String getDescription() {
@@ -1323,7 +1319,7 @@ public class CLHandler {
             }
 
             public String getExampleArgs() {
-                return "joustacular hey";
+                return "joustacular \"hey\"";
             }
 
             public void handle(JoscarTester tester, String line, String cmd, String[] args) {
@@ -1390,7 +1386,7 @@ public class CLHandler {
         });
         cmdMap.put("encjoinroom", new CLCommand() {
             public String getArgumentsUsage() {
-                return "<exchange number> <single-word room name>";
+                return "<exchange number> <room name>";
             }
 
             public String getDescription() {
@@ -1402,7 +1398,7 @@ public class CLHandler {
             }
 
             public String getExampleArgs() {
-                return "4 EncryptionParty";
+                return "4 \"Encryption Party\"";
             }
 
             public void handle(JoscarTester tester, String line, String cmd, String[] args) {
@@ -1414,7 +1410,7 @@ public class CLHandler {
         });
         cmdMap.put("encchatsay", new CLCommand() {
             public String getArgumentsUsage() {
-                return "<chat room name> <single-word message>";
+                return "<chat room name> <message>";
             }
 
             public String getDescription() {
@@ -1425,7 +1421,7 @@ public class CLHandler {
             }
 
             public String getExampleArgs() {
-                return "EncryptionParty hey";
+                return "\"Encryption Party\" \"hey guys\"";
             }
 
             public void handle(JoscarTester tester, String line, String cmd, String[] args) {
@@ -1495,7 +1491,7 @@ public class CLHandler {
         });
         cmdMap.put("enccreateroom", new CLCommand() {
             public String getArgumentsUsage() {
-                return "<exchange number> <single-word chat room name>";
+                return "<exchange number> <chat room name>";
             }
 
             public String getDescription() {
@@ -1503,7 +1499,7 @@ public class CLHandler {
             }
 
             public String getExampleArgs() {
-                return "4 EncryptionParty";
+                return "4 \"Encryption Party\"";
             }
 
             public void handle(JoscarTester tester, String line, String cmd, String[] args) {

@@ -41,7 +41,10 @@ import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.MiscTools;
 import net.kano.joscar.snaccmd.FullUserInfo;
 import net.kano.joscar.snaccmd.ssi.SsiItem;
-import net.kano.joscar.tlv.*;
+import net.kano.joscar.tlv.MutableTlvChain;
+import net.kano.joscar.tlv.Tlv;
+import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.TlvTools;
 
 import java.util.regex.Pattern;
 
@@ -350,7 +353,9 @@ if ((privacyItem.getVisibleMask() & PrivacyItem.VISMASK_HIDE_WIRELESS) != 0) {
 
     /** A pattern matching the MODE_* fields of this class. */
     private static final Pattern modeFieldRE = Pattern.compile("MODE_.*");
+    /** A regular expression pattern matching VISMASK_* fields in this class. */
     private static final Pattern vismaskFieldRE = Pattern.compile("VISMASK_.*");
+    /** A regular expression pattern matching MASK_* fields in this class. */
     private static final Pattern classmaskFieldRE = Pattern.compile("MASK_.*");
 
     public synchronized String toString() {

@@ -48,7 +48,7 @@ import java.io.OutputStream;
  * the (rather conservative) defaults normally imposed by the server.
  *
  * @snac.src client
- * @snac.cmd 0x01 0x02
+ * @snac.cmd 0x04 0x02
  *
  * @see ParamInfoCmd
  */

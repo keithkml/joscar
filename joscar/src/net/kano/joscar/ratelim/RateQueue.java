@@ -36,12 +36,13 @@
 package net.kano.joscar.ratelim;
 
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.logging.Logger;
+import net.kano.joscar.logging.LoggingSystem;
 import net.kano.joscar.snac.SnacRequest;
 
 import java.util.Collection;
 import java.util.LinkedList;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
 
 /**
  * Manages a single queue for a single rate class of a SNAC connection. This
@@ -52,7 +53,7 @@ import java.util.logging.Logger;
 public class RateQueue {
     /** A logger to log rate-related events. */
     private static final Logger logger
-            = Logger.getLogger("net.kano.joscar.ratelim");
+            = LoggingSystem.getLogger("net.kano.joscar.ratelim");
 
     /** The "parent" connection manager for this rate queue. */
     private final ConnectionQueueMgr parentMgr;
@@ -114,8 +115,8 @@ public class RateQueue {
     synchronized void enqueue(SnacRequest req) {
         DefensiveTools.checkNull(req, "req");
 
-        if (logger.isLoggable(Level.FINE)) {
-            logger.fine("Enqueuing " + req.getCommand() + " within ratequeue " +
+        if (logger.logFineEnabled()) {
+            logger.logFine("Enqueuing " + req.getCommand() + " within ratequeue " +
                     "(class " + rateMonitor.getRateInfo().getRateClass()
                     + ")...");
         }
@@ -133,8 +134,8 @@ public class RateQueue {
 
         SnacRequest request = (SnacRequest) queue.removeFirst();
 
-        if (logger.isLoggable(Level.FINE)) {
-            logger.fine("Dequeueing " + request.getCommand()
+        if (logger.logFineEnabled()) {
+            logger.logFine("Dequeueing " + request.getCommand()
                     + " from ratequeue (class "
                     + rateMonitor.getRateInfo().getRateClass() + ")...");
         }

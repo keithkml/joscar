@@ -263,6 +263,23 @@ public class SsiItem implements LiveWritable, Serializable {
         return totalSize;
     }
 
+    /**
+     * Indicates whether the given item object refers to the same entity as this
+     * item object. Two entities are considered to match if their item ID's,
+     * parent ID's and item type are the same.
+     *
+     * @param other the item to compare
+     * @return whether this item and the given item have the same ID, parent ID
+     *         and type
+     */
+    public final boolean matches(SsiItem other) {
+        DefensiveTools.checkNull(other, "item");
+
+        return (getId() == other.getId()
+                && getParentId() == other.getParentId()
+                && getItemType() == other.getItemType());
+    }
+
     public void write(OutputStream out) throws IOException {
         byte[] namebytes = BinaryTools.getAsciiBytes(name);
         BinaryTools.writeUShort(out, namebytes.length);
@@ -278,6 +295,7 @@ public class SsiItem implements LiveWritable, Serializable {
         if (data != null) data.write(out);
     }
 
+    /** A regular expression pattern matching TYPE_* fields in this class. */
     private static final Pattern typeFieldRE = Pattern.compile("TYPE_.*");
 
     public String toString() {

@@ -232,13 +232,32 @@ public final class DefensiveTools {
         return safeArray;
     }
 
-    public static int[] getSafeNonnullArrayCopy(int[] results, String name, int min) {
-        checkNull(results, name);
+    /**
+     * Returns a copy of the given non-null array, ensuring that no element of
+     * the returned array is <code>null</code>. If the given array is
+     * <code>null</code> or any elements in the array are <code>null</code>, an
+     * <code>IllegalArgumentException</code> is thrown.
+     *
+     * @param array the array to clone and check using the given minimum value
+     * @param name the name of the array variable, for debugging purposes
+     * @param min the minimum value of any element in the array
+     * @return a copy of the given array without any <code>null</code> elements
+     *
+     * @throws IllegalArgumentException if any elements of the given array are
+     *         less than <code>min</code> or if the given array is
+     *         <code>null</code>
+     */
+    public static int[] getSafeMinArrayCopy(int[] array, String name, int min) {
+        checkNull(array, name);
 
-        int[] safeResults = (int[]) results.clone();
+        int[] safeResults = (int[]) array.clone();
 
         for (int i = 0; i < safeResults.length; i++) {
-            checkRange(safeResults[i], name, min);
+            if (safeResults[i] < min) {
+                throw new IllegalArgumentException(name + " elements must " +
+                        "be >= " + min + " (" + name + "[" + i + "] is " 
+                        + safeResults[i] + ")");
+            }
         }
         return safeResults;
     }

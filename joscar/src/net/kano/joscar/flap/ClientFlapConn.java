@@ -42,7 +42,6 @@ import net.kano.joscar.net.ClientConnStreamHandler;
 import net.kano.joscar.net.ConnDescriptor;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.Socket;
 
 /**

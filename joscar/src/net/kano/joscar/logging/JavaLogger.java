@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2002-2003, The Joust Project
+ *  Copyright (c) 2004, The Joust Project
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without 
@@ -12,7 +12,7 @@
  *    notice, this list of conditions and the following disclaimer in 
  *    the documentation and/or other materials provided with the 
  *    distribution. 
- *  - Neither the name of the Joust Project nor the names of its
+ *  - Neither the name of the Joust Project nor the names of its 
  *    contributors may be used to endorse or promote products derived 
  *    from this software without specific prior written permission. 
  *
@@ -29,71 +29,55 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- *  File created by keith @ Feb 22, 2003
+ *  File created by keith @ Jan 1, 2004
  *
  */
 
-package net.kano.joscar.snaccmd.loc;
+package net.kano.joscar.logging;
 
-import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.flapcmd.SnacPacket;
-import net.kano.joscar.snaccmd.InfoData;
 
-import java.io.IOException;
-import java.io.OutputStream;
+import java.util.logging.Level;
 
 /**
- * A SNAC command used to set one's "user info" fields, such as away message
- * and "info."
- *
- * @snac.src client
- * @snac.cmd 0x02 0x04
+ * A logger implementation that uses Java 1.4's own
+ * <code>java.util.logging</code> logging facilities.
  */
-public class SetInfoCmd extends LocCommand {
-    /** The block of "info data" to set. */
-    private final InfoData infoData;
+public final class JavaLogger implements Logger {
+    /** The underlying Java logging framework logger. */
+    private final java.util.logging.Logger logger;
 
     /**
-     * Generates a new set-info command from the given incoming SNAC packet.
+     * Creates a new Java logger instance representing the given Java logging
+     * framework logger.
      *
-     * @param packet an incoming set-info packet
+     * @param logger the logger to use
      */
-    protected SetInfoCmd(SnacPacket packet) {
-        super(CMD_SET_INFO);
+    JavaLogger(java.util.logging.Logger logger) {
+        DefensiveTools.checkNull(logger, "logger");
 
-        DefensiveTools.checkNull(packet, "packet");
-
-        ByteBlock snacData = packet.getData();
-
-        infoData = InfoData.readInfoData(snacData);
+        this.logger = logger;
     }
 
-    /**
-     * Creates a new set-info command with the given info data block.
-     *
-     * @param infoData a block of "info data" to set
-     */
-    public SetInfoCmd(InfoData infoData) {
-        super(CMD_SET_INFO);
-
-        this.infoData = infoData;
+    public void logException(String s, Throwable t) {
+        logger.log(Level.WARNING, s, t);
     }
 
-    /**
-     * Returns the "info data" block being set.
-     *
-     * @return this command's "info data" that is being set
-     */
-    public final InfoData getInfoData() {
-        return infoData;
+    public void logWarning(String s) { logger.warning(s); }
+
+    public void logFine(String s) { logger.fine(s); }
+
+    public void logFiner(String s) { logger.finer(s); }
+
+    public boolean logWarningEnabled() {
+        return logger.isLoggable(Level.WARNING);
     }
 
-    public void writeData(OutputStream out) throws IOException {
-        if (infoData != null) infoData.write(out);
+    public boolean logFineEnabled() {
+        return logger.isLoggable(Level.FINE);
     }
 
-    public String toString() {
-        return "SetInfoCmd: info=" + infoData;
+    public boolean logFinerEnabled() {
+        return logger.isLoggable(Level.FINER);
     }
 }
