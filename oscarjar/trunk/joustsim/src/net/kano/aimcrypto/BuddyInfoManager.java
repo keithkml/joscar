@@ -36,8 +36,10 @@
 package net.kano.aimcrypto;
 
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.ByteBlock;
 import net.kano.joscar.snaccmd.FullUserInfo;
 import net.kano.joscar.snaccmd.DirInfo;
+import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.aimcrypto.connection.AimConnection;
 import net.kano.aimcrypto.connection.oscar.service.BuddyServiceListener;
 import net.kano.aimcrypto.connection.oscar.service.BuddyService;
@@ -46,6 +48,7 @@ import net.kano.aimcrypto.connection.oscar.service.InfoService;
 
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Date;
 
 public class BuddyInfoManager {
     private final AimConnection conn;
@@ -85,6 +88,38 @@ public class BuddyInfoManager {
                     BuddySecurityInfo securityInfo) {
             }
         });
+    }
+
+    private void setBuddyStatus(Screenname buddy, FullUserInfo info) {
+        BuddyInfo buddyInfo = getBuddyInfo(buddy);
+
+        Date onSince = info.getOnSince();
+        if (onSince != null) buddyInfo.setOnlineSince(onSince);
+
+        Boolean awayStatus = info.getAwayStatus();
+        if (awayStatus != null) buddyInfo.setAway(awayStatus.booleanValue());
+
+        CapabilityBlock[] caps = info.getCapabilityBlocks();
+        if (caps != null) buddyInfo.setCapabilities(caps);
+
+        ByteBlock certHash = info.getCertInfoHash();
+        buddyInfo.setCertificateInfoHash(certHash);
+
+        int idleMins = info.getIdleMins();
+        Date idleSince;
+        if (idleMins == -1) {
+            idleSince = null;
+        } else {
+            idleSince = new Date(System.currentTimeMillis() - (idleMins*1000*60));
+        }
+        buddyInfo.setIdleSince(idleSince);
+
+        int warningLevelx10 = info.getWarningLevel();
+        if (warningLevelx10 != -1) {
+            int rounder = (warningLevelx10 % 10) >= 5 ? 1 : 0;
+            int warningLevel = (warningLevelx10 / 10) + rounder;
+            buddyInfo.setWarningLevel(warningLevel);
+        }
     }
 
     public synchronized BuddyInfo getBuddyInfo(Screenname buddy) {

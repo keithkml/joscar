@@ -36,13 +36,23 @@
 package net.kano.aimcrypto;
 
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.ByteBlock;
 import net.kano.joscar.snaccmd.DirInfo;
+import net.kano.joscar.snaccmd.CapabilityBlock;
+
+import java.util.Date;
 
 public final class BuddyInfo {
     private Screenname screenname;
     private BuddySecurityInfo securityInfo = null;
     private boolean online = true;
     private DirInfo dirInfo = null;
+    private Date onlineSince = null;
+    private boolean away;
+    private CapabilityBlock[] capabilities;
+    private ByteBlock certificateInfoHash;
+    private Date idleSince;
+    private int warningLevel;
 
     public BuddyInfo(Screenname screenname) {
         DefensiveTools.checkNull(screenname, "screenname");
@@ -73,4 +83,32 @@ public final class BuddyInfo {
     }
 
     public synchronized DirInfo getDirInfo() { return dirInfo; }
+
+    synchronized void setOnlineSince(Date onlineSince) {
+        this.onlineSince = onlineSince;
+    }
+
+    public synchronized Date getOnlineSince() {
+        return onlineSince;
+    }
+
+    public void setAway(boolean away) {
+        this.away = away;
+    }
+
+    public void setCapabilities(CapabilityBlock[] capabilities) {
+        this.capabilities = capabilities;
+    }
+
+    public void setCertificateInfoHash(ByteBlock certificateInfoHash) {
+        this.certificateInfoHash = certificateInfoHash;
+    }
+
+    public void setIdleSince(Date idleSince) {
+        this.idleSince = idleSince;
+    }
+
+    public void setWarningLevel(int warningLevel) {
+        this.warningLevel = warningLevel;
+    }
 }
