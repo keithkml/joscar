@@ -40,27 +40,47 @@ import net.kano.joscar.snaccmd.conn.RateClassInfo;
 import net.kano.joscar.snac.CmdType;
 import net.kano.joscar.snac.SnacProcessor;
 import net.kano.joscar.snac.SnacRequest;
+import net.kano.joscar.snac.SnacQueueManager;
 
 import java.util.*;
 
+/**
+ * Manages the SNAC queue for a single SNAC processor (or "connection").
+ * Instances of this class must be obtained from a
+ * <code>RateLimitingQueueMgr</code>'s {@link RateLimitingQueueMgr#getQueueMgr
+ * getQueueMgr} or {@link RateLimitingQueueMgr#getQueueMgrs() getQueueMgrs}
+ * methods; an instance is created automatically upon assigning a
+ * <code>RateLimitingQueueMgr</code> as the SNAC queue manager for a given SNAC
+ * processor.
+ */
 public final class ConnectionQueueMgr {
+    /** The "parent" rate queue manager of this connection queue manager. */
     private final RateLimitingQueueMgr queueMgr;
+    /** The rate monitor used by this connection queue manager. */
     private final RateMonitor monitor;
+    /** The SNAC processor whose SNAC queues are being managed. */
     private final SnacProcessor snacProcessor;
 
+    /** Whether this connection is paused. */
     private boolean paused = false;
 
+    /** A map from <code>RateClassMonitor</code>s to <code>RateQueue</code>s. */
     private final Map queues = new IdentityHashMap();
 
+    /** A rate listener used to monitor rate events. */
     private RateListener rateListener = new RateListener() {
         public void detached(RateMonitor rateMonitor, SnacProcessor processor) {
             rateMonitor.removeListener(this);
         }
 
-        public void reset(RateMonitor rateMonitor) { }
+        public void reset(RateMonitor rateMonitor) {
+            synchronized (ConnectionQueueMgr.this) {
+                clearQueues();
+            }
+        }
 
         public void gotRateClasses(RateMonitor monitor) {
-            resetRateClasses();
+            updateRateClasses();
         }
 
         public void rateClassUpdated(RateMonitor monitor,
@@ -76,23 +96,103 @@ public final class ConnectionQueueMgr {
         }
     };
 
-    ConnectionQueueMgr(RateLimitingQueueMgr queueMgr, RateMonitor monitor) {
+    /**
+     * Creates a new SNAC processor queue manager with the given parent rate
+     * manager for the given SNAC processor.
+     *
+     * @param queueMgr this connection queue manager's parent rate manager
+     * @param processor the SNAC processor to manage
+     */
+    ConnectionQueueMgr(RateLimitingQueueMgr queueMgr, SnacProcessor processor) {
         DefensiveTools.checkNull(queueMgr, "queueMgr");
-        DefensiveTools.checkNull(monitor, "monitor");
+        DefensiveTools.checkNull(processor, "processor");
 
         this.queueMgr = queueMgr;
-        this.monitor = monitor;
-        this.snacProcessor = monitor.getSnacProcessor();
+        this.monitor = new RateMonitor(processor);
+        this.snacProcessor = processor;
         monitor.addListener(rateListener);
     }
 
+    /**
+     * Returns this SNAC connection queue manager's "parent"
+     * <code>RateLimitingQueueMgr</code>.
+     *
+     * @return the parent rate manager of this connection queue manager
+     */
     public RateLimitingQueueMgr getParentQueueMgr() { return queueMgr; }
 
+    /**
+     * Returns the rate monitor being used to determine when to send SNAC
+     * commands on the associated SNAC connection.
+     *
+     * @return the rate monitor being used
+     */
     public RateMonitor getRateMonitor() { return monitor; }
 
+    /**
+     * Returns the SNAC processor whose rate queues are being managed by this
+     * queue manager.
+     *
+     * @return the SNAC processor whose rate queues are being managed by this
+     *         queue manager
+     */
     public SnacProcessor getSnacProcessor() { return snacProcessor; }
 
-    public void queueSnac(SnacRequest request) {
+    /**
+     * Returns the rate queue being used for the rate class associated with the
+     * given rate class monitor.
+     *
+     * @param classMonitor a rate class monitor
+     * @return the rate queue associated with the given rate class monitor
+     */
+    private synchronized RateQueue getRateQueue(RateClassMonitor classMonitor) {
+        DefensiveTools.checkNull(classMonitor, "classMonitor");
+
+        return (RateQueue) queues.get(classMonitor);
+    }
+
+    /**
+     * Returns the rate queue in which a command of the given type would be
+     * placed. Note that, normally, any number of calls to this method with the
+     * same command type will return a reference to the same
+     * <code>RateQueue</code> for the duration of the underlying SNAC
+     * connection. That is, <code>RateQueue</code> references can safely be kept
+     * for the duration of a SNAC connection. To be notified of when rate
+     * information changes, one could use code such as the following:
+     * <pre>
+connQueueMgr.getRateMonitor().addListener(myRateListener);
+     * </pre>
+     * When new rate information is received (that is, when {@link
+     * RateListener#gotRateClasses} is called), old rate queues are discarded
+     * and new ones are created as per the new rate information.
+     * <br>
+     * <br>
+     * This method should only return <code>null</code> in the case that no
+     * rate information has yet been received or the server did not specify
+     * a default rate class (this is very abnormal behavior and will most likely
+     * never happen when using AOL's servers).
+     *
+     * @param type the command type whose rate queue is to be returned
+     * @return the rate queue used for the given command type
+     */
+    public synchronized RateQueue getRateQueue(CmdType type) {
+        DefensiveTools.checkNull(type, "type");
+
+        RateClassMonitor cm = monitor.getMonitor(type);
+
+        if (cm == null) return null;
+
+        return getRateQueue(cm);
+    }
+
+    /**
+     * Queues a SNAC request on the associated connection.
+     *
+     * @param request the request to enqueue
+     *
+     * @see SnacQueueManager#queueSnac(SnacProcessor, SnacRequest)
+     */
+    void queueSnac(SnacRequest request) {
         DefensiveTools.checkNull(request, "request");
 
         CmdType type = CmdType.ofCmd(request.getCommand());
@@ -109,23 +209,12 @@ public final class ConnectionQueueMgr {
         }
     }
 
-    private synchronized RateQueue getRateQueue(RateClassMonitor classMonitor) {
-        DefensiveTools.checkNull(classMonitor, "classMonitor");
-
-        return (RateQueue) queues.get(classMonitor);
-    }
-
-    public synchronized RateQueue getRateQueue(CmdType type) {
-        DefensiveTools.checkNull(type, "type");
-
-        RateClassMonitor cm = monitor.getMonitor(type);
-
-        if (cm == null) return null;
-
-        return getRateQueue(cm);
-    }
-
-    public synchronized void clearQueue() {
+    /**
+     * Clears the SNAC queue for the associated connection.
+     *
+     * @see SnacQueueManager#clearQueue(SnacProcessor)
+     */
+    synchronized void clearQueue() {
         for (Iterator it = queues.values().iterator(); it.hasNext();) {
             RateQueue queue = (RateQueue) it.next();
 
@@ -135,7 +224,12 @@ public final class ConnectionQueueMgr {
         paused = false;
     }
 
-    public synchronized void pause() {
+    /**
+     * Pauses the SNAC queue for the associated connection.
+     *
+     * @see SnacQueueManager#pause(SnacProcessor)
+     */
+    synchronized void pause() {
         assert !paused;
 
         // we just set this flag and we should be pretty okay. we don't need
@@ -145,7 +239,12 @@ public final class ConnectionQueueMgr {
         paused = true;
     }
 
-    public synchronized void unpause() {
+    /**
+     * Unpauses the SNAC queue for the associated connection.
+     *
+     * @see SnacQueueManager#unpause(SnacProcessor)
+     */
+    synchronized void unpause() {
         assert paused;
 
         // we turn the paused flag off and tell the thread to wake up, in
@@ -154,16 +253,27 @@ public final class ConnectionQueueMgr {
         queueMgr.getRunner().update(this);
     }
 
+    /**
+     * Returns whether the SNAC queue for the associated connection is currently
+     * paused.
+     *
+     * @return whether the SNAC queue for the associated connection is currently
+     *         paused
+     *
+     * @see SnacProcessor#pause()
+     * @see SnacProcessor#unpause()
+     */
     public synchronized boolean isPaused() { return paused; }
 
-    private synchronized void resetRateClasses() {
+    /**
+     * Discards all open rate queues and creates new ones based on the rate
+     * monitor's current rate class information.
+     */
+    private synchronized void updateRateClasses() {
         RateClassMonitor[] monitors = monitor.getMonitors();
 
         // clear the list of queues
-        RateQueue[] queueArray = (RateQueue[])
-                queues.values().toArray(new RateQueue[0]);
-        queueMgr.getRunner().removeQueues(queueArray);
-        queues.clear();
+        RateQueue[] queueArray = clearQueues();
 
         List reqs = new LinkedList();
 
@@ -193,8 +303,26 @@ public final class ConnectionQueueMgr {
         queueMgr.getRunner().update(this);
     }
 
+    /**
+     * Removes all queues from the list of queues and returns them.
+     *
+     * @return the rate queues formerly in the queue list
+     */
+    private synchronized RateQueue[] clearQueues() {
+        RateQueue[] queueArray = (RateQueue[])
+                queues.values().toArray(new RateQueue[0]);
+        queueMgr.getRunner().removeQueues(queueArray);
+        queues.clear();
+
+        return queueArray;
+    }
+
+    /**
+     * Clears the rate queues and stops listening for rate events.
+     */
     synchronized void detach() {
         clearQueue();
+        clearQueues();
         monitor.detach();
     }
 }

@@ -42,64 +42,127 @@ import net.kano.joscar.snac.SnacRequest;
 
 import java.util.IdentityHashMap;
 import java.util.Map;
-import java.util.Collection;
 
 /**
- * A SNAC queue manager which utilizes the "official" rate limiting algorithm to
- * avoid ever becoming rate-limited.
+ * A SNAC queue manager which uses a <code>RateMonitor</code> to determine when
+ * to send SNAC commands to avoid becoming rate-limited.
+ * <br>
+ * <br>
+ * Note that a <code>RateLimitingQueueMgr</code> creates its own
+ * <code>RateMonitor</code> for each SNAC processor to which it is added. This
+ * behavior has several noteworthy implications:
+ * <ul>
+ * <li> As per the <code>RateMonitor</code> documentation,
+ * <code>RateMonitor</code>s should not be attached to SNAC processors which are
+ * already connected. Thus, <b>a <code>RateLimitingQueueMgr</code> should not be
+ * set as the SNAC queue manager for a SNAC processor which has already
+ * connected</b>. </li>
+ * <li> To avoid calculating the rate more than once, it is not recommended to
+ * create one's own <code>RateMonitor</code> for SNAC processors which use a
+ * <code>RateLimitingQueueMgr</code> for a SNAC queue manager. To retrieve the
+ * <code>RateMonitor</code> used by the <code>RateLimitingQueueMgr</code> for a
+ * given SNAC processor, simply use code such as the following:
+ * <br>
+ * <br>
+ * <code> RateMonitor mon = rateLimitingQueueMgr.{@linkplain
+ * #getQueueMgr(SnacProcessor) getQueueMgr}(snacProcessor).{@linkplain
+ * ConnectionQueueMgr#getRateMonitor getRateMonitor}() </code></li>
+ * </ul>
+ *
+ * One may also wish to note that each instance of
+ * <code>RateLimitingQueueMgr</code> starts its own thread to manage the queue.
+ * It may be desirable to add a single rate limiting queue manager to every SNAC
+ * processor, or to split them up by giving each logical OSCAR connection (that
+ * is, each screenname) its own instance, or to give each SNAC processor its
+ * own. At the time of this writing, the threading / queue management code is
+ * not optimal, and it may consume a rather large amount of CPU when added to
+ * too many SNAC processors. In buzzword terms, it may not scale well. Thus, for
+ * now, it may be recommended to give each SNAC processor its own individual
+ * <code>RateLimitingQueueMgr</code>.
+ * <br>
+ * <br>
+ * A <code>RateLimitingQueueMgr</code> delegates most actual functionality to
+ * a set of "child" {@link ConnectionQueueMgr}s. See {@link #getQueueMgr
+ * getQueueMgr} and {@link #getQueueMgrs getQueueMgrs} for information on how
+ * to use these after assigning the <code>RateLimitingQueueMgr</code> to a SNAC
+ * processor.
+ *
+ * @see RateMonitor
  */
 public class RateLimitingQueueMgr implements SnacQueueManager {
-    public static final int ERRORMARGIN_DEFAULT = 100;
+    /** A map from SNAC processors to connection managers. */
+    private final Map connMgrs = new IdentityHashMap();
 
-    private Map conns = new IdentityHashMap();
-
-    private int errorMargin = ERRORMARGIN_DEFAULT;
-
-    private QueueRunner runner = new QueueRunner();
-
-    public final ConnectionQueueMgr[] getQueueMgrs() {
-        Collection values;
-        synchronized(conns) {
-            values = conns.values();
-        }
-        return (ConnectionQueueMgr[]) values.toArray(new ConnectionQueueMgr[0]);
+    /** A thread to "run" the SNAC queues controlled by this queue manager. */
+    private final QueueRunner runner = new QueueRunner();
+    {
+        new Thread(runner).start();
     }
 
-    public final ConnectionQueueMgr getQueueMgr(SnacProcessor processor) {
-        DefensiveTools.checkNull(processor, "processor");
-
-        synchronized(conns) {
-            return (ConnectionQueueMgr) conns.get(processor);
-        }
-    }
-
-    public synchronized final void setErrorMargin(int errorMargin) {
-        DefensiveTools.checkRange(errorMargin, "errorMargin", 0);
-
-        this.errorMargin = errorMargin;
-    }
-
-    public final synchronized int getErrorMargin() { return errorMargin; }
-
-
+    /**
+     * Returns this rate manager's "queue runner."
+     *
+     * @return this rate manager's queue runner thread object
+     */
     final QueueRunner getRunner() { return runner; }
 
+    /**
+     * Sends the given SNAC request on the given SNAC processor.
+     *
+     * @param processor the SNAC processor on which the given request should be
+     *        sent
+     * @param request the request to send
+     *
+     * @see SnacProcessor#sendSnacImmediately
+     */
     void sendSnac(SnacProcessor processor, SnacRequest request) {
         processor.sendSnacImmediately(request);
     }
 
+    /**
+     * Returns a list of all SNAC processor queue managers currently being used.
+     * One <code>ConnectionQueueMgr</code> exists for each SNAC processor for
+     * which this <code>RateLimitingQueueMgr</code> is set.
+     *
+     * @return a list of all single-SNAC-processor queue managers currently in
+     *         use
+     */
+    public final ConnectionQueueMgr[] getQueueMgrs() {
+        synchronized(connMgrs) {
+            return (ConnectionQueueMgr[])
+                    connMgrs.values().toArray(new ConnectionQueueMgr[0]);
+        }
+    }
+
+    /**
+     * Returns the single-SNAC-processor queue manager for the given SNAC
+     * processor. Note that if this <code>RateLimitingQueueMgr</code> is not set
+     * as the given SNAC processor's queue manager this method will return
+     * <code>null</code>.
+     *
+     * @param processor a SNAC processor
+     * @return the SNAC processor queue manager in use for the given SNAC
+     *         processor, or <code>null</code> if none is in use for the given
+     *         SNAC processor
+     */
+    public final ConnectionQueueMgr getQueueMgr(SnacProcessor processor) {
+        DefensiveTools.checkNull(processor, "processor");
+
+        synchronized(connMgrs) {
+            return (ConnectionQueueMgr) connMgrs.get(processor);
+        }
+    }
 
     public void attached(SnacProcessor processor) {
-        RateMonitor monitor = new RateMonitor(processor);
-        synchronized(conns) {
-            conns.put(processor, new ConnectionQueueMgr(this, monitor));
+        synchronized(connMgrs) {
+            connMgrs.put(processor, new ConnectionQueueMgr(this, processor));
         }
     }
 
     public void detached(SnacProcessor processor) {
         ConnectionQueueMgr mgr;
-        synchronized(conns) {
-            mgr = (ConnectionQueueMgr) conns.remove(processor);
+        synchronized(connMgrs) {
+            mgr = (ConnectionQueueMgr) connMgrs.remove(processor);
         }
 
         mgr.detach();

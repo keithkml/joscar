@@ -43,36 +43,30 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Set;
 
+/**
+ * "Runs" a set of <code>RateQueue</code>s, dequeuing SNACs at appropriate
+ * times. Note that this class does not create its own thread; intended usage
+ * is as follows:
+ * <pre>
+QueueRunner runner = new QueueRunner();
+new Thread(runner).start();
+ * </pre>
+ */
 class QueueRunner implements Runnable {
-    private boolean started = false;
-
+    /** A lock used in synchronizing updates with the running thread. */
     private final Object lock = new Object();
 
-    private boolean updated = false;
+    /** Whether or not this queue has been updated. */
+    private boolean updated = true;
+
+    /** The list of queues to "run." */
     private final Set queues = new CopyOnWriteArraySet();
-
-    private void forceStart() {
-        started = true;
-
-        // I think this is correct
-        updated = true;
-
-        Thread thread = new Thread(this, "SNAC queue manager");
-        thread.start();
-    }
-
-    private synchronized void ensureStarted() {
-        if (!started) forceStart();
-    }
 
     public void run() {
         long minWait = 0;
         for (;;) {
             synchronized(lock) {
-                System.out.println("looping..");
                 if (!updated) {
-                    System.out.println("waiting for " + (minWait == 0 ? "ever"
-                            : minWait + "ms"));
                     // if we haven't been updated, we need to wait until a
                     // call to update() or until we need to send the next
                     // command (this time is specified in minWait, if non-
@@ -135,16 +129,35 @@ class QueueRunner implements Runnable {
         }
     }
 
+    /**
+     * Returns the "optimal wait time" for the given queue.
+     *
+     * @param queue a rate queue
+     * @return the optimal wait time for the given queue
+     *
+     * @see RateClassMonitor#getOptimalWaitTime()
+     */
     private long getWaitTime(RateQueue queue) {
-        long waitTime = queue.getRateClassMonitor().getOptimalWaitTime();
-
-        return waitTime;
+        return queue.getRateClassMonitor().getOptimalWaitTime();
     }
 
+    /**
+     * Returns whether the given queue is "ready" to send the next request. (A
+     * rate queue is "ready" if its {@linkplain #getWaitTime(RateQueue) wait
+     * time} is zero.
+     *
+     * @param queue a rate queue
+     * @return whether the given queue is "ready"
+     */
     private boolean isReady(RateQueue queue) {
         return getWaitTime(queue) <= 0;
     }
 
+    /**
+     * Dequeues all "ready" requests in the given rate queue.
+     *
+     * @param queue a rate queue
+     */
     private void dequeueReady(RateQueue queue) {
         ConnectionQueueMgr connMgr = queue.getParentMgr();
         SnacProcessor processor = connMgr.getSnacProcessor();
@@ -159,27 +172,53 @@ class QueueRunner implements Runnable {
         }
     }
 
+    /**
+     * Tells the queue runner thread that the given connection queue manager has
+     * been updated. (This indicates to the queue runner that it should
+     * recalculate when to next send SNAC requests in queues under the given
+     * queue manager.)
+     *
+     * @param updated the connection queue manager that has been updated
+     */
     public void update(ConnectionQueueMgr updated) {
         forceUpdate();
     }
 
+    /**
+     * Tells the queue runner that the given rate queue has been updated. (This
+     * indicates to the queue runner that it should recalculate when to next
+     * send SNAC requests in the given queue.)
+     *
+     * @param updated the rate queue that has been updated
+     */
     public void update(RateQueue updated) {
         forceUpdate();
     }
 
+    /**
+     * Tells the queue runner thread that a major change has taken place. This
+     * indicates to the queue runner that it should recalculate when to next
+     * send SNAC requests in all registered queues.
+     */
     public void update() {
         forceUpdate();
     }
 
+    /**
+     * Tells the queue runner to recalculate SNAC queue wait times.
+     */
     private void forceUpdate() {
-        ensureStarted();
-
         synchronized(lock) {
             updated = true;
             lock.notifyAll();
         }
     }
 
+    /**
+     * Adds the given queue to this queue runner's queue list.
+     *
+     * @param queue the queue to add
+     */
     public void addQueue(RateQueue queue) {
         DefensiveTools.checkNull(queue, "queue");
 
@@ -188,18 +227,34 @@ class QueueRunner implements Runnable {
         update(queue);
     }
 
+    /**
+     * Adds the given queues to this queue runner's queue list.
+     *
+     * @param rateQueues the queues to add
+     */
     public void addQueues(RateQueue[] rateQueues) {
         DefensiveTools.checkNull(rateQueues, "rateQueues");
 
         queues.addAll(Arrays.asList(rateQueues));
     }
 
+    /**
+     * Removes the given queue, if present, from this queue runner's queue list.
+     *
+     * @param queue the queue to remove
+     */
     public void removeQueue(RateQueue queue) {
         DefensiveTools.checkNull(queue, "queue");
 
         queues.remove(queue);
     }
 
+    /**
+     * Removes the given queues, if present, from this queue runner's queue
+     * list.
+     *
+     * @param rateQueues the queues to remove
+     */
     public void removeQueues(RateQueue[] rateQueues) {
         DefensiveTools.checkNull(rateQueues, "rateQueues");
 
