@@ -45,22 +45,23 @@ import net.kano.aimcrypto.connection.oscar.OscarConnListener;
 import net.kano.aimcrypto.connection.oscar.OscarConnection;
 import net.kano.aimcrypto.connection.oscar.loginstatus.LoginFailureInfo;
 import net.kano.aimcrypto.connection.oscar.loginstatus.LoginSuccessInfo;
-import net.kano.aimcrypto.connection.oscar.service.BosService;
-import net.kano.aimcrypto.connection.oscar.service.IcbmService;
-import net.kano.aimcrypto.connection.oscar.service.LoginService;
 import net.kano.aimcrypto.connection.oscar.service.Service;
 import net.kano.aimcrypto.connection.oscar.service.ServiceFactory;
-import net.kano.aimcrypto.connection.oscar.service.BuddyService;
-import net.kano.aimcrypto.connection.oscar.service.InfoService;
+import net.kano.aimcrypto.connection.oscar.service.bos.BosService;
+import net.kano.aimcrypto.connection.oscar.service.buddy.BuddyService;
+import net.kano.aimcrypto.connection.oscar.service.icbm.IcbmService;
+import net.kano.aimcrypto.connection.oscar.service.info.InfoService;
+import net.kano.aimcrypto.connection.oscar.service.info.CertificateManager;
+import net.kano.aimcrypto.connection.oscar.service.login.LoginService;
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.net.ClientConn;
 import net.kano.joscar.net.ClientConnEvent;
 import net.kano.joscar.snaccmd.auth.AuthCommand;
+import net.kano.joscar.snaccmd.buddy.BuddyCommand;
 import net.kano.joscar.snaccmd.conn.ConnCommand;
 import net.kano.joscar.snaccmd.icbm.IcbmCommand;
-import net.kano.joscar.snaccmd.buddy.BuddyCommand;
 import net.kano.joscar.snaccmd.loc.LocCommand;
 
 import java.util.ArrayList;
@@ -93,6 +94,7 @@ public class AimConnection {
     private CopyOnWriteArrayList serviceListeners = new CopyOnWriteArrayList();
 
     private BuddyInfoManager buddyInfoManager = new BuddyInfoManager(this);
+    private final CertificateManager certManager;
 
     public AimConnection(AppSession appSession, AimSession aimSession,
             AimConnectionProperties props) throws IllegalArgumentException {
@@ -116,6 +118,9 @@ public class AimConnection {
 
         this.screenname = sn;
 
+        this.certManager = new CertificateManager(this,
+                appSession.getCertificateManager());
+
         loginConn = new LoginConnection(props.getLoginHost(),
                 props.getLoginPort());
         password = props.getPass();
@@ -126,6 +131,8 @@ public class AimConnection {
     public final AppSession getAppSession() { return appSession; }
 
     public final AimSession getAimSession() { return aimSession; }
+
+    public CertificateManager getCertificateManager() { return certManager; }
 
     public final Screenname getScreenname() { return screenname; }
 
@@ -239,7 +246,7 @@ public class AimConnection {
 
     private void connectBos(LoginSuccessInfo info) {
         synchronized(this) {
-            if (state != State.CONNECTINGAUTH) {
+            if (state != State.AUTHORIZING) {
                 throw new IllegalStateException("tried to connect to BOS "
                         + "server in state " + state);
             }
@@ -249,7 +256,7 @@ public class AimConnection {
             mainConn.setServiceFactory(new BasicServiceFactory());
             mainConn.connect();
         }
-        setState(State.CONNECTINGAUTH, State.CONNECTING,
+        setState(State.AUTHORIZING, State.CONNECTING,
                 new ConnectingStateInfo(info));
     }
 

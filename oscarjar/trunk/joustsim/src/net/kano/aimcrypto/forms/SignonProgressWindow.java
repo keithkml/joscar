@@ -118,32 +118,37 @@ public class SignonProgressWindow extends JFrame {
         private StateListener stateListener = new StateListener() {
             public void handleStateChange(StateEvent event) {
                 State state = event.getNewState();
-                int index = -1;
-                for (int i = 0; i < states.length; i++) {
-                    StateInfo stateInfo = states[i];
-                    if (stateInfo.getState() == state) {
-                        stateInfo.setDoing(true);
-                        stateInfo.setDone(false);
-                        index = i;
-                        break;
-                    }
-                }
-                if (index == -1) {
-                    // something special?
-                    return;
-                }
-                for (int i = index - 1; i >= 0; i--) {
-                    StateInfo stateInfo = states[i];
-                    stateInfo.setDoing(false);
-                    stateInfo.setDone(true);
-                }
-                fireContentsChanged(this, 0, index);
+                updateState(state);
             }
         };
 
         public ProgressListModel(AimConnection conn) {
             this.conn = conn;
             conn.addStateListener(stateListener);
+            updateState(conn.getState());
+        }
+
+        private void updateState(State state) {
+            int index = -1;
+            for (int i = 0; i < states.length; i++) {
+                StateInfo stateInfo = states[i];
+                if (stateInfo.getState() == state) {
+                    stateInfo.setDoing(true);
+                    stateInfo.setDone(false);
+                    index = i;
+                    break;
+                }
+            }
+            if (index == -1) {
+                // something special?
+                return;
+            }
+            for (int i = index - 1; i >= 0; i--) {
+                StateInfo stateInfo = states[i];
+                stateInfo.setDoing(false);
+                stateInfo.setDone(true);
+            }
+            fireContentsChanged(this, 0, index);
         }
 
         public void stop() {

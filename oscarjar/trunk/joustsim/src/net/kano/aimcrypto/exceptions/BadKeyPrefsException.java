@@ -36,34 +36,44 @@
 package net.kano.aimcrypto.exceptions;
 
 public class BadKeyPrefsException extends Exception {
-    private final boolean hasAlias;
+    private final boolean hasSigningAlias;
+    private final boolean hasEncryptionAlias;
     private final boolean hasPass;
 
-    public BadKeyPrefsException(boolean hasAlias, boolean hasPass) {
-        this.hasAlias = hasAlias;
-        this.hasPass = hasPass;
-    }
-
-    public BadKeyPrefsException(String message, boolean hasAlias, boolean hasPass) {
-        super(message);
-        this.hasAlias = hasAlias;
-        this.hasPass = hasPass;
-    }
-
-    public BadKeyPrefsException(Throwable cause, boolean hasAlias, boolean hasPass) {
-        super(cause);
-        this.hasAlias = hasAlias;
-        this.hasPass = hasPass;
-    }
-
-    public BadKeyPrefsException(String message, Throwable cause, boolean hasAlias,
+    public BadKeyPrefsException(boolean hasSigningAlias, boolean hasEncryptionAlias,
             boolean hasPass) {
-        super(message, cause);
-        this.hasAlias = hasAlias;
+        this.hasSigningAlias = hasSigningAlias;
+        this.hasEncryptionAlias = hasEncryptionAlias;
         this.hasPass = hasPass;
     }
 
-    public boolean hasAlias() { return hasAlias; }
+    public BadKeyPrefsException(String message, boolean hasSigningAlias,
+            boolean hasEncryptionAlias, boolean hasPass) {
+        super(message);
+        this.hasSigningAlias = hasSigningAlias;
+        this.hasEncryptionAlias = hasEncryptionAlias;
+        this.hasPass = hasPass;
+    }
+
+    public BadKeyPrefsException(Throwable cause, boolean hasSigningAlias,
+            boolean hasEncryptionAlias, boolean hasPass) {
+        super(cause);
+        this.hasSigningAlias = hasSigningAlias;
+        this.hasEncryptionAlias = hasEncryptionAlias;
+        this.hasPass = hasPass;
+    }
+
+    public BadKeyPrefsException(String message, Throwable cause, boolean hasSigningAlias,
+            boolean hasEncryptionAlias, boolean hasPass) {
+        super(message, cause);
+        this.hasSigningAlias = hasSigningAlias;
+        this.hasEncryptionAlias = hasEncryptionAlias;
+        this.hasPass = hasPass;
+    }
+
+    public boolean hasSigningAlias() { return hasSigningAlias; }
+
+    public boolean hasEncryptionAlias() { return hasEncryptionAlias; }
 
     public boolean hasPass() { return hasPass; }
 }

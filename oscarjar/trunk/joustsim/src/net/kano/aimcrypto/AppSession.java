@@ -35,20 +35,22 @@
 
 package net.kano.aimcrypto;
 
-import net.kano.joscar.DefensiveTools;
+import net.kano.aimcrypto.connection.oscar.service.info.CertificateManager;
 import net.kano.aimcrypto.exceptions.BadKeyPrefsException;
 import net.kano.aimcrypto.exceptions.BadKeysException;
+import net.kano.joscar.DefensiveTools;
 
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.List;
-import java.util.ArrayList;
+import java.net.URL;
 
 public class AppSession {
     private static final DirFilter DIR_FILTER = new DirFilter();
@@ -58,6 +60,7 @@ public class AppSession {
 
     private File baseDir;
     private File securityDir;
+    private CertificateManager certificateManager = new CertificateManager();
 
     public AppSession(File baseDir) throws IllegalArgumentException {
         DefensiveTools.checkNull(baseDir, "baseDir");
@@ -76,7 +79,7 @@ public class AppSession {
         securityDir = new File(baseDir, "security");
     }
 
-    public synchronized PrivateSecurityInfo getSecurityInfo(Screenname sn) {
+    public synchronized PrivateSecurityInfo getPrivateSecurityInfo(Screenname sn) {
         PrivateSecurityInfo si = (PrivateSecurityInfo) securityInfos.get(sn);
         if (si == null) {
             si = new PrivateSecurityInfo(sn);
@@ -110,30 +113,49 @@ public class AppSession {
             throws IOException, FileNotFoundException, BadKeysException,
             BadKeyPrefsException {
         DefensiveTools.checkNull(sn, "sn");
+        System.out.println("loading keys for " + sn);
 
-        PrivateSecurityInfo si = getSecurityInfo(sn);
+        PrivateSecurityInfo si = getPrivateSecurityInfo(sn);
 
-        File ks = new File(securityDir, "keys.p12");
-        File prefs = new File(securityDir, "key-prefs.properties");
+        File dir = new File(new File(securityDir, "local-keys"), sn.getNormal());
+
+        File ks = new File(dir, "keys.p12");
+        File prefs = new File(dir, "key-prefs.properties");
 
         if (!ks.exists()) throw new FileNotFoundException(ks.getPath());
         if (!prefs.exists()) throw new FileNotFoundException(prefs.getPath());
 
         Properties props = new Properties();
         props.load(new FileInputStream(prefs));
-        String alias = props.getProperty("alias");
-        String pass = props.getProperty("pass");
-        if (alias == null || pass == null) {
-            throw new BadKeyPrefsException(alias != null, pass != null);
+        String signingAlias = props.getProperty("signing-alias");
+        String encryptionAlias = props.getProperty("encryption-alias");
+        String pass = props.getProperty("password");
+
+        if (signingAlias == null || encryptionAlias == null || pass == null) {
+            throw new BadKeyPrefsException(signingAlias != null,
+                    encryptionAlias != null, pass != null);
         }
-        si.loadKeysFromP12(ks.toURI().toURL(), alias, pass);
+
+        URL url = ks.toURI().toURL();
+        si.loadKeysFromP12(url, signingAlias, encryptionAlias, pass);
 
         return si;
     }
 
     public AimSession openAimSession(Screenname sn) {
         AimSession sess = new AimSession(this, sn);
+        PrivateSecurityInfo keys = null;
+        try {
+            keys = loadKeys(sn);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (BadKeysException e) {
+            e.printStackTrace();
+        } catch (BadKeyPrefsException e) {
+            e.printStackTrace();
+        }
         synchronized(this) {
+            securityInfos.put(sn, keys);
             List snsesses = (List) sessions.get(sn);
             if (snsesses == null) {
                 snsesses = new ArrayList();
@@ -142,8 +164,14 @@ public class AppSession {
 
             snsesses.add(sess);
         }
+        if (keys != null) sess.setPrivateKeysInfo(keys.getKeysInfo());
         return sess;
     }
+
+    public CertificateManager getCertificateManager() {
+        return certificateManager;
+    }
+
 
     private static class DirFilter implements FileFilter {
         public boolean accept(File pathname) {

@@ -37,13 +37,17 @@ package net.kano.aimcrypto.forms;
 
 import net.kano.aimcrypto.GuiSession;
 import net.kano.aimcrypto.Screenname;
-import net.kano.aimcrypto.connection.oscar.service.Conversation;
-import net.kano.aimcrypto.connection.oscar.service.ConversationListener;
-import net.kano.aimcrypto.connection.oscar.service.ConversationNotOpenException;
-import net.kano.aimcrypto.connection.oscar.service.ImConversation;
-import net.kano.aimcrypto.connection.oscar.service.MessageInfo;
-import net.kano.aimcrypto.connection.oscar.service.SimpleMessage;
-import net.kano.aimcrypto.connection.oscar.service.Message;
+import net.kano.aimcrypto.connection.oscar.service.icbm.Conversation;
+import net.kano.aimcrypto.connection.oscar.service.icbm.ConversationListener;
+import net.kano.aimcrypto.connection.oscar.service.icbm.ConversationNotOpenException;
+import net.kano.aimcrypto.connection.oscar.service.icbm.ImConversation;
+import net.kano.aimcrypto.connection.oscar.service.icbm.MessageInfo;
+import net.kano.aimcrypto.connection.oscar.service.icbm.SimpleMessage;
+import net.kano.aimcrypto.connection.oscar.service.icbm.Message;
+import net.kano.aimcrypto.connection.oscar.service.icbm.Conversation;
+import net.kano.aimcrypto.connection.oscar.service.icbm.ConversationNotOpenException;
+import net.kano.aimcrypto.connection.oscar.service.icbm.Message;
+import net.kano.aimcrypto.connection.oscar.service.icbm.SecureAimConversation;
 import net.kano.aimcrypto.conv.ConversationDocument;
 import net.kano.aimcrypto.conv.ConversationEditorKit;
 import net.kano.aimcrypto.conv.AolRtfText;
@@ -191,7 +195,10 @@ public class ImBox extends JFrame {
             Conversation conv = info.getConversation();
             if (conv instanceof ImConversation) {
                 string = "Insecure";
+            } else if (conv instanceof SecureAimConversation) {
+                string = "Secure";
             }
+            string += conv.getClass().getName();
             JLabel comp = (JLabel) super.getListCellRendererComponent(list,
                     string, index, isSelected, cellHasFocus);
             comp.setForeground(conv.isOpen() ? null : Color.LIGHT_GRAY);

@@ -44,7 +44,7 @@ import net.kano.aimcrypto.connection.oscar.loginstatus.LoginFailureInfo;
 import net.kano.aimcrypto.connection.oscar.loginstatus.LoginSuccessInfo;
 import net.kano.aimcrypto.connection.oscar.loginstatus.SnacErrorFailureInfo;
 import net.kano.aimcrypto.connection.oscar.loginstatus.TimeoutFailureInfo;
-import net.kano.aimcrypto.connection.oscar.service.LoginService;
+import net.kano.aimcrypto.connection.oscar.service.login.LoginService;
 import net.kano.aimcrypto.connection.oscar.service.Service;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flap.FlapCommand;

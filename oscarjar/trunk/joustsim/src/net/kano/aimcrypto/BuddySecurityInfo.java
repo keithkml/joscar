@@ -49,8 +49,10 @@ public final class BuddySecurityInfo implements AimCertificateHolder {
     public BuddySecurityInfo(Screenname buddy, ByteBlock hash,
             X509Certificate encCert, X509Certificate signingCert) {
         DefensiveTools.checkNull(buddy, "buddy");
+        DefensiveTools.checkNull(hash, "hash");
 
         this.buddy = buddy;
+        this.hash = hash;
         this.encryptionCert = encCert;
         this.signingCert = signingCert;
     }
@@ -59,7 +61,7 @@ public final class BuddySecurityInfo implements AimCertificateHolder {
 
     public ByteBlock getCertificateInfoHash() { return hash; }
 
-    public X509Certificate getEncryptionCert() { return encryptionCert; }
+    public X509Certificate getEncryptionCertificate() { return encryptionCert; }
 
-    public X509Certificate getSigningCert() { return signingCert; }
+    public X509Certificate getSigningCertificate() { return signingCert; }
 }

@@ -41,12 +41,13 @@ import net.kano.aimcrypto.connection.State;
 import net.kano.aimcrypto.connection.StateEvent;
 import net.kano.aimcrypto.connection.StateInfo;
 import net.kano.aimcrypto.connection.StateListener;
-import net.kano.aimcrypto.connection.oscar.service.Conversation;
-import net.kano.aimcrypto.connection.oscar.service.IcbmService;
+import net.kano.aimcrypto.connection.oscar.service.icbm.Conversation;
+import net.kano.aimcrypto.connection.oscar.service.icbm.IcbmService;
 import net.kano.aimcrypto.connection.oscar.service.ServiceListener;
 import net.kano.aimcrypto.connection.oscar.service.Service;
-import net.kano.aimcrypto.connection.oscar.service.IcbmListener;
-import net.kano.aimcrypto.connection.oscar.service.ImConversation;
+import net.kano.aimcrypto.connection.oscar.service.icbm.IcbmListener;
+import net.kano.aimcrypto.connection.oscar.service.icbm.ImConversation;
+import net.kano.aimcrypto.connection.oscar.service.icbm.IcbmBuddyInfo;
 import net.kano.aimcrypto.forms.DummyOnlineWindow;
 import net.kano.aimcrypto.forms.ImBox;
 import net.kano.aimcrypto.forms.SignonProgressWindow;
@@ -248,7 +249,7 @@ public class GuiSession {
         public void handleStateChange(StateEvent event) {
             AimConnection conn = event.getAimConnection();
             if (conn != aimSession.getConnection()) {
-                // we can ignore this message since we're using a new connection
+                // we can ignore this event since we're using a new connection
                 // now
                 return;
             }
@@ -258,6 +259,10 @@ public class GuiSession {
                 icbmservice.addIcbmListener(new IcbmListener() {
                     public void newConversation(IcbmService service, Conversation conv) {
                         handleNewConversation(conv);
+                    }
+
+                    public void buddyInfoUpdated(IcbmService service, Screenname buddy,
+                            IcbmBuddyInfo info) {
                     }
                 });
                 SwingUtilities.invokeLater(new Runnable() {

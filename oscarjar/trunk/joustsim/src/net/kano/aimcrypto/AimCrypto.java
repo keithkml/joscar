@@ -45,6 +45,9 @@ import java.util.logging.Logger;
 import java.util.logging.Level;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
+import java.security.Security;
+
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public final class AimCrypto {
     private AimCrypto() { }
@@ -64,6 +67,8 @@ public final class AimCrypto {
         });
         handler.setLevel(Level.ALL);
         logger.addHandler(handler);
+
+        Security.addProvider(new BouncyCastleProvider());
 
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());

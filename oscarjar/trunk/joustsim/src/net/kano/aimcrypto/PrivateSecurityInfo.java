@@ -53,6 +53,7 @@ import java.security.cert.X509Certificate;
 import java.security.cert.CertificateException;
 import java.security.interfaces.RSAPrivateKey;
 import java.io.IOException;
+import java.util.Enumeration;
 
 public final class PrivateSecurityInfo {
     private final Screenname screenname;
@@ -101,6 +102,7 @@ public final class PrivateSecurityInfo {
 
         synchronized(this) {
             keysInfo = new PrivateKeysInfo(signingKeys, encryptionKeys);
+            System.out.println("stored keys info: " + keysInfo);
         }
     }
 
