@@ -36,5 +36,6 @@
 package net.kano.joscardemo;
 
 public interface CLCommand {
+    String getArgumentsUsage();
     void handle(String line, String cmd, String[] args);
 }

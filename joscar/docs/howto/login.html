@@ -22,7 +22,7 @@ pre {
 <h1>A quick joscar login tutorial</h1>
 
 <blockquote style="font-size: large">
-<p>This "tutorial" was written by Keith as a Weblog entry once. It is by no means complete nor does it teach how to implement a robust login sequence. A full joscar tutorial will come in a future release. Check the <a href="http://joust.kano.net/" title="The Joust website">Joust website</a> for updates.</p>
+<p>This "tutorial" was written by Keith as a Weblog entry once, and has since been updated slightly to match changes in joscar. It is by no means complete nor does it teach how to implement a robust login sequence. A full joscar tutorial will probably come in a future release. Check the <a href="http://joust.kano.net/" title="The Joust website">Joust website</a> for updates.</p>
 <p>The latest version of this tutorial is available at <a href="http://joust.kano.net/joscar/docs/howto/login.html" title="A quick joscar login tutorial">http://joust.kano.net/joscar/docs/howto/login.html</a>.</p>
 </blockquote>
 
@@ -42,7 +42,7 @@ FlapProcessor flapProcessor = new FlapProcessor(socket);
 </pre>
 </p>
 
-<p>And then you can begin sending FLAP packets through the FLAP "processor." In addition, you might want to set up a loop to read incoming commands (note that I suggest something cleaner than this):
+<p>And then you can begin sending FLAP packets through the FLAP "processor." In addition, you might want to set up a loop to read incoming commands (I suggest something cleaner than this):
 
 <pre>
 Runnable looper = new Runnable() {
@@ -216,7 +216,7 @@ Here's how the connection to the authorizer goes:
 </ul>
 </p>
 
-<p>So. That's the login process for you. Note that many of the commands sent in setting up the BOS connection are unnecessary, but it's good to send them even if you don't quite know what you're doing; the server sort of expects them and might behave differently without them, thinking you are an older or somehow broken client.</p>
+<p>So. That's the login process for you. Many of the commands sent in setting up the BOS connection are unnecessary, but it's good to send them even if you don't quite know what you're doing; the server sort of expects them and might behave differently without them, thinking you are an older or somehow broken client.</p>
 
 <p> I'll leave you with some sample code that connects to the authorization server and logs in. It doesn't even connect to the BOS server, but I think it serves as a good introduction to joscar:
 <ul>
@@ -233,7 +233,7 @@ logger.setLevel(Level.ALL);
 </pre>
 </p>
 
-<p>If you still can't figure it out, feel free to email me at <a href="keith@kano.net">keith@kano.net</a>.</p>
+<p>If you still can't figure it out, feel free to email me at <a href="mailto:keith@kano.net">keith@kano.net</a>.</p>
 
 <p>Enjoy.</p>
 

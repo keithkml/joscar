@@ -1,5 +1,3 @@
-package net.kano.joscardemo;
-
 import net.kano.joscar.flap.FlapCommand;
 import net.kano.joscar.flap.FlapPacketEvent;
 import net.kano.joscar.flap.FlapPacketListener;
@@ -29,16 +27,19 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class TutorialDemo {
+    // we will pretend to be AIM 5.1
     private static final ClientVersionInfo VER_AIM51 = new ClientVersionInfo(
             "AOL Instant Messenger, version 5.1.3036/WIN32",
             5, 1, 0, 3036, 239);
 
+    // some fields we'll need
     private Socket socket;
     private FlapProcessor flapProcessor;
     private ClientSnacProcessor snacProcessor;
     private SnacRequestListener respListener;
     private Thread flapEventThread;
 
+    // we store the username and password here
     private String screenname;
     private String password;
 
