@@ -107,6 +107,18 @@
   </target>
 
 
+  <target name="run-demo" depends="demo">
+    <input message="Type AIM Screenname to log in with and press Enter" 
+           addproperty="demo.sn" />
+    <input message="Type password for ${demo.sn} and press Enter" 
+           addproperty="demo.pass" />
+    <java classpath="bin:demo" fork="true" 
+          classname="net.kano.joscartests.JoscarTester">
+      <arg value="${demo.sn}" />
+      <arg value="${demo.pass}" />
+    </java>
+  </target>
+
   <target name="build-taglets">
     <mkdir dir="${taglets.bin}" />
     <javac srcdir="${joscar.src}"
