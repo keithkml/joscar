@@ -56,6 +56,7 @@ public class ServerSsiCmdFactory implements SnacCmdFactory {
         new CmdType(SsiCommand.FAMILY_SSI, SsiCommand.CMD_DELETE_ITEMS),
         new CmdType(SsiCommand.FAMILY_SSI, SsiCommand.CMD_PRE_MOD),
         new CmdType(SsiCommand.FAMILY_SSI, SsiCommand.CMD_POST_MOD),
+        new CmdType(SsiCommand.FAMILY_SSI, SsiCommand.CMD_REMOVE_ME),
     };
 
     public CmdType[] getSupportedTypes() {
@@ -85,6 +86,8 @@ public class ServerSsiCmdFactory implements SnacCmdFactory {
             return new PreModCmd(packet);
         } else if (command == SsiCommand.CMD_POST_MOD) {
             return new PostModCmd(packet);
+        } else if (command == SsiCommand.CMD_REMOVE_ME) {
+            return new RemoveMeCmd(packet);
         } else {
             return null;
         }
