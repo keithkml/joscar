@@ -346,8 +346,6 @@ public class RateClassMonitor {
     public synchronized final long getTimeUntil(long minAvg) {
         if (last == -1) return 0;
 
-        System.out.println("computing time until " + minAvg);
-
         long winSize = rateInfo.getWindowSize();
         long sinceLast = System.currentTimeMillis() - last;
 

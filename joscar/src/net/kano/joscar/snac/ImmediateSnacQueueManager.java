@@ -46,7 +46,6 @@ public class ImmediateSnacQueueManager implements SnacQueueManager {
     private final Map queues = new IdentityHashMap();
 
     public synchronized void attached(ClientSnacProcessor processor) {
-        System.out.println("attaching...");
         queues.put(processor, new SnacQueue());
     }
 

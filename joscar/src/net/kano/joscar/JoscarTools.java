@@ -54,7 +54,7 @@ public final class JoscarTools {
      * The "patch" version of joscar being used. This will return the
      * <code>3</code> in version <code>1.2.3</code>.
      */
-    public static final int JOSCAR_VERSION_PATCH = 1;
+    public static final int JOSCAR_VERSION_PATCH = 2;
 
     /**
      * Ensures that this class is never instantiated.
