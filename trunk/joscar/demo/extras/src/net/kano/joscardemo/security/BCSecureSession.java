@@ -126,13 +126,13 @@ public class BCSecureSession extends SecureSession {
         try {
             Security.addProvider(new BouncyCastleProvider());
         } catch (SecurityException e) {
-            System.out.println("[couldn't load Bouncy Castle JCE provider]");
+            System.err.println("[couldn't load Bouncy Castle JCE provider]");
         }
 
         try {
             loadKeys();
         } catch (Exception e) {
-            System.out.println("couldn't load private key: "
+            System.err.println("couldn't load private key: "
                     + MiscTools.getClassName(e) + ": " + e.getMessage());
         }
     }
@@ -474,7 +474,7 @@ public class BCSecureSession extends SecureSession {
             for (Iterator sit = signers.iterator(); sit.hasNext();) {
                 SignerInformation si = (SignerInformation) sit.next();
                 boolean verified = si.verify(getCert(sn), "BC");
-                if (!verified) System.out.println("NOTE: key not verified!");
+                if (!verified) System.err.println("NOTE: key not verified!");
             }
             CMSProcessableByteArray cpb
                     = (CMSProcessableByteArray) csd.getSignedContent();
@@ -537,11 +537,11 @@ public class BCSecureSession extends SecureSession {
                     SignerInformation si = (SignerInformation) sit.next();
                     boolean verified = si.verify(cert, "BC");
                     if (!verified) {
-                        System.out.println("NOTE: message not verified");
+                        System.err.println("NOTE: message not verified");
                     }
                 }
             } else {
-                System.out.println("[couldn't verify message because I don't "
+                System.err.println("[couldn't verify message because I don't "
                         + "have a cert for " + sn + "]");
             }
             byte[] scBytes = (byte[]) csd.getSignedContent().getContent();

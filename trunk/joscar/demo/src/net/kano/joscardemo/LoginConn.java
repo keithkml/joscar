@@ -41,6 +41,7 @@ import net.kano.joscar.flap.FlapPacketEvent;
 import net.kano.joscar.flapcmd.LoginFlapCmd;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.net.ClientConnEvent;
+import net.kano.joscar.net.ConnDescriptor;
 import net.kano.joscar.snac.SnacPacketEvent;
 import net.kano.joscar.snac.SnacResponseEvent;
 import net.kano.joscar.snaccmd.auth.AuthRequest;
@@ -54,16 +55,8 @@ import java.net.InetAddress;
 public class LoginConn extends AbstractFlapConn {
     protected boolean loggedin = false;
 
-    public LoginConn(JoscarTester tester) {
-        super(tester);
-    }
-
-    public LoginConn(String host, int port, JoscarTester tester) {
-        super(host, port, tester);
-    }
-
-    public LoginConn(InetAddress ip, int port, JoscarTester tester) {
-        super(ip, port, tester);
+    public LoginConn(ConnDescriptor cd, JoscarTester tester) {
+        super(cd, tester);
     }
 
     protected void handleStateChange(ClientConnEvent e) {
@@ -116,9 +109,9 @@ public class LoginConn extends AbstractFlapConn {
 
             int error = ar.getErrorCode();
             if (error != -1) {
-                System.out.println("connection error! code: " + error);
+                System.err.println("connection error! code: " + error);
                 if (ar.getErrorUrl() != null) {
-                    System.out.println("Error URL: " + ar.getErrorUrl());
+                    System.err.println("Error URL: " + ar.getErrorUrl());
                 }
             } else {
                 loggedin = true;

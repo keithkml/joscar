@@ -39,6 +39,7 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.flap.ClientFlapConn;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.net.ClientConnEvent;
+import net.kano.joscar.net.ConnDescriptor;
 import net.kano.joscar.snac.SnacPacketEvent;
 import net.kano.joscar.snaccmd.FullRoomInfo;
 import net.kano.joscar.snaccmd.FullUserInfo;
@@ -68,9 +69,9 @@ public class ChatConn extends ServiceConn {
     protected Set members = new HashSet();
     private SecureSession secureSession;
 
-    public ChatConn(String host, int port, JoscarTester tester,
+    public ChatConn(ConnDescriptor cd, JoscarTester tester,
             ByteBlock cookie, FullRoomInfo roomInfo) {
-        super(host, port, tester, cookie, 0x000e);
+        super(cd, tester, cookie, 0x000e);
         this.roomInfo = roomInfo;
         this.secureSession = tester.getSecureSession();
     }

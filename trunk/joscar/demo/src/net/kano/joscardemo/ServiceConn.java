@@ -40,6 +40,7 @@ import net.kano.joscar.flap.ClientFlapConn;
 import net.kano.joscar.flap.FlapPacketEvent;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.net.ClientConnEvent;
+import net.kano.joscar.net.ConnDescriptor;
 import net.kano.joscar.snac.SnacPacketEvent;
 import net.kano.joscar.snac.SnacRequestAdapter;
 import net.kano.joscar.snac.SnacRequestListener;
@@ -67,23 +68,12 @@ import java.util.List;
 import java.util.Map;
 
 public class ServiceConn extends BasicConn {
+    private List listeners = new LinkedList();
     protected int serviceFamily;
 
-    public ServiceConn(JoscarTester tester, ByteBlock cookie,
-            int serviceFamily) {
-        super(tester, cookie);
-        this.serviceFamily = serviceFamily;
-    }
-
-    public ServiceConn(String host, int port, JoscarTester tester,
+    public ServiceConn(ConnDescriptor cd, JoscarTester tester,
             ByteBlock cookie, int serviceFamily) {
-        super(host, port, tester, cookie);
-        this.serviceFamily = serviceFamily;
-    }
-
-    public ServiceConn(InetAddress ip, int port, JoscarTester tester,
-            ByteBlock cookie, int serviceFamily) {
-        super(ip, port, tester, cookie);
+        super(cd, tester, cookie);
         this.serviceFamily = serviceFamily;
     }
 

@@ -39,6 +39,7 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.flap.FlapPacketEvent;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.net.ClientConnEvent;
+import net.kano.joscar.net.ConnDescriptor;
 import net.kano.joscar.snac.SnacPacketEvent;
 import net.kano.joscar.snac.SnacResponseEvent;
 import net.kano.joscar.snaccmd.CapabilityBlock;
@@ -47,6 +48,7 @@ import net.kano.joscar.snaccmd.ExtraInfoBlock;
 import net.kano.joscar.snaccmd.ExtraInfoData;
 import net.kano.joscar.snaccmd.FullUserInfo;
 import net.kano.joscar.snaccmd.InfoData;
+import net.kano.joscar.snaccmd.ShortCapabilityBlock;
 import net.kano.joscar.snaccmd.conn.MyInfoRequest;
 import net.kano.joscar.snaccmd.conn.ServerReadyCmd;
 import net.kano.joscar.snaccmd.conn.ServiceRedirect;
@@ -84,19 +86,9 @@ import java.security.cert.X509Certificate;
 public class BosFlapConn extends BasicConn {
     protected SsiItemObjectFactory itemFactory = new DefaultSsiItemObjFactory();
 
-
-    public BosFlapConn(JoscarTester tester, ByteBlock cookie) {
-        super(tester, cookie);
-    }
-
-    public BosFlapConn(String host, int port, JoscarTester tester,
+    public BosFlapConn(ConnDescriptor cd, JoscarTester tester,
             ByteBlock cookie) {
-        super(host, port, tester, cookie);
-    }
-
-    public BosFlapConn(InetAddress ip, int port,
-            JoscarTester tester, ByteBlock cookie) {
-        super(ip, port, tester, cookie);
+        super(cd, tester, cookie);
     }
 
     protected void handleStateChange(ClientConnEvent e) {
@@ -160,6 +152,9 @@ public class BosFlapConn extends BasicConn {
                             CapabilityBlock.BLOCK_ICQCOMPATIBLE,
                             CapabilityBlock.BLOCK_SHORTCAPS,
                             CapabilityBlock.BLOCK_ENCRYPTION,
+                            // f0 03 is a transparent phone icon
+                            new ShortCapabilityBlock(ByteBlock.wrap(new byte[] { (byte) 0xf0, 0x03 })).toCapabilityBlock(),
+
 //                        CapabilityBlock.BLOCK_SOMETHING,
                         }, certInfo)));
             } catch (CertificateEncodingException e1) {
