@@ -35,8 +35,8 @@
 
 package net.kano.joscar.net;
 
-import java.net.Socket;
 import java.io.IOException;
+import java.net.Socket;
 
 /**
  * Handles a socket successfully created by a <code>ClientConn</code>. See

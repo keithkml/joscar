@@ -35,17 +35,17 @@
 
 package net.kano.joscar.rvproto.directim;
 
-import net.kano.joscar.LiveWritable;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.LiveWritable;
 import net.kano.joscar.snaccmd.icbm.ImEncodedString;
 import net.kano.joscar.snaccmd.icbm.ImEncodingParams;
 
-import java.io.InputStream;
-import java.io.IOException;
-import java.io.OutputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 /**
  * A data structure containing information about a Direct IM message or typing

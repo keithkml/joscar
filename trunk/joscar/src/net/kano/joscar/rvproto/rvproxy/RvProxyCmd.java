@@ -37,8 +37,8 @@ package net.kano.joscar.rvproto.rvproxy;
 
 import net.kano.joscar.DefensiveTools;
 
-import java.io.OutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 
 /**
  * Represents a single AOL Proxy protocol command to be sent over an AOL Proxy

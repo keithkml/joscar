@@ -36,14 +36,16 @@
 package net.kano.joscar.snac;
 
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.BinaryTools;
 import net.kano.joscar.flap.FlapPacketEvent;
 import net.kano.joscar.flap.FlapProcessor;
 import net.kano.joscar.flap.VetoableFlapPacketListener;
 import net.kano.joscar.flapcmd.SnacFlapCmd;
 import net.kano.joscar.flapcmd.SnacPacket;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -196,7 +198,7 @@ public class SnacProcessor {
     /**
      * The maximum request ID value before it wraps to zero.
      */
-    private static final long REQID_MAX = BinaryTools.UINT_MAX;
+    private static final long REQID_MAX = 0xffffffL;
 
     /** The request ID of the last SNAC command sent. */
     private long lastReqid;

@@ -35,8 +35,8 @@
 
 package net.kano.joscar.rv;
 
-import net.kano.joscar.snac.SnacPacketEvent;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.snac.SnacPacketEvent;
 
 /**
  * An event that occurs when a non-RV response to a RV command or RV response is

@@ -35,6 +35,7 @@
 
 package net.kano.joscar.rvcmd;
 
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.rv.RvCommandFactory;
 import net.kano.joscar.rvcmd.addins.AddinsAcceptRvCmd;
 import net.kano.joscar.rvcmd.addins.AddinsRejectRvCmd;
@@ -60,7 +61,6 @@ import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.icbm.AbstractRvIcbm;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.snaccmd.icbm.RvCommand;
-import net.kano.joscar.DefensiveTools;
 
 /**
  * A default RV command factory that generates instances of the

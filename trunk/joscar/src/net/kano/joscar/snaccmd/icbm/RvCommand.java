@@ -35,12 +35,11 @@
 
 package net.kano.joscar.snaccmd.icbm;
 
-import net.kano.joscar.snaccmd.CapabilityBlock;
-import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.snaccmd.CapabilityBlock;
 
-import java.io.OutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 
 /**
  * Represents a single "rendezvous command." Rendezvous commands can be used in
