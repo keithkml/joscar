@@ -36,13 +36,12 @@
 package net.kano.joscartests;
 
 import net.kano.joscar.ByteBlock;
-import net.kano.joscar.FileWritable;
 import net.kano.joscar.OscarTools;
 import net.kano.joscar.flap.FlapCommand;
 import net.kano.joscar.flap.FlapPacketEvent;
 import net.kano.joscar.flapcmd.LoginFlapCmd;
-import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.flapcmd.SnacCommand;
+import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.rv.*;
 import net.kano.joscar.rvcmd.AbstractRequestRvCmd;
 import net.kano.joscar.rvcmd.DefaultRvCommandFactory;
@@ -73,7 +72,7 @@ public abstract class BasicConn extends AbstractFlapConn {
     protected int[] snacFamilies = null;
     protected SnacFamilyInfo[] snacFamilyInfos;
     protected RateClassInfo[] rateClasses = null;
-    protected RateDataQueueMgr rateMgr = new RateDataQueueMgr();
+    protected DefaultSnacQueueMgr rateMgr = new DefaultSnacQueueMgr();
     protected RvProcessor rvProcessor = new RvProcessor(snacProcessor);
     protected RvProcessorListener rvListener = new RvProcessorListener() {
         public void handleNewSession(NewRvSessionEvent event) {
@@ -209,7 +208,7 @@ public abstract class BasicConn extends AbstractFlapConn {
         FlapCommand cmd = e.getFlapCommand();
 
         if (cmd instanceof LoginFlapCmd) {
-            getFlapProcessor().send(new LoginFlapCmd(cookie));
+            getFlapProcessor().sendFlap(new LoginFlapCmd(cookie));
         } else {
             System.out.println("got FLAP command on channel 0x"
                     + Integer.toHexString(e.getFlapPacket().getChannel())
@@ -345,7 +344,7 @@ public abstract class BasicConn extends AbstractFlapConn {
             System.out.println("rate change: current avg is "
                     + rc.getRateInfo().getCurrentAvg());
 
-            rateMgr.setRateClass(rc.getRateInfo());
+            rateMgr.setRateClass(getSnacProcessor(), rc.getRateInfo());
         }
     }
 
@@ -363,7 +362,7 @@ public abstract class BasicConn extends AbstractFlapConn {
 
             rateClasses = ric.getRateClassInfos();
 
-            rateMgr.setRateClasses(rateClasses);
+            rateMgr.setRateClasses(getSnacProcessor(), rateClasses);
 
             int[] classes = new int[rateClasses.length];
             for (int i = 0; i < rateClasses.length; i++) {

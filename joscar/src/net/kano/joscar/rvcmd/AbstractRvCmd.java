@@ -158,9 +158,6 @@ public abstract class AbstractRvCmd extends RvCommand {
 
             ByteBlock serviceBlock = ByteBlock.wrap(bout.toByteArray());
 
-            System.out.println("service data: "
-                    + BinaryTools.describeData(serviceBlock));
-
             new Tlv(TYPE_SERVICE_DATA, serviceBlock).write(out);
         }
     }

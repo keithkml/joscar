@@ -41,6 +41,7 @@ import net.kano.joscar.snaccmd.DefaultClientFactoryList;
 import net.kano.joscar.net.ClientConnEvent;
 import net.kano.joscar.net.ClientConnListener;
 import net.kano.joscar.flapcmd.SnacCommand;
+import net.kano.joscar.flapcmd.DefaultFlapCmdFactory;
 
 import java.net.InetAddress;
 
@@ -48,11 +49,13 @@ public abstract class AbstractFlapConn extends ClientFlapConn {
     protected JoscarTester tester;
     protected SnacProcessor snacProcessor = new SnacProcessor(getFlapProcessor());
 
-    {
+    { // init
+        getFlapProcessor().setFlapCmdFactory(new DefaultFlapCmdFactory());
+
         snacProcessor.addPreprocessor(new FamilyVersionPreprocessor());
         snacProcessor.setDefaultSnacCmdFactoryList(
                 new DefaultClientFactoryList());
-        
+
         addConnListener(new ClientConnListener() {
             public void stateChanged(ClientConnEvent e) {
                 handleStateChange(e);
@@ -72,6 +75,11 @@ public abstract class AbstractFlapConn extends ClientFlapConn {
         });
         snacProcessor.addPacketListener(new SnacPacketListener() {
             public void handleSnacPacket(SnacPacketEvent e) {
+                long reqid = e.getSnacPacket().getReqid();
+
+                System.out.println("incoming packet ID: 0x"
+                        + Long.toHexString(reqid));
+
                 AbstractFlapConn.this.handleSnacPacket(e);
             }
         });

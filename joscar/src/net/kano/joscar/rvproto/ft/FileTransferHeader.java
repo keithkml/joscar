@@ -161,8 +161,6 @@ public final class FileTransferHeader implements LiveWritable {
 
         int headerLen = BinaryTools.getUShort(ByteBlock.wrap(header), 4);
 
-        System.out.println("headerlen: " + headerLen);
-
         if (headerLen < 6) return null;
 
         // then we read the full header by reading the rest of the bytes

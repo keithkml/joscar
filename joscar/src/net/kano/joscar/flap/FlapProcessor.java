@@ -46,6 +46,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
  * Represents a FLAP connection that manages an outgoing FLAP queue as well
@@ -236,7 +237,10 @@ public class FlapProcessor extends ConnProcessor {
     private synchronized final void handlePacket(FlapPacket packet) {
         DefensiveTools.checkNull(packet, "packet");
 
-        logger.fine("FlapProcessor received packet: " + packet);
+        boolean logFine = logger.isLoggable(Level.FINE);
+        boolean logFiner = logger.isLoggable(Level.FINER);
+
+        if (logFine) logger.fine("FlapProcessor received packet: " + packet);
 
         FlapCommand cmd = null;
         if (commandFactory != null) {
@@ -245,7 +249,7 @@ public class FlapProcessor extends ConnProcessor {
             } catch (Throwable t) {
                 handleException(FlapExceptionEvent.ERRTYPE_CMD_GEN, t, packet);
             }
-            logger.fine("Flap command for " + packet + ": " + cmd);
+            if (logFine) logger.fine("Flap command for " + packet + ": " + cmd);
         }
 
         FlapPacketEvent event = new FlapPacketEvent(this, packet, cmd);
@@ -254,7 +258,10 @@ public class FlapProcessor extends ConnProcessor {
             VetoableFlapPacketListener listener
                     = (VetoableFlapPacketListener) it.next();
 
-            logger.finer("Running vetoable flap packet listener: " + listener);
+            if (logFiner) {
+                logger.finer("Running vetoable flap packet listener: "
+                        + listener);
+            }
 
             Object result;
             try {
@@ -265,8 +272,10 @@ public class FlapProcessor extends ConnProcessor {
                 continue;
             }
             if (result != VetoableFlapPacketListener.CONTINUE_PROCESSING) {
-                logger.finer("Flap packet listener vetoed further processing: "
-                        + listener);
+                if (logFiner) {
+                    logger.finer("Flap packet listener vetoed further " +
+                            "processing: " + listener);
+                }
                 return;
             }
         }
@@ -274,7 +283,9 @@ public class FlapProcessor extends ConnProcessor {
         for (Iterator it = packetListeners.iterator(); it.hasNext();) {
             FlapPacketListener listener = (FlapPacketListener) it.next();
 
-            logger.finer("Running Flap packet listener " + listener);
+            if (logFiner) {
+                logger.finer("Running Flap packet listener " + listener);
+            }
 
             try {
                 listener.handleFlapPacket(event);
@@ -284,7 +295,7 @@ public class FlapProcessor extends ConnProcessor {
             }
         }
 
-        logger.finer("Finished handling Flap packet");
+        if (logFiner) logger.finer("Finished handling Flap packet");
     }
 
     /**
@@ -319,15 +330,22 @@ public class FlapProcessor extends ConnProcessor {
         DefensiveTools.checkNull(type, "type");
         DefensiveTools.checkNull(t, "t");
 
-        logger.fine("Processing flap error (" + type + "): " + t.getMessage()
-                + ": " + info);
+        boolean logFine = logger.isLoggable(Level.FINE);
+        boolean logFiner = logger.isLoggable(Level.FINER);
+
+        if (logFine) {
+            logger.fine("Processing flap error (" + type + "): "
+                    + t.getMessage() + ": " + info);
+        }
 
         if (type == FlapExceptionEvent.ERRTYPE_CONNECTION_ERROR
                 && !isAttached()) {
             // if we're not attached to anything, the listeners don't want to
             // be hearing about any connection errors.
-            logger.finer("Ignoring " + type + " flap error because processor " +
-                    "is not attached");
+            if (logFiner) {
+                logger.finer("Ignoring " + type + " flap error because " +
+                        "processor is not attached");
+            }
             return;
         }
 
@@ -336,7 +354,7 @@ public class FlapProcessor extends ConnProcessor {
         for (Iterator it = errorHandlers.iterator(); it.hasNext();) {
             FlapExceptionHandler handler = (FlapExceptionHandler) it.next();
 
-            logger.finer("Running flap error handler " + handler);
+            if (logFiner) logger.finer("Running flap error handler " + handler);
 
             try {
                 handler.handleException(event);
@@ -353,14 +371,17 @@ public class FlapProcessor extends ConnProcessor {
      *
      * @param command the command to send
      */
-    public synchronized final void send(FlapCommand command) {
+    public synchronized final void sendFlap(FlapCommand command) {
         DefensiveTools.checkNull(command, "command");
+
+        boolean logFine = logger.isLoggable(Level.FINE);
+        boolean logFiner = logger.isLoggable(Level.FINER);
 
         OutputStream out = getOutputStream();
 
         if (out == null) return;
 
-        logger.finer("Sending Flap command " + command);
+        if (logFiner) logger.finer("Sending Flap command " + command);
         FlapPacket packet = new FlapPacket(seqnum, command);
 
         ByteBlock block;
@@ -371,8 +392,10 @@ public class FlapProcessor extends ConnProcessor {
             return;
         }
 
-        logger.fine("Sending Flap packet " + packet + ": " + block.getLength()
-                + " total bytes");
+        if (logFine) {
+            logger.fine("Sending Flap packet " + packet + ": "
+                    + block.getLength() + " total bytes");
+        }
 
         // we trust ByteBlock.write so much that we don't even check for
         // Throwable!
@@ -388,7 +411,7 @@ public class FlapProcessor extends ConnProcessor {
         if (seqnum == SEQNUM_MAX) seqnum = 0;
         else seqnum++;
 
-        logger.finer("Finished sending Flap command");
+        if (logFiner) logger.finer("Finished sending Flap command");
     }
 
     /**
@@ -415,18 +438,21 @@ public class FlapProcessor extends ConnProcessor {
      * @throws IOException if an I/O error occurs
      */
     public final boolean readNextFlap() throws IOException {
+        boolean logFiner = logger.isLoggable(Level.FINER);
+
         synchronized(readLock) {
             if (getInputStream() == null) return false;
 
             FlapHeader header = FlapHeader.readFLAPHeader(getInputStream());
 
-            logger.finer("Read flap header " + header);
+            if (logFiner) logger.finer("Read flap header " + header);
 
             if (header == null) return false;
 
             FlapPacket packet = FlapPacket.readRestOfFlap(header, getInputStream());
 
-            logger.finer("Read flap packet " + packet);
+            if (logFiner) logger.finer("Read flap packet " + packet);
+
             if (packet == null) return false;
 
             handlePacket(packet);
@@ -434,5 +460,4 @@ public class FlapProcessor extends ConnProcessor {
             return true;
         }
     }
-
 }

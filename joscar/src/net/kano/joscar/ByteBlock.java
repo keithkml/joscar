@@ -199,6 +199,7 @@ public final class ByteBlock implements Writable, Serializable {
             bytes = block.bytes;
             offset = block.offset;
             len = block.len;
+
         } else {
             ByteArrayOutputStream out;
 

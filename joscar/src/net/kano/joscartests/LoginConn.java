@@ -68,7 +68,7 @@ public class LoginConn extends AbstractFlapConn {
 
         if (e.getNewState() == ClientFlapConn.STATE_CONNECTED) {
             System.out.println("sending flap version and key request");
-            getFlapProcessor().send(new LoginFlapCmd());
+            getFlapProcessor().sendFlap(new LoginFlapCmd());
             request(new KeyRequest(tester.getScreenname()));
         } else if (e.getNewState() == ClientFlapConn.STATE_FAILED) {
             tester.loginFailed("connection failed: " + e.getReason());

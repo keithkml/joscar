@@ -83,21 +83,16 @@ public class GetFileList implements LiveWritable {
 
         String version = BinaryTools.getAsciiString(block.subBlock(0, 4));
 
-        System.out.println("version: " + version);
-
         ByteBlock rest = block.subBlock(4);
         TlvChain chain = ImmutableTlvChain.readChain(rest);
 
         Tlv[] tlvs = chain.getTlvs();
-        System.out.println("entry tlvs: " + tlvs.length);
 
         List entries = new LinkedList();
 
         for (int i = 0; i < tlvs.length;) {
             GetFileEntry entry
                     = GetFileEntry.readEntry(tlvs, i);
-
-            System.out.println("read entry: " + entry);
 
             if (entry == null) break;
 
