@@ -414,6 +414,7 @@ public class ClientConn {
         }
     }
 
+    //TODO: processError(Object)
     /**
      * Closes this connection and sets the state to
      * <code>STATE_NOT_CONNECTED</code>, with the given exception or error as
