@@ -47,6 +47,7 @@ import net.kano.joscar.rv.*;
 import net.kano.joscar.rvcmd.AbstractRequestRvCmd;
 import net.kano.joscar.rvcmd.DefaultRvCommandFactory;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
+import net.kano.joscar.rvcmd.chatinvite.ChatInvitationRvCmd;
 import net.kano.joscar.rvcmd.addins.AddinsReqRvCmd;
 import net.kano.joscar.rvcmd.directim.DirectIMReqRvCmd;
 import net.kano.joscar.rvcmd.getfile.GetFileReqRvCmd;
@@ -146,6 +147,9 @@ public abstract class BasicConn extends AbstractFlapConn {
                 }
             } else if (cmd instanceof AddinsReqRvCmd) {
                 session.sendRv(cmd);
+            } else if (cmd instanceof ChatInvitationRvCmd) {
+                ChatInvitationRvCmd circ = (ChatInvitationRvCmd) cmd;
+                System.out.println("room info: " + circ.getRoomInfo());
             }
         }
 
