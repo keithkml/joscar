@@ -1095,8 +1095,8 @@ public class JoscarTester implements CmdLineListener {
         certs.put(OscarTools.normalize(sn), cert);
     }
 
-    public Certificate getCert(String sn) {
-        return (Certificate) certs.get(OscarTools.normalize(sn));
+    public X509Certificate getCert(String sn) {
+        return (X509Certificate) certs.get(OscarTools.normalize(sn));
     }
 
     private class TestRateTimerTask extends TimerTask {
