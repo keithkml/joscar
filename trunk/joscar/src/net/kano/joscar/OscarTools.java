@@ -329,16 +329,35 @@ public final class OscarTools {
      * "normalized": an IM to "joustacular" is the same as an IM to "Joust
      * Acular". Similarly, joining the chat room "JoUsTeRrIfIc" is equivalent
      * to joining "Jousterrific".
+     * <br>
+     * <br>
+     * This method will return the original string <code>str</code> if the
+     * string is already in normal form (that is, if no modifications are
+     * needed to normalize it).
      *
      * @param str the string to normalize
-     * @return a normalized version of the given string
+     * @return a normalized version of the given string, or the given string if
+     *         it is already in normal form
      */
     public static String normalize(String str) {
         DefensiveTools.checkNull(str, "str");
 
-        StringBuffer buffer = new StringBuffer(str.length());
+	    // see if it's already normalized. this doesn't hurt performance on my
+        // machine.
+        boolean normalized = true;
+        int len = str.length();
+        for (int i = 0; i < len; i++) {
+		    char c = str.charAt(i);
+		    if ((c < '0' || c > '9') && (c < 'a' || c > 'z')) {
+			    normalized = false;
+			    break;
+		    }
+	    }
+	    if (normalized) return str;
 
-        for (int i = 0; i < str.length(); i++) {
+        StringBuffer buffer = new StringBuffer(len);
+
+        for (int i = 0; i < len; i++) {
             char c = str.charAt(i);
 
             if (c != ' ') buffer.append(Character.toLowerCase(c));
