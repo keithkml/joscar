@@ -52,6 +52,8 @@ import java.io.OutputStream;
 public final class ClientVersionInfo implements LiveWritable {
     /** A TLV containing the user's client version string. */
     private static final int TYPE_VERSION_STRING = 0x0003;
+    /** A TLV type containing the client's client ID. */
+    private static final int TYPE_CLIENTID = 0x0016;
     /** A TLV type containing the user's client's major version number. */
     private static final int TYPE_MAJOR = 0x0017;
     /** A TLV type containing the user's client's minor version number. */
@@ -65,6 +67,8 @@ public final class ClientVersionInfo implements LiveWritable {
 
     /** A version string describing the client. */
     private final String versionString;
+    /** A client ID number. */
+    private final int clientid;
     /** The client's major version. */
     private final int major;
     /** The client's minor version. */
@@ -74,7 +78,7 @@ public final class ClientVersionInfo implements LiveWritable {
     /** The client's build number. */
     private final int build;
     /** The client's "distribution code." */
-    private final int distCode;
+    private final long distCode;
 
     /**
      * Reads a client version information block from the given TLV chain.
@@ -87,14 +91,15 @@ public final class ClientVersionInfo implements LiveWritable {
         DefensiveTools.checkNull(chain, "chain");
 
         String verString = chain.getString(TYPE_VERSION_STRING);
+        int clientid = chain.getUShort(TYPE_CLIENTID);
         int major = chain.getUShort(TYPE_MAJOR);
         int minor = chain.getUShort(TYPE_MINOR);
         int point = chain.getUShort(TYPE_POINT);
         int build = chain.getUShort(TYPE_BUILD);
-        int distCode = chain.getUShort(TYPE_DISTCODE);
+        long distCode = chain.getUInt(TYPE_DISTCODE);
 
-        return new ClientVersionInfo(verString, major, minor, point, build,
-                distCode);
+        return new ClientVersionInfo(verString, clientid, major, minor, point,
+                build, distCode);
     }
 
     /**
@@ -110,15 +115,17 @@ public final class ClientVersionInfo implements LiveWritable {
      * @param distCode a "distribution code," whose meaning is unknown at the
      *        time of this writing
      */
-    public ClientVersionInfo(String versionString, int major, int minor,
-            int point, int build, int distCode) {
+    public ClientVersionInfo(String versionString, int clientid, int major,
+            int minor, int point, int build, long distCode) {
         DefensiveTools.checkRange(major, "major", -1);
+        DefensiveTools.checkRange(clientid, "clientid", -1);
         DefensiveTools.checkRange(minor, "minor", -1);
         DefensiveTools.checkRange(point, "point", -1);
         DefensiveTools.checkRange(build, "build", -1);
         DefensiveTools.checkRange(distCode, "distCode", -1);
 
         this.versionString = versionString;
+        this.clientid = clientid;
         this.major = major;
         this.minor = minor;
         this.point = point;
@@ -133,6 +140,15 @@ public final class ClientVersionInfo implements LiveWritable {
      * @return the client's client version string
      */
     public String getVersionString() { return versionString; }
+
+    /**
+     * Returns the "client ID code." As of this writing the significance of this
+     * value is unknown. This will be <code>-1</code> if this value was not
+     * sent.
+     *
+     * @return the client's client ID code
+     */
+    public int getClientid() { return clientid; }
 
     /**
      * Returns the client's "major version." This is generally the first number
@@ -182,15 +198,22 @@ public final class ClientVersionInfo implements LiveWritable {
         if (versionString != null) {
             Tlv.getStringInstance(TYPE_VERSION_STRING, versionString).write(out);
         }
+        if (clientid != -1) {
+            Tlv.getUShortInstance(TYPE_CLIENTID, clientid).write(out);
+        }
         if (major != -1) Tlv.getUShortInstance(TYPE_MAJOR, major).write(out);
         if (minor != -1) Tlv.getUShortInstance(TYPE_MINOR, minor).write(out);
         if (point != -1) Tlv.getUShortInstance(TYPE_POINT, point).write(out);
         if (build != -1) Tlv.getUShortInstance(TYPE_BUILD, build).write(out);
+        if (distCode != -1) {
+            Tlv.getUIntInstance(TYPE_DISTCODE, distCode).write(out);
+        }
     }
 
     public String toString() {
         return "ClientVersionInfo: " +
                 ", versionString='" + versionString + "'" +
+                ", clientid=" + clientid +
                 ", major=" + major +
                 ", minor=" + minor +
                 ", point=" + point +

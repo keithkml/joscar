@@ -99,10 +99,10 @@ public class LoginConn extends AbstractFlapConn {
             ByteBlock authkey = kr.getKey();
 
 //            ClientVersionInfo version = new ClientVersionInfo("Apple iChat",
-//                    1, 0, 0, 60, 0xc6);
+//                    0x311a, 1, 0, 0, 60, 198);
             ClientVersionInfo version = new ClientVersionInfo(
                     "AOL Instant Messenger, version 5.2.3292/WIN32",
-                    5, 1, 0, 3292, 238);
+                    0x0109, 5, 2, 0, 3292, 238);
 
             request(new AuthRequest(
                     tester.getScreenname(), tester.getPassword(),

@@ -54,12 +54,11 @@ public final class FamilyVersionPreprocessor implements SnacPreprocessor {
      *
      * @param packet the packet to filter
      */
-    public final void process(final MutableSnacPacket packet) {
+    public final void process(MutableSnacPacket packet) {
         if ((packet.getFlag1() & 0x80) != 0) {
-            // yay.
             ByteBlock data = packet.getData();
 
-            final int len = BinaryTools.getUShort(data, 0);
+            int len = BinaryTools.getUShort(data, 0);
             ByteBlock rest = data.subBlock(2 + len);
 
             packet.setData(rest);
