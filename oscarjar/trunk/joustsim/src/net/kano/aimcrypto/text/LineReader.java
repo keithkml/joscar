@@ -49,69 +49,13 @@ import java.awt.Color;
 import java.util.LinkedList;
 import java.util.List;
 
-/*
-iChat font sizes:
-<= 1:  9
-   2: 10
-   3: 12
-   4: 14
-   5: 18
-   6: 24
->= 7: 36
-
-<= -2: 9
-   -1: 10
-   +0: 12
-   +1: 14
-   +2: 18
-   +3: 24
->= +4: 36
-
-WinAIM 5.5
-   0: 4
-   1: 8
-   2: 10
-   3: 12
-   4: 14
-   5: 18
-   6: 24
->= 7: 38
-
-<= -2: 8
-   -1: 10
-   +0: 4
-   +1: 14
-   +2: 18
-   +3: 24
->= +4: 38
-
-gaim:
-0: none
-1: 8
-2: 10
-3: 12
-4: 14
-5: 20
-6: 30
-7: 40
-
-<= -3: none
-   -2: 8
-   -1: 10
-   +0: 12
-   +1: 14
-   +2: 20
-   +3: 30
->= +4: 40
-*/
-
 class LineReader extends HTMLEditorKit.ParserCallback {
     private final StyleSheet sheet;
 
     private List elements = new LinkedList();
     private LinkedList attrs = new LinkedList();
     private Color bgColor = null;
-    private FontSizeTranslator fontSizeTranslator;
+    private FontSizeTranslator fontSizeTranslator = new WinAimFontSizeTranslator();
 
     public LineReader(StyleSheet styles) {
         DefensiveTools.checkNull(styles, "styles");
@@ -186,7 +130,12 @@ class LineReader extends HTMLEditorKit.ParserCallback {
             MutableAttributeSet html = new SimpleAttributeSet(a);
             MutableAttributeSet css = new SimpleAttributeSet();
             sheet.removeAttribute(css, HTML.Tag.IMPLIED);
-            fontSizeTranslator.convertHtmlFontSizeToCSS(sheet, html, css);
+            FontSizeTranslator fontSizeTranslator = getFontSizeTranslator();
+            if (fontSizeTranslator == null) {
+                convertKey(html, HTML.Attribute.SIZE, css, CSS.Attribute.FONT_SIZE);
+            } else {
+                fontSizeTranslator.convertHtmlFontSizeToCSS(sheet, html, css);
+            }
             convertKey(html, HTML.Attribute.FACE, css, CSS.Attribute.FONT_FAMILY);
             convertKey(html, HTML.Attribute.COLOR, css, CSS.Attribute.COLOR);
             convertKey(html, "back", css, CSS.Attribute.BACKGROUND_COLOR);
@@ -198,6 +147,13 @@ class LineReader extends HTMLEditorKit.ParserCallback {
         }
     }
 
+    private FontSizeTranslator getFontSizeTranslator() {
+        return this.fontSizeTranslator;
+    }
+
+    public void setFontSizeTranslator(FontSizeTranslator fontSizeTranslator) {
+        this.fontSizeTranslator = fontSizeTranslator;
+    }
 
     private void pushNothing() {
         push(getCurrentAttr());

@@ -40,6 +40,7 @@ import net.kano.aimcrypto.Screenname;
 import net.kano.aimcrypto.config.LocalPreferencesManager;
 import net.kano.aimcrypto.config.PermanentCertificateTrustManager;
 import net.kano.aimcrypto.config.PermanentSignerTrustManager;
+import net.kano.aimcrypto.config.LoadingException;
 import net.kano.joscar.DefensiveTools;
 
 import javax.swing.Icon;
@@ -119,12 +120,23 @@ public class TrustPrefsPane extends JPanel implements PrefsPane {
     }
 
     public void prefsWindowFocused() {
+        reloadIfNecessary();
+    }
+
+    private void reloadIfNecessary() {
+        try {
+            certTrustMgr.reloadIfNecessary();
+            signerTrustMgr.reloadIfNecessary();
+        } catch (LoadingException e) {
+            e.printStackTrace();
+        }
     }
 
     public void prefsWindowFocusLost() {
     }
 
     public void prefsPaneToBeShown() {
+        reloadIfNecessary();
     }
 
     public void prefsPaneShown() {

@@ -70,41 +70,7 @@ public class ConversationEditorKit extends HTMLEditorKit {
     }
 
     public ViewFactory getViewFactory() {
-        return new MyViewFactory(super.getViewFactory());
+        return new WordSplittingViewFactory(super.getViewFactory());
     }
 
-    private static class MyViewFactory implements ViewFactory {
-        private final ViewFactory parent;
-
-        public MyViewFactory(ViewFactory parent) {
-            this.parent = parent;
-        }
-
-        public View create(Element elem) {
-            AttributeSet attr = elem.getAttributes();
-            Object name = attr.getAttribute(StyleConstants.NameAttribute);
-            if (name == HTML.Tag.P || name == HTML.Tag.IMPLIED) {
-                Boolean val = (Boolean) attr.getAttribute(
-                        ConversationDocument.ATTR_SPLIT_WORDS);
-                if (val != null && val.booleanValue() == true) {
-                    return new WordSplittingParagraphView(elem);
-                }
-            }
-
-            return parent.create(elem);
-        }
-    }
-
-    private static class WordSplittingParagraphView extends ParagraphView {
-        public WordSplittingParagraphView(Element elem) {
-            super(elem);
-        }
-
-        protected SizeRequirements calculateMinorAxisRequirements(int axis,
-                SizeRequirements r) {
-            SizeRequirements sup = super.calculateMinorAxisRequirements(axis, r);
-            sup.minimum = 1;
-            return sup;
-        }
-    }
 }

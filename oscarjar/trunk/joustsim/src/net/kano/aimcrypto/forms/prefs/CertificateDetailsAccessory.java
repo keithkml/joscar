@@ -195,7 +195,7 @@ public class CertificateDetailsAccessory extends JPanel {
         selectedCert = null;
         loadingException = null;
 
-        if (selectedFiles.length > 0) {
+        if (selectedFiles.length == 1) {
             File file = selectedFiles[0];
             try {
                 selectedCert = loadCert(file);
@@ -325,6 +325,7 @@ public class CertificateDetailsAccessory extends JPanel {
     }
 
     private void setNoPreview(String text) {
+
         insert(text, null);
     }
 

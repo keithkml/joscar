@@ -35,11 +35,9 @@
 
 package net.kano.aimcrypto.text.aolrtfbox;
 
-import net.kano.aimcrypto.text.FontSizeTranslator;
-
+import javax.swing.text.AbstractDocument;
 import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.StyleSheet;
-import javax.swing.text.AbstractDocument;
 
 public class AolRtfDocument extends HTMLDocument {
     public AolRtfDocument() {

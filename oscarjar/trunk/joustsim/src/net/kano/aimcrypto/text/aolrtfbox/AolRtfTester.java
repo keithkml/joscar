@@ -113,7 +113,7 @@ public class AolRtfTester {
                 String line = br.readLine();
                 if (line == null) return;
 
-                textpane.setText(line);
+                textpane.setText(line.replaceAll("\\\\n", "\n"));
             }
         } catch (IOException e) {
             e.printStackTrace();

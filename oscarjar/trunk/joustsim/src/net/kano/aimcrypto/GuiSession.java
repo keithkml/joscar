@@ -291,7 +291,7 @@ public class GuiSession {
     private class ConnStateListener implements StateListener {
         public void handleStateChange(StateEvent event) {
             AimConnection conn = event.getAimConnection();
-            if (conn != aimSession.getConnection()) {
+            if (aimSession == null || conn != aimSession.getConnection()) {
                 // we can ignore this event since we're using a new connection
                 // now
                 return;

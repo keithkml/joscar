@@ -37,6 +37,7 @@ package net.kano.aimcrypto.text.aolrtfbox;
 
 import net.kano.aimcrypto.text.FontSizeTranslator;
 import net.kano.aimcrypto.text.WinAimFontSizeTranslator;
+import net.kano.aimcrypto.text.convbox.WordSplittingViewFactory;
 import net.kano.joscar.DefensiveTools;
 
 import javax.swing.text.AttributeSet;
@@ -46,6 +47,7 @@ import javax.swing.text.Element;
 import javax.swing.text.MutableAttributeSet;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
+import javax.swing.text.ViewFactory;
 import javax.swing.text.html.CSS;
 import javax.swing.text.html.HTML;
 import javax.swing.text.html.HTMLEditorKit;
@@ -55,6 +57,7 @@ import javax.swing.text.html.parser.ParserDelegator;
 import java.awt.Color;
 import java.io.IOException;
 import java.io.Reader;
+import java.io.StringReader;
 import java.io.Writer;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -71,6 +74,10 @@ public class AolRtfEditorKit extends HTMLEditorKit {
         this.fontSizeTranslator = fontSizeTranslator;
     }
 
+    public ViewFactory getViewFactory() {
+        return new WordSplittingViewFactory(super.getViewFactory());
+    }
+
     public Document createDefaultDocument() {
         StyleSheet styles = getStyleSheet();
         StyleSheet ss = new StyleSheet();
@@ -78,9 +85,15 @@ public class AolRtfEditorKit extends HTMLEditorKit {
         ss.addStyleSheet(styles);
 
         AolRtfDocument doc = new AolRtfDocument(ss);
-        doc.setParser(getParser());
         doc.setAsynchronousLoadPriority(4);
         doc.setTokenThreshold(100);
+        doc.setParser(getParser());
+        try {
+            doc.remove(0, doc.getLength());
+            read(new StringReader("<html><head></head><body></body></html>"), doc, 0);
+        } catch (BadLocationException ok) {
+        } catch (IOException whatever) {
+        }
         return doc;
     }
 
@@ -94,28 +107,8 @@ public class AolRtfEditorKit extends HTMLEditorKit {
     }
 
     protected HTMLEditorKit.Parser getParser() {
-        return new AolRtfTranslatingParser();
+        return new AolRtfFilterParser(new AolRtfTranslatingParser());
     }
-
-//    public void read(Reader in, Document doc, int pos) throws IOException,
-//            BadLocationException {
-//        AolRtfDocument aolrtfdoc = (AolRtfDocument) doc;
-//        Parser p = new AolRtfTranslatingParser(aolrtfdoc);
-//        if (pos > aolrtfdoc.getLength()) {
-//            throw new BadLocationException("Invalid location", pos);
-//        }
-//
-//        ParserCallback receiver = aolrtfdoc.getReader(pos);
-//        Boolean ignoreCharset = (Boolean) aolrtfdoc.getProperty(
-//                "IgnoreCharsetDirective");
-//
-//        boolean ignoreCharsetBool;
-//        if (ignoreCharset == null) ignoreCharsetBool = false;
-//        else ignoreCharsetBool = ignoreCharset.booleanValue();
-//
-//        p.parse(in, receiver, ignoreCharsetBool);
-//        receiver.flush();
-//    }
 
     public void write(Writer out, Document doc, int pos, int len)
             throws IOException, BadLocationException {
@@ -131,13 +124,17 @@ public class AolRtfEditorKit extends HTMLEditorKit {
                 throws IOException {
             DefensiveTools.checkNull(cb, "cb");
 
-            realParser.parse(r, new MyParserCallback(cb), ignoreCharSet);
+            AolRtfTranslatingCallback acb = new AolRtfTranslatingCallback(cb);
+            realParser.parse(r, acb, ignoreCharSet);
+            try {
+                acb.flush();
+            } catch (BadLocationException ignored) { }
         }
 
-        private class MyParserCallback extends ParserCallback {
+        private class AolRtfTranslatingCallback extends ParserCallback {
             private final ParserCallback realCallback;
 
-            public MyParserCallback(ParserCallback realCallback) {
+            public AolRtfTranslatingCallback(ParserCallback realCallback) {
                 DefensiveTools.checkNull(realCallback, "realCallback");
 
                 this.realCallback = realCallback;
@@ -147,6 +144,7 @@ public class AolRtfEditorKit extends HTMLEditorKit {
                 if (!isHandledComplexTag(t)) return;
 
                 SimpleAttributeSet nattr = new SimpleAttributeSet();
+                copyAttribute(a, nattr, IMPLIED);
                 if (t == HTML.Tag.BODY) {
                     copyAttribute(a, nattr, HTML.Attribute.BGCOLOR);
                     realCallback.handleStartTag(t, nattr, pos);
@@ -235,8 +233,8 @@ public class AolRtfEditorKit extends HTMLEditorKit {
                 }
             }
 
-            public void handleText(char[] data, int pos) {
-                realCallback.handleText(data, pos);
+            public void handleText(char[] stripped, int pos) {
+                realCallback.handleText(stripped, pos);
             }
 
             public void handleEndOfLineString(String eol) {
@@ -250,7 +248,12 @@ public class AolRtfEditorKit extends HTMLEditorKit {
             public void flush() throws BadLocationException {
                 realCallback.flush();
             }
+
+            public void handleComment(char[] data, int pos) {
+                // do nothing
+            }
         }
+
     }
 
     private class AolRtfWriter extends HTMLWriter {
@@ -288,7 +291,8 @@ public class AolRtfEditorKit extends HTMLEditorKit {
         protected void startTag(Element elem) throws IOException,
                 BadLocationException {
             if (getName(elem) == HTML.Tag.BODY) {
-                String bg = (String) elem.getAttributes().getAttribute(HTML.Attribute.BGCOLOR);
+                AttributeSet attr = elem.getAttributes();
+                String bg = (String) attr.getAttribute(HTML.Attribute.BGCOLOR);
                 if (bg != null) {
                     write("<body bgcolor=\"");
                     output(bg);
@@ -316,7 +320,8 @@ public class AolRtfEditorKit extends HTMLEditorKit {
         }
 
         private Object getName(Element elem) {
-            return elem.getAttributes().getAttribute(StyleConstants.NameAttribute);
+            AttributeSet attr = elem.getAttributes();
+            return attr.getAttribute(StyleConstants.NameAttribute);
         }
 
         protected void endTag(Element elem) throws IOException {
@@ -392,12 +397,24 @@ public class AolRtfEditorKit extends HTMLEditorKit {
         protected void output(char[] chars, int start, int length)
                 throws IOException {
             int off = start;
+            boolean lastNbsp = false;
             for (int i = start; i < length; i++) {
-                char aChar = chars[i];
-                if (aChar == '\n') {
+                char c = chars[i];
+                if (c == '\n') {
                     super.output(chars, off, i-off);
                     off = i + 1;
-                    write("<br>");
+                    getWriter().write("<br>");
+
+                } else if (c == ' ' && i > 0 && chars[i-1] == ' ') {
+                    if (lastNbsp) {
+                        lastNbsp = false;
+
+                    } else {
+                        super.output(chars, off, i-off);
+                        off = i + 1;
+                        getWriter().write("&nbsp;");
+                        lastNbsp = true;
+                    }
                 }
             }
             super.output(chars, off, length - (off - start));
@@ -422,4 +439,5 @@ public class AolRtfEditorKit extends HTMLEditorKit {
             buf.append(str);
         }
     }
+
 }

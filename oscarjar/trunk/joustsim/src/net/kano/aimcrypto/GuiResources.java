@@ -48,7 +48,7 @@ public final class GuiResources {
     private static final IconResourceHolder tinyCertificateIcon
             = new IconResourceHolder("icons/certificate-tiny.png");
     private static final IconResourceHolder mediumLockIcon
-            = new IconResourceHolder("icons/lock-medium.png");
+            = new IconResourceHolder("icons/lock-color-tiny.png");
     private static final IconResourceHolder mediumSignerIcon
             = new IconResourceHolder("icons/signer-medium.png");
     private static final IconResourceHolder tinySignerIcon

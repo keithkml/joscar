@@ -46,6 +46,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+import javax.swing.ImageIcon;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.event.ActionEvent;
@@ -95,6 +96,9 @@ public class DummyOnlineWindow extends JFrame {
         });
 
         prefsButton.setAction(new ShowPrefsAction());
+
+        setIconImage(new ImageIcon(getClass().getClassLoader()
+                .getResource("icons/buddy-list-tiny.png")).getImage());
     }
 
     public DummyOnlineWindow(GuiSession session) {

@@ -36,6 +36,7 @@
 package net.kano.aimcrypto.text;
 
 import net.kano.joscar.DefensiveTools;
+import net.kano.aimcrypto.text.aolrtfbox.AolRtfFilterParser;
 
 import javax.swing.text.DefaultStyledDocument.ElementSpec;
 import javax.swing.text.MutableAttributeSet;
@@ -44,6 +45,7 @@ import javax.swing.text.StyleConstants;
 import javax.swing.text.html.HTML;
 import javax.swing.text.html.HTML.Tag;
 import javax.swing.text.html.StyleSheet;
+import javax.swing.text.html.HTMLEditorKit;
 import javax.swing.text.html.parser.ParserDelegator;
 import java.awt.Color;
 import java.io.IOException;
@@ -69,7 +71,8 @@ public class AolRtfString {
         DefensiveTools.checkNull(text, "text");
         
         LineReader reader = new LineReader(context);
-        ParserDelegator parser = new ParserDelegator();
+        ParserDelegator realParser = new ParserDelegator();
+        HTMLEditorKit.Parser parser = new AolRtfFilterParser(realParser);
         try {
             parser.parse(new StringReader(text), reader, false);
         } catch (IOException e) {

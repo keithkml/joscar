@@ -35,10 +35,12 @@
 
 package net.kano.aimcrypto.forms;
 
+import net.kano.aimcrypto.GuiResources;
 import net.kano.aimcrypto.GuiSession;
 import net.kano.aimcrypto.Screenname;
 import net.kano.aimcrypto.config.BuddyCertificateInfo;
 import net.kano.aimcrypto.connection.AimConnection;
+import net.kano.aimcrypto.connection.BuddyInfoManager;
 import net.kano.aimcrypto.connection.oscar.service.icbm.Conversation;
 import net.kano.aimcrypto.connection.oscar.service.icbm.ConversationAdapter;
 import net.kano.aimcrypto.connection.oscar.service.icbm.ConversationException;
@@ -51,7 +53,9 @@ import net.kano.aimcrypto.connection.oscar.service.icbm.SecureAimConversation;
 import net.kano.aimcrypto.connection.oscar.service.icbm.SimpleMessage;
 import net.kano.aimcrypto.connection.oscar.service.info.BuddyTrustAdapter;
 import net.kano.aimcrypto.connection.oscar.service.info.BuddyTrustEvent;
+import net.kano.aimcrypto.connection.oscar.service.info.BuddyTrustManager;
 import net.kano.aimcrypto.text.AolRtfString;
+import net.kano.aimcrypto.text.aolrtfbox.AolRtfDocument;
 import net.kano.aimcrypto.text.aolrtfbox.AolRtfEditorKit;
 import net.kano.aimcrypto.text.convbox.ConversationBox;
 import net.kano.aimcrypto.text.convbox.ConversationDocument;
@@ -60,11 +64,12 @@ import net.kano.aimcrypto.text.convbox.IconID;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.MiscTools;
-import net.kano.joscar.BinaryTools;
 
 import javax.swing.AbstractAction;
+import javax.swing.Action;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListCellRenderer;
+import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -74,41 +79,35 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTextPane;
+import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
-import javax.swing.SwingUtilities;
 import javax.swing.KeyStroke;
-import javax.swing.Action;
-import javax.swing.Icon;
-import javax.swing.TransferHandler;
-import javax.swing.JComponent;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import javax.swing.event.CaretEvent;
+import javax.swing.event.CaretListener;
 import javax.swing.text.AttributeSet;
+import javax.swing.text.Keymap;
 import javax.swing.text.MutableAttributeSet;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
-import javax.swing.text.Keymap;
-import javax.swing.text.DefaultEditorKit;
-import javax.swing.text.StyledEditorKit;
-import javax.swing.text.html.HTMLDocument;
-import javax.swing.text.html.HTMLEditorKit;
+import javax.swing.undo.CannotRedoException;
+import javax.swing.undo.CannotUndoException;
+import javax.swing.undo.UndoManager;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.datatransfer.DataFlavor;
-import java.awt.datatransfer.Transferable;
-import java.awt.datatransfer.UnsupportedFlavorException;
-import java.awt.dnd.DropTarget;
 import java.awt.event.ActionEvent;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.awt.event.KeyEvent;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
-import java.io.IOException;
 
 public class ImBox extends JFrame {
     private JSplitPane splitPane;
@@ -144,6 +143,10 @@ public class ImBox extends JFrame {
     private final ConversationListener conversationListener
             = new ConversationAdapter() {
         public void conversationOpened(Conversation c) {
+            BuddyInfoManager bim = conn.getBuddyInfoManager();
+            BuddyCertificateInfo certs = bim.getBuddyInfo(buddy).getCertificateInfo();
+            if (certs != null) askAboutCertificates(certs);
+
             updateButtons();
         }
 
@@ -196,6 +199,15 @@ public class ImBox extends JFrame {
     private final Action boldAction = new BoldAction();
     private final Action italicAction = new ItalicAction();
     private final Action underlineAction = new UnderlineAction();
+    private final Action undoAction = new UndoAction();
+    private final Action redoAction = new RedoAction();
+
+    private final JToggleButton boldButton;
+    private final JToggleButton italicButton;
+    private final JToggleButton underlineButton;
+
+    private final AolRtfDocument inputDocument;
+    private final UndoManager inputUndoManager = new UndoManager();
 
     {
         getContentPane().add(splitPane);
@@ -232,11 +244,12 @@ public class ImBox extends JFrame {
         convTypeBox.setRenderer(new TypesBoxRenderer());
 
         formatToolbar.setBorderPainted(false);
-        addToolbarAction(boldAction);
-        addToolbarAction(italicAction);
-        addToolbarAction(underlineAction);
+        boldButton = addToolbarAction(boldAction);
+        italicButton = addToolbarAction(italicAction);
+        underlineButton = addToolbarAction(underlineAction);
 
         inputBox.setEditorKit(new AolRtfEditorKit());
+        inputDocument = (AolRtfDocument) inputBox.getDocument();
 
         Keymap inputmap = inputBox.getKeymap();
         inputmap.addActionForKeyStroke(KeyStroke.getKeyStroke(KeyEvent.VK_B,
@@ -245,8 +258,24 @@ public class ImBox extends JFrame {
                 KeyEvent.CTRL_MASK), italicAction);
         inputmap.addActionForKeyStroke(KeyStroke.getKeyStroke(KeyEvent.VK_U,
                 KeyEvent.CTRL_MASK), underlineAction);
+        inputmap.addActionForKeyStroke(KeyStroke.getKeyStroke(KeyEvent.VK_Z,
+                KeyEvent.CTRL_MASK), undoAction);
+        inputmap.addActionForKeyStroke(KeyStroke.getKeyStroke(KeyEvent.VK_Z,
+                KeyEvent.CTRL_MASK | KeyEvent.SHIFT_MASK), redoAction);
         inputmap.addActionForKeyStroke(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER,
                 0), sendAction);
+
+        inputDocument.addUndoableEditListener(inputUndoManager);
+
+        inputBox.addCaretListener(new CaretListener() {
+            public void caretUpdate(CaretEvent e) {
+                SwingUtilities.invokeLater(new Runnable() {
+                    public void run() {
+                        updateToolbarButtons();
+                    }
+                });
+            }
+        });
 
         convTypeBox.addItemListener(new ItemListener() {
             public void itemStateChanged(ItemEvent e) {
@@ -279,7 +308,8 @@ public class ImBox extends JFrame {
         this.guiSession = guiSession;
         this.conn = conn;
         this.buddy = buddy;
-        conn.getBuddyTrustManager().addBuddyTrustListener(new BuddyTrustAdapter() {
+        BuddyTrustManager trustManager = conn.getBuddyTrustManager();
+        trustManager.addBuddyTrustListener(new BuddyTrustAdapter() {
             public void gotUntrustedCertificateChange(BuddyTrustEvent event) {
                 if (!event.isFor(ImBox.this.buddy)) return;
                 askAboutCertificates(event.getCertInfo());
@@ -311,11 +341,13 @@ public class ImBox extends JFrame {
         });
     }
 
-    private void addToolbarAction(Action action) {
-        JButton boldButton = formatToolbar.add(action);
-        boldButton.setBorder(null);
-        boldButton.setBorderPainted(false);
-        boldButton.setMargin(null);
+    private JToggleButton addToolbarAction(Action action) {
+        JToggleButton button = new JToggleButton(action);
+        button.setText("");
+        button.setBorder(null);
+        button.setMargin(null);
+        formatToolbar.add(button);
+        return button;
     }
 
     private synchronized void closeAllConversations() {
@@ -362,6 +394,17 @@ public class ImBox extends JFrame {
         //TODO: disable things in the box
     }
 
+    private void updateToolbarButtons() {
+        MutableAttributeSet attr = inputBox.getInputAttributes();
+        boldButton.setSelected(StyleConstants.isBold(attr));
+        italicButton.setSelected(StyleConstants.isItalic(attr));
+        underlineButton.setSelected(StyleConstants.isUnderline(attr));
+    }
+
+    private void beepInputBox() {
+        UIManager.getLookAndFeel().provideErrorFeedback(inputBox);
+    }
+
     private static class ConversationInfo {
         private final Conversation conv;
 
@@ -380,18 +423,47 @@ public class ImBox extends JFrame {
             ConversationInfo info = (ConversationInfo) value;
             Conversation conv = info.getConversation();
             String string = "(Unknown)";
+            Icon icon = null;
             if (conv instanceof ImConversation) {
                 string = "Insecure";
             } else if (conv instanceof SecureAimConversation) {
+                icon = GuiResources.getMediumLockIcon();
                 string = "Secure";
             }
             super.getListCellRendererComponent(list,
                     string, index, isSelected, cellHasFocus);
             setForeground(conv.isOpen() ? null : Color.LIGHT_GRAY);
+            setIcon(icon);
             return this;
         }
     }
 
+    public class UndoAction extends AbstractAction {
+        public UndoAction() {
+            super("Undo");
+        }
+
+        public void actionPerformed(ActionEvent e) {
+            try {
+                inputUndoManager.undo();
+            } catch (CannotUndoException er) {
+                beepInputBox();
+            }
+        }
+    }
+    public class RedoAction extends AbstractAction {
+        public RedoAction() {
+            super("Redo");
+        }
+
+        public void actionPerformed(ActionEvent e) {
+            try {
+                inputUndoManager.redo();
+            } catch (CannotRedoException er) {
+                beepInputBox();
+            }
+        }
+    }
     public abstract class ToggleAction extends AbstractAction {
         protected ToggleAction() {
         }
@@ -468,6 +540,7 @@ public class ImBox extends JFrame {
             try {
                 conversation.sendMessage(new SimpleMessage(inputBox.getText()));
                 inputBox.setText("");
+//                inputUndoManager.discardAllEdits();
                 inputBox.requestFocusInWindow();
 
             } catch (ConversationException ex) {
