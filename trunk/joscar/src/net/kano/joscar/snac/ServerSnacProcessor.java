@@ -35,8 +35,8 @@
 
 package net.kano.joscar.snac;
 
-import net.kano.joscar.flap.FlapProcessor;
 import net.kano.joscar.SeqNum;
+import net.kano.joscar.flap.FlapProcessor;
 import net.kano.joscar.flapcmd.SnacCommand;
 
 /**

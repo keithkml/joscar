@@ -437,10 +437,9 @@ public class RateMonitor {
             processor.getFlapProcessor().handleException(type, t, info);
 
         } else {
-            System.err.println("Rate monitor couldn't process error because "
+            logger.warning("Rate monitor couldn't process error because "
                     + "not attached to SNAC processor: " + t.getMessage()
                     + " (reason obj: " + info + ")");
-            t.printStackTrace();
         }
     }
 

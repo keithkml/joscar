@@ -59,7 +59,7 @@ public abstract class SnacFamilyListCmd extends ConnCommand {
      * @param command the SNAC command subtype of this command
      * @param packet the incoming SNAC-family-list-based packet
      */
-    SnacFamilyListCmd(int command, SnacPacket packet) {
+    protected SnacFamilyListCmd(int command, SnacPacket packet) {
         super(command);
 
         DefensiveTools.checkNull(packet, "packet");
@@ -79,7 +79,7 @@ public abstract class SnacFamilyListCmd extends ConnCommand {
      * @param command the SNAC command subtype of this command
      * @param snacFamilies the SNAC families contained in this command
      */
-    SnacFamilyListCmd(int command, int[] snacFamilies) {
+    protected SnacFamilyListCmd(int command, int[] snacFamilies) {
         super(command);
 
         this.snacFamilies = (int[]) (snacFamilies == null

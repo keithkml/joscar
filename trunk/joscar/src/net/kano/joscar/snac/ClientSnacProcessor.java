@@ -37,8 +37,8 @@ package net.kano.joscar.snac;
 
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.SeqNum;
 import net.kano.joscar.MiscTools;
+import net.kano.joscar.SeqNum;
 import net.kano.joscar.flap.FlapProcessor;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.flapcmd.SnacPacket;

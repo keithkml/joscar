@@ -37,8 +37,8 @@ package net.kano.joscar.snac;
 
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flap.FlapPacketEvent;
-import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.flapcmd.SnacCommand;
+import net.kano.joscar.flapcmd.SnacPacket;
 
 /**
  * An event fired when a SNAC packet is received on a SNAC processor.

@@ -338,7 +338,7 @@ public class CopyOnWriteArrayList implements List, Cloneable,
      * @exception ArrayStoreException the runtime type of a is not a supertype
      * of the runtime type of every element in this list.
      */
-    public Object[] toArray(Object a[]) {
+    public Object[] toArray(Object[] a) {
         Object[] elementData = array();
 
         if (a.length < elementData.length)

@@ -35,10 +35,10 @@
 
 package net.kano.joscar.snaccmd.rooms;
 
+import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snac.CmdType;
 import net.kano.joscar.snac.SnacCmdFactory;
-import net.kano.joscar.flapcmd.SnacCommand;
 
 /**
  * A SNAC command factory for the client-bound commands provided in this

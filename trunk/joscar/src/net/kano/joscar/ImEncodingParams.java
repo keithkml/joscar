@@ -35,7 +35,7 @@
 
 package net.kano.joscar;
 
-import net.kano.joscar.DefensiveTools;
+
 
 /**
  * Represents a set of {@linkplain net.kano.joscar.ImEncodedString IM encoding} parameters that

@@ -128,10 +128,10 @@ public class ImmediateSnacQueueManager implements SnacQueueManager {
      */
     private static class SnacQueue {
         /** Whether or not this queue is paused. */
-        public boolean paused = false;
+        private boolean paused = false;
         /**
          * A list of enqueued requests. Only nonempty if this queue is paused.
          */
-        public final LinkedList queue = new LinkedList();
+        private final LinkedList queue = new LinkedList();
     }
 }

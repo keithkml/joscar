@@ -35,7 +35,6 @@
 
 package net.kano.joscar.rvcmd;
 
-import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.CapabilityBlock;

@@ -36,15 +36,18 @@
 package net.kano.joscartests;
 
 import net.kano.joscar.ByteBlock;
-import net.kano.joscar.net.ClientConnEvent;
 import net.kano.joscar.flap.FlapPacketEvent;
 import net.kano.joscar.flapcmd.SnacCommand;
+import net.kano.joscar.net.ClientConnEvent;
 import net.kano.joscar.snac.SnacPacketEvent;
 import net.kano.joscar.snac.SnacResponseEvent;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.FullUserInfo;
 import net.kano.joscar.snaccmd.InfoData;
-import net.kano.joscar.snaccmd.conn.*;
+import net.kano.joscar.snaccmd.conn.MyInfoRequest;
+import net.kano.joscar.snaccmd.conn.ServerReadyCmd;
+import net.kano.joscar.snaccmd.conn.ServiceRedirect;
+import net.kano.joscar.snaccmd.conn.YourInfoCmd;
 import net.kano.joscar.snaccmd.icbm.ParamInfo;
 import net.kano.joscar.snaccmd.icbm.ParamInfoCmd;
 import net.kano.joscar.snaccmd.icbm.ParamInfoRequest;

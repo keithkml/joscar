@@ -62,7 +62,7 @@ public abstract class FamilyVersionsCmd extends ConnCommand {
      * @param command the SNAC command subtype of this command
      * @param packet a family-version-based-command SNAC packet
      */
-    FamilyVersionsCmd(int command, SnacPacket packet) {
+    protected FamilyVersionsCmd(int command, SnacPacket packet) {
         super(command);
 
         DefensiveTools.checkNull(packet, "packet");
@@ -85,7 +85,7 @@ public abstract class FamilyVersionsCmd extends ConnCommand {
      * @param command the SNAC command subtype of this command
      * @param families a list of SNAC family version information blocks
      */
-    FamilyVersionsCmd(int command, SnacFamilyInfo[] families) {
+    protected FamilyVersionsCmd(int command, SnacFamilyInfo[] families) {
         super(command);
 
         this.families = families == null

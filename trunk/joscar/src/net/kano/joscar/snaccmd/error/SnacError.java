@@ -38,8 +38,8 @@ package net.kano.joscar.snaccmd.error;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.flapcmd.SnacCommand;
+import net.kano.joscar.flapcmd.SnacPacket;
 
 import java.io.IOException;
 import java.io.OutputStream;

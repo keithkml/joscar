@@ -51,13 +51,13 @@ public interface VetoableFlapPacketListener {
      * value instead of <code>STOP_PROCESSING_ALL</code> to allow for further
      * expansion of <code>FlapProcessor</code>'s processing code.
      */
-    static final Object STOP_PROCESSING_LISTENERS = new Object();
+    Object STOP_PROCESSING_LISTENERS = new Object();
 
     /**
      * Tells the <code>FlapProcessor</code> to continue processing as usual;
      * that is, this value signifies that this packet has not been vetoed.
      */
-    static final Object CONTINUE_PROCESSING = new Object();
+    Object CONTINUE_PROCESSING = new Object();
 
     /**
      * Tells the <code>FlapProcessor</code> to halt all further processing of
@@ -66,7 +66,7 @@ public interface VetoableFlapPacketListener {
      * <code>STOP_PROCESSING_LISTENERS</code> as no fruther processing is done
      * on FLAP packets by the <code>FlapProcessor</code>.
      */
-    static final Object STOP_PROCESSING_ALL = new Object();
+    Object STOP_PROCESSING_ALL = new Object();
 
     /**
      * Processes a single packet received by a <code>FlapProcessor</code>.

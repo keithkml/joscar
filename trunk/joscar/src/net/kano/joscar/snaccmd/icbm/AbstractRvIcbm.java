@@ -83,7 +83,7 @@ public abstract class AbstractRvIcbm extends AbstractIcbm {
      * @param command the SNAC command subtype of this command
      * @param packet an incoming rendezvous ICBM packet
      */
-    AbstractRvIcbm(int command, SnacPacket packet) {
+    protected AbstractRvIcbm(int command, SnacPacket packet) {
         super(IcbmCommand.FAMILY_ICBM, command, packet);
     }
 
@@ -132,7 +132,7 @@ public abstract class AbstractRvIcbm extends AbstractIcbm {
      * @param cap the capability block associated with this command
      * @param rvDataWriter an object to write rendezvous-command-specific data
      */
-    AbstractRvIcbm(int command, long icbmMessageId, int status,
+    protected AbstractRvIcbm(int command, long icbmMessageId, int status,
             long rvSessionId, CapabilityBlock cap, LiveWritable rvDataWriter) {
         super(IcbmCommand.FAMILY_ICBM, command, icbmMessageId, CHANNEL_RV);
 
@@ -157,7 +157,7 @@ public abstract class AbstractRvIcbm extends AbstractIcbm {
      * @param rvCommand an RV command whose properties should be used in this
      *        RV ICBM
      */
-    AbstractRvIcbm(int command, long icbmMessageId, long rvSessionId,
+    protected AbstractRvIcbm(int command, long icbmMessageId, long rvSessionId,
             final RvCommand rvCommand) {
         this(command, icbmMessageId, rvCommand.getRvStatus(),
                 rvSessionId, rvCommand.getCapabilityBlock(),

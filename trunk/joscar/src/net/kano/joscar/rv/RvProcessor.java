@@ -35,23 +35,23 @@
 
 package net.kano.joscar.rv;
 
+import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.OscarTools;
+import net.kano.joscar.SeqNum;
 import net.kano.joscar.flap.FlapProcessor;
+import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.snac.*;
 import net.kano.joscar.snaccmd.AbstractIcbm;
 import net.kano.joscar.snaccmd.CapabilityBlock;
-import net.kano.joscar.OscarTools;
-import net.kano.joscar.CopyOnWriteArrayList;
-import net.kano.joscar.SeqNum;
-import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.snaccmd.icbm.RvCommand;
 import net.kano.joscar.snaccmd.icbm.RvResponse;
 import net.kano.joscar.snaccmd.icbm.SendRvIcbm;
 
 import java.util.*;
-import java.util.logging.Logger;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Provides an easy interface for creating and manipulating "rendezvous
@@ -501,9 +501,9 @@ public class RvProcessor {
         }
 
         // okay. we were forced into this. I swear.
-        System.err.println("RV processor got exception; no exception handlers" +
+        logger.warning("RV processor got exception; no exception handlers" +
                 "present (type=" + type + ", info=" + info + ")");
-        t.printStackTrace(System.err);
+        logger.warning(Arrays.asList(t.getStackTrace()).toString());
     }
 
     /**

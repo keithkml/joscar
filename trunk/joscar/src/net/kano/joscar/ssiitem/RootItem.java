@@ -202,6 +202,6 @@ public class RootItem extends AbstractItemObj {
             buffer.append(", ");
         }
 
-        return "RootItem with groupids: " + buffer.toString();
+        return "RootItem with groupids: " + buffer;
     }
 }

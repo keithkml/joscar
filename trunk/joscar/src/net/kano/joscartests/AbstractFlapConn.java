@@ -36,12 +36,12 @@
 package net.kano.joscartests;
 
 import net.kano.joscar.flap.*;
-import net.kano.joscar.snac.*;
-import net.kano.joscar.snaccmd.DefaultClientFactoryList;
+import net.kano.joscar.flapcmd.DefaultFlapCmdFactory;
+import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.net.ClientConnEvent;
 import net.kano.joscar.net.ClientConnListener;
-import net.kano.joscar.flapcmd.SnacCommand;
-import net.kano.joscar.flapcmd.DefaultFlapCmdFactory;
+import net.kano.joscar.snac.*;
+import net.kano.joscar.snaccmd.DefaultClientFactoryList;
 
 import java.net.InetAddress;
 

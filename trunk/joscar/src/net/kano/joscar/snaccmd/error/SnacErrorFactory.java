@@ -35,10 +35,10 @@
 
 package net.kano.joscar.snaccmd.error;
 
+import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snac.CmdType;
 import net.kano.joscar.snac.SnacCmdFactory;
-import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.snaccmd.acct.AcctCommand;
 import net.kano.joscar.snaccmd.auth.AuthCommand;
 import net.kano.joscar.snaccmd.buddy.BuddyCommand;
@@ -75,7 +75,7 @@ public abstract class SnacErrorFactory implements SnacCmdFactory {
     };
 
     /** Creates a new SNAC error factory. */
-    SnacErrorFactory() { }
+    protected SnacErrorFactory() { }
 
     public CmdType[] getSupportedTypes() {
         return (CmdType[]) SUPPORTED_TYPES.clone();

@@ -109,7 +109,7 @@ public abstract class AcctResponse extends AcctCommand {
      * @param command the SNAC command subtype of this command
      * @param packet an account response packet
      */
-    AcctResponse(int command, SnacPacket packet) {
+    protected AcctResponse(int command, SnacPacket packet) {
         super(command);
 
         DefensiveTools.checkNull(packet, "packet");
@@ -138,7 +138,7 @@ public abstract class AcctResponse extends AcctCommand {
      * @param command the SNAC command subtype of this command
      * @param result the result code, like {@link #RESULT_SUCCESS}
      */
-    AcctResponse(int command, int result) {
+    protected AcctResponse(int command, int result) {
         this(command, TYPE_DEFAULT, result, null, null, -1, null);
     }
 
@@ -153,7 +153,7 @@ public abstract class AcctResponse extends AcctCommand {
      * @param errorURL a URL describing this error, or <code>null</code> for
      *        none
      */
-    AcctResponse(int command, int errorCode, String errorURL) {
+    protected AcctResponse(int command, int errorCode, String errorURL) {
         this(command, TYPE_DEFAULT, RESULT_ERROR, null, null, errorCode,
                 errorURL);
     }
@@ -170,7 +170,7 @@ public abstract class AcctResponse extends AcctCommand {
      *        or <code>-1</code> for none
      * @param errorUrl an error URL, or <code>null</code> for none
      */
-    AcctResponse(int command, int type, int result, String sn,
+    protected AcctResponse(int command, int type, int result, String sn,
             String email, int errorCode, String errorUrl) {
         super(command);
 

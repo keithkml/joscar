@@ -134,9 +134,9 @@ public final class BinaryTools {
             throws ArrayIndexOutOfBoundsException {
         long num = 0;
 
-        for (final int end = pos + 8; pos < end; pos++) {
-            final int offset = (end - pos - 1) * 8;
-            num |= (((long) data.get(pos)) & 0xffL) << offset;
+        for (int i = pos, end = i + 8; i < end; i++) {
+            final int offset = (end - i - 1) * 8;
+            num |= (((long) data.get(i)) & 0xffL) << offset;
         }
 
         return num;
@@ -498,9 +498,9 @@ public final class BinaryTools {
              firstNull++) {
             if (block.get(firstNull) == 0) break;
         }
-        block = block.subBlock(0, firstNull);
+        ByteBlock strBlock = block.subBlock(0, firstNull);
 
-        return new StringBlock(getAsciiString(block), block.getLength());
+        return new StringBlock(getAsciiString(strBlock), strBlock.getLength());
     }
 
     /**

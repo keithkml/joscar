@@ -35,13 +35,8 @@
 
 package net.kano.joscar.snaccmd.icbm;
 
-import net.kano.joscar.BinaryTools;
-import net.kano.joscar.ByteBlock;
-import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.MiscTools;
+import net.kano.joscar.*;
 import net.kano.joscar.flapcmd.SnacPacket;
-import net.kano.joscar.OscarTools;
-import net.kano.joscar.StringBlock;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -86,7 +81,7 @@ public abstract class TypingCmd extends IcbmCommand {
      * @param command the SNAC command subtype of this command
      * @param packet an incoming typing-notification command
      */
-    TypingCmd(int command, SnacPacket packet) {
+    protected TypingCmd(int command, SnacPacket packet) {
         super(command);
 
         DefensiveTools.checkNull(packet, "packet");
@@ -118,7 +113,7 @@ public abstract class TypingCmd extends IcbmCommand {
      *        or comes, respectively
      * @param typingState the typing state, like {@link #STATE_NO_TEXT}
      */
-    TypingCmd(int command, String sn, int typingState) {
+    protected TypingCmd(int command, String sn, int typingState) {
         this(command, NULLS_DEFAULT, CODE_DEFAULT, sn, typingState);
     }
 
@@ -133,7 +128,7 @@ public abstract class TypingCmd extends IcbmCommand {
      *        depending on context
      * @param typingState the typing state, like {@link #STATE_PAUSED}
      */
-    TypingCmd(int command, long nulls, int code, String sn,
+    protected TypingCmd(int command, long nulls, int code, String sn,
             int typingState) {
         super(command);
 
