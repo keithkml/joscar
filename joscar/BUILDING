@@ -1,4 +1,4 @@
-BUILDING - joscar 0.9.2
+BUILDING - joscar 0.9.3
 AOL Instant Messenger protocol library for Java
 (C) 2002-2003 The Joust Project
 
@@ -17,6 +17,8 @@ The following targets are defined in build.xml:
    - tests:  Builds and runs JUnit tests in tests/.
 
    - demo:  Builds JoscarTester binaries and places them in demo/.
+
+   - run-demo:  Builds the JoscarTester demo and runs it.
 
    - javadoc:  Generates HTML documentation from the joscar source.
 

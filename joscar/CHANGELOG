@@ -1,6 +1,40 @@
-CHANGELOG - joscar 0.9.2
+CHANGELOG - joscar 0.9.3
 AOL Instant Messenger protocol library for Java
 (C) 2002-2003 The Joust Project
+
+--------------------------------------------------------------------------------
+
+version 0.9.3, 29 Sep 2003
+
+New Features and Enhancements:
+
+- Implemented AOL's new Encrypted IM functionality, including the necessary
+  data structures and commands to support the encrypted forms of IM, file
+  transfer, direct IM, Get File, and chat rooms. (See JoscarTester demo for
+  implementation.)
+- Implemented Trillian Secure IM (see JoscarTester demo).
+- Improved support for "extra info" (new buddy icon system, iChat availability,
+  AIM Expressions).
+- Added functionality to resume file transfers (namely, the FileTransferHeader
+  types involved).
+- Created new GetInfoCmd, a new, faster way to retrieve a user's info and away
+  message. (The old GetInfoCmd implementation was moved to OldGetInfoCmd.)
+- Added GetRoomInfoCmd as a more stable method of joining chat rooms to which 
+  you were invited. (Thanks to Stephen Flynn)
+- Added support for new "short capability blocks."
+- Implemented new AIM 5.2 authorization password hash algorithm.
+
+Bugfixes and Other Updates:
+
+- Clarified JoinRoomCmd documentation to indicate more clearly when it should
+  and should not be used.
+- Fixed javadoc for FullUserInfo.getWarningLevel() to say that it returns the
+  warning percentage times 10.
+- Fixed a few bugs found by FindBugs and some minor bugs found by
+  InspectionGadgets.
+- Removed all documentation references to SnacProcessor.
+- Added ant task "run-demo" to run the JoscarTester demo.
+- Updated SNAC family versions and IM "features" block for AIM 5.2.
 
 --------------------------------------------------------------------------------
 

@@ -38,7 +38,6 @@ package net.kano.joscar.snaccmd.auth;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
-import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
 import net.kano.joscar.tlv.TlvTools;
@@ -58,10 +57,24 @@ import java.util.Locale;
  * string formed by concatenating the {@linkplain KeyResponse#getKey
  * authorization key}, the user's password, and the string "AOL Instant
  * Messenger (SM)". This way the user's password is never sent over an OSCAR
- * connection. I wonder why they didn't just use SSL or SSH, though.
+ * connection.
+ * <br>
+ * <br>
+ * Newer clients use a slightly different algorithm and send an extra empty
+ * <code>0x4c</code> TLV to indicate that this algorithm was used. The algorithm
+ * is almost identical to the one mentioned above except that instead of using
+ * the user's password, the password's MD5 hash is used. An MD5 hash of the
+ * string formed by concatenating the authorization key, an MD5 hash of the
+ * user's password, and the string "AOL Instant Messenger (SM)" is sent. The
+ * reason for adding this extra step is unknown, as it does not appear to
+ * increase security.
+ * <br>
+ * <br>
+ * As of version 0.9.3, joscar always uses the second algorithm.
  *
  * @snac.src client
  * @snac.cmd 0x17 0x02
+ *
  * @see AuthResponse
  */
 public class AuthRequest extends AuthCommand {
@@ -73,26 +86,69 @@ public class AuthRequest extends AuthCommand {
     private static final int TYPE_LANG = 0x000f;
     /** A TLV type containing the user's password, encrypted. */
     private static final int TYPE_ENCPASS = 0x0025;
+    /**
+     * A TLV type indicating that the user's password was sent as its MD5 hash.
+     */
+    private static final int TYPE_HASHEDPASS = 0x4c;
+
+    /** The string "AOL Instant Messenger (SM)" encoded as US-ASCII. */
+    private static final byte[] AIMSM_BYTES;
+
+    static { // initialization
+        byte[] bytes = null;
+        try {
+            bytes = "AOL Instant Messenger (SM)".getBytes("US-ASCII");
+        } catch (UnsupportedEncodingException impossible) { }
+        AIMSM_BYTES = bytes;
+    }
 
     /**
      * Encrypts the given password with the given key into a format suitable
-     * for sending in an auth request packet.
+     * for sending in an auth request packet. Note that the password string must
+     * contain only US-ASCII characters.
      *
      * @param pass the user's password
      * @param key a "key" provided by the server
+     * @param hashedPass whether the password should be sent as its MD5 hash
+     *        like newer clients do using the <code>0x4c</code> TLV
      * @return the user's password, encrypted
      */
-    private static byte[] encryptPassword(String pass, ByteBlock key) {
+    private static byte[] encryptPassword(String pass, ByteBlock key,
+            boolean hashedPass) {
+        byte[] passBytes;
+        try {
+            passBytes = pass.getBytes("US-ASCII");
+        } catch (UnsupportedEncodingException impossible) { return null; }
+
+        if (hashedPass) {
+            MessageDigest digest;
+            try {
+                digest = MessageDigest.getInstance("MD5");
+            } catch (NoSuchAlgorithmException impossible) { return null; }
+            passBytes = digest.digest(passBytes);
+        }
+
+        return getPassHash(key, ByteBlock.wrap(passBytes));
+    }
+
+    /**
+     * Returns the MD5 sum of the given key, the given block of password data,
+     * and the string "AOL Instant Messenger (SM)".
+     *
+     * @param key a block of data
+     * @param passBytes another block of data
+     * @return the MD5 sum of the given key, password data, and {@link
+     *         #AIMSM_BYTES}
+     */
+    private static byte[] getPassHash(ByteBlock key, ByteBlock passBytes) {
         MessageDigest md5;
         try {
             md5 = MessageDigest.getInstance("MD5");
         } catch (NoSuchAlgorithmException impossible) { return null; }
 
-        try {
-            md5.update(key.toByteArray());
-            md5.update(pass.getBytes("US-ASCII"));
-            md5.update("AOL Instant Messenger (SM)".getBytes("US-ASCII"));
-        } catch (UnsupportedEncodingException impossible) { return null; }
+        md5.update(key.toByteArray());
+        md5.update(passBytes.toByteArray());
+        md5.update(AIMSM_BYTES);
 
         return md5.digest();
     }
@@ -108,6 +164,9 @@ public class AuthRequest extends AuthCommand {
 
     /** The user's password, encrypted. */
     private final ByteBlock encryptedPass;
+
+    /** Whether or not the password was sent as its MD5 hash. */
+    private final boolean hashedPass;
 
     /**
      * Generates an auth request command from the given incoming SNAC packet.
@@ -134,6 +193,8 @@ public class AuthRequest extends AuthCommand {
         } else {
             locale = null;
         }
+
+        hashedPass = chain.hasTlv(TYPE_HASHEDPASS);
     }
 
     /**
@@ -175,7 +236,8 @@ public class AuthRequest extends AuthCommand {
         this.sn = sn;
         this.version = version;
         this.locale = locale;
-        this.encryptedPass = ByteBlock.wrap(encryptPassword(pass, key));
+        this.hashedPass = true;
+        this.encryptedPass = ByteBlock.wrap(encryptPassword(pass, key, true));
     }
 
     /**
@@ -206,6 +268,13 @@ public class AuthRequest extends AuthCommand {
      */
     public final ByteBlock getEncryptedPass() { return encryptedPass; }
 
+    /**
+     * Returns whether the password was encoded as its MD5 hash.
+     *
+     * @return whether the password was encoded as its MD5 hash
+     */
+    public final boolean isPassHashed() { return hashedPass; }
+
     public void writeData(OutputStream out) throws IOException {
         if (sn != null) {
             Tlv.getStringInstance(TYPE_SN, sn).write(out);
@@ -216,6 +285,7 @@ public class AuthRequest extends AuthCommand {
 
         // right here WinAIM sends an empty 0x004c TLV, but it causes our MD5
         // password hash to stop working :(
+        if (hashedPass) new Tlv(TYPE_HASHEDPASS).write(out);
 
         // when the value of the TLV sent on this line is 0x0109, we are able to
         // set a buddy icon using SSI (SSI item type 0x14). when the value is

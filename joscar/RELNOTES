@@ -1,6 +1,45 @@
-RELNOTES - joscar 0.9.2
+RELNOTES - joscar 0.9.3
 AOL Instant Messenger protocol library for Java
 (C) 2002-2003 The Joust Project
+
+--------------------------------------------------------------------------------
+
+version 0.9.3, 29 Sep 2003
+
+- The new password hash system in AuthRequest has not been thoroughly tested and
+  could conceivably not work in all cases. This is unlikely, however.
+- Several API changes were made for this release, namely involving instant
+  messages and retrieving a user's info/away message. The changes are subtle
+  (but important) and it should be easy to translate old code to fit the new
+  API.
+- Utility classes for "extra info"-related features such as AIM Expressions and
+  iChat availability messages are not part of this release. Somewhat ugly byte
+  manipulation code may be in order to use these features.
+
+Old release notes that still apply:
+
+- Checking AOL Mail is not implemented as using such functionality over the
+  OSCAR protocol is ludicrous. They may be implemented in the future, if
+  someone really wants them there.
+- Functionality mimicking the official AIM clients' "rate bar" is not yet
+  implemented because the "current rate," as defined by the protocol, does not
+  change with time like the "rate bar" does. The algorithm is probably one of
+  the following two means of deriving a "live" rate average:
+    - Determining what the rate would be if the last message sent were instead
+      sent at the current time, or
+    - Determining what the rate would be if a new message were sent at the
+      current time
+  The latter is implemented as RateClassMonitor.getPotentialRate; the former is
+  not yet implemented.
+- A rate class's limited status will only be updated when certain events occur,
+  like sending a command or calling isLimited. Thus, no-longer-rate-limited
+  status callbacks will not occur immediately when the limited status is
+  removed. If those callbacks matter to you, I suggest running a timer to call
+  isLimited frequently (or after getOptimalWaitTime only when limited).
+- All mutable classes are completely thread-safe. All immutable classes are
+  inherently so. These facts will be more extensively documented later.
+- JoscarTester is an awful demo. A tutorial and better demo will be released
+  sometime in the near future.
 
 --------------------------------------------------------------------------------
 

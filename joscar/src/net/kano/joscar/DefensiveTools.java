@@ -35,9 +35,6 @@
 
 package net.kano.joscar;
 
-
-
-
 /**
  * A set of utilities for ensuring the validity (and non-<code>null</code>ness)
  * of arguments passed into methods or constructors.
