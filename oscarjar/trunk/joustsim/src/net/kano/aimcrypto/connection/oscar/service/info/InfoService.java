@@ -188,10 +188,8 @@ public class InfoService extends Service {
     private void handleUserInfoCmd(UserInfoCmd uic) {
         FullUserInfo userInfo = uic.getUserInfo();
         if (userInfo == null) return;
-
         String snText = userInfo.getScreenname();
         if (snText == null) return;
-
         InfoData infodata = uic.getInfoData();
         if (infodata == null) return;
 
@@ -226,6 +224,9 @@ public class InfoService extends Service {
             }
             if (signingData == null || encryptionData == null) {
                 //TODO: report wrong signing and/or encryption certs
+                System.err.println("signingData == null || encryptionData == null");
+                System.err.println("signingData=" + signingData);
+                System.err.println("encryptionData=" + encryptionData);
                 return;
             }
 
@@ -236,6 +237,7 @@ public class InfoService extends Service {
                 encryption = decodeCertificate(encryptionData);
             } catch (Exception e) {
                 //TODO: report any errors thrown while decoding certificates
+                e.printStackTrace();
                 return;
             }
             BuddySecurityInfo securityInfo = new BuddySecurityInfo(sn,
@@ -244,6 +246,7 @@ public class InfoService extends Service {
 
             for (Iterator it = listeners.iterator(); it.hasNext();) {
                 InfoListener listener = (InfoListener) it.next();
+                System.out.println("firing listener " + listener);
                 listener.gotSecurityInfo(this, sn, securityInfo);
             }
         }

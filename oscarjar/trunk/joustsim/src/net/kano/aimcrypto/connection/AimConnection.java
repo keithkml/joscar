@@ -149,6 +149,14 @@ public class AimConnection {
     public void removeStateListener(StateListener l) {
         stateListeners.remove(l);
     }
+    
+    public void addNewServiceListener(NewServiceListener l) {
+        serviceListeners.addIfAbsent(l);
+    }
+
+    public void removeNewServiceListener(NewServiceListener l) {
+        serviceListeners.remove(l);
+    }
 
     public synchronized boolean getTriedConnecting() {
         return triedConnecting;

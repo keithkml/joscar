@@ -56,5 +56,5 @@ public class DecryptedAimMessage extends EncryptedAimMessage {
         this.message = message;
     }
 
-    public String getMessage() { return message; }
+    public String getMessageBody() { return message; }
 }

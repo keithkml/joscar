@@ -167,6 +167,7 @@ public class IcbmService extends Service {
                     getScreenname(), icbm, senderHash);
             if (minfo == null) return;
 
+            System.out.println("passing encrypted IM info to " + conv);
             conv.handleIncomingMessage(minfo);
 
         } else {
@@ -176,6 +177,7 @@ public class IcbmService extends Service {
 
             ImMessageInfo msg = ImMessageInfo.getInstance(getScreenname(),
                     icbm);
+            System.out.println("passing normal IM to " + conv);
             conv.handleIncomingMessage(msg);
         }
     }

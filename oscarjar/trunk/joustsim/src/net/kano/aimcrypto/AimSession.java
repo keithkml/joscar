@@ -35,11 +35,9 @@
 
 package net.kano.aimcrypto;
 
-import net.kano.joscar.DefensiveTools;
 import net.kano.aimcrypto.connection.AimConnection;
 import net.kano.aimcrypto.connection.AimConnectionProperties;
-import net.kano.aimcrypto.AppSession;
-import net.kano.aimcrypto.Screenname;
+import net.kano.joscar.DefensiveTools;
 
 public class AimSession {
     private final AppSession appSession;

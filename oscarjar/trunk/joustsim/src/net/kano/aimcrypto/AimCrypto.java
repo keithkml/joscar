@@ -39,7 +39,10 @@ import net.kano.aimcrypto.forms.SignonWindow;
 
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.plaf.metal.MetalLookAndFeel;
 import java.io.File;
+import java.io.StringWriter;
+import java.io.PrintWriter;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Logger;
 import java.util.logging.Level;
@@ -48,6 +51,11 @@ import java.util.logging.LogRecord;
 import java.security.Security;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import com.jgoodies.plaf.plastic.Plastic3DLookAndFeel;
+import com.jgoodies.plaf.plastic.PlasticLookAndFeel;
+import com.jgoodies.plaf.plastic.theme.DesertBlue;
+import com.jgoodies.plaf.plastic.theme.SkyBluer;
+import com.jgoodies.clearlook.ClearLookManager;
 
 public final class AimCrypto {
     private AimCrypto() { }
@@ -60,9 +68,16 @@ public final class AimCrypto {
             public String format(LogRecord record) {
                 String clname = record.getSourceClassName();
                 String shname = clname.substring(clname.lastIndexOf('.') + 1);
+                Throwable thrown = record.getThrown();
+                StringWriter sw = null;
+                if (thrown != null) {
+                    sw = new StringWriter();
+                    thrown.printStackTrace(new PrintWriter(sw));
+                }
                 return "[" + record.getLevel() + "] "
                         + shname + ": "
-                        + record.getMessage() + "\n";
+                        + record.getMessage() + (sw == null ? ""
+                        : sw.getBuffer().toString()) + "\n";
             }
         });
         handler.setLevel(Level.ALL);
@@ -72,6 +87,12 @@ public final class AimCrypto {
 
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            if (UIManager.getLookAndFeel() instanceof MetalLookAndFeel) {
+                Plastic3DLookAndFeel plastic = new Plastic3DLookAndFeel();
+                Plastic3DLookAndFeel.setMyCurrentTheme(new SkyBluer());
+                ClearLookManager.installDefaultMode();
+                UIManager.setLookAndFeel(plastic);
+            }
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         } catch (InstantiationException e) {

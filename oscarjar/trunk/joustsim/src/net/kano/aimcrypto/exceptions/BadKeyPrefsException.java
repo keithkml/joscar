@@ -36,44 +36,26 @@
 package net.kano.aimcrypto.exceptions;
 
 public class BadKeyPrefsException extends Exception {
-    private final boolean hasSigningAlias;
-    private final boolean hasEncryptionAlias;
-    private final boolean hasPass;
+    private final String missingPref;
 
-    public BadKeyPrefsException(boolean hasSigningAlias, boolean hasEncryptionAlias,
-            boolean hasPass) {
-        this.hasSigningAlias = hasSigningAlias;
-        this.hasEncryptionAlias = hasEncryptionAlias;
-        this.hasPass = hasPass;
+    public BadKeyPrefsException(String missingPref) {
+        this.missingPref = missingPref;
     }
 
-    public BadKeyPrefsException(String message, boolean hasSigningAlias,
-            boolean hasEncryptionAlias, boolean hasPass) {
+    public BadKeyPrefsException(String message, String missingPref) {
         super(message);
-        this.hasSigningAlias = hasSigningAlias;
-        this.hasEncryptionAlias = hasEncryptionAlias;
-        this.hasPass = hasPass;
+        this.missingPref = missingPref;
     }
 
-    public BadKeyPrefsException(Throwable cause, boolean hasSigningAlias,
-            boolean hasEncryptionAlias, boolean hasPass) {
+    public BadKeyPrefsException(Throwable cause, String missingPref) {
         super(cause);
-        this.hasSigningAlias = hasSigningAlias;
-        this.hasEncryptionAlias = hasEncryptionAlias;
-        this.hasPass = hasPass;
+        this.missingPref = missingPref;
     }
 
-    public BadKeyPrefsException(String message, Throwable cause, boolean hasSigningAlias,
-            boolean hasEncryptionAlias, boolean hasPass) {
+    public BadKeyPrefsException(String message, Throwable cause, String missingPref) {
         super(message, cause);
-        this.hasSigningAlias = hasSigningAlias;
-        this.hasEncryptionAlias = hasEncryptionAlias;
-        this.hasPass = hasPass;
+        this.missingPref = missingPref;
     }
 
-    public boolean hasSigningAlias() { return hasSigningAlias; }
-
-    public boolean hasEncryptionAlias() { return hasEncryptionAlias; }
-
-    public boolean hasPass() { return hasPass; }
+    public String getMissingPref() { return missingPref; }
 }

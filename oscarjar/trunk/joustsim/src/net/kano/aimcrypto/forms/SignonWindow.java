@@ -49,11 +49,15 @@ import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
+import javax.swing.KeyStroke;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.event.KeyEvent;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 
 public class SignonWindow extends JFrame {
     private JPanel mainPanel;
@@ -88,10 +92,18 @@ public class SignonWindow extends JFrame {
 
         updateButtons();
 
+        setResizable(false);
+
         addWindowStateListener(new WindowAdapter() {
             public void windowOpened(WindowEvent e) {
                 setEnabled(true);
+            }
+        });
+        addComponentListener(new ComponentAdapter() {
+            public void componentShown(ComponentEvent e) {
                 updateButtons();
+                pack();
+                setSize(getPreferredSize());
             }
         });
     }
@@ -166,6 +178,9 @@ public class SignonWindow extends JFrame {
             super("Sign On");
 
             putValue(SHORT_DESCRIPTION, "Sign onto AIM");
+            putValue(ACCELERATOR_KEY,
+                    KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0));
+            putValue(MNEMONIC_KEY, new Integer(KeyEvent.VK_S));
         }
 
         public void actionPerformed(ActionEvent e) {
@@ -180,6 +195,7 @@ public class SignonWindow extends JFrame {
             super("Options");
 
             putValue(SHORT_DESCRIPTION, "Edit options before signing on");
+            putValue(MNEMONIC_KEY, new Integer(KeyEvent.VK_O));
         }
 
         public void actionPerformed(ActionEvent e) {
@@ -193,6 +209,7 @@ public class SignonWindow extends JFrame {
 
             putValue(SHORT_DESCRIPTION,
                     "Clear the screenname and password boxes");
+            putValue(MNEMONIC_KEY, new Integer(KeyEvent.VK_C));
         }
 
         public void actionPerformed(ActionEvent e) {

@@ -49,10 +49,9 @@ import org.bouncycastle.cms.CMSException;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
+import java.util.Iterator;
 
 public class SecureAimConversation extends Conversation {
     private final AimConnection conn;
@@ -60,10 +59,10 @@ public class SecureAimConversation extends Conversation {
     private SecureAimDecoder decoder = new SecureAimDecoder();
     private PrivateKeysInfo privates = null;
     private BuddySecurityInfo currentSecurityInfo = null;
-    private Set trustedHashes = new HashSet();
+
+    private boolean trusted = false;
 
     private List inQueue = new LinkedList();
-    private boolean trusted = false;
 
     protected SecureAimConversation(AimConnection conn, Screenname buddy) {
         super(buddy);
@@ -82,6 +81,17 @@ public class SecureAimConversation extends Conversation {
     protected void initialize() {
         CertificateManager certManager = conn.getCertificateManager();
         certManager.addListener(new CertificateAdapter() {
+            public void gotTrustedCertificateChange(CertificateManager manager,
+                    Screenname buddy, BuddySecurityInfo info) {
+                System.out.println("got trusted cert for " + buddy);
+            }
+
+            public void gotUntrustedCertificateChange(CertificateManager manager,
+                    Screenname buddy, BuddySecurityInfo info) {
+                System.out.println("got untrusted cert for " + buddy + ", trusting");
+                manager.trust(info);
+            }
+
             public void gotUnknownCertificateChange(CertificateManager manager,
                     Screenname buddy, ByteBlock newHash) {
                 if (!buddy.equals(getBuddy())) return;
@@ -95,24 +105,36 @@ public class SecureAimConversation extends Conversation {
                     Screenname buddy, ByteBlock trustedhash, BuddySecurityInfo info) {
                 if (!buddy.equals(getBuddy())) return;
 
-                encoder.setBuddyCerts(info);
-                decoder.setBuddyCerts(info);
-                setTrusted(true);
+                System.out.println("buddy is now trusted: " + buddy);
+                storeBuddyInfo(info);
             }
 
-            public void trustRevoked(CertificateManager manager, Screenname buddy,
-                    ByteBlock hash) {
+            public void buddyTrustRevoked(CertificateManager certificateManager,
+                    Screenname buddy, ByteBlock hash, BuddySecurityInfo info) {
                 if (!buddy.equals(getBuddy())) return;
 
+                System.out.println("buddy is no longer trusted: " + buddy);
                 encoder.setBuddyCerts(null);
                 decoder.setBuddyCerts(null);
                 setTrusted(false);
             }
         });
-        if (certManager.getSecurityInfo(getBuddy()) == null) {
-            conn.getInfoService().requestSecurityInfo(getBuddy());
+        Screenname buddy = getBuddy();
+        BuddySecurityInfo info = certManager.getSecurityInfo(buddy);
+        if (info == null) {
+            System.out.println("requesting initial security info from " + buddy);
+            conn.getInfoService().requestSecurityInfo(buddy);
+        } else {
+            System.out.println("already have security info for " + buddy + "!");
+            storeBuddyInfo(info);
         }
-        trusted = certManager.isTrusted(getBuddy());
+        trusted = certManager.isTrusted(buddy);
+    }
+
+    private void storeBuddyInfo(BuddySecurityInfo info) {
+        encoder.setBuddyCerts(info);
+        decoder.setBuddyCerts(info);
+        setTrusted(true);
     }
 
     private synchronized void setTrusted(boolean trusted) {
@@ -177,7 +199,8 @@ public class SecureAimConversation extends Conversation {
             return;
         }
         if (decrypted == null) {
-            System.err.println("decrypted == null");
+            //TODO: decryption failed
+//            fireDecryptionFailedEvent(new DecryptionFailureInfo());
             return;
         }
 
@@ -190,5 +213,16 @@ public class SecureAimConversation extends Conversation {
                         securityInfo);
 
         fireIncomingEvent(dinfo);
+    }
+
+    private void fireDecryptionFailedEvent(DecryptionFailureInfo info) {
+        for (Iterator it = getListeners().iterator(); it.hasNext();) {
+            ConversationListener listener = (ConversationListener) it.next();
+            if (listener instanceof SecureAimConversationListener) {
+                SecureAimConversationListener sl
+                        = (SecureAimConversationListener) listener;
+
+            }
+        }
     }
 }

@@ -49,6 +49,7 @@ import net.kano.aimcrypto.connection.oscar.service.info.InfoService;
 import net.kano.aimcrypto.connection.oscar.service.info.InfoService;
 import net.kano.aimcrypto.connection.oscar.service.buddy.BuddyService;
 import net.kano.aimcrypto.connection.oscar.service.buddy.BuddyServiceListener;
+import net.kano.aimcrypto.connection.oscar.service.Service;
 import net.kano.aimcrypto.Screenname;
 import net.kano.aimcrypto.BuddySecurityInfo;
 
@@ -72,12 +73,13 @@ public class BuddyInfoManager {
         public void propertyChange(PropertyChangeEvent evt) {
             BuddyInfo info = (BuddyInfo) evt.getSource();
             Screenname sn = info.getScreenname();
+            System.out.println("property changed: " + sn + " - " + evt);
 
             for (Iterator it = listeners.iterator(); it.hasNext();) {
                 GlobalBuddyInfoListener l = (GlobalBuddyInfoListener) it.next();
 
-                l.buddyInfoChanged(BuddyInfoManager.this, sn,
-                        info, evt);
+                System.out.println("firing global buddy info listener " + l);
+                l.buddyInfoChanged(BuddyInfoManager.this, sn, info, evt);
             }
         }
     };
@@ -86,6 +88,12 @@ public class BuddyInfoManager {
         DefensiveTools.checkNull(conn, "conn");
 
         this.conn = conn;
+        conn.addNewServiceListener(new NewServiceListener() {
+            public void openedServices(AimConnection conn, Service[] services) {
+                initBuddyService();
+                initInfoService();
+            }
+        });
         initBuddyService();
         initInfoService();
     }
@@ -125,25 +133,25 @@ public class BuddyInfoManager {
             public void gotDirectoryInfo(InfoService service, Screenname buddy,
                     DirInfo info) {
                 BuddyInfo buddyInfo = getBuddyInfoInstance(buddy);
-                if (buddyInfo != null) buddyInfo.setDirInfo(info);
+                buddyInfo.setDirInfo(info);
             }
 
             public void gotAwayMessage(InfoService service, Screenname buddy,
                     String awayMsg) {
                 BuddyInfo buddyInfo = getBuddyInfoInstance(buddy);
-                if (buddyInfo != null) buddyInfo.setAwayMessage(awayMsg);
+                buddyInfo.setAwayMessage(awayMsg);
             }
 
             public void gotUserProfile(InfoService service, Screenname buddy,
                     String infoString) {
                 BuddyInfo buddyInfo = getBuddyInfoInstance(buddy);
-                if (buddyInfo != null) buddyInfo.setUserProfile(infoString);
+                buddyInfo.setUserProfile(infoString);
             }
 
             public void gotSecurityInfo(InfoService service, Screenname buddy,
                     BuddySecurityInfo securityInfo) {
                 BuddyInfo buddyInfo = getBuddyInfoInstance(buddy);
-                if (buddyInfo != null) buddyInfo.setSecurityInfo(securityInfo);
+                buddyInfo.setSecurityInfo(securityInfo);
             }
         });
     }

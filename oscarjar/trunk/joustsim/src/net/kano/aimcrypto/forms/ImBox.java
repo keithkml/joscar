@@ -52,6 +52,7 @@ import net.kano.aimcrypto.conv.ConversationDocument;
 import net.kano.aimcrypto.conv.ConversationEditorKit;
 import net.kano.aimcrypto.conv.AolRtfText;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.MiscTools;
 
 import javax.swing.AbstractAction;
 import javax.swing.DefaultComboBoxModel;
@@ -128,6 +129,7 @@ public class ImBox extends JFrame {
             public void gotMessage(Conversation c, MessageInfo minfo) {
                 Message message = minfo.getMessage();
                 String body = message.getMessageBody();
+                System.out.println("got message: " + minfo + " - " + message + " - " + body);
                 convDoc.addLine(AolRtfText.readLine(body));
             }
 
@@ -190,15 +192,14 @@ public class ImBox extends JFrame {
     private static class TypesBoxRenderer extends DefaultListCellRenderer {
         public Component getListCellRendererComponent(JList list, Object value,
                 int index, boolean isSelected, boolean cellHasFocus) {
-            String string = "(Unknown)";
             ConversationInfo info = (ConversationInfo) value;
             Conversation conv = info.getConversation();
+            String string = "(Unknown)";
             if (conv instanceof ImConversation) {
                 string = "Insecure";
             } else if (conv instanceof SecureAimConversation) {
                 string = "Secure";
             }
-            string += conv.getClass().getName();
             JLabel comp = (JLabel) super.getListCellRendererComponent(list,
                     string, index, isSelected, cellHasFocus);
             comp.setForeground(conv.isOpen() ? null : Color.LIGHT_GRAY);

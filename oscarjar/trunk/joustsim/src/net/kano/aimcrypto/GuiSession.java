@@ -42,19 +42,17 @@ import net.kano.aimcrypto.connection.StateEvent;
 import net.kano.aimcrypto.connection.StateInfo;
 import net.kano.aimcrypto.connection.StateListener;
 import net.kano.aimcrypto.connection.oscar.service.icbm.Conversation;
-import net.kano.aimcrypto.connection.oscar.service.icbm.IcbmService;
-import net.kano.aimcrypto.connection.oscar.service.ServiceListener;
-import net.kano.aimcrypto.connection.oscar.service.Service;
-import net.kano.aimcrypto.connection.oscar.service.icbm.IcbmListener;
-import net.kano.aimcrypto.connection.oscar.service.icbm.ImConversation;
 import net.kano.aimcrypto.connection.oscar.service.icbm.IcbmBuddyInfo;
+import net.kano.aimcrypto.connection.oscar.service.icbm.IcbmListener;
+import net.kano.aimcrypto.connection.oscar.service.icbm.IcbmService;
+import net.kano.aimcrypto.connection.oscar.service.icbm.ImConversation;
 import net.kano.aimcrypto.forms.DummyOnlineWindow;
 import net.kano.aimcrypto.forms.ImBox;
 import net.kano.aimcrypto.forms.SignonProgressWindow;
 import net.kano.aimcrypto.forms.SignonWindow;
+import net.kano.aimcrypto.forms.CertificateOptionsPane;
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.snaccmd.icbm.IcbmCommand;
 
 import javax.swing.SwingUtilities;
 import java.awt.event.WindowAdapter;
@@ -117,8 +115,6 @@ public class GuiSession {
     }
 
     private void signon(AimConnectionProperties props) {
-
-
         Screenname sn = new Screenname(signonWindow.getScreenname());
         aimSession = appSession.openAimSession(sn);
 
@@ -203,9 +199,11 @@ public class GuiSession {
         if (box == null) {
             IcbmService service = conn.getIcbmService();
 
-            ImConversation imConversation = service.getImConversation(sn);
             box = createBox(sn);
+
+            ImConversation imConversation = service.getImConversation(sn);
             box.handleConversation(imConversation);
+
             box.pack();
             box.setSize(box.getPreferredSize());
             box.setVisible(true);
@@ -231,6 +229,10 @@ public class GuiSession {
 //    }
 
     private synchronized ImBox createBox(Screenname sn) {
+        DefensiveTools.checkNull(sn, "sn");
+        if (imBoxes.containsKey(sn)) {
+            throw new IllegalArgumentException("box for " + sn + " already exists");
+        }
         ImBox box = new ImBox(this, sn);
         imBoxes.put(sn, box);
 //        box.handleConversation(conv);
@@ -242,7 +244,11 @@ public class GuiSession {
     }
 
     public void showOptionsWindow() {
-
+        Screenname sn =  new Screenname(signonWindow.getScreenname());
+        CertificateOptionsPane pane = new CertificateOptionsPane(appSession, sn);
+        pane.pack();
+        pane.setSize(pane.getPreferredSize());
+        pane.setVisible(true);
     }
 
     private class ConnStateListener implements StateListener {

@@ -106,6 +106,7 @@ public class CertificateManager {
     private void fireBuddyTrustedEvent(Screenname buddy, ByteBlock trustedhash,
             BuddySecurityInfo info) {
         assert !Thread.holdsLock(this);
+        System.out.println("firing buddy trusted event");
 
         for (Iterator it = listeners.iterator(); it.hasNext();) {
             CertificateListener listener = (CertificateListener) it.next();
@@ -116,6 +117,8 @@ public class CertificateManager {
     private void fireBuddyTrustRevokedEvent(Screenname buddy, ByteBlock hash,
             BuddySecurityInfo info) {
         assert !Thread.holdsLock(this);
+
+        System.out.println("firing buddy trust revoked event");
 
         for (Iterator it = listeners.iterator(); it.hasNext();) {
             CertificateListener listener = (CertificateListener) it.next();
@@ -170,18 +173,22 @@ public class CertificateManager {
             public void buddyInfoChanged(BuddyInfoManager manager, Screenname buddy,
                     BuddyInfo info, PropertyChangeEvent event) {
                 String name = event.getPropertyName();
+                System.out.println("thing changed: " + name);
 
                 if (name.equals("certificateInfoHash")) {
                     System.out.println("hash changed: " + buddy);
                     ByteBlock newHash = (ByteBlock) event.getNewValue();
                     updateHash(buddy, newHash);
 
-                } else if (name.equals("buddySecurityInfo")) {
-                    System.out.println("info changed: " + buddy);
+                } else if (name.equals("securityInfo")) {
+                    System.out.println("certmanager: info changed: " + buddy);
                     BuddySecurityInfo newi = (BuddySecurityInfo) event.getNewValue();
                     ByteBlock newHash = newi.getCertificateInfoHash();
+                    System.out.println("new hash: " + newHash);
                     storeSecurityInfo(buddy, newHash, newi);
+                    System.out.println("stored security info, updating hash");
                     updateHash(buddy, newHash);
+                    System.out.println("done updating");
                 }
             }
 
@@ -236,12 +243,14 @@ public class CertificateManager {
     private synchronized void storeSecurityInfo(Screenname buddy,
             ByteBlock newHash, BuddySecurityInfo newi) {
         DefensiveTools.checkNull(newHash, "newHash");
-        hashes.put(new HashKey(buddy, newHash), newi);
+        HashKey key = new HashKey(buddy, newHash);
+        securityInfos.put(key, newi);
     }
 
     private boolean updateHash(Screenname buddy, ByteBlock newHash) {
         assert !Thread.holdsLock(this);
 
+        System.out.println("updating hash for " + buddy + ": " + newHash);
         boolean wastrusted;
         boolean istrusted;
         BuddySecurityInfo info;
@@ -252,6 +261,7 @@ public class CertificateManager {
             if ((old == null && newHash == null)
                     || (newHash != null && newHash.equals(old))) {
                 // the new hash and the old hash are the same
+                System.out.println("new and old are the same: " + old);
                 return false;
             }
 
@@ -282,14 +292,19 @@ public class CertificateManager {
         assert istrusted ? info != null : true;
 
         if (istrusted) {
+            System.out.println("is trusted!");
             fireTrustedChangeEvent(buddy, info);
             if (!wastrusted) {
+                System.out.println("wasn't trusted!");
                 fireBuddyTrustedEvent(buddy, newHash, info);
             }
         } else {
+            System.out.println("is not trusted!");
             if (info == null) fireUnknownChangeEvent(buddy, newHash);
             else fireUntrustedChangeEvent(buddy, info);
+
             if (wastrusted) {
+                System.out.println("used to be trusted!");
                 fireBuddyTrustRevokedEvent(buddy, newHash, info);
             }
         }
@@ -301,6 +316,8 @@ public class CertificateManager {
             BuddySecurityInfo info) {
         assert !Thread.holdsLock(this);
 
+        System.out.println("firing trusted change event");
+
         for (Iterator it = listeners.iterator(); it.hasNext();) {
             CertificateListener listener = (CertificateListener) it.next();
             listener.gotTrustedCertificateChange(this, buddy, info);
@@ -311,6 +328,8 @@ public class CertificateManager {
             BuddySecurityInfo info) {
         assert !Thread.holdsLock(this);
 
+        System.out.println("firing untrusted change event");
+
         for (Iterator it = listeners.iterator(); it.hasNext();) {
             CertificateListener listener = (CertificateListener) it.next();
             listener.gotUntrustedCertificateChange(this, buddy, info);
@@ -319,6 +338,8 @@ public class CertificateManager {
 
     private void fireUnknownChangeEvent(Screenname buddy, ByteBlock newHash) {
         assert !Thread.holdsLock(this);
+
+        System.out.println("firing unknown change event");
 
         for (Iterator it = listeners.iterator(); it.hasNext();) {
             CertificateListener listener = (CertificateListener) it.next();

@@ -40,17 +40,15 @@ import net.kano.aimcrypto.exceptions.BadKeyPrefsException;
 import net.kano.aimcrypto.exceptions.BadKeysException;
 import net.kano.joscar.DefensiveTools;
 
+import javax.swing.DefaultComboBoxModel;
 import java.io.File;
 import java.io.FileFilter;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
-import java.net.URL;
 
 public class AppSession {
     private static final DirFilter DIR_FILTER = new DirFilter();
@@ -82,62 +80,28 @@ public class AppSession {
     public synchronized PrivateSecurityInfo getPrivateSecurityInfo(Screenname sn) {
         PrivateSecurityInfo si = (PrivateSecurityInfo) securityInfos.get(sn);
         if (si == null) {
-            si = new PrivateSecurityInfo(sn);
+            si = new PrivateSecurityInfo(sn, new File(
+                    new File(securityDir, "local-keys"), sn.getNormal()));
+            try {
+                si.loadPrefs();
+            } catch (IOException e) {
+                //TODO: loading prefs failed
+                e.printStackTrace();
+            }
             securityInfos.put(sn, si);
         }
         return si;
     }
 
-    /*
-    public void loadSecurityInfos() {
-        File[] files = securityDir.listFiles(DIR_FILTER);
-        for (int i = 0; i < files.length; i++) {
-            File dir = files[i];
-            Screenname sn = new Screenname(dir.getName());
-            File ks = new File(dir, "keys.p12");
-            File prefs = new File(dir, "prefs");
-            if (ks.exists() && prefs.exists()) {
-                try {
-                    loadKeys(sn, ks, prefs);
-                } catch (MalformedURLException nobigdeal) {
-                } catch (FileNotFoundException e) {
-                } catch (IOException e) {
-                } catch (BadKeysException e) {
-                }
-            }
-        }
-    }
-    */
-
     public PrivateSecurityInfo loadKeys(Screenname sn)
             throws IOException, FileNotFoundException, BadKeysException,
-            BadKeyPrefsException {
+            BadKeyPrefsException, LoadingException {
         DefensiveTools.checkNull(sn, "sn");
-        System.out.println("loading keys for " + sn);
 
         PrivateSecurityInfo si = getPrivateSecurityInfo(sn);
 
-        File dir = new File(new File(securityDir, "local-keys"), sn.getNormal());
-
-        File ks = new File(dir, "keys.p12");
-        File prefs = new File(dir, "key-prefs.properties");
-
-        if (!ks.exists()) throw new FileNotFoundException(ks.getPath());
-        if (!prefs.exists()) throw new FileNotFoundException(prefs.getPath());
-
-        Properties props = new Properties();
-        props.load(new FileInputStream(prefs));
-        String signingAlias = props.getProperty("signing-alias");
-        String encryptionAlias = props.getProperty("encryption-alias");
-        String pass = props.getProperty("password");
-
-        if (signingAlias == null || encryptionAlias == null || pass == null) {
-            throw new BadKeyPrefsException(signingAlias != null,
-                    encryptionAlias != null, pass != null);
-        }
-
-        URL url = ks.toURI().toURL();
-        si.loadKeysFromP12(url, signingAlias, encryptionAlias, pass);
+        si.loadPrefs();
+        si.reloadIfNecessary();
 
         return si;
     }
@@ -153,7 +117,10 @@ public class AppSession {
             e.printStackTrace();
         } catch (BadKeyPrefsException e) {
             e.printStackTrace();
+        } catch (LoadingException e) {
+            e.printStackTrace();
         }
+
         synchronized(this) {
             securityInfos.put(sn, keys);
             List snsesses = (List) sessions.get(sn);
@@ -171,7 +138,6 @@ public class AppSession {
     public CertificateManager getCertificateManager() {
         return certificateManager;
     }
-
 
     private static class DirFilter implements FileFilter {
         public boolean accept(File pathname) {
