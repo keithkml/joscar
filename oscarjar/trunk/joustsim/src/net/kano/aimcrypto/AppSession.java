@@ -35,7 +35,8 @@
 
 package net.kano.aimcrypto;
 
-import net.kano.aimcrypto.config.AppConfiguration;
+import net.kano.aimcrypto.config.GlobalPrefs;
+import net.kano.aimcrypto.config.LocalPreferencesManager;
 import net.kano.aimcrypto.connection.oscar.service.info.BuddyCertificateManager;
 import net.kano.joscar.DefensiveTools;
 
@@ -47,10 +48,17 @@ import java.util.List;
 import java.util.Map;
 
 public class AppSession {
+    private final File baseDir;
+    private final File configDir;
+    private final File localPrefsDir;
+    private final File globalPrefsDir;
+
+    private final GlobalPrefs globalPrefs;
+    private boolean loadedGlobalPrefs = false;
+
     private Map prefs = new HashMap();
     private Map sessions = new HashMap();
 
-    private File baseDir;
     private Thread shutdownHook = null;
 
     public AppSession(File baseDir) throws IllegalArgumentException {
@@ -63,9 +71,18 @@ public class AppSession {
             }
         } else {
             baseDir.mkdir();
+            if (!baseDir.isDirectory()) {
+                throw new IllegalArgumentException(baseDir.getPath()
+                        + " is not a directory and cannot be created");
+            }
         }
 
         this.baseDir = baseDir;
+        this.configDir = new File(baseDir, "config");
+        this.localPrefsDir = new File(configDir, "local");
+        this.globalPrefsDir = new File(configDir, "global");
+
+        this.globalPrefs = new GlobalPrefs(configDir, globalPrefsDir);
     }
 
 
@@ -89,9 +106,15 @@ public class AppSession {
     }
 
     private synchronized void saveAllPrefs() {
+        try {
+            globalPrefs.savePrefs();
+        } catch (Exception e) {
+            //TODO: saving prefs failed
+            e.printStackTrace();
+        }
         for (Iterator it = prefs.values().iterator(); it.hasNext();) {
-            AppConfiguration configuration = (AppConfiguration) it.next();
-            configuration.saveAllPrefs();
+            LocalPreferencesManager prefs = (LocalPreferencesManager) it.next();
+            prefs.saveAllPrefs();
         }
     }
 
@@ -111,14 +134,29 @@ public class AppSession {
         return sess;
     }
 
-    public synchronized AppConfiguration getPrefs(Screenname sn) {
-        AppConfiguration appconfig = (AppConfiguration) prefs.get(sn);
-        if (appconfig == null) {
-            appconfig = new AppConfiguration(sn,
-                    new File(new File(baseDir, "config"), sn.getNormal()));
-            prefs.put(sn, appconfig);
+    public synchronized GlobalPrefs getGlobalPrefs() {
+        if (!loadedGlobalPrefs) {
+            loadedGlobalPrefs = true;
+            globalPrefs.loadPrefs();
         }
-        return appconfig;
+        return globalPrefs;
+    }
+
+    public synchronized LocalPreferencesManager getLocalPrefs(Screenname sn) {
+        LocalPreferencesManager appPrefs = (LocalPreferencesManager) prefs.get(sn);
+        if (appPrefs == null) {
+            appPrefs = new LocalPreferencesManager(sn, getLocalPrefsDir(sn));
+            prefs.put(sn, appPrefs);
+        }
+        return appPrefs;
+    }
+
+    private File getLocalPrefsDir(Screenname sn) {
+        return new File(localPrefsDir, sn.getNormal());
+    }
+
+    public boolean hasLocalPrefs(Screenname sn) {
+        return getLocalPrefsDir(sn).isDirectory();
     }
 
     public BuddyCertificateManager getCertificateManager() {

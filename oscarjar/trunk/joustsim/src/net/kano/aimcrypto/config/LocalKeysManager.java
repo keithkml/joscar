@@ -50,6 +50,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.channels.FileChannel;
 import java.security.Key;
 import java.security.KeyStore;
@@ -66,7 +67,8 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Properties;
 
-public final class LocalKeysManager extends DefaultFileBasedResource {
+public final class LocalKeysManager
+        extends DefaultFileBasedResource implements Preferences {
     private static final String PROP_CERTFILE = "certificate-file";
     private static final String PROP_SIGNALIAS = "signing-alias";
     private static final String PROP_ENCALIAS = "encryption-alias";
@@ -117,43 +119,48 @@ public final class LocalKeysManager extends DefaultFileBasedResource {
     }
 
     public void loadPrefs() throws IOException {
-        if (!prefsFile.exists()) {
+        Properties props = PrefTools.loadProperties(prefsFile);
+        loadPrefs(props);
+    }
+
+    private synchronized void loadPrefs(Properties props) {
+        String fn = props.getProperty(PROP_CERTFILE);
+        setCertificateFilename(fn);
+        signingAlias = props.getProperty(PROP_SIGNALIAS);
+        encryptionAlias = props.getProperty(PROP_ENCALIAS);
+        password = props.getProperty(PROP_PASSWORD);
+        savePassword = (password != null);
+    }
+
+    public void savePrefs() throws IOException {
+        File prefsFile = this.prefsFile;
+        // make sure it exists
+        keysDir.mkdir();
+        prefsFile.createNewFile();
+        if (!prefsFile.canWrite()) {
             throw new FileNotFoundException(prefsFile.getAbsolutePath());
         }
 
-        Properties props = new Properties();
-        FileInputStream fin = new FileInputStream(prefsFile);
-        props.load(fin);
-        String fn = props.getProperty(PROP_CERTFILE);
-        synchronized(this) {
-            setCertificateFilename(fn);
-            signingAlias = props.getProperty(PROP_SIGNALIAS);
-            encryptionAlias = props.getProperty(PROP_ENCALIAS);
-            password = props.getProperty(PROP_PASSWORD);
-            savePassword = (password != null);
-        }
-        fin.close();
+        Properties props = generatePrefsProperties();
+
+        PrefTools.writeProperties(prefsFile, props,
+                "Local certificate preferences for " + getScreenname());
     }
 
-    public synchronized void savePrefs() throws IOException {
-        File prefsFile = this.prefsFile;
-        // make sure it exists
-        prefsFile.createNewFile();
-
-        FileOutputStream fout = new FileOutputStream(prefsFile);
-
+    private synchronized Properties generatePrefsProperties() {
         Properties props = new Properties();
-        String certfile = getCertificateFilename();
-        String signAlias = getSigningAlias();
-        String encAlias = getEncryptionAlias();
-        String pass = getSavePassword() ? getPassword() : null;
+
+        String certfile = certificateFilename;
+        String signAlias = signingAlias;
+        String encAlias = encryptionAlias;
+        String pass = savePassword ? password : null;
+
         if (certfile != null) props.setProperty(PROP_CERTFILE, certfile);
         if (signAlias != null) props.setProperty(PROP_SIGNALIAS, signAlias);
         if (encAlias != null) props.setProperty(PROP_ENCALIAS, encAlias);
         if (pass != null) props.setProperty(PROP_PASSWORD, pass);
 
-        props.store(fout, "Certificate preferences for " + getScreenname());
-        fout.close();
+        return props;
     }
 
     public PrivateKeysInfo getKeysInfo() { return keysLoader.getKeysInfo(); }
@@ -204,20 +211,33 @@ public final class LocalKeysManager extends DefaultFileBasedResource {
     }
 
     public void importCertFile(File file) throws IOException {
+        File kd;
         File cd;
         synchronized(this) {
+            kd = keysDir;
             cd = certsDir;
         }
-        if (!cd.exists()) cd.mkdirs();
+        if (!cd.isDirectory()) {
+            kd.mkdir();
+            cd.mkdir();
+        }
         String newName = file.getName();
         File dest = new File(cd, newName);
 
-        FileChannel sourceChannel = new FileInputStream(file).getChannel();
-        FileChannel destinationChannel = new
-                FileOutputStream(dest).getChannel();
-        sourceChannel.transferTo(0, sourceChannel.size(), destinationChannel);
-        sourceChannel.close();
-        destinationChannel.close();
+        FileChannel sourceChannel = null;
+        FileChannel destinationChannel = null;
+        try {
+            sourceChannel = new FileInputStream(file).getChannel();
+            destinationChannel = new FileOutputStream(dest).getChannel();
+            sourceChannel.transferTo(0, sourceChannel.size(), destinationChannel);
+        } finally {
+            if (sourceChannel != null) {
+                try { sourceChannel.close(); } catch (IOException e) { }
+            }
+            if (destinationChannel != null) {
+                try { destinationChannel.close(); } catch (IOException e) { }
+            }
+        }
     }
 
     public synchronized void switchToCertificateFile(String name) {

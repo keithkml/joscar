@@ -40,11 +40,41 @@ import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 
 import java.security.cert.X509Certificate;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.Certificate;
+import java.security.NoSuchProviderException;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
+import java.io.File;
+import java.io.IOException;
+import java.io.FileInputStream;
 
 public class CertificateTrustManager {
+    protected static X509Certificate loadX509Certificate(File file)
+            throws CertificateException, NoSuchProviderException, IOException {
+        CertificateFactory cf = CertificateFactory.getInstance("X.509", "BC");
+        FileInputStream fin = new FileInputStream(file);
+        Certificate cert;
+        try {
+            fin.getChannel().lock(0L, Long.MAX_VALUE, true);
+            cert = cf.generateCertificate(fin);
+        } finally {
+            fin.close();
+        }
+        if (cert == null) {
+            throw new NullPointerException("Unknown error: Certificate was "
+                    + "null");
+        }
+        if (!(cert instanceof X509Certificate)) {
+            throw new IllegalArgumentException("this file is not an X.509 "
+                    + "certificate, it's a " + cert.getClass().getName());
+        }
+        X509Certificate xcert = (X509Certificate) cert;
+        return xcert;
+    }
+
     private final Screenname buddy;
 
     private final Set trusted = new HashSet();
@@ -65,10 +95,16 @@ public class CertificateTrustManager {
         listeners.remove(l);
     }
 
-    public boolean trustCertificate(X509Certificate cert) {
+    public boolean trustCertificate(X509Certificate cert) throws TrustException {
+        checkCanBeAdded(cert);
         boolean added = addTrust(cert);
         if (added) fireTrustedEvent(cert);
         return added;
+    }
+
+    protected void checkCanBeAdded(X509Certificate cert)
+            throws CantBeAddedException {
+        if (!canBeAdded(cert)) throw new CantBeAddedException();
     }
 
     public synchronized boolean isTrusted(X509Certificate cert) {
@@ -81,7 +117,20 @@ public class CertificateTrustManager {
         return removed;
     }
 
-    protected synchronized boolean addTrust(X509Certificate cert) {
+    public synchronized X509Certificate[] getTrustedCertificates() {
+        X509Certificate[] certs = new X509Certificate[trusted.size()];
+        int i = 0;
+        for (Iterator it = trusted.iterator(); it.hasNext();) {
+            CertificateHolder holder = (CertificateHolder) it.next();
+            certs[i] = holder.getCertificate();
+            i++;
+        }
+        return certs;
+    }
+
+    protected synchronized boolean addTrust(X509Certificate cert)
+            throws CantBeAddedException {
+        checkCanBeAdded(cert);
         return trusted.add(new CertificateHolder(cert));
     }
 
@@ -109,5 +158,25 @@ public class CertificateTrustManager {
             TrustChangeListener listener = (TrustChangeListener) it.next();
             listener.trustRemoved(this, cert);
         }
+    }
+
+    public boolean importCert(File file) throws TrustException {
+        DefensiveTools.checkNull(file, "file");
+
+        X509Certificate cert;
+        try {
+            cert = loadX509Certificate(file);
+        } catch (Exception e) {
+            throw new TrustException(e);
+        }
+        if (cert == null) {
+            throw new TrustException("Certificate could not be loaded");
+        }
+
+        return trustCertificate(cert);
+    }
+
+    protected boolean canBeAdded(X509Certificate certificate) {
+        return true;
     }
 }

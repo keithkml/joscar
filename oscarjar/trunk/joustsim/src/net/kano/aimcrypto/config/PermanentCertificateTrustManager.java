@@ -40,15 +40,12 @@ import net.kano.aimcrypto.Screenname;
 import net.kano.joscar.DefensiveTools;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.security.NoSuchProviderException;
-import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -62,7 +59,7 @@ import java.util.Set;
 
 public class PermanentCertificateTrustManager
         extends CertificateTrustManager implements FileBasedResource {
-    private static TrustedCertInfo loadCertificate(File loadedFromFile)
+    private static TrustedCertInfo loadCertificatePermanently(File loadedFromFile)
             throws NoSuchProviderException, CertificateException,
             IOException, IllegalArgumentException {
         DefensiveTools.checkNull(loadedFromFile, "loadedFromFile");
@@ -73,24 +70,7 @@ public class PermanentCertificateTrustManager
                     + "date: " + lastmod);
         }
 
-        CertificateFactory cf = CertificateFactory.getInstance("X.509", "BC");
-        FileInputStream fin = new FileInputStream(loadedFromFile);
-        Certificate cert;
-        try {
-            fin.getChannel().lock(0L, Long.MAX_VALUE, true);
-            cert = cf.generateCertificate(fin);
-        } finally {
-            fin.close();
-        }
-        if (cert == null) {
-            throw new NullPointerException("Unknown error: Certificate was "
-                    + "null");
-        }
-        if (!(cert instanceof X509Certificate)) {
-            throw new IllegalArgumentException("this file is not an X.509 "
-                    + "certificate, it's a " + cert.getClass().getName());
-        }
-        X509Certificate xcert = (X509Certificate) cert;
+        X509Certificate xcert = loadX509Certificate(loadedFromFile);
 
         return new TrustedCertInfo(loadedFromFile, lastmod, xcert);
     }
@@ -121,7 +101,9 @@ public class PermanentCertificateTrustManager
 
     private static void writeCert(X509Certificate cert, File file)
             throws IOException, CertificateEncodingException {
-        file.getParentFile().mkdirs();
+        DefensiveTools.checkNull(cert, "cert");
+        DefensiveTools.checkNull(file, "file");
+
         FileOutputStream fout = new FileOutputStream(file);
         try {
             fout.getChannel().lock();
@@ -136,7 +118,7 @@ public class PermanentCertificateTrustManager
     private final Map file2info = new HashMap();
     private final Map cert2info = new HashMap();
 
-    private CertificateLoader certLoader = new CertificateLoader();
+    private final CertificateLoader certLoader;
 
     public PermanentCertificateTrustManager(Screenname buddy,
             File trustedCertsDir) {
@@ -145,6 +127,7 @@ public class PermanentCertificateTrustManager
         DefensiveTools.checkNull(trustedCertsDir, "trustedCertsDir");
 
         this.trustedCertsDir = trustedCertsDir;
+        this.certLoader = new CertificateLoader();
     }
 
     public boolean isUpToDate() {
@@ -159,24 +142,28 @@ public class PermanentCertificateTrustManager
         certLoader.reload();
     }
 
-    public boolean trustCertificate(X509Certificate cert) {
+    public boolean trustCertificate(X509Certificate cert)
+            throws TrustException {
         DefensiveTools.checkNull(cert, "cert");
 
         if (isTrusted(cert)) return false;
 
-        File file = createFileForCert(cert);
-        boolean saved = false;
+        File file;
         try {
-            writeCert(cert, file);
-            saved = true;
-        } catch (IOException e) {
-            //TODO: couldn't save certificate
-            e.printStackTrace();
-        } catch (CertificateEncodingException e) {
-            e.printStackTrace();
+            file = createFileForCert(cert);
+        } catch (Exception e) {
+            throw new TrustException(e);
+        }
+        if (file == null) {
+            throw new TrustException(new CantSavePrefsException(
+                    "Couldn't create file to certificate to disk"));
         }
 
-        if (!saved) return false;
+        try {
+            writeCert(cert, file);
+        } catch (Exception e) {
+            throw new TrustException(e);
+        }
 
         long lastmod = file.lastModified();
         TrustedCertInfo info = new TrustedCertInfo(file, lastmod, cert);
@@ -208,38 +195,41 @@ public class PermanentCertificateTrustManager
     }
 
     private synchronized boolean deleteTrustFile(X509Certificate cert) {
-        TrustedCertInfo info = (TrustedCertInfo) cert2info.get(cert);
+        CertificateHolder holder = new CertificateHolder(cert);
+        TrustedCertInfo info = (TrustedCertInfo) cert2info.get(holder);
         if (info == null) return false;
+
         File file = info.getLoadedFromFile();
         boolean deleted = file.delete();
         return deleted;
     }
 
-    private File createFileForCert(X509Certificate cert) {
+    private File createFileForCert(X509Certificate cert)
+            throws IOException, CantSavePrefsException {
+        trustedCertsDir.mkdir();
         if (!trustedCertsDir.canWrite()) return null;
 
         String fixed = getPossibleFilenameRoot(cert);
         String fn = fixed;
         File file;
         int n = 1;
-        boolean success;
         do {
             file = new File(trustedCertsDir, fn + ".der");
             fn = fixed + "-" + n;
             n++;
             try {
-                success = file.createNewFile();
+                if (file.createNewFile()) break;
+                else throw new CantSavePrefsException("couldn't create file");
             } catch (IOException e) {
-                success = false;
+                if (n == 99) throw e;
             }
-        } while (!success && n < 100);
-
-        if (!success) file = null;
+        } while (n < 100);
 
         return file;
     }
 
-    private synchronized boolean addTrust(TrustedCertInfo info) {
+    private synchronized boolean addTrust(TrustedCertInfo info)
+            throws CantBeAddedException {
         DefensiveTools.checkNull(info, "info");
 
         File file = info.getLoadedFromFile();
@@ -337,15 +327,17 @@ public class PermanentCertificateTrustManager
                 for (Iterator it = filesToAdd.iterator(); it.hasNext();) {
                     File file = (File) it.next();
                     try {
-                        TrustedCertInfo info = loadCertificate(file);
-                        addedInfos.add(info);
+                        TrustedCertInfo info = loadCertificatePermanently(file);
                         addTrust(info);
+                        addedInfos.add(info);
                     } catch (NoSuchProviderException e) {
                         //TODO: handle cert loading exception
                         e.printStackTrace();
                     } catch (CertificateException e) {
                         e.printStackTrace();
                     } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (CantBeAddedException e) {
                         e.printStackTrace();
                     }
                 }

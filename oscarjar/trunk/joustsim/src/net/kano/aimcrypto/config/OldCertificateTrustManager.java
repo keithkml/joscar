@@ -60,6 +60,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+/*
 
 public class OldCertificateTrustManager implements FileBasedResource {
     private static String getPossibleFilenameRoot(X509Certificate cert) {
@@ -497,3 +498,4 @@ public class OldCertificateTrustManager implements FileBasedResource {
         }
     }
 }
+*/

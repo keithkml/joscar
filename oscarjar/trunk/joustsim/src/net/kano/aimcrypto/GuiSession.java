@@ -35,6 +35,8 @@
 
 package net.kano.aimcrypto;
 
+import net.kano.aimcrypto.config.LocalPreferencesManager;
+import net.kano.aimcrypto.config.CertificateTrustManager;
 import net.kano.aimcrypto.connection.AimConnection;
 import net.kano.aimcrypto.connection.AimConnectionProperties;
 import net.kano.aimcrypto.connection.State;
@@ -46,14 +48,15 @@ import net.kano.aimcrypto.connection.oscar.service.icbm.IcbmBuddyInfo;
 import net.kano.aimcrypto.connection.oscar.service.icbm.IcbmListener;
 import net.kano.aimcrypto.connection.oscar.service.icbm.IcbmService;
 import net.kano.aimcrypto.connection.oscar.service.icbm.ImConversation;
+import net.kano.aimcrypto.forms.CertificatesPrefsPanel;
 import net.kano.aimcrypto.forms.DummyOnlineWindow;
 import net.kano.aimcrypto.forms.ImBox;
 import net.kano.aimcrypto.forms.SignonProgressWindow;
 import net.kano.aimcrypto.forms.SignonWindow;
-import net.kano.aimcrypto.forms.CertificateOptionsPane;
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 
+import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -153,15 +156,10 @@ public class GuiSession {
             signonWindow = new SignonWindow(this);
             signonWindow.pack();
             signonWindow.setSize(signonWindow.getPreferredSize());
-            signonWindow.addWindowListener(new WindowAdapter() {
-                public void windowClosing(WindowEvent e) {
-                    close();
-                }
-            });
         }
     }
 
-    private void close() {
+    public void close() {
         synchronized(this) {
             if (!open || closed) return;
             closed = true;
@@ -243,12 +241,19 @@ public class GuiSession {
         openImBox(conv.getBuddy()).handleConversation(conv);
     }
 
-    public void showOptionsWindow() {
+    public void showPrefsWindow() {
         Screenname sn =  new Screenname(signonWindow.getScreenname());
-        CertificateOptionsPane pane = new CertificateOptionsPane(appSession, sn);
-        pane.pack();
-        pane.setSize(pane.getPreferredSize());
-        pane.setVisible(true);
+        JFrame frame = new JFrame();
+        LocalPreferencesManager prefs = appSession.getLocalPrefs(sn);
+        CertificateTrustManager certMgr = prefs.getStoredCertificateTrustmanager();
+        frame.getContentPane().add(new CertificatesPrefsPanel(appSession, sn, certMgr));
+        frame.pack();
+        frame.setSize(frame.getPreferredSize());
+        frame.setVisible(true);
+    }
+
+    public AppSession getAppSession() {
+        return appSession;
     }
 
     private class ConnStateListener implements StateListener {

@@ -38,22 +38,27 @@ package net.kano.aimcrypto.forms;
 import javax.swing.text.JTextComponent;
 import java.awt.event.FocusListener;
 import java.awt.event.FocusEvent;
+import java.awt.Component;
 import java.security.cert.X509Certificate;
 
 class OnFocusSelector implements FocusListener {
-    private final JTextComponent field;
-
-    public OnFocusSelector(JTextComponent field) {
-        this.field = field;
-    }
-
     public void focusGained(FocusEvent e) {
-        field.setSelectionStart(0);
-        int length = field.getDocument().getLength();
-        field.setSelectionEnd(length);
-        field.setCaretPosition(length);
+        Component comp = e.getComponent();
+        if (comp instanceof JTextComponent) {
+            JTextComponent field = (JTextComponent) comp;
+            int length = field.getDocument().getLength();
+//            field.setCaretPosition(length);
+            field.setSelectionStart(0);
+            field.setSelectionEnd(length);
+        }
     }
 
     public void focusLost(FocusEvent e) {
+        Component comp = e.getComponent();
+        if (comp instanceof JTextComponent) {
+            JTextComponent field = (JTextComponent) comp;
+            field.setSelectionStart(0);
+            field.setSelectionEnd(0);
+        }
     }
 }

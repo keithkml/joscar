@@ -14,7 +14,7 @@
         <javac srcdir="${dir.src}" destdir="${dir.bin}" classpath="lib/*.jar" />
     </target>
 
-    <target name="jar" depends="compile">
+    <target name="jar">
         <delete file="${file.jar}" />
         <jar file="${file.jar}" manifest="etc/main-manifest.mf">
             <fileset dir="${dir.bin}" includes="**/*.class" />
