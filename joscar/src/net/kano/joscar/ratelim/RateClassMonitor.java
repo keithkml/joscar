@@ -187,7 +187,10 @@ public class RateClassMonitor {
      * <code>-1</code>, which indicates that the error margin should be
      * "inherited" from this rate class monitor's parent
      * <code>RateMonitor</code>.
-     * @return
+     *
+     * @return this monitor's locally set error margin, or <code>-1</code> if
+     *         this monitor's error margin is currently inherited from its
+     *         parent rate monitor
      */
     public synchronized final int getLocalErrorMargin() { return errorMargin; }
 
@@ -261,8 +264,19 @@ public class RateClassMonitor {
         return limited;
     }
 
-    public synchronized final long getCurrentAvg() {
+    //TODO: implement, document getCurrentAvg
+    public final long getCurrentAvg() {
         return computeCurrentAvg();
+    }
+
+    /**
+     * Returns what the rate average <i>would</i> be if a command were sent at
+     * the current time.
+     *
+     * @return the potential rate average
+     */
+    public final long getPotentialAvg() {
+        return getPotentialAvg(System.currentTimeMillis());
     }
 
     /**
@@ -281,7 +295,7 @@ public class RateClassMonitor {
      * Returns how long one "should" wait before sending a command in this
      * monitor's associated rate class (to avoid being rate limited). This
      * algorithm attempts to stay above the rate limit (or the clear limit, if
-     * {@linkplain #isLimited currently rate limited) plus the {@linkplain
+     * {@linkplain #isLimited currently rate limited}) plus the {@linkplain
      * #getErrorMargin error margin}. Note that this method will never return
      * a value less than zero.
      *

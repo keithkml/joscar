@@ -43,16 +43,33 @@ import java.util.Collection;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Manages a single queue for a single rate class of a SNAC connection. This
+ * class basically wraps a plain old queue, and its existence is thus rather
+ * questionable. However, functionality might be added later, so this class
+ * stays.
+ */
 public class RateQueue {
+    /** A logger to log rate-related events. */
     private static final Logger logger
             = Logger.getLogger("net.kano.joscar.ratelim");
 
+    /** The "parent" connection manager for this rate queue. */
     private final ConnectionQueueMgr parentMgr;
 
+    /** The actual request queue. */
     private final LinkedList queue = new LinkedList();
 
+    /** The rate class monitor for this rate queue. */
     private final RateClassMonitor rateMonitor;
 
+    /**
+     * Creates a new rate queue with the given "parent" connection queue manager
+     * using the given rate monitor.
+     *
+     * @param parentMgr this rate queue's parent connection queue manager
+     * @param monitor the rate class monitor to use for this rate queue
+     */
     RateQueue(ConnectionQueueMgr parentMgr, RateClassMonitor monitor) {
         DefensiveTools.checkNull(parentMgr, "parentMgr");
         DefensiveTools.checkNull(monitor, "monitor");
@@ -61,14 +78,39 @@ public class RateQueue {
         this.rateMonitor = monitor;
     }
 
+    /**
+     * Returns this rate queue's "parent" connection queue manager.
+     *
+     * @return this rate queue's "parent" connection queue manager
+     */
     public ConnectionQueueMgr getParentMgr() { return parentMgr; }
 
+    /**
+     * Returns the rate class monitor associated with this rate queue.
+     *
+     * @return this rate queue's associated rate class monitor
+     */
     public RateClassMonitor getRateClassMonitor() { return rateMonitor; }
 
+    /**
+     * Returns the number of requests currently waiting in this queue.
+     *
+     * @return the number of requests currently waiting in this queue
+     */
     public synchronized int getQueueSize() { return queue.size(); }
 
+    /**
+     * Returns whether any requests are waiting in this queue.
+     *
+     * @return whether any requests are currently in this queue
+     */
     public synchronized boolean hasRequests() { return !queue.isEmpty(); }
 
+    /**
+     * Adds a request to this queue.
+     *
+     * @param req the request to enqueue
+     */
     synchronized void enqueue(SnacRequest req) {
         DefensiveTools.checkNull(req, "req");
 
@@ -81,6 +123,11 @@ public class RateQueue {
         queue.add(req);
     }
 
+    /**
+     * Removes the oldest request from this queue.
+     *
+     * @return the request that was removed
+     */
     synchronized SnacRequest dequeue() {
         if (queue.isEmpty()) return null;
 
@@ -95,11 +142,20 @@ public class RateQueue {
         return request;
     }
 
+    /**
+     * Dequeues all requests in this queue, adding them in order from oldest
+     * to newest to the given collection.
+     *
+     * @param dest the collection to which the dequeued requests should be added
+     */
     synchronized void dequeueAll(Collection dest) {
         dest.addAll(queue);
         queue.clear();
     }
 
+    /**
+     * Removes all requests from this queue.
+     */
     synchronized void clear() {
         queue.clear();
     }
