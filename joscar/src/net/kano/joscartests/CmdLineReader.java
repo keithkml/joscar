@@ -51,7 +51,9 @@ public class CmdLineReader {
     public CmdLineReader(CmdLineListener listener, InputStream stream) {
         this.listener = listener;
         this.stream = stream;
-        new Thread(new CLThread(), "Command line thread").start();
+
+        Thread thread = new Thread(new CLThread(), "Command line thread");
+        thread.start();
     }
 
     protected class CLThread implements Runnable {

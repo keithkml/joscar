@@ -44,11 +44,11 @@ import java.util.LinkedList;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 
-public class RateQueue {
+class RateQueue {
     private static final Logger logger
             = Logger.getLogger("net.kano.joscar.ratelim");
 
-    private final RateClassSet parentSet;
+    private final ConnectionQueueMgr parentMgr;
 
     private RateClassInfo rateInfo;
     private LinkedList queue = new LinkedList();
@@ -56,16 +56,16 @@ public class RateQueue {
     private long runningAvg;
     private boolean limited = false;
 
-    public RateQueue(RateClassSet parentSet, RateClassInfo rateInfo) {
-        DefensiveTools.checkNull(parentSet, "parentSet");
+    public RateQueue(ConnectionQueueMgr parentMgr, RateClassInfo rateInfo) {
+        DefensiveTools.checkNull(parentMgr, "parentMgr");
         DefensiveTools.checkNull(rateInfo, "rateInfo");
 
-        this.parentSet = parentSet;
+        this.parentMgr = parentMgr;
         this.rateInfo = rateInfo;
         this.runningAvg = rateInfo.getMax();
     }
 
-    public RateClassSet getParentSet() { return parentSet; }
+    public ConnectionQueueMgr getParentMgr() { return parentMgr; }
 
     public synchronized RateClassInfo getRateInfo() { return rateInfo; }
 
@@ -101,7 +101,7 @@ public class RateQueue {
     }
 
     private synchronized int getErrorMargin() {
-        return parentSet.getQueueMgr().getErrorMargin();
+        return parentMgr.getQueueMgr().getErrorMargin();
     }
 
     public synchronized long getOptimalWaitTime() {
