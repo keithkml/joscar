@@ -68,7 +68,7 @@ public class SsiDataModResponse extends SsiCommand {
      * deleted.
       */
     public static final int RESULT_NO_SUCH_ITEM = 0x0002;
-    //TODO: is CANT_ADD_ANOTHER... more like ITEM_EXISTS_OTHER_TYPE
+    //TODO: is CANT_ADD_ANOTHER... more like ITEM_EXISTS_OTHER_TYPE?
     /**
      * A result code indicating that the client attempted to create a second
      * {@linkplain net.kano.joscar.ssiitem.RootItem group list}.

@@ -95,20 +95,16 @@ public class RateLimitingQueueMgr implements SnacQueueManager {
 
     /** A thread to "run" the SNAC queues controlled by this queue manager. */
     private final QueueRunner runner = new QueueRunner();
-    private final Thread runnerThread = new Thread(runner);
-    {
-        runnerThread.start();
-    }
 
     /**
      * Returns this rate manager's "queue runner."
      *
      * @return this rate manager's queue runner thread object
      */
-    final QueueRunner getRunner() { return runner; }
+    public final QueueRunner getRunner() { return runner; }
 
     public void stop() {
-        runner.stop();
+        runner.stopCurrentRun();
     }
 
     protected void finalize() {

@@ -54,9 +54,10 @@ public final class JoscarTools {
      * The "patch" version of joscar being used. This will return the
      * <code>3</code> in version <code>1.2.3</code>.
      */
-    public static final int JOSCAR_VERSION_PATCH = 3;
+    public static final int JOSCAR_VERSION_PATCH = 4;
+    public static final ReleaseType JOSCAR_VERSION_RELTYPE = ReleaseType.TYPE_CVS;
 
-    /** A version string, like "1.2.3". */
+    /** A version string, like "1.2.3 alpha". */
     private static final String VERSION_STRING
             = JOSCAR_VERSION_MAJOR + "."
             + JOSCAR_VERSION_MINOR + "."
@@ -78,4 +79,23 @@ public final class JoscarTools {
      * @see #JOSCAR_VERSION_PATCH
      */
     public static String getVersionString() { return VERSION_STRING; }
+
+    public static final class ReleaseType {
+        public static final ReleaseType TYPE_CVS
+                = new ReleaseType("pre-alpha (CVS)");
+        public static final ReleaseType TYPE_ALPHA
+                = new ReleaseType("alpha");
+        public static final ReleaseType TYPE_BETA
+                = new ReleaseType("beta");
+        public static final ReleaseType TYPE_RELEASE
+                = new ReleaseType("release");
+
+        private final String name;
+
+        private ReleaseType(String name) {
+            this.name = name;
+        }
+
+        public String toString() { return name; }
+    }
 }

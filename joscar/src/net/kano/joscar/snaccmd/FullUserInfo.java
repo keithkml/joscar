@@ -110,33 +110,33 @@ public class FullUserInfo implements LiveWritable {
     /**
      * An ICQ status flag indicating that the user is invisible.
      */
-    public static final long ICQSTATUS_INVISIBLE = 0x00000100;
+    public static final long ICQSTATUS_INVISIBLE = 0x00000100L;
 
     /**
      * An ICQ status flag indicating that the user does not want to be
      * disturbed.
      */
-    public static final long ICQSTATUS_DND = 0x00000002;
+    public static final long ICQSTATUS_DND = 0x00000002L;
 
     /**
      * An ICQ status flag indicating that the user is occupied.
      */
-    public static final long ICQSTATUS_OCCUPIED = 0x00000010;
+    public static final long ICQSTATUS_OCCUPIED = 0x00000010L;
 
     /**
      * An ICQ status flag indicating that the user is not available.
      */
-    public static final long ICQSTATUS_NA = 0x00000004;
+    public static final long ICQSTATUS_NA = 0x00000004L;
 
     /**
      * An ICQ status flag indicating that the user is away.
      */
-    public static final long ICQSTATUS_AWAY = 0x00000001;
+    public static final long ICQSTATUS_AWAY = 0x00000001L;
 
     /**
      * An ICQ status flag indicating that the user is free for chat.
      */
-    public static final long ICQSTATUS_FFC = 0x00000020;
+    public static final long ICQSTATUS_FFC = 0x00000020L;
 
 
     /**
@@ -223,14 +223,12 @@ public class FullUserInfo implements LiveWritable {
 
         long sessLengthAIM = -1;
         if (sessionLengthAIM != null) {
-            // once again convert seconds to milliseconds and subtract from the
-            // current time
-            sessLengthAIM = sessionLengthAIM.getDataAsUInt() * 1000;
+            sessLengthAIM = sessionLengthAIM.getDataAsUInt();
         }
 
         long sessLengthAOL = -1;
         if (sessionLengthAOL != null) {
-            sessLengthAOL = sessionLengthAOL.getDataAsUInt() * 1000;
+            sessLengthAOL = sessionLengthAOL.getDataAsUInt();
         }
 
         Date onSince = null;
@@ -802,18 +800,15 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
 
         if (warningLevel == null) return;
 
-        BinaryTools.writeUByte(out, warningLevel.getX10Value());
+        BinaryTools.writeUShort(out, warningLevel.getX10Value());
 
         MutableTlvChain chain = TlvTools.createMutableChain();
 
         if (flags != -1 || away != null) {
-            int flags = this.flags;
+            int flags = this.flags == -1 ? 0 : this.flags;
             if (away != null) {
-                if (away.booleanValue()) {
-                    flags &= MASK_AWAY;
-                } else {
-                    flags &= ~MASK_AWAY;
-                }
+                if (away.booleanValue()) flags |= MASK_AWAY;
+                else flags &= ~MASK_AWAY;
             }
             chain.addTlv(Tlv.getUShortInstance(TYPE_USER_FLAG, flags));
         }
@@ -898,10 +893,10 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
                 (memberSince != null ? ", memberSince=" + memberSince : "") +
 
                 (sessionLengthAIM != -1
-                ? ", sessLenAim=" + sessionLengthAIM / 60 + "min" : "") +
+                ? ", sessLenAim=" + (sessionLengthAIM / 60) + "min" : "") +
 
                 (sessionLengthAOL != -1
-                ? ", sessLenAol=" + sessionLengthAOL / 60 + "min" : "") +
+                ? ", sessLenAol=" + (sessionLengthAOL / 60) + "min" : "") +
 
                 (onSince != null ? ", onSince=" + onSince  : "") +
 
