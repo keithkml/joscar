@@ -61,7 +61,7 @@ import java.util.List;
  * <br>
  * <br>
  * This command is normally sent in response to each of {@link JoinRoomCmd},
- * {@link ExchangeInfoReq}, and {@link RoomRightsRequest}.
+ * {@link ExchangeInfoReq}, {@link RoomRightsRequest}, and {@link RoomInfoReq}.
  *
  * @snac.src server
  * @snac.cmd 0x0d 0x09

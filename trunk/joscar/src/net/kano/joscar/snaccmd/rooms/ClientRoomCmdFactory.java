@@ -48,6 +48,7 @@ public class ClientRoomCmdFactory implements SnacCmdFactory {
     /** The supported SNAC command types. */
     private static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
         new CmdType(RoomCommand.FAMILY_ROOM, RoomCommand.CMD_ROOM_RESPONSE),
+        new CmdType(RoomCommand.FAMILY_ROOM, RoomCommand.CMD_MORE_ROOM_INFO),
     };
 
     public CmdType[] getSupportedTypes() {
@@ -61,6 +62,8 @@ public class ClientRoomCmdFactory implements SnacCmdFactory {
 
         if (command == RoomCommand.CMD_ROOM_RESPONSE) {
             return new RoomResponse(packet);
+        } else if (command == RoomCommand.CMD_MORE_ROOM_INFO) {
+            return new RoomInfoReq(packet);
         } else {
             return null;
         }

@@ -43,11 +43,13 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * A SNAC command used to join a chat room. The response to this command,
- * normally a {@link RoomResponse}, contains a room information block and a
- * cookie, which can then be passed to a {@link
- * net.kano.joscar.snaccmd.conn.ServiceRequest} which will then provide you
- * with a connection to the server on which the requested chat room resides.
+ * A SNAC command used to join (or create) a chat room whose name is already
+ * known. This command should normally be used when joining a room to which one
+ * has not been already invited. The response to this command, normally a {@link
+ * RoomResponse}, contains a room information block and a cookie, which can then
+ * be passed to a {@link net.kano.joscar.snaccmd.conn.ServiceRequest} which will
+ * then provide you with a connection to the server on which the requested chat
+ * room resides.
  *
  * @snac.src client
  * @snac.cmd 0x0d 0x08

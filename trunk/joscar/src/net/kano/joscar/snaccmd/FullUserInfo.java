@@ -143,13 +143,13 @@ public class FullUserInfo implements LiveWritable {
         Tlv capTlv = chain.getLastTlv(TYPE_CAPS);
         Tlv sessionLengthAIM = chain.getLastTlv(TYPE_SESS_LEN_AIM);
         Tlv sessionLengthAOL = chain.getLastTlv(TYPE_SESS_LEN_AOL);
-        Tlv iconInfoTlv = chain.getLastTlv(TYPE_ICON_INFO);
+        Tlv iconInfoTlv = chain.getLastTlv(TYPE_EXTRA_INFO);
 
         MutableTlvChain extras = new DefaultMutableTlvChain(chain);
         extras.removeTlvs(new int[] {
             TYPE_USER_FLAG, TYPE_ACCT_CREATED, TYPE_ON_SINCE, TYPE_IDLE_MINS,
             TYPE_MEMBER_SINCE, TYPE_CAPS, TYPE_SESS_LEN_AIM, TYPE_SESS_LEN_AOL,
-            TYPE_ICON_INFO
+            TYPE_EXTRA_INFO
         });
 
         Boolean away = null;
@@ -207,10 +207,10 @@ public class FullUserInfo implements LiveWritable {
 
         }
 
-        ExtraIconInfo[] iconInfos = null;
+        ExtraInfoBlock[] iconInfos = null;
         if (iconInfoTlv != null) {
             ByteBlock iconData = iconInfoTlv.getData();
-            iconInfos = ExtraIconInfo.readExtraIconInfos(iconData);
+            iconInfos = ExtraInfoBlock.readExtraInfos(iconData);
         }
 
         block = block.subBlock(chain.getTotalSize());
@@ -269,9 +269,9 @@ public class FullUserInfo implements LiveWritable {
     private static final int TYPE_SESS_LEN_AOL = 0x0010;
 
     /**
-     * A TLV containing a series of <code>ExtraIconInfo</code> structures.
+     * A TLV containing a series of <code>ExtraInfoBlock</code> structures.
      */
-    private static final int TYPE_ICON_INFO = 0x001d;
+    private static final int TYPE_EXTRA_INFO = 0x001d;
 
 
     /** The screenname of this user. */
@@ -345,7 +345,7 @@ public class FullUserInfo implements LiveWritable {
      * A set of extra icon information structures advertised by this user, or
      * <code>null</code> if this field was not sent.
      */
-    private final ExtraIconInfo[] iconInfos;
+    private final ExtraInfoBlock[] iconInfos;
 
     /**
      * A set of extra TLV's that were not explicitly parsed into fields.
@@ -400,7 +400,7 @@ public class FullUserInfo implements LiveWritable {
     public FullUserInfo(String sn, int warningLevel, int flags,
             Date accountCreated, Date memberSince, long sessAIM, long sessAOL,
             Date onSince, int idleMins, CapabilityBlock[] capabilityBlocks,
-            Boolean away, ExtraIconInfo[] iconInfos) {
+            Boolean away, ExtraInfoBlock[] iconInfos) {
         this(sn, warningLevel, flags, accountCreated, memberSince, sessAIM,
                 sessAOL, onSince, idleMins, capabilityBlocks, away, iconInfos,
                 null);
@@ -436,7 +436,7 @@ public class FullUserInfo implements LiveWritable {
     public FullUserInfo(String sn, int warningLevel, int flags,
             Date accountCreated, Date memberSince, long sessAIM, long sessAOL,
             Date onSince, int idleMins, CapabilityBlock[] capabilityBlocks,
-            Boolean away, ExtraIconInfo[] iconInfos, TlvChain extraTlvs) {
+            Boolean away, ExtraInfoBlock[] iconInfos, TlvChain extraTlvs) {
         this(sn, warningLevel, flags, accountCreated, memberSince, sessAIM,
                 sessAOL, onSince, idleMins, capabilityBlocks, away, iconInfos,
                 extraTlvs, -1);
@@ -472,7 +472,7 @@ public class FullUserInfo implements LiveWritable {
     private FullUserInfo(String sn, int warningLevel, int flags,
             Date accountCreated, Date memberSince, long sessAIM, long sessAOL,
             Date onSince, int idleMins, CapabilityBlock[] capabilityBlocks,
-            Boolean away, ExtraIconInfo[] iconInfos, TlvChain extraTlvs,
+            Boolean away, ExtraInfoBlock[] iconInfos, TlvChain extraTlvs,
             int totalSize) {
         DefensiveTools.checkNull(sn, "sn");
         DefensiveTools.checkRange(warningLevel, "warningLevel", 0);
@@ -630,8 +630,8 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
      *
      * @return a list if advertised buddy icon hash information blocks
      */
-    public final ExtraIconInfo[] getIconInfos() {
-        return (ExtraIconInfo[]) (iconInfos == null ? null : iconInfos.clone());
+    public final ExtraInfoBlock[] getIconInfos() {
+        return (ExtraInfoBlock[]) (iconInfos == null ? null : iconInfos.clone());
     }
 
     /**
@@ -715,7 +715,7 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
         }
 
         if (iconInfos != null) {
-            chain.addTlv(new Tlv(TYPE_ICON_INFO,
+            chain.addTlv(new Tlv(TYPE_EXTRA_INFO,
                     ByteBlock.createByteBlock(iconInfos)));
         }
 

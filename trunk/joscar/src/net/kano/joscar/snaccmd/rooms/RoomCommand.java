@@ -63,6 +63,9 @@ public abstract class RoomCommand extends SnacCommand {
     /** A command subtype for a generic chat information response. */
     public static final int CMD_ROOM_RESPONSE = 0x0009;
 
+    /** A command subtype for requesting more information about a chat room. */
+    public static final int CMD_MORE_ROOM_INFO = 0x0004;
+
     /**
      * Creates a new SNAC command in the chat room navigation family.
      *

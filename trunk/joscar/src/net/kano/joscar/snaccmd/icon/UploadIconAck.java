@@ -39,7 +39,7 @@ import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
-import net.kano.joscar.snaccmd.ExtraIconInfo;
+import net.kano.joscar.snaccmd.ExtraInfoBlock;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -60,7 +60,7 @@ public class UploadIconAck extends IconCommand {
     /** The acknowledgement code. */
     private final int code;
     /** An icon information block corresponding to the uploaded icon. */
-    private final ExtraIconInfo iconInfo;
+    private final ExtraInfoBlock iconInfo;
 
     /**
      * Generates an icon upload acknowledgement command from the given incoming
@@ -79,7 +79,7 @@ public class UploadIconAck extends IconCommand {
 
         ByteBlock iconBlock = snacData.subBlock(1);
 
-        iconInfo = ExtraIconInfo.readExtraIconInfo(iconBlock);
+        iconInfo = ExtraInfoBlock.readExtraInfoBlock(iconBlock);
     }
 
     /**
@@ -92,7 +92,7 @@ public class UploadIconAck extends IconCommand {
      * @param iconInfo an icon information block corresponding to the uploaded
      *        icon
      */
-    public UploadIconAck(ExtraIconInfo iconInfo) {
+    public UploadIconAck(ExtraInfoBlock iconInfo) {
         this(CODE_DEFAULT, iconInfo);
     }
 
@@ -104,7 +104,7 @@ public class UploadIconAck extends IconCommand {
      * @param iconInfo an icon information block corresponding to the uploaded
      *        icon
      */
-    public UploadIconAck(int code, ExtraIconInfo iconInfo) {
+    public UploadIconAck(int code, ExtraInfoBlock iconInfo) {
         super(CMD_UPLOAD_ACK);
 
         DefensiveTools.checkRange(code, "code", 0);
@@ -128,7 +128,7 @@ public class UploadIconAck extends IconCommand {
      *
      * @return the icon information block for the uploaded icon
      */
-    public final ExtraIconInfo getIconInfo() {
+    public final ExtraInfoBlock getIconInfo() {
         return iconInfo;
     }
 
