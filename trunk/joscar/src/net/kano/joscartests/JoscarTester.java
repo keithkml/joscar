@@ -37,10 +37,20 @@ package net.kano.joscartests;
 
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.FileWritable;
-import net.kano.joscar.rvcmd.sendfile.SendFileRvCmd;
-import net.kano.joscar.rvcmd.sendfile.FileSendBlock;
-import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.flap.ClientFlapConn;
+import net.kano.joscar.flap.FlapCommand;
+import net.kano.joscar.rv.RvSession;
+import net.kano.joscar.rvcmd.InvitationMessage;
+import net.kano.joscar.rvcmd.RvConnectionInfo;
+import net.kano.joscar.rvcmd.voice.VoiceReqRvCmd;
+import net.kano.joscar.rvcmd.chatinvite.ChatInvitationRvCmd;
+import net.kano.joscar.rvcmd.directim.DirectIMReqRvCmd;
+import net.kano.joscar.rvcmd.getfile.GetFileReqRvCmd;
+import net.kano.joscar.rvcmd.sendbl.SendBuddyListGroup;
+import net.kano.joscar.rvcmd.sendbl.SendBuddyListRvCmd;
+import net.kano.joscar.rvcmd.sendfile.FileSendBlock;
+import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
+import net.kano.joscar.rvcmd.trillcrypt.TrillianCryptReqRvCmd;
 import net.kano.joscar.snac.SnacCommand;
 import net.kano.joscar.snac.SnacProcessor;
 import net.kano.joscar.snac.SnacRequest;
@@ -51,6 +61,7 @@ import net.kano.joscar.snaccmd.acct.AcctModCmd;
 import net.kano.joscar.snaccmd.acct.ConfirmAcctCmd;
 import net.kano.joscar.snaccmd.chat.ChatMsg;
 import net.kano.joscar.snaccmd.conn.ServiceRequest;
+import net.kano.joscar.snaccmd.icbm.OldIconHashInfo;
 import net.kano.joscar.snaccmd.icbm.SendImIcbm;
 import net.kano.joscar.snaccmd.icon.UploadIconCmd;
 import net.kano.joscar.snaccmd.invite.InviteFriendCmd;
@@ -69,17 +80,20 @@ import net.kano.joscar.snaccmd.ssi.ModifyItemsCmd;
 import net.kano.joscar.snaccmd.ssi.SsiItem;
 import net.kano.joscar.ssiitem.*;
 
+import javax.crypto.interfaces.DHPublicKey;
+import javax.crypto.spec.DHPublicKeySpec;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.io.OutputStream;
+import java.net.*;
+import java.security.*;
+import java.security.spec.InvalidKeySpecException;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.net.ServerSocket;
 
 public class JoscarTester implements CmdLineListener {
     protected static final int DEFAULT_SERVICE_PORT = 5190;
@@ -267,10 +281,27 @@ public class JoscarTester implements CmdLineListener {
 
     protected SortedMap cmdMap = new TreeMap();
 
+    OldIconHashInfo oldIconInfo;
+    File iconFile;
+    {
+        try {
+            ClassLoader classLoader = getClass().getClassLoader();
+            URL iconResource = classLoader.getResource("images/beck.gif");
+            URI uri = new URI(iconResource.toExternalForm());
+            iconFile = new File(uri);
+            oldIconInfo = new OldIconHashInfo(iconFile);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+        }
+    }
+
     {
         cmdMap.put("im", new CLCommand() {
             public void handle(String line, String cmd, String[] args) {
-                request(new SendImIcbm(args[0], args[1], false));
+                request(new SendImIcbm(args[0], args[1], false, 0, true,
+                        oldIconInfo, true));
             }
         });
         cmdMap.put("info", new CLCommand() {
@@ -602,19 +633,148 @@ public class JoscarTester implements CmdLineListener {
                 ServerSocket socket = null;
                 try {
                     socket = new ServerSocket(0);
+
+                    new SendFileThread(session, socket).start();
                 } catch (IOException e) {
                     e.printStackTrace();
-                    return;
                 }
 
                 session.addListener(bosConn.rvSessionListener);
 
-                session.sendRv(new SendFileRvCmd("take this file lol",
-                        bosConn.getSocket().getLocalAddress(), 
-                        socket.getLocalPort(),
-                        new FileSendBlock("wut up.exe", 20000)));
+                InetAddress localHost = bosConn.getSocket().getLocalAddress();
+                int port = socket.getLocalPort();
+                session.sendRv(new FileSendReqRvCmd(
+                        new InvitationMessage("take this file lol"),
+                        new RvConnectionInfo(localHost,  port),
+                        new FileSendBlock("wut up.gif", 2000000)));
             }
         });
+        cmdMap.put("secureim", new CLCommand() {
+            public void handle(String line, String cmd, String[] args) {
+                RvSession session = bosConn.rvProcessor.createRvSession(
+                        args[0]);
+
+                session.addListener(bosConn.rvSessionListener);
+
+                try {
+                    KeyPairGenerator keygen
+                            = KeyPairGenerator.getInstance("DiffieHellman");
+                    KeyPair keyPair = keygen.generateKeyPair();
+
+                    DHPublicKey key = (DHPublicKey) keyPair.getPublic();
+
+                    KeyFactory factory
+                            = KeyFactory.getInstance("DiffieHellman");
+
+                    DHPublicKeySpec pubSpec
+                            = (DHPublicKeySpec) factory.getKeySpec(key,
+                            DHPublicKeySpec.class);
+
+                    session.sendRv(new TrillianCryptReqRvCmd(0,
+                            pubSpec.getP(), pubSpec.getG()));
+                } catch (NoSuchAlgorithmException e) {
+                    e.printStackTrace();
+                } catch (InvalidKeySpecException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        cmdMap.put("sendbl", new CLCommand() {
+            public void handle(String line, String cmd, String[] args) {
+                RvSession session = bosConn.rvProcessor.createRvSession(
+                        args[0]);
+
+                session.addListener(bosConn.rvSessionListener);
+
+                session.sendRv(new SendBuddyListRvCmd(new SendBuddyListGroup[] {
+                    new SendBuddyListGroup("HEYTOM", new String[] {
+                        "HEYTOMBUDDY"
+                    }),
+                }));
+            }
+        });
+        cmdMap.put("invite", new CLCommand() {
+            public void handle(String line, String cmd, String[] args) {
+                RvSession session = bosConn.rvProcessor.createRvSession(
+                        args[0]);
+
+                ChatConn conn = (ChatConn) chats.get(args[1]);
+
+                session.addListener(bosConn.rvSessionListener);
+
+                session.sendRv(new ChatInvitationRvCmd(
+                        new MiniRoomInfo(conn.getRoomInfo()),
+                        new InvitationMessage("wut up d00d")));
+            }
+        });
+        cmdMap.put("directim", new CLCommand() {
+            public void handle(String line, String cmd, String[] args) {
+                RvSession session = bosConn.rvProcessor.createRvSession(
+                        args[0]);
+
+                session.addListener(bosConn.rvSessionListener);
+
+                try {
+                    session.sendRv(new DirectIMReqRvCmd(
+                            new RvConnectionInfo(
+                            InetAddress.getLocalHost(),
+                            3453)));
+                } catch (UnknownHostException e) {
+
+                }
+            }
+        });
+        cmdMap.put("getfile", new CLCommand() {
+            public void handle(String line, String cmd, String[] args) {
+                RvSession session = bosConn.rvProcessor.createRvSession(
+                        args[0]);
+
+                session.addListener(bosConn.rvSessionListener);
+
+                ServerSocket socket = null;
+                try {
+                    socket = new ServerSocket(0);
+
+                    new GetFileThread(session, socket).start();
+                } catch (IOException e) {
+                    e.printStackTrace();
+
+                    return;
+                }
+
+                bosConn.getFlapProcessor().send(new MysteryFlapCmd());
+                try {
+                    session.sendRv(new GetFileReqRvCmd(0,
+                            new RvConnectionInfo(InetAddress.getLocalHost(),
+                                    socket.getLocalPort())));
+                } catch (UnknownHostException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        cmdMap.put("voicechat", new CLCommand() {
+            public void handle(String line, String cmd, String[] args) {
+                RvSession session = bosConn.rvProcessor.createRvSession(
+                        args[0]);
+
+                session.addListener(bosConn.rvSessionListener);
+
+                try {
+                    session.sendRv(new VoiceReqRvCmd(0,
+                            new RvConnectionInfo(InetAddress.getLocalHost())));
+                } catch (UnknownHostException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+
+    private class MysteryFlapCmd extends FlapCommand {
+        public MysteryFlapCmd() {
+            super(5);
+        }
+
+        public void writeData(OutputStream out) throws IOException { }
     }
 
     public void processCmd(CmdLineReader reader, String line) {
@@ -625,6 +785,7 @@ public class JoscarTester implements CmdLineListener {
         }
 
         if (cmds.isEmpty()) {
+            // this is a joke. :(
             System.out.println("*** Empty lines are prohibited.");
             return;
         }
@@ -646,7 +807,6 @@ public class JoscarTester implements CmdLineListener {
     }
 
     public static void main(String[] args) {
-        System.out.println(CapabilityBlock.BLOCK_CHAT);
         System.out.println("connecting to AIM as " + args[0] + "...");
 
         ConsoleHandler handler = new ConsoleHandler();
@@ -657,7 +817,6 @@ public class JoscarTester implements CmdLineListener {
 
         JoscarTester tester = new JoscarTester(args[0], args[1]);
         tester.connect();
-
 
         new Timer(true).scheduleAtFixedRate(new TimerTask() {
             protected NumberFormat format = NumberFormat.getNumberInstance();

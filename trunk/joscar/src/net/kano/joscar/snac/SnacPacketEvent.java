@@ -84,7 +84,6 @@ public class SnacPacketEvent extends FlapPacketEvent {
 
         DefensiveTools.checkNull(snacProcessor, "snacProcessor");
         DefensiveTools.checkNull(snacPacket, "snacPacket");
-        DefensiveTools.checkNull(snacCommand, "snacCommand");
 
         this.snacProcessor = snacProcessor;
         this.snacPacket = snacPacket;

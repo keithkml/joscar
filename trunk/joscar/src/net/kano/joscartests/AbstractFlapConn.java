@@ -38,29 +38,31 @@ package net.kano.joscartests;
 import net.kano.joscar.flap.*;
 import net.kano.joscar.snac.*;
 import net.kano.joscar.snaccmd.DefaultClientFactoryList;
+import net.kano.joscar.net.ClientConnEvent;
+import net.kano.joscar.net.ClientConnListener;
 
 import java.net.InetAddress;
 
 public abstract class AbstractFlapConn extends ClientFlapConn {
     protected JoscarTester tester;
-    protected SnacProcessor snacProcessor = new SnacProcessor(this);
+    protected SnacProcessor snacProcessor = new SnacProcessor(getFlapProcessor());
 
     {
         snacProcessor.addPreprocessor(new FamilyVersionPreprocessor());
         snacProcessor.setDefaultSnacCmdFactoryList(
                 new DefaultClientFactoryList());
         
-        addConnListener(new FlapConnListener() {
-            public void stateChanged(FlapConnEvent e) {
+        addConnListener(new ClientConnListener() {
+            public void stateChanged(ClientConnEvent e) {
                 handleStateChange(e);
             }
         });
-        addPacketListener(new FlapPacketListener() {
-            public void handlePacket(FlapPacketEvent e) {
-                handleFlapPacket(e);
+        getFlapProcessor().addPacketListener(new FlapPacketListener() {
+            public void handleFlapPacket(FlapPacketEvent e) {
+                AbstractFlapConn.this.handleFlapPacket(e);
             }
         });
-        addExceptionHandler(new FlapExceptionHandler() {
+        getFlapProcessor().addExceptionHandler(new FlapExceptionHandler() {
             public void handleException(FlapExceptionEvent event) {
                 System.out.println(event.getType() + " FLAP ERROR: "
                         + event.getException().getMessage());
@@ -68,8 +70,8 @@ public abstract class AbstractFlapConn extends ClientFlapConn {
             }
         });
         snacProcessor.addPacketListener(new SnacPacketListener() {
-            public void handlePacket(SnacPacketEvent e) {
-                handleSnacPacket(e);
+            public void handleSnacPacket(SnacPacketEvent e) {
+                AbstractFlapConn.this.handleSnacPacket(e);
             }
         });
     }
@@ -120,7 +122,7 @@ public abstract class AbstractFlapConn extends ClientFlapConn {
         return req;
     }
 
-    protected abstract void handleStateChange(FlapConnEvent e);
+    protected abstract void handleStateChange(ClientConnEvent e);
     protected abstract void handleFlapPacket(FlapPacketEvent e);
     protected abstract void handleSnacPacket(SnacPacketEvent e);
     protected abstract void handleSnacResponse(SnacResponseEvent e);

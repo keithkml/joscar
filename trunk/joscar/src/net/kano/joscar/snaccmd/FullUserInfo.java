@@ -112,11 +112,11 @@ public class FullUserInfo implements LiveWritable {
 
         int start = block.getOffset();
 
-        ScreenNameBlock snInfo = OscarTools.readScreenname(block);
+        StringBlock snInfo = OscarTools.readScreenname(block);
 
         if (snInfo == null) return null;
 
-        String sn = snInfo.getScreenname();
+        String sn = snInfo.getString();
         int snLength = snInfo.getTotalSize();
 
         if (block.getLength() < snLength + 2) {

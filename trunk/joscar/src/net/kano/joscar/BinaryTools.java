@@ -35,6 +35,8 @@
 
 package net.kano.joscar;
 
+import net.kano.joscar.snaccmd.StringBlock;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
@@ -77,7 +79,7 @@ import java.net.UnknownHostException;
  * <code>writeLong</code> exist, you may ask, when they work with <i>signed</i>
  * <code>long</code>s? Let me start by saying that nowhere in the OSCAR protocol
  * is an eight-byte integer used. Why do these methods exist at all?, you may
- * now ask. The answer is simple: IM and Rendezvous "cookies" are eight bytes,
+ * now ask. The answer is simple: IM and Rendezvous ID's are eight bytes,
  * and are effectively represented as Java's <code>long</code>. Whether these
  * values are read as signed or unsigned matters not, as the <code>long</code>
  * is only an internal representation just as a <code>ByteBlock</code> is an
@@ -469,7 +471,28 @@ public final class BinaryTools {
      */
     public static String getAsciiString(ByteBlock data) {
         try {
-            return new String(data.toByteArray(), "US-ASCII");
+            return ByteBlock.createString(data, "US-ASCII");
         } catch (UnsupportedEncodingException impossible) { return null; }
+    }
+
+    public static StringBlock getNullPadded(ByteBlock block) {
+        int firstNull;
+        for (firstNull = 0; firstNull < block.getLength();
+             firstNull++) {
+            if (block.get(firstNull) == 0) break;
+        }
+        block = block.subBlock(0, firstNull);
+
+        return new StringBlock(getAsciiString(block), block.getLength());
+    }
+
+    public static void writeNullPadded(OutputStream out, ByteBlock block,
+            int len) throws IOException {
+        if (block.getLength() <= len) {
+            block.write(out);
+            out.write(new byte[len - block.getLength()]);
+        } else {
+            block.subBlock(0, len).write(out);
+        }
     }
 }

@@ -36,6 +36,7 @@
 package net.kano.joscar.snaccmd;
 
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.snaccmd.icbm.ImEncoding;
 
 /**
  * A simple structure containing a block of data and the name of the charset
@@ -74,6 +75,36 @@ public final class EncodedStringInfo {
      */
     public final String getCharset() {
         return charset;
+    }
+
+    /**
+     * Returns an <code>ImEncoding</code> object that describes the charset
+     * used to encode the associated string.
+     *
+     * @return an <code>ImEncoding</code> describing the charset that encoded
+     *         the string associated with this <code>EncodedStringInfo</code>
+     *
+     * @see net.kano.joscar.snaccmd.icbm.ImEncodedString
+     */
+    public final ImEncoding getImEncoding() {
+        int charsetCode;
+        int charsetSubcode;
+        if (charset == MinimalEncoder.ENCODING_ASCII) {
+            charsetCode = ImEncoding.CHARSET_ASCII;
+        } else if (charset == MinimalEncoder.ENCODING_ISO) {
+            charsetCode = ImEncoding.CHARSET_ISO;
+        } else if (charset == MinimalEncoder.ENCODING_UTF16) {
+            charsetCode = ImEncoding.CHARSET_UTF16;
+        } else {
+            // this shouldn't ever really happen, but it's nice to have
+            // something in case it does.
+            charsetCode = ImEncoding.CHARSET_ASCII;
+        }
+
+        // this is always the same value
+        charsetSubcode = ImEncoding.CHARSUBSET_DEFAULT;
+
+        return new ImEncoding(charsetCode, charsetSubcode);
     }
 
     /**

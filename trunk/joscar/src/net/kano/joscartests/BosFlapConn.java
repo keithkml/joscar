@@ -36,7 +36,7 @@
 package net.kano.joscartests;
 
 import net.kano.joscar.ByteBlock;
-import net.kano.joscar.flap.FlapConnEvent;
+import net.kano.joscar.net.ClientConnEvent;
 import net.kano.joscar.flap.FlapPacketEvent;
 import net.kano.joscar.snac.SnacCommand;
 import net.kano.joscar.snac.SnacPacketEvent;
@@ -47,7 +47,7 @@ import net.kano.joscar.snaccmd.InfoData;
 import net.kano.joscar.snaccmd.conn.*;
 import net.kano.joscar.snaccmd.icbm.ParamInfo;
 import net.kano.joscar.snaccmd.icbm.ParamInfoCmd;
-import net.kano.joscar.snaccmd.icbm.ParamInfoReq;
+import net.kano.joscar.snaccmd.icbm.ParamInfoRequest;
 import net.kano.joscar.snaccmd.icbm.SetParamInfoCmd;
 import net.kano.joscar.snaccmd.loc.LocRightsCmd;
 import net.kano.joscar.snaccmd.loc.LocRightsRequest;
@@ -78,7 +78,7 @@ public class BosFlapConn extends BasicConn {
         super(ip, port, tester, cookie);
     }
 
-    protected void handleStateChange(FlapConnEvent e) {
+    protected void handleStateChange(ClientConnEvent e) {
         System.out.println("main connection state changed from "
                 + e.getOldState() + " to " + e.getNewState() + ": "
                 + e.getReason());
@@ -95,7 +95,7 @@ public class BosFlapConn extends BasicConn {
 
         if (cmd instanceof ServerReadyCmd) {
             request(new SetIdleCmd(12345678));
-            request(new ParamInfoReq());
+            request(new ParamInfoRequest());
             request(new LocRightsRequest());
             request(new SsiRightsRequest());
             request(new SsiDataRequest());
@@ -109,16 +109,18 @@ public class BosFlapConn extends BasicConn {
 
         if (cmd instanceof LocRightsCmd) {
             request(new SetInfoCmd(new InfoData("this is my infoz lol",
-                    "im away?", new CapabilityBlock[] {
+                    null, new CapabilityBlock[] {
                         CapabilityBlock.BLOCK_CHAT,
                         CapabilityBlock.BLOCK_DIRECTIM,
                         CapabilityBlock.BLOCK_FILE_GET,
                         CapabilityBlock.BLOCK_FILE_SEND,
                         CapabilityBlock.BLOCK_GAMES,
+                        CapabilityBlock.BLOCK_GAMES2,
                         CapabilityBlock.BLOCK_ICON,
                         CapabilityBlock.BLOCK_SENDBUDDYLIST,
-                        CapabilityBlock.BLOCK_TRILLIANCRYPT,
-                        CapabilityBlock.BLOCK_VOICE
+//                        CapabilityBlock.BLOCK_TRILLIANCRYPT,
+                        CapabilityBlock.BLOCK_VOICE,
+                        CapabilityBlock.BLOCK_ADDINS,
                     })));
 
             request(new MyInfoRequest());

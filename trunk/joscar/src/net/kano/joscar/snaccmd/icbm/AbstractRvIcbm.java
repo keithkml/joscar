@@ -68,8 +68,8 @@ public abstract class AbstractRvIcbm extends AbstractIcbm {
 
     /** A status code. */
     private int status;
-    /** A rendezvous cookie. */
-    private long rvCookie;
+    /** A rendezvous session ID. */
+    private long rvSessionId;
     /** The capability block associated with this rendezvous command. */
     private CapabilityBlock cap;
     /** Command-specific data. */
@@ -98,7 +98,7 @@ public abstract class AbstractRvIcbm extends AbstractIcbm {
         ByteBlock rvBlock = chain.getLastTlv(TYPE_RV_DATA).getData();
 
         status = BinaryTools.getUShort(rvBlock, 0);
-        rvCookie = BinaryTools.getLong(rvBlock, 2);
+        rvSessionId = BinaryTools.getLong(rvBlock, 2);
 
         ByteBlock capBlock = rvBlock.subBlock(10, 16);
         cap = new CapabilityBlock(capBlock);
@@ -112,32 +112,35 @@ public abstract class AbstractRvIcbm extends AbstractIcbm {
      * Creates a new outgoing rendezvous ICBM command with the given properties.
      *
      * @param command the SNAC command subtype of this command
-     * @param icbmCookie an ICBM cookie to attach to this command
+     * @param icbmMessageId an ICBM message ID to attach to this command
      * @param status a status code, like {@link #STATUS_REQUEST}
-     * @param rvCookie a rendezvous cookie to attach to this command
+     * @param rvSessionId a rendezvous session ID to attach to this command
      * @param cap the capability block associated with this command
      * @param rvDataWriter an object to write rendezvous-command-specific data
      */
-    AbstractRvIcbm(int command, long icbmCookie, int status,
-            long rvCookie, CapabilityBlock cap, LiveWritable rvDataWriter) {
-        super(IcbmCommand.FAMILY_ICBM, command, icbmCookie, CHANNEL_RV);
+    AbstractRvIcbm(int command, long icbmMessageId, int status,
+            long rvSessionId, CapabilityBlock cap, LiveWritable rvDataWriter) {
+        super(IcbmCommand.FAMILY_ICBM, command, icbmMessageId, CHANNEL_RV);
 
         DefensiveTools.checkRange(status, "status", 0);
         DefensiveTools.checkNull(cap, "cap");
         DefensiveTools.checkNull(rvDataWriter, "rvDataWriter");
 
         this.status = status;
-        this.rvCookie = rvCookie;
+        this.rvSessionId = rvSessionId;
         this.cap = cap;
         this.rvData = null;
         this.rvDataWriter = rvDataWriter;
     }
 
-    AbstractRvIcbm(int command, long icbmCookie, long rvCookie,
-            RvCommand rvCommand) {
-        this(command, icbmCookie, rvCommand.getStatus(), rvCookie,
-                rvCommand.getCapabilityBlock(),
-                new RvCommandDataWriter(rvCommand));
+    AbstractRvIcbm(int command, long rvSessionId, final RvCommand rvCommand) {
+        this(command, rvCommand.getIcbmMessageId(), rvCommand.getRvStatus(),
+                rvSessionId, rvCommand.getCapabilityBlock(),
+                new LiveWritable() {
+                    public void write(OutputStream out) throws IOException {
+                        rvCommand.writeRvData(out);
+                    }
+                });
     }
 
     /**
@@ -152,12 +155,13 @@ public abstract class AbstractRvIcbm extends AbstractIcbm {
     }
 
     /**
-     * Returns the rendezvous cookie sent in this command.
+     * Returns the rendezvous session ID sent in this command. This is normally
+     * the ID of the rendezvous session in which this command was sent.
      *
-     * @return this rendezvous's rendezvous cookie
+     * @return this rendezvous's rendezvous session ID
      */
-    public final long getRvCookie() {
-        return rvCookie;
+    public final long getRvSessionId() {
+        return rvSessionId;
     }
 
     /**
@@ -190,28 +194,15 @@ public abstract class AbstractRvIcbm extends AbstractIcbm {
         ByteArrayOutputStream rvout = new ByteArrayOutputStream();
 
         BinaryTools.writeUShort(rvout, status);
-        BinaryTools.writeLong(rvout, rvCookie);
+        BinaryTools.writeLong(rvout, rvSessionId);
         cap.write(rvout);
         rvDataWriter.write(rvout);
 
         new Tlv(TYPE_RV_DATA, ByteBlock.wrap(rvout.toByteArray())).write(out);
     }
 
-    private static class RvCommandDataWriter implements LiveWritable {
-        private final RvCommand command;
-
-        public RvCommandDataWriter(RvCommand rvCommand) {
-            DefensiveTools.checkNull(rvCommand, "rvCommand");
-
-            this.command = rvCommand;
-        }
-
-        public final RvCommand getRvCommand() {
-            return command;
-        }
-
-        public void write(OutputStream out) throws IOException {
-            command.writeRvData(out);
-        }
+    public String toString() {
+        return "AbstractRvIcbm: status=" + this.status + ", rvSessionId="
+                + this.rvSessionId + ", on top of " + super.toString();
     }
 }

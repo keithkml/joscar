@@ -615,7 +615,7 @@ public class SnacProcessor {
             logger.finer("Running Snac packet listener " + listener);
 
             try {
-                listener.handlePacket(event);
+                listener.handleSnacPacket(event);
             } catch (Throwable t) {
                 flapProcessor.handleException(ERROR_SNAC_PACKET_LISTENER, t,
                         listener);
@@ -725,6 +725,8 @@ public class SnacProcessor {
 
         SnacCommand command = request.getCommand();
 
+        registerSnacRequest(request);
+
         logger.fine("Queueing Snac request #" + lastReqid + ": "
                 + command);
 
@@ -748,6 +750,37 @@ public class SnacProcessor {
 
         logger.fine("Sending SNAC request " + request);
 
+        RequestInfo reqInfo = registerSnacRequest(request);
+
+        if (reqInfo.getSentTime() != -1) {
+            throw new IllegalArgumentException("SNAC request " + request
+                    + " was already sent");
+        }
+
+        long reqid = reqInfo.getRequest().getReqid();
+        flapProcessor.send(new SnacFlapCmd(reqid, request.getCommand()));
+
+        long sentTime = System.currentTimeMillis();
+        reqInfo.sent(sentTime);
+        request.sent(new SnacRequestSentEvent(flapProcessor, this, request,
+                sentTime));
+        logger.finer("Finished sending SNAC request " + request);
+    }
+
+    /**
+     * Registers a SNAC request, giving it a request ID and remembering that ID
+     * for future reference. If the given request has already been registered,
+     * no change takes place, but its corresponding <code>RequestInfo</code> is
+     * still returned.
+     *
+     * @param request the request to register
+     * @return a <code>RequestInfo</code> corresponding to the given request
+     */
+    private synchronized RequestInfo registerSnacRequest(SnacRequest request) {
+        if (request.getReqid() != -1) {
+            return (RequestInfo) requests.get(new Long(request.getReqid()));
+        }
+
         // this is sent as an unsigned int, so it has to wrap like one. we
         // avoid request ID zero because that seems like a value the server
         // might use to denote a lack of a request ID.
@@ -763,19 +796,7 @@ public class SnacProcessor {
         RequestInfo reqInfo = new RequestInfo(request);
 
         requests.put(key, reqInfo);
-        
-        if (reqInfo.getSentTime() != -1) {
-            throw new IllegalArgumentException("SNAC request " + request
-                    + " was already sent");
-        }
-
-        flapProcessor.send(new SnacFlapCmd(lastReqid, request.getCommand()));
-
-        long sentTime = System.currentTimeMillis();
-        reqInfo.sent(sentTime);
-        request.sent(new SnacRequestSentEvent(flapProcessor, this, request,
-                sentTime));
-        logger.finer("Finished sending SNAC request " + request);
+        return reqInfo;
     }
 
     /**

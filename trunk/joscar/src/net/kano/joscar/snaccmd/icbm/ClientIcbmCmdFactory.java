@@ -53,6 +53,7 @@ public class ClientIcbmCmdFactory implements SnacCmdFactory {
         new CmdType(IcbmCommand.FAMILY_ICBM, IcbmCommand.CMD_RECV_TYPING),
         new CmdType(IcbmCommand.FAMILY_ICBM, IcbmCommand.CMD_MISSED),
         new CmdType(IcbmCommand.FAMILY_ICBM, IcbmCommand.CMD_MSG_ACK),
+        new CmdType(IcbmCommand.FAMILY_ICBM, IcbmCommand.CMD_RV_RESPONSE),
     };
 
     public CmdType[] getSupportedTypes() {
@@ -82,6 +83,8 @@ public class ClientIcbmCmdFactory implements SnacCmdFactory {
             return new MissedMessagesCmd(packet);
         } else if (command == IcbmCommand.CMD_MSG_ACK) {
             return new MessageAck(packet);
+        } else if (command == IcbmCommand.CMD_RV_RESPONSE) {
+            return new RvResponse(packet);
         } else {
             return null;
         }

@@ -41,7 +41,7 @@ import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.ExtraIconInfo;
 import net.kano.joscar.snaccmd.OscarTools;
-import net.kano.joscar.snaccmd.ScreenNameBlock;
+import net.kano.joscar.snaccmd.StringBlock;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -81,9 +81,9 @@ public class IconRequest extends IconCommand {
 
         ByteBlock snacData = packet.getData();
 
-        ScreenNameBlock snInfo = OscarTools.readScreenname(snacData);
+        StringBlock snInfo = OscarTools.readScreenname(snacData);
 
-        sn = snInfo.getScreenname();
+        sn = snInfo.getString();
 
         ByteBlock rest = snacData.subBlock(snInfo.getTotalSize());
 

@@ -35,10 +35,7 @@
 
 package net.kano.joscar.tlv;
 
-import net.kano.joscar.BinaryTools;
-import net.kano.joscar.ByteBlock;
-import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.Writable;
+import net.kano.joscar.*;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -124,7 +121,7 @@ public final class Tlv implements Writable {
 
     /**
      * Creates a TLV of the given type with no data block. Equivalent to calling
-     * {@link #Tlv(int, Writable) new Tlv(type, ByteBlock.EMPTY_BLOCK)}.
+     * {@link #Tlv(int, net.kano.joscar.LiveWritable) new Tlv(type, ByteBlock.EMPTY_BLOCK)}.
      *
      * @param type the type of this TLV
      */
@@ -211,7 +208,7 @@ public final class Tlv implements Writable {
      * @return the object that will be used to write the TLV data block to
      *         a stream with {@link #write}
      */
-    public final Writable getDataWriter() {
+    public final LiveWritable getDataWriter() {
         return writer;
     }
 

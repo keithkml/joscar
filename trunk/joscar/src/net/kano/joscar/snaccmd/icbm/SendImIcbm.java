@@ -39,7 +39,7 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.OscarTools;
-import net.kano.joscar.snaccmd.ScreenNameBlock;
+import net.kano.joscar.snaccmd.StringBlock;
 import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
@@ -78,8 +78,8 @@ public class SendImIcbm extends AbstractImIcbm {
 
         ByteBlock snacData = packet.getData();
 
-        ScreenNameBlock snInfo = OscarTools.readScreenname(snacData);
-        sn = snInfo.getScreenname();
+        StringBlock snInfo = OscarTools.readScreenname(snacData);
+        sn = snInfo.getString();
 
         ByteBlock rest = snacData.subBlock(snInfo.getTotalSize());
 
@@ -94,7 +94,7 @@ public class SendImIcbm extends AbstractImIcbm {
      * Creates a new outgoing IM with the given message text to the given
      * screenname. No icon is requested, no icon hash data are provided, the
      * message is not marked as an auto-response, and an {@link MessageAck
-     * acknowledgement packet} <i>is</i> requested. Also, the ICBM cookie is
+     * acknowledgement packet} <i>is</i> requested. Also, the ICBM message ID is
      * set to <code>0</code>.
      *
      * @param sn the screenname to whom to send the given message
@@ -108,7 +108,7 @@ public class SendImIcbm extends AbstractImIcbm {
      * Creates a new outgoing IM with the given message text to the given
      * screenname. No icon is requested, no icon hash data are provided, and an
      * {@link MessageAck acknowledgement packet} <i>is</i> requested. Also, the
-     * ICBM cookie is set to <code>0</code>.
+     * ICBM message ID is set to <code>0</code>.
      *
      * @param sn the screenname to whom to send the given message
      * @param message the message to send
@@ -124,7 +124,7 @@ public class SendImIcbm extends AbstractImIcbm {
      * @param sn the screenname to hom to send the given message
      * @param message the message to send
      * @param autoResponse whether this message is an "auto-response" or not
-     * @param icbmCookie an "ICBM cookie" to attach to this message
+     * @param messageId an ICBM message ID to attach to this message
      * @param wantsIcon whether or not to request the receiver's buddy icon
      * @param iconInfo a block of buddy icon hash information to "advertise" to
      *        the receiver
@@ -132,9 +132,9 @@ public class SendImIcbm extends AbstractImIcbm {
      *        response to this command
      */
     public SendImIcbm(String sn, String message, boolean autoResponse,
-            long icbmCookie, boolean wantsIcon, OldIconHashData iconInfo,
+            long messageId, boolean wantsIcon, OldIconHashInfo iconInfo,
             boolean ackRequested) {
-        super(IcbmCommand.CMD_SEND_ICBM, icbmCookie, message, autoResponse,
+        super(IcbmCommand.CMD_SEND_ICBM, messageId, message, autoResponse,
                 wantsIcon, iconInfo);
 
         DefensiveTools.checkNull(sn, "sn");

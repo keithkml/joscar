@@ -68,7 +68,7 @@ public final class OscarTools {
      * @return an object containing the screenname and the total number of bytes
      *         read
      */
-    public static ScreenNameBlock readScreenname(ByteBlock data) {
+    public static StringBlock readScreenname(ByteBlock data) {
         if (data.getLength() < 1) return null;
 
         int length = BinaryTools.getUByte(data, 0);
@@ -77,7 +77,7 @@ public final class OscarTools {
 
         String sn = BinaryTools.getAsciiString(data.subBlock(1, length));
 
-        return new ScreenNameBlock(sn, length + 1);
+        return new StringBlock(sn, length + 1);
     }
 
     /**
@@ -159,7 +159,7 @@ public final class OscarTools {
     }
 
     /** A regular expression that only matches valid names for charsets. */
-    private static Pattern charsetPattern
+    private static final Pattern charsetPattern
             = Pattern.compile("[A-Za-z0-9][A-Za-z0-9-.:_]*");
 
     /**
@@ -255,18 +255,16 @@ public final class OscarTools {
 
         try {
             // okay, finally, decode the data
-            return new String(infoData.toByteArray(), charset);
-        } catch (UnsupportedEncodingException impossible) { }
-
-        // compiler fun
-        return null;
+            return ByteBlock.createString(infoData, charset);
+        } catch (UnsupportedEncodingException impossible) { return null; }
     }
 
     /**
      * Returns the given charset if it is supported by the JVM; if it is not
      * supported, attempts to fix it and returns the "fixed" version. This
      * method will always return the name of a charset that can be used within
-     * this JVM.
+     * this JVM. Note that if <code>charset</code> is <code>null</code>,
+     * <code>"US-ASCII"</code> will be returned.
      *
      * @param charset the charset name to "fix"
      * @return either the given charset name or a valid charset name derived
@@ -289,13 +287,33 @@ public final class OscarTools {
             } catch (IllegalCharsetNameException e) {
                 // this shouldn't happen, so be very loud and angry about it
                 System.err.println("charset=" + charset);
-                e.printStackTrace();
+                e.printStackTrace(System.err);
 
                 // and default to ASCII
                 charset = fixCharset(charset);
             }
         }
         return charset;
+    }
+
+    /**
+     * Creates a <code>String</code> from the given block of data and the given
+     * charset. Note that this will <i>never</i> return <code>null</code>, even
+     * if the given <code>charset</code> is <code>null</code>. This method will
+     * do its best to produce a <code>String</code> from the given data using
+     * {@link #getValidCharset getValidCharset}.
+     *
+     * @param data a block of data containing a string
+     * @param charset the name of a charset to use to extract a string from the
+     *        given data, or <code>null</code> for US-ASCII
+     * @return a <code>String</code> decoded from the given block of data
+     */
+    public static String getString(ByteBlock data, String charset) {
+        charset = getValidCharset(charset);
+
+        try {
+            return ByteBlock.createString(data, charset);
+        } catch (UnsupportedEncodingException impossible) { return null; }
     }
 
     /**
@@ -324,8 +342,8 @@ public final class OscarTools {
     private static final Pattern htmlRE = Pattern.compile("<[^>]*>");
 
     /**
-     * Uses a poorly conceived method to remove HTML from a string. Not for
-     * production use.
+     * Uses a poorly conceived method to remove HTML from a string. "Not for
+     * production use."
      *
      * @param str the string from which to strip HTML tags
      * @return the given string with HTML tags removed

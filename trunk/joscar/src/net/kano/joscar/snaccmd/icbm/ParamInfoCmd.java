@@ -44,7 +44,7 @@ import java.io.OutputStream;
 
 /**
  * A SNAC command indicating to the client what his or her current ICBM
- * parameter settings are. Normally sent in response to a {@link ParamInfoReq},
+ * parameter settings are. Normally sent in response to a {@link ParamInfoRequest},
  * and optionally responded-to by the client with a {@link SetParamInfoCmd}
  * to adjust the settings provided in this command.
  *

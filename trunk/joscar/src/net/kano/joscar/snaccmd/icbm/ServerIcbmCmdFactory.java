@@ -53,7 +53,7 @@ public class ServerIcbmCmdFactory implements SnacCmdFactory {
         new CmdType(IcbmCommand.FAMILY_ICBM, IcbmCommand.CMD_SEND_ICBM),
         new CmdType(IcbmCommand.FAMILY_ICBM, IcbmCommand.CMD_SEND_TYPING),
         new CmdType(IcbmCommand.FAMILY_ICBM, IcbmCommand.CMD_WARN),
-        new CmdType(IcbmCommand.FAMILY_ICBM, IcbmCommand.CMD_RV_ERROR),
+        new CmdType(IcbmCommand.FAMILY_ICBM, IcbmCommand.CMD_RV_RESPONSE),
     };
 
     public CmdType[] getSupportedTypes() {
@@ -66,7 +66,7 @@ public class ServerIcbmCmdFactory implements SnacCmdFactory {
         int command = packet.getCommand();
 
         if (command == IcbmCommand.CMD_PARAM_INFO_REQ) {
-            return new ParamInfoReq(packet);
+            return new ParamInfoRequest(packet);
         } else if (command == IcbmCommand.CMD_SET_PARAM_INFO) {
             return new SetParamInfoCmd(packet);
         } else if (command == IcbmCommand.CMD_SEND_ICBM) {
@@ -83,8 +83,8 @@ public class ServerIcbmCmdFactory implements SnacCmdFactory {
             return new SendTypingNotification(packet);
         } else if (command == IcbmCommand.CMD_WARN) {
             return new WarnCmd(packet);
-        } else if (command == IcbmCommand.CMD_RV_ERROR) {
-            return new RvErrorCmd(packet);
+        } else if (command == IcbmCommand.CMD_RV_RESPONSE) {
+            return new RvResponse(packet);
         } else {
             return null;
         }

@@ -294,6 +294,10 @@ public final class ByteBlock implements Writable, Serializable {
         return new String(block.bytes, block.offset, block.len, charset);
     }
 
+    public static InputStream createInputStream(ByteBlock data) {
+        return new ByteArrayInputStream(data.bytes, data.offset, data.len);
+    }
+
     /**
      * The array backing this <code>ByteBlock</code>.
      */
@@ -404,6 +408,8 @@ public final class ByteBlock implements Writable, Serializable {
      * @throws IOException if an I/O error occurs
      */
     public void write(OutputStream stream) throws IOException {
+        DefensiveTools.checkNull(stream, "stream");
+
         stream.write(bytes, offset, len);
     }
 

@@ -81,17 +81,19 @@ public class RecvRvIcbm extends AbstractRvIcbm {
     /**
      * Creates a new outgoing client-bound ICBM with the given properties.
      * 
-     * @param icbmCookie an "ICBM cookie" to associate with this rendezvous
+     * @param icbmMessageId an ICBM message ID to associate with this rendezvous
+     *        command
      * @param status a status code, like {@link #STATUS_REQUEST}
-     * @param rvCookie a "rendezvous cookie" to associated with this rendezvous
+     * @param rvSessionId a rendezvous session ID on which this rendezvous
+     *        exists
      * @param cap this rendezvous's associated capability block
      * @param rvDataWriter an object used to write the rendezvous-specific data
      * @param sender an object describing the user who sent this rendezvous
      */
-    public RecvRvIcbm(long icbmCookie, int status, long rvCookie,
+    public RecvRvIcbm(long icbmMessageId, int status, long rvSessionId,
             CapabilityBlock cap, LiveWritable rvDataWriter,
             FullUserInfo sender) {
-        super(IcbmCommand.CMD_ICBM, icbmCookie, status, rvCookie, cap,
+        super(IcbmCommand.CMD_ICBM, icbmMessageId, status, rvSessionId, cap,
                 rvDataWriter);
 
         DefensiveTools.checkNull(sender, "sender");
@@ -110,5 +112,10 @@ public class RecvRvIcbm extends AbstractRvIcbm {
             throws IOException {
         sender.write(out);
         writeRvTlvs(out);
+    }
+
+    public String toString() {
+        return "RecvRvIcbm: sender=<" + sender + ">, on top of "
+                + super.toString();
     }
 }

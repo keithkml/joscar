@@ -36,63 +36,16 @@
 package net.kano.joscar.flap;
 
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.net.ConnProcessorExceptionEvent;
 
 /**
  * An event fired when an exception occurs during the FLAP processing process.
  */
-public class FlapExceptionEvent {
-    /**
-     * An exception type indicating that an exception was thrown while
-     * attempting to read from the attached input stream. The "reason" (the
-     * value returned by {@link #getReason()}) in this case will be
-     * <code>null</code>.
-     */
-    public static final Object TYPE_CONNECTION_ERROR = "TYPE_CONNECTION_ERROR";
-
-    /**
-     * An exception type indicating that an exception was thrown while calling
-     * a <code>FlapCommand</code>'s <code>write</code> method. In this case, the
-     * "reason" (the value returned by {@link #getReason()}) will be the
-     * <code>FlapCommand</code> whose <code>writeData</code> method threw an
-     * exception.
-     */
-    public static final Object TYPE_CMD_WRITE = "TYPE_CMD_WRITE";
-
-    /**
-     * An exception type indicating that an exception was thrown while
-     * converting a raw FLAP packet to a <code>FlapCommand</code> in a
-     * <code>FlapCommandFactory</code>. In this case, the "reason" (the value
-     * returned by {@link #getReason()} will be the <code>FlapPacket</code>
-     * used in the <code>FlapCommand</code> generation attempt (that threw the
-     * exception).
-     */
-    public static final Object TYPE_CMD_GEN = "TYPE_CMD_GEN";
-
-    /**
-     * An exception type indicating that an exception was thrown while passing
-     * a packet event to a packet listener.
-     */
-    public static final Object TYPE_PACKET_LISTENER = "TYPE_PACKET_LISTENER";
-
-    /**
-     * The type of this exception.
-     */
-    private final Object type;
-
+public class FlapExceptionEvent extends ConnProcessorExceptionEvent {
     /**
      * The FLAP connection on which this exception was thrown.
      */
     private final FlapProcessor conn;
-
-    /**
-     * The exception that was thrown.
-     */
-    private final Throwable exception;
-
-    /**
-     * A "reason" or description of why the exception was thrown.
-     */
-    private final Object reason;
 
     /**
      * Creates a new exception event with the given properties.
@@ -105,26 +58,10 @@ public class FlapExceptionEvent {
      */
     protected FlapExceptionEvent(Object type, FlapProcessor conn,
             Throwable exception, Object reason) {
-        DefensiveTools.checkNull(type, "type");
+        super(type, exception, reason);
         DefensiveTools.checkNull(conn, "conn");
 
-        this.type = type;
         this.conn = conn;
-        this.exception = exception;
-        this.reason = reason;
-    }
-
-    /**
-     * Returns the type of this exception, possibly indicating when or why this
-     * exception was thrown. May be one of {@link #TYPE_CONNECTION_ERROR},
-     * {@link #TYPE_CMD_WRITE}, {@link #TYPE_CMD_GEN}, and {@link
-     * #TYPE_PACKET_LISTENER}, but other classes may define their own types as
-     * well.
-     *
-     * @return the type of exception that was thrown
-     */
-    public final Object getType() {
-        return type;
     }
 
     /**
@@ -134,41 +71,5 @@ public class FlapExceptionEvent {
      */
     public final FlapProcessor getFlapProcessor() {
         return conn;
-    }
-
-    /**
-     * Returns the exception that was thrown.
-     *
-     * @return the thrown exception
-     */
-    public final Throwable getException() {
-        return exception;
-    }
-
-    /**
-     * Returns an object describing or providing more detail regarding the
-     * exception that was thrown. The type of this object varies with situation,
-     * but it may be a <code>FlapPacketListener</code> if it was the source of
-     * this exception, for example. The type of this value may change, so code
-     * such as the following is suggested for handling it:
-     *
-     * <pre>
-if (e.getReason() instanceof Throwable) {
-    ((Throwable) e.getReason()).printStackTrace();
-} else {
-    System.err.println(e.getReason());
-}
-     </pre>
-     *
-     * @return an object providing more information or detail on this exception
-     */
-    public final Object getReason() {
-        return reason;
-    }
-
-    public String toString() {
-        return "FlapExceptionEvent of type " + type + ": "
-                + (exception != null ? exception.getMessage() : null)
-                + " (" + reason + ")";
     }
 }
