@@ -35,6 +35,9 @@
 
 package net.kano.joscar.snac;
 
+/**
+ * An interface for listening for responses to SNAC requests.
+ */
 public interface SnacResponseListener {
     /**
      * Called when a SNAC packet is received in response to a request. This may

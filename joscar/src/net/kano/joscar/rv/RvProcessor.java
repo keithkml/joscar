@@ -42,6 +42,7 @@ import net.kano.joscar.snaccmd.AbstractIcbm;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.OscarTools;
 import net.kano.joscar.CopyOnWriteArrayList;
+import net.kano.joscar.SeqNum;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.snaccmd.icbm.RvCommand;
@@ -151,8 +152,9 @@ public class RvProcessor {
     /** A lock for using or modifying session-related fields. */
     private final Object sessionLock = new Object();
 
-    /** The session ID of the last outgoing rendezvous session. */
-    private long lastSessionId = new Random().nextLong();
+    /** An object used to generate sequential RV session ID's. */
+    private SeqNum sessionId = new SeqNum(Long.MIN_VALUE, Long.MAX_VALUE,
+            new Random().nextLong());
 
     /** The sessions being managed by this RV processor. */
     private Map sessions = new HashMap();
@@ -624,13 +626,7 @@ public class RvProcessor {
     public final RvSession createRvSession(String sn) {
         DefensiveTools.checkNull(sn, "sn");
 
-        long sessid;
-        synchronized(sessionLock) {
-            lastSessionId++;
-            sessid = lastSessionId;
-        }
-
-        return createRvSession(sn, sessid);
+        return createRvSession(sn, sessionId.next());
     }
 
     /**

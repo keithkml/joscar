@@ -47,24 +47,18 @@ import java.io.OutputStream;
 /**
  * A data structure containing rate limiting information for a specific "class"
  * of SNAC commands.
- * <br>
- * <br>
- * Here's a quick explanation of what is currently known about rate classes.
+ *
+ * <h2> Introduction to Rates </h2>
+ *
  * A rate class identifies a set of SNAC commands and limitations on how fast
  * any sequence of those commands can be sent to the server. For example, one
- * rate class normally contains the outgoing ICBM command and the info request
- * command. You may have noticed that sometimes WinAIM will tell you you can't
- * look at someone's info because your rate is too high; this is why.
- * <br>
- * <br>
- * Now, somehow the AIM hacking community (namely Sean Egan) knows some things
- * about rate class information packets, but no one seems to know how these data
- * correspond to the rate at which you can send packets, exactly.
- * <br>
- * <br>
- * So, here is a description of all of the fields in this object, described as
- * best I can. (These values can be retrieved with the fields' getters, like
- * <code>getWindowSize</code>.)
+ * rate class normally contains the <i>outgoing ICBM</i> command and the <i>info
+ * request</i> command. You may have noticed that sometimes WinAIM will tell you
+ * you can't look at someone's info because your rate is too high; this is why.
+ * Gaim, of course, simply tells you to stop talking so fast. Good one, Gaim.
+ *
+ * <h2> The <code>RateClassInfo</code> Fields </h2>
+ *
  * <dl>
  * <dt><code>windowSize</code></dt>
  * <dd>The number of previously sent commands that will be included in
@@ -72,8 +66,9 @@ import java.io.OutputStream;
  * rate class to rate class; normally ranges from <code>10</code> to
  * <code>60</code>)</dd>
  * <dt><code>currentAvg</code>
- * <dd>Your current "rate average," which is some sort of average of the times
- * between each of your last <code><i>windowSize</i></code> commands</dd>
+ * <dd>Your current "rate average," which attempts to resemble a moving average
+ * of the times between each of your last <code><i>windowSize</i></code>
+ * commands</dd>
  * <dt><code>warnAvg</code></dt>
  * <dd>The "rate average" that will put you into the yellow part of
  * WinAIM's rate limiting bar (normally <code>5000</code> ms)</dd>
@@ -89,25 +84,76 @@ import java.io.OutputStream;
  * <dd>The "rate average" below which you will be disconnected from the server
  * (normally <code>3000</code> ms)</dd>
  * <dt><code>max</code></dt>
- * <dd>May be the maximum time between commands to use in "rate average"
- * computations; for example, if 5 minutes passed between two commands, the
- * <code>300000</code> ms value would be replaced with this value (normally
- * <code>6000</code> ms)
+ * <dd>The maximum value for a rate average (normally <code>6000</code> ms)</dd>
  * </dl>
  *
- * Now this all seems pretty easy to implement, but in fact it is not as simple
- * as it appears. While here I refer to these values as "rate averages" they are
- * in fact not pure arithmetic means. From my research it appears as if the
- * "rate average" value is in fact the sum of each indivudual time difference
- * between two subsequent commands (in milliseconds) raised to the power of
- * <code>0.6</code>. In Maple notation, the sum is
- * <code>sum(differences[k]^0.6, k=1..windowSize)</code>.
+ * <h2> Handling Rate-Related SNAC Commands </h2>
+ *
+ * The values described above can be used to keep an accurate rate average for a
+ * rate class as follows:
  * <br>
  * <br>
- * Upon further inspection, the above equation does not work consistently.
+ * Upon initial connection, the average should be ignored: all commands can be
+ * sent as quickly as possible until a {@link RateAck} is sent.
  * <br>
  * <br>
- * This is all I have as far as research on this topic so far.
+ * Upon receiving a {@link RateInfoCmd}, the current rate for each rate class
+ * within should be set to that rate class's {@linkplain #getMax() maximum rate
+ * average}. Note that a {@linkplain #getCurrentAvg current average} is sent,
+ * but should be <b>ignored</b> in the initial <code>RateInfoCmd</code>.
+ * <br>
+ * <br>
+ * Upon receiving a {@link RateChange}, nothing must be modified (unless the
+ * maximum rate average has been decreased and the current rate is now above
+ * it). You may want to set your current average to the given "current average,"
+ * but this is not advised, as the rate change command may have been sent in
+ * response to a command sent several commands ago (due to network lag). A good
+ * way to do this might be to only set your rate average to the given "current
+ * average" only if the given current average is lower than your client's
+ * computed average. This should be the most conservative and thus reliable way
+ * to handle rate changes.
+ *
+ * <h2> Computing the Current Rate </h2>
+ *
+ * Now the important part: how to compute the current average for a rate class.
+ * <br>
+ * <br>
+ * The current average for a rate class is computed cumulatively. Essentially,
+ * the algorithm goes like this:
+ * <pre>
+void computeNewAvg(long lastSent, long oldAvg,
+            RateClassInfo rateClassInfo) {
+    long curTime = System.currentTimeMillis();
+    long diff = curTime - lastSent;
+
+    long winSize = rateClassInfo.getWindowSize();
+    long maxAvg = rateClassInfo.getMax();
+
+    currentAvg = ((currentAvg * (winSize - 1))
+            + diff) / winSize;
+
+    if (currentAvg > maxAvg) currentAvg = maxAvg;
+}
+ * </pre>
+ *
+ * Using such an algorithm produces results almost exactly consistent with the
+ * "current averages" sent in <code>RateChange</code> packets, often within a
+ * margin of one or two milliseconds (out of an average of <code>5000</code> ms
+ * or lower). (This margin of error is surely due to network traffic and not an
+ * error in the algorithm's above implementation.)
+ *
+ * <h2> Being "Rate Limited" </h2>
+ *
+ * If commands are sent so fast as to bring the current rate average below the
+ * {@linkplain #getLimitedAvg limited average}, the server will send a {@link
+ * RateChange} with a {@linkplain RateChange#getChangeCode() change code} of
+ * {@link RateChange#CODE_LIMITED}. After this happens, all of the commands
+ * sent in the {@linkplain RateChange#getRateInfo() associated rate class} will
+ * be ignored by the server until the rate reaches the {@linkplain #getClearAvg
+ * "clear average"}, at which point a <code>RateChange</code> with a change code
+ * of {@linkplain RateChange#CODE_LIMIT_CLEARED} <i><b>may</b></i> be sent
+ * (though it is not usually sent). Once the average is above the clear average,
+ * however, all is back to normal, as if limiting had never taken place.
  */
 public class RateClassInfo implements Writable {
     /** The rate class ID of this rate class information block. */
@@ -127,7 +173,7 @@ public class RateClassInfo implements Writable {
     /** Your current average. */
     private final long currentAvg;
 
-    /** The maximum time between messages. We think. */
+    /** The maximum rate average. */
     private final long max;
 
     /** The commands in this rate class. */
@@ -186,7 +232,7 @@ public class RateClassInfo implements Writable {
      * @param limitedAvg the "rate limited" average
      * @param disconnectAvg the "disconnected" average
      * @param currentAvg the current average
-     * @param max the maximum time between commands
+     * @param max the maximum rate average
      */
     public RateClassInfo(int rateClass, long windowSize, long clearAvg,
             long warnAvg, long limitedAvg, long disconnectAvg, long currentAvg,
@@ -220,9 +266,8 @@ public class RateClassInfo implements Writable {
     }
 
     /**
-     * Returns the "window size" of this rate class. This is a number indicating
-     * how far back in the command history to look when computing rate averages.
-     * See {@linkplain RateClassInfo above} for more details.
+     * Returns the "window size" of this rate class. See {@linkplain
+     * RateClassInfo above} for more details.
      *
      * @return the rate class's window size
      */
@@ -273,7 +318,8 @@ public class RateClassInfo implements Writable {
     }
 
     /**
-     * Returns the user's current rate average in this rate class.
+     * Returns the user's current rate average in this rate class. See
+     * {@linkplain RateClassInfo above} for more details.
      *
      * @return the user's current rate average.
      */
@@ -282,11 +328,10 @@ public class RateClassInfo implements Writable {
     }
 
     /**
-     * Returns the maximum amount of time between commands to use in rate
-     * average computation. I think. See {@linkplain RateClassInfo above} for
-     * more details.
+     * Returns the maximum rate average for this rate class. See {@linkplain
+     * RateClassInfo above} for more details.
      *
-     * @return the maximum time between commands in this class
+     * @return the maximum rate average in this class
      */
     public final long getMax() {
         return max;

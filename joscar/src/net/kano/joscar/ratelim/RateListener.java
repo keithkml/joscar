@@ -36,6 +36,7 @@
 package net.kano.joscar.ratelim;
 
 import net.kano.joscar.snaccmd.conn.RateClassInfo;
+import net.kano.joscar.snac.SnacProcessor;
 
 public interface RateListener {
     void gotRateClasses(RateMonitor monitor);
@@ -45,4 +46,8 @@ public interface RateListener {
 
     void rateClassLimited(RateMonitor rateMonitor,
             RateClassMonitor rateClassMonitor, boolean limited);
+
+    void detached(RateMonitor rateMonitor, SnacProcessor processor);
+
+    void reset(RateMonitor rateMonitor);
 }

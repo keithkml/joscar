@@ -230,7 +230,7 @@ public class SnacProcessor {
     /** The maximum request ID value before it wraps to {@link #REQID_MIN}. */
     private static final long REQID_MAX = REQID_MAX_CLIENT;
 
-    /** The request ID of the last SNAC command sent. */
+    /** An object used to generate sequential SNAC request ID's. */
     private SeqNum reqid = new SeqNum(REQID_MIN, REQID_MAX);
 
     /**
@@ -301,7 +301,10 @@ public class SnacProcessor {
     private boolean paused = false;
 
     /** A SNAC queue manager for this processor. */
-    private SnacQueueManager queueManager = new ImmediateSnacQueueManager();
+    private SnacQueueManager queueManager;
+    {
+        setSnacQueueManager(null);
+    }
 
     /**
      * The FLAP packet listener we add to whichever FLAP processor to which we
@@ -619,14 +622,19 @@ public class SnacProcessor {
      *        SNACs immediately
      */
     public synchronized final void setSnacQueueManager(SnacQueueManager mgr) {
-        // tell the old queue manager to forget about us
-        queueManager.clearQueue(this);
+        if (queueManager != null) {
+            // tell the old queue manager to forget about us
+            queueManager.clearQueue(this);
+            queueManager.detached(this);
+        }
 
         // we allow null for the manager argument, which means we use our own
         // immediate SNAC queue manager
         if (mgr == null) mgr = new ImmediateSnacQueueManager();
 
         queueManager = mgr;
+
+        queueManager.attached(this);
 
         // keep everything synchronized
         if (paused) mgr.pause(this);
@@ -763,14 +771,18 @@ public class SnacProcessor {
 
                 SnacResponseEvent sre = new SnacResponseEvent(event, request);
 
-                for (Iterator it = responseListeners.iterator(); it.hasNext();) {
-                    SnacResponseListener l = (SnacResponseListener) it.next();
+                if (!responseListeners.isEmpty()) {
+                    for (Iterator it = responseListeners.iterator();
+                         it.hasNext();) {
+                        SnacResponseListener l
+                                = (SnacResponseListener) it.next();
 
-                    try {
-                        l.handleResponse(sre);
-                    } catch (Throwable t) {
-                        processor.handleException(
-                                ERRTYPE_SNAC_RESPONSE_LISTENER, t, l);
+                        try {
+                            l.handleResponse(sre);
+                        } catch (Throwable t) {
+                            processor.handleException(
+                                    ERRTYPE_SNAC_RESPONSE_LISTENER, t, l);
+                        }
                     }
                 }
 
@@ -867,15 +879,17 @@ public class SnacProcessor {
 
         synchronized(requestEventLock) {
             // tell the global listeners
-            for (Iterator it = requestListeners.iterator(); it.hasNext();) {
-                OutgoingSnacRequestListener l
-                        = (OutgoingSnacRequestListener) it.next();
+            if (!requestListeners.isEmpty()) {
+                for (Iterator it = requestListeners.iterator(); it.hasNext();) {
+                    OutgoingSnacRequestListener l
+                            = (OutgoingSnacRequestListener) it.next();
 
-                try {
-                    l.handleTimeout(event);
-                } catch (Throwable t) {
-                    processor.handleException(ERRTYPE_SNAC_REQUEST_LISTENER,
-                            t, l);
+                    try {
+                        l.handleTimeout(event);
+                    } catch (Throwable t) {
+                        processor.handleException(ERRTYPE_SNAC_REQUEST_LISTENER,
+                                t, l);
+                    }
                 }
             }
 
@@ -1058,15 +1072,17 @@ public class SnacProcessor {
 
         synchronized(requestEventLock) {
             // tell the global request listeners first
-            for (Iterator it = requestListeners.iterator(); it.hasNext();) {
-                OutgoingSnacRequestListener l
-                        = (OutgoingSnacRequestListener) it.next();
+            if (!requestListeners.isEmpty()) {
+                for (Iterator it = requestListeners.iterator(); it.hasNext();) {
+                    OutgoingSnacRequestListener l
+                            = (OutgoingSnacRequestListener) it.next();
 
-                try {
-                    l.handleSent(event);
-                } catch (Throwable t) {
-                    processor.handleException(ERRTYPE_SNAC_REQUEST_LISTENER,
-                            t, l);
+                    try {
+                        l.handleSent(event);
+                    } catch (Throwable t) {
+                        processor.handleException(ERRTYPE_SNAC_REQUEST_LISTENER,
+                                t, l);
+                    }
                 }
             }
 

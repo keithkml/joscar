@@ -39,6 +39,7 @@ import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snac.SnacRequest;
 
 import java.util.LinkedList;
+import java.util.Collection;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -62,7 +63,7 @@ public class RateQueue {
 
     public ConnectionQueueMgr getParentMgr() { return parentMgr; }
 
-    public RateClassMonitor getRateMonitor() { return rateMonitor; }
+    public RateClassMonitor getRateClassMonitor() { return rateMonitor; }
 
     public synchronized int getQueueSize() { return queue.size(); }
 
@@ -92,6 +93,11 @@ public class RateQueue {
         }
 
         return request;
+    }
+
+    synchronized void dequeueAll(Collection dest) {
+        dest.addAll(queue);
+        queue.clear();
     }
 
     synchronized void clear() {
