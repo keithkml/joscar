@@ -71,7 +71,7 @@ public class HostGetFileThread extends Thread {
             socket = new Socket(connInfo.getInternalIP(),
                             connInfo.getPort());
 
-            File base = new File("E:/in");
+            File base = new File(".");
 
             sendDirList(base, null);
 

@@ -155,7 +155,7 @@ public final class ImmutableTlvChain extends AbstractTlvChain {
         copy(other);
     }
 
-    private final List getTlvList() { return tlvList; }
+    protected final List getTlvList() { return tlvList; }
 
-    private final Map getTlvMap() { return tlvMap; }
+    protected final Map getTlvMap() { return tlvMap; }
 }
