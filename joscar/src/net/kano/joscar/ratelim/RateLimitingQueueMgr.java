@@ -56,15 +56,16 @@ public class RateLimitingQueueMgr extends AbstractSnacQueueMgr {
     private Map conns = new IdentityHashMap();
 
     private final QueueRunner runner = new QueueRunner();
+
+    { // init
+        runner.start();
+    }
+
     private SnacPacketListener packetListener = new SnacPacketListener() {
         public void handleSnacPacket(SnacPacketEvent e) {
             SnacCommand cmd = e.getSnacCommand();
 
-            if (cmd instanceof RateInfoCmd) {
-                RateInfoCmd ric = (RateInfoCmd) cmd;
-
-                setRateClasses(e.getSnacProcessor(), ric.getRateClassInfos());
-            } else if (cmd instanceof RateChange) {
+            if (cmd instanceof RateChange) {
                 RateChange rc = (RateChange) cmd;
 
                 RateClassInfo rateInfo = rc.getRateInfo();
@@ -75,10 +76,17 @@ public class RateLimitingQueueMgr extends AbstractSnacQueueMgr {
             }
         }
     };
+    private SnacResponseListener responseListener = new SnacResponseListener() {
+        public void handleResponse(SnacResponseEvent e) {
+            SnacCommand cmd = e.getSnacCommand();
 
-    { // init
-        runner.start();
-    }
+            if (cmd instanceof RateInfoCmd) {
+                RateInfoCmd ric = (RateInfoCmd) cmd;
+
+                setRateClasses(e.getSnacProcessor(), ric.getRateClassInfos());
+            }
+        }
+    };
 
     final QueueRunner getRunner() { return runner; }
 
@@ -94,6 +102,7 @@ public class RateLimitingQueueMgr extends AbstractSnacQueueMgr {
             processor.setSnacQueueManager(this);
             assert processor.getSnacQueueManager() == this;
             processor.addPacketListener(packetListener);
+            processor.addGlobalResponseListener(responseListener);
         }
     }
 
@@ -116,6 +125,7 @@ public class RateLimitingQueueMgr extends AbstractSnacQueueMgr {
                         + processor);
             }
             processor.removePacketListener(packetListener);
+            processor.removeGlobalResponseListener(responseListener);
             synchronized(processor) {
                 if (processor.getSnacQueueManager() == this) {
                     processor.setSnacQueueManager(null);
@@ -257,7 +267,9 @@ public class RateLimitingQueueMgr extends AbstractSnacQueueMgr {
 
                     // if there are any commands that were dequeued above, we
                     // send them now, outside of the lock on the queue
-                    if (reqs != null && !reqs.isEmpty()) sendRequests(queue, reqs);
+                    if (reqs != null && !reqs.isEmpty()) { 
+                        sendRequests(queue, reqs);
+                    }
 
                     // and if there's nothing more to wait for, move on to the
                     // next queue
@@ -275,10 +287,7 @@ public class RateLimitingQueueMgr extends AbstractSnacQueueMgr {
         }
 
         private long getWaitTime(RateQueue queue) {
-            // we compute the time to wait to stay above the limited rate plus
-            // the specified error margin (to account for network latency and
-            // whatnot)
-            return queue.getOptimalWaitTime(errorMargin);
+            return queue.getOptimalWaitTime();
         }
 
         private boolean isReady(RateQueue queue) {

@@ -76,11 +76,13 @@ public class SnacPacketEvent extends FlapPacketEvent {
      * @param other a <code>FlapPacketEvent</code> to copy
      * @param snacProcessor the SNAC processor on which the packet was received
      * @param snacPacket the SNAC packet that was received
-     * @param snacCommand the SNAC command that was received
+     * @param snacCommand the SNAC command that was received, or
+     *        <code>null</code> if no SNAC command object is associated with
+     *        this event
      */
     protected SnacPacketEvent(FlapPacketEvent other,
-            SnacProcessor snacProcessor, SnacPacket snacPacket,
-            SnacCommand snacCommand) {
+            SnacProcessor snacProcessor,
+            SnacPacket snacPacket, SnacCommand snacCommand) {
         super(other);
 
         DefensiveTools.checkNull(snacProcessor, "snacProcessor");
@@ -92,30 +94,24 @@ public class SnacPacketEvent extends FlapPacketEvent {
     }
 
     /**
-     * The SNAC processor on which a packet was received.
+     * Returns the SNAC processor on which a packet was received.
      *
      * @return the associated SNAC connection
      */
-    public final SnacProcessor getSnacProcessor() {
-        return snacProcessor;
-    }
+    public final SnacProcessor getSnacProcessor() { return snacProcessor; }
 
     /**
-     * The SNAC packet that was received.
+     * Returns the SNAC packet that was received.
      *
      * @return the SNAC packet that was received
      */
-    public final SnacPacket getSnacPacket() {
-        return snacPacket;
-    }
+    public final SnacPacket getSnacPacket() { return snacPacket; }
 
     /**
-     * A <code>SnacCommand</code> generated from the SNAC packet that was
+     * Returns a <code>SnacCommand</code> generated from the SNAC packet that was
      * received.
      *
      * @return the SNAC command that was received
      */
-    public final SnacCommand getSnacCommand() {
-        return snacCommand;
-    }
+    public final SnacCommand getSnacCommand() { return snacCommand; }
 }

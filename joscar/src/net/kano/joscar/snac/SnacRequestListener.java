@@ -41,7 +41,7 @@ package net.kano.joscar.snac;
  *
  * @see SnacRequest#addListener
  */
-public interface SnacRequestListener {
+public interface SnacRequestListener extends SnacResponseListener {
     /**
      * Called when an outgoing SNAC request was sent over a SNAC connection.
      * This method will be called only once for each request this listener has
@@ -50,14 +50,6 @@ public interface SnacRequestListener {
      * @param e an object describing the event
      */
     void handleSent(SnacRequestSentEvent e);
-
-    /**
-     * Called when a SNAC packet is received in response to a request. This may
-     * be called multiple times, as a request can have more than one response.
-     *
-     * @param e an object describing the event
-     */
-    void handleResponse(SnacResponseEvent e);
 
     /**
      * Called when a SNAC packet "times out" and is removed from the request
