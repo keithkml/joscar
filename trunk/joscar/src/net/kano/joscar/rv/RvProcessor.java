@@ -41,6 +41,7 @@ import net.kano.joscar.snac.*;
 import net.kano.joscar.snaccmd.AbstractIcbm;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.OscarTools;
+import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.snaccmd.icbm.RvCommand;
@@ -147,6 +148,9 @@ public class RvProcessor {
     /** The SNAC processor to which this RV processor is attached. */
     private SnacProcessor snacProcessor = null;
 
+    /** A lock for using or modifying session-related fields. */
+    private final Object sessionLock = new Object();
+
     /** The session ID of the last outgoing rendezvous session. */
     private long lastSessionId = new Random().nextLong();
 
@@ -154,7 +158,7 @@ public class RvProcessor {
     private Map sessions = new HashMap();
 
     /** The "new session listeners" attached to this processor. */
-    private List rvListeners = new ArrayList();
+    private CopyOnWriteArrayList rvListeners = new CopyOnWriteArrayList();
 
     /** The <code>RvCommand</code> factories attached to this processor. */
     private Map rvFactories = new HashMap();
@@ -258,10 +262,10 @@ public class RvProcessor {
      *
      * @param l the RV processor listener to add
      */
-    public synchronized final void addListener(RvProcessorListener l) {
+    public final void addListener(RvProcessorListener l) {
         DefensiveTools.checkNull(l, "l");
 
-        if (!rvListeners.contains(l)) rvListeners.add(l);
+        rvListeners.addIfAbsent(l);
     }
 
     /**
@@ -270,7 +274,9 @@ public class RvProcessor {
      *
      * @param l the listener to remove
      */
-    public synchronized final void removeListener(RvProcessorListener l) {
+    public final void removeListener(RvProcessorListener l) {
+        DefensiveTools.checkNull(l, "l");
+
         rvListeners.remove(l);
     }
 
@@ -390,16 +396,18 @@ public class RvProcessor {
      * @return an <code>RvCommand</code> generated from the given ICBM, or
      *         <code>null</code> if none could be generated
      */
-    private synchronized RvCommand genRvCommand(RecvRvIcbm icbm) {
+    private RvCommand genRvCommand(RecvRvIcbm icbm) {
         DefensiveTools.checkNull(icbm, "icbm");
 
-        // find a factory for this capability type
-        RvCommandFactory factory
-                = (RvCommandFactory) rvFactories.get(icbm.getCapability());
+        RvCommandFactory factory;
+        synchronized(this) {
+            // find a factory for this capability type
+            factory = (RvCommandFactory) rvFactories.get(icbm.getCapability());
 
-        if (factory == null) {
-            // if there's no factory for that type, try the generic factory
-            factory = (RvCommandFactory) rvFactories.get(null);
+            if (factory == null) {
+                // if there's no factory for that type, try the generic factory
+                factory = (RvCommandFactory) rvFactories.get(null);
+            }
         }
 
         // if there's no factory, we can't make a rendezvous command
@@ -422,9 +430,7 @@ public class RvProcessor {
         DefensiveTools.checkNull(sn, "sn");
 
         RvSessionMapKey key = new RvSessionMapKey(sessionId, sn);
-        RvSessionImpl session = (RvSessionImpl) sessions.get(key);
-
-        return session;
+        return (RvSessionImpl) sessions.get(key);
     }
 
     /**
@@ -437,8 +443,8 @@ public class RvProcessor {
      * @return an RV session object associated with the given session ID and
      *         with the given screenname
      */
-    private synchronized RvSessionImpl getOrCreateIncomingSession(
-            long sessionId, String sn) {
+    private RvSessionImpl getOrCreateIncomingSession(long sessionId,
+            String sn) {
         DefensiveTools.checkNull(sn, "sn");
 
         RvSessionImpl session = getSession(sessionId, sn);
@@ -448,10 +454,12 @@ public class RvProcessor {
                 logger.fine("Creating new incoming RV session for " + sn
                         + ", id=0x" + Long.toHexString(sessionId));
             }
-            session = createNewSession(sessionId, sn);
+            synchronized(sessionLock) {
+                session = createNewSession(sessionId, sn);
 
-            fireNewSessionEvent(session,
-                    NewRvSessionEvent.TYPE_INCOMING);
+                fireNewSessionEvent(session,
+                        NewRvSessionEvent.TYPE_INCOMING);
+            }
         }
 
         return session;
@@ -468,8 +476,7 @@ public class RvProcessor {
      *
      * @see FlapProcessor#handleException(Object, Throwable, Object)
      */
-    private synchronized void handleException(Object type, Throwable t,
-            Object info) {
+    private void handleException(Object type, Throwable t, Object info) {
         DefensiveTools.checkNull(type, "type");
         DefensiveTools.checkNull(t, "t");
 
@@ -478,8 +485,13 @@ public class RvProcessor {
                     + " - " + info);
         }
 
-        if (snacProcessor != null) {
-            FlapProcessor fp = snacProcessor.getFlapProcessor();
+        SnacProcessor processor;
+        synchronized(this) {
+            processor = snacProcessor;
+        }
+
+        if (processor != null) {
+            FlapProcessor fp = processor.getFlapProcessor();
             if (fp != null) {
                 fp.handleException(type, t, info);
                 return;
@@ -502,7 +514,7 @@ public class RvProcessor {
      * @param type the type of session, like {@link
      *        NewRvSessionEvent#TYPE_OUTGOING}
      */
-    private synchronized void fireNewSessionEvent(RvSessionImpl session,
+    private void fireNewSessionEvent(RvSessionImpl session,
             Object type) {
         NewRvSessionEvent event = new NewRvSessionEvent(this, session, type);
 
@@ -531,7 +543,9 @@ public class RvProcessor {
 
         RvSessionMapKey key = new RvSessionMapKey(sessionId, sn);
 
-        sessions.put(key, session);
+        synchronized(sessionLock) {
+            sessions.put(key, session);
+        }
 
         return session;
     }
@@ -545,12 +559,14 @@ public class RvProcessor {
      *
      * @see #getOrCreateIncomingSession
      */
-    private synchronized void processRv(SnacPacketEvent e) {
+    private void processRv(SnacPacketEvent e) {
         RecvRvIcbm cmd = (RecvRvIcbm) e.getSnacCommand();
 
+        // find or create a session object for the received RV
         RvSessionImpl session = getOrCreateIncomingSession(cmd.getRvSessionId(),
                 cmd.getSender().getScreenname());
 
+        // generate an RV command object
         RvCommand rvCommand = null;
         try {
             rvCommand = genRvCommand(cmd);
@@ -562,8 +578,8 @@ public class RvProcessor {
             logger.fine("Generated RV command: " + rvCommand);
         }
 
+        // notify the session object retrieved/crated above
         RecvRvEvent event = new RecvRvEvent(e, this, session, rvCommand);
-
         session.processRv(event);
 
         if (logger.isLoggable(Level.FINER)) {
@@ -577,15 +593,16 @@ public class RvProcessor {
      *
      * @param e the SNAC packet event containing a <code>RvResponse</code>
      */
-    private synchronized void processResponse(SnacPacketEvent e) {
+    private void processResponse(SnacPacketEvent e) {
         RvResponse cmd = (RvResponse) e.getSnacCommand();
 
+        // get or create an RV session for this response
         RvSessionImpl session = getOrCreateIncomingSession(cmd.getRvSessionId(),
                 cmd.getScreenname());
 
+        // notify the session object
         RecvRvEvent event = new RecvRvEvent(e, this, session,
                 cmd.getResultCode());
-
         session.processRv(event);
 
         if (logger.isLoggable(Level.FINER)) {
@@ -604,12 +621,16 @@ public class RvProcessor {
      * @param sn the screenname of the user with whom to create a new session
      * @return a new <code>RvSession</code> with the given user
      */
-    public synchronized final RvSession createRvSession(String sn) {
+    public final RvSession createRvSession(String sn) {
         DefensiveTools.checkNull(sn, "sn");
 
-        lastSessionId++;
+        long sessid;
+        synchronized(sessionLock) {
+            lastSessionId++;
+            sessid = lastSessionId;
+        }
 
-        return createRvSession(sn, lastSessionId);
+        return createRvSession(sn, sessid);
     }
 
     /**
@@ -624,17 +645,19 @@ public class RvProcessor {
      * @param sessionID a session ID number to use for the created session
      * @return a new <code>RvSession</code> with the given user
      */
-    public synchronized final RvSession createRvSession(String sn,
-            long sessionID) {
+    public final RvSession createRvSession(String sn, long sessionID) {
         DefensiveTools.checkNull(sn, "sn");
 
         if (logger.isLoggable(Level.FINER)) {
             logger.finer("Creating new outgoing RV session for " + sn);
         }
 
-        RvSessionImpl session = createNewSession(sessionID, sn);
+        RvSessionImpl session;
+        synchronized(sessionLock) {
+            session = createNewSession(sessionID, sn);
 
-        fireNewSessionEvent(session, NewRvSessionEvent.TYPE_OUTGOING);
+            fireNewSessionEvent(session, NewRvSessionEvent.TYPE_OUTGOING);
+        }
 
         return session;
     }
@@ -645,17 +668,22 @@ public class RvProcessor {
      *
      * @param req the SNAC request to send
      */
-    private synchronized void sendSnac(SnacRequest req) {
-        if (snacProcessor == null) return;
+    private void sendSnac(SnacRequest req) {
+        SnacProcessor processor;
+        synchronized(this) {
+            processor = snacProcessor;
+        }
 
-        snacProcessor.sendSnac(req);
+        if (processor == null) return;
+
+        processor.sendSnac(req);
     }
 
     /**
      * A simple class holding a session ID and screenname, for use as a map key
      * in {@link RvProcessor#sessions RvProcessor.sessions}.
      */
-    private class RvSessionMapKey {
+    private static class RvSessionMapKey {
         /** A rendezvous session ID. */
         private final long sessionId;
         /** A screenname. */
@@ -697,7 +725,7 @@ public class RvProcessor {
         private final String sn;
 
         /** This session's listeners. */
-        private List listeners = new ArrayList();
+        private CopyOnWriteArrayList listeners = new CopyOnWriteArrayList();
 
         /**
          * A SNAC request listener attached to all outgoing SNAC requests sent
@@ -731,13 +759,15 @@ public class RvProcessor {
 
         public String getScreenname() { return sn; }
 
-        public synchronized void addListener(RvSessionListener l) {
+        public void addListener(RvSessionListener l) {
             DefensiveTools.checkNull(l, "l");
 
-            if (!listeners.contains(l)) listeners.add(l);
+            listeners.addIfAbsent(l);
         }
 
-        public synchronized void removeListener(RvSessionListener l) {
+        public void removeListener(RvSessionListener l) {
+            DefensiveTools.checkNull(l, "l");
+
             listeners.remove(l);
         }
 
@@ -747,9 +777,8 @@ public class RvProcessor {
          *
          * @param event the incoming rendezvous event
          */
-        private synchronized void processRv(RecvRvEvent event) {
-            for (Iterator it = new LinkedList(listeners).iterator();
-                 it.hasNext();) {
+        private void processRv(RecvRvEvent event) {
+            for (Iterator it = listeners.iterator(); it.hasNext();) {
                 RvSessionListener listener = (RvSessionListener) it.next();
 
                 try {
@@ -766,10 +795,8 @@ public class RvProcessor {
          *
          * @param event the incoming rendezvous event
          */
-        private synchronized void processSnacResponse(
-                RvSnacResponseEvent event) {
-            for (Iterator it = new LinkedList(listeners).iterator();
-                 it.hasNext();) {
+        private void processSnacResponse(RvSnacResponseEvent event) {
+            for (Iterator it = listeners.iterator(); it.hasNext();) {
                 RvSessionListener listener = (RvSessionListener) it.next();
 
                 try {

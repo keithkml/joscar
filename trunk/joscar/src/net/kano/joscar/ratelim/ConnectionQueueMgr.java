@@ -44,6 +44,7 @@ import net.kano.joscar.snaccmd.conn.RateClassInfo;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.lang.reflect.Field;
 
 public final class ConnectionQueueMgr {
     private final RateLimitingQueueMgr queueMgr;
@@ -52,6 +53,10 @@ public final class ConnectionQueueMgr {
 
     private boolean avoidLimiting = true;
     private boolean paused = false;
+
+    private Map typeToQueue = new HashMap();
+    private Map classToQueue = new HashMap();
+    private RateQueue defaultQueue = null;
 
     ConnectionQueueMgr(RateLimitingQueueMgr queueMgr,
             SnacProcessor snacProcessor) {
@@ -97,7 +102,7 @@ public final class ConnectionQueueMgr {
 
 
     public synchronized void clearQueue() {
-        for (Iterator it = this.classToQueue.values().iterator();
+        for (Iterator it = classToQueue.values().iterator();
              it.hasNext();) {
             RateQueue queue = (RateQueue) it.next();
 
@@ -139,73 +144,5 @@ public final class ConnectionQueueMgr {
         this.avoidLimiting = avoidLimiting;
 
         if (!avoidLimiting) queueMgr.getRunner().update(this);
-    }
-
-    public RateClassInfo getRateInfo(CmdType cmdType) {
-        RateQueue rateQueue = getRateQueue(cmdType);
-
-        if (rateQueue == null) return null;
-
-        return rateQueue.getRateInfo();
-    }
-
-    public long getCurrentRate(CmdType cmdType) {
-        DefensiveTools.checkNull(cmdType, "cmdType");
-
-        RateQueue queue = getRateQueue(cmdType);
-
-        if (queue == null) return -1;
-
-        return Math.max(0, queue.getRunningAvg());
-    }
-
-    public long getPotentialRate(CmdType cmdType) {
-        DefensiveTools.checkNull(cmdType, "cmdType");
-
-        RateQueue queue = getRateQueue(cmdType);
-
-        if (queue == null) return -1;
-
-        return Math.max(0, queue.getPotentialAvg(System.currentTimeMillis()));
-    }
-
-    public long getLimitAvoidanceWaitTime(CmdType cmdType) {
-        DefensiveTools.checkNull(cmdType, "cmdType");
-
-        RateQueue queue = getRateQueue(cmdType);
-
-        if (queue == null) return -1;
-
-        return Math.max(0, queue.getOptimalWaitTime());
-    }
-
-    public int getPossibleCmdCount(CmdType cmdType) {
-        DefensiveTools.checkNull(cmdType, "cmdType");
-
-        RateQueue queue = getRateQueue(cmdType);
-
-        if (queue == null) return -1;
-
-        return queue.getPossibleCmdCount();
-    }
-
-    public int getMaxCmdCount(CmdType cmdType) {
-        DefensiveTools.checkNull(cmdType, "cmdType");
-
-        RateQueue queue = getRateQueue(cmdType);
-
-        if (queue == null) return -1;
-
-        return queue.getMaxCmdCount();
-    }
-
-    public int getQueueSize(CmdType cmdType) {
-        DefensiveTools.checkNull(cmdType, "cmdType");
-
-        RateQueue queue = getRateQueue(cmdType);
-
-        if (queue == null) return -1;
-
-        return queue.getQueueSize();
     }
 }

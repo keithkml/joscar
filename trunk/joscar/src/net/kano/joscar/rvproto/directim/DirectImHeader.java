@@ -526,7 +526,7 @@ header.setScreenname("");
         hout.writeTo(out);
     }
 
-    public String toString() {
+    public synchronized String toString() {
         return "DirectIMHeader: " +
                 "msgid=" + messageId +
                 ", dataLen=" + dataLength +

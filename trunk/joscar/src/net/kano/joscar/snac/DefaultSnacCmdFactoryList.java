@@ -48,7 +48,7 @@ public class DefaultSnacCmdFactoryList extends SnacCmdFactoryList {
      */
     public DefaultSnacCmdFactoryList(SnacCmdFactory[] factories) {
         for (int i = 0; i < factories.length; i++) {
-            registerSupported(factories[i]);
+            registerAll(factories[i]);
         }
     }
 }

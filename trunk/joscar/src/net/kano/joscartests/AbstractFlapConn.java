@@ -53,7 +53,7 @@ public abstract class AbstractFlapConn extends ClientFlapConn {
         getFlapProcessor().setFlapCmdFactory(new DefaultFlapCmdFactory());
 
         snacProcessor.addPreprocessor(new FamilyVersionPreprocessor());
-        snacProcessor.setDefaultSnacCmdFactoryList(
+        snacProcessor.getCmdFactoryMgr().setDefaultFactoryList(
                 new DefaultClientFactoryList());
 
         addConnListener(new ClientConnListener() {
@@ -75,11 +75,6 @@ public abstract class AbstractFlapConn extends ClientFlapConn {
         });
         snacProcessor.addPacketListener(new SnacPacketListener() {
             public void handleSnacPacket(SnacPacketEvent e) {
-                long reqid = e.getSnacPacket().getReqid();
-
-                System.out.println("incoming packet ID: 0x"
-                        + Long.toHexString(reqid));
-
                 AbstractFlapConn.this.handleSnacPacket(e);
             }
         });

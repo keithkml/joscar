@@ -39,6 +39,7 @@ import net.kano.joscar.snaccmd.conn.RateClassInfo;
 
 public interface RateListener {
     void gotRateClasses(RateMonitor monitor);
+    
     void rateClassUpdated(RateMonitor rateMonitor,
             RateClassMonitor rateClassMonitor, RateClassInfo rateClassInfo);
 

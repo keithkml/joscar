@@ -142,7 +142,7 @@ public class RateClassMonitor {
         if (limited != this.limited) {
             this.limited = limited;
 
-            // TODO: notify listeners that we are limited or unlimited
+            rateMonitor.fireLimitedEvent(this, this.limited);
         }
     }
 
@@ -156,7 +156,7 @@ public class RateClassMonitor {
         return runningAvg;
     }
 
-    public synchronized final long getPotentialAvg(long time) {
+    public final long getPotentialAvg(long time) {
         return computeCurrentAvg(time);
     }
 
@@ -211,12 +211,8 @@ public class RateClassMonitor {
             count++;
         }
 
-        // the loop iterates once past the maximum
+        // the loop iterates once past the maximum, so we decrement the counter
+        // to get the number of commands that can be sent
         return count - 1;
-    }
-
-    public synchronized final int getTimeUntilPossibleCmdCount(int cmdCount) {
-        // TODO: implement getTimeUntilPossibleCmdCount
-        return 0;
     }
 }
