@@ -35,27 +35,31 @@
 
 package net.kano.joscartests;
 
+import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.OscarTools;
-import net.kano.joscar.ratelim.RateLimitingQueueMgr;
 import net.kano.joscar.flap.FlapCommand;
 import net.kano.joscar.flap.FlapPacketEvent;
 import net.kano.joscar.flapcmd.LoginFlapCmd;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.flapcmd.SnacPacket;
+import net.kano.joscar.ratelim.RateLimitingQueueMgr;
 import net.kano.joscar.rv.*;
 import net.kano.joscar.rvcmd.AbstractRequestRvCmd;
 import net.kano.joscar.rvcmd.DefaultRvCommandFactory;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
-import net.kano.joscar.rvcmd.chatinvite.ChatInvitationRvCmd;
 import net.kano.joscar.rvcmd.addins.AddinsReqRvCmd;
+import net.kano.joscar.rvcmd.chatinvite.ChatInvitationRvCmd;
 import net.kano.joscar.rvcmd.directim.DirectIMReqRvCmd;
 import net.kano.joscar.rvcmd.getfile.GetFileReqRvCmd;
 import net.kano.joscar.rvcmd.icon.SendBuddyIconRvCmd;
 import net.kano.joscar.rvcmd.sendbl.SendBuddyListRvCmd;
 import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
 import net.kano.joscar.rvcmd.trillcrypt.AbstractTrillianCryptRvCmd;
-import net.kano.joscar.snac.*;
+import net.kano.joscar.snac.SnacPacketEvent;
+import net.kano.joscar.snac.SnacRequest;
+import net.kano.joscar.snac.SnacRequestListener;
+import net.kano.joscar.snac.SnacResponseEvent;
 import net.kano.joscar.snaccmd.*;
 import net.kano.joscar.snaccmd.buddy.BuddyOfflineCmd;
 import net.kano.joscar.snaccmd.buddy.BuddyStatusCmd;
@@ -292,21 +296,39 @@ public abstract class BasicConn extends AbstractFlapConn {
 
             tester.setUserInfo(sn, info);
 
-            ExtraInfoBlock[] iconInfos = info.getIconInfos();
+            ExtraInfoBlock[] extraInfos = info.getExtraInfoBlocks();
 
-            if (false && iconInfos != null) {
-                for (int i = 0; i < iconInfos.length; i++) {
-                    ExtraInfoData hashInfo = iconInfos[i].getExtraData();
+            if (extraInfos != null) {
+                for (int i = 0; i < extraInfos.length; i++) {
+                    ExtraInfoBlock extraInfo = extraInfos[i];
+                    ExtraInfoData data = extraInfo.getExtraData();
 
-                    if ((hashInfo.getFlags() & ExtraInfoData.FLAG_ICON_PRESENT)
-                            != 0) {
+//                    if ((hashInfo.getFlags() & ExtraInfoData.FLAG_ICON_PRESENT)
+//                            != 0) {
 //                        System.out.println(sn +
 //                                " has an icon! requesting it.. (excode="
 //                                + iconInfos[i].getExtraCode() + ")");
 
 //                        request(new IconRequest(sn, iconInfos[i]));
+//
+//                        break;
+//                    }
 
-                        break;
+                    if (extraInfo.getType() == ExtraInfoBlock.TYPE_AVAILMSG) {
+                        ByteBlock msgBlock = data.getData();
+                        int len = BinaryTools.getUShort(msgBlock, 0);
+                        byte[] msgBytes = msgBlock.subBlock(2, len).toByteArray();
+
+                        String msg;
+                        try {
+                            msg = new String(msgBytes, "UTF-8");
+                        } catch (UnsupportedEncodingException e1) {
+                            e1.printStackTrace();
+                            return;
+                        }
+
+                        System.out.println(info.getScreenname()
+                                + " availability: " + msg);
                     }
                 }
             }

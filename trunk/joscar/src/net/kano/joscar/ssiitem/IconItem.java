@@ -47,7 +47,7 @@ import net.kano.joscar.tlv.*;
  * {@linkplain net.kano.joscar.snaccmd.ssi.CreateItemsCmd creating}) an icon
  * object sets that icon as the user's current icon (given that you {@linkplain
  * net.kano.joscar.snaccmd.icon.UploadIconCmd upload} it when {@linkplain
- * net.kano.joscar.snaccmd.conn.YourIconAck asked}).
+ * net.kano.joscar.snaccmd.conn.ExtraInfoAck asked}).
  * <br>
  * <br>
  * Note that this class is only used to store data and that <b>changes to this

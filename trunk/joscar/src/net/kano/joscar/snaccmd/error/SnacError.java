@@ -43,6 +43,8 @@ import net.kano.joscar.flapcmd.SnacCommand;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 
 /**
  * A SNAC command representing a SNAC error sent in any supported SNAC family.
@@ -196,6 +198,22 @@ public class SnacError extends SnacCommand {
     }
 
     public String toString() {
-        return "SnacError: code=0x" + Integer.toHexString(code);
+        String name = null;
+        Field[] fields = SnacError.class.getFields();
+        for (int i = 0; i < fields.length; i++) {
+            Field field = fields[i];
+
+            if (!Modifier.isStatic(field.getModifiers())) continue;
+            if (!field.getName().startsWith("CODE_")) continue;
+            try {
+                if (field.getInt(null) == code) {
+                    name = field.getName();
+                }
+            } catch (IllegalAccessException e) {
+                continue;
+            }
+        }
+        return "SnacError: code=0x" + Integer.toHexString(code) + " (name: "
+                + name + ")";
     }
 }

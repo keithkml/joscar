@@ -44,7 +44,7 @@ public class DefaultSnacCmdFactoryList extends SnacCmdFactoryList {
      * Creates a new <code>SnacCmdFactoryList</code> holding the given list of
      * factories.
      *
-     * @param factories
+     * @param factories a list of SNAC command factories
      */
     public DefaultSnacCmdFactoryList(SnacCmdFactory[] factories) {
         for (int i = 0; i < factories.length; i++) {

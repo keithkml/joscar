@@ -44,7 +44,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * A data structure used to hold data in {@link ExtraInfoBlock}s that contains
+ * A data structure used to hold data in {@link ExtraInfoBlock}s, containing
  * a set of flags and a block of data.
  * <br>
  * <br>
@@ -52,7 +52,7 @@ import java.io.OutputStream;
  * <ul>
  * <li> When an extra info block received from the server is an {@linkplain
  * ExtraInfoBlock#TYPE_ICONHASH icon hash block} (like in a
- * {@link FullUserInfo#getIconInfos() FullUserInfo}):
+ * {@link FullUserInfo#getExtraInfoBlocks() FullUserInfo}):
  * <ul>
  * <li> If the flags include the {@link #FLAG_ICON_PRESENT} bit, the data field
  * is a buddy icon hash (in MD5 format). If the <code>FLAG_ICON_PRESENT</code>
@@ -63,7 +63,7 @@ import java.io.OutputStream;
  * <code>HASH_SPECIAL</code>. </li>
  * <li> When received in an {@link net.kano.joscar.snaccmd.conn.ExtraInfoAck},
  * the flags {@link #FLAG_UPLOAD_ICON} or {@link #FLAG_ALREADY_HAVE_ICON} may be
- * present. If <code>#FLAG_UPLOAD_ICON</code> is present, the client should
+ * present. If <code>FLAG_UPLOAD_ICON</code> is present, the client should
  * upload the user's buddy icon to the buddy icon server (with an {@link
  * net.kano.joscar.snaccmd.icon.UploadIconCmd}. If
  * <code>FLAG_ALREADY_HAVE_ICON</code> is present, the server has your buddy
@@ -84,9 +84,16 @@ import java.io.OutputStream;
  * </li>
  * <li> When setting an {@linkplain ExtraInfoBlock#TYPE_AVAILMSG iChat
  * availability message}, the flag {@link #FLAG_AVAILMSG_PRESENT} should be
- * set. The data should be ??????????????
- * TODO: finish extraInfoData javadoc for iChat availability
+ * set. The data should be as follows:
+ * <ul>
+ * <li> An unsigned two-byte value indicating the length of the message
+ * data </li>
+ * <li> The message data: the message string encoded as UTF-8 </li>
+ * <li> Two zero bytes </li>
+ * </ul>
  *  </li>
+ * <li> To "unset" or clear an iChat availability message, one should simply set
+ * an empty (zero-length) availability message. </li>
  * </ul>
  *
  * Note that, as used above, a "flag" means a single bit, and a flag being

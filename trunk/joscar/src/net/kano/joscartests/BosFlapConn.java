@@ -94,7 +94,7 @@ public class BosFlapConn extends BasicConn {
         SnacCommand cmd = e.getSnacCommand();
 
         if (cmd instanceof ServerReadyCmd) {
-            request(new SetIdleCmd(123456789));
+//            request(new SetIdleCmd(123456789));
             request(new ParamInfoRequest());
             request(new LocRightsRequest());
             request(new SsiRightsRequest());

@@ -86,7 +86,7 @@ public class UploadIconAck extends IconCommand {
      * Creates a new outgoing icon upload acknowledgement command with the
      * given icon information block and a <code>code</code> of {@link
      * #CODE_DEFAULT}. Using this constructor is equivalent to using {@link
-     * #UploadIconAck(int, ExtraIconInfo) new
+     * #UploadIconAck(int, ExtraInfoBlock) new
      * UploadIconAck(UploadIconAck.CODE_DEFAULT, iconInfo)}.
      *
      * @param iconInfo an icon information block corresponding to the uploaded

@@ -63,6 +63,7 @@ import net.kano.joscar.snaccmd.acct.AcctModCmd;
 import net.kano.joscar.snaccmd.acct.ConfirmAcctCmd;
 import net.kano.joscar.snaccmd.chat.ChatMsg;
 import net.kano.joscar.snaccmd.conn.ServiceRequest;
+import net.kano.joscar.snaccmd.conn.SetAvailabilityMsgCmd;
 import net.kano.joscar.snaccmd.icbm.OldIconHashInfo;
 import net.kano.joscar.snaccmd.icbm.SendImIcbm;
 import net.kano.joscar.snaccmd.icon.UploadIconCmd;
@@ -407,6 +408,12 @@ public class JoscarTester implements CmdLineListener {
         cmdMap.put("setinterests", new CLCommand() {
             public void handle(String line, String cmd, String[] args) {
                 request(new SetInterestsCmd(args));
+            }
+        });
+        cmdMap.put("setavail", new CLCommand() {
+            public void handle(String line, String cmd, String[] args) {
+                request(new SetAvailabilityMsgCmd(
+                        args.length == 0 ? "" : args[0]));
             }
         });
     }
