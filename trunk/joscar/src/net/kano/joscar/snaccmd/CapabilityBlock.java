@@ -8,6 +8,7 @@ package net.kano.joscar.snaccmd;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.Writable;
+import net.kano.joscar.DefensiveTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -200,6 +201,8 @@ public final class CapabilityBlock implements Writable {
      *         exactly sixteen bytes
      */
     public CapabilityBlock(ByteBlock block) throws IllegalArgumentException {
+        DefensiveTools.checkNull(block, "block");
+
         if (block.getLength() < 16) {
             throw new IllegalArgumentException("invalid capability block: "
                     + "length must be 16 (is " + (block.getLength()) + ")");

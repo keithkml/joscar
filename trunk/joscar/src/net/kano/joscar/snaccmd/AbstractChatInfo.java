@@ -38,9 +38,11 @@ package net.kano.joscar.snaccmd;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.MiscTools;
-import net.kano.joscar.tlv.MutableTlvChain;
+import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.tlv.DefaultMutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.AbstractTlvChain;
+import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.MutableTlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -282,6 +284,11 @@ public abstract class AbstractChatInfo {
     protected AbstractChatInfo(int flags, Date creation, int maxMsgLen,
             int maxOccupancy, String name, short createPerms, String charset1,
             String language1, String charset2, String language2) {
+        DefensiveTools.checkRange(flags, "flags", -1);
+        DefensiveTools.checkRange(maxMsgLen, "maxMsgLen", -1);
+        DefensiveTools.checkRange(maxOccupancy, "maxOccupancy", -1);
+        DefensiveTools.checkRange(createPerms, "createPerms", -1);
+
         this.flags = flags;
         this.creation = creation;
         this.maxMsgLen = maxMsgLen;
@@ -300,7 +307,9 @@ public abstract class AbstractChatInfo {
      *
      * @param chain the TLV chain from which to read
      */
-    protected synchronized final void readBaseInfo(AbstractTlvChain chain) {
+    protected synchronized final void readBaseInfo(TlvChain chain) {
+        DefensiveTools.checkNull(chain, "chain");
+
         flags = chain.getUShort(TYPE_FLAGS);
 
         Tlv creationTlv = chain.getLastTlv(TYPE_CREATION_DATE);
@@ -338,7 +347,7 @@ public abstract class AbstractChatInfo {
     private synchronized final void ensureTlvChainExists() {
         if (tlvChain != null) return;
 
-        tlvChain = new MutableTlvChain();
+        tlvChain = new DefaultMutableTlvChain();
 
         if (flags != -1) {
             tlvChain.addTlv(Tlv.getUShortInstance(TYPE_FLAGS, flags));

@@ -37,19 +37,23 @@ package net.kano.joscar.ssiitem;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.ssi.SsiItem;
-import net.kano.joscar.tlv.MutableTlvChain;
-import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.AbstractTlvChain;
-import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.*;
 
 /**
  * An SSI item object representing a buddy on the user's buddy list. A buddy
  * item contains a set of buddy alert flags (for the different types of alerts),
  * an alert sound filename, a buddy comment, and (though WinAIM does not yet
  * support it) an "alias" or "display name" for the buddy.
+ * <br>
+ * <br>
+ * Note that this class is only used to store data and that <b>changes to this
+ * object are not reflected on the server</b> without sending the changes to the
+ * server with a {@link net.kano.joscar.snaccmd.ssi.ModifyItemsCmd
+ * ModifyItemsCmd}.
  */
-public class BuddyItem extends AbstractItem {
+public class BuddyItem extends AbstractItemObj {
     /**
      * An alert action flag indicating that a window should be popped up when
      * the buddy alert is activated.
@@ -93,68 +97,154 @@ public class BuddyItem extends AbstractItem {
     /** The buddy's screenname. */
     private final String sn;
     /** The ID of the parent group of this buddy. */
-    private final int parent;
+    private final int groupid;
     /** The ID of this buddy in its parent group. */
     private final int id;
 
     /** The buddy's "alias." */
-    private final String alias;
+    private String alias;
     /** The buddy's buddy comment. */
-    private final String comment;
+    private String comment;
 
     /** A bit mask for what to do when an alert is activated. */
-    private final int alertActionMask;
+    private int alertActionMask;
     /** A bit mask for when to activate a buddy alert for this buddy. */
-    private final int alertWhenMask;
+    private int alertWhenMask;
     /** A sound to play when an alert is activated. */
-    private final String alertSound;
+    private String alertSound;
 
-    public static BuddyItem readBuddyItem(SsiItem item) {
-        String sn = item.getName();
+    /**
+     * Creates a new buddy item object from the given SSI item.
+     *
+     * @param item a "buddy" (type {@link SsiItem#TYPE_BUDDY}) SSI item
+     */
+    public BuddyItem(SsiItem item) {
+        DefensiveTools.checkNull(item, "item");
 
-        int parent = item.getParentId();
-        int id = item.getSubId();
+        sn = item.getName();
 
-        AbstractTlvChain chain = ImmutableTlvChain.readChain(item.getData());
+        groupid = item.getParentId();
+        id = item.getId();
 
-        String alias = chain.getString(TYPE_ALIAS);
-        String comment = chain.getString(TYPE_COMMENT);
-        String alertSound = chain.getString(TYPE_ALERT_SOUND);
+        TlvChain chain = ImmutableTlvChain.readChain(item.getData());
+
+        alias = chain.getString(TYPE_ALIAS);
+        comment = chain.getString(TYPE_COMMENT);
+        alertSound = chain.getString(TYPE_ALERT_SOUND);
 
         Tlv alertTlv = chain.getLastTlv(TYPE_ALERT_FLAGS);
 
-        int alertActionMask = -1;
-        int alertWhenMask = -1;
         if (alertTlv != null) {
             ByteBlock alertMaskData = alertTlv.getData();
 
             alertActionMask = BinaryTools.getUByte(alertMaskData, 0);
             alertWhenMask = BinaryTools.getUByte(alertMaskData, 1);
+
+            if (alertActionMask == -1) alertActionMask = 0;
+            if (alertWhenMask == -1) alertWhenMask = 0;
+        } else {
+            alertActionMask = 0;
+            alertWhenMask = 0;
         }
 
-        MutableTlvChain extraTlvs = new MutableTlvChain(chain);
+        MutableTlvChain extraTlvs = new DefaultMutableTlvChain(chain);
 
         extraTlvs.removeTlvs(new int[] {
             TYPE_ALIAS, TYPE_COMMENT, TYPE_ALERT_SOUND, TYPE_ALERT_FLAGS
         });
 
-        return new BuddyItem(sn, parent, id, alias, comment, alertWhenMask,
-                alertActionMask, alertSound, extraTlvs);
+        addExtraTlvs(extraTlvs);
     }
 
+    /**
+     * Creates a buddy item object with the same properties as the given object.
+     *
+     * @param other a buddy item object to copy
+     */
     public BuddyItem(BuddyItem other) {
-        this(other.sn, other.parent, other.id, other.alias, other.comment,
+        this(other.sn, other.groupid, other.id, other.alias, other.comment,
                 other.alertWhenMask, other.alertActionMask, other.alertSound,
                 other.copyExtraTlvs());
     }
 
-    public BuddyItem(String sn, int parent, int id, String alias,
+    /**
+     * Creates a new buddy item with the given screenname, group ID, and buddy
+     * ID. All other fields are set to <code>null</code> or <code>0</code>
+     * depending on the field's type.
+     *
+     * @param sn the buddy's screenname
+     * @param groupid the ID of the group in which this buddy resides
+     * @param id the buddy's buddy ID
+     */
+    public BuddyItem(String sn, int groupid, int id) {
+        this(sn, groupid, id, null, null, 0, 0, null);
+    }
+
+     /**
+     * Creates a new buddy item object with the given properties. All fields
+     * other than <code>sn</code>, <code>groupid</code>, and <code>id</code>
+     * can be either <code>0</code> or <code>null</code> (depending on type) to
+     * indicate that the given field should not be sent.
+     *
+     * @param sn the buddy's screenname
+     * @param groupid the ID of the group in which this buddy resides
+     * @param id the buddy's buddy ID
+     * @param alias an "alias" or "display name" for this buddy (only supported
+     *        by joscar and gaim)
+     * @param comment a "buddy comment" for this buddy
+     * @param alertWhenMask a set of bit flags indicating when a buddy alert
+     *        should be activated (see the {@link
+      *       #MASK_WHEN_ONLINE MASK_WHEN_<i>*</i>} constants)
+     * @param alertActionMask a set of bit flags indicating what should happen
+      *       when a buddy alert is activated (see the {@link
+      *       #MASK_ACTION_POPUP MASK_ACTION_<i>*</i>} constants)
+     * @param alertSound the name of a sound file to play when an alert is
+      *       activated (normally stored without a full path or an extension,
+      *       like "moo")
+     */
+    public BuddyItem(String sn, int groupid, int id, String alias,
             String comment, int alertWhenMask, int alertActionMask,
-            String alertSound, AbstractTlvChain extraTlvs) {
+            String alertSound) {
+        this(sn, groupid, id, alias, comment, alertWhenMask, alertActionMask,
+                alertSound, null);
+    }
+
+    /**
+     * Creates a new buddy item object with the given properties. All fields
+     * other than <code>sn</code>, <code>groupid</code>, and <code>id</code>
+     * can be either <code>0</code> or <code>null</code> (depending on type) to
+     * indicate that the given field should not be sent.
+     *
+     * @param sn the buddy's screenname
+     * @param groupid the ID of the group in which this buddy resides
+     * @param id the buddy's buddy ID
+     * @param alias an "alias" or "display name" for this buddy (only supported
+     *        by joscar and gaim)
+     * @param comment a "buddy comment" for this buddy
+     * @param alertWhenMask a set of bit flags indicating when a buddy alert
+     *        should be activated (see the {@link
+     *       #MASK_WHEN_ONLINE MASK_WHEN_<i>*</i>} constants)
+     * @param alertActionMask a set of bit flags indicating what should happen
+     *       when a buddy alert is activated (see the {@link
+     *       #MASK_ACTION_POPUP MASK_ACTION_<i>*</i>} constants)
+     * @param alertSound the name of a sound file to play when an alert is
+     *       activated (normally stored without a full path or an extension,
+     *       like "moo")
+     * @param extraTlvs a set of extra TLV's to store in this item
+     */
+    public BuddyItem(String sn, int groupid, int id, String alias,
+            String comment, int alertWhenMask, int alertActionMask,
+            String alertSound, TlvChain extraTlvs) {
         super(extraTlvs);
 
+        DefensiveTools.checkNull(sn, "sn");
+        DefensiveTools.checkRange(groupid, "groupid", 0);
+        DefensiveTools.checkRange(id, "id", 0);
+        DefensiveTools.checkRange(alertWhenMask, "alertWhenMask", 0);
+        DefensiveTools.checkRange(alertActionMask, "alertActionMask", 0);
+
         this.sn = sn;
-        this.parent = parent;
+        this.groupid = groupid;
         this.id = id;
         this.alias = alias;
         this.comment = comment;
@@ -163,51 +253,158 @@ public class BuddyItem extends AbstractItem {
         this.alertSound = alertSound;
     }
 
-    public BuddyItem(String sn, int parent, int id, String alias,
-            String comment, int alertWhenMask, int alertActionMask,
-            String alertSound) {
-        this(sn, parent, id, alias, comment, alertWhenMask, alertActionMask,
-                alertSound, null);
-    }
+    /**
+     * Returns this buddy's screenname.
+     *
+     * @return this buddy's screenname
+     */
+    public final String getScreenname() { return sn; }
 
-    public BuddyItem(String sn, int parent, int id) {
-        this(sn, parent, id, null, null, 0, 0, null);
-    }
+    /**
+     * Returns the ID of the group in which this buddy resides.
+     *
+     * @return the ID of this buddy's parent group
+     */
+    public final int getGroupId() { return groupid; }
 
-    public final String getScreenname() {
-        return sn;
-    }
+    /**
+     * Returns the ID of this buddy in its parent group.
+     *
+     * @return this buddy's "buddy ID"
+     */
+    public final int getId() { return id; }
 
-    public final int getParent() {
-        return parent;
-    }
 
-    public final int getId() {
-        return id;
-    }
+    /**
+     * Returns this buddy's "alias" or "display name." Currently this feature
+     * is only supported by joscar and gaim, but it's conceivable that WinAIM
+     * will begin supporting it in the future.
+     *
+     * @return this buddy's "alias" or "display name," or <code>null</code> if
+     *         this buddy has no alias
+     */
+    public synchronized final String getAlias() { return alias; }
 
-    public final String getAlias() {
-        return alias;
-    }
+    /**
+     * Returns this buddy's "buddy comment." A buddy comment is a string of text
+     * normally edited by the user to store some brief information about the
+     * buddy. WinAIM puts a limit of 84 characters on this value, but there is
+     * no hard (server-side) limit. Note that this value is stored as ASCII
+     * text.
+     *
+     * @return this buddy's "buddy comment," or <code>null</code> if this buddy
+     *         has no buddy comment
+     */
+    public synchronized final String getBuddyComment() { return comment; }
 
-    public final String getComment() {
-        return comment;
-    }
-
-    public final int getAlertActionMask() {
+    /**
+     * Returns a bit mask describing what should happen when a buddy alert is
+     * activated for this buddy. Normally a combination of any of {@link
+     * #MASK_ACTION_POPUP} and {@link #MASK_ACTION_PLAY_SOUND}. One can test
+     * for a given value using code resembling the following:
+     * <pre>
+if ((buddyItem.getAlertActionMask() & BuddyItem.MASK_ACTION_POPUP) != 0) {
+    // popup alert box
+}
+     * </pre>
+     *
+     * @return a set of bit flags describing what should happen when this
+     *         buddy's buddy alert is activated
+     */
+    public synchronized final int getAlertActionMask() {
         return alertActionMask;
     }
 
-    public final int getAlertWhenMask() {
-        return alertWhenMask;
+    /**
+     * Returns a bit mask describing when a buddy alert for this user should be
+     * activated. Normally a combination of any of {@link #MASK_WHEN_ONLINE},
+     * {@link #MASK_WHEN_UNAWAY}, and {@link #MASK_WHEN_UNIDLE}. One can test
+     * for a given value using code resembling the following:
+     * <pre>
+if ((buddyItem.getAlertWhenMask() & BuddyItem.MASK_WHEN_ONLINE) != 0) {
+    System.out.println("An alert should be triggered when "
+            + buddyItem.getScreenname() + " signs on!");
+}
+     * </pre>
+     *
+     * @return a set of bit flags describing when a buddy alert for this user
+     *         should be activated
+     */
+    public synchronized final int getAlertWhenMask() { return alertWhenMask; }
+
+    /**
+     * Returns the name of a sound file that should be played when this buddy's
+     * alert is activated. The sound should only be played if this buddy's
+     * {@linkplain #getAlertActionMask alert action mask} contains {@link
+     * #MASK_ACTION_PLAY_SOUND}. The filename is normally stored without a full
+     * path or file extension, like <code>"moo"</code> to represent
+     * <code>C:\Program Files\AIM95\Sounds\moo.wav</code>.
+     *
+     * @return the name of a sound file that should be played when this buddy's
+     *         alert is activated, or <code>null</code> if none is stored for
+     *         this buddy
+     *
+     * @see #getAlertActionMask
+     */
+    public synchronized final String getAlertSound() { return alertSound; }
+
+    /**
+     * Sets this buddy's "alias" or "display name."
+     *
+     * @param alias this buddy's new "alias" or "display name," or
+     *        <code>null</code> to erase this buddy's alias
+     */
+    public synchronized final void setAlias(String alias) {
+        this.alias = alias;
     }
 
-    public final String getAlertSound() {
-        return alertSound;
+    /**
+     * Sets this buddy's "buddy comment."
+     *
+     * @param comment this buddy's new "buddy comment," or <code>null</code> to
+     *        erase this buddy's comment
+     */
+    public synchronized final void setComment(String comment) {
+        this.comment = comment;
     }
 
-    public SsiItem getSsiItem() {
-        MutableTlvChain chain = new MutableTlvChain();
+    /**
+     * Sets this buddy's "alert action mask." Normally a combination of any of
+     * {@link #MASK_ACTION_POPUP} and {@link #MASK_ACTION_PLAY_SOUND}.
+     *
+     * @param alertActionMask a new "alert action mask" for this buddy
+     */
+    public synchronized final void setAlertActionMask(int alertActionMask) {
+        this.alertActionMask = alertActionMask;
+    }
+
+    /**
+     * Sets this buddy's "alert criteria mask." Normally a combination of any
+     * of {@link #MASK_WHEN_ONLINE}, {@link #MASK_WHEN_UNAWAY}, and {@link
+     * #MASK_WHEN_UNIDLE}.
+     *
+     * @param alertWhenMask a new "alert criteria mask" for this buddy
+     */
+    public synchronized final void setAlertWhenMask(int alertWhenMask) {
+        this.alertWhenMask = alertWhenMask;
+    }
+
+    /**
+     * Sets the "alert sound" filename for this buddy. This is normally stored
+     * without full path or file extension, like <code>"moo"</code> to represent
+     * <code>C:\Program Files\AIM95\Sounds\moo.wav</code>.
+     *
+     * @param alertSound the buddy's "alert sound filename," or
+     *        <code>null</code> to erase any alert sound file currently stored
+     *        in this item
+     */
+    public synchronized final void setAlertSound(String alertSound) {
+        this.alertSound = alertSound;
+    }
+
+
+    public synchronized SsiItem generateSsiItem() {
+        MutableTlvChain chain = new DefaultMutableTlvChain();
 
         if (alias != null) {
             chain.addTlv(Tlv.getStringInstance(TYPE_ALIAS, alias));
@@ -215,7 +412,7 @@ public class BuddyItem extends AbstractItem {
         if (comment != null) {
             chain.addTlv(Tlv.getStringInstance(TYPE_COMMENT, comment));
         }
-        if (alertActionMask != -1 && alertWhenMask != -1) {
+        if (alertActionMask != 0 || alertWhenMask != 0) {
             // this is the most elegant statement I've ever written.
             ByteBlock block = ByteBlock.wrap(new byte[] {
                 BinaryTools.getUByte(alertActionMask)[0],
@@ -227,28 +424,22 @@ public class BuddyItem extends AbstractItem {
             chain.addTlv(Tlv.getStringInstance(TYPE_ALERT_SOUND, alertSound));
         }
 
-        return generateItem(sn, parent, id, SsiItem.TYPE_BUDDY, chain);
+        return generateItem(sn, groupid, id, SsiItem.TYPE_BUDDY, chain);
     }
 
-    public String toString() {
+    public synchronized String toString() {
         boolean popupAlert = false, alertOnSignon = false,
                 alertOnUnidle = false, alertOnBack = false, playSound = false;
 
-        if (alertActionMask != -1) {
-            // the first byte contains what kind of popup..
-            popupAlert = (alertActionMask & MASK_ACTION_POPUP) != 0;
-            playSound = (alertActionMask & MASK_ACTION_PLAY_SOUND) != 0;
-        }
+        popupAlert = (alertActionMask & MASK_ACTION_POPUP) != 0;
+        playSound = (alertActionMask & MASK_ACTION_PLAY_SOUND) != 0;
 
-        if (alertWhenMask != -1) {
-            // the second contains when to pop up
-            alertOnSignon = (alertWhenMask & MASK_WHEN_ONLINE) != 0;
-            alertOnUnidle = (alertWhenMask & MASK_WHEN_UNIDLE) != 0;
-            alertOnBack = (alertWhenMask & MASK_WHEN_UNAWAY) != 0;
-        }
+        alertOnSignon = (alertWhenMask & MASK_WHEN_ONLINE) != 0;
+        alertOnUnidle = (alertWhenMask & MASK_WHEN_UNIDLE) != 0;
+        alertOnBack = (alertWhenMask & MASK_WHEN_UNAWAY) != 0;
 
         return "BuddyItem for " + sn + " (buddy 0x" + Integer.toHexString(id)
-                + " in group 0x" + Integer.toHexString(parent) + "): alias="
+                + " in group 0x" + Integer.toHexString(groupid) + "): alias="
                 + alias + ", comment=\"" + comment + "\", alerts: "
                 + (popupAlert ? "[popup alert] " : "")
                 + (playSound ? "[play " + alertSound + "] " : "")

@@ -36,6 +36,7 @@
 package net.kano.joscar.snaccmd.conn;
 
 import net.kano.joscar.flapcmd.SnacPacket;
+import net.kano.joscar.DefensiveTools;
 
 /**
  * A command sent to indicate that the server is ready for the client to
@@ -52,6 +53,8 @@ public class ServerReadyCmd extends SnacFamilyListCmd {
      */
     protected ServerReadyCmd(SnacPacket packet) {
         super(CMD_SERVER_READY, packet);
+
+        DefensiveTools.checkNull(packet, "packet");
     }
 
     /**

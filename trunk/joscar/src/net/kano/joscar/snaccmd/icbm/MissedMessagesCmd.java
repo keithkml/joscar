@@ -36,6 +36,7 @@
 package net.kano.joscar.snaccmd.icbm;
 
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 
 import java.io.IOException;
@@ -64,6 +65,8 @@ public class MissedMessagesCmd extends IcbmCommand {
     protected MissedMessagesCmd(SnacPacket packet) {
         super(CMD_MISSED);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock block = packet.getData();
 
         List messages = new LinkedList();
@@ -89,7 +92,9 @@ public class MissedMessagesCmd extends IcbmCommand {
     public MissedMessagesCmd(MissedMsgInfo[] missedMsgInfos) {
         super(CMD_MISSED);
 
-        this.missedMsgInfos = missedMsgInfos;
+        this.missedMsgInfos = (MissedMsgInfo[]) (missedMsgInfos == null
+                ? null
+                : missedMsgInfos.clone());
     }
 
     /**
@@ -103,19 +108,23 @@ public class MissedMessagesCmd extends IcbmCommand {
     }
 
     public void writeData(OutputStream out) throws IOException {
-        for (int i = 0; i < missedMsgInfos.length; i++) {
-            missedMsgInfos[i].write(out);
+        if (missedMsgInfos != null) {
+            for (int i = 0; i < missedMsgInfos.length; i++) {
+                missedMsgInfos[i].write(out);
+            }
         }
     }
 
     public String toString() {
         StringBuffer buffer = new StringBuffer();
         buffer.append("MissedMessagesCmd: ");
-        buffer.append(missedMsgInfos.length);
-        buffer.append(" missed: ");
-        for (int i = 0; i < missedMsgInfos.length; i++) {
-            if (i != 0) buffer.append(", ");
-            buffer.append(missedMsgInfos[i]);
+        if (missedMsgInfos != null) {
+            buffer.append(missedMsgInfos.length);
+            buffer.append(" missed: ");
+            for (int i = 0; i < missedMsgInfos.length; i++) {
+                if (i != 0) buffer.append(", ");
+                buffer.append(missedMsgInfos[i]);
+            }
         }
         return buffer.toString();
     }

@@ -36,6 +36,7 @@
 package net.kano.joscar.snaccmd.conn;
 
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 
 import java.io.IOException;
@@ -62,6 +63,8 @@ public class ClientReadyCmd extends ConnCommand {
     protected ClientReadyCmd(SnacPacket packet) {
         super(CMD_CLIENT_READY);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
 
         infos = new SnacFamilyInfo[snacData.getLength()/8];
@@ -82,7 +85,7 @@ public class ClientReadyCmd extends ConnCommand {
     public ClientReadyCmd(SnacFamilyInfo[] infos) {
         super(CMD_CLIENT_READY);
 
-        this.infos = infos;
+        this.infos = (SnacFamilyInfo[]) (infos == null ? null : infos.clone());
     }
 
     /**
@@ -90,11 +93,15 @@ public class ClientReadyCmd extends ConnCommand {
      *
      * @return this command's SNAC family information blocks
      */
-    public final SnacFamilyInfo[] getSnacFamilyInfos() { return infos; }
+    public final SnacFamilyInfo[] getSnacFamilyInfos() {
+        return (SnacFamilyInfo[]) (infos == null ? null : infos.clone());
+    }
 
     public void writeData(OutputStream out) throws IOException {
-        for (int i = 0; i < infos.length; i++) {
-            infos[i].write(out);
+        if (infos != null) {
+            for (int i = 0; i < infos.length; i++) {
+                infos[i].write(out);
+            }
         }
     }
 }

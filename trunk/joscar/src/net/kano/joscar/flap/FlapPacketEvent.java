@@ -35,6 +35,8 @@
 
 package net.kano.joscar.flap;
 
+import net.kano.joscar.DefensiveTools;
+
 /**
  * An event fired when a FLAP packet is received on a FLAP connection.
  */
@@ -59,6 +61,8 @@ public class FlapPacketEvent {
      * @param other the FLAP packet event to copy
      */
     protected FlapPacketEvent(FlapPacketEvent other) {
+        DefensiveTools.checkNull(other, "other");
+
         flapProcessor = other.flapProcessor;
         flapCommand = other.flapCommand;
         flapPacket = other.flapPacket;
@@ -75,6 +79,9 @@ public class FlapPacketEvent {
      */
     protected FlapPacketEvent(FlapProcessor conn, FlapPacket packet,
             FlapCommand command) {
+        DefensiveTools.checkNull(conn, "conn");
+        DefensiveTools.checkNull(packet, "packet");
+
         this.flapProcessor = conn;
         this.flapPacket = packet;
         this.flapCommand = command;

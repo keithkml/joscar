@@ -38,6 +38,7 @@ package net.kano.joscar.snaccmd.conn;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.MiscTools;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 
 import java.io.IOException;
@@ -61,6 +62,8 @@ public abstract class SnacFamilyListCmd extends ConnCommand {
     SnacFamilyListCmd(int command, SnacPacket packet) {
         super(command);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
 
         snacFamilies = new int[snacData.getLength() / 2];
@@ -79,7 +82,9 @@ public abstract class SnacFamilyListCmd extends ConnCommand {
     SnacFamilyListCmd(int command, int[] snacFamilies) {
         super(command);
 
-        this.snacFamilies = snacFamilies;
+        this.snacFamilies = (int[]) (snacFamilies == null
+                ? null
+                : snacFamilies.clone());
     }
 
     /**
@@ -88,21 +93,25 @@ public abstract class SnacFamilyListCmd extends ConnCommand {
      * @return this command's associated SNAC families
      */
     public final int[] getSnacFamilies() {
-        return snacFamilies;
+        return (int[]) (snacFamilies == null ? null : snacFamilies.clone());
     }
 
     public void writeData(OutputStream out) throws IOException {
-        for (int i = 0; i < snacFamilies.length; i++) {
-            BinaryTools.writeUShort(out, snacFamilies[i]);
+        if (snacFamilies != null) {
+            for (int i = 0; i < snacFamilies.length; i++) {
+                BinaryTools.writeUShort(out, snacFamilies[i]);
+            }
         }
     }
 
     public String toString() {
         StringBuffer buffer = new StringBuffer();
         buffer.append(MiscTools.getClassName(this) + ": snac families: ");
-        for (int i = 0; i < snacFamilies.length; i++) {
-            buffer.append(Integer.toHexString(snacFamilies[i]));
-            buffer.append(", ");
+        if (snacFamilies != null) {
+            for (int i = 0; i < snacFamilies.length; i++) {
+                if (i != 0) buffer.append(", ");
+                buffer.append(Integer.toHexString(snacFamilies[i]));
+            }
         }
 
         return buffer.toString();

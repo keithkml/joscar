@@ -40,6 +40,7 @@ import net.kano.joscar.flap.FlapPacket;
 import net.kano.joscar.flap.FlapPacketEvent;
 import net.kano.joscar.flap.FlapProcessor;
 import net.kano.joscar.flapcmd.SnacPacket;
+import net.kano.joscar.DefensiveTools;
 
 /**
  * An event fired when a SNAC packet is received on a
@@ -83,6 +84,11 @@ public class SnacPacketEvent extends FlapPacketEvent {
             SnacProcessor snacProcessor, SnacPacket snacPacket,
             SnacCommand snacCommand) {
         super(other);
+
+        DefensiveTools.checkNull(snacProcessor, "snacProcessor");
+        DefensiveTools.checkNull(snacPacket, "snacPacket");
+        DefensiveTools.checkNull(snacCommand, "snacCommand");
+
         this.snacProcessor = snacProcessor;
         this.snacPacket = snacPacket;
         this.snacCommand = snacCommand;

@@ -35,6 +35,8 @@
 
 package net.kano.joscar.snac;
 
+import net.kano.joscar.DefensiveTools;
+
 /**
  * An event fired when a SNAC packet is received in response to an outgoing SNAC
  * request.
@@ -55,6 +57,9 @@ public class SnacResponseEvent extends SnacPacketEvent {
      */
     protected SnacResponseEvent(SnacPacketEvent other, SnacRequest request) {
         super(other);
+
+        DefensiveTools.checkNull(request, "request");
+
         this.request = request;
     }
 

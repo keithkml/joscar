@@ -36,10 +36,11 @@
 package net.kano.joscar.snaccmd.popup;
 
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.AbstractTlvChain;
 import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.TlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -82,9 +83,11 @@ public class PopupMsg extends PopupCommand {
     protected PopupMsg(SnacPacket packet) {
         super(CMD_POPUP_MSG);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
 
-        AbstractTlvChain chain = ImmutableTlvChain.readChain(snacData);
+        TlvChain chain = ImmutableTlvChain.readChain(snacData);
 
         message = chain.getString(TYPE_MSG);
         url = chain.getString(TYPE_URL);

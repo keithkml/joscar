@@ -36,12 +36,13 @@
 package net.kano.joscar.snaccmd.loc;
 
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.OscarTools;
 import net.kano.joscar.snaccmd.MinimalEncoder;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.AbstractTlvChain;
 import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.TlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -77,9 +78,11 @@ public class SetInterestsCmd extends LocCommand {
     protected SetInterestsCmd(SnacPacket packet) {
         super(CMD_SET_INTERESTS);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
 
-        AbstractTlvChain chain = ImmutableTlvChain.readChain(snacData);
+        TlvChain chain = ImmutableTlvChain.readChain(snacData);
 
         String charset = OscarTools.getValidCharset(
                 chain.getString(TYPE_CHARSET));
@@ -108,7 +111,9 @@ public class SetInterestsCmd extends LocCommand {
     public SetInterestsCmd(String[] interests) {
         super(CMD_SET_INTERESTS);
 
-        this.interests = interests;
+        this.interests = (String[]) (interests == null
+                ? null
+                : interests.clone());
     }
 
     /**
@@ -120,7 +125,7 @@ public class SetInterestsCmd extends LocCommand {
      * @return the chat interests being set
      */
     public final String[] getInterests() {
-        return interests;
+        return (String[]) (interests == null ? null : interests.clone());
     }
 
     public void writeData(OutputStream out) throws IOException {

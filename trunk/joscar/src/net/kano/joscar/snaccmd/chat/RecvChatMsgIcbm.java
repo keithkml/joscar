@@ -39,7 +39,7 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.FullUserInfo;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.AbstractTlvChain;
+import net.kano.joscar.tlv.TlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -68,7 +68,7 @@ public class RecvChatMsgIcbm extends AbstractChatMsgIcbm {
     protected RecvChatMsgIcbm(SnacPacket packet) {
         super(ChatCommand.CMD_RECV_CHAT_MSG, packet);
 
-        AbstractTlvChain chain = getChatTlvs();
+        TlvChain chain = getChatTlvs();
 
         Tlv userTlv = chain.getLastTlv(TYPE_USERINFO);
 

@@ -37,6 +37,7 @@ package net.kano.joscar.snaccmd.loc;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 
 import java.io.IOException;
@@ -75,6 +76,8 @@ public class SetDirAck extends LocCommand {
     protected SetDirAck(SnacPacket packet) {
         super(CMD_SET_DIR_ACK);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
 
         code = BinaryTools.getUShort(snacData, 0);
@@ -96,6 +99,8 @@ public class SetDirAck extends LocCommand {
      */
     public SetDirAck(int code) {
         super(CMD_SET_DIR_ACK);
+
+        DefensiveTools.checkRange(code, "code", 0);
 
         this.code = code;
     }

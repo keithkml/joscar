@@ -36,6 +36,7 @@
 package net.kano.joscar.flapcmd;
 
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flap.FlapCommand;
 import net.kano.joscar.flap.FlapPacket;
 import net.kano.joscar.snac.SnacCommand;
@@ -69,6 +70,8 @@ public class SnacFlapCmd extends FlapCommand {
     public SnacFlapCmd(FlapPacket flapPacket) {
         super(CHANNEL_SNAC);
 
+        DefensiveTools.checkNull(flapPacket, "flapPacket");
+
         ByteBlock flapData = flapPacket.getData();
 
         packet = SnacPacket.isValidSnacPacket(flapData)
@@ -86,6 +89,8 @@ public class SnacFlapCmd extends FlapCommand {
      */
     public SnacFlapCmd(long requestId, SnacCommand command) {
         super(CHANNEL_SNAC);
+
+        DefensiveTools.checkRange(requestId, "requestId", 0);
 
         packet = new SnacPacket(requestId, command);
     }

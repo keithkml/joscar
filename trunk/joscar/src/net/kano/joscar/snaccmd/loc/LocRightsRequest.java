@@ -36,6 +36,7 @@
 package net.kano.joscar.snaccmd.loc;
 
 import net.kano.joscar.flapcmd.SnacPacket;
+import net.kano.joscar.DefensiveTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -58,6 +59,8 @@ public class LocRightsRequest extends LocCommand {
      */
     protected LocRightsRequest(SnacPacket packet) {
         super(CMD_RIGHTS_REQ);
+
+        DefensiveTools.checkNull(packet, "packet");
     }
 
     /**

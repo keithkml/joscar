@@ -36,6 +36,7 @@
 package net.kano.joscar.snac;
 
 import net.kano.joscar.flap.FlapProcessor;
+import net.kano.joscar.DefensiveTools;
 
 /**
  * An event fired when a SNAC request "times out." This is not a bad thing; in
@@ -77,6 +78,10 @@ public class SnacRequestTimeoutEvent {
      */
     protected SnacRequestTimeoutEvent(FlapProcessor flapProcessor,
             SnacProcessor snacProcessor, SnacRequest request, int ttl) {
+        DefensiveTools.checkNull(flapProcessor, "flapProcessor");
+        DefensiveTools.checkNull(snacProcessor, "snacProcessor");
+        DefensiveTools.checkNull(request, "request");
+        
         this.flapProcessor = flapProcessor;
         this.snacProcessor = snacProcessor;
         this.request = request;

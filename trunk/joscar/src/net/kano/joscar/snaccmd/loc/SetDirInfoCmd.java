@@ -36,6 +36,7 @@
 package net.kano.joscar.snaccmd.loc;
 
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.DirInfo;
 
@@ -63,6 +64,8 @@ public class SetDirInfoCmd extends LocCommand {
      */
     protected SetDirInfoCmd(SnacPacket packet) {
         super(CMD_SET_DIR);
+
+        DefensiveTools.checkNull(packet, "packet");
 
         ByteBlock snacData = packet.getData();
 

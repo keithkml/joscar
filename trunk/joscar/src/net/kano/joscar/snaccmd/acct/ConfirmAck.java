@@ -37,10 +37,11 @@ package net.kano.joscar.snaccmd.acct;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.AbstractTlvChain;
 import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.TlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -88,13 +89,15 @@ public class ConfirmAck extends AcctCommand {
     protected ConfirmAck(SnacPacket packet) {
         super(CMD_CONFIRM_ACK);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
 
         result = BinaryTools.getUShort(snacData, 0);
 
         ByteBlock tlvBlock = snacData.subBlock(2);
 
-        AbstractTlvChain chain = ImmutableTlvChain.readChain(tlvBlock);
+        TlvChain chain = ImmutableTlvChain.readChain(tlvBlock);
 
         errorUrl = chain.getString(TYPE_ERROR_URL);
     }
@@ -118,6 +121,8 @@ public class ConfirmAck extends AcctCommand {
      */
     public ConfirmAck(int result, String errorURL) {
         super(CMD_CONFIRM_ACK);
+
+        DefensiveTools.checkRange(result, "result", 0);
 
         this.result = result;
         this.errorUrl = errorURL;

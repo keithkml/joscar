@@ -36,6 +36,7 @@
 package net.kano.joscar.snaccmd.buddy;
 
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.OscarTools;
 import net.kano.joscar.snaccmd.ScreenNameBlock;
@@ -61,6 +62,8 @@ public class BuddyOfflineCmd extends BuddyCommand {
     protected BuddyOfflineCmd(SnacPacket packet) {
         super(CMD_BUDDY_OFFLINE);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
 
         ScreenNameBlock snInfo = OscarTools.readScreenname(snacData);
@@ -75,6 +78,8 @@ public class BuddyOfflineCmd extends BuddyCommand {
      */
     public BuddyOfflineCmd(String sn) {
         super(CMD_BUDDY_OFFLINE);
+
+        DefensiveTools.checkNull(sn, "sn");
 
         this.sn = sn;
     }

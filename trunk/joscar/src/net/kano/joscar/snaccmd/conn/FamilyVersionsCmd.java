@@ -38,6 +38,7 @@ package net.kano.joscar.snaccmd.conn;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.MiscTools;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 
 import java.io.IOException;
@@ -64,6 +65,8 @@ public abstract class FamilyVersionsCmd extends ConnCommand {
     FamilyVersionsCmd(int command, SnacPacket packet) {
         super(command);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
 
         families = new SnacFamilyInfo[snacData.getLength()/4];
@@ -85,7 +88,9 @@ public abstract class FamilyVersionsCmd extends ConnCommand {
     FamilyVersionsCmd(int command, SnacFamilyInfo[] families) {
         super(command);
 
-        this.families = (SnacFamilyInfo[]) families.clone();
+        this.families = families == null
+                ? null
+                : (SnacFamilyInfo[]) families.clone();
     }
 
     /**
@@ -96,9 +101,11 @@ public abstract class FamilyVersionsCmd extends ConnCommand {
     public final SnacFamilyInfo[] getSnacFamilyInfos() { return families; }
 
     public void writeData(OutputStream out) throws IOException {
-        for (int i = 0; i < families.length; i++) {
-            BinaryTools.writeUShort(out, families[i].getFamily());
-            BinaryTools.writeUShort(out, families[i].getVersion());
+        if (families != null) {
+            for (int i = 0; i < families.length; i++) {
+                BinaryTools.writeUShort(out, families[i].getFamily());
+                BinaryTools.writeUShort(out, families[i].getVersion());
+            }
         }
     }
 
@@ -106,11 +113,13 @@ public abstract class FamilyVersionsCmd extends ConnCommand {
         StringBuffer buffer = new StringBuffer();
         buffer.append(MiscTools.getClassName(this) + ": family versions: ");
 
-        for (int i = 0; i < families.length; i++) {
-            buffer.append(Integer.toHexString(families[i].getFamily()));
-            buffer.append(" (v=");
-            buffer.append(Integer.toHexString(families[i].getVersion()));
-            buffer.append("), ");
+        if (families != null) {
+            for (int i = 0; i < families.length; i++) {
+                buffer.append(Integer.toHexString(families[i].getFamily()));
+                buffer.append(" (v=");
+                buffer.append(Integer.toHexString(families[i].getVersion()));
+                buffer.append("), ");
+            }
         }
 
         return buffer.toString();

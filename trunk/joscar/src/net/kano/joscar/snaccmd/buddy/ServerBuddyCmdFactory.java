@@ -49,7 +49,7 @@ public class ServerBuddyCmdFactory implements SnacCmdFactory {
     private static final CmdType[] SUPPORTED_TYPES = new CmdType[0];
 
     public CmdType[] getSupportedTypes() {
-        return SUPPORTED_TYPES;
+        return (CmdType[]) SUPPORTED_TYPES.clone();
     }
 
     public SnacCommand genSnacCommand(SnacPacket packet) {

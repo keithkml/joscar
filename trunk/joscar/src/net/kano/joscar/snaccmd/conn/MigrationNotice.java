@@ -37,10 +37,11 @@ package net.kano.joscar.snaccmd.conn;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.AbstractTlvChain;
 import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.TlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -73,6 +74,8 @@ public class MigrationNotice extends ConnCommand {
     protected MigrationNotice(SnacPacket packet) {
         super(CMD_MIGRATE_PLS);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
 
         int familyCount = BinaryTools.getUShort(snacData, 0);
@@ -84,7 +87,7 @@ public class MigrationNotice extends ConnCommand {
 
         ByteBlock tlvBlock = snacData.subBlock(2+familyCount*2);
 
-        AbstractTlvChain chain = ImmutableTlvChain.readChain(tlvBlock);
+        TlvChain chain = ImmutableTlvChain.readChain(tlvBlock);
 
         host = chain.getString(TYPE_HOST);
 
@@ -106,7 +109,7 @@ public class MigrationNotice extends ConnCommand {
     public MigrationNotice(String host, ByteBlock cookie, int[] families) {
         super(CMD_MIGRATE_PLS);
 
-        this.families = families;
+        this.families = (int[]) (families == null ? null : families.clone());
         this.host = host;
         this.cookie = cookie;
     }
@@ -140,20 +143,24 @@ public class MigrationNotice extends ConnCommand {
      * @return the migration host's supported SNAC families
      */
     public final int[] getFamilies() {
-        return families;
+        return (int[]) (families == null ? null : families.clone());
     }
 
     public void writeData(OutputStream out) throws IOException {
-        BinaryTools.writeUShort(out, families.length);
-        for (int i = 0; i < families.length; i++) {
-            BinaryTools.writeUShort(out, families[i]);
+        int len = families == null ? 0 : families.length;
+        BinaryTools.writeUShort(out, len);
+        if (families != null) {
+            for (int i = 0; i < families.length; i++) {
+                BinaryTools.writeUShort(out, families[i]);
+            }
         }
-        Tlv.getStringInstance(TYPE_HOST, host).write(out);
-        new Tlv(TYPE_COOKIE, cookie).write(out);
+        if (host != null) Tlv.getStringInstance(TYPE_HOST, host).write(out);
+        if (cookie != null) new Tlv(TYPE_COOKIE, cookie).write(out);
     }
 
     public String toString() {
-        return "MigrationNotice for " + families.length + " families to "
+        return "MigrationNotice for " + (families == null ? -1
+                : families.length) + " families to "
                 + host + " (cookie length=" + cookie.getLength() + ")"; 
     }
 }

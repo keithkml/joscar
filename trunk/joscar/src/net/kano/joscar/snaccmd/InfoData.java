@@ -37,9 +37,10 @@ package net.kano.joscar.snaccmd;
 
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.LiveWritable;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.AbstractTlvChain;
 import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.TlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -74,7 +75,9 @@ public class InfoData implements LiveWritable {
      * @param chain the TLV chain containing user info TLV's
      * @return a user info data block read from the given TLV chain
      */
-    public static InfoData readInfoDataFromChain(AbstractTlvChain chain) {
+    public static InfoData readInfoDataFromChain(TlvChain chain) {
+        DefensiveTools.checkNull(chain, "chain");
+
         String awayType = chain.getString(TYPE_AWAY_FMT);
         Tlv awayTlv = chain.getLastTlv(TYPE_AWAY);
         String infoType = chain.getString(TYPE_INFO_FMT);
@@ -155,7 +158,7 @@ public class InfoData implements LiveWritable {
     public InfoData(String info, String awayMessage, CapabilityBlock[] caps) {
         this.info = info;
         this.awayMessage = awayMessage;
-        this.caps = caps;
+        this.caps = (CapabilityBlock[]) (caps == null ? null : caps.clone());
     }
 
     /**
@@ -187,7 +190,7 @@ public class InfoData implements LiveWritable {
      * @return the user's supported capability blocks
      */
     public final CapabilityBlock[] getCaps() {
-        return caps;
+        return (CapabilityBlock[]) (caps == null ? null : caps.clone());
     }
 
     /**

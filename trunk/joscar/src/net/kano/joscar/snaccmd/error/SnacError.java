@@ -37,6 +37,7 @@ package net.kano.joscar.snaccmd.error;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snac.SnacCommand;
 
@@ -159,6 +160,8 @@ public class SnacError extends SnacCommand {
     protected SnacError(SnacPacket packet) {
         super(packet.getFamily(), CMD_ERROR);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
 
         code = BinaryTools.getUShort(snacData, 0);
@@ -173,6 +176,8 @@ public class SnacError extends SnacCommand {
      */
     public SnacError(int family, int errorCode) {
         super(family, CMD_ERROR);
+
+        DefensiveTools.checkRange(errorCode, "errorCode", 0);
 
         this.code = errorCode;
     }

@@ -35,6 +35,8 @@
 
 package net.kano.joscar.snac;
 
+import net.kano.joscar.DefensiveTools;
+
 /**
  * An interface for managing a "SNAC queue," which controls when individual
  * SNAC commands are sent on a <code>SnacProcessor</code>. This is useful for,
@@ -76,6 +78,8 @@ public abstract class SnacQueueManager {
      */
     protected final void sendSnac(SnacProcessor processor,
             SnacRequest request) {
+        DefensiveTools.checkNull(request, "request");
+        
         processor.reallySendSnac(request);
     }
 }

@@ -36,25 +36,39 @@
 package net.kano.joscar.ssiitem;
 
 import net.kano.joscar.snaccmd.ssi.SsiItem;
+import net.kano.joscar.DefensiveTools;
 
+/**
+ * Provides a default implementation of an SSI item object factory, converting
+ * SSI items to their respective classes provided in this package.
+ */
 public class DefaultSsiItemObjFactory implements SsiItemObjectFactory {
-    public AbstractItem getItemObj(SsiItem item) {
+    public SsiItemObj getItemObj(SsiItem item) {
+        DefensiveTools.checkNull(item, "item");
+
         int type = item.getItemType();
         if (type == SsiItem.TYPE_BUDDY) {
-            return BuddyItem.readBuddyItem(item);
+            return new BuddyItem(item);
+
         } else if (type == SsiItem.TYPE_GROUP) {
-            if (item.getParentId() == 0) return RootItem.readRootItem(item);
-            else return GroupItem.readGroupItem(item);
+            if (item.getParentId() == 0) return new RootItem(item);
+            else return new GroupItem(item);
+
         } else if (type == SsiItem.TYPE_PRIVACY) {
-            return PrivacyItem.readPrivacyItem(item);
+            return new PrivacyItem(item);
+
         } else if (type == SsiItem.TYPE_ICON_INFO) {
-            return IconItem.readIconItem(item);
+            return new IconItem(item);
+
         } else if (type == SsiItem.TYPE_PERMIT) {
-            return PermitItem.readPermitItem(item);
+            return new PermitItem(item);
+
         } else if (type == SsiItem.TYPE_DENY) {
-            return DenyItem.readDenyItem(item);
+            return new DenyItem(item);
+
         } else if (type == SsiItem.TYPE_VISIBILITY) {
-            return VisibilityItem.readVisiblityItem(item);
+            return new VisibilityItem(item);
+
         } else {
             return null;
         }

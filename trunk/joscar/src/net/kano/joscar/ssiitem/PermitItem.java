@@ -36,28 +36,62 @@
 package net.kano.joscar.ssiitem;
 
 import net.kano.joscar.snaccmd.ssi.SsiItem;
-import net.kano.joscar.tlv.MutableTlvChain;
-import net.kano.joscar.tlv.AbstractTlvChain;
-import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.TlvChain;
 
+/**
+ * An SSI item object representing a user on one's "allow" (or "permit" list.
+ * The allow list is an infrequently used privacy feature that allows one to
+ * block everyone <i>but</i> those on this list.
+ * <br>
+ * <br>
+ * Note that this class is only used to store data and that <b>changes to this
+ * object are not reflected on the server</b> without sending the changes to the
+ * server with a {@link net.kano.joscar.snaccmd.ssi.ModifyItemsCmd
+ * ModifyItemsCmd}.
+ */
 public class PermitItem extends SimpleNamedItem {
-    public static PermitItem readPermitItem(SsiItem item) {
-        AbstractTlvChain chain = ImmutableTlvChain.readChain(item.getData());
-
-        MutableTlvChain mutey = new MutableTlvChain(chain);
-
-        return new PermitItem(item.getName(), item.getSubId(), mutey);
+    /**
+     * Creates a new allowed user item object generated from the data in the
+     * given SSI item.
+     *
+     * @param item a "permit" SSI item
+     */
+    public PermitItem(SsiItem item) {
+        super(item);
     }
 
+    /**
+     * Creates a new allowed user item object with the same properties as the
+     * given object.
+     *
+     * @param other a permit item object to copy
+     */
     public PermitItem(PermitItem other) {
         super(other);
     }
 
+    /**
+     * Creates a new allowed user item object for the given user and with the
+     * given permit item ID. Note that the given ID is in no way related to the
+     * {@linkplain BuddyItem#getId buddy ID} of the user.
+     *
+     * @param sn the screenname of the user being "allowed"
+     * @param id an ID number for this permit item
+     */
     public PermitItem(String sn, int id) {
         super(sn, id);
     }
 
-    public PermitItem(String sn, int id, AbstractTlvChain extraTlvs) {
+    /**
+     * Creates a new allowed user item object for the given properties.. Note
+     * that the given ID is in no way related to the {@linkplain
+     * BuddyItem#getId buddy ID} of the user.
+     *
+     * @param sn the screenname of the user being "allowed"
+     * @param id an ID number for this permit item
+     * @param extraTlvs a list of extra TLV's to store in this permit item
+     */
+    public PermitItem(String sn, int id, TlvChain extraTlvs) {
         super(sn, id, extraTlvs);
     }
 

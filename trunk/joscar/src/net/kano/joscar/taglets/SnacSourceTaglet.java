@@ -39,7 +39,16 @@ import com.sun.tools.doclets.Taglet;
 import com.sun.javadoc.*;
 import java.util.Map;
 
+/**
+ * A javadoc taglet that provides a <code>@snac.src</code> tag to indicate the
+ * source of a SNAC command (client, server, or both).
+ */
 public class SnacSourceTaglet implements Taglet {
+    /**
+     * Registers this taglet with the given taglet map.
+     *
+     * @param tagletMap a taglet map with which to register this taglet
+     */
     public static void register(Map tagletMap) {
         SnacSourceTaglet instance = new SnacSourceTaglet();
         tagletMap.put(instance.getName(), instance);

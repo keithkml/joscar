@@ -37,6 +37,7 @@ package net.kano.joscar.snaccmd.conn;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 
 import java.io.IOException;
@@ -68,6 +69,8 @@ public class SetIdleCmd extends ConnCommand {
     protected SetIdleCmd(SnacPacket packet) {
         super(CMD_SET_IDLE);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
         seconds = BinaryTools.getUInt(snacData, 0);
     }
@@ -82,6 +85,8 @@ public class SetIdleCmd extends ConnCommand {
      */
     public SetIdleCmd(long seconds) {
         super(CMD_SET_IDLE);
+
+        DefensiveTools.checkRange(seconds, "seconds", 0);
 
         this.seconds = seconds;
     }

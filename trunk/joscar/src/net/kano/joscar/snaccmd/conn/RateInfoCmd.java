@@ -37,6 +37,7 @@ package net.kano.joscar.snaccmd.conn;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snac.CmdType;
 
@@ -67,6 +68,8 @@ public class RateInfoCmd extends ConnCommand {
      */
     protected RateInfoCmd(SnacPacket packet) {
         super(CMD_RATE_INFO);
+
+        DefensiveTools.checkNull(packet, "packet");
 
         ByteBlock snacData = packet.getData();
 
@@ -110,7 +113,7 @@ public class RateInfoCmd extends ConnCommand {
     public RateInfoCmd(RateClassInfo[] infos) {
         super(CMD_RATE_INFO);
 
-        this.infos = infos;
+        this.infos = (RateClassInfo[]) (infos == null ? null : infos.clone());
     }
 
     /**
@@ -119,19 +122,22 @@ public class RateInfoCmd extends ConnCommand {
      * @return this command's enclosed rate class information blocks
      */
     public RateClassInfo[] getRateClassInfos() {
-        return infos;
+        return (RateClassInfo[]) (infos == null ? null : infos.clone());
     }
 
     public void writeData(OutputStream out) throws IOException {
-        BinaryTools.writeUShort(out, infos.length);
-        for (int i = 0; i < infos.length; i++) {
-            infos[i].write(out);
-        }
-        for (int i = 0; i < infos.length; i++) {
-            CmdType[] families = infos[i].getCommands();
-            for (int j = 0; j < families.length; j++) {
-                BinaryTools.writeUShort(out, families[j].getFamily());
-                BinaryTools.writeUShort(out, families[j].getCommand());
+        int len = infos == null ? 0 : infos.length;
+        BinaryTools.writeUShort(out, len);
+        if (infos != null) {
+            for (int i = 0; i < infos.length; i++) {
+                infos[i].write(out);
+            }
+            for (int i = 0; i < infos.length; i++) {
+                CmdType[] families = infos[i].getCommands();
+                for (int j = 0; j < families.length; j++) {
+                    BinaryTools.writeUShort(out, families[j].getFamily());
+                    BinaryTools.writeUShort(out, families[j].getCommand());
+                }
             }
         }
     }

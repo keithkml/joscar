@@ -39,7 +39,16 @@ import com.sun.tools.doclets.Taglet;
 import com.sun.javadoc.*;
 import java.util.Map;
 
+/**
+ * A javadoc taglet that provides a <code>@snac.cmd</code> tag to indicate the
+ * SNAC command and subtype of a SNAC command class.
+ */
 public class SnacCommandTaglet implements Taglet {
+    /**
+     * Registers this taglet with the given taglet map.
+     *
+     * @param tagletMap a taglet map with which to register this taglet
+     */
     public static void register(Map tagletMap) {
         SnacCommandTaglet instance = new SnacCommandTaglet();
         tagletMap.put(instance.getName(), instance);

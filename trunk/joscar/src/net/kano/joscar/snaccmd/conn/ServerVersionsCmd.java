@@ -36,6 +36,7 @@
 package net.kano.joscar.snaccmd.conn;
 
 import net.kano.joscar.flapcmd.SnacPacket;
+import net.kano.joscar.DefensiveTools;
 
 /**
  * A SNAC command sent to indicate to the client the versions of the SNAC
@@ -53,6 +54,8 @@ public class ServerVersionsCmd extends FamilyVersionsCmd {
      */
     protected ServerVersionsCmd(SnacPacket packet) {
         super(CMD_SERV_VERS, packet);
+
+        DefensiveTools.checkNull(packet, "packet");
     }
 
     /**

@@ -38,10 +38,11 @@ package net.kano.joscar.snaccmd.acct;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.MiscTools;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.AbstractTlvChain;
 import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.TlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -111,6 +112,8 @@ public abstract class AcctResponse extends AcctCommand {
     AcctResponse(int command, SnacPacket packet) {
         super(command);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock block = packet.getData();
 
         type = BinaryTools.getUShort(block, 0);
@@ -118,36 +121,13 @@ public abstract class AcctResponse extends AcctCommand {
 
         ByteBlock tlvBlock = block.subBlock(4);
 
-        AbstractTlvChain chain = ImmutableTlvChain.readChain(tlvBlock);
+        TlvChain chain = ImmutableTlvChain.readChain(tlvBlock);
 
         sn = chain.getString(TYPE_SN);
         email = chain.getString(TYPE_EMAIL);
 
         errorCode = chain.getUShort(TYPE_ERROR_CODE);
         errorUrl = chain.getString(TYPE_ERROR_URL);
-    }
-
-    /**
-     * Creates an outgoing account response command with the given properties.
-     *
-     * @param command the SNAC command subtype of this command
-     * @param type the response type, normally {@link #TYPE_DEFAULT}
-     * @param result a result code, like {@link #RESULT_ERROR}
-     * @param sn a screen name, or <code>null</code> for none
-     * @param email an email address, or <code>null</code> for none
-     * @param errorCode an error code, like {@link #ERRORCODE_NO_EMAIL},
-     *        or <code>-1</code> for none
-     * @param errorUrl an error URL, or <code>null</code> for none
-     */
-    AcctResponse(int command, int type, int result, String sn,
-            String email, int errorCode, String errorUrl) {
-        super(command);
-        this.type = type;
-        this.result = result;
-        this.sn = sn;
-        this.email = email;
-        this.errorCode = errorCode;
-        this.errorUrl = errorUrl;
     }
 
     /**
@@ -176,6 +156,34 @@ public abstract class AcctResponse extends AcctCommand {
     AcctResponse(int command, int errorCode, String errorURL) {
         this(command, TYPE_DEFAULT, RESULT_ERROR, null, null, errorCode,
                 errorURL);
+    }
+
+    /**
+     * Creates an outgoing account response command with the given properties.
+     *
+     * @param command the SNAC command subtype of this command
+     * @param type the response type, normally {@link #TYPE_DEFAULT}
+     * @param result a result code, like {@link #RESULT_ERROR}
+     * @param sn a screen name, or <code>null</code> for none
+     * @param email an email address, or <code>null</code> for none
+     * @param errorCode an error code, like {@link #ERRORCODE_NO_EMAIL},
+     *        or <code>-1</code> for none
+     * @param errorUrl an error URL, or <code>null</code> for none
+     */
+    AcctResponse(int command, int type, int result, String sn,
+            String email, int errorCode, String errorUrl) {
+        super(command);
+
+        DefensiveTools.checkRange(type, "type", 0);
+        DefensiveTools.checkRange(result, "result", 0);
+        DefensiveTools.checkRange(errorCode, "errorCode", -1);
+
+        this.type = type;
+        this.result = result;
+        this.sn = sn;
+        this.email = email;
+        this.errorCode = errorCode;
+        this.errorUrl = errorUrl;
     }
 
     /**

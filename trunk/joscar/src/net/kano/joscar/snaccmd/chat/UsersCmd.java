@@ -37,6 +37,7 @@ package net.kano.joscar.snaccmd.chat;
 
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.MiscTools;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.FullUserInfo;
 
@@ -61,6 +62,8 @@ public abstract class UsersCmd extends ChatCommand {
      */
     UsersCmd(int command, SnacPacket packet) {
         super(command);
+
+        DefensiveTools.checkNull(packet, "packet");
 
         List userList = new LinkedList();
 
@@ -88,7 +91,7 @@ public abstract class UsersCmd extends ChatCommand {
     UsersCmd(int command, FullUserInfo[] users) {
         super(command);
 
-        this.users = users;
+        this.users = (FullUserInfo[]) (users == null ? null : users.clone());
     }
 
     /**
@@ -97,12 +100,14 @@ public abstract class UsersCmd extends ChatCommand {
      * @return the list of users
      */
     public final FullUserInfo[] getUsers() {
-        return users;
+        return (FullUserInfo[]) (users == null ? null : users.clone());
     }
 
     public void writeData(OutputStream out) throws IOException {
-        for (int i = 0; i < users.length; i++) {
-            users[i].write(out);
+        if (users != null) {
+            for (int i = 0; i < users.length; i++) {
+                users[i].write(out);
+            }
         }
     }
 

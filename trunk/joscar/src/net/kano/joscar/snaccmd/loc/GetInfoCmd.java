@@ -37,6 +37,7 @@ package net.kano.joscar.snaccmd.loc;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.OscarTools;
 import net.kano.joscar.snaccmd.ScreenNameBlock;
@@ -83,6 +84,8 @@ public class GetInfoCmd extends LocCommand {
     protected GetInfoCmd(SnacPacket packet) {
         super(CMD_GET_INFO);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
 
         type = BinaryTools.getUShort(snacData, 0);
@@ -102,20 +105,14 @@ public class GetInfoCmd extends LocCommand {
      * @param type the type of information being requested, like {@link
      *        #TYPE_AWAYMSG}
      */
-    public GetInfoCmd(String sn, int type) {
+    public GetInfoCmd(int type, String sn) {
         super(CMD_GET_INFO);
 
-        this.sn = sn;
-        this.type = type;
-    }
+        DefensiveTools.checkRange(type, "type", 0);
+        DefensiveTools.checkNull(sn, "sn");
 
-    /**
-     * Returns the screenname of the user whose info is being requested.
-     *
-     * @return the screenname of the user whose information is being requested
-     */
-    public final String getScreenname() {
-        return sn;
+        this.type = type;
+        this.sn = sn;
     }
 
     /**
@@ -126,6 +123,15 @@ public class GetInfoCmd extends LocCommand {
      */
     public final int getRequestType() {
         return type;
+    }
+
+    /**
+     * Returns the screenname of the user whose info is being requested.
+     *
+     * @return the screenname of the user whose information is being requested
+     */
+    public final String getScreenname() {
+        return sn;
     }
 
     public void writeData(OutputStream out) throws IOException {

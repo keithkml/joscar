@@ -38,6 +38,7 @@ package net.kano.joscar.snaccmd;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.LiveWritable;
+import net.kano.joscar.DefensiveTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -76,6 +77,8 @@ public final class ExtraIconInfo implements LiveWritable {
      *         given data block
      */
     public static ExtraIconInfo[] readExtraIconInfos(ByteBlock block) {
+        DefensiveTools.checkNull(block, "block");
+
         List infos = new LinkedList();
 
         for (;;) {
@@ -98,6 +101,8 @@ public final class ExtraIconInfo implements LiveWritable {
      *         <code>null</code> if no valid object could be read
      */
     public static ExtraIconInfo readExtraIconInfo(ByteBlock block) {
+        DefensiveTools.checkNull(block, "block");
+
         if (block.getLength() < 2) return null;
 
         int code = BinaryTools.getUShort(block, 0);
@@ -120,6 +125,9 @@ public final class ExtraIconInfo implements LiveWritable {
      *        of data
      */
     protected ExtraIconInfo(int code, IconHashInfo iconInfo, int totalSize) {
+        DefensiveTools.checkRange(code, "code", 0);
+        DefensiveTools.checkRange(totalSize, "totalSize", -1);
+
         this.extraCode = code;
         this.iconInfo = iconInfo;
         this.totalSize = totalSize;

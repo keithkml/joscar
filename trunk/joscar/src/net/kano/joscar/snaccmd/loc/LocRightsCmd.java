@@ -36,10 +36,11 @@
 package net.kano.joscar.snaccmd.loc;
 
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.AbstractTlvChain;
 import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.TlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -67,9 +68,11 @@ public class LocRightsCmd extends LocCommand {
     protected LocRightsCmd(SnacPacket packet) {
         super(CMD_RIGHTS_RESP);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
 
-        AbstractTlvChain chain = ImmutableTlvChain.readChain(snacData);
+        TlvChain chain = ImmutableTlvChain.readChain(snacData);
 
         maxInfoLength = chain.getUShort(TYPE_MAX_INFO_LEN);
     }
@@ -81,6 +84,8 @@ public class LocRightsCmd extends LocCommand {
      */
     public LocRightsCmd(int maxInfoLength) {
         super(CMD_RIGHTS_RESP);
+
+        DefensiveTools.checkRange(maxInfoLength, "maxInfoLength", 0);
 
         this.maxInfoLength = maxInfoLength;
     }

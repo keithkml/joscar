@@ -37,6 +37,7 @@ package net.kano.joscar.snaccmd.conn;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.MiniUserInfo;
 
@@ -63,6 +64,8 @@ public class WarningNotification extends ConnCommand {
      */
     protected WarningNotification(SnacPacket packet) {
         super(CMD_WARNED);
+
+        DefensiveTools.checkNull(packet, "packet");
 
         ByteBlock snacData = packet.getData();
         level = BinaryTools.getUShort(snacData, 0);
@@ -92,6 +95,8 @@ public class WarningNotification extends ConnCommand {
      */
     public WarningNotification(int level, MiniUserInfo by) {
         super(CMD_WARNED);
+
+        DefensiveTools.checkRange(level, "level", 0);
 
         this.level = level;
         this.by = by;

@@ -38,6 +38,7 @@ package net.kano.joscar.snaccmd;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.LiveWritable;
+import net.kano.joscar.DefensiveTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -58,6 +59,8 @@ public final class MiniRoomInfo implements LiveWritable {
      *         <code>null</code> if no valid object can be read
      */
     public static MiniRoomInfo readMiniRoomInfo(ByteBlock block) {
+        DefensiveTools.checkNull(block, "block");
+
         if (block.getLength() < 5) return null;
 
         int exchange = BinaryTools.getUShort(block, 0);
@@ -98,6 +101,11 @@ public final class MiniRoomInfo implements LiveWritable {
      */
     protected MiniRoomInfo(int exchange, String cookie, int instance,
             int totalSize) {
+        DefensiveTools.checkRange(exchange, "exchange", 0);
+        DefensiveTools.checkNull(cookie, "cookie");
+        DefensiveTools.checkRange(instance, "instance", 0);
+        DefensiveTools.checkRange(totalSize, "totalSize", -1);
+
         this.exchange = exchange;
         this.cookie = cookie;
         this.instance = instance;

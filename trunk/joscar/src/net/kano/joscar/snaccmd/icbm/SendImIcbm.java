@@ -36,12 +36,13 @@
 package net.kano.joscar.snaccmd.icbm;
 
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.OscarTools;
 import net.kano.joscar.snaccmd.ScreenNameBlock;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.AbstractTlvChain;
 import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.TlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -73,6 +74,8 @@ public class SendImIcbm extends AbstractImIcbm {
     protected SendImIcbm(SnacPacket packet) {
         super(IcbmCommand.CMD_SEND_ICBM, packet);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
 
         ScreenNameBlock snInfo = OscarTools.readScreenname(snacData);
@@ -80,7 +83,7 @@ public class SendImIcbm extends AbstractImIcbm {
 
         ByteBlock rest = snacData.subBlock(snInfo.getTotalSize());
 
-        AbstractTlvChain imTlvs = ImmutableTlvChain.readChain(rest);
+        TlvChain imTlvs = ImmutableTlvChain.readChain(rest);
 
         processImTlvs(imTlvs);
 
@@ -133,6 +136,8 @@ public class SendImIcbm extends AbstractImIcbm {
             boolean ackRequested) {
         super(IcbmCommand.CMD_SEND_ICBM, icbmCookie, message, autoResponse,
                 wantsIcon, iconInfo);
+
+        DefensiveTools.checkNull(sn, "sn");
 
         this.sn = sn;
         this.ackRequested = ackRequested;

@@ -36,6 +36,7 @@
 package net.kano.joscar.snaccmd.conn;
 
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.FullUserInfo;
 
@@ -64,6 +65,8 @@ public class YourInfoCmd extends ConnCommand {
     protected YourInfoCmd(SnacPacket packet) {
         super(CMD_YOUR_INFO);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
 
         userInfo = FullUserInfo.readUserInfo(snacData);
@@ -77,6 +80,8 @@ public class YourInfoCmd extends ConnCommand {
      */
     public YourInfoCmd(FullUserInfo info) {
         super(CMD_YOUR_INFO);
+
+        DefensiveTools.checkNull(info, "info");
 
         this.userInfo = info;
     }

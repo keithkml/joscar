@@ -37,6 +37,7 @@ package net.kano.joscar.snaccmd.loc;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 
 import java.io.IOException;
@@ -67,6 +68,8 @@ public class SetInterestsAck extends LocCommand {
     protected SetInterestsAck(SnacPacket packet) {
         super(CMD_INTEREST_ACK);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
 
         code = BinaryTools.getUShort(snacData, 0);
@@ -88,6 +91,9 @@ public class SetInterestsAck extends LocCommand {
      */
     public SetInterestsAck(int code) {
         super(CMD_INTEREST_ACK);
+
+        DefensiveTools.checkRange(code, "code", 0);
+
         this.code = code;
     }
 

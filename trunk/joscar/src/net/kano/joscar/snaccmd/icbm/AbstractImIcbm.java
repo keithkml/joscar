@@ -37,14 +37,12 @@ package net.kano.joscar.snaccmd.icbm;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.AbstractIcbm;
 import net.kano.joscar.snaccmd.EncodedStringInfo;
 import net.kano.joscar.snaccmd.MinimalEncoder;
-import net.kano.joscar.tlv.MutableTlvChain;
-import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.AbstractTlvChain;
-import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -106,7 +104,9 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
      *
      * @param chain the TLV chain from which to read
      */
-    final void processImTlvs(AbstractTlvChain chain) {
+    final void processImTlvs(TlvChain chain) {
+        DefensiveTools.checkNull(chain, "chain");
+        
         // get some TLV's
         Tlv messageTlv = chain.getLastTlv(TYPE_MESSAGE);
         Tlv iconTlv = chain.getLastTlv(TYPE_ICONINFO);
@@ -119,7 +119,7 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
         if (messageTlv != null) {
             // this is a normal IM. there are TLV's in here. two or more of
             // them.
-            AbstractTlvChain msgTLVs = ImmutableTlvChain.readChain(messageTlv.getData());
+            TlvChain msgTLVs = ImmutableTlvChain.readChain(messageTlv.getData());
 
             // read each part of the multipart data
             StringBuffer messageBuffer = new StringBuffer();
@@ -249,7 +249,7 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
             msgout.write(encInfo.getData());
 
             // create the two TLV's inside a TLV chain, and write it out.
-            MutableTlvChain chain = new MutableTlvChain();
+            MutableTlvChain chain = new DefaultMutableTlvChain();
             Tlv featuresTlv = new Tlv(TYPE_FEATURES);
             chain.addTlv(featuresTlv);
 

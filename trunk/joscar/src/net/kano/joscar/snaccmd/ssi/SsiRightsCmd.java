@@ -37,10 +37,11 @@ package net.kano.joscar.snaccmd.ssi;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.AbstractTlvChain;
 import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.TlvChain;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -73,9 +74,11 @@ public class SsiRightsCmd extends SsiCommand {
     protected SsiRightsCmd(SnacPacket packet) {
         super(CMD_RIGHTS);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
 
-        AbstractTlvChain chain = ImmutableTlvChain.readChain(snacData);
+        TlvChain chain = ImmutableTlvChain.readChain(snacData);
 
         Tlv maximaTlv = chain.getLastTlv(TYPE_MAXIMA);
 
@@ -102,7 +105,7 @@ public class SsiRightsCmd extends SsiCommand {
     public SsiRightsCmd(int[] maxima) {
         super(CMD_RIGHTS);
 
-        this.maxima = maxima;
+        this.maxima = (int[]) (maxima == null ? null : maxima.clone());
     }
 
     /**
@@ -119,7 +122,7 @@ public class SsiRightsCmd extends SsiCommand {
      * @return a list of the maximum numbers of items of each item type
      */
     public final int[] getMaxima() {
-        return maxima;
+        return (int[]) (maxima == null ? null : maxima.clone());
     }
 
     public void writeData(OutputStream out) throws IOException {

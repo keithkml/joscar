@@ -36,6 +36,7 @@
 package net.kano.joscar.flapcmd;
 
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 
 /**
@@ -65,6 +66,8 @@ public final class MutableSnacPacket {
      *        object
      */
     public MutableSnacPacket(SnacPacket packet) {
+        DefensiveTools.checkNull(packet, "packet");
+
         family = packet.getFamily();
         command = packet.getCommand();
         reqid = packet.getReqid();
@@ -131,6 +134,8 @@ public final class MutableSnacPacket {
      * @param family this packet's new SNAC family code
      */
     public void setFamily(int family) {
+        DefensiveTools.checkRange(family, "family", 0);
+
         if (!changed) changed = family != this.family;
         this.family = family;
     }
@@ -141,6 +146,8 @@ public final class MutableSnacPacket {
      * @param command this packet's new SNAC command subtype
      */
     public void setCommand(int command) {
+        DefensiveTools.checkRange(command, "command", 0);
+
         if (!changed) changed = command != this.command;
         this.command = command;
     }
@@ -151,6 +158,8 @@ public final class MutableSnacPacket {
      * @param reqid this packet's new SNAC request ID
      */
     public void setReqid(long reqid) {
+        DefensiveTools.checkRange(reqid, "reqid", 0);
+
         if (!changed) changed = reqid != this.reqid;
         this.reqid = reqid;
     }
@@ -161,6 +170,8 @@ public final class MutableSnacPacket {
      * @param flag1 this packet's new first SNAC flag byte
      */
     public void setFlag1(short flag1) {
+        DefensiveTools.checkRange(flag1, "flag1", 0);
+
         if (!changed) changed = flag1 != this.flag1;
         this.flag1 = flag1;
     }
@@ -171,6 +182,8 @@ public final class MutableSnacPacket {
      * @param flag2 this packet's new second SNAC flag byte
      */
     public void setFlag2(short flag2) {
+        DefensiveTools.checkRange(flag2, "flag2", 0);
+
         if (!changed) changed = flag2 != this.flag2;
         this.flag2 = flag2;
     }
@@ -181,6 +194,8 @@ public final class MutableSnacPacket {
      * @param data this packet's new SNAC data block
      */
     public void setData(ByteBlock data) {
+        DefensiveTools.checkNull(data, "data");
+
         if (!changed) changed = data != this.data;
         this.data = data;
     }

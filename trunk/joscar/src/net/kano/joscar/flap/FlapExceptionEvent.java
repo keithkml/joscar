@@ -35,6 +35,8 @@
 
 package net.kano.joscar.flap;
 
+import net.kano.joscar.DefensiveTools;
+
 /**
  * An event fired when an exception occurs during the FLAP processing process.
  */
@@ -103,6 +105,9 @@ public class FlapExceptionEvent {
      */
     protected FlapExceptionEvent(Object type, FlapProcessor conn,
             Throwable exception, Object reason) {
+        DefensiveTools.checkNull(type, "type");
+        DefensiveTools.checkNull(conn, "conn");
+
         this.type = type;
         this.conn = conn;
         this.exception = exception;

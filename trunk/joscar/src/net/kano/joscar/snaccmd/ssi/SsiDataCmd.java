@@ -37,6 +37,7 @@ package net.kano.joscar.snaccmd.ssi;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 
 import java.io.IOException;
@@ -77,6 +78,8 @@ public class SsiDataCmd extends SsiCommand {
      */
     protected SsiDataCmd(SnacPacket packet) {
         super(CMD_SSI_DATA);
+
+        DefensiveTools.checkNull(packet, "packet");
 
         ByteBlock snacData = packet.getData();
 
@@ -127,8 +130,12 @@ public class SsiDataCmd extends SsiCommand {
     public SsiDataCmd(int version, SsiItem[] items, long lastmod) {
         super(CMD_SSI_DATA);
 
+        DefensiveTools.checkRange(version, "version", 0);
+        DefensiveTools.checkNull(items, "items");
+        DefensiveTools.checkRange(lastmod, "lastmod", 0);
+
         this.version = version;
-        this.items = items;
+        this.items = (SsiItem[]) items.clone();
         this.lastmod = lastmod;
     }
 
@@ -152,7 +159,7 @@ public class SsiDataCmd extends SsiCommand {
      * @return the items in this user's server-stored information
      */
     public final SsiItem[] getItems() {
-        return items;
+        return (SsiItem[]) items.clone();
     }
 
     /**

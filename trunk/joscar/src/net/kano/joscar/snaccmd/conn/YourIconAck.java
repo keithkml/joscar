@@ -36,6 +36,7 @@
 package net.kano.joscar.snaccmd.conn;
 
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.ExtraIconInfo;
 
@@ -63,6 +64,8 @@ public class YourIconAck extends ConnCommand {
     protected YourIconAck(SnacPacket packet) {
         super(CMD_YOUR_ICON);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
 
         iconInfos = ExtraIconInfo.readExtraIconInfos(snacData);
@@ -77,7 +80,9 @@ public class YourIconAck extends ConnCommand {
     public YourIconAck(ExtraIconInfo[] iconInfos) {
         super(CMD_YOUR_ICON);
 
-        this.iconInfos = iconInfos;
+        this.iconInfos = (ExtraIconInfo[]) (iconInfos == null
+                ? null
+                : iconInfos.clone());
     }
 
     /**
@@ -87,11 +92,11 @@ public class YourIconAck extends ConnCommand {
      * @return this command's icon information blocks
      */
     public final ExtraIconInfo[] getIconInfos() {
-        return iconInfos;
+        return (ExtraIconInfo[]) (iconInfos == null ? null : iconInfos.clone());
     }
 
     public void writeData(OutputStream out) throws IOException {
-        ByteBlock.createByteBlock(iconInfos).write(out);
+        if (iconInfos != null) ByteBlock.createByteBlock(iconInfos).write(out);
     }
 
     public String toString() {

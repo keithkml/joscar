@@ -37,6 +37,7 @@ package net.kano.joscar.snaccmd.rooms;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 
 import java.io.IOException;
@@ -64,6 +65,8 @@ public class ExchangeInfoReq extends RoomCommand {
     protected ExchangeInfoReq(SnacPacket packet) {
         super(CMD_EXCH_INFO_REQ);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
 
         exchange = BinaryTools.getUShort(snacData, 0);
@@ -76,6 +79,8 @@ public class ExchangeInfoReq extends RoomCommand {
      */
     public ExchangeInfoReq(int exchange) {
         super(CMD_EXCH_INFO_REQ);
+
+        DefensiveTools.checkRange(exchange, "exchange", 0);
 
         this.exchange = exchange;
     }

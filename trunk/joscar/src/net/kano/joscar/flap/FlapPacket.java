@@ -38,6 +38,7 @@ package net.kano.joscar.flap;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.LiveWritable;
+import net.kano.joscar.DefensiveTools;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -109,6 +110,9 @@ public final class FlapPacket implements LiveWritable {
      */
     static FlapPacket readRestOfFlap(FlapHeader header, InputStream in)
             throws IOException {
+        DefensiveTools.checkNull(header, "header");
+        DefensiveTools.checkNull(in, "in");
+
         final byte[] data = new byte[header.getDataLength()];
         int pos = 0;
 
@@ -130,6 +134,9 @@ public final class FlapPacket implements LiveWritable {
      */
     FlapPacket(FlapHeader header, ByteBlock data)
             throws IllegalArgumentException {
+        DefensiveTools.checkNull(header, "header");
+        DefensiveTools.checkNull(data, "data");
+
         if (header.getDataLength() != data.getLength()) {
             throw new IllegalArgumentException("FLAP data length ("
                     + data.getLength() + ") does not agree with header ("
@@ -150,6 +157,8 @@ public final class FlapPacket implements LiveWritable {
      * @param command the FLAP command to use to create the packet
      */
     FlapPacket(int seqnum, FlapCommand command) {
+        DefensiveTools.checkNull(command, "command");
+
         this.seqnum = seqnum;
         this.channel = command.getChannel();
         this.block = null;

@@ -37,6 +37,19 @@ package net.kano.joscar.ssiitem;
 
 import net.kano.joscar.snaccmd.ssi.SsiItem;
 
+/**
+ * An interface for generating SSI item objects from more low-level SSI item
+ * blocks.
+ */
 public interface SsiItemObjectFactory {
-    AbstractItem getItemObj(SsiItem item);
+    /**
+     * Returns an SSI item object that represents the given SSI item, or
+     * <code>null</code> of no appropriate object could be created.
+     *
+     * @param item the SSI item block to "convert"
+     * @return an SSI item object representing the given SSI item block, or
+     *         <code>null</code> if no appropriate item object could be created
+     *         (for example, if the item is in an invalid format)
+     */
+    SsiItemObj getItemObj(SsiItem item);
 }

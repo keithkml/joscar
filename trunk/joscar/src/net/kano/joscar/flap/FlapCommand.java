@@ -35,6 +35,8 @@
 
 package net.kano.joscar.flap;
 
+import net.kano.joscar.DefensiveTools;
+
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -53,6 +55,8 @@ public abstract class FlapCommand {
      * @param channel the FLAP channel associated with this command
      */
     protected FlapCommand(int channel) {
+        DefensiveTools.checkRange(channel, "channel", 0);
+        
         this.channel = channel;
     }
 

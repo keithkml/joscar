@@ -36,6 +36,7 @@
 package net.kano.joscar.snaccmd.ssi;
 
 import net.kano.joscar.flapcmd.SnacPacket;
+import net.kano.joscar.DefensiveTools;
 
 /**
  * A SNAC command sent to create new server-stored "items." Normally
@@ -54,6 +55,8 @@ public class CreateItemsCmd extends ItemsCmd {
      */
     protected CreateItemsCmd(SnacPacket packet) {
         super(CMD_CREATE_ITEMS, packet);
+
+        DefensiveTools.checkNull(packet, "packet");
     }
 
     /**

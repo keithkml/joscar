@@ -37,6 +37,7 @@ package net.kano.joscar.snaccmd;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snac.SnacCommand;
 
@@ -80,6 +81,8 @@ public abstract class AbstractIcbm extends SnacCommand {
      * @return the ICBM channel on which the given packet was received
      */
     public static final int getIcbmChannel(SnacPacket packet) {
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock block = packet.getData();
 
         return BinaryTools.getUShort(block, 8);
@@ -113,6 +116,8 @@ public abstract class AbstractIcbm extends SnacCommand {
     protected AbstractIcbm(int family, int command, SnacPacket packet) {
         super(family, command);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
 
         icbmCookie = BinaryTools.getLong(snacData, 0);
@@ -134,6 +139,8 @@ public abstract class AbstractIcbm extends SnacCommand {
     protected AbstractIcbm(int family, int command, long icbmCookie,
             int channel) {
         super(family, command);
+
+        DefensiveTools.checkRange(channel, "channel", 0);
 
         this.icbmCookie = icbmCookie;
         this.channel = channel;

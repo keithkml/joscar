@@ -38,6 +38,7 @@ package net.kano.joscar.snaccmd.icbm;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.Writable;
+import net.kano.joscar.DefensiveTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -91,6 +92,8 @@ public class ParamInfo implements Writable {
      *         block
      */
     protected static ParamInfo readParamInfo(ByteBlock block) {
+        DefensiveTools.checkNull(block, "block");
+
         if (block.getLength() < 16) return null;
 
         int maxchan = BinaryTools.getUShort(block, 0);
@@ -171,6 +174,13 @@ new ParamInfo(ParamInfo.FLAGS_MISSEDCALLS_ALLOWED
      */
     public ParamInfo(int maxChannel, long flags, int maxMsgLen,
             int maxSenderWarning, int maxReceiverWarning, long minMsgInterval) {
+        DefensiveTools.checkRange(maxChannel, "maxChannel", 0);
+        DefensiveTools.checkRange(flags, "flags", 0);
+        DefensiveTools.checkRange(maxMsgLen, "maxMsgLen", 0);
+        DefensiveTools.checkRange(maxSenderWarning, "maxSenderWarning", 0);
+        DefensiveTools.checkRange(maxReceiverWarning, "maxReceiverWarning", 0);
+        DefensiveTools.checkRange(minMsgInterval, "minMsgInterval", 0);
+
         this.maxChannel = maxChannel;
         this.flags = flags;
         this.maxMsgLen = maxMsgLen;
@@ -196,8 +206,8 @@ new ParamInfo(ParamInfo.FLAGS_MISSEDCALLS_ALLOWED
      * {@link #FLAG_MISSEDCALLS_ALLOWED}, and {@link #FLAG_TYPING_NOTIFICATION}.
      * The presence of these values can be accessed as such:
      * <pre>
-if (paramInfo.getFlags() & ParamInfo.FLAG_TYPING_NOTIFICATION) {
-    System.out.println("typing notification supported!");
+if ((paramInfo.getFlags() & ParamInfo.FLAG_TYPING_NOTIFICATION) != 0) {
+    System.out.println("Typing notification is supported!");
 }
      * </pre>
      *

@@ -37,6 +37,7 @@ package net.kano.joscar.snaccmd.conn;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 
 import java.io.IOException;
@@ -83,6 +84,8 @@ public class RateChange extends ConnCommand {
     protected RateChange(SnacPacket packet) {
         super(CMD_RATE_CHG);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
 
         code = BinaryTools.getUShort(snacData, 0);
@@ -101,6 +104,8 @@ public class RateChange extends ConnCommand {
      */
     public RateChange(int code, RateClassInfo rateInfo) {
         super(CMD_RATE_CHG);
+
+        DefensiveTools.checkRange(code, "code", 0);
 
         this.rateInfo = rateInfo;
         this.code = code;
@@ -129,7 +134,7 @@ public class RateChange extends ConnCommand {
     public void writeData(OutputStream out) throws IOException {
         BinaryTools.writeUShort(out, code);
 
-        rateInfo.write(out);
+        if (rateInfo != null) rateInfo.write(out);
     }
 
     public String toString() {

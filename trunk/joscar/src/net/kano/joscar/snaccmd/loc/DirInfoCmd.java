@@ -37,6 +37,7 @@ package net.kano.joscar.snaccmd.loc;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.DirInfo;
 
@@ -77,6 +78,8 @@ public class DirInfoCmd extends LocCommand {
     protected DirInfoCmd(SnacPacket packet) {
         super(CMD_DIR_INFO);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
 
         code = BinaryTools.getUShort(snacData, 0);
@@ -112,6 +115,8 @@ public class DirInfoCmd extends LocCommand {
      */
     public DirInfoCmd(int code, DirInfo dirInfo) {
         super(CMD_DIR_INFO);
+
+        DefensiveTools.checkRange(code, "code", 0);
 
         this.code = code;
         this.dirInfo = dirInfo;

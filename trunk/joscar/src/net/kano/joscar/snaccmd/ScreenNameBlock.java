@@ -35,6 +35,8 @@
 
 package net.kano.joscar.snaccmd;
 
+import net.kano.joscar.DefensiveTools;
+
 /**
  * A very simple but very common data structure containing a screenname and the
  * byte length of that screenname.
@@ -54,6 +56,9 @@ public final class ScreenNameBlock {
      *        binary data
      */
     protected ScreenNameBlock(String sn, int dataSize) {
+        DefensiveTools.checkNull(sn, "sn");
+        DefensiveTools.checkRange(dataSize, "dataSize", 0);
+
         this.sn = sn;
         this.dataSize = dataSize;
     }

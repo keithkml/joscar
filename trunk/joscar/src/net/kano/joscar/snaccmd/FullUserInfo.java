@@ -38,10 +38,8 @@ package net.kano.joscar.snaccmd;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.LiveWritable;
-import net.kano.joscar.tlv.MutableTlvChain;
-import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.AbstractTlvChain;
-import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.tlv.*;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -96,6 +94,12 @@ public class FullUserInfo implements LiveWritable {
     public static final int MASK_AWAY = 0x0020;
 
     /**
+     * A user mask representing all users. Mainly for use in {@link
+     * net.kano.joscar.ssiitem.PrivacyItem}.
+      */
+    public static final long MASK_ALL = 0xffffffffL;
+
+    /**
      * Reads a user info block from the given data block, or returns
      * <code>null</code> if no valid user info block is present in the given
      * data block.
@@ -104,6 +108,8 @@ public class FullUserInfo implements LiveWritable {
      * @return a user info object read from the given data block
      */
     public static FullUserInfo readUserInfo(ByteBlock block) {
+        DefensiveTools.checkNull(block, "block");
+
         int start = block.getOffset();
 
         ScreenNameBlock snInfo = OscarTools.readScreenname(block);
@@ -129,7 +135,7 @@ public class FullUserInfo implements LiveWritable {
 
         int tlvCount = BinaryTools.getUShort(block, 0);
         block = block.subBlock(2);
-        AbstractTlvChain chain = ImmutableTlvChain.readChain(block, tlvCount);
+        TlvChain chain = ImmutableTlvChain.readChain(block, tlvCount);
 
         // read the TLV's we know about
         Tlv userFlagTlv = chain.getLastTlv(TYPE_USER_FLAG);
@@ -142,7 +148,7 @@ public class FullUserInfo implements LiveWritable {
         Tlv sessionLengthAOL = chain.getLastTlv(TYPE_SESS_LEN_AOL);
         Tlv iconInfoTlv = chain.getLastTlv(TYPE_ICON_INFO);
 
-        MutableTlvChain extras = new MutableTlvChain(chain);
+        MutableTlvChain extras = new DefaultMutableTlvChain(chain);
         extras.removeTlvs(new int[] {
             TYPE_USER_FLAG, TYPE_ACCT_CREATED, TYPE_ON_SINCE, TYPE_IDLE_MINS,
             TYPE_MEMBER_SINCE, TYPE_CAPS, TYPE_SESS_LEN_AIM, TYPE_SESS_LEN_AOL,
@@ -347,7 +353,7 @@ public class FullUserInfo implements LiveWritable {
     /**
      * A set of extra TLV's that were not explicitly parsed into fields.
      */
-    private final AbstractTlvChain extraTlvs;
+    private final TlvChain extraTlvs;
 
     /**
      * Creates a user info block containing only the given screenname.
@@ -433,7 +439,7 @@ public class FullUserInfo implements LiveWritable {
     public FullUserInfo(String sn, int warningLevel, int flags,
             Date accountCreated, Date memberSince, long sessAIM, long sessAOL,
             Date onSince, int idleMins, CapabilityBlock[] capabilityBlocks,
-            Boolean away, ExtraIconInfo[] iconInfos, AbstractTlvChain extraTlvs) {
+            Boolean away, ExtraIconInfo[] iconInfos, TlvChain extraTlvs) {
         this(sn, warningLevel, flags, accountCreated, memberSince, sessAIM,
                 sessAOL, onSince, idleMins, capabilityBlocks, away, iconInfos,
                 extraTlvs, -1);
@@ -469,10 +475,13 @@ public class FullUserInfo implements LiveWritable {
     private FullUserInfo(String sn, int warningLevel, int flags,
             Date accountCreated, Date memberSince, long sessAIM, long sessAOL,
             Date onSince, int idleMins, CapabilityBlock[] capabilityBlocks,
-            Boolean away, ExtraIconInfo[] iconInfos, AbstractTlvChain extraTlvs,
+            Boolean away, ExtraIconInfo[] iconInfos, TlvChain extraTlvs,
             int totalSize) {
+        DefensiveTools.checkNull(sn, "sn");
+        DefensiveTools.checkRange(warningLevel, "warningLevel", 0);
+        DefensiveTools.checkRange(totalSize, "totalSize", -1);
+
         this.sn = sn;
-        this.totalSize = totalSize;
         this.warningLevel = warningLevel;
         this.flags = flags;
         this.accountCreated = accountCreated;
@@ -485,6 +494,7 @@ public class FullUserInfo implements LiveWritable {
         this.away = away;
         this.iconInfos = iconInfos;
         this.extraTlvs = extraTlvs;
+        this.totalSize = totalSize;
     }
 
     /**
@@ -573,9 +583,9 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
     }
 
     /**
-     * Returns the date at which this user began the current session (i.e.,
-     * AIM connection). This will be <code>null</code> if this field was not
-     * sent.
+     * Returns the date at which this user began the current session (that is,
+     * the current AIM connection). This will be <code>null</code> if this field
+     * was not sent.
      *
      * @return the date at which this user logged in
      */
@@ -602,7 +612,8 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
      * @return this user's advertised "capability blocks"
      */
     public final CapabilityBlock[] getCapabilityBlocks() {
-        return capabilityBlocks;
+        return (CapabilityBlock[])
+                (capabilityBlocks == null ? null : capabilityBlocks.clone());
     }
 
     /**
@@ -623,7 +634,7 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
      * @return a list if advertised buddy icon hash information blocks
      */
     public final ExtraIconInfo[] getIconInfos() {
-        return iconInfos;
+        return (ExtraIconInfo[]) (iconInfos == null ? null : iconInfos.clone());
     }
 
     /**
@@ -635,7 +646,7 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
      * @return a list of TLV's present in the received user info block that were
      *         not processed into fields of this object
      */
-    public final AbstractTlvChain getExtraTlvs() {
+    public final TlvChain getExtraTlvs() {
         return extraTlvs;
     }
 
@@ -658,7 +669,7 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
 
         BinaryTools.writeUByte(out, warningLevel);
 
-        MutableTlvChain chain = new MutableTlvChain();
+        MutableTlvChain chain = new DefaultMutableTlvChain();
 
         if (flags != -1 || away != null) {
             int flags = this.flags;

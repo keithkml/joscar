@@ -38,6 +38,7 @@ package net.kano.joscar.snaccmd.icbm;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.Writable;
+import net.kano.joscar.DefensiveTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -56,6 +57,8 @@ public final class OldIconHashData implements Writable {
      * @return an icon sum suitable for use in an <code>OldIconHashData</code>
      */
     public static int computeIconSum(byte[] data) {
+        DefensiveTools.checkNull(data, "data");
+
         long sum = 0;
         int i;
 
@@ -81,6 +84,8 @@ public final class OldIconHashData implements Writable {
      * @return an icon hash data block read from the given block
      */
     protected static OldIconHashData readOldIconHashData(ByteBlock block) {
+        DefensiveTools.checkNull(block, "block");
+
         long size = BinaryTools.getUInt(block, 0);
         int sum = BinaryTools.getUShort(block, 6);
         long stamp = BinaryTools.getUInt(block, 8);
@@ -104,6 +109,10 @@ public final class OldIconHashData implements Writable {
      *        since the unix epoch
      */
     public OldIconHashData(long size, int sum, long timestamp) {
+        DefensiveTools.checkRange(size, "size", 0);
+        DefensiveTools.checkRange(sum, "sum", 0);
+        DefensiveTools.checkRange(timestamp, "timestamp", 0);
+
         this.size = size;
         this.sum = sum;
         this.timestamp = timestamp;

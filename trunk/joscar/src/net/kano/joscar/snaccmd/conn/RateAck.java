@@ -37,6 +37,7 @@ package net.kano.joscar.snaccmd.conn;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 
 import java.io.IOException;
@@ -62,6 +63,8 @@ public class RateAck extends ConnCommand {
     protected RateAck(SnacPacket packet) {
         super(CMD_RATE_ACK);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
         classes = new int[snacData.getLength() / 2];
 
@@ -80,7 +83,7 @@ public class RateAck extends ConnCommand {
     public RateAck(int[] classes) {
         super(CMD_RATE_ACK);
 
-        this.classes = classes;
+        this.classes = (int[]) (classes == null ? null : classes.clone());
     }
 
     /**
@@ -88,19 +91,25 @@ public class RateAck extends ConnCommand {
      *
      * @return the rate class numbers being acknowledged
      */
-    public final int[] getClasses() { return classes; }
+    public final int[] getClasses() {
+        return (int[]) (classes == null ? null : classes.clone());
+    }
 
     public void writeData(OutputStream out) throws IOException {
-        for (int i = 0; i < classes.length; i++) {
-            BinaryTools.writeUShort(out, classes[i]);
+        if (classes != null) {
+            for (int i = 0; i < classes.length; i++) {
+                BinaryTools.writeUShort(out, classes[i]);
+            }
         }
     }
 
     public String toString() {
         StringBuffer buffer = new StringBuffer();
         buffer.append("RateAck for classes: ");
-        for (int i = 0; i < classes.length; i++) {
-            buffer.append(classes[i]).append(", ");
+        if (classes != null) {
+            for (int i = 0; i < classes.length; i++) {
+                buffer.append(classes[i]).append(", ");
+            }
         }
 
         return buffer.toString();

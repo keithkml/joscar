@@ -36,10 +36,11 @@
 package net.kano.joscar.snaccmd.conn;
 
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.AbstractTlvChain;
 import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.TlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -82,9 +83,11 @@ public class ServiceRedirect extends ConnCommand {
     protected ServiceRedirect(SnacPacket packet) {
         super(CMD_SERVICE_REDIR);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
 
-        AbstractTlvChain chain = ImmutableTlvChain.readChain(snacData);
+        TlvChain chain = ImmutableTlvChain.readChain(snacData);
 
         family = chain.getUShort(TYPE_FAMILY);
 
@@ -139,6 +142,8 @@ public class ServiceRedirect extends ConnCommand {
             ByteBlock cookie) {
         super(CMD_SERVICE_REDIR);
 
+        DefensiveTools.checkRange(family, "family", 0);
+
         this.family = family;
         this.host = host;
         this.port = port;
@@ -189,7 +194,7 @@ public class ServiceRedirect extends ConnCommand {
             }
             Tlv.getStringInstance(TYPE_HOST, hostString.toString()).write(out);
         }
-        new Tlv(TYPE_COOKIE, cookie).write(out);
+        if (cookie != null) new Tlv(TYPE_COOKIE, cookie).write(out);
     }
 
     public String toString() {

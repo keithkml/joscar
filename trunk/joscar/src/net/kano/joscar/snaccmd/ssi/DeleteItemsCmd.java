@@ -36,6 +36,7 @@
 package net.kano.joscar.snaccmd.ssi;
 
 import net.kano.joscar.flapcmd.SnacPacket;
+import net.kano.joscar.DefensiveTools;
 
 /**
  * A SNAC command used to delete specific server-stored "items." Normally
@@ -53,6 +54,8 @@ public class DeleteItemsCmd extends ItemsCmd {
      */
     protected DeleteItemsCmd(SnacPacket packet) {
         super(CMD_DELETE_ITEMS, packet);
+
+        DefensiveTools.checkNull(packet, "packet");
     }
 
     /**

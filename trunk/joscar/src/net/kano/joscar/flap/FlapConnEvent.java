@@ -35,6 +35,8 @@
 
 package net.kano.joscar.flap;
 
+import net.kano.joscar.DefensiveTools;
+
 /**
  * An event fired upon a change in the connection state of a
  * <code>ClientFlapConn</code>.
@@ -74,6 +76,8 @@ public class FlapConnEvent {
      */
     protected FlapConnEvent(ClientFlapConn conn, Object oldState,
             Object newState, Object reason) {
+        DefensiveTools.checkNull(conn, "conn");
+
         this.flapConn = conn;
         this.oldState = oldState;
         this.newState = newState;

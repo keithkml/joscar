@@ -36,6 +36,7 @@
 package net.kano.joscar.snaccmd.icbm;
 
 import net.kano.joscar.flapcmd.SnacPacket;
+import net.kano.joscar.DefensiveTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -57,6 +58,8 @@ public class MessageAck extends IcbmCommand {
      */
     protected MessageAck(SnacPacket packet) {
         super(CMD_MSG_ACK);
+
+        DefensiveTools.checkNull(packet, "packet");
     }
 
     /**

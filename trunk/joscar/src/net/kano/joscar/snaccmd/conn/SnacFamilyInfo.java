@@ -38,6 +38,7 @@ package net.kano.joscar.snaccmd.conn;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.Writable;
+import net.kano.joscar.DefensiveTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -74,6 +75,8 @@ public class SnacFamilyInfo implements Writable {
      * @return a SNAC family information block read from the given block of data
      */
     protected static SnacFamilyInfo readSnacFamilyInfo(ByteBlock block) {
+        DefensiveTools.checkNull(block, "block");
+
         int family = BinaryTools.getUShort(block, 0);
         int version = BinaryTools.getUShort(block, 2);
         int toolid = BinaryTools.getUShort(block, 4);
@@ -106,6 +109,11 @@ public class SnacFamilyInfo implements Writable {
      */
     public SnacFamilyInfo(int family, int version, int toolID,
             int toolVersion) {
+        DefensiveTools.checkRange(family, "family", 0);
+        DefensiveTools.checkRange(version, "version", 0);
+        DefensiveTools.checkRange(toolID, "toolID", -1);
+        DefensiveTools.checkRange(toolVersion, "toolVersion", -1);
+
         this.family = family;
         this.version = version;
         this.toolID = toolID;
@@ -156,8 +164,10 @@ public class SnacFamilyInfo implements Writable {
     public void write(OutputStream out) throws IOException {
         BinaryTools.writeUShort(out, family);
         BinaryTools.writeUShort(out, version);
-        BinaryTools.writeUShort(out, toolID);
-        BinaryTools.writeUShort(out, toolVersion);
+        if (toolID != -1 && toolVersion != -1) {
+            BinaryTools.writeUShort(out, toolID);
+            BinaryTools.writeUShort(out, toolVersion);
+        }
     }
 
     public String toString() {

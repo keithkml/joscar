@@ -37,11 +37,12 @@ package net.kano.joscar.snaccmd.icbm;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.OscarTools;
 import net.kano.joscar.snaccmd.ScreenNameBlock;
-import net.kano.joscar.tlv.AbstractTlvChain;
 import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.TlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -86,6 +87,8 @@ public class RvErrorCmd extends IcbmCommand {
     protected RvErrorCmd(SnacPacket packet) {
         super(CMD_RV_ERROR);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
 
         cookie = BinaryTools.getLong(snacData, 0);
@@ -97,7 +100,7 @@ public class RvErrorCmd extends IcbmCommand {
 
         ByteBlock rest = snData.subBlock(snInfo.getTotalSize());
 
-        AbstractTlvChain chain = ImmutableTlvChain.readChain(rest);
+        TlvChain chain = ImmutableTlvChain.readChain(rest);
 
         code = chain.getUShort(TYPE_ERROR_CODE);
     }
@@ -113,6 +116,11 @@ public class RvErrorCmd extends IcbmCommand {
      */
     public RvErrorCmd(long cookie, int channel, String sn, int code) {
         super(CMD_RV_ERROR);
+
+        DefensiveTools.checkRange(channel, "channel", 0);
+        DefensiveTools.checkNull(sn, "sn");
+        DefensiveTools.checkRange(code, "code", -1);
+
         this.cookie = cookie;
         this.channel = channel;
         this.sn = sn;

@@ -38,13 +38,13 @@ package net.kano.joscar.snaccmd;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.LiveWritable;
-import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.AbstractTlvChain;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.Tlv;
+import net.kano.joscar.tlv.TlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.charset.Charset;
 import java.util.Locale;
 
 /**
@@ -123,6 +123,8 @@ public final class FullRoomInfo
      * @param block the block of data containing a room info object
      */
     protected FullRoomInfo(ByteBlock block) {
+        DefensiveTools.checkNull(block, "block");
+
         mini = MiniRoomInfo.readMiniRoomInfo(block);
 
         exchange = mini.getExchange();
@@ -137,7 +139,7 @@ public final class FullRoomInfo
         // for but they seem to always be zero)
         ByteBlock roomBlock = rest.subBlock(5);
 
-        AbstractTlvChain chain = ImmutableTlvChain.readChain(roomBlock);
+        TlvChain chain = ImmutableTlvChain.readChain(roomBlock);
 
         // TLV userlistTlv = chain.getLastTlv(TYPE_MEMBERS);
 
@@ -175,6 +177,9 @@ public final class FullRoomInfo
     public FullRoomInfo(int exchange, String name, String charset1,
             String language1) {
         super(name, charset1, language1);
+
+        DefensiveTools.checkRange(exchange, "exchange", 0);
+
         this.exchange = exchange;
         this.cookie = "create";
         this.instance = INSTANCE_LAST;
@@ -234,14 +239,14 @@ public final class FullRoomInfo
     }
 
     public void write(OutputStream out) throws IOException {
-        if (mini == null) {
-            mini = new MiniRoomInfo(exchange, cookie, instance);
-        }
+        if (mini == null) mini = new MiniRoomInfo(exchange, cookie, instance);
         mini.write(out);
+
         BinaryTools.writeUByte(out, type);
 
         // I guess this is just zero
         BinaryTools.writeUShort(out, 0);
+
         writeBaseInfo(out);
         if (roomName != null) {
             Tlv.getStringInstance(TYPE_ROOM_NAME, roomName).write(out);
