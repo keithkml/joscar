@@ -36,23 +36,23 @@
 package net.kano.aimcrypto.connection.oscar.service.icbm;
 
 import net.kano.aimcrypto.Screenname;
-import net.kano.aimcrypto.config.BuddySecurityInfo;
-import net.kano.aimcrypto.config.BuddySecurityInfo;
+import net.kano.aimcrypto.config.BuddyCertificateInfo;
+import net.kano.aimcrypto.config.BuddyCertificateInfo;
 
 public class DecryptableAimMessageInfo extends MessageInfo {
     static DecryptableAimMessageInfo getInstance(
-            EncryptedAimMessageInfo msgInfo, BuddySecurityInfo securityInfo) {
+            EncryptedAimMessageInfo msgInfo, BuddyCertificateInfo securityInfo) {
         return new DecryptableAimMessageInfo(msgInfo.getFrom(), msgInfo.getTo(),
                 (EncryptedAimMessage) msgInfo.getMessage(), securityInfo);
     }
 
-    private final BuddySecurityInfo securityInfo;
+    private final BuddyCertificateInfo securityInfo;
 
     private DecryptableAimMessageInfo(Screenname from, Screenname to,
-            EncryptedAimMessage message, BuddySecurityInfo securityInfo) {
+            EncryptedAimMessage message, BuddyCertificateInfo securityInfo) {
         super(from, to, message);
         this.securityInfo = securityInfo;
     }
 
-    public BuddySecurityInfo getSecurityInfo() { return securityInfo; }
+    public BuddyCertificateInfo getSecurityInfo() { return securityInfo; }
 }

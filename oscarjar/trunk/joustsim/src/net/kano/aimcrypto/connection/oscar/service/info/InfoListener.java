@@ -36,8 +36,8 @@
 package net.kano.aimcrypto.connection.oscar.service.info;
 
 import net.kano.aimcrypto.Screenname;
-import net.kano.aimcrypto.config.BuddySecurityInfo;
-import net.kano.aimcrypto.config.BuddySecurityInfo;
+import net.kano.aimcrypto.config.BuddyCertificateInfo;
+import net.kano.aimcrypto.config.BuddyCertificateInfo;
 import net.kano.joscar.snaccmd.DirInfo;
 
 public interface InfoListener {
@@ -46,5 +46,5 @@ public interface InfoListener {
     void gotUserProfile(InfoService service, Screenname buddy,
             String profileString);
     void gotSecurityInfo(InfoService service, Screenname buddy,
-            BuddySecurityInfo securityInfo);
+            BuddyCertificateInfo securityInfo);
 }

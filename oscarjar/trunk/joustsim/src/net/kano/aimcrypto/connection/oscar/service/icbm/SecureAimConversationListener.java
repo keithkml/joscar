@@ -35,14 +35,14 @@
 
 package net.kano.aimcrypto.connection.oscar.service.icbm;
 
-import net.kano.aimcrypto.config.BuddySecurityInfo;
-import net.kano.aimcrypto.config.BuddySecurityInfo;
+import net.kano.aimcrypto.config.BuddyCertificateInfo;
+import net.kano.aimcrypto.config.BuddyCertificateInfo;
 import net.kano.aimcrypto.connection.oscar.service.icbm.ConversationListener;
 import net.kano.aimcrypto.connection.oscar.service.icbm.SecureAimConversation;
 
 public interface SecureAimConversationListener extends ConversationListener {
     void buddySecurityInfoChanged(SecureAimConversation conversation,
-            BuddySecurityInfo securityInfo, boolean trusted);
+            BuddyCertificateInfo securityInfo, boolean trusted);
 
     void decryptingFailed(SecureAimConversation conversation,
             EncryptedAimMessageInfo msgInfo, DecryptionFailureInfo failureInfo);

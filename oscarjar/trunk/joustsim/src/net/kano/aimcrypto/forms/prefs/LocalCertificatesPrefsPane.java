@@ -310,7 +310,7 @@ public class LocalCertificatesPrefsPane extends JPanel implements PrefsPane {
     }
 
     public void prefsPaneShown() {
-        updateThings(false);
+        updateThings(true);
     }
 
     public void prefsPaneHidden() {

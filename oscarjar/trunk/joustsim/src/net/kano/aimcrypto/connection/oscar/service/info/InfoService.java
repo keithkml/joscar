@@ -36,10 +36,10 @@
 package net.kano.aimcrypto.connection.oscar.service.info;
 
 import net.kano.aimcrypto.AimSession;
-import net.kano.aimcrypto.config.BuddySecurityInfo;
+import net.kano.aimcrypto.config.BuddyCertificateInfo;
 import net.kano.aimcrypto.config.PrivateKeysInfo;
 import net.kano.aimcrypto.Screenname;
-import net.kano.aimcrypto.config.BuddySecurityInfo;
+import net.kano.aimcrypto.config.BuddyCertificateInfo;
 import net.kano.aimcrypto.config.PrivateKeysInfo;
 import net.kano.aimcrypto.connection.AimConnection;
 import net.kano.aimcrypto.connection.oscar.OscarConnection;
@@ -242,7 +242,7 @@ public class InfoService extends Service {
                 e.printStackTrace();
                 return;
             }
-            BuddySecurityInfo securityInfo = new BuddySecurityInfo(sn,
+            BuddyCertificateInfo securityInfo = new BuddyCertificateInfo(sn,
                     ByteBlock.wrap(CertificateInfo.getCertInfoHash(certInfo)),
                     encryption, signing);
 

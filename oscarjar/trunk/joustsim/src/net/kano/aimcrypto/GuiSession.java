@@ -216,6 +216,7 @@ public class GuiSession {
             throw new IllegalArgumentException("box for " + sn + " already exists");
         }
         ImBox box = new ImBox(this, sn);
+        box.setSize(410, 280);
         imBoxes.put(sn, box);
         return box;
     }

@@ -38,6 +38,10 @@ package net.kano.aimcrypto.connection;
 import net.kano.aimcrypto.AimSession;
 import net.kano.aimcrypto.AppSession;
 import net.kano.aimcrypto.Screenname;
+import net.kano.aimcrypto.TrustedCertificatesTracker;
+import net.kano.aimcrypto.config.LocalPreferencesManager;
+import net.kano.aimcrypto.config.PermanentCertificateTrustManager;
+import net.kano.aimcrypto.config.PermanentSignerTrustManager;
 import net.kano.aimcrypto.connection.oscar.BasicConnection;
 import net.kano.aimcrypto.connection.oscar.LoginConnection;
 import net.kano.aimcrypto.connection.oscar.LoginServiceListener;
@@ -47,11 +51,13 @@ import net.kano.aimcrypto.connection.oscar.loginstatus.LoginFailureInfo;
 import net.kano.aimcrypto.connection.oscar.loginstatus.LoginSuccessInfo;
 import net.kano.aimcrypto.connection.oscar.service.Service;
 import net.kano.aimcrypto.connection.oscar.service.ServiceFactory;
+import net.kano.aimcrypto.connection.oscar.service.SsiService;
 import net.kano.aimcrypto.connection.oscar.service.bos.BosService;
 import net.kano.aimcrypto.connection.oscar.service.buddy.BuddyService;
 import net.kano.aimcrypto.connection.oscar.service.icbm.IcbmService;
+import net.kano.aimcrypto.connection.oscar.service.info.CertificateInfoTrustManager;
 import net.kano.aimcrypto.connection.oscar.service.info.InfoService;
-import net.kano.aimcrypto.connection.oscar.service.info.BuddyCertificateManager;
+import net.kano.aimcrypto.connection.oscar.service.info.BuddyTrustManager;
 import net.kano.aimcrypto.connection.oscar.service.login.LoginService;
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
@@ -63,6 +69,7 @@ import net.kano.joscar.snaccmd.buddy.BuddyCommand;
 import net.kano.joscar.snaccmd.conn.ConnCommand;
 import net.kano.joscar.snaccmd.icbm.IcbmCommand;
 import net.kano.joscar.snaccmd.loc.LocCommand;
+import net.kano.joscar.snaccmd.ssi.SsiCommand;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -93,8 +100,11 @@ public class AimConnection {
     private CopyOnWriteArrayList stateListeners = new CopyOnWriteArrayList();
     private CopyOnWriteArrayList serviceListeners = new CopyOnWriteArrayList();
 
-    private BuddyInfoManager buddyInfoManager = new BuddyInfoManager(this);
-    private final BuddyCertificateManager certManager;
+    private final BuddyInfoManager buddyInfoManager;
+    private final CertificateInfoTrustManager certificateInfoTrustManager;
+    private final TrustedCertificatesTracker trustedCertificatesTracker;
+    private final LocalPreferencesManager localPrefs;
+    private final BuddyTrustManager buddyTrustManager;
 
     public AimConnection(AppSession appSession, AimSession aimSession,
             AimConnectionProperties props) throws IllegalArgumentException {
@@ -118,12 +128,22 @@ public class AimConnection {
 
         this.screenname = sn;
 
-        this.certManager = new BuddyCertificateManager(this,
-                appSession.getCertificateManager());
-
-        loginConn = new LoginConnection(props.getLoginHost(),
+        this.buddyInfoManager = new BuddyInfoManager(this);
+        this.loginConn = new LoginConnection(props.getLoginHost(),
                 props.getLoginPort());
-        password = props.getPass();
+        this.password = props.getPass();
+        this.localPrefs = appSession.getLocalPrefs(sn);
+
+        PermanentCertificateTrustManager certMgr
+                = localPrefs.getStoredCertificateTrustManager();
+        PermanentSignerTrustManager signerMgr
+                = localPrefs.getStoredSignerTrustManager();
+        trustedCertificatesTracker = new TrustedCertificatesTracker(certMgr,
+                signerMgr);
+        certificateInfoTrustManager
+                = new CertificateInfoTrustManager(trustedCertificatesTracker);
+        buddyTrustManager = new BuddyTrustManager(this);
+
         loginConn.addOscarListener(new LoginConnListener());
         loginConn.setServiceFactory(new LoginServiceFactory());
     }
@@ -131,8 +151,6 @@ public class AimConnection {
     public final AppSession getAppSession() { return appSession; }
 
     public final AimSession getAimSession() { return aimSession; }
-
-    public BuddyCertificateManager getCertificateManager() { return certManager; }
 
     public final Screenname getScreenname() { return screenname; }
 
@@ -318,6 +336,22 @@ public class AimConnection {
         return list == null || list.isEmpty() ? null : list;
     }
 
+    public CertificateInfoTrustManager getCertificateInfoTrustManager() {
+        return certificateInfoTrustManager;
+    }
+
+    public TrustedCertificatesTracker getTrustedCertificatesTracker() {
+        return trustedCertificatesTracker;
+    }
+
+    public LocalPreferencesManager getLocalPrefs() {
+        return localPrefs;
+    }
+
+    public BuddyTrustManager getBuddyTrustManager() {
+        return buddyTrustManager;
+    }
+
     private class LoginServiceFactory implements ServiceFactory {
         public Service getService(OscarConnection conn, int family) {
             if (family == AuthCommand.FAMILY_AUTH) {
@@ -340,7 +374,10 @@ public class AimConnection {
                 return new BuddyService(AimConnection.this, conn);
             } else if (family == LocCommand.FAMILY_LOC) {
                 return new InfoService(AimConnection.this, conn);
+            } else if (family == SsiCommand.FAMILY_SSI) {
+                return new SsiService(AimConnection.this, conn);
             } else {
+                System.out.println("no service for family " + family);
                 return null;
             }
         }

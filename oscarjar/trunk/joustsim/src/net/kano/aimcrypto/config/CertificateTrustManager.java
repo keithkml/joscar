@@ -43,9 +43,9 @@ import java.io.File;
 public interface CertificateTrustManager {
     Screenname getBuddy();
 
-    void addTrustListener(TrustChangeListener l);
+    void addTrustListener(CertificateTrustListener l);
 
-    void removeTrustChangeListener(TrustChangeListener l);
+    void removeTrustChangeListener(CertificateTrustListener l);
 
     boolean trustCertificate(X509Certificate cert) throws TrustException;
 
@@ -55,5 +55,5 @@ public interface CertificateTrustManager {
 
     X509Certificate[] getTrustedCertificates();
 
-    boolean importCert(File file) throws TrustException;
+    boolean importCertificate(File file) throws TrustException;
 }

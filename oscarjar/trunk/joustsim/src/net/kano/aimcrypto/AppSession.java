@@ -38,19 +38,17 @@ package net.kano.aimcrypto;
 import net.kano.aimcrypto.config.GlobalPrefs;
 import net.kano.aimcrypto.config.LocalPreferencesManager;
 import net.kano.aimcrypto.config.PrefTools;
-import net.kano.aimcrypto.connection.oscar.service.info.BuddyCertificateManager;
 import net.kano.joscar.DefensiveTools;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.HashSet;
-import java.util.Collection;
-import java.util.Arrays;
 
 public class AppSession {
     private final File baseDir;
@@ -209,10 +207,5 @@ public class AppSession {
 
     public boolean hasLocalPrefs(Screenname sn) {
         return getLocalPrefsDir(sn).isDirectory();
-    }
-
-    public BuddyCertificateManager getCertificateManager() {
-        //TODO: appsession's certmanager
-        return null;
     }
 }

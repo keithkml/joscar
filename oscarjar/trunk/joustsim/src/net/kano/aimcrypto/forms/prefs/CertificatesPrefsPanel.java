@@ -42,7 +42,7 @@ import net.kano.aimcrypto.Screenname;
 import net.kano.aimcrypto.forms.SortedListModel;
 import net.kano.aimcrypto.config.CantBeAddedException;
 import net.kano.aimcrypto.config.CantSavePrefsException;
-import net.kano.aimcrypto.config.TrustChangeListener;
+import net.kano.aimcrypto.config.CertificateTrustListener;
 import net.kano.aimcrypto.config.TrustException;
 import net.kano.aimcrypto.config.CertificateTrustManager;
 import net.kano.joscar.DefensiveTools;
@@ -84,6 +84,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+//TODO: clear error message on other activity
 //TODO: add Delete keybinding, context menu
 public class CertificatesPrefsPanel extends JPanel {
     private static final EmptyBorder EMPTY_BORDER = new EmptyBorder(2, 5, 2, 5);
@@ -125,8 +126,8 @@ public class CertificatesPrefsPanel extends JPanel {
         }
     });
 
-    private final TrustChangeListener trustChangeListener
-            = new TrustChangeListener() {
+    private final CertificateTrustListener trustChangeListener
+            = new CertificateTrustListener() {
         public void trustAdded(CertificateTrustManager manager,
                 final X509Certificate cert) {
             SwingUtilities.invokeLater(new Runnable() {
@@ -263,7 +264,7 @@ public class CertificatesPrefsPanel extends JPanel {
 
         for (int i = 0; i < files.length; i++) {
             try {
-                if (!certTrustMgr.importCert(files[i])) {
+                if (!certTrustMgr.importCertificate(files[i])) {
                     failed.add(new ImportFailureInfo(files[i]));
                 }
             } catch (Exception e) {

@@ -53,6 +53,8 @@ public class AimSession {
 
         this.appSession = appSession;
         this.screenname = screenname;
+
+        privateKeysInfo = appSession.getLocalPrefs(screenname).getLocalKeysManager().getKeysInfo();
     }
 
     public final AppSession getAppSession() { return appSession; }

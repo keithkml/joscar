@@ -7,11 +7,10 @@
     </constraints>
     <properties>
       <continuousLayout value="true"/>
-      <dividerLocation value="150"/>
+      <dividerLocation value="600"/>
       <dividerSize value="6"/>
       <oneTouchExpandable value="false"/>
       <orientation value="0"/>
-      <resizeWeight value="0"/>
       <visible value="true"/>
     </properties>
     <border type="none"/>

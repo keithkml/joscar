@@ -35,14 +35,14 @@
 
 package net.kano.aimcrypto.connection.oscar.service.icbm;
 
-import net.kano.aimcrypto.config.BuddySecurityInfo;
+import net.kano.aimcrypto.config.BuddyCertificateInfo;
 import net.kano.aimcrypto.config.PrivateKeysInfo;
 import net.kano.aimcrypto.Screenname;
-import net.kano.aimcrypto.config.BuddySecurityInfo;
+import net.kano.aimcrypto.config.BuddyCertificateInfo;
 import net.kano.aimcrypto.connection.AimConnection;
 import net.kano.aimcrypto.connection.oscar.service.icbm.SecureAimDecoder.DecryptedMessageInfo;
-import net.kano.aimcrypto.connection.oscar.service.info.CertificateAdapter;
-import net.kano.aimcrypto.connection.oscar.service.info.BuddyCertificateManager;
+import net.kano.aimcrypto.connection.oscar.service.info.BuddyTrustAdapter;
+import net.kano.aimcrypto.connection.oscar.service.info.BuddyTrustManager;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.icbm.InstantMessage;
@@ -59,7 +59,7 @@ public class SecureAimConversation extends Conversation {
     private SecureAimEncoder encoder = new SecureAimEncoder();
     private SecureAimDecoder decoder = new SecureAimDecoder();
     private PrivateKeysInfo privates = null;
-    private BuddySecurityInfo currentSecurityInfo = null;
+    private BuddyCertificateInfo currentSecurityInfo = null;
 
     private boolean trusted = false;
 
@@ -80,20 +80,20 @@ public class SecureAimConversation extends Conversation {
     }
 
     protected void initialize() {
-        BuddyCertificateManager certManager = conn.getCertificateManager();
-        certManager.addListener(new CertificateAdapter() {
-            public void gotTrustedCertificateChange(BuddyCertificateManager manager,
-                    Screenname buddy, BuddySecurityInfo info) {
+        BuddyTrustManager trustManager = conn.getBuddyTrustManager();
+        trustManager.addBuddyTrustListener(new BuddyTrustAdapter() {
+            public void gotTrustedCertificateChange(BuddyTrustManager manager,
+                    Screenname buddy, BuddyCertificateInfo info) {
                 System.out.println("got trusted cert for " + buddy);
             }
 
-            public void gotUntrustedCertificateChange(BuddyCertificateManager manager,
-                    Screenname buddy, BuddySecurityInfo info) {
+            public void gotUntrustedCertificateChange(BuddyTrustManager manager,
+                    Screenname buddy, BuddyCertificateInfo info) {
                 System.out.println("got untrusted cert for " + buddy + ", trusting");
-                manager.trust(info);
+//                manager.trust(info);
             }
 
-            public void gotUnknownCertificateChange(BuddyCertificateManager manager,
+            public void gotUnknownCertificateChange(BuddyTrustManager manager,
                     Screenname buddy, ByteBlock newHash) {
                 if (!buddy.equals(getBuddy())) return;
 
@@ -102,16 +102,16 @@ public class SecureAimConversation extends Conversation {
 
             }
 
-            public void buddyTrusted(BuddyCertificateManager certificateManager,
-                    Screenname buddy, ByteBlock trustedhash, BuddySecurityInfo info) {
+            public void buddyTrusted(BuddyTrustManager certificateManager,
+                    Screenname buddy, ByteBlock trustedhash, BuddyCertificateInfo info) {
                 if (!buddy.equals(getBuddy())) return;
 
                 System.out.println("buddy is now trusted: " + buddy);
                 storeBuddyInfo(info);
             }
 
-            public void buddyTrustRevoked(BuddyCertificateManager certificateManager,
-                    Screenname buddy, ByteBlock hash, BuddySecurityInfo info) {
+            public void buddyTrustRevoked(BuddyTrustManager certificateManager,
+                    Screenname buddy, ByteBlock hash, BuddyCertificateInfo info) {
                 if (!buddy.equals(getBuddy())) return;
 
                 System.out.println("buddy is no longer trusted: " + buddy);
@@ -121,7 +121,7 @@ public class SecureAimConversation extends Conversation {
             }
         });
         Screenname buddy = getBuddy();
-        BuddySecurityInfo info = certManager.getSecurityInfo(buddy);
+        BuddyCertificateInfo info = trustManager.getCurrentSecurityInfo(buddy);
         if (info == null) {
             System.out.println("requesting initial security info from " + buddy);
             conn.getInfoService().requestSecurityInfo(buddy);
@@ -129,10 +129,10 @@ public class SecureAimConversation extends Conversation {
             System.out.println("already have security info for " + buddy + "!");
             storeBuddyInfo(info);
         }
-        trusted = certManager.isTrusted(buddy);
+        trusted = trustManager.isTrusted(buddy);
     }
 
-    private void storeBuddyInfo(BuddySecurityInfo info) {
+    private void storeBuddyInfo(BuddyCertificateInfo info) {
         encoder.setBuddyCerts(info);
         decoder.setBuddyCerts(info);
         setTrusted(true);
@@ -206,8 +206,8 @@ public class SecureAimConversation extends Conversation {
         }
 
         String decryptedMsg = decrypted.getMessage();
-        BuddySecurityInfo securityInfo
-                = (BuddySecurityInfo) decrypted.getSecurityInfo();
+        BuddyCertificateInfo securityInfo
+                = (BuddyCertificateInfo) decrypted.getSecurityInfo();
 
         DecryptedAimMessageInfo dinfo
                 = DecryptedAimMessageInfo.getInstance(info, decryptedMsg,

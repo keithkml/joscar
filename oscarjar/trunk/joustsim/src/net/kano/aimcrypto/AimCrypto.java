@@ -48,7 +48,9 @@ import java.util.logging.Logger;
 import java.util.logging.Level;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
+import java.util.Date;
 import java.security.Security;
+import java.text.DateFormat;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import com.jgoodies.plaf.plastic.Plastic3DLookAndFeel;
@@ -66,6 +68,8 @@ public final class AimCrypto {
         logger.setLevel(Level.FINE);
         ConsoleHandler handler = new ConsoleHandler();
         handler.setFormatter(new Formatter() {
+            private final DateFormat formatter
+                    = DateFormat.getTimeInstance(DateFormat.SHORT);
             public String format(LogRecord record) {
                 String clname = record.getSourceClassName();
                 String shname = clname.substring(clname.lastIndexOf('.') + 1);
@@ -75,7 +79,8 @@ public final class AimCrypto {
                     sw = new StringWriter();
                     thrown.printStackTrace(new PrintWriter(sw));
                 }
-                return "[" + record.getLevel() + "] "
+                return "[" + formatter.format(new Date(record.getMillis()))
+                        + " " + record.getLevel() + "] "
                         + shname + ": "
                         + record.getMessage() + (sw == null ? ""
                         : sw.getBuffer().toString()) + "\n";

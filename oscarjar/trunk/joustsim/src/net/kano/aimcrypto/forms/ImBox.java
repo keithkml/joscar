@@ -69,6 +69,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.ImageIcon;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Cursor;
 import java.awt.event.ActionEvent;
 import java.util.HashSet;
 import java.util.Set;
@@ -97,8 +98,8 @@ public class ImBox extends JFrame {
 
     {
         getContentPane().add(splitPane);
-        //TODO: resize weight?
-        System.out.println(splitPane.getResizeWeight());
+        splitPane.setResizeWeight(1.0);
+        inputBox.setCursor(Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR));
 
         inputBox.setEditorKit(inputKit);
         inputDoc = (ConversationDocument) inputBox.getDocument();

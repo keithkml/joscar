@@ -29,56 +29,14 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- *  File created by keith @ Feb 2, 2004
+ *  File created by keith @ Feb 6, 2004
  *
  */
 
 package net.kano.aimcrypto.config;
 
-import net.kano.joscar.DefensiveTools;
-
-import java.math.BigInteger;
-import java.security.PublicKey;
 import java.security.cert.X509Certificate;
-import java.security.interfaces.RSAPublicKey;
 
-public class CertificateHolder {
-    private final X509Certificate certificate;
-    private final BigInteger mod;
-    private final BigInteger exp;
-
-    public CertificateHolder(X509Certificate cert) {
-        DefensiveTools.checkNull(cert, "cert");
-
-        PublicKey pubkey = cert.getPublicKey();
-        if (!(pubkey instanceof RSAPublicKey)) {
-            throw new IllegalArgumentException();
-        }
-
-        this.certificate = cert;
-        RSAPublicKey rsaKey = (RSAPublicKey) pubkey;
-        mod = rsaKey.getModulus();
-        if (mod == null) {
-            throw new IllegalArgumentException("modulus of key is null");
-        }
-        exp = rsaKey.getPublicExponent();
-        if (exp == null) {
-            throw new IllegalArgumentException("exponent of key is null");
-        }
-    }
-
-    public final X509Certificate getCertificate() { return certificate; }
-
-    public final int hashCode() {
-        return mod.hashCode() ^ exp.hashCode();
-    }
-
-    public final boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (!(obj instanceof CertificateHolder)) return false;
-
-        CertificateHolder holder = (CertificateHolder) obj;
-
-        return holder.mod.equals(mod) && holder.exp.equals(exp);
-    }
+public interface CertificateHolder {
+    X509Certificate getCertificate();
 }

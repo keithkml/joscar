@@ -36,7 +36,7 @@
 package net.kano.aimcrypto.connection.oscar.service.info;
 
 import net.kano.aimcrypto.Screenname;
-import net.kano.aimcrypto.config.BuddySecurityInfo;
+import net.kano.aimcrypto.config.BuddyCertificateInfo;
 import net.kano.joscar.snaccmd.DirInfo;
 
 public abstract class InfoAdapter implements InfoListener {
@@ -53,6 +53,6 @@ public abstract class InfoAdapter implements InfoListener {
     }
 
     public void gotSecurityInfo(InfoService service, Screenname buddy,
-            BuddySecurityInfo securityInfo) {
+            BuddyCertificateInfo securityInfo) {
     }
 }

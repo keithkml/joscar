@@ -64,11 +64,11 @@ public class DefaultCertificateTrustManager implements CertificateTrustManager {
 
     public final Screenname getBuddy() { return buddy; }
 
-    public void addTrustListener(TrustChangeListener l) {
+    public void addTrustListener(CertificateTrustListener l) {
         listeners.addIfAbsent(l);
     }
 
-    public void removeTrustChangeListener(TrustChangeListener l) {
+    public void removeTrustChangeListener(CertificateTrustListener l) {
         listeners.remove(l);
     }
 
@@ -85,7 +85,7 @@ public class DefaultCertificateTrustManager implements CertificateTrustManager {
     }
 
     public synchronized boolean isTrusted(X509Certificate cert) {
-        return trusted.contains(new CertificateHolder(cert));
+        return trusted.contains(new DefaultCertificateHolder(cert));
     }
 
     public boolean revokeTrust(X509Certificate cert) {
@@ -108,11 +108,11 @@ public class DefaultCertificateTrustManager implements CertificateTrustManager {
     protected synchronized boolean addTrust(X509Certificate cert)
             throws CantBeAddedException {
         checkCanBeAdded(cert);
-        return trusted.add(new CertificateHolder(cert));
+        return trusted.add(new DefaultCertificateHolder(cert));
     }
 
     protected synchronized boolean removeTrust(X509Certificate cert) {
-        return trusted.remove(new CertificateHolder(cert));
+        return trusted.remove(new DefaultCertificateHolder(cert));
     }
 
     protected void fireTrustedEvent(X509Certificate cert) {
@@ -121,7 +121,7 @@ public class DefaultCertificateTrustManager implements CertificateTrustManager {
         DefensiveTools.checkNull(cert, "cert");
 
         for (Iterator it = listeners.iterator(); it.hasNext();) {
-            TrustChangeListener listener = (TrustChangeListener) it.next();
+            CertificateTrustListener listener = (CertificateTrustListener) it.next();
             listener.trustAdded(this, cert);
         }
     }
@@ -132,12 +132,12 @@ public class DefaultCertificateTrustManager implements CertificateTrustManager {
         DefensiveTools.checkNull(cert, "cert");
 
         for (Iterator it = listeners.iterator(); it.hasNext();) {
-            TrustChangeListener listener = (TrustChangeListener) it.next();
+            CertificateTrustListener listener = (CertificateTrustListener) it.next();
             listener.trustRemoved(this, cert);
         }
     }
 
-    public boolean importCert(File file) throws TrustException {
+    public boolean importCertificate(File file) throws TrustException {
         DefensiveTools.checkNull(file, "file");
 
         X509Certificate cert;

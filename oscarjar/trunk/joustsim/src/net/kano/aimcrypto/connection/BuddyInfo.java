@@ -35,24 +35,40 @@
 
 package net.kano.aimcrypto.connection;
 
-import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.ByteBlock;
-import net.kano.joscar.snaccmd.DirInfo;
-import net.kano.joscar.snaccmd.CapabilityBlock;
-import net.kano.joscar.snaccmd.icbm.OldIconHashInfo;
 import net.kano.aimcrypto.Screenname;
-import net.kano.aimcrypto.config.BuddySecurityInfo;
-import net.kano.aimcrypto.config.BuddySecurityInfo;
+import net.kano.aimcrypto.config.BuddyCertificateInfo;
+import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.snaccmd.CapabilityBlock;
+import net.kano.joscar.snaccmd.DirInfo;
+import net.kano.joscar.snaccmd.icbm.OldIconHashInfo;
 
-import java.util.Date;
-import java.beans.PropertyChangeSupport;
 import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
+import java.util.Date;
 
 public final class BuddyInfo {
+    public static final String PROP_CERTIFICATE_INFO = "certificateInfo";
+    public static final String PROP_ONLINE = "online";
+    public static final String PROP_DIRECTORY_INFO = "dirInfo";
+    public static final String PROP_ONLINE_SINCE = "onlineSince";
+    public static final String PROP_AWAY = "away";
+    public static final String PROP_CAPABILITIES = "capabilities";
+    public static final String PROP_CERTIFICATE_INFO_HASH = "certificateInfoHash";
+    public static final String PROP_IDLE_SINCE = "idleSince";
+    public static final String PROP_WARNING_LEVEL = "warningLevel";
+    public static final String PROP_AWAY_MESSAGE = "awayMessage";
+    public static final String PROP_USER_PROFILE = "userProfile";
+    public static final String PROP_OLD_ICON_INFO = "oldIconInfo";
+    public static final String PROP_LAST_AIM_EXPRESSION = "lastAimExpression";
+    public static final String PROP_SUPPORTS_TYPING_NOTIFICATIONS
+            = "supportsTypingNotifications";
+    public static final String PROP_WANTS_OUR_ICON = "wantsOurIcon";
+
     private Screenname screenname;
-    private BuddySecurityInfo securityInfo = null;
+    private BuddyCertificateInfo certificateInfo = null;
     private boolean online = true;
-    private DirInfo dirInfo = null;
+    private DirInfo directoryInfo = null;
     private Date onlineSince = null;
     private boolean away = false;
     private CapabilityBlock[] capabilities = null;
@@ -86,29 +102,29 @@ public final class BuddyInfo {
 
     public synchronized Screenname getScreenname() { return screenname; }
 
-    void setSecurityInfo(BuddySecurityInfo securityInfo) {
-        BuddySecurityInfo old;
+    void setCertificateInfo(BuddyCertificateInfo certificateInfo) {
+        BuddyCertificateInfo old;
         synchronized (this) {
-            old = this.securityInfo;
-            this.securityInfo = securityInfo;
+            old = this.certificateInfo;
+            this.certificateInfo = certificateInfo;
         }
-        pcs.firePropertyChange("securityInfo", old, securityInfo);
+        pcs.firePropertyChange(PROP_CERTIFICATE_INFO, old, certificateInfo);
     }
 
     public synchronized boolean isSecurityInfoCurrent() {
         ByteBlock advHash = certificateInfoHash;
-        if (securityInfo == null) {
+        if (certificateInfo == null) {
             if (advHash == null) return true;
             else return false;
         }
-        ByteBlock storedHash = securityInfo.getCertificateInfoHash();
+        ByteBlock storedHash = certificateInfo.getCertificateInfoHash();
 
         return (advHash == null && storedHash == null) || (storedHash != null
                 && storedHash.equals(advHash));
     }
 
-    public synchronized BuddySecurityInfo getSecurityInfo() {
-        return securityInfo;
+    public synchronized BuddyCertificateInfo getCertificateInfo() {
+        return certificateInfo;
     }
 
     void setOnline(boolean online) {
@@ -117,21 +133,21 @@ public final class BuddyInfo {
             old = this.online;
             this.online = online;
         }
-        pcs.firePropertyChange("online", old, online);
+        pcs.firePropertyChange(PROP_ONLINE, old, online);
     }
 
     public synchronized boolean isOnline() { return online; }
 
-    void setDirInfo(DirInfo dirInfo) {
+    void setDirectoryInfo(DirInfo directoryInfo) {
         DirInfo old;
         synchronized (this) {
-            old = this.dirInfo;
-            this.dirInfo = dirInfo;
+            old = this.directoryInfo;
+            this.directoryInfo = directoryInfo;
         }
-        pcs.firePropertyChange("dirInfo", old, dirInfo);
+        pcs.firePropertyChange(PROP_DIRECTORY_INFO, old, directoryInfo);
     }
 
-    public synchronized DirInfo getDirInfo() { return dirInfo; }
+    public synchronized DirInfo getDirectoryInfo() { return directoryInfo; }
 
     void setOnlineSince(Date onlineSince) {
         Date old;
@@ -139,7 +155,7 @@ public final class BuddyInfo {
             old = this.onlineSince;
             this.onlineSince = onlineSince;
         }
-        pcs.firePropertyChange("onlineSince", old, onlineSince);
+        pcs.firePropertyChange(PROP_ONLINE_SINCE, old, onlineSince);
     }
 
     public synchronized Date getOnlineSince() { return onlineSince; }
@@ -150,7 +166,7 @@ public final class BuddyInfo {
             old = this.away;
             this.away = away;
         }
-        pcs.firePropertyChange("away", old, away);
+        pcs.firePropertyChange(PROP_AWAY, old, away);
     }
 
     public synchronized boolean isAway() { return away; }
@@ -161,7 +177,7 @@ public final class BuddyInfo {
             old = this.capabilities;
             this.capabilities = (CapabilityBlock[]) capabilities.clone();
         }
-        pcs.firePropertyChange("capabilities", old, capabilities);
+        pcs.firePropertyChange(PROP_CAPABILITIES, old, capabilities);
     }
 
     public synchronized CapabilityBlock[] getCapabilities() {
@@ -174,7 +190,7 @@ public final class BuddyInfo {
             old = this.certificateInfoHash;
             this.certificateInfoHash = certificateInfoHash;
         }
-        pcs.firePropertyChange("certificateInfoHash", old, certificateInfoHash);
+        pcs.firePropertyChange(PROP_CERTIFICATE_INFO_HASH, old, certificateInfoHash);
     }
 
     public synchronized ByteBlock getCertificateInfoHash() {
@@ -187,7 +203,7 @@ public final class BuddyInfo {
             old = this.idleSince;
             this.idleSince = idleSince;
         }
-        pcs.firePropertyChange("idleSince", old, idleSince);
+        pcs.firePropertyChange(PROP_IDLE_SINCE, old, idleSince);
     }
 
     public synchronized Date getIdleSince() { return idleSince; }
@@ -198,7 +214,7 @@ public final class BuddyInfo {
             old = this.warningLevel;
             this.warningLevel = warningLevel;
         }
-        pcs.firePropertyChange("warningLevel", old, warningLevel);
+        pcs.firePropertyChange(PROP_WARNING_LEVEL, old, warningLevel);
     }
 
     public synchronized int getWarningLevel() { return warningLevel; }
@@ -209,7 +225,7 @@ public final class BuddyInfo {
             old = this.awayMessage;
             this.awayMessage = awayMessage;
         }
-        pcs.firePropertyChange("awayMessage", old, awayMessage);
+        pcs.firePropertyChange(PROP_AWAY_MESSAGE, old, awayMessage);
     }
 
     public synchronized String getAwayMessage() { return awayMessage; }
@@ -220,7 +236,7 @@ public final class BuddyInfo {
             old = this.userProfile;
             this.userProfile = userProfile;
         }
-        pcs.firePropertyChange("userProfile", old, userProfile);
+        pcs.firePropertyChange(PROP_USER_PROFILE, old, userProfile);
     }
 
     public synchronized String getUserProfile() { return userProfile; }
@@ -231,7 +247,7 @@ public final class BuddyInfo {
             old = this.oldIconInfo;
             this.oldIconInfo = oldIconInfo;
         }
-        pcs.firePropertyChange("oldIconInfo", old, oldIconInfo);
+        pcs.firePropertyChange(PROP_OLD_ICON_INFO, old, oldIconInfo);
     }
 
     public synchronized OldIconHashInfo getOldIconInfo() { return oldIconInfo; }
@@ -242,7 +258,7 @@ public final class BuddyInfo {
             old = this.lastAimExpression;
             this.lastAimExpression = lastAimExpression;
         }
-        pcs.firePropertyChange("lastAimExpression", old, lastAimExpression);
+        pcs.firePropertyChange(PROP_LAST_AIM_EXPRESSION, old, lastAimExpression);
     }
 
     public synchronized String getLastAimExpression() {
@@ -255,7 +271,7 @@ public final class BuddyInfo {
             old = this.supportsTypingNotifications;
             this.supportsTypingNotifications = supportsTypingNotifications;
         }
-        pcs.firePropertyChange("supportsTypingNotifications", old,
+        pcs.firePropertyChange(PROP_SUPPORTS_TYPING_NOTIFICATIONS, old,
                 supportsTypingNotifications);
     }
 
@@ -269,7 +285,7 @@ public final class BuddyInfo {
             old = this.wantsOurIcon;
             this.wantsOurIcon = wantsOurIcon;
         }
-        pcs.firePropertyChange("wantsOurIcon", old, wantsOurIcon);
+        pcs.firePropertyChange(PROP_WANTS_OUR_ICON, old, wantsOurIcon);
     }
 
     public synchronized boolean wantsOurIcon() { return wantsOurIcon; }

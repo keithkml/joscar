@@ -45,14 +45,12 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
-import javax.swing.text.JTextComponent;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.event.ActionEvent;
-import java.awt.event.FocusListener;
-import java.awt.event.FocusEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.event.KeyEvent;
 
 public class DummyOnlineWindow extends JFrame {
     private JPanel mainPanel;
@@ -60,6 +58,7 @@ public class DummyOnlineWindow extends JFrame {
     private JTextField snBox;
     private JButton openButton;
     private JLabel onlineLabel;
+    private JButton prefsButton;
 
     private final GuiSession guiSession;
     private AimConnection conn = null;
@@ -92,6 +91,7 @@ public class DummyOnlineWindow extends JFrame {
             }
         });
 
+        prefsButton.setAction(new ShowPrefsAction());
     }
 
     public DummyOnlineWindow(GuiSession session) {
@@ -132,6 +132,18 @@ public class DummyOnlineWindow extends JFrame {
 
         public void actionPerformed(ActionEvent e) {
             guiSession.disconnect();
+        }
+    }
+
+    private class ShowPrefsAction extends AbstractAction {
+        public ShowPrefsAction() {
+            super("Preferences");
+
+            putValue(MNEMONIC_KEY, new Integer(KeyEvent.VK_P));
+        }
+
+        public void actionPerformed(ActionEvent e) {
+            guiSession.showPrefsWindow(conn.getScreenname());
         }
     }
 }

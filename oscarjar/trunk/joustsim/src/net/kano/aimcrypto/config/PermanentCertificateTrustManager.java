@@ -187,7 +187,7 @@ public class PermanentCertificateTrustManager
     }
 
     private synchronized boolean removeTrustCompletely(X509Certificate cert) {
-        CertificateHolder holder = new CertificateHolder(cert);
+        CertificateHolder holder = new DefaultCertificateHolder(cert);
         TrustedCertInfo info = (TrustedCertInfo) cert2info.remove(holder);
         if (info != null) {
             file2info.remove(info.getLoadedFromFile());
@@ -197,7 +197,7 @@ public class PermanentCertificateTrustManager
     }
 
     private synchronized boolean deleteTrustFile(X509Certificate cert) {
-        CertificateHolder holder = new CertificateHolder(cert);
+        CertificateHolder holder = new DefaultCertificateHolder(cert);
         TrustedCertInfo info = (TrustedCertInfo) cert2info.get(holder);
         if (info == null) return false;
 
@@ -236,7 +236,7 @@ public class PermanentCertificateTrustManager
 
         File file = info.getLoadedFromFile();
         X509Certificate cert = info.getCertificate();
-        CertificateHolder holder = new CertificateHolder(cert);
+        CertificateHolder holder = new DefaultCertificateHolder(cert);
         cert2info.put(holder, info);
         file2info.put(file, info);
 
@@ -253,7 +253,7 @@ public class PermanentCertificateTrustManager
             file2info.remove(file);
         }
         X509Certificate cert = info.getCertificate();
-        CertificateHolder holder = new CertificateHolder(cert);
+        CertificateHolder holder = new DefaultCertificateHolder(cert);
         if (info.equals(cert2info.get(holder))) {
             cert2info.remove(holder);
         }

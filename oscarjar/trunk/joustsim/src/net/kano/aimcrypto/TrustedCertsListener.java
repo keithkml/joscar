@@ -36,4 +36,9 @@
 package net.kano.aimcrypto;
 
 public interface TrustedCertsListener {
+    void certificateTrusted(TrustedCertificatesTracker manager,
+            TrustedCertificateInfo info);
+
+    void certificateNoLongerTrusted(TrustedCertificatesTracker manager,
+            TrustedCertificateInfo info);
 }
