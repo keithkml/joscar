@@ -29,20 +29,37 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- *  File created by keith @ Jun 4, 2003
+ *  File created by keith @ Jun 14, 2003
  *
  */
 
-package net.kano.joscar.ratelim;
+package net.kano.joscar;
 
-import net.kano.joscar.snaccmd.conn.RateClassInfo;
+public class SeqNum {
+    private final long min;
+    private final long max;
+    private long current;
 
-public interface RateListener {
-    void gotRateClasses(RateMonitor monitor);
-    
-    void rateClassUpdated(RateMonitor rateMonitor,
-            RateClassMonitor rateClassMonitor, RateClassInfo rateClassInfo);
+    public SeqNum(long min, long max) {
+        this(min, max, min);
+    }
 
-    void rateClassLimited(RateMonitor rateMonitor,
-            RateClassMonitor rateClassMonitor, boolean limited);
+    public SeqNum(long min, long max, long current) {
+        this.min = min;
+        this.max = max;
+        this.current = current;
+    }
+
+    public final long getMin() { return min; }
+
+    public final long getMax() { return max; }
+
+    public synchronized final long getLast() { return current; }
+
+    public synchronized long next() {
+        if (current == max) current = min;
+        else current++;
+
+        return current;
+    }
 }
