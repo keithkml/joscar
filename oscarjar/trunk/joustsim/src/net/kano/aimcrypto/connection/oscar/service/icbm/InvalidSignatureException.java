@@ -40,6 +40,10 @@ import org.bouncycastle.cms.SignerInformation;
 public class InvalidSignatureException extends Exception {
     private final SignerInformation invalidSigner;
 
+    public InvalidSignatureException() {
+        invalidSigner = null;
+    }
+
     public InvalidSignatureException(SignerInformation invalidSigner) {
         this.invalidSigner = invalidSigner;
     }

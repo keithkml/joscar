@@ -41,9 +41,4 @@ import net.kano.aimcrypto.connection.oscar.service.icbm.ConversationListener;
 import net.kano.aimcrypto.connection.oscar.service.icbm.SecureAimConversation;
 
 public interface SecureAimConversationListener extends ConversationListener {
-    void buddySecurityInfoChanged(SecureAimConversation conversation,
-            BuddyCertificateInfo securityInfo, boolean trusted);
-
-    void decryptingFailed(SecureAimConversation conversation,
-            EncryptedAimMessageInfo msgInfo, DecryptionFailureInfo failureInfo);
 }

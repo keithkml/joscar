@@ -216,9 +216,17 @@ public class InfoService extends Service {
                 certificateInfo == null ? CERTINFO_EMPTY : certificateInfo)));
     }
 
+    public void requestUserProfile(Screenname buddy) {
+        profileRequestManager.request(buddy);
+    }
+
     public void requestUserProfile(Screenname buddy,
             InfoResponseListener listener) {
         profileRequestManager.request(buddy, listener);
+    }
+
+    public void requestAwayMessage(Screenname buddy) {
+        awayMsgRequestManager.request(buddy);
     }
 
     public void requestAwayMessage(Screenname buddy,
@@ -226,9 +234,17 @@ public class InfoService extends Service {
         awayMsgRequestManager.request(buddy, listener);
     }
 
+    public void requestCertificateInfo(Screenname buddy) {
+        certInfoRequestManager.request(buddy);
+    }
+
     public void requestCertificateInfo(Screenname buddy,
             InfoResponseListener listener) {
         certInfoRequestManager.request(buddy, listener);
+    }
+
+    public void requestDirectoryInfo(Screenname buddy) {
+        dirInfoRequestManager.request(buddy);
     }
 
     public void requestDirectoryInfo(Screenname buddy,

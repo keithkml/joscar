@@ -72,31 +72,54 @@ public abstract class Conversation {
         return true;
     }
 
-    protected boolean open() {
+    public boolean open() {
         synchronized(this) {
             if (open || closed) return false;
             open = true;
         }
+
+        fireOpenEvent();
+        opened();
+
+        return true;
+    }
+
+    private void fireOpenEvent() {
+        assert !Thread.holdsLock(this);
 
         for (Iterator it = listeners.iterator(); it.hasNext();) {
             ConversationListener l = (ConversationListener) it.next();
 
             l.conversationOpened(this);
         }
-        return true;
     }
 
-    protected boolean close() {
+    public boolean close() {
         synchronized(this) {
             if (closed) return false;
             closed = true;
         }
+
+        fireClosedEvent();
+        closed();
+
+        return true;
+    }
+
+    private void fireClosedEvent() {
+        assert !Thread.holdsLock(this);
+
         for (Iterator it = listeners.iterator(); it.hasNext();) {
             ConversationListener l = (ConversationListener) it.next();
 
             l.conversationClosed(this);
         }
-        return true;
+    }
+
+    protected void opened() {
+    }
+
+    protected void closed() {
     }
 
     public synchronized boolean isOpen() { return open; }
@@ -104,26 +127,31 @@ public abstract class Conversation {
     public synchronized boolean isClosed() { return closed; }
 
     protected void fireIncomingEvent(MessageInfo msg) {
-        System.out.println(MiscTools.getClassName(this) + " - firing incoming event: " + msg);
+        assert !Thread.holdsLock(this);
+
+        DefensiveTools.checkNull(msg, "msg");
+
+        System.out.println(MiscTools.getClassName(this) + ": firing incoming event: " + msg);
         for (Iterator it = listeners.iterator(); it.hasNext();) {
             ConversationListener l = (ConversationListener) it.next();
             l.gotMessage(this, msg);
         }
     }
 
-    //TODO: fire outgoing event!
     protected void fireOutgoingEvent(MessageInfo msg) {
-        System.out.println(MiscTools.getClassName(this) + " - firing outgoing event: " + msg);
+        assert !Thread.holdsLock(this);
+
+        DefensiveTools.checkNull(msg, "msg");
+
+        System.out.println(MiscTools.getClassName(this) + ": firing outgoing event: " + msg);
         for (Iterator it = listeners.iterator(); it.hasNext();) {
             ConversationListener l = (ConversationListener) it.next();
             l.sentMessage(this, msg);
         }
     }
 
-    protected void ensureOpen() throws ConversationNotOpenException {
-        synchronized(this) {
-            if (!open) throw new ConversationNotOpenException(this);
-        }
+    protected synchronized void checkOpen() throws ConversationNotOpenException {
+        if (!open) throw new ConversationNotOpenException(this);
     }
 
     public abstract void sendMessage(Message msg)

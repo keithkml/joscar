@@ -35,52 +35,46 @@
 
 package net.kano.aimcrypto.connection;
 
-import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.ByteBlock;
-import net.kano.joscar.CopyOnWriteArrayList;
-import net.kano.joscar.snaccmd.FullUserInfo;
-import net.kano.joscar.snaccmd.DirInfo;
-import net.kano.joscar.snaccmd.CapabilityBlock;
-import net.kano.joscar.snaccmd.ShortCapabilityBlock;
-import net.kano.aimcrypto.connection.AimConnection;
-import net.kano.aimcrypto.connection.oscar.service.buddy.BuddyServiceListener;
-import net.kano.aimcrypto.connection.oscar.service.buddy.BuddyService;
-import net.kano.aimcrypto.connection.oscar.service.info.InfoServiceListener;
-import net.kano.aimcrypto.connection.oscar.service.info.InfoService;
-import net.kano.aimcrypto.connection.oscar.service.info.InfoService;
-import net.kano.aimcrypto.connection.oscar.service.buddy.BuddyService;
-import net.kano.aimcrypto.connection.oscar.service.buddy.BuddyServiceListener;
-import net.kano.aimcrypto.connection.oscar.service.Service;
 import net.kano.aimcrypto.Screenname;
 import net.kano.aimcrypto.config.BuddyCertificateInfo;
-import net.kano.aimcrypto.config.BuddyCertificateInfo;
+import net.kano.aimcrypto.connection.oscar.service.Service;
+import net.kano.aimcrypto.connection.oscar.service.buddy.BuddyService;
+import net.kano.aimcrypto.connection.oscar.service.buddy.BuddyServiceListener;
+import net.kano.aimcrypto.connection.oscar.service.info.InfoService;
+import net.kano.aimcrypto.connection.oscar.service.info.InfoServiceListener;
+import net.kano.aimcrypto.connection.oscar.service.info.BuddyHashHolder;
+import net.kano.joscar.ByteBlock;
+import net.kano.joscar.CopyOnWriteArrayList;
+import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.snaccmd.CapabilityBlock;
+import net.kano.joscar.snaccmd.DirInfo;
+import net.kano.joscar.snaccmd.FullUserInfo;
+import net.kano.joscar.snaccmd.ShortCapabilityBlock;
 
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Date;
-import java.util.Iterator;
-import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeEvent;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 public class BuddyInfoManager {
     private final AimConnection conn;
     private Map buddyInfos = new HashMap();
+    private Map cachedCertInfos = new HashMap();
+
 
     private boolean initedBuddyService = false;
     private boolean initedInfoService = false;
 
     private CopyOnWriteArrayList listeners = new CopyOnWriteArrayList();
 
-    private PropertyChangeListener pcl = new PropertyChangeListener() {
+    private BuddyInfoChangeListener pcl = new BuddyInfoChangeListener() {
         public void propertyChange(PropertyChangeEvent evt) {
-            BuddyInfo info = (BuddyInfo) evt.getSource();
-            Screenname sn = info.getScreenname();
+            fireGlobalPropertyChangeEvent(evt);
+        }
 
-            for (Iterator it = listeners.iterator(); it.hasNext();) {
-                GlobalBuddyInfoListener l = (GlobalBuddyInfoListener) it.next();
-
-                l.buddyInfoChanged(BuddyInfoManager.this, sn, info, evt);
-            }
+        public void receivedBuddyStatusUpdate(BuddyInfo info) {
+            fireReceivedStatusEvent(info);
         }
     };
 
@@ -98,6 +92,16 @@ public class BuddyInfoManager {
         initInfoService();
     }
 
+    private synchronized void cacheCertInfo(BuddyCertificateInfo certInfo) {
+        DefensiveTools.checkNull(certInfo, "certInfo");
+
+        Screenname buddy = certInfo.getBuddy();
+        ByteBlock hash = certInfo.getCertificateInfoHash();
+        BuddyHashHolder holder = new BuddyHashHolder(buddy, hash);
+        if (cachedCertInfos.containsKey(buddy)) return;
+        cachedCertInfos.put(holder, certInfo);
+    }
+
     private void initBuddyService() {
         BuddyService bs = conn.getBuddyService();
         if (bs == null) return;
@@ -110,7 +114,7 @@ public class BuddyInfoManager {
         bs.addBuddyListener(new BuddyServiceListener() {
             public void gotBuddyStatus(BuddyService service, Screenname buddy,
                     FullUserInfo info) {
-                setBuddyStatus(buddy, info);
+                handleBuddyStatusUpdate(buddy, info);
             }
 
             public void buddyOffline(BuddyService service, Screenname buddy) {
@@ -134,28 +138,25 @@ public class BuddyInfoManager {
                     DirInfo info) {
                 BuddyInfo buddyInfo = getBuddyInfoInstance(buddy);
                 buddyInfo.setDirectoryInfo(info);
-                System.out.println("got dir info");
             }
 
             public void handleAwayMessage(InfoService service, Screenname buddy,
                     String awayMsg) {
                 BuddyInfo buddyInfo = getBuddyInfoInstance(buddy);
                 buddyInfo.setAwayMessage(awayMsg);
-                System.out.println("got away msg");
             }
 
             public void handleUserProfile(InfoService service, Screenname buddy,
                     String infoString) {
                 BuddyInfo buddyInfo = getBuddyInfoInstance(buddy);
                 buddyInfo.setUserProfile(infoString);
-                System.out.println("got info string");
             }
 
             public void handleCertificateInfo(InfoService service, Screenname buddy,
-                    BuddyCertificateInfo securityInfo) {
+                    BuddyCertificateInfo certInfo) {
                 BuddyInfo buddyInfo = getBuddyInfoInstance(buddy);
-                buddyInfo.setCertificateInfo(securityInfo);
-                System.out.println("got security info");
+                if (certInfo != null) cacheCertInfo(certInfo);
+                buddyInfo.setCertificateInfo(certInfo);
             }
         });
     }
@@ -168,7 +169,7 @@ public class BuddyInfoManager {
         listeners.remove(l);
     }
 
-    private void setBuddyStatus(Screenname buddy, FullUserInfo info) {
+    private void handleBuddyStatusUpdate(Screenname buddy, FullUserInfo info) {
         BuddyInfo buddyInfo = getBuddyInfoInstance(buddy);
 
         Date onSince = info.getOnSince();
@@ -196,7 +197,7 @@ public class BuddyInfoManager {
         }
 
         ByteBlock certHash = info.getCertInfoHash();
-        buddyInfo.setCertificateInfoHash(certHash);
+        buddyInfo.setCertificateInfo(getAppropriateCertificateInfo(buddy, certHash));
 
         int idleMins = info.getIdleMins();
         Date idleSince;
@@ -214,19 +215,66 @@ public class BuddyInfoManager {
             int warningLevel = (warningLevelx10 / 10) + rounder;
             buddyInfo.setWarningLevel(warningLevel);
         }
+
+        buddyInfo.receivedBuddyStatusUpdate();
+    }
+
+    private synchronized BuddyCertificateInfo getAppropriateCertificateInfo(
+            Screenname buddy, ByteBlock certHash) {
+        BuddyCertificateInfo cached = getCachedCertificateInfo(buddy, certHash);
+        if (cached != null) return cached;
+        if (certHash == null) return null;
+
+        return new BuddyCertificateInfo(buddy, certHash);
+    }
+
+    public synchronized BuddyCertificateInfo getCachedCertificateInfo(
+            Screenname buddy, ByteBlock hash) {
+        DefensiveTools.checkNull(buddy, "buddy");
+
+        if (hash == null) return null;
+
+        BuddyHashHolder holder = new BuddyHashHolder(buddy, hash);
+        return (BuddyCertificateInfo) cachedCertInfos.get(holder);
     }
 
     private synchronized BuddyInfo getBuddyInfoInstance(Screenname buddy) {
         BuddyInfo info = (BuddyInfo) buddyInfos.get(buddy);
         if (info == null) {
             info = new BuddyInfo(buddy);
-            buddyInfos.put(buddy, info);
             info.addPropertyListener(pcl);
+            buddyInfos.put(buddy, info);
         }
         return info;
     }
 
     public synchronized BuddyInfo getBuddyInfo(Screenname buddy) {
+        //TODO: should this never return null?
         return (BuddyInfo) buddyInfos.get(buddy);
+    }
+
+    private void fireGlobalPropertyChangeEvent(PropertyChangeEvent evt) {
+        assert !Thread.holdsLock(this);
+
+        BuddyInfo info = (BuddyInfo) evt.getSource();
+        Screenname sn = info.getScreenname();
+
+        for (Iterator it = listeners.iterator(); it.hasNext();) {
+            GlobalBuddyInfoListener l = (GlobalBuddyInfoListener) it.next();
+
+            l.buddyInfoChanged(this, sn, info, evt);
+        }
+    }
+
+    private void fireReceivedStatusEvent(BuddyInfo info) {
+        assert !Thread.holdsLock(this);
+
+        Screenname sn = info.getScreenname();
+
+        for (Iterator it = listeners.iterator(); it.hasNext();) {
+            GlobalBuddyInfoListener l = (GlobalBuddyInfoListener) it.next();
+
+            l.receivedStatusUpdate(this, sn, info);
+        }
     }
 }

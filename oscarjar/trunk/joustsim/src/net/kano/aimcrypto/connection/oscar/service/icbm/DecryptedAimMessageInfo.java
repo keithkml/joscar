@@ -39,11 +39,13 @@ import net.kano.aimcrypto.Screenname;
 import net.kano.aimcrypto.config.BuddyCertificateInfo;
 import net.kano.joscar.DefensiveTools;
 
+import java.util.Date;
+
 public class DecryptedAimMessageInfo extends MessageInfo {
     public static DecryptedAimMessageInfo getInstance(
             EncryptedAimMessageInfo einfo, String decrypted,
-            BuddyCertificateInfo securityInfo) {
-        DefensiveTools.checkNull(securityInfo, "securityInfo");
+            BuddyCertificateInfo certInfo) {
+        DefensiveTools.checkNull(certInfo, "certInfo");
 
         EncryptedAimMessage encryptedMsg
                 = (EncryptedAimMessage) einfo.getMessage();
@@ -51,17 +53,17 @@ public class DecryptedAimMessageInfo extends MessageInfo {
                 = DecryptedAimMessage.getInstance(encryptedMsg, decrypted);
         
         return new DecryptedAimMessageInfo(einfo.getFrom(), einfo.getTo(),
-                decryptedMsg, securityInfo);
+                decryptedMsg, certInfo, einfo.getTimestamp());
     }
 
-    private final BuddyCertificateInfo securityInfo;
+    private final BuddyCertificateInfo certInfo;
 
     private DecryptedAimMessageInfo(Screenname from, Screenname to, Message message,
-            BuddyCertificateInfo securityInfo) {
-        super(from, to, message);
+            BuddyCertificateInfo certInfo, Date date) {
+        super(from, to, message, date);
 
-        this.securityInfo = securityInfo;
+        this.certInfo = certInfo;
     }
 
-    public BuddyCertificateInfo getSecurityInfo() { return securityInfo; }
+    public BuddyCertificateInfo getMessageCertificateInfo() { return certInfo; }
 }

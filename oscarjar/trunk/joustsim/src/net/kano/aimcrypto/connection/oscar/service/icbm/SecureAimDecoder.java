@@ -38,7 +38,6 @@ package net.kano.aimcrypto.connection.oscar.service.icbm;
 import net.kano.aimcrypto.AimCertificateHolder;
 import net.kano.aimcrypto.KeyPair;
 import net.kano.aimcrypto.config.PrivateKeysInfo;
-import net.kano.aimcrypto.config.PrivateKeysInfo;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.OscarTools;
@@ -59,14 +58,13 @@ import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPrivateKey;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.Collections;
 
 public class SecureAimDecoder extends SecureAimCodec {
     public synchronized DecryptedMessageInfo decryptMessage(
             ByteBlock encryptedData)
             throws CMSException, NoSuchProviderException,
             NoSuchAlgorithmException, InvalidSignatureException,
-            NoBuddyKeysException, NoLocalKeysException {
+            NoBuddyKeysException, NoLocalKeysException, EmptyMessageException {
 
         AimCertificateHolder buddyCerts = getBuddyCerts();
         if (buddyCerts == null) throw new NoBuddyKeysException();
@@ -85,8 +83,7 @@ public class SecureAimDecoder extends SecureAimCodec {
         Collection recip = ced.getRecipientInfos().getRecipients();
 
         if (recip.isEmpty()) {
-            //TODO: throw new NoRecipientsException
-            return null;
+            throw new EmptyMessageException();
         }
 
         KeyTransRecipientInformation rinfo
@@ -103,23 +100,34 @@ public class SecureAimDecoder extends SecureAimCodec {
         SignerInformationStore signerInfos = csd.getSignerInfos();
         Collection signers = signerInfos.getSigners();
 
-        for (Iterator sit = signers.iterator(); sit.hasNext();) {
-            SignerInformation si = (SignerInformation) sit.next();
-            boolean verified;
-            try {
-                verified = si.verify(signingCert, "BC");
-            } catch (CertificateExpiredException e) {
-                throw new InvalidSignatureException(e, si);
-            } catch (CertificateNotYetValidException e) {
-                throw new InvalidSignatureException(e, si);
-            }
-            if (!verified) {
-                throw new InvalidSignatureException(si);
-            }
+        Iterator sit = signers.iterator();
+        if (!sit.hasNext()) {
+            throw new InvalidSignatureException(null);
+        }
+        SignerInformation si = (SignerInformation) sit.next();
+        if (sit.hasNext()) {
+            throw new MultipleSignersException();
+        }
+        boolean verified;
+        try {
+            verified = si.verify(signingCert, "BC");
+
+        } catch (CertificateExpiredException e) {
+            throw new InvalidSignatureException(e, si);
+
+        } catch (CertificateNotYetValidException e) {
+            throw new InvalidSignatureException(e, si);
+        }
+        if (!verified) {
+            throw new InvalidSignatureException(si);
         }
 
         CMSProcessable signedContent = csd.getSignedContent();
-        ByteBlock data = ByteBlock.wrap((byte[]) signedContent.getContent());
+        Object signedContentData = signedContent.getContent();
+        if (!(signedContentData instanceof byte[])) {
+            throw new EmptyMessageException();
+        }
+        ByteBlock data = ByteBlock.wrap((byte[]) signedContentData);
 
         OscarTools.HttpHeaderInfo bodyInfo
                 = OscarTools.parseHttpHeader(data);
@@ -127,24 +135,26 @@ public class SecureAimDecoder extends SecureAimCodec {
         String msg = OscarTools.getInfoString(bodyInfo.getData(),
                 (String) bodyInfo.getHeaders().get("content-type"));
 
+        if (msg == null) throw new EmptyMessageException();
+
         return new DecryptedMessageInfo(msg, buddyCerts);
     }
 
     public final class DecryptedMessageInfo {
         private final String str;
-        private final AimCertificateHolder securityInfo;
+        private final AimCertificateHolder buddyCertInfo;
 
         private DecryptedMessageInfo(String str,
-                AimCertificateHolder securityInfo) {
+                AimCertificateHolder certInfo) {
             DefensiveTools.checkNull(str, "str");
-            DefensiveTools.checkNull(securityInfo, "securityInfo");
+            DefensiveTools.checkNull(certInfo, "certInfo");
 
             this.str = str;
-            this.securityInfo = securityInfo;
+            this.buddyCertInfo = certInfo;
         }
 
         public String getMessage() { return str; }
 
-        public AimCertificateHolder getSecurityInfo() { return securityInfo; }
+        public AimCertificateHolder getCertificateInfo() { return buddyCertInfo; }
     }
 }

@@ -47,9 +47,21 @@ public final class BuddyCertificateInfo implements AimCertificateHolder {
     private final ByteBlock hash;
     private final X509Certificate encryptionCert;
     private final X509Certificate signingCert;
+    private final boolean upToDate;
+
+    public BuddyCertificateInfo(Screenname buddy, ByteBlock hash) {
+        this(buddy, hash, null, null, false);
+    }
 
     public BuddyCertificateInfo(Screenname buddy, ByteBlock hash,
             X509Certificate encCert, X509Certificate signingCert) {
+        this(buddy, hash, encCert,  signingCert, true);
+    }
+
+    public BuddyCertificateInfo(Screenname buddy, ByteBlock hash,
+            X509Certificate encCert, X509Certificate signingCert,
+            boolean upToDate) {
+        this.upToDate = upToDate;
         DefensiveTools.checkNull(buddy, "buddy");
         DefensiveTools.checkNull(hash, "hash");
 
@@ -63,9 +75,15 @@ public final class BuddyCertificateInfo implements AimCertificateHolder {
 
     public ByteBlock getCertificateInfoHash() { return hash; }
 
+    public boolean hasAnyCertificates() {
+        return encryptionCert != null || signingCert != null;
+    }
+
     public boolean hasBothCertificates() {
         return encryptionCert != null && signingCert != null;
     }
+
+    public boolean isUpToDate() { return upToDate; }
 
     public X509Certificate getEncryptionCertificate() { return encryptionCert; }
 

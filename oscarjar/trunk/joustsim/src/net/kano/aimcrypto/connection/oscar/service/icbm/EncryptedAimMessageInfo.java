@@ -36,14 +36,15 @@
 package net.kano.aimcrypto.connection.oscar.service.icbm;
 
 import net.kano.aimcrypto.Screenname;
-import net.kano.aimcrypto.connection.oscar.service.icbm.EncryptedAimMessage;
+import net.kano.aimcrypto.config.BuddyCertificateInfo;
 import net.kano.joscar.snaccmd.FullUserInfo;
 import net.kano.joscar.snaccmd.icbm.RecvImIcbm;
-import net.kano.joscar.ByteBlock;
+
+import java.util.Date;
 
 public class EncryptedAimMessageInfo extends MessageInfo {
     public static EncryptedAimMessageInfo getInstance(Screenname to,
-            RecvImIcbm icbm, ByteBlock certificateHash) {
+            RecvImIcbm icbm, BuddyCertificateInfo certInfo, Date date) {
         FullUserInfo senderInfo = icbm.getSenderInfo();
         if (senderInfo == null) return null;
 
@@ -52,17 +53,18 @@ public class EncryptedAimMessageInfo extends MessageInfo {
         EncryptedAimMessage message = EncryptedAimMessage.getInstance(icbm);
         if (message == null) return null;
 
-        return new EncryptedAimMessageInfo(from, to, message, certificateHash);
+        return new EncryptedAimMessageInfo(from, to, message, certInfo, date);
     }
 
-    private final ByteBlock certificateHash;
+    private final BuddyCertificateInfo certificateInfo;
 
     private EncryptedAimMessageInfo(Screenname from, Screenname to,
-            EncryptedAimMessage message, ByteBlock certificateHash) {
-        super(from, to, message);
+            EncryptedAimMessage message, BuddyCertificateInfo certInfo,
+            Date date) {
+        super(from, to, message, date);
 
-        this.certificateHash = certificateHash;
+        this.certificateInfo = certInfo;
     }
 
-    public ByteBlock getCertificateHash() { return certificateHash; }
+    public BuddyCertificateInfo getCertificateInfo() { return certificateInfo; }
 }

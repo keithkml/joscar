@@ -105,6 +105,7 @@ public class AimConnection {
     private CopyOnWriteArrayList serviceListeners = new CopyOnWriteArrayList();
 
     private final BuddyInfoManager buddyInfoManager;
+    private final BuddyInfoTracker buddyInfoTracker;
     private final CertificateInfoTrustManager certificateInfoTrustManager;
     private final TrustedCertificatesTracker trustedCertificatesTracker;
     private final LocalPreferencesManager localPrefs;
@@ -134,6 +135,7 @@ public class AimConnection {
         this.screenname = sn;
 
         this.buddyInfoManager = new BuddyInfoManager(this);
+        this.buddyInfoTracker = new BuddyInfoTracker(this);
         this.loginConn = new LoginConnection(props.getLoginHost(),
                 props.getLoginPort());
         this.password = props.getPass();
@@ -150,12 +152,12 @@ public class AimConnection {
         buddyTrustManager = new BuddyTrustManager(this);
         buddyTrustManager.addBuddyTrustListener(new BuddyTrustAdapter() {
             public void buddyTrusted(BuddyTrustManager manager, Screenname buddy,
-                    ByteBlock hash, BuddyCertificateInfo info) {
+                    BuddyCertificateInfo info) {
                 System.out.println("* " + buddy + " is trusted");
             }
 
             public void buddyTrustRevoked(BuddyTrustManager manager, Screenname buddy,
-                    ByteBlock hash, BuddyCertificateInfo info) {
+                    BuddyCertificateInfo info) {
                 System.out.println("* " + buddy + " is no longer trusted");
             }
 
@@ -383,6 +385,10 @@ public class AimConnection {
 
     public CapabilityManager getCapabilityManager() {
         return capabilityManager;
+    }
+
+    public BuddyInfoTracker getBuddyInfoTracker() {
+        return buddyInfoTracker;
     }
 
     private class LoginServiceFactory implements ServiceFactory {

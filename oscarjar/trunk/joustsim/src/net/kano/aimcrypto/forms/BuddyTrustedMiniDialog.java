@@ -40,12 +40,13 @@ import net.kano.aimcrypto.Screenname;
 import net.kano.aimcrypto.config.BuddyCertificateInfo;
 import net.kano.aimcrypto.config.CertificateTrustManager;
 import net.kano.aimcrypto.config.TrustException;
+import net.kano.aimcrypto.connection.AimConnection;
 import net.kano.aimcrypto.connection.oscar.service.info.BuddyTrustAdapter;
 import net.kano.aimcrypto.connection.oscar.service.info.BuddyTrustManager;
-import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 
 import javax.swing.AbstractAction;
+import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -53,11 +54,12 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
 import javax.swing.SwingUtilities;
+import java.awt.Component;
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 
-public class BuddyTrustedMiniDialog extends JPanel {
+public class BuddyTrustedMiniDialog extends JPanel implements MiniDialog {
     private JPanel mainPanel;
     private JButton trustButton;
     private JScrollPane textScrollPane;
@@ -67,8 +69,9 @@ public class BuddyTrustedMiniDialog extends JPanel {
     private final CertificateTrustManager trustMgr;
     private final BuddyTrustManager buddyTrustMgr;
     private final Screenname buddy;
-    private final ByteBlock hash;
-    private BuddyCertificateInfo certInfo = null;
+    private final BuddyCertificateInfo origCertificateInfo;
+
+    private BuddyCertificateInfo certificateInfo = null;
 
     private TrustAction trustAction = new TrustAction();
     private final ImageIcon certIcon
@@ -97,13 +100,10 @@ public class BuddyTrustedMiniDialog extends JPanel {
         }
 
         public void gotUnknownCertificateChange(BuddyTrustManager manager,
-                Screenname buddy, ByteBlock newHash) {
+                Screenname buddy, BuddyCertificateInfo certInfo) {
+            setLoadingCertInfo();
         }
     };
-
-    private void hideMe() {
-        textPane.setText("(Trusted)");
-    }
 
     {
         setLayout(new BorderLayout());
@@ -115,24 +115,30 @@ public class BuddyTrustedMiniDialog extends JPanel {
         trustButton.setAction(trustAction);
     }
 
-    public BuddyTrustedMiniDialog(CertificateTrustManager trustMgr,
-            BuddyTrustManager buddyTrustMgr, Screenname buddy, ByteBlock hash) {
-        DefensiveTools.checkNull(buddyTrustMgr, "trustMgr");
+    public BuddyTrustedMiniDialog(AimConnection conn, Screenname buddy,
+            BuddyCertificateInfo certInfo) {
+        DefensiveTools.checkNull(conn, "conn");
         DefensiveTools.checkNull(buddy, "buddy");
 
-        this.trustMgr = trustMgr;
-        this.buddyTrustMgr = buddyTrustMgr;
+        this.trustMgr = conn.getLocalPrefs().getStoredCertificateTrustManager();
+        this.buddyTrustMgr = conn.getBuddyTrustManager();
         this.buddy = buddy;
-        this.hash = hash;
+        this.origCertificateInfo = certInfo;
 
         setLoadingCertInfo();
         buddyTrustMgr.addBuddyTrustListener(trustListener);
-        final BuddyCertificateInfo certInfo
-                = buddyTrustMgr.getBuddyCertificateInfo(buddy, hash);
-        if (certInfo != null) {
-            buddyTrustMgr.removeBuddyTrustListener(trustListener);
+        if (certInfo != null && certInfo.isUpToDate()) {
+            System.out.println("cert info is ok!");
             updateCertInfo(certInfo);
         }
+    }
+
+    private void cleanUp() {
+        buddyTrustMgr.removeBuddyTrustListener(trustListener);
+    }
+
+    public Component getComponent() {
+        return this;
     }
 
     private void setLoadingCertInfo() {
@@ -161,9 +167,7 @@ public class BuddyTrustedMiniDialog extends JPanel {
             DistinguishedName sn = DistinguishedName.getSubjectInstance(
                     certInfo.getSigningCertificate());
             String signedby = sn.getName() + ", " + sn.getOrganization();
-            DistinguishedName en = DistinguishedName.getSubjectInstance(
-                    certInfo.getEncryptionCertificate());
-            String encby = en.getName() + ", " + en.getOrganization();
+
             textPane.setText("Messages from " + buddy.getFormatted()
                     + " are signed by " + signedby + ".");
             trustAction.setEnabled(true);
@@ -171,12 +175,26 @@ public class BuddyTrustedMiniDialog extends JPanel {
         }
     }
 
+    private void hideMe() {
+        cleanUp();
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                textPane.setText("(Trusted)");
+                setVisible(false);
+            }
+        });
+    }
+
     private boolean hasInvalidHash(BuddyCertificateInfo certInfo) {
-        return hash != null && !hash.equals(certInfo.getCertificateInfoHash());
+        DefensiveTools.checkNull(certInfo, "certInfo");
+
+        BuddyCertificateInfo orig = origCertificateInfo;
+        return orig != null && !orig.getCertificateInfoHash().equals(
+                certInfo.getCertificateInfoHash());
     }
 
     private synchronized void setCertInfo(BuddyCertificateInfo certInfo) {
-        this.certInfo = certInfo;
+        this.certificateInfo = certInfo;
     }
 
     private class TrustAction extends AbstractAction {
@@ -188,12 +206,12 @@ public class BuddyTrustedMiniDialog extends JPanel {
 
         public void actionPerformed(ActionEvent e) {
             try {
-                trustMgr.trustCertificate(certInfo.getEncryptionCertificate());
+                trustMgr.trustCertificate(certificateInfo.getEncryptionCertificate());
             } catch (TrustException e1) {
                 e1.printStackTrace();
             }
             try {
-                trustMgr.trustCertificate(certInfo.getSigningCertificate());
+                trustMgr.trustCertificate(certificateInfo.getSigningCertificate());
             } catch (TrustException e1) {
                 e1.printStackTrace();
             }

@@ -45,4 +45,6 @@ public interface GlobalBuddyInfoListener {
             BuddyInfo info);
     void buddyInfoChanged(BuddyInfoManager manager, Screenname buddy,
             BuddyInfo info, PropertyChangeEvent event);
+    void receivedStatusUpdate(BuddyInfoManager manager, Screenname buddy,
+            BuddyInfo info);
 }

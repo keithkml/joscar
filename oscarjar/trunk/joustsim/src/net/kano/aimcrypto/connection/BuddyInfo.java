@@ -37,15 +37,15 @@ package net.kano.aimcrypto.connection;
 
 import net.kano.aimcrypto.Screenname;
 import net.kano.aimcrypto.config.BuddyCertificateInfo;
-import net.kano.joscar.ByteBlock;
+import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.DirInfo;
 import net.kano.joscar.snaccmd.icbm.OldIconHashInfo;
 
-import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.Date;
+import java.util.Iterator;
 
 public final class BuddyInfo {
     public static final String PROP_CERTIFICATE_INFO = "certificateInfo";
@@ -54,7 +54,6 @@ public final class BuddyInfo {
     public static final String PROP_ONLINE_SINCE = "onlineSince";
     public static final String PROP_AWAY = "away";
     public static final String PROP_CAPABILITIES = "capabilities";
-    public static final String PROP_CERTIFICATE_INFO_HASH = "certificateInfoHash";
     public static final String PROP_IDLE_SINCE = "idleSince";
     public static final String PROP_WARNING_LEVEL = "warningLevel";
     public static final String PROP_AWAY_MESSAGE = "awayMessage";
@@ -67,14 +66,14 @@ public final class BuddyInfo {
 
     private static final CapabilityBlock[] CAPS_EMPTY = new CapabilityBlock[0];
     
-    private Screenname screenname;
+    private final Screenname screenname;
+
     private BuddyCertificateInfo certificateInfo = null;
     private boolean online = true;
     private DirInfo directoryInfo = null;
     private Date onlineSince = null;
     private boolean away = false;
     private CapabilityBlock[] capabilities = CAPS_EMPTY;
-    private ByteBlock certificateInfoHash = null;
     private Date idleSince = null;
     private int warningLevel = -1;
     private String awayMessage = null;
@@ -87,6 +86,7 @@ public final class BuddyInfo {
     private boolean wantsOurIcon = false;
 
     private PropertyChangeSupport pcs = new PropertyChangeSupport(this);
+    private CopyOnWriteArrayList listeners = new CopyOnWriteArrayList();
 
     public BuddyInfo(Screenname screenname) {
         DefensiveTools.checkNull(screenname, "screenname");
@@ -94,15 +94,17 @@ public final class BuddyInfo {
         this.screenname = screenname;
     }
 
-    public void addPropertyListener(PropertyChangeListener l) {
+    public void addPropertyListener(BuddyInfoChangeListener l) {
         pcs.addPropertyChangeListener(l);
+        listeners.add(l);
     }
 
-    public void removePropertyListener(PropertyChangeListener l) {
+    public void removePropertyListener(BuddyInfoChangeListener l) {
         pcs.removePropertyChangeListener(l);
+        listeners.remove(l);
     }
 
-    public synchronized Screenname getScreenname() { return screenname; }
+    public Screenname getScreenname() { return screenname; }
 
     void setCertificateInfo(BuddyCertificateInfo certificateInfo) {
         BuddyCertificateInfo old;
@@ -111,18 +113,6 @@ public final class BuddyInfo {
             this.certificateInfo = certificateInfo;
         }
         pcs.firePropertyChange(PROP_CERTIFICATE_INFO, old, certificateInfo);
-    }
-
-    public synchronized boolean isSecurityInfoCurrent() {
-        ByteBlock advHash = certificateInfoHash;
-        if (certificateInfo == null) {
-            if (advHash == null) return true;
-            else return false;
-        }
-        ByteBlock storedHash = certificateInfo.getCertificateInfoHash();
-
-        return (advHash == null && storedHash == null) || (storedHash != null
-                && storedHash.equals(advHash));
     }
 
     public synchronized BuddyCertificateInfo getCertificateInfo() {
@@ -176,29 +166,17 @@ public final class BuddyInfo {
     void setCapabilities(CapabilityBlock[] capabilities) {
         DefensiveTools.checkNull(capabilities, "capabilities");
 
+        CapabilityBlock[] cloned = (CapabilityBlock[]) capabilities.clone();
         CapabilityBlock[] old;
         synchronized (this) {
             old = this.capabilities;
-            this.capabilities = (CapabilityBlock[]) capabilities.clone();
+            this.capabilities = cloned;
         }
         pcs.firePropertyChange(PROP_CAPABILITIES, old, capabilities);
     }
 
     public synchronized CapabilityBlock[] getCapabilities() {
         return (CapabilityBlock[]) capabilities.clone();
-    }
-
-    void setCertificateInfoHash(ByteBlock certificateInfoHash) {
-        ByteBlock old;
-        synchronized (this) {
-            old = this.certificateInfoHash;
-            this.certificateInfoHash = certificateInfoHash;
-        }
-        pcs.firePropertyChange(PROP_CERTIFICATE_INFO_HASH, old, certificateInfoHash);
-    }
-
-    public synchronized ByteBlock getCertificateInfoHash() {
-        return certificateInfoHash;
     }
 
     void setIdleSince(Date idleSince) {
@@ -293,4 +271,18 @@ public final class BuddyInfo {
     }
 
     public synchronized boolean wantsOurIcon() { return wantsOurIcon; }
+
+    void receivedBuddyStatusUpdate() {
+        assert !Thread.holdsLock(this);
+
+        for (Iterator it = listeners.iterator(); it.hasNext();) {
+            BuddyInfoChangeListener listener = (BuddyInfoChangeListener) it.next();
+            listener.receivedBuddyStatusUpdate(this);
+        }
+    }
+
+    public synchronized boolean isCertificateInfoCurrent() {
+        BuddyCertificateInfo certInfo = certificateInfo;
+        return certInfo != null && certInfo.isUpToDate();
+    }
 }

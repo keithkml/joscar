@@ -110,7 +110,7 @@ public class LocalCertificatesPrefsPane extends JPanel implements PrefsPane {
 
     private final AppSession appSession;
     private final Screenname sn;
-    private final LocalKeysManager securityInfo;
+    private final LocalKeysManager keysMgr;
 
     private ListComboBoxModel certificateFileList = new ListComboBoxModel();
     private ListComboBoxModel signingCertificateList = new ListComboBoxModel();
@@ -187,7 +187,7 @@ public class LocalCertificatesPrefsPane extends JPanel implements PrefsPane {
                         });
                     } else if (item instanceof String || item == VALUE_NONE) {
                         Object realItem = item == VALUE_NONE ? null : item;
-                        securityInfo.switchToCertificateFile((String) realItem);
+                        keysMgr.switchToCertificateFile((String) realItem);
                         SwingUtilities.invokeLater(new Runnable() {
                             public void run() {
                                 updateThings(true);
@@ -206,7 +206,7 @@ public class LocalCertificatesPrefsPane extends JPanel implements PrefsPane {
                 if (e.getStateChange() == ItemEvent.SELECTED) {
                     Object item = e.getItem();
                     if (item instanceof String) {
-                        securityInfo.setSigningAlias((String) item);
+                        keysMgr.setSigningAlias((String) item);
                         updateThings(true);
                     }
                 }
@@ -217,7 +217,7 @@ public class LocalCertificatesPrefsPane extends JPanel implements PrefsPane {
                 if (e.getStateChange() == ItemEvent.SELECTED) {
                     Object item = e.getItem();
                     if (item instanceof String) {
-                        securityInfo.setEncryptionAlias((String) item);
+                        keysMgr.setEncryptionAlias((String) item);
                         updateThings(true);
                     }
                 }
@@ -248,7 +248,7 @@ public class LocalCertificatesPrefsPane extends JPanel implements PrefsPane {
 
         savePasswordBox.addChangeListener(new ChangeListener() {
             public void stateChanged(ChangeEvent e) {
-                securityInfo.setSavePassword(savePasswordBox.isSelected());
+                keysMgr.setSavePassword(savePasswordBox.isSelected());
             }
         });
         passwordBox.addFocusListener(new FocusListener() {
@@ -256,9 +256,9 @@ public class LocalCertificatesPrefsPane extends JPanel implements PrefsPane {
 
             public void focusLost(FocusEvent e) {
                 String newpass = new String(passwordBox.getPassword());
-                String oldpass = securityInfo.getPassword();
+                String oldpass = keysMgr.getPassword();
                 if (newpass.equals(oldpass)) return;
-                securityInfo.setPassword(newpass);
+                keysMgr.setPassword(newpass);
                 updateThings(false);
             }
         });
@@ -275,7 +275,7 @@ public class LocalCertificatesPrefsPane extends JPanel implements PrefsPane {
 
         this.appSession = appSession;
         this.sn = sn;
-        this.securityInfo = appSession.getLocalPrefs(sn).getLocalKeysManager();
+        this.keysMgr = appSession.getLocalPrefs(sn).getLocalKeysManager();
     }
 
     public String getPlainPrefsName() {
@@ -337,7 +337,7 @@ public class LocalCertificatesPrefsPane extends JPanel implements PrefsPane {
         ListComboBoxModel cfl = certificateFileList;
         cfl.clear();
 
-        LocalKeysManager securityInfo = this.securityInfo;
+        LocalKeysManager keysMgr = this.keysMgr;
         String[] possibleCertNames;
         String currentName;
         String pass;
@@ -347,16 +347,16 @@ public class LocalCertificatesPrefsPane extends JPanel implements PrefsPane {
         String[] aliasesArray;
         String signingAlias;
         String encryptionAlias;
-        synchronized(securityInfo) {
-            possibleCertNames = securityInfo.getPossibleCertificateNames();
-            currentName = securityInfo.getCertificateFilename();
-            pass = securityInfo.getPassword();
-            savePassword = securityInfo.getSavePassword();
-            haveKeys = securityInfo.getKeysInfo() != null;
-            canChangePass = !haveKeys && !securityInfo.isPasswordValid();
-            aliasesArray = securityInfo.getPossibleAliases();
-            signingAlias = securityInfo.getSigningAlias();
-            encryptionAlias = securityInfo.getEncryptionAlias();
+        synchronized(keysMgr) {
+            possibleCertNames = keysMgr.getPossibleCertificateNames();
+            currentName = keysMgr.getCertificateFilename();
+            pass = keysMgr.getPassword();
+            savePassword = keysMgr.getSavePassword();
+            haveKeys = keysMgr.getKeysInfo() != null;
+            canChangePass = !haveKeys && !keysMgr.isPasswordValid();
+            aliasesArray = keysMgr.getPossibleAliases();
+            signingAlias = keysMgr.getSigningAlias();
+            encryptionAlias = keysMgr.getEncryptionAlias();
         }
 
         List names = Arrays.asList(possibleCertNames);
@@ -462,7 +462,7 @@ public class LocalCertificatesPrefsPane extends JPanel implements PrefsPane {
     }
 
     private void updateSecurityDescription() {
-        PrivateKeysInfo keysInfo = securityInfo.getKeysInfo();
+        PrivateKeysInfo keysInfo = keysMgr.getKeysInfo();
         X509Certificate signingCert = null;
         X509Certificate encryptingCert = null;
         if (keysInfo != null) {
@@ -476,8 +476,8 @@ public class LocalCertificatesPrefsPane extends JPanel implements PrefsPane {
             if (loadedYet) {
                 String details;
                 if (currentCertFileValid) {
-                    if (!securityInfo.isPasswordValid()) {
-                        String pass = securityInfo.getPassword();
+                    if (!keysMgr.isPasswordValid()) {
+                        String pass = keysMgr.getPassword();
                         String details2;
                         if (pass == null || pass.trim().length() == 0) {
                             details2 = "Try entering the certificate file's "
@@ -507,8 +507,8 @@ public class LocalCertificatesPrefsPane extends JPanel implements PrefsPane {
                         }
                     }
                 } else {
-                    int pcn = securityInfo.getPossibleCertificateNames().length;
-                    if (securityInfo.getCertificateFilename() != null) {
+                    int pcn = keysMgr.getPossibleCertificateNames().length;
+                    if (keysMgr.getCertificateFilename() != null) {
                         String details2;
                         if (pcn == 0) {
                             details2 = "importing a different certificate file";
@@ -586,8 +586,8 @@ public class LocalCertificatesPrefsPane extends JPanel implements PrefsPane {
         if (file == null) return false;
 
         try {
-            securityInfo.importCertFile(file);
-            securityInfo.switchToCertificateFile(file.getName());
+            keysMgr.importCertFile(file);
+            keysMgr.switchToCertificateFile(file.getName());
             return true;
         } catch (IOException e) {
             String msg;
@@ -698,7 +698,7 @@ public class LocalCertificatesPrefsPane extends JPanel implements PrefsPane {
             boolean repaint = false;
             try {
                 LocalCertificatesPrefsPane.this.setLastException(null);
-                repaint = securityInfo.reloadIfNecessary();
+                repaint = keysMgr.reloadIfNecessary();
             } catch (LoadingException e) {
                 setLastException(e);
                 repaint = true;

@@ -45,8 +45,11 @@ import net.kano.joscar.snaccmd.FullUserInfo;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.BinaryTools;
 
+import java.util.Date;
+
 public class ImMessageInfo extends MessageInfo {
-    static ImMessageInfo getInstance(Screenname to, RecvImIcbm icbm) {
+    static ImMessageInfo getInstance(Screenname to, RecvImIcbm icbm,
+            Date date) {
         FullUserInfo senderInfo = icbm.getSenderInfo();
         if (senderInfo == null) return null;
 
@@ -55,10 +58,11 @@ public class ImMessageInfo extends MessageInfo {
         BasicInstantMessage im = BasicInstantMessage.getInstance(icbm);
         if (im == null) return null;
 
-        return new ImMessageInfo(from, to, im);
+        return new ImMessageInfo(from, to, im, date);
     }
 
-    private ImMessageInfo(Screenname from, Screenname to, Message msg) {
-        super(from, to, msg);
+    private ImMessageInfo(Screenname from, Screenname to, Message msg,
+            Date date) {
+        super(from, to, msg, date);
     }
 }

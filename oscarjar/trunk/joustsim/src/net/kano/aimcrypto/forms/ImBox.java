@@ -38,30 +38,23 @@ package net.kano.aimcrypto.forms;
 import net.kano.aimcrypto.GuiSession;
 import net.kano.aimcrypto.Screenname;
 import net.kano.aimcrypto.config.BuddyCertificateInfo;
-import net.kano.aimcrypto.config.PermanentCertificateTrustManager;
-import net.kano.aimcrypto.config.LocalPreferencesManager;
+import net.kano.aimcrypto.connection.AimConnection;
 import net.kano.aimcrypto.connection.oscar.service.icbm.Conversation;
 import net.kano.aimcrypto.connection.oscar.service.icbm.ConversationListener;
 import net.kano.aimcrypto.connection.oscar.service.icbm.ConversationNotOpenException;
+import net.kano.aimcrypto.connection.oscar.service.icbm.DecryptableAimMessageInfo;
 import net.kano.aimcrypto.connection.oscar.service.icbm.ImConversation;
+import net.kano.aimcrypto.connection.oscar.service.icbm.Message;
 import net.kano.aimcrypto.connection.oscar.service.icbm.MessageInfo;
-import net.kano.aimcrypto.connection.oscar.service.icbm.SimpleMessage;
-import net.kano.aimcrypto.connection.oscar.service.icbm.Message;
-import net.kano.aimcrypto.connection.oscar.service.icbm.Conversation;
-import net.kano.aimcrypto.connection.oscar.service.icbm.ConversationNotOpenException;
-import net.kano.aimcrypto.connection.oscar.service.icbm.Message;
 import net.kano.aimcrypto.connection.oscar.service.icbm.SecureAimConversation;
 import net.kano.aimcrypto.connection.oscar.service.icbm.SecureAimConversationListener;
-import net.kano.aimcrypto.connection.oscar.service.icbm.EncryptedAimMessageInfo;
-import net.kano.aimcrypto.connection.oscar.service.icbm.DecryptionFailureInfo;
-import net.kano.aimcrypto.connection.oscar.service.icbm.DecryptableAimMessageInfo;
-import net.kano.aimcrypto.connection.oscar.service.icbm.EncryptedAimMessage;
-import net.kano.aimcrypto.connection.oscar.service.info.BuddyTrustAdapter;
+import net.kano.aimcrypto.connection.oscar.service.icbm.SimpleMessage;
+import net.kano.aimcrypto.connection.oscar.service.icbm.ConversationException;
 import net.kano.aimcrypto.connection.oscar.service.info.BuddyTrustManager;
-import net.kano.aimcrypto.connection.AimConnection;
+import net.kano.aimcrypto.connection.oscar.service.info.BuddyTrustAdapter;
+import net.kano.aimcrypto.conv.AolRtfText;
 import net.kano.aimcrypto.conv.ConversationDocument;
 import net.kano.aimcrypto.conv.ConversationEditorKit;
-import net.kano.aimcrypto.conv.AolRtfText;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.MiscTools;
 import net.kano.joscar.ByteBlock;
@@ -69,31 +62,41 @@ import net.kano.joscar.ByteBlock;
 import javax.swing.AbstractAction;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListCellRenderer;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTextPane;
-import javax.swing.SwingUtilities;
-import javax.swing.ImageIcon;
-import javax.swing.JPanel;
 import javax.swing.JToolBar;
 import javax.swing.JViewport;
-import javax.swing.text.StyledEditorKit;
+import javax.swing.SwingUtilities;
 import javax.swing.text.AttributeSet;
-import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.MutableAttributeSet;
+import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
+import java.awt.BorderLayout;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
+import java.awt.event.WindowListener;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.ItemListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.Iterator;
 
+//TODO: this class modifies the model outside of the event thread
 public class ImBox extends JFrame {
     private JSplitPane splitPane;
     private JScrollPane textScrollPane;
@@ -104,8 +107,7 @@ public class ImBox extends JFrame {
     private JButton sendButton;
     private JPanel inputSidePanel;
     private JToolBar formatToolbar;
-    private JViewport bottomViewport;
-    private JViewport topViewport;
+    private JPanel miniDialogStackHolder;
 
     private final ConversationEditorKit inputKit = new ConversationEditorKit();
     private final ConversationEditorKit convKit = new ConversationEditorKit();
@@ -121,13 +123,70 @@ public class ImBox extends JFrame {
     private Set convs = new HashSet();
     private SendAction sendAction = new SendAction();
 
+    private final ConversationListener conversationListener
+            = new ConversationListener() {
+        public void conversationOpened(Conversation c) {
+            updateButtons();
+        }
+
+        public void gotMessage(Conversation c, MessageInfo minfo) {
+            if (minfo instanceof DecryptableAimMessageInfo) {
+                DecryptableAimMessageInfo dinfo = (DecryptableAimMessageInfo) minfo;
+                BuddyCertificateInfo certInfo = dinfo.getMessageCertificateInfo();
+                System.out.println("info=" + certInfo);
+
+                askAboutCertificates(certInfo);
+            }
+            Message message = minfo.getMessage();
+            String body = message.getMessageBody();
+            System.out.println("got message: " + MiscTools.getClassName(minfo)
+                    + " - " + body);
+            if (body != null) convDoc.addLine(AolRtfText.readLine(body));
+        }
+
+        public void sentMessage(Conversation c, MessageInfo minfo) {
+            Message msg = minfo.getMessage();
+            convDoc.addLine(AolRtfText.readLine(msg.getMessageBody()));
+        }
+
+        public void conversationClosed(Conversation c) {
+            updateButtons();
+        }
+    };
+    private final MiniDialogStack miniDialogStack = new MiniDialogStack();
+
+    private Conversation currentConversation = null;
+
     {
         getContentPane().add(splitPane);
         splitPane.setResizeWeight(1.0);
-        inputBox.setCursor(Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR));
+
+        miniDialogStackHolder.setLayout(new BorderLayout());
+        miniDialogStackHolder.add(miniDialogStack);
+        miniDialogStack.addComponentListener(new ComponentAdapter() {
+            public void componentShown(ComponentEvent e) {
+                System.out.println("mini dialog was shown...");
+                if (!miniDialogStackHolder.isVisible()) {
+                    System.out.println("- we're invisible! making visible..");
+                    miniDialogStackHolder.setVisible(true);
+                }
+            }
+
+            public void componentHidden(ComponentEvent e) {
+                System.out.println("mini dialog is hidden..");
+                if (miniDialogStackHolder.isVisible()) {
+                    System.out.println("- we're visible! hiding..");
+                    miniDialogStackHolder.setVisible(false);
+                }
+            }
+        });
+
+        textScrollPane.setBorder(null);
+//        inputScrollPane.setBorder(null);
 
         inputBox.setEditorKit(inputKit);
         inputDoc = (ConversationDocument) inputBox.getDocument();
+        inputBox.setCursor(Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR));
         convBox.setEditorKit(convKit);
         convDoc = (ConversationDocument) convBox.getDocument();
 
@@ -145,6 +204,24 @@ public class ImBox extends JFrame {
 //        formatToolbar.add(new ItalicAction());
 //        formatToolbar.add(new UnderlineAction());
 
+        typeBox.addItemListener(new ItemListener() {
+            public void itemStateChanged(ItemEvent e) {
+                Object selectedObj = typesModel.getSelectedItem();
+                if (!(selectedObj instanceof ConversationInfo)) return;
+
+                ConversationInfo selected = (ConversationInfo) selectedObj;
+                Conversation conv = selected.getConversation();
+                setCurrentConversation(conv);
+                conv.open();
+            }
+        });
+
+        addWindowListener(new WindowAdapter() {
+            public void windowClosed(WindowEvent e) {
+                closeAllConversations();
+            }
+        });
+
         setIconImage(new ImageIcon(getClass().getClassLoader().getResource(
                 "icons/im-window-tiny.png")).getImage());
     }
@@ -158,77 +235,39 @@ public class ImBox extends JFrame {
         this.guiSession = guiSession;
         this.conn = conn;
         this.buddy = buddy;
+        conn.getBuddyTrustManager().addBuddyTrustListener(new BuddyTrustAdapter() {
+            public void gotUntrustedCertificateChange(BuddyTrustManager manager,
+                    Screenname buddy, BuddyCertificateInfo info) {
+                askAboutCertificates(info);
+            }
 
-        BuddyTrustManager trustMgr = conn.getBuddyTrustManager();
+            public void gotUnknownCertificateChange(BuddyTrustManager manager,
+                    Screenname buddy, BuddyCertificateInfo certInfo) {
+                askAboutCertificates(certInfo);
+            }
+        });
     }
 
     public void handleConversation(Conversation conversation) {
         if (convs.contains(conversation)) return;
 
-        if (conversation instanceof SecureAimConversation) {
-            conversation.addConversationListener(new SecureAimConversationListener() {
-                public void buddySecurityInfoChanged(SecureAimConversation conversation,
-                        BuddyCertificateInfo securityInfo, boolean trusted) {
-                }
+        conversation.addConversationListener(conversationListener);
 
-                public void decryptingFailed(SecureAimConversation conversation,
-                        EncryptedAimMessageInfo msgInfo, DecryptionFailureInfo failureInfo) {
-                }
-
-                public void conversationOpened(Conversation c) {
-                }
-
-                public void gotMessage(Conversation c, MessageInfo minfo) {
-                    if (minfo instanceof DecryptableAimMessageInfo) {
-                        DecryptableAimMessageInfo dinfo = (DecryptableAimMessageInfo) minfo;
-                        BuddyCertificateInfo certInfo = dinfo.getMessageCertificateInfo();
-                        System.out.println("info=" + certInfo);
-
-                        LocalPreferencesManager prefs = conn.getLocalPrefs();
-                        PermanentCertificateTrustManager certMgr
-                                = prefs.getStoredCertificateTrustManager();
-                        ByteBlock hash = certInfo == null
-                                ? null 
-                                : certInfo.getCertificateInfoHash();
-
-                        topViewport.setView(new BuddyTrustedMiniDialog(certMgr,
-                                conn.getBuddyTrustManager(), buddy, hash));
-                        topViewport.setVisible(true);
-                    }
-                }
-
-                public void sentMessage(Conversation c, MessageInfo minfo) {
-                }
-
-                public void conversationClosed(Conversation c) {
-                }
-            });
-        } else {
-            conversation.addConversationListener(new ConversationListener() {
-            public void conversationOpened(Conversation c) {
-                updateButtons();
-            }
-
-            public void gotMessage(Conversation c, MessageInfo minfo) {
-                Message message = minfo.getMessage();
-                String body = message.getMessageBody();
-                System.out.println("got message: " + minfo + " - " + message + " - " + body);
-                convDoc.addLine(AolRtfText.readLine(body));
-            }
-
-            public void sentMessage(Conversation c, MessageInfo minfo) {
-                Message msg = minfo.getMessage();
-                convDoc.addLine(AolRtfText.readLine(msg.getMessageBody()));
-            }
-
-            public void conversationClosed(Conversation c) {
-                updateButtons();
-            }
-        });
-        }
         convs.add(conversation);
         typesModel.addElement(new ConversationInfo(conversation));
         updateButtons();
+    }
+
+    private synchronized void closeAllConversations() {
+        for (Iterator it = convs.iterator(); it.hasNext();) {
+            Conversation conversation = (Conversation) it.next();
+            conversation.close();
+        }
+    }
+
+    private void askAboutCertificates(BuddyCertificateInfo certInfo) {
+        System.out.println("asking for certificates for " + buddy + ": " + certInfo);
+        miniDialogStack.popup(new BuddyTrustedMiniDialog(conn, buddy, certInfo));
     }
 
     private void updateButtons() {
@@ -241,24 +280,12 @@ public class ImBox extends JFrame {
         });
     }
 
-    public Conversation getCurrentConversation() {
-        return ((ConversationInfo) typesModel.getSelectedItem()).getConversation();
+    public synchronized Conversation getCurrentConversation() {
+        return currentConversation;
     }
 
-    private class SendAction extends AbstractAction {
-        private SendAction() {
-            super("Send");
-        }
-
-        public void actionPerformed(ActionEvent e) {
-            Conversation conversation = getCurrentConversation();
-            try {
-                conversation.sendMessage(new SimpleMessage(inputBox.getText()));
-                inputBox.setText("");
-            } catch (ConversationNotOpenException ex) {
-                //TODO: print error message
-            }
-        }
+    public synchronized void setCurrentConversation(Conversation conv) {
+        this.currentConversation = conv;
     }
 
     private static class ConversationInfo {
@@ -284,10 +311,10 @@ public class ImBox extends JFrame {
             } else if (conv instanceof SecureAimConversation) {
                 string = "Secure";
             }
-            JLabel comp = (JLabel) super.getListCellRendererComponent(list,
+            super.getListCellRendererComponent(list,
                     string, index, isSelected, cellHasFocus);
-            comp.setForeground(conv.isOpen() ? null : Color.LIGHT_GRAY);
-            return comp;
+            setForeground(conv.isOpen() ? null : Color.LIGHT_GRAY);
+            return this;
         }
     }
 
@@ -303,6 +330,24 @@ public class ImBox extends JFrame {
             MutableAttributeSet attr = new SimpleAttributeSet();
             StyleConstants.setBold(attr, bold);
             inputBox.setCharacterAttributes(attr, false);
+        }
+    }
+
+    private class SendAction extends AbstractAction {
+        private SendAction() {
+            super("Send");
+        }
+
+        public void actionPerformed(ActionEvent e) {
+            Conversation conversation = getCurrentConversation();
+            try {
+                conversation.sendMessage(new SimpleMessage(inputBox.getText()));
+                inputBox.setText("");
+
+            } catch (ConversationException ex) {
+                //TODO: print error message
+                ex.printStackTrace();
+            }
         }
     }
 }

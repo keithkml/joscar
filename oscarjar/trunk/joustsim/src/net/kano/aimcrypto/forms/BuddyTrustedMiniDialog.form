@@ -3,7 +3,7 @@
   <grid id="a6590" binding="mainPanel" row-count="1" column-count="3" hgap="-1" vgap="-1">
     <margin top="0" left="0" bottom="0" right="0"/>
     <constraints>
-      <xy x="125" y="112" width="142" height="68"/>
+      <xy x="125" y="112" width="266" height="53"/>
       <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3"/>
     </constraints>
     <properties/>
@@ -11,7 +11,7 @@
     <children>
       <component id="bf9c9" class="javax.swing.JLabel" binding="iconLabel">
         <constraints>
-          <xy x="0" y="0" width="31" height="15"/>
+          <xy x="0" y="19" width="31" height="15"/>
           <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="4" fill="0"/>
         </constraints>
         <properties>
@@ -20,8 +20,8 @@
       </component>
       <scrollpane id="b3f9a" binding="textScrollPane">
         <constraints>
-          <xy x="41" y="0" width="27" height="68"/>
-          <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="3"/>
+          <xy x="41" y="0" width="151" height="53"/>
+          <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="7" hsize-policy="3" anchor="0" fill="3"/>
         </constraints>
         <properties/>
         <border type="none"/>
@@ -39,8 +39,8 @@
       </scrollpane>
       <component id="7c80b" class="javax.swing.JButton" binding="trustButton">
         <constraints>
-          <xy x="78" y="21" width="64" height="25"/>
-          <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="1" anchor="0" fill="1"/>
+          <xy x="202" y="14" width="64" height="25"/>
+          <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="1" anchor="0" fill="0"/>
         </constraints>
         <properties>
           <text value="Trust"/>

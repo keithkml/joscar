@@ -35,46 +35,47 @@
 
 package net.kano.aimcrypto.connection.oscar.service.icbm;
 
+import net.kano.aimcrypto.Screenname;
+import net.kano.aimcrypto.config.BuddyCertificateInfo;
 import net.kano.aimcrypto.connection.AimConnection;
 import net.kano.aimcrypto.connection.BuddyInfo;
 import net.kano.aimcrypto.connection.BuddyInfoManager;
 import net.kano.aimcrypto.connection.oscar.OscarConnection;
-import net.kano.aimcrypto.connection.oscar.service.icbm.Conversation;
-import net.kano.aimcrypto.connection.oscar.service.icbm.EncryptedAimMessage;
-import net.kano.aimcrypto.connection.oscar.service.icbm.EncryptedAimMessageInfo;
-import net.kano.aimcrypto.connection.oscar.service.icbm.IcbmListener;
 import net.kano.aimcrypto.connection.oscar.service.Service;
-import net.kano.aimcrypto.Screenname;
+import net.kano.aimcrypto.connection.oscar.service.info.BuddyTrustManager;
+import net.kano.joscar.ByteBlock;
+import net.kano.joscar.CopyOnWriteArrayList;
+import net.kano.joscar.flapcmd.SnacCommand;
+import net.kano.joscar.snac.SnacPacketEvent;
+import net.kano.joscar.snaccmd.FullUserInfo;
+import net.kano.joscar.snaccmd.conn.SnacFamilyInfo;
 import net.kano.joscar.snaccmd.icbm.IcbmCommand;
-import net.kano.joscar.snaccmd.icbm.ParamInfoRequest;
-import net.kano.joscar.snaccmd.icbm.ParamInfoCmd;
-import net.kano.joscar.snaccmd.icbm.ParamInfo;
-import net.kano.joscar.snaccmd.icbm.SetParamInfoCmd;
-import net.kano.joscar.snaccmd.icbm.RecvImIcbm;
+import net.kano.joscar.snaccmd.icbm.InstantMessage;
 import net.kano.joscar.snaccmd.icbm.MissedMessagesCmd;
 import net.kano.joscar.snaccmd.icbm.MissedMsgInfo;
-import net.kano.joscar.snaccmd.icbm.InstantMessage;
+import net.kano.joscar.snaccmd.icbm.ParamInfo;
+import net.kano.joscar.snaccmd.icbm.ParamInfoCmd;
+import net.kano.joscar.snaccmd.icbm.ParamInfoRequest;
+import net.kano.joscar.snaccmd.icbm.RecvImIcbm;
 import net.kano.joscar.snaccmd.icbm.SendImIcbm;
-import net.kano.joscar.snaccmd.conn.SnacFamilyInfo;
-import net.kano.joscar.snaccmd.FullUserInfo;
-import net.kano.joscar.snac.SnacPacketEvent;
-import net.kano.joscar.flapcmd.SnacCommand;
-import net.kano.joscar.CopyOnWriteArrayList;
-import net.kano.joscar.ByteBlock;
+import net.kano.joscar.snaccmd.icbm.SetParamInfoCmd;
 
-import java.util.Map;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
 public class IcbmService extends Service {
     private ParamInfo paramInfo = null;
     private SecureAimEncoder encoder = null;
 
     private CopyOnWriteArrayList listeners = new CopyOnWriteArrayList();
+    private final BuddyInfoManager buddyInfoManager;
 
     public IcbmService(AimConnection aimConnection,
             OscarConnection oscarConnection) {
         super(aimConnection, oscarConnection, IcbmCommand.FAMILY_ICBM);
+        buddyInfoManager = getAimConnection().getBuddyInfoManager();
     }
 
     public void addIcbmListener(IcbmListener l) {
@@ -157,27 +158,21 @@ public class IcbmService extends Service {
             EncryptedAimMessage msg = EncryptedAimMessage.getInstance(icbm);
             if (msg == null) return;
 
-            BuddyInfoManager bim = getAimConnection().getBuddyInfoManager();
-            BuddyInfo buddyInfo = bim.getBuddyInfo(sender);
-            ByteBlock senderHash;
-            if (buddyInfo == null) senderHash = null;
-            else senderHash = buddyInfo.getCertificateInfoHash();
+            BuddyInfo info = buddyInfoManager.getBuddyInfo(sender);
+            BuddyCertificateInfo certInfo = info.getCertificateInfo();
 
             EncryptedAimMessageInfo minfo = EncryptedAimMessageInfo.getInstance(
-                    getScreenname(), icbm, senderHash);
+                    getScreenname(), icbm, certInfo, new Date());
             if (minfo == null) return;
 
-            System.out.println("passing encrypted IM info to " + conv);
             conv.handleIncomingMessage(minfo);
 
         } else {
             ImConversation conv = getImConversation(sender);
 
-//                getAimConnection().getBuddyInfoManager().getBuddyInfo(sn);
-
             ImMessageInfo msg = ImMessageInfo.getInstance(getScreenname(),
-                    icbm);
-            System.out.println("passing normal IM to " + conv);
+                    icbm, new Date());
+
             conv.handleIncomingMessage(msg);
         }
     }

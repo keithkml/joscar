@@ -39,10 +39,10 @@ import net.kano.aimcrypto.Screenname;
 import net.kano.aimcrypto.config.BuddyCertificateInfo;
 import net.kano.aimcrypto.config.PrivateKeysInfo;
 import net.kano.aimcrypto.connection.AimConnection;
+import net.kano.aimcrypto.connection.BuddyInfoTrackerListener;
+import net.kano.aimcrypto.connection.BuddyInfoManager;
 import net.kano.aimcrypto.connection.oscar.service.icbm.SecureAimDecoder.DecryptedMessageInfo;
-import net.kano.aimcrypto.connection.oscar.service.info.BuddyTrustAdapter;
 import net.kano.aimcrypto.connection.oscar.service.info.BuddyTrustManager;
-import net.kano.aimcrypto.connection.oscar.service.info.InfoResponseAdapter;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.icbm.InstantMessage;
@@ -50,20 +50,16 @@ import org.bouncycastle.cms.CMSException;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 
 public class SecureAimConversation extends Conversation {
     private final AimConnection conn;
     private SecureAimEncoder encoder = new SecureAimEncoder();
     private SecureAimDecoder decoder = new SecureAimDecoder();
     private PrivateKeysInfo privates = null;
-    private BuddyCertificateInfo currentSecurityInfo = null;
-
-    private boolean trusted = false;
-
-    private List undecryptedQueue = new LinkedList();
+    private final BuddyInfoTrackerListener trackerListener
+            = new BuddyInfoTrackerListener() {
+            };
+    private final BuddyInfoManager buddyInfoManager;
 
     protected SecureAimConversation(AimConnection conn, Screenname buddy) {
         super(buddy);
@@ -71,99 +67,28 @@ public class SecureAimConversation extends Conversation {
         DefensiveTools.checkNull(conn, "session");
 
         this.conn = conn;
-
-        setAlwaysOpen();
-
-        privates = conn.getAimSession().getPrivateKeysInfo();
-        encoder.setLocalKeys(privates);
-        decoder.setLocalKeys(privates);
+        buddyInfoManager = conn.getBuddyInfoManager();
     }
 
-    protected void initialize() {
-        BuddyTrustManager trustManager = conn.getBuddyTrustManager();
-        trustManager.addBuddyTrustListener(new BuddyTrustAdapter() {
-            public void gotTrustedCertificateChange(BuddyTrustManager manager,
-                    Screenname buddy, BuddyCertificateInfo info) {
-                if (!buddy.equals(getBuddy())) return;
-
-                System.out.println("got trusted cert for " + buddy);
-                currentSecurityInfo = info;
-            }
-
-            public void gotUntrustedCertificateChange(BuddyTrustManager manager,
-                    Screenname buddy, BuddyCertificateInfo info) {
-                if (!buddy.equals(getBuddy())) return;
-
-                System.out.println("got untrusted cert for " + buddy);
-                currentSecurityInfo = info;
-            }
-
-            public void gotUnknownCertificateChange(BuddyTrustManager manager,
-                    Screenname buddy, ByteBlock newHash) {
-                if (!buddy.equals(getBuddy())) return;
-
-                currentSecurityInfo = null;
-
-                System.out.println("requesting security info for " + buddy);
-                requestCertInfo();
-            }
-
-            public void buddyTrusted(BuddyTrustManager certificateManager,
-                    Screenname buddy, ByteBlock trustedhash, BuddyCertificateInfo info) {
-                System.out.println("got thing for " + buddy);
-                System.out.println("inside listener for: " + getBuddy());
-                if (!buddy.equals(getBuddy())) return;
-
-                System.out.println("buddy is now trusted: " + buddy);
-                storeBuddyInfo(info);
-            }
-
-            public void buddyTrustRevoked(BuddyTrustManager certificateManager,
-                    Screenname buddy, ByteBlock hash, BuddyCertificateInfo info) {
-                if (!buddy.equals(getBuddy())) return;
-
-                System.out.println("buddy is no longer trusted: " + buddy);
-                encoder.setBuddyCerts(null);
-                decoder.setBuddyCerts(null);
-                setTrusted(false);
-            }
-        });
-        Screenname buddy = getBuddy();
-        BuddyCertificateInfo info = trustManager.getCurrentCertificateInfo(buddy);
-        if (info == null) {
-            System.out.println("requesting initial security info from " + buddy);
-            requestCertInfo();
-        } else {
-            System.out.println("already have security info for " + buddy + "!");
-            storeBuddyInfo(info);
-        }
-        trusted = trustManager.isTrusted(buddy);
+    protected synchronized void initialize() {
+        PrivateKeysInfo pkinfo = conn.getAimSession().getPrivateKeysInfo();
+        privates = pkinfo;
+        encoder.setLocalKeys(pkinfo);
+        decoder.setLocalKeys(pkinfo);
     }
 
-    private void requestCertInfo() {
-        //TODO: don't actually request info here
-        conn.getInfoService().requestCertificateInfo(getBuddy(),
-                new InfoResponseAdapter());
+    protected void opened() {
+        conn.getBuddyInfoTracker().addTracker(getBuddy(), trackerListener);
     }
 
-    private void storeBuddyInfo(BuddyCertificateInfo info) {
-        encoder.setBuddyCerts(info);
-        decoder.setBuddyCerts(info);
-        setTrusted(true);
+    protected void closed() {
+        conn.getBuddyInfoTracker().removeTracker(getBuddy(), trackerListener);
     }
 
-    private synchronized void setTrusted(boolean trusted) {
-        this.trusted = trusted;
-    }
-
-    public synchronized boolean isTrusted() { return trusted; }
-
-    public void sendMessage(Message msg) throws ConversationException {
-        if (!isTrusted()) throw new NotTrustedException(this);
-
+    public synchronized void sendMessage(Message msg) throws ConversationException {
         IcbmService icbmService = conn.getIcbmService();
         if (icbmService == null) {
-            throw new ConversationException("there's no ICBM service open to "
+            throw new ConversationException("no ICBM service present to "
                     + "send through", this);
         }
 
@@ -173,6 +98,7 @@ public class SecureAimConversation extends Conversation {
 
         } catch (NoBuddyKeysException e) {
             throw new NotTrustedException(e, this);
+
         } catch (Exception e) {
             throw new EncryptionFailedException(e, this);
         }
@@ -184,61 +110,88 @@ public class SecureAimConversation extends Conversation {
     protected void handleIncomingMessage(MessageInfo minfo) {
         if (!(minfo instanceof EncryptedAimMessageInfo)) {
             throw new IllegalArgumentException("SecureAimConversation can't "
-                    + "handle message information objects of type "
+                    + "handle incoming message objects of type "
                     + minfo.getClass().getName() + " (" + minfo + ")");
         }
 
         EncryptedAimMessageInfo info = (EncryptedAimMessageInfo) minfo;
         EncryptedAimMessage msg = (EncryptedAimMessage) info.getMessage();
 
-        DecryptedMessageInfo decrypted;
-        try {
-            decrypted = decoder.decryptMessage(msg.getEncryptedForm());
-        } catch (CMSException e) {
-            e.printStackTrace();
-            return;
-        } catch (NoSuchProviderException e) {
-            e.printStackTrace();
-            return;
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-            return;
-        } catch (InvalidSignatureException e) {
-            e.printStackTrace();
-            return;
-        } catch (NoLocalKeysException e) {
-            fireIncomingEvent(DecryptableAimMessageInfo.getInstance(info, currentSecurityInfo));
-            return;
-        } catch (NoBuddyKeysException e) {
-            fireIncomingEvent(DecryptableAimMessageInfo.getInstance(info, currentSecurityInfo));
-            e.printStackTrace();
-            return;
+        BuddyTrustManager trustMgr = conn.getBuddyTrustManager();
+
+        boolean trusted;
+        BuddyCertificateInfo certInfo;
+        DecryptedMessageInfo decrypted = null;
+        Exception exception = null;
+        synchronized(this) {
+            certInfo = info.getCertificateInfo();
+            trusted = certInfo != null && trustMgr.isTrusted(certInfo);
+
+            if (trusted) {
+                try {
+                    decrypted = decoder.decryptMessage(msg.getEncryptedForm());
+                } catch (Exception e) {
+                    exception = e;
+                }
+            }
         }
-        if (decrypted == null) {
-            //TODO: decryption failed
-//            fireDecryptionFailedEvent(new DecryptionFailureInfo());
+        if (!trusted) {
+            fireDecryptableEvent(info, certInfo);
             return;
         }
 
-        String decryptedMsg = decrypted.getMessage();
-        BuddyCertificateInfo securityInfo
-                = (BuddyCertificateInfo) decrypted.getSecurityInfo();
+        if (exception != null) {
+            if (exception instanceof NoSuchProviderException
+                    || exception instanceof NoSuchAlgorithmException
+                    || exception instanceof CMSException) {
+                fireUndecryptableEvent(info, certInfo,
+                        UndecryptableAimMessageInfo.Reason.DECRYPT_ERROR,
+                        exception);
 
-        DecryptedAimMessageInfo dinfo
-                = DecryptedAimMessageInfo.getInstance(info, decryptedMsg,
-                        securityInfo);
+            } else if (exception instanceof InvalidSignatureException) {
+                fireUndecryptableEvent(info,
+                        certInfo,
+                        UndecryptableAimMessageInfo.Reason.BAD_SIGNATURE,
+                        exception);
+
+            } else if (exception instanceof NoLocalKeysException
+                    || exception instanceof NoBuddyKeysException) {
+                fireDecryptableEvent(info, certInfo);
+
+            } else {
+                fireUndecryptableEvent(info, certInfo,
+                        UndecryptableAimMessageInfo.Reason.UNKNOWN, exception);
+            }
+            return;
+        }
+
+        String decryptedMsg = decrypted == null ? null : decrypted.getMessage();
+
+        if (decrypted == null || decryptedMsg == null) {
+            fireUndecryptableEvent(info, certInfo,
+                    UndecryptableAimMessageInfo.Reason.UNKNOWN, null);
+            return;
+        }
+
+
+        DecryptedAimMessageInfo dinfo = DecryptedAimMessageInfo.getInstance(
+                info, decryptedMsg, certInfo);
 
         fireIncomingEvent(dinfo);
     }
 
-    private void fireDecryptionFailedEvent(DecryptionFailureInfo info) {
-        for (Iterator it = getListeners().iterator(); it.hasNext();) {
-            ConversationListener listener = (ConversationListener) it.next();
-            if (listener instanceof SecureAimConversationListener) {
-                SecureAimConversationListener sl
-                        = (SecureAimConversationListener) listener;
+    private void fireUndecryptableEvent(EncryptedAimMessageInfo info,
+            BuddyCertificateInfo certInfo,
+            UndecryptableAimMessageInfo.Reason reason, Exception exception) {
+        UndecryptableAimMessageInfo minfo
+                = UndecryptableAimMessageInfo.getInstance(info, certInfo,
+                        reason, exception);
+        fireIncomingEvent(minfo);
+    }
 
-            }
-        }
+    private void fireDecryptableEvent(EncryptedAimMessageInfo info,
+            BuddyCertificateInfo certInfo) {
+        fireIncomingEvent(DecryptableAimMessageInfo.getInstance(info,
+                certInfo));
     }
 }

@@ -42,22 +42,22 @@ import net.kano.joscar.ByteBlock;
 
 public abstract class BuddyTrustAdapter implements BuddyTrustListener {
     public void gotTrustedCertificateChange(BuddyTrustManager manager,
-            Screenname buddy, BuddyCertificateInfo info) {
+            Screenname buddy, BuddyCertificateInfo certInfo) {
     }
 
     public void gotUntrustedCertificateChange(BuddyTrustManager manager,
-            Screenname buddy, BuddyCertificateInfo info) {
+            Screenname buddy, BuddyCertificateInfo certInfo) {
     }
 
     public void gotUnknownCertificateChange(BuddyTrustManager manager,
-            Screenname buddy, ByteBlock newHash) {
+            Screenname buddy, BuddyCertificateInfo certInfo) {
     }
 
     public void buddyTrusted(BuddyTrustManager manager, Screenname buddy,
-            ByteBlock hash, BuddyCertificateInfo info) {
+            BuddyCertificateInfo certInfo) {
     }
 
     public void buddyTrustRevoked(BuddyTrustManager manager, Screenname buddy,
-            ByteBlock hash, BuddyCertificateInfo info) {
+            BuddyCertificateInfo certInfo) {
     }
 }

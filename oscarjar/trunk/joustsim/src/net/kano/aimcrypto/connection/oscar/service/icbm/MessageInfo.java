@@ -38,15 +38,20 @@ package net.kano.aimcrypto.connection.oscar.service.icbm;
 import net.kano.aimcrypto.Screenname;
 import net.kano.aimcrypto.connection.oscar.service.icbm.Message;
 
+import java.util.Date;
+
 public abstract class MessageInfo {
     private final Screenname from;
     private final Screenname to;
-    protected final Message message;
+    private final Message message;
+    private final Date date;
 
-    protected MessageInfo(Screenname from, Screenname to, Message message) {
+    protected MessageInfo(Screenname from, Screenname to, Message message,
+            Date date) {
         this.from = from;
         this.to = to;
         this.message = message;
+        this.date = date;
     }
 
     public final Screenname getFrom() { return from; }
@@ -54,4 +59,6 @@ public abstract class MessageInfo {
     public final Screenname getTo() { return to; }
 
     public Message getMessage() { return message; }
+
+    public Date getTimestamp() { return date; }
 }

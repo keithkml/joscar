@@ -47,19 +47,23 @@ import java.util.HashMap;
 public abstract class InfoRequestManager {
     private final InfoService service;
     private final Map listenerMap = new HashMap();
-    private boolean pending = false;
 
     protected InfoRequestManager(InfoService service) {
         this.service = service;
     }
 
+    public void request(Screenname sn) {
+        DefensiveTools.checkNull(sn, "sn");
+
+        request(sn, null);
+    }
+
     public void request(Screenname sn, InfoResponseListener listener) {
         DefensiveTools.checkNull(sn, "sn");
-        DefensiveTools.checkNull(listener, "listener");
 
         boolean shouldRequest;
         synchronized(this) {
-            shouldRequest = storeListener(sn, listener) && !pending;
+            shouldRequest = storeListener(sn, listener);
         }
         if (shouldRequest) sendRequest(sn);
     }
@@ -70,8 +74,10 @@ public abstract class InfoRequestManager {
             InfoResponseListener listener) {
         DefensiveTools.checkNull(sn, "sn");
 
+        boolean shouldRequest = !listenerMap.containsKey(sn);
         Set listeners = getListeners(sn);
-        return listeners.add(listener);
+        if (listener != null) listeners.add(listener);
+        return shouldRequest;
     }
 
     protected synchronized final Set getListeners(Screenname sn) {
