@@ -73,7 +73,12 @@ class RateQueue {
         DefensiveTools.checkNull(rateInfo, "rateInfo");
 
         this.rateInfo = rateInfo;
-        runningAvg = rateInfo.getCurrentAvg();
+        // I'm not sure if this max call is necessary, or correct, but I know
+        // sometimes the server will give you really crazy values (in the range
+        // of several minutes) for an average. but that is only on the initial
+        // rate class packet. either way I think your average can never
+        // correctly be greater than the max.
+        runningAvg = Math.min(rateInfo.getCurrentAvg(), rateInfo.getMax());
     }
 
     public synchronized int getQueueSize() { return queue.size(); }
@@ -100,8 +105,8 @@ class RateQueue {
         }
     }
 
-    private synchronized int getErrorMargin() {
-        return parentMgr.getQueueMgr().getErrorMargin();
+    private int getErrorMargin() {
+        return parentMgr.getParentQueueMgr().getErrorMargin();
     }
 
     public synchronized long getOptimalWaitTime() {
@@ -198,5 +203,38 @@ class RateQueue {
             }
             limited = false;
         }
+    }
+
+    public synchronized long getPotentialAvg(long time) {
+        return computeCurrentAvg(time);
+    }
+
+    public synchronized int getPossibleCmdCount() {
+        return getPossibleCmdCount(runningAvg);
+    }
+
+    public synchronized int getMaxCmdCount() {
+        return getPossibleCmdCount(rateInfo.getMax());
+    }
+
+    private int getPossibleCmdCount(long initialAvg) {
+        long diff = System.currentTimeMillis() - last;
+        long winSize = rateInfo.getWindowSize();
+        long limited = rateInfo.getLimitedAvg() + getErrorMargin();
+        long avg = initialAvg;
+        int count = 0;
+
+        while (avg > limited) {
+            avg = (diff + avg * (winSize - 1)) / winSize;
+
+            // after the first iteration we set diff to 0, since the difference
+            // will be zero
+            diff = 0;
+
+            count++;
+        }
+
+        // the loop iterates once past the maximum
+        return count - 1;
     }
 }

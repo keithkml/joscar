@@ -45,15 +45,19 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Iterator;
 
-class ConnectionQueueMgr {
+public final class ConnectionQueueMgr implements SingleQueueMgr {
     private final RateLimitingQueueMgr queueMgr;
+
     private final SnacProcessor snacProcessor;
+
     private Map classToQueue = new HashMap();
     private Map typeToQueue = new HashMap(500);
     private RateQueue defaultQueue = null;
+
+    private boolean avoidLimiting = true;
     private boolean paused = false;
 
-    public ConnectionQueueMgr(RateLimitingQueueMgr queueMgr,
+    ConnectionQueueMgr(RateLimitingQueueMgr queueMgr,
             SnacProcessor snacProcessor) {
         DefensiveTools.checkNull(queueMgr, "queueMgr");
         DefensiveTools.checkNull(snacProcessor, "snacProcessor");
@@ -62,7 +66,7 @@ class ConnectionQueueMgr {
         this.snacProcessor = snacProcessor;
     }
 
-    public RateLimitingQueueMgr getQueueMgr() { return queueMgr; }
+    public RateLimitingQueueMgr getParentQueueMgr() { return queueMgr; }
 
     public SnacProcessor getSnacProcessor() { return snacProcessor; }
 
@@ -71,12 +75,7 @@ class ConnectionQueueMgr {
 
         CmdType type = CmdType.ofCmd(request.getCommand());
 
-        RateQueue queue;
-        synchronized(this) {
-            queue = (RateQueue) typeToQueue.get(type);
-
-            if (queue == null) queue = defaultQueue;
-        }
+        RateQueue queue = getRateQueue(type);
 
         if (queue == null) {
             // so there's no queue. let's send it right out!
@@ -86,6 +85,31 @@ class ConnectionQueueMgr {
 
         queue.enqueue(request);
         queueMgr.getRunner().update(queue);
+    }
+
+    private synchronized RateQueue getRateQueue(CmdType type) {
+        DefensiveTools.checkNull(type, "type");
+
+        RateQueue queue = (RateQueue) typeToQueue.get(type);
+
+        if (queue == null) queue = defaultQueue;
+
+        return queue;
+    }
+
+
+    public void setRateClasses(RateClassInfo[] rateInfos) {
+        DefensiveTools.checkNull(rateInfos, "rateInfos");
+
+        rateInfos = (RateClassInfo[]) rateInfos.clone();
+
+        DefensiveTools.checkNullElements(rateInfos, "rateInfos");
+
+        for (int i = 0; i < rateInfos.length; i++) {
+            RateClassInfo rateInfo = rateInfos[i];
+
+            setRateClass(rateInfo);
+        }
     }
 
     public synchronized void setRateClass(RateClassInfo rateInfo) {
@@ -122,6 +146,7 @@ class ConnectionQueueMgr {
             queue.setChangeCode(changeCode);
         }
     }
+
     private synchronized RateQueue updateRateQueue(RateClassInfo rateInfo) {
         Integer key = new Integer(rateInfo.getRateClass());
         RateQueue queue = (RateQueue) classToQueue.get(key);
@@ -164,8 +189,78 @@ class ConnectionQueueMgr {
         // we turn the paused flag off and tell the thread to wake up, in
         // case there are some commands queued up that can be sent now
         paused = false;
-        queueMgr.getRunner().update();
+        queueMgr.getRunner().update(this);
     }
 
     public synchronized boolean isPaused() { return paused; }
+
+
+
+    public synchronized final boolean isAvoidingLimiting() {
+        return avoidLimiting;
+    }
+
+    public synchronized final void setAvoidingLimiting(boolean avoidLimiting) {
+        if (avoidLimiting = this.avoidLimiting) return;
+
+        this.avoidLimiting = avoidLimiting;
+
+        if (!avoidLimiting) queueMgr.getRunner().update(this);
+    }
+
+    public RateClassInfo getRateInfo(CmdType cmdType) {
+        RateQueue rateQueue = getRateQueue(cmdType);
+
+        if (rateQueue == null) return null;
+
+        return rateQueue.getRateInfo();
+    }
+
+    public long getCurrentRate(CmdType cmdType) {
+        RateQueue queue = getRateQueue(cmdType);
+
+        if (queue == null) return -1;
+
+        return Math.max(0, queue.getRunningAvg());
+    }
+
+    public long getPotentialRate(CmdType cmdType) {
+        RateQueue queue = getRateQueue(cmdType);
+
+        if (queue == null) return -1;
+
+        return Math.max(0, queue.getPotentialAvg(System.currentTimeMillis()));
+    }
+
+    public long getLimitAvoidanceWaitTime(CmdType cmdType) {
+        RateQueue queue = getRateQueue(cmdType);
+
+        if (queue == null) return -1;
+
+        return Math.max(0, queue.getOptimalWaitTime());
+    }
+
+    public int getPossibleCmdCount(CmdType cmdType) {
+        RateQueue queue = getRateQueue(cmdType);
+
+        if (queue == null) return -1;
+
+        return queue.getPossibleCmdCount();
+    }
+
+    public int getMaxCmdCount(CmdType cmdType) {
+        RateQueue queue = getRateQueue(cmdType);
+
+        if (queue == null) return -1;
+
+        return queue.getMaxCmdCount();
+    }
+
+    public int getQueueSize(CmdType cmdType) {
+        RateQueue queue = getRateQueue(cmdType);
+
+        if (queue == null) return -1;
+
+        return queue.getQueueSize();
+    }
 }
