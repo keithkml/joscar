@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<form xmlns="http://www.intellij.com/uidesigner/form/" version="1">
+  <grid id="4ea79" row-count="2" column-count="1" hgap="10" vgap="10">
+    <margin top="5" left="5" bottom="5" right="5"/>
+    <constraints>
+      <xy x="12" y="21" width="453" height="330"/>
+      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3"/>
+    </constraints>
+    <properties/>
+    <border type="none"/>
+    <children>
+      <grid id="ce6e7" row-count="2" column-count="1" hgap="10" vgap="10">
+        <margin top="0" left="5" bottom="5" right="5"/>
+        <constraints>
+          <xy x="5" y="5" width="443" height="153"/>
+          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3"/>
+        </constraints>
+        <properties/>
+        <border type="none" title="Trusted Buddy Certificates"/>
+        <children>
+          <component id="cb14e" class="javax.swing.JLabel">
+            <constraints>
+              <xy x="10" y="22" width="423" height="15"/>
+              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0">
+                <minimum-size width="100" height="-1"/>
+              </grid>
+            </constraints>
+            <properties>
+              <text value="Buddies using the security certificates below will be automatically trusted."/>
+            </properties>
+          </component>
+          <grid id="98b91" row-count="1" column-count="2" hgap="10" vgap="10">
+            <margin top="0" left="0" bottom="0" right="0"/>
+            <constraints>
+              <xy x="10" y="50" width="423" height="93"/>
+              <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3"/>
+            </constraints>
+            <properties/>
+            <border type="none"/>
+            <children>
+              <grid id="bf857" row-count="3" column-count="1" hgap="10" vgap="10">
+                <margin top="0" left="0" bottom="0" right="0"/>
+                <constraints>
+                  <xy x="339" y="0" width="84" height="93"/>
+                  <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3"/>
+                </constraints>
+                <properties/>
+                <border type="none"/>
+                <children>
+                  <vspacer id="49f8a">
+                    <constraints>
+                      <xy x="36" y="60" width="11" height="33"/>
+                      <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="6" hsize-policy="1" anchor="0" fill="2"/>
+                    </constraints>
+                  </vspacer>
+                  <component id="18f80" class="javax.swing.JButton">
+                    <constraints>
+                      <xy x="0" y="0" width="84" height="25"/>
+                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="1" anchor="0" fill="1"/>
+                    </constraints>
+                    <properties>
+                      <text value="Import..."/>
+                    </properties>
+                  </component>
+                  <component id="9e5f3" class="javax.swing.JButton">
+                    <constraints>
+                      <xy x="0" y="35" width="84" height="25"/>
+                      <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="1" anchor="0" fill="1"/>
+                    </constraints>
+                    <properties>
+                      <text value="Remove"/>
+                    </properties>
+                  </component>
+                </children>
+              </grid>
+              <scrollpane id="b27e1">
+                <constraints>
+                  <xy x="0" y="0" width="329" height="93"/>
+                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="3"/>
+                </constraints>
+                <properties/>
+                <border type="none"/>
+                <children>
+                  <component id="91dd1" class="javax.swing.JList">
+                    <constraints/>
+                    <properties>
+                      <layoutOrientation value="1"/>
+                    </properties>
+                  </component>
+                </children>
+              </scrollpane>
+            </children>
+          </grid>
+        </children>
+      </grid>
+      <grid id="e20ae" row-count="2" column-count="1" hgap="10" vgap="10">
+        <margin top="0" left="0" bottom="0" right="0"/>
+        <constraints>
+          <xy x="5" y="168" width="443" height="157"/>
+          <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3"/>
+        </constraints>
+        <properties/>
+        <border type="none" title="Trusted Certificate Authorities"/>
+        <children>
+          <grid id="8f3db" row-count="1" column-count="2" hgap="10" vgap="10">
+            <margin top="0" left="5" bottom="0" right="5"/>
+            <constraints>
+              <xy x="5" y="60" width="433" height="92"/>
+              <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3"/>
+            </constraints>
+            <properties/>
+            <border type="none"/>
+            <children>
+              <grid id="e7cd4" row-count="3" column-count="1" hgap="10" vgap="10">
+                <margin top="0" left="0" bottom="0" right="0"/>
+                <constraints>
+                  <xy x="344" y="0" width="84" height="92"/>
+                  <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3"/>
+                </constraints>
+                <properties/>
+                <border type="none"/>
+                <children>
+                  <vspacer id="7575d">
+                    <constraints>
+                      <xy x="36" y="60" width="11" height="32"/>
+                      <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="6" hsize-policy="1" anchor="0" fill="2"/>
+                    </constraints>
+                  </vspacer>
+                  <component id="ac801" class="javax.swing.JButton">
+                    <constraints>
+                      <xy x="0" y="0" width="84" height="25"/>
+                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="1" anchor="0" fill="1"/>
+                    </constraints>
+                    <properties>
+                      <text value="Import..."/>
+                    </properties>
+                  </component>
+                  <component id="d0c2f" class="javax.swing.JButton">
+                    <constraints>
+                      <xy x="0" y="35" width="84" height="25"/>
+                      <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="1" anchor="0" fill="1"/>
+                    </constraints>
+                    <properties>
+                      <text value="Remove"/>
+                    </properties>
+                  </component>
+                </children>
+              </grid>
+              <scrollpane id="89e6d">
+                <constraints>
+                  <xy x="5" y="0" width="329" height="92"/>
+                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="3"/>
+                </constraints>
+                <properties/>
+                <border type="none"/>
+                <children>
+                  <component id="e8f01" class="javax.swing.JList">
+                    <constraints/>
+                    <properties>
+                      <layoutOrientation value="1"/>
+                    </properties>
+                  </component>
+                </children>
+              </scrollpane>
+            </children>
+          </grid>
+          <component id="6cb7a" class="javax.swing.JLabel">
+            <constraints>
+              <xy x="5" y="20" width="349" height="30"/>
+              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0"/>
+            </constraints>
+            <properties>
+              <text value="&lt;HTML&gt;Buddies whose security certificates are authenticated by the &lt;br&gt;Certificate Authorities below will be automatically trusted."/>
+            </properties>
+          </component>
+        </children>
+      </grid>
+    </children>
+  </grid>
+</form>
