@@ -343,19 +343,18 @@ public class FlapProcessor extends ConnProcessor {
 
     /**
      * Sends the given FLAP command on this FLAP processor's attached output
-     * stream.
+     * stream. Note that <i>if this processor is not currently attached to
+     * an output stream or socket, this method will <b>return silently</b></i>.
      *
      * @param command the command to send
-     * @throws NullPointerException if this FLAP processor is not attached to
-     *         an output stream
      */
     public synchronized final void send(FlapCommand command)
-            throws NullPointerException {
+            throws IllegalArgumentException {
         DefensiveTools.checkNull(command, "command");
 
         OutputStream out = getOutputStream();
 
-        DefensiveTools.checkNull(out, "out");
+        if (out == null) return;
 
         logger.finer("Sending Flap command " + command);
         FlapPacket packet = new FlapPacket(seqnum, command);

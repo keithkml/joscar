@@ -41,8 +41,8 @@ import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joscar.rvcmd.SegmentedFilename;
 import net.kano.joscar.rvcmd.getfile.GetFileAcceptRvCmd;
 import net.kano.joscar.rvcmd.getfile.GetFileReqRvCmd;
-import net.kano.joscar.rvproto.ft.FileSendChecksum;
-import net.kano.joscar.rvproto.ft.FileSendHeader;
+import net.kano.joscar.rvproto.ft.FileTransferChecksum;
+import net.kano.joscar.rvproto.ft.FileTransferHeader;
 import net.kano.joscar.rvproto.getfile.GetFileEntry;
 import net.kano.joscar.rvproto.getfile.GetFileList;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
@@ -78,13 +78,13 @@ public class HostGetFileThread extends Thread {
             InputStream in = socket.getInputStream();
 
             for (int i = 0;; i++) {
-                FileSendHeader header = FileSendHeader.readFileSendHeader(in);
+                FileTransferHeader header = FileTransferHeader.readHeader(in);
 
                 System.out.println("got header " + i + ": " + header);
 
                 int type = header.getHeaderType();
 
-                if (type == FileSendHeader.HEADERTYPE_FILELIST_REQDIR) {
+                if (type == FileTransferHeader.HEADERTYPE_FILELIST_REQDIR) {
                     SegmentedFilename filename = header.getFilename();
 
                     File dir = new File(base, filename.toNativeFilename());
@@ -119,14 +119,14 @@ public class HostGetFileThread extends Thread {
         gflist.write(listout);
         int listSize = listout.size();
 
-        FileSendChecksum cs = new FileSendChecksum();
+        FileTransferChecksum cs = new FileTransferChecksum();
         cs.update(listout.toByteArray(), 0, listout.size());
 
-        FileSendHeader hdr = new FileSendHeader();
+        FileTransferHeader hdr = new FileTransferHeader();
         hdr.setDefaults();
-        hdr.setHeaderType(FileSendHeader.HEADERTYPE_FILELIST_SENDLIST);
-        hdr.setFlags(FileSendHeader.FLAG_DEFAULT
-                | FileSendHeader.FLAG_FILELIST);
+        hdr.setHeaderType(FileTransferHeader.HEADERTYPE_FILELIST_SENDLIST);
+        hdr.setFlags(FileTransferHeader.FLAG_DEFAULT
+                | FileTransferHeader.FLAG_FILELIST);
         hdr.setFileCount(entryList.length);
         hdr.setFilesLeft(1);
         hdr.setPartCount(1);
@@ -151,13 +151,13 @@ public class HostGetFileThread extends Thread {
 
         InputStream in = socket.getInputStream();
 
-        FileSendHeader ack = FileSendHeader.readFileSendHeader(in);
+        FileTransferHeader ack = FileTransferHeader.readHeader(in);
 
         System.out.println("got ack: " + ack);
 
         listout.writeTo(out);
 
-        FileSendHeader fin = FileSendHeader.readFileSendHeader(in);
+        FileTransferHeader fin = FileTransferHeader.readHeader(in);
 
         System.out.println("got fin: " + fin);
     }

@@ -47,12 +47,24 @@ import net.kano.joscar.tlv.TlvChain;
 import java.io.IOException;
 import java.io.OutputStream;
 
+/**
+ * A rendezvous command used to request a voice chat session.
+ */
 public class VoiceReqRvCmd extends AbstractRequestRvCmd {
-    public static final long VERSION_DEFAULT = 0x00000001;
+    /** The voice chat protocol version used by WinAIM. */
+    public static final long VERSION_DEFAULT = 0x00000001L;
 
+    /** The voice chat protocol version sent in this command. */
     private final long version;
+    /** The connection information block. */
     private final RvConnectionInfo connInfo;
 
+    /**
+     * Creates a new voice chat request command from the given incoming voice
+     * chat request RV ICBM.
+     *
+     * @param icbm an incoming voice chat request RV ICBM command
+     */
     public VoiceReqRvCmd(RecvRvIcbm icbm) {
         super(icbm);
 
@@ -68,10 +80,29 @@ public class VoiceReqRvCmd extends AbstractRequestRvCmd {
         }
     }
 
+    /**
+     * Creates a new outgoing voice chat request with the given connection
+     * information block and a protocol version number of {@link
+     * #VERSION_DEFAULT}.
+     * <br>
+     * <br>
+     * Using this constructor is equivalent to using {@link #VoiceReqRvCmd(long,
+     * RvConnectionInfo) new VoiceReqRvCmd(VERSION_DEFAULT, connInfo)}.
+     *
+     * @param connInfo a block of connection information
+     */
     public VoiceReqRvCmd(RvConnectionInfo connInfo) {
         this(VERSION_DEFAULT, connInfo);
     }
 
+    /**
+     * Creates a new outgoing voice chat request with the given protocol version
+     * and the given connection information block.
+     *
+     * @param version a protocol version; normally {@link #VERSION_DEFAULT}
+     * @param connInfo a connection information block, or <code>null</code> to
+     *        not send any connection information in this command
+     */
     public VoiceReqRvCmd(long version, RvConnectionInfo connInfo) {
         super(CapabilityBlock.BLOCK_VOICE);
 
@@ -81,8 +112,25 @@ public class VoiceReqRvCmd extends AbstractRequestRvCmd {
         this.version = version;
     }
 
+    /**
+     * Returns the voice chat protocol version sent in this command, or
+     * <code>-1</code> if none was sent. This value is normally {@link
+     * #VERSION_DEFAULT}.
+     *
+     * @return the voice chat protocol version sent in this command, or
+     *         <code>-1</code> if none was sent
+     */
     public final long getVersion() { return version; }
 
+    /**
+     * Returns the connection information block sent in this command. Note that
+     * this method will never return <code>null</code>; the returned object's
+     * fields will simply be empty if no connection information information
+     * was sent.
+     *
+     * @return an object containing the connection information sent in this
+     *         command
+     */
     public final RvConnectionInfo getConnInfo() { return connInfo; }
 
     protected void writeRvTlvs(OutputStream out) throws IOException {

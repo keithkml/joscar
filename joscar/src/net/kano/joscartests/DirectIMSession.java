@@ -74,14 +74,6 @@ public class DirectIMSession {
 
     private ClientConn conn = null;
 
-    private DirectImProcessor dimProcessor
-            = new DirectImProcessor(new DirectImStreamHandler() {
-                public boolean handleIncomingData(DirectImDataRecvEvent e)
-                        throws IOException {
-                    return handleDirectImData(e);
-                }
-            });
-
     public DirectIMSession(String mysn, RvSession session,
             RecvRvEvent event) {
         this.mysn = mysn;
@@ -178,29 +170,20 @@ public class DirectIMSession {
         System.out.println("starting dim connection..");
         this.conn = socket;
 
-        try {
-            dimProcessor.attachToSocket(conn.getSocket());
-        } catch (IOException e) {
-            e.printStackTrace();
-            close();
-            return;
-        }
 
         System.out.println("direct IM to " + rvSession.getScreenname()
                 + " opened");
-        dimProcessor.runReadLoop();
     }
 
     private void close() {
-        dimProcessor.detach();
         conn.disconnect();
     }
 
-    private boolean handleDirectImData(DirectImDataRecvEvent e)
+    private boolean handleDirectImData()
             throws IOException {
         String sn = rvSession.getScreenname();
-        DirectImHeader header = e.getDirectImHeader();
-        InputStream in = e.getInputStream();
+        DirectImHeader header = null;
+        InputStream in = null;
 
         long flags = header.getFlags();
         if ((flags & DirectImHeader.FLAG_TYPINGPACKET) != 0) {
@@ -239,11 +222,11 @@ public class DirectIMSession {
         } else {
             packetBlock = null;
         }
-        dimProcessor.sendPacket(header, new DirectImDataWriter() {
-            public void writeData(DirectImDataSendEvent e) throws IOException {
-                packetBlock.write(e.getOutputStream());
-            }
-        });
+//        dimProcessor.sendPacket(header, new DirectImDataWriter() {
+//            public void writeData(DirectImDataSendEvent e) throws IOException {
+//                packetBlock.write(e.getOutputStream());
+//            }
+//        });
 
         return true;
     }

@@ -37,12 +37,10 @@ package net.kano.joscartests;
 
 import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rvcmd.sendfile.FileSendAcceptRvCmd;
-import net.kano.joscar.rvproto.ft.FileSendHeader;
+import net.kano.joscar.rvproto.ft.FileTransferHeader;
+import net.kano.joscar.rvproto.ft.FileTransferChecksum;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.channels.Channels;
@@ -87,11 +85,10 @@ public class RecvFileThread extends Thread {
             SocketChannel socketChannel = getSocket();
             System.out.println("opening socket to " + address + " on " + port);
 
-
             InputStream in = Channels.newInputStream(socketChannel);
 
-//            for (;;) {
-                FileSendHeader header = FileSendHeader.readFileSendHeader(in);
+            for (;;) {
+                FileTransferHeader header = FileTransferHeader.readHeader(in);
 
                 System.out.println("header: " + header);
 
@@ -99,15 +96,30 @@ public class RecvFileThread extends Thread {
                 String filename = "dl-" + parts[parts.length-1];
                 System.out.println("writing to file " + filename);
 
+                long sum = 0;
+                if (new File(filename).exists()) {
+                    FileInputStream fis = new FileInputStream(filename);
+                    byte[] block = new byte[10];
+                    fis.read(block);
+
+                    FileTransferChecksum summer = new FileTransferChecksum();
+                    summer.update(block, 0, 10);
+                    sum = summer.getValue();
+                }
+
                 FileChannel fileChannel
                         = new FileOutputStream(filename).getChannel();
 
-                FileSendHeader outHeader = new FileSendHeader(header);
-                outHeader.setHeaderType(FileSendHeader.HEADERTYPE_ACK);
+                FileTransferHeader outHeader = new FileTransferHeader(header);
+                outHeader.setHeaderType(FileTransferHeader.HEADERTYPE_ACK);
                 outHeader.setIcbmMessageId(cookie);
+                outHeader.setBytesReceived(10);
+                outHeader.setReceivedChecksum(sum);
+
                 OutputStream socketOut
                         = Channels.newOutputStream(socketChannel);
-//                outHeader.write(socketOut);
+                outHeader.write(socketOut);
+
                 System.out.println("sending header: " + outHeader);
 
                 for (int i = 0; i < header.getFileSize();) {
@@ -123,14 +135,16 @@ public class RecvFileThread extends Thread {
                 System.out.println("finished transfer!");
                 fileChannel.close();
 
-                FileSendHeader doneHeader = new FileSendHeader(header);
-                doneHeader.setHeaderType(FileSendHeader.HEADERTYPE_RECEIVED);
+                FileTransferHeader doneHeader = new FileTransferHeader(header);
+                doneHeader.setHeaderType(FileTransferHeader.HEADERTYPE_RECEIVED);
                 doneHeader.setFlags(doneHeader.getFlags()
-                        | FileSendHeader.FLAG_DONE);
+                        | FileTransferHeader.FLAG_DONE);
                 doneHeader.setBytesReceived(doneHeader.getBytesReceived() + 1);
                 doneHeader.setIcbmMessageId(cookie);
+                doneHeader.setFilesLeft(doneHeader.getFilesLeft() - 1);
                 doneHeader.write(socketOut);
-//            }
+            }
+
         } catch (IOException e) {
             e.printStackTrace();
             return;

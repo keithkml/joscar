@@ -38,10 +38,9 @@ package net.kano.joscartests;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rvcmd.SegmentedFilename;
-import net.kano.joscar.rvproto.ft.FileSendHeader;
-import net.kano.joscar.rvproto.getfile.GetFileList;
+import net.kano.joscar.rvproto.ft.FileTransferHeader;
 import net.kano.joscar.rvproto.getfile.GetFileEntry;
-import net.kano.joscar.snaccmd.icbm.ImEncodingParams;
+import net.kano.joscar.rvproto.getfile.GetFileList;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -64,14 +63,15 @@ public class GetFileThread extends Thread {
 
             InputStream in = socket.getInputStream();
 
-            FileSendHeader firstHdr = FileSendHeader.readFileSendHeader(in);
+            FileTransferHeader firstHdr =
+                    FileTransferHeader.readHeader(in);
 
             System.out.println("got header: " + firstHdr);
 
-            FileSendHeader ack = new FileSendHeader(firstHdr);
+            FileTransferHeader ack = new FileTransferHeader(firstHdr);
 
-            ack.setHeaderType(FileSendHeader.HEADERTYPE_FILELIST_ACK);
-            ack.setFlags(FileSendHeader.FLAG_DEFAULT);
+            ack.setHeaderType(FileTransferHeader.HEADERTYPE_FILELIST_ACK);
+            ack.setFlags(FileTransferHeader.FLAG_DEFAULT);
 
             System.out.println("sending ack: " + ack);
 
@@ -95,16 +95,16 @@ public class GetFileThread extends Thread {
                 System.out.println("* " + entries[i]);
             }
 
-            FileSendHeader fin = new FileSendHeader(ack);
-            fin.setHeaderType(FileSendHeader.HEADERTYPE_FILELIST_RECEIVED);
-            fin.setFlags(FileSendHeader.FLAG_DEFAULT
-                    | FileSendHeader.FLAG_DONE);
+            FileTransferHeader fin = new FileTransferHeader(ack);
+            fin.setHeaderType(FileTransferHeader.HEADERTYPE_FILELIST_RECEIVED);
+            fin.setFlags(FileTransferHeader.FLAG_DEFAULT
+                    | FileTransferHeader.FLAG_DONE);
 
             fin.write(out);
 
-            FileSendHeader dirreq = new FileSendHeader(fin);
+            FileTransferHeader dirreq = new FileTransferHeader(fin);
 
-            dirreq.setHeaderType(FileSendHeader.HEADERTYPE_FILELIST_REQDIR);
+            dirreq.setHeaderType(FileTransferHeader.HEADERTYPE_FILELIST_REQDIR);
             dirreq.setFilename(new SegmentedFilename(
                     new String[] { "in", "ebaything" }));
             dirreq.setTotalFileSize(0);
@@ -113,7 +113,7 @@ public class GetFileThread extends Thread {
             dirreq.setFilesLeft(0);
             dirreq.write(out);
 
-            FileSendHeader resp = FileSendHeader.readFileSendHeader(in);
+            FileTransferHeader resp = FileTransferHeader.readHeader(in);
 
             System.out.println("got response: " + resp);
 

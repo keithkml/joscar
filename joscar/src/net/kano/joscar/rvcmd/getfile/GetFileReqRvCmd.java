@@ -194,7 +194,7 @@ public class GetFileReqRvCmd extends AbstractRequestRvCmd {
      *        <code>0</code> (for none)
      */
     public GetFileReqRvCmd(RvConnectionInfo connInfo, long flags) {
-        this(REQTYPE_INITIAL_REQUEST, connInfo, CHARSET_DEFAULT, CODE_DEFAULT,
+        this(REQTYPE_INITIALREQUEST, connInfo, CHARSET_DEFAULT, CODE_DEFAULT,
                 PROTOVERSION_DEFAULT, flags, EXTRABLOCK_DEFAULT);
     }
 
@@ -221,7 +221,7 @@ public class GetFileReqRvCmd extends AbstractRequestRvCmd {
      * Creates a new outgoing Get File session request / redirect (depending on
      * <code>requestType</code>) with the given properties.
      *
-     * @param requestType a request type, like {@link #REQTYPE_INITIAL_REQUEST}
+     * @param requestType a request type, like {@link #REQTYPE_INITIALREQUEST}
      * @param connInfo a block of connection information to use for the
      *        associated connection
      * @param charset the name of a charset (this value appears to be ignored

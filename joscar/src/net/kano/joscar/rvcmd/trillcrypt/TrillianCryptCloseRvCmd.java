@@ -40,11 +40,24 @@ import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import java.io.IOException;
 import java.io.OutputStream;
 
+/**
+ * A rendezvous command used to end a Trillian Encryption session.
+ */
 public class TrillianCryptCloseRvCmd extends AbstractTrillianCryptRvCmd {
+    /**
+     * Creates a new Trillian Encryption session close command from the given
+     * incoming session close RV ICBM.
+     *
+     * @param icbm an incoming Trillian Encryption session closing RV ICBM
+     *        command
+     */
     public TrillianCryptCloseRvCmd(RecvRvIcbm icbm) {
         super(icbm);
     }
 
+    /**
+     * Creates a new outgoing Trillian Encryption session close command.
+     */
     public TrillianCryptCloseRvCmd() {
         super(CMDTYPE_CLOSE);
     }

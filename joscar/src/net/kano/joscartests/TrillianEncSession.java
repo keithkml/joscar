@@ -104,8 +104,8 @@ public class TrillianEncSession implements RvSessionListener {
             TrillianCryptReqRvCmd cmd = (TrillianCryptReqRvCmd) rvc;
 
             try {
-                modulus = cmd.getP();
-                otherPublic = cmd.getY();
+                modulus = cmd.getModulus();
+                otherPublic = cmd.getPublicValue();
 
                 myPrivate = new BigInteger(128, new Random()).mod(modulus);
                 myPublic = FIVE.modPow(myPrivate, modulus);
@@ -121,7 +121,7 @@ public class TrillianEncSession implements RvSessionListener {
             }
 
         } else if (rvc instanceof TrillianCryptAcceptRvCmd) {
-            otherPublic = ((TrillianCryptAcceptRvCmd) rvc).getY();
+            otherPublic = ((TrillianCryptAcceptRvCmd) rvc).getPublicValue();
             try {
                 initCiphers();
             } catch (NoSuchAlgorithmException e) {

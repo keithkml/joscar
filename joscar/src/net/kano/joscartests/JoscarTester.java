@@ -50,7 +50,6 @@ import net.kano.joscar.rvcmd.sendbl.SendBuddyListRvCmd;
 import net.kano.joscar.rvcmd.sendfile.FileSendBlock;
 import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
 import net.kano.joscar.rvcmd.trillcrypt.TrillianCryptReqRvCmd;
-import net.kano.joscar.rvcmd.trillcrypt.TrillianCryptMsgRvCmd;
 import net.kano.joscar.rvcmd.voice.VoiceReqRvCmd;
 import net.kano.joscar.snac.SnacCommand;
 import net.kano.joscar.snac.SnacProcessor;
@@ -635,7 +634,7 @@ public class JoscarTester implements CmdLineListener {
 
                 ServerSocket socket = null;
                 try {
-                    socket = new ServerSocket(0);
+                    socket = new ServerSocket(7050);
 
                     new SendFileThread(session, socket).start();
                 } catch (IOException e) {
