@@ -69,11 +69,18 @@ public abstract class Conversation {
      */
     protected void initialize() { }
 
+    protected synchronized boolean setAlwaysOpen() {
+        if (open || closed) return false;
+        open = true;
+        return true;
+    }
+
     protected boolean open() {
         synchronized(this) {
             if (open || closed) return false;
             open = true;
         }
+
         for (Iterator it = listeners.iterator(); it.hasNext();) {
             ConversationListener l = (ConversationListener) it.next();
 
@@ -120,5 +127,7 @@ public abstract class Conversation {
     }
 
     public abstract void sendMessage(Message msg)
-            throws ConversationNotOpenException;
+            throws ConversationException;
+
+    protected CopyOnWriteArrayList getListeners() { return listeners; }
 }

@@ -35,7 +35,9 @@
 
 package net.kano.aimcrypto.connection.oscar.service;
 
+import net.kano.aimcrypto.AimSession;
 import net.kano.aimcrypto.BuddySecurityInfo;
+import net.kano.aimcrypto.PrivateKeysInfo;
 import net.kano.aimcrypto.Screenname;
 import net.kano.aimcrypto.connection.AimConnection;
 import net.kano.aimcrypto.connection.oscar.OscarConnection;
@@ -49,13 +51,15 @@ import net.kano.joscar.snaccmd.FullUserInfo;
 import net.kano.joscar.snaccmd.InfoData;
 import net.kano.joscar.snaccmd.conn.SnacFamilyInfo;
 import net.kano.joscar.snaccmd.loc.DirInfoCmd;
-import net.kano.joscar.snaccmd.loc.LocCommand;
-import net.kano.joscar.snaccmd.loc.UserInfoCmd;
-import net.kano.joscar.snaccmd.loc.GetInfoCmd;
 import net.kano.joscar.snaccmd.loc.GetDirInfoCmd;
+import net.kano.joscar.snaccmd.loc.GetInfoCmd;
+import net.kano.joscar.snaccmd.loc.LocCommand;
+import net.kano.joscar.snaccmd.loc.SetInfoCmd;
+import net.kano.joscar.snaccmd.loc.UserInfoCmd;
 
 import java.io.InputStream;
 import java.security.NoSuchProviderException;
+import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -63,6 +67,9 @@ import java.util.Iterator;
 
 public class InfoService extends Service {
     private CopyOnWriteArrayList listeners = new CopyOnWriteArrayList();
+
+    private String awayMessage = null;
+    private String userProfile = null;
 
     public InfoService(AimConnection aimConnection,
             OscarConnection oscarConnection) {
@@ -75,6 +82,34 @@ public class InfoService extends Service {
 
     public void removeInfoListener(InfoListener l) {
         listeners.remove(l);
+    }
+
+    public void connected() {
+        CertificateInfo certInfo = generateCertificateInfo();
+        InfoData infoData = new InfoData(awayMessage, userProfile, null,
+                certInfo);
+        sendSnac(new SetInfoCmd(infoData));
+    }
+
+    private CertificateInfo generateCertificateInfo() {
+        AimSession session = getAimConnection().getAimSession();
+        PrivateKeysInfo keys = session.getPrivateKeysInfo();
+
+        X509Certificate signing = keys.getSigningCert();
+        X509Certificate encrypting = keys.getEncryptionCert();
+
+        if (signing == null || encrypting == null) return null;
+
+        CertificateInfo certInfo = null;
+        try {
+            byte[] encSigning = signing.getEncoded();
+            byte[] encEncrypting = encrypting.getEncoded();
+            certInfo = new CertificateInfo(ByteBlock.wrap(encEncrypting),
+                    ByteBlock.wrap(encSigning));
+        } catch (CertificateEncodingException e1) {
+            //TODO: handle certificate errors
+        }
+        return certInfo;
     }
 
     public SnacFamilyInfo getSnacFamilyInfo() {
@@ -179,6 +214,7 @@ public class InfoService extends Service {
                 return;
             }
             BuddySecurityInfo securityInfo = new BuddySecurityInfo(sn,
+                     ByteBlock.wrap(CertificateInfo.getCertInfoHash(certInfo)),
                     encryption, signing);
 
             for (Iterator it = listeners.iterator(); it.hasNext();) {

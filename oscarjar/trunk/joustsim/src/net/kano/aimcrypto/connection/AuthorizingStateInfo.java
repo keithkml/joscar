@@ -45,6 +45,8 @@ public final class AuthorizingStateInfo extends StateInfo {
     private final int timeout;
 
     public AuthorizingStateInfo(LoginConnection conn) {
+        super(State.AUTHORIZING);
+        
         host = conn.getHost();
         port = conn.getPort();
         versionInfo = conn.getLoginService().getVersionInfo();

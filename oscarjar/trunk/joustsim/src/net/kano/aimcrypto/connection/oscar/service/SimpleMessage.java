@@ -35,7 +35,7 @@
 
 package net.kano.aimcrypto.connection.oscar.service;
 
-import net.kano.joscar.DefensiveTools;
+
 
 public class SimpleMessage implements Message {
     private final String messageBody;
@@ -50,9 +50,11 @@ public class SimpleMessage implements Message {
         this(messageBody, false);
     }
 
-    public SimpleMessage(String messageBody, boolean autoResponse) {
-        DefensiveTools.checkNull(messageBody, "messageBody");
+    public SimpleMessage(boolean autoresponse) {
+        this(null, autoresponse);
+    }
 
+    public SimpleMessage(String messageBody, boolean autoResponse) {
         this.messageBody = messageBody;
         this.autoResponse = autoResponse;
     }

@@ -46,6 +46,8 @@ public class AimSession {
     private final Screenname screenname;
     private AimConnection connection = null;
 
+    private PrivateKeysInfo privateKeysInfo = null;
+
     AimSession(AppSession appSession, Screenname screenname) {
         DefensiveTools.checkNull(appSession, "appSession");
         DefensiveTools.checkNull(screenname, "screenname");
@@ -54,9 +56,15 @@ public class AimSession {
         this.screenname = screenname;
     }
 
-    public AppSession getAppSession() { return appSession; }
+    public final AppSession getAppSession() { return appSession; }
 
-    public Screenname getScreenname() { return screenname; }
+    public final Screenname getScreenname() { return screenname; }
+
+    public PrivateKeysInfo getPrivateKeysInfo() { return privateKeysInfo; }
+
+    public void setPrivateKeysInfo(PrivateKeysInfo privateKeysInfo) {
+        this.privateKeysInfo = privateKeysInfo;
+    }
 
     public AimConnection openConnection(AimConnectionProperties props) {
         //TODO: close old connection

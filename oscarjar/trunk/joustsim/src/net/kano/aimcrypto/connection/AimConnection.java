@@ -76,20 +76,23 @@ public class AimConnection {
 
     private final AppSession appSession;
     private final AimSession aimSession;
-    private final Screenname screenname;
 
+    private final Screenname screenname;
     private String password;
 
-    private boolean triedConnecting = false;
-
-    private LoginConnection loginConn = null;
+    private final LoginConnection loginConn;
     private BasicConnection mainConn = null;
 
     private Map snacfamilies = new HashMap();
 
-    private State state = State.NOT_CONNECTED;
-    private StateInfo stateInfo = EmptyStateInfo.getInstance();
+    private boolean triedConnecting = false;
+    private State state = State.NOTCONNECTED;
+    private StateInfo stateInfo = NotConnectedStateInfo.getInstance();
+
     private CopyOnWriteArrayList stateListeners = new CopyOnWriteArrayList();
+    private CopyOnWriteArrayList serviceListeners = new CopyOnWriteArrayList();
+
+    private BuddyInfoManager buddyInfoManager = new BuddyInfoManager(this);
 
     public AimConnection(AppSession appSession, AimSession aimSession,
             AimConnectionProperties props) throws IllegalArgumentException {
@@ -120,33 +123,17 @@ public class AimConnection {
         loginConn.setServiceFactory(new LoginServiceFactory());
     }
 
-    public Screenname getScreenname() { return screenname; }
+    public final AppSession getAppSession() { return appSession; }
 
-    private void setState(State state, StateInfo info) {
-        DefensiveTools.checkNull(state, "state");
-        DefensiveTools.checkNull(info, "info");
+    public final AimSession getAimSession() { return aimSession; }
 
-        logger.fine("New state: " + state + " - " + info);
+    public final Screenname getScreenname() { return screenname; }
 
-        State oldState;
-        StateInfo oldStateInfo;
-        synchronized(this) {
-            oldState = this.state;
-            oldStateInfo = this.stateInfo;
+    public BuddyInfoManager getBuddyInfoManager() { return buddyInfoManager; }
 
-            this.state = state;
-            this.stateInfo = info;
-        }
+    public synchronized State getState() { return state; }
 
-        StateEvent event = new StateEvent(this, oldState, oldStateInfo, state,
-                info);
-
-        for (Iterator it = stateListeners.iterator(); it.hasNext();) {
-            StateListener listener = (StateListener) it.next();
-
-            listener.handleStateChange(event);
-        }
-    }
+    public synchronized StateInfo getStateInfo() { return stateInfo; }
 
     public void addStateListener(StateListener l) {
         stateListeners.addIfAbsent(l);
@@ -156,58 +143,30 @@ public class AimConnection {
         stateListeners.remove(l);
     }
 
-    private void connectBos(LoginSuccessInfo info) {
-        mainConn = new BasicConnection(info.getServer(), info.getPort());
-        mainConn.setCookie(info.getCookie());
-        mainConn.addOscarListener(new BosConnListener());
-        mainConn.setServiceFactory(new BasicServiceFactory());
-        setState(State.CONNECTING, new ConnectingStateInfo(info));
-        mainConn.connect();
-    }
-
-    private void internalDisconnected() {
-        //TODO: close all related OSCAR connections
-        if (loginConn != null) loginConn.disconnect();
-        if (mainConn != null) mainConn.disconnect();
-        setState(State.DISCONNECTED, new DisconnectedStateInfo());
-    }
-
     public synchronized boolean getTriedConnecting() {
         return triedConnecting;
     }
 
-    public synchronized void connect() throws IllegalStateException {
-        if (triedConnecting) {
-            throw new IllegalStateException("already connected");
+    public void connect() throws IllegalStateException {
+        synchronized(this) {
+            if (triedConnecting) {
+                throw new IllegalStateException("already connected");
+            }
+            triedConnecting = true;
         }
-        triedConnecting = true;
         loginConn.connect();
-        setState(State.CONNECTINGAUTH, new AuthorizingStateInfo(loginConn));
+        setState(State.NOTCONNECTED, State.CONNECTINGAUTH,
+                new AuthorizingStateInfo(loginConn));
     }
 
-    private synchronized void recordSnacFamilies(OscarConnection conn) {
-        int[] families = conn.getSnacFamilies();
-        for (int i = 0; i < families.length; i++) {
-            int family = families[i];
-            List services = getServiceList(family);
-            services.add(conn.getService(family));
-        }
-    }
-
-    private synchronized List getServiceList(int family) {
-        Integer key = new Integer(family);
-        List list = (List) snacfamilies.get(key);
-        if (list == null) {
-            list = new ArrayList();
-            snacfamilies.put(key, list);
-        }
-        return list;
+    public void disconnect() {
+        //TODO: disconnect
+        closeConnections();
     }
 
     public synchronized Service getService(int family) {
         List list = getServiceListIfExists(family);
-        if (list == null || list.isEmpty()) return null;
-        return (Service) list.get(0);
+        return list == null ? null : (Service) list.get(0);
     }
 
     public LoginService getLoginService() {
@@ -240,19 +199,108 @@ public class AimConnection {
         else return null;
     }
 
-    private synchronized List getServiceListIfExists(int family) {
-        return (List) snacfamilies.get(new Integer(family));
-    }
-
     public void sendSnac(SnacCommand snac) {
         Service service = getService(snac.getFamily());
         service.sendSnac(snac);
     }
 
-    public void disconnect() {
-        //TODO: disconnect
-        if (loginConn != null) loginConn.disconnect();
+    private boolean setState(State expectedOld, State state, StateInfo info) {
+        DefensiveTools.checkNull(state, "state");
+        DefensiveTools.checkNull(info, "info");
+
+        logger.fine("New state: " + state + " - " + info);
+
+        State oldState;
+        StateInfo oldStateInfo;
+        synchronized(this) {
+            oldState = this.state;
+            oldStateInfo = this.stateInfo;
+
+            if (expectedOld != null && oldState != expectedOld) {
+                logger.warning("Tried converting state " + expectedOld + " to "
+                        + state + ", but was in " + oldState);
+                return false;
+            }
+
+            this.state = state;
+            this.stateInfo = info;
+        }
+
+        StateEvent event = new StateEvent(this, oldState, oldStateInfo, state,
+                info);
+
+        for (Iterator it = stateListeners.iterator(); it.hasNext();) {
+            StateListener listener = (StateListener) it.next();
+
+            listener.handleStateChange(event);
+        }
+        return true;
+    }
+
+    private void connectBos(LoginSuccessInfo info) {
+        synchronized(this) {
+            if (state != State.CONNECTINGAUTH) {
+                throw new IllegalStateException("tried to connect to BOS "
+                        + "server in state " + state);
+            }
+            mainConn = new BasicConnection(info.getServer(), info.getPort());
+            mainConn.setCookie(info.getCookie());
+            mainConn.addOscarListener(new MainBosConnListener());
+            mainConn.setServiceFactory(new BasicServiceFactory());
+            mainConn.connect();
+        }
+        setState(State.CONNECTINGAUTH, State.CONNECTING,
+                new ConnectingStateInfo(info));
+    }
+
+    private void internalDisconnected() {
+        //TODO: close all related OSCAR connections
+        setState(null, State.DISCONNECTED, new DisconnectedStateInfo());
+        closeConnections();
+    }
+
+    private void closeConnections() {
+        loginConn.disconnect();
+        BasicConnection mainConn = this.mainConn;
         if (mainConn != null) mainConn.disconnect();
+    }
+
+    private void recordSnacFamilies(OscarConnection conn) {
+        List added = new ArrayList();
+        synchronized(this) {
+            int[] families = conn.getSnacFamilies();
+            for (int i = 0; i < families.length; i++) {
+                int family = families[i];
+                List services = getServiceList(family);
+                Service service = conn.getService(family);
+                services.add(service);
+                added.add(service);
+            }
+        }
+
+        Service[] services = (Service[])
+                added.toArray(new Service[added.size()]);
+
+        for (Iterator it = serviceListeners.iterator(); it.hasNext();) {
+            NewServiceListener listener = (NewServiceListener) it.next();
+
+            listener.openedServices(this, (Service[]) services.clone());
+        }
+    }
+
+    private synchronized List getServiceList(int family) {
+        Integer key = new Integer(family);
+        List list = (List) snacfamilies.get(key);
+        if (list == null) {
+            list = new ArrayList();
+            snacfamilies.put(key, list);
+        }
+        return list;
+    }
+
+    private synchronized List getServiceListIfExists(int family) {
+        List list = (List) snacfamilies.get(new Integer(family));
+        return list == null || list.isEmpty() ? null : list;
     }
 
     private class LoginServiceFactory implements ServiceFactory {
@@ -273,6 +321,10 @@ public class AimConnection {
                 return new BosService(AimConnection.this, conn);
             } else if (family == IcbmCommand.FAMILY_ICBM) {
                 return new IcbmService(AimConnection.this, conn);
+            } else if (family == BuddyCommand.FAMILY_BUDDY) {
+                return new BuddyService(AimConnection.this, conn);
+            } else if (family == LocCommand.FAMILY_LOC) {
+                return new InfoService(AimConnection.this, conn);
             } else {
                 return null;
             }
@@ -303,7 +355,8 @@ public class AimConnection {
         public void connStateChanged(OscarConnection conn, ClientConnEvent event) {
             ClientConn.State state = event.getNewState();
             if (state == ClientConn.STATE_CONNECTED) {
-                setState(State.AUTHORIZING, new AuthorizingStateInfo(loginConn));
+                setState(State.CONNECTINGAUTH, State.AUTHORIZING,
+                        new AuthorizingStateInfo(loginConn));
             }
         }
     }
@@ -314,26 +367,31 @@ public class AimConnection {
         }
 
         public void loginFailed(LoginFailureInfo info) {
-            setState(State.FAILED, new LoginFailureStateInfo(info));
+            setState(null, State.FAILED, new LoginFailureStateInfo(info));
         }
     }
 
-    private class BosConnListener extends DefaultConnListener {
+    private class MainBosConnListener extends DefaultConnListener {
         public void allFamiliesReady(OscarConnection conn) {
             super.allFamiliesReady(conn);
 
-            setState(State.ONLINE, new OnlineStateInfo());
+            setState(State.SIGNINGON, State.ONLINE, new OnlineStateInfo());
         }
 
-        public void connStateChanged(OscarConnection conn, ClientConnEvent event) {
+        public void connStateChanged(OscarConnection conn,
+                ClientConnEvent event) {
             ClientConn.State state = event.getNewState();
+
             if (state == ClientConn.STATE_FAILED) {
-                setState(State.FAILED, new ConnectionFailedStateInfo(
+                setState(null, State.FAILED, new ConnectionFailedStateInfo(
                         conn.getHost(), conn.getPort()));
+
             } else if (state == ClientConn.STATE_NOT_CONNECTED) {
                 internalDisconnected();
+
             } else if (state == ClientConn.STATE_CONNECTED) {
-                setState(State.SIGNINGON, new SigningOnStateInfo());
+                setState(State.CONNECTING, State.SIGNINGON,
+                        new SigningOnStateInfo());
             }
         }
     }

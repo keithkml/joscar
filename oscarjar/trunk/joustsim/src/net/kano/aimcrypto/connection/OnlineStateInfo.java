@@ -36,4 +36,7 @@
 package net.kano.aimcrypto.connection;
 
 public class OnlineStateInfo extends StateInfo {
+    public OnlineStateInfo() {
+        super(State.ONLINE);
+    }
 }

@@ -95,7 +95,7 @@ public class LoginService extends Service {
         this.screenname = screenname;
         this.password = password;
 
-        ready();
+        setReady();
     }
 
     public SnacFamilyInfo getSnacFamilyInfo() {
@@ -127,7 +127,7 @@ public class LoginService extends Service {
             LoginServiceListener listener = (LoginServiceListener) it.next();
             listener.loginSucceeded(info);
         }
-        finished();
+        setFinished();
     }
 
     private void loginFailed(LoginFailureInfo info) {
@@ -142,7 +142,7 @@ public class LoginService extends Service {
             LoginServiceListener listener = (LoginServiceListener) it.next();
             listener.loginFailed(info);
         }
-        finished();
+        setFinished();
     }
 
     public void timeout(int timeout) {

@@ -288,6 +288,7 @@ public class OscarConnection {
 
     public final void setSnacFamilies(int[] snacFamilies)
             throws IllegalStateException {
+        List services;
         synchronized(this) {
             if (this.snacFamilies != null) {
                 throw new IllegalStateException("this connection "
@@ -299,33 +300,33 @@ public class OscarConnection {
             int[] families = (int[]) snacFamilies.clone();
             Arrays.sort(families);
             this.snacFamilies = families;
-        }
 
-        List services = new ArrayList(snacFamilies.length);
-        for (int i = 0; i < snacFamilies.length; i++) {
-            int family = snacFamilies[i];
+            services = new ArrayList(snacFamilies.length);
+            for (int i = 0; i < snacFamilies.length; i++) {
+                int family = snacFamilies[i];
 
-            Service service = serviceFactory.getService(this, family);
+                Service service = serviceFactory.getService(this, family);
 
-            if (service == null) {
-                logger.finer("No service for family 0x"
-                        + Integer.toHexString(family));
-                continue;
+                if (service == null) {
+                    logger.finer("No service for family 0x"
+                            + Integer.toHexString(family));
+                    continue;
+                }
+
+                int family2 = service.getFamily();
+                if (family2 != family) {
+                    logger.warning("Service returned by ServiceFactory for family "
+                            + "0x" + family + " is of wrong family (0x"
+                            + Integer.toHexString(family2) + ")");
+                    continue;
+                }
+                serviceManager.setService(family, service);
+                services.add(service);
             }
 
-            int family2 = service.getFamily();
-            if (family2 != family) {
-                logger.warning("Service returned by ServiceFactory for family "
-                        + "0x" + family + " is of wrong family (0x"
-                        + Integer.toHexString(family2) + ")");
-                continue;
-            }
-            serviceManager.setService(family, service);
-            services.add(service);
+            unready.addAll(services);
+            unfinished.addAll(services);
         }
-
-        unready.addAll(services);
-        unfinished.addAll(services);
 
         // services are initialized in the ascending order of their family codes
         ClientConn.State state = conn.getState();

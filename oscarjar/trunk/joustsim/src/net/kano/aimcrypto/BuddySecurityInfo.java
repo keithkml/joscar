@@ -36,16 +36,18 @@
 package net.kano.aimcrypto;
 
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.ByteBlock;
 
 import java.security.cert.X509Certificate;
 
-public final class BuddySecurityInfo {
+public final class BuddySecurityInfo implements AimCertificateHolder {
     private final Screenname buddy;
+    private ByteBlock hash;
     private X509Certificate encryptionCert;
     private X509Certificate signingCert;
 
-    public BuddySecurityInfo(Screenname buddy, X509Certificate encCert,
-            X509Certificate signingCert) {
+    public BuddySecurityInfo(Screenname buddy, ByteBlock hash,
+            X509Certificate encCert, X509Certificate signingCert) {
         DefensiveTools.checkNull(buddy, "buddy");
 
         this.buddy = buddy;
@@ -55,11 +57,9 @@ public final class BuddySecurityInfo {
 
     public final Screenname getBuddy() { return buddy; }
 
-    public X509Certificate getEncryptionCert() {
-        return encryptionCert;
-    }
+    public ByteBlock getCertificateInfoHash() { return hash; }
 
-    public X509Certificate getSigningCert() {
-        return signingCert;
-    }
+    public X509Certificate getEncryptionCert() { return encryptionCert; }
+
+    public X509Certificate getSigningCert() { return signingCert; }
 }

@@ -36,24 +36,28 @@
 package net.kano.aimcrypto.connection.oscar.service;
 
 import net.kano.aimcrypto.Screenname;
+import net.kano.aimcrypto.BuddySecurityInfo;
 import net.kano.joscar.snaccmd.icbm.RecvImIcbm;
+import net.kano.joscar.snaccmd.ExtraInfoBlock;
+import net.kano.joscar.snaccmd.ExtraInfoData;
+import net.kano.joscar.snaccmd.FullUserInfo;
+import net.kano.joscar.ByteBlock;
+import net.kano.joscar.BinaryTools;
 
 public class ImMessageInfo extends MessageInfo {
     static ImMessageInfo getInstance(Screenname to, RecvImIcbm icbm) {
-        Screenname from = new Screenname(icbm.getSenderInfo().getScreenname());
-        String msg = icbm.getMessage().getMessage();
-        boolean ar = icbm.isAutoResponse();
+        FullUserInfo senderInfo = icbm.getSenderInfo();
+        if (senderInfo == null) return null;
 
-        return new ImMessageInfo(from, to, new SimpleMessage(msg, ar));
+        Screenname from = new Screenname(senderInfo.getScreenname());
+
+        BasicInstantMessage im = BasicInstantMessage.getInstance(icbm);
+        if (im == null) return null;
+
+        return new ImMessageInfo(from, to, im);
     }
-
-    private final Message message;
 
     private ImMessageInfo(Screenname from, Screenname to, Message msg) {
-        super(from, to);
-
-        this.message = msg;
+        super(from, to, msg);
     }
-
-    public Message getMessage() { return message; }
 }

@@ -35,29 +35,22 @@
 
 package net.kano.aimcrypto.connection.oscar.service;
 
-public class ConversationNotOpenException extends RuntimeException {
-    private final Conversation conversation;
-
+public class ConversationNotOpenException extends ConversationException {
     public ConversationNotOpenException(Conversation conversation) {
-        this.conversation = conversation;
+        super(conversation);
     }
 
-    public ConversationNotOpenException(String message, Conversation conversation) {
-        super(message);
-        this.conversation = conversation;
-    }
-
-    public ConversationNotOpenException(Throwable cause,
+    public ConversationNotOpenException(String message,
             Conversation conversation) {
-        super(cause);
-        this.conversation = conversation;
+        super(message, conversation);
+    }
+
+    public ConversationNotOpenException(Throwable cause, Conversation conversation) {
+        super(cause, conversation);
     }
 
     public ConversationNotOpenException(String message, Throwable cause,
             Conversation conversation) {
-        super(message, cause);
-        this.conversation = conversation;
+        super(message, cause, conversation);
     }
-
-    public final Conversation getConversation() { return conversation; }
 }

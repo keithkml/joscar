@@ -36,7 +36,7 @@
 package net.kano.aimcrypto.connection;
 
 public final class State {
-    public static State NOT_CONNECTED = new State("NOT_CONNECTED");
+    public static State NOTCONNECTED = new State("NOT_CONNECTED");
     public static State CONNECTINGAUTH = new State("CONNECTINGAUTH");
     public static State AUTHORIZING = new State("AUTHORIZING");
     public static State CONNECTING = new State("CONNECTING");

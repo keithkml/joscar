@@ -43,6 +43,8 @@ public final class LoginFailureStateInfo extends StateInfo {
     private final LoginFailureInfo loginFailureInfo;
 
     public LoginFailureStateInfo(LoginFailureInfo loginFailureInfo) {
+        super(State.FAILED);
+
         DefensiveTools.checkNull(loginFailureInfo, "loginFailureInfo");
         this.loginFailureInfo = loginFailureInfo;
     }

@@ -40,6 +40,7 @@ public class ConnectionFailedStateInfo extends StateInfo {
     private final int port;
 
     public ConnectionFailedStateInfo(String host, int port) {
+        super(State.FAILED);
         this.host = host;
         this.port = port;
     }

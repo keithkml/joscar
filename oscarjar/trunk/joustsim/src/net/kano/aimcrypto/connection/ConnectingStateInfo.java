@@ -42,6 +42,7 @@ public final class ConnectingStateInfo extends StateInfo {
     private LoginSuccessInfo loginSuccessInfo;
 
     public ConnectingStateInfo(LoginSuccessInfo loginSuccessInfo) {
+        super(State.CONNECTING);
         this.loginSuccessInfo = loginSuccessInfo;
     }
 

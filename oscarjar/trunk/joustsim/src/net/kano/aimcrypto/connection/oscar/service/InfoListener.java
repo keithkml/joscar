@@ -42,7 +42,8 @@ import net.kano.joscar.snaccmd.DirInfo;
 public interface InfoListener {
     void gotDirectoryInfo(InfoService service, Screenname buddy, DirInfo info);
     void gotAwayMessage(InfoService service, Screenname buddy, String awayMsg);
-    void gotUserProfile(InfoService service, Screenname buddy, String infoString);
+    void gotUserProfile(InfoService service, Screenname buddy,
+            String profileString);
     void gotSecurityInfo(InfoService service, Screenname buddy,
             BuddySecurityInfo securityInfo);
 }

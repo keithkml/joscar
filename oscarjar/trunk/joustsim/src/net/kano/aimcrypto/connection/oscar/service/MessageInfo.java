@@ -40,15 +40,17 @@ import net.kano.aimcrypto.Screenname;
 public abstract class MessageInfo {
     private final Screenname from;
     private final Screenname to;
+    protected final Message message;
 
-    protected MessageInfo(Screenname from, Screenname to) {
+    protected MessageInfo(Screenname from, Screenname to, Message message) {
         this.from = from;
         this.to = to;
+        this.message = message;
     }
 
     public final Screenname getFrom() { return from; }
 
     public final Screenname getTo() { return to; }
 
-    public abstract Message getMessage();
+    public Message getMessage() { return message; }
 }

@@ -36,4 +36,7 @@
 package net.kano.aimcrypto.connection;
 
 public class DisconnectedStateInfo extends StateInfo {
+    public DisconnectedStateInfo() {
+        super(State.DISCONNECTED);
+    }
 }

@@ -37,8 +37,9 @@ package net.kano.aimcrypto.connection.oscar.service;
 
 import net.kano.aimcrypto.Screenname;
 import net.kano.aimcrypto.connection.AimConnection;
-import net.kano.joscar.snaccmd.icbm.IcbmCommand;
 import net.kano.joscar.snaccmd.icbm.SendImIcbm;
+
+import java.util.Iterator;
 
 public class ImConversation extends Conversation {
     private final AimConnection conn;
@@ -46,15 +47,11 @@ public class ImConversation extends Conversation {
     ImConversation(AimConnection conn, Screenname buddy) {
         super(buddy);
         this.conn = conn;
-    }
 
-    protected void initialize() {
-        open();
+        setAlwaysOpen();
     }
 
     public void sendMessage(Message msg) throws IllegalStateException {
-        ensureOpen();
-
         IcbmService service = getConnection().getIcbmService();
         if (service == null) {
             throw new IllegalStateException("no ICBM service to send to");
@@ -69,7 +66,15 @@ public class ImConversation extends Conversation {
     }
 
     public void handleMissedMsg(MissedImInfo info) {
-        // go through listeners and find ImConversationListeners
-    }
+        for (Iterator it = getListeners().iterator(); it.hasNext();) {
+            ConversationListener listener = (ConversationListener) it.next();
 
+            if (!(listener instanceof ImConversationListener)) continue;
+
+            ImConversationListener imlistener
+                    = (ImConversationListener) listener;
+
+            imlistener.missedMessages(this, info);
+        }
+    }
 }

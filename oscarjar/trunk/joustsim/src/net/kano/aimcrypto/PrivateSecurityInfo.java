@@ -44,29 +44,38 @@ import net.kano.aimcrypto.exceptions.WrongKeyTypesException;
 import java.net.URL;
 import java.security.Key;
 import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
+import java.security.NoSuchProviderException;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
+import java.security.cert.CertificateException;
 import java.security.interfaces.RSAPrivateKey;
+import java.io.IOException;
 
 public final class PrivateSecurityInfo {
     private final Screenname screenname;
-    private KeysInfo keysInfo;
+    private PrivateKeysInfo keysInfo;
 
     public PrivateSecurityInfo(Screenname screenname) {
         this(screenname, null);
     }
 
-    public PrivateSecurityInfo(Screenname screenname, KeysInfo keysInfo) {
+    public PrivateSecurityInfo(Screenname screenname, PrivateKeysInfo keysInfo) {
         DefensiveTools.checkNull(screenname, "screenname");
 
         this.screenname = screenname;
         this.keysInfo = keysInfo;
     }
 
-    public void loadKeysFromP12(URL p12url, String alias, String pass)
+    public Screenname getScreenname() { return screenname; }
+
+    public void loadKeysFromP12(URL p12url, String signingAlias,
+            String encryptionAlias, String pass)
             throws BadKeysException {
         try {
-            loadKeysImpl(p12url, alias, pass);
+            loadKeysImpl(p12url, signingAlias, encryptionAlias, pass);
         } catch (BadKeysException bke) {
             throw bke;
         } catch (Exception e) {
@@ -74,12 +83,31 @@ public final class PrivateSecurityInfo {
         }
     }
 
-    private void loadKeysImpl(URL url, String alias, String pass)
-            throws BadKeysException, Exception {
+    private void loadKeysImpl(URL url, String signingAlias,
+            String encryptionAlias, String pass)
+            throws BadKeysException, NoSuchProviderException,
+            KeyStoreException, IOException, NoSuchAlgorithmException,
+            CertificateException, UnrecoverableKeyException {
+        boolean same = encryptionAlias.equals(signingAlias);
         char[] passChars = pass.toCharArray();
 
         KeyStore ks = KeyStore.getInstance("PKCS12", "BC");
         ks.load(url.openStream(), passChars);
+
+        KeyPair signingKeys = loadKeys(ks, signingAlias, passChars);
+        KeyPair encryptionKeys;
+        if (same) encryptionKeys = signingKeys;
+        else encryptionKeys = loadKeys(ks, encryptionAlias, passChars);
+
+        synchronized(this) {
+            keysInfo = new PrivateKeysInfo(signingKeys, encryptionKeys);
+        }
+    }
+
+    private static KeyPair loadKeys(KeyStore ks, String alias, char[] passChars)
+            throws KeyStoreException, NoSuchAliasException,
+            NoSuchAlgorithmException, UnrecoverableKeyException,
+            InsufficientKeysException, WrongKeyTypesException {
 
         if (!ks.containsAlias(alias)) {
             throw new NoSuchAliasException(alias);
@@ -100,17 +128,10 @@ public final class PrivateSecurityInfo {
                     isx509 ? null : pubCert.getClass());
         }
 
-        synchronized(this) {
-            keysInfo = new KeysInfo((RSAPrivateKey) privKey,
-                    (X509Certificate) pubCert);
-        }
+        return new KeyPair((RSAPrivateKey) privKey, (X509Certificate) pubCert);
     }
 
-    public synchronized void forgetKeys() {
-        keysInfo = null;
-    }
+    public PrivateKeysInfo getKeysInfo() { return keysInfo; }
 
-    public Screenname getScreenname() { return screenname; }
-
-    public KeysInfo getKeysInfo() { return keysInfo; }
+    public synchronized void forgetKeys() { keysInfo = null; }
 }

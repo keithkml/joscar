@@ -36,4 +36,11 @@
 package net.kano.aimcrypto.connection;
 
 public abstract class StateInfo {
+    private final State state;
+
+    protected StateInfo(State state) {
+        this.state = state;
+    }
+
+    public final State getState() { return state; }
 }

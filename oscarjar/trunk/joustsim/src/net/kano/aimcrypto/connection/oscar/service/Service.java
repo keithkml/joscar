@@ -122,7 +122,7 @@ public abstract class Service {
         oscarConnection.sendSnac(snac);
     }
 
-    protected void ready() {
+    protected void setReady() {
         //TODO: optimize logging statements
         logger.finer(MiscTools.getClassName(this) + " is ready");
 
@@ -136,7 +136,7 @@ public abstract class Service {
         }
     }
 
-    protected void finished() {
+    protected void setFinished() {
         logger.finer(MiscTools.getClassName(this) + " is finished");
 
         synchronized(this) {

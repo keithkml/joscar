@@ -114,6 +114,8 @@ public class BosService extends Service {
             sendSnac(new ClientVersionsCmd(familyInfos));
             sendSnac(new RateInfoRequest());
 
+            serverReady();
+
         } else if (snac instanceof RateInfoCmd) {
             RateInfoCmd ric = (RateInfoCmd) snac;
 
@@ -125,8 +127,19 @@ public class BosService extends Service {
             }
 
             sendSnac(new RateAck(classes));
-            ready();
+
+            beforeClientReady();
+
+            setReady();
         }
+    }
+
+    protected void beforeClientReady() {
+
+    }
+
+    protected void serverReady() {
+
     }
 
     private synchronized void setSnacFamilyInfos(

@@ -36,4 +36,7 @@
 package net.kano.aimcrypto.connection;
 
 public class SigningOnStateInfo extends StateInfo {
+    public SigningOnStateInfo() {
+        super(State.SIGNINGON);
+    }
 }

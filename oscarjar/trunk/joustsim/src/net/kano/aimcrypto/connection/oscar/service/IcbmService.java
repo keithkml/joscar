@@ -46,7 +46,10 @@ import net.kano.joscar.snaccmd.icbm.SetParamInfoCmd;
 import net.kano.joscar.snaccmd.icbm.RecvImIcbm;
 import net.kano.joscar.snaccmd.icbm.MissedMessagesCmd;
 import net.kano.joscar.snaccmd.icbm.MissedMsgInfo;
+import net.kano.joscar.snaccmd.icbm.InstantMessage;
+import net.kano.joscar.snaccmd.icbm.SendImIcbm;
 import net.kano.joscar.snaccmd.conn.SnacFamilyInfo;
+import net.kano.joscar.snaccmd.FullUserInfo;
 import net.kano.joscar.snac.SnacPacketEvent;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.CopyOnWriteArrayList;
@@ -87,42 +90,98 @@ public class IcbmService extends Service {
         if (snac instanceof ParamInfoCmd) {
             ParamInfoCmd pic = (ParamInfoCmd) snac;
 
-            // we need to change from the default parameter infos to something
-            // cooler
-
-            ParamInfo pi = pic.getParamInfo();
-            long newflags = pi.getFlags()
-                    | ParamInfo.FLAG_CHANMSGS_ALLOWED
-                    | ParamInfo.FLAG_MISSEDCALLS_ALLOWED
-                    | ParamInfo.FLAG_TYPING_NOTIFICATION;
-            ParamInfo newparams = new ParamInfo(newflags, 8000, 999, 999, 0);
-            this.paramInfo = newparams;
-            sendSnac(new SetParamInfoCmd(newparams));
-            ready();
+            handleParamInfo(pic);
 
         } else if (snac instanceof RecvImIcbm) {
             RecvImIcbm icbm = (RecvImIcbm) snac;
-            Screenname sn = new Screenname(icbm.getSenderInfo().getScreenname());
+            handleImIcbm(icbm);
 
-            if (icbm.getMessage().isEncrypted()) {
-            } else {
-                ImConversation conv = getImConversation(sn);
-                ImMessageInfo msg = ImMessageInfo.getInstance(
-                        getScreenname(), icbm);
-                conv.fireIncomingEvent(msg);
-            }
-            
         } else if (snac instanceof MissedMessagesCmd) {
             MissedMessagesCmd mc = (MissedMessagesCmd) snac;
-            MissedMsgInfo[] msgs = mc.getMissedMsgInfos();
-            for (int i = 0; i < msgs.length; i++) {
-                MissedMsgInfo msg = msgs[i];
+            handleMissedMessages(mc);
+        }
+    }
 
-                Screenname sn = new Screenname(msg.getUserInfo().getScreenname());
-                ImConversation conv = getImConversation(sn);
-                conv.handleMissedMsg(MissedImInfo.getInstance(getScreenname(), msg));
+    private void handleParamInfo(ParamInfoCmd pic) {
+        // we need to change from the default parameter infos to something
+        // cooler, so we do it here
+        ParamInfo pi = pic.getParamInfo();
+        long newflags = pi.getFlags()
+                | ParamInfo.FLAG_CHANMSGS_ALLOWED
+                | ParamInfo.FLAG_MISSEDCALLS_ALLOWED
+                | ParamInfo.FLAG_TYPING_NOTIFICATION;
+
+        ParamInfo newparams = new ParamInfo(newflags, 8000, 999, 999, 0);
+        this.paramInfo = newparams;
+
+        sendSnac(new SetParamInfoCmd(newparams));
+
+        setReady();
+    }
+
+    private void handleMissedMessages(MissedMessagesCmd mc) {
+        MissedMsgInfo[] msgs = mc.getMissedMsgInfos();
+        for (int i = 0; i < msgs.length; i++) {
+            MissedMsgInfo msg = msgs[i];
+
+            Screenname sn = new Screenname(msg.getUserInfo().getScreenname());
+            ImConversation conv = getImConversation(sn);
+
+            //TODO: handle icbm buddy info
+
+            conv.handleMissedMsg(MissedImInfo.getInstance(getScreenname(),
+                    msg));
+        }
+    }
+
+    private void handleImIcbm(RecvImIcbm icbm) {
+        FullUserInfo senderInfo = icbm.getSenderInfo();
+        if (senderInfo == null) return;
+        Screenname sn = new Screenname(senderInfo.getScreenname());
+
+        InstantMessage message = icbm.getMessage();
+        if (message == null) return;
+
+        if (message.isEncrypted()) {
+            SecureAimConversation conv = getSecureAimConversation(sn);
+
+            SecureAimMessage msg = SecureAimMessage.getInstance(icbm);
+            if (msg == null) return;
+
+            SecureAimMessageInfo minfo = SecureAimMessageInfo.getInstance(sn,
+                    icbm);
+            if (minfo == null) return;
+            
+            conv.fireIncomingEvent(minfo);
+
+        } else {
+            ImConversation conv = getImConversation(sn);
+
+//                getAimConnection().getBuddyInfoManager().getBuddyInfo(sn);
+
+            ImMessageInfo msg = ImMessageInfo.getInstance(getScreenname(),
+                    icbm);
+            conv.fireIncomingEvent(msg);
+        }
+    }
+
+    private Map secureAimConvs = new HashMap();
+
+    private SecureAimConversation getSecureAimConversation(Screenname sn) {
+        boolean isnew = false;
+        SecureAimConversation conv;
+        synchronized(this) {
+            conv = (SecureAimConversation) imconvs.get(sn);
+            if (conv == null) {
+                isnew = true;
+                conv = new SecureAimConversation(getAimConnection(), sn);
+                imconvs.put(sn, conv);
             }
         }
+        // we need to initialize this outside of the lock to prevent deadlocks
+        if (isnew) initConversation(conv);
+
+        return conv;
     }
 
     private Map imconvs = new HashMap();
@@ -144,11 +203,18 @@ public class IcbmService extends Service {
         return conv;
     }
 
-    private void initConversation(ImConversation conv) {
+    private void initConversation(Conversation conv) {
         conv.initialize();
+
         for (Iterator it = listeners.iterator(); it.hasNext();) {
             IcbmListener listener = (IcbmListener) it.next();
             listener.newConversation(this, conv);
         }
+    }
+
+    public void sendIM(Screenname buddy, InstantMessage im,
+            boolean autoresponse) {
+        sendSnac(new SendImIcbm(buddy.getFormatted(), im, autoresponse, 0,
+                false, null, null, true));
     }
 }
