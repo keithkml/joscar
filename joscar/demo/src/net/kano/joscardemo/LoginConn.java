@@ -100,9 +100,12 @@ public class LoginConn extends AbstractFlapConn {
 
 //            ClientVersionInfo version = new ClientVersionInfo("Apple iChat",
 //                    0x311a, 1, 0, 0, 60, 198);
+//            ClientVersionInfo version = new ClientVersionInfo(
+//                    "AOL Instant Messenger, version 5.2.3292/WIN32",
+//                    0x0109, 5, 2, 0, 3292, 238);
             ClientVersionInfo version = new ClientVersionInfo(
-                    "AOL Instant Messenger, version 5.2.3292/WIN32",
-                    0x0109, 5, 2, 0, 3292, 238);
+                    "AOL Instant Messenger, version 5.5.3415/WIN32",
+                    0x0109, 5, 5, 0, 3415, 239);
 
             request(new AuthRequest(
                     tester.getScreenname(), tester.getPassword(),

@@ -38,11 +38,13 @@ import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.Writable;
+import net.kano.joscar.MiscTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.regex.Pattern;
 
 /**
  * Represents a single "capability" that a client may have. Such capabilities
@@ -325,24 +327,12 @@ public final class CapabilityBlock implements Writable {
 
     public int hashCode() { return hashCode; }
 
-    public String toString() {
-        String name = "unknown capability block";
-        Field[] fields = CapabilityBlock.class.getFields();
-        for (int i = 0; i < fields.length; i++) {
-            Field field = fields[i];
+    private static final Pattern blockFieldRE = Pattern.compile("BLOCK_.*");
 
-            if (!Modifier.isStatic(field.getModifiers())) continue;
-            if (!field.getName().startsWith("BLOCK_")) continue;
-            try {
-                if (field.get(null).equals(this)) {
-                    name = field.getName();
-                    break;
-                }
-            } catch (IllegalAccessException e) {
-                continue;
-            }
-        }
-        return "CapabilityBlock: " + BinaryTools.describeData(block) + " ("
-                + name + ")";
+    public String toString() {
+        String name = MiscTools.findEqualField(CapabilityBlock.class, this,
+                blockFieldRE);
+        return "CapabilityBlock: " + BinaryTools.describeData(block)
+                + " (" + (name == null ? "unknown capability block" : name) + ")";
     }
 }

@@ -48,7 +48,7 @@ public abstract class RoomCommand extends SnacCommand {
 
     /** A set of SNAC family information for this family. */
     public static final SnacFamilyInfo FAMILY_INFO
-            = new SnacFamilyInfo(FAMILY_ROOM, 0x0001, 0x0010, 0x0739);
+            = new SnacFamilyInfo(FAMILY_ROOM, 0x0001, 0x0010, 0x0801);
 
     /** A command subtype for requesting chat room "rights." */
     public static final int CMD_RIGHTS_REQ = 0x0002;

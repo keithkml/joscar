@@ -56,6 +56,8 @@ import net.kano.joscar.snaccmd.icbm.ParamInfo;
 import net.kano.joscar.snaccmd.icbm.ParamInfoCmd;
 import net.kano.joscar.snaccmd.icbm.ParamInfoRequest;
 import net.kano.joscar.snaccmd.icbm.SetParamInfoCmd;
+import net.kano.joscar.snaccmd.icbm.RecvTypingNotification;
+import net.kano.joscar.snaccmd.icbm.SendTypingNotification;
 import net.kano.joscar.snaccmd.loc.LocRightsCmd;
 import net.kano.joscar.snaccmd.loc.LocRightsRequest;
 import net.kano.joscar.snaccmd.loc.SetInfoCmd;
@@ -65,6 +67,7 @@ import net.kano.joscar.snaccmd.ssi.SsiDataCmd;
 import net.kano.joscar.snaccmd.ssi.SsiDataRequest;
 import net.kano.joscar.snaccmd.ssi.SsiItem;
 import net.kano.joscar.snaccmd.ssi.SsiRightsRequest;
+import net.kano.joscar.snaccmd.ssi.SsiRightsCmd;
 import net.kano.joscar.ssiitem.DefaultSsiItemObjFactory;
 import net.kano.joscar.ssiitem.SsiItemObj;
 import net.kano.joscar.ssiitem.SsiItemObjectFactory;
@@ -118,6 +121,10 @@ public class BosFlapConn extends BasicConn {
             request(new LocRightsRequest());
             request(new SsiRightsRequest());
             request(new SsiDataRequest());
+        } else if (cmd instanceof RecvTypingNotification) {
+            RecvTypingNotification rtn = (RecvTypingNotification) cmd;
+
+            request(new SendTypingNotification(rtn.getScreenname(), rtn.getTypingState()));
         }
     }
 
@@ -236,6 +243,7 @@ public class BosFlapConn extends BasicConn {
             SsiDataCmd sdc = (SsiDataCmd) cmd;
 
             SsiItem[] items = sdc.getItems();
+            System.out.println("SSI items: " + items.length);
             for (int i = 0; i < items.length; i++) {
                 SsiItemObj obj = itemFactory.getItemObj(items[i]);
                 System.out.println("- " + (obj == null ? (Object) items[i]
@@ -246,6 +254,16 @@ public class BosFlapConn extends BasicConn {
                 System.out.println("done with SSI");
                 request(new ActivateSsiCmd());
                 clientReady();
+            }
+        } else if (cmd instanceof SsiRightsCmd) {
+            SsiRightsCmd src = (SsiRightsCmd) cmd;
+
+            System.out.println("SSI maxima:");
+            int[] maxima = src.getMaxima();
+            for (int i = 0; i < maxima.length; i++) {
+                int max = maxima[i];
+
+                System.out.println("- 0x" + Integer.toHexString(i) + ": " + max);
             }
         }
     }

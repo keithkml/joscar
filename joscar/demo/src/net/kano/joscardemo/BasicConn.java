@@ -84,6 +84,7 @@ import net.kano.joscar.snaccmd.conn.RateInfoRequest;
 import net.kano.joscar.snaccmd.conn.ServerReadyCmd;
 import net.kano.joscar.snaccmd.conn.SnacFamilyInfo;
 import net.kano.joscar.snaccmd.conn.WarningNotification;
+import net.kano.joscar.snaccmd.conn.ServerVersionsCmd;
 import net.kano.joscar.snaccmd.icbm.InstantMessage;
 import net.kano.joscar.snaccmd.icbm.RecvImIcbm;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
@@ -287,12 +288,12 @@ public abstract class BasicConn extends AbstractFlapConn {
         SnacCommand cmd = e.getSnacCommand();
         if (cmd instanceof ServerReadyCmd) {
             ServerReadyCmd src = (ServerReadyCmd) cmd;
+            int[] families = src.getSnacFamilies();
 
-            setSnacFamilies(src.getSnacFamilies());
+            setSnacFamilies(families);
 
             SnacFamilyInfo[] familyInfos = SnacFamilyInfoFactory
-                    .getDefaultFamilyInfos(src.getSnacFamilies());
-
+                    .getDefaultFamilyInfos(families);
             setSnacFamilyInfos(familyInfos);
 
             tester.registerSnacFamilies(this);
@@ -458,6 +459,10 @@ public abstract class BasicConn extends AbstractFlapConn {
 
             System.out.println("rate change: current avg is "
                     + rc.getRateInfo().getCurrentAvg());
+        } else if (cmd instanceof ServerVersionsCmd) {
+            ServerVersionsCmd svc = (ServerVersionsCmd) cmd;
+
+            SnacFamilyInfo[] familyInfos = svc.getSnacFamilyInfos();
         }
     }
 
@@ -478,7 +483,7 @@ public abstract class BasicConn extends AbstractFlapConn {
             int[] classes = new int[rateClasses.length];
             for (int i = 0; i < rateClasses.length; i++) {
                 classes[i] = rateClasses[i].getRateClass();
-//                System.out.println("- " + rateClasses[i] + ": " + Arrays.asList(rateClasses[i].getCommands()));
+                System.out.println("- " + rateClasses[i] + ": " + Arrays.asList(rateClasses[i].getCommands()));
             }
 
             request(new RateAck(classes));

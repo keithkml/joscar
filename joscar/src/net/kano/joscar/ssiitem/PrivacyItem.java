@@ -38,9 +38,12 @@ package net.kano.joscar.ssiitem;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.MiscTools;
 import net.kano.joscar.snaccmd.FullUserInfo;
 import net.kano.joscar.snaccmd.ssi.SsiItem;
 import net.kano.joscar.tlv.*;
+
+import java.util.regex.Pattern;
 
 /**
  * An SSI item object containing various privacy-related settings.
@@ -345,9 +348,14 @@ if ((privacyItem.getVisibleMask() & PrivacyItem.VISMASK_HIDE_WIRELESS) != 0) {
                 SsiItem.TYPE_PRIVACY, chain);
     }
 
+    /** A pattern matching the MODE_* fields of this class. */
+    private static final Pattern modeFieldRE = Pattern.compile("MODE_.*");
+
     public synchronized String toString() {
         return "PrivacyItem: id=0x" + Integer.toHexString(id)
                 + ", mode=" + privacyMode
+                + "(" + MiscTools.findIntField(PrivacyItem.class, privacyMode,
+                        modeFieldRE) + ")"
                 + ", classMask=0x" + Long.toHexString(classMask)
                 + ", visMask=0x" + Long.toHexString(visibleMask);
     }

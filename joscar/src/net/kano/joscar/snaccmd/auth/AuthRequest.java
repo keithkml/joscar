@@ -126,9 +126,10 @@ public class AuthRequest extends AuthCommand {
                 digest = MessageDigest.getInstance("MD5");
             } catch (NoSuchAlgorithmException impossible) { return null; }
             passBytes = digest.digest(passBytes);
+            return getPassHash(digest, key, ByteBlock.wrap(passBytes));
+        } else {
+            return getPassHash(key, ByteBlock.wrap(passBytes));
         }
-
-        return getPassHash(key, ByteBlock.wrap(passBytes));
     }
 
     /**
@@ -146,6 +147,22 @@ public class AuthRequest extends AuthCommand {
             md5 = MessageDigest.getInstance("MD5");
         } catch (NoSuchAlgorithmException impossible) { return null; }
 
+        return getPassHash(md5, key, passBytes);
+
+    }
+
+    /**
+     * Returns the MD5 sum of the given key, the given block of password data,
+     * and the string "AOL Instant Messenger (SM)".
+     *
+     * @param md5 a message digest object to use
+     * @param key a block of data
+     * @param passBytes another block of data
+     * @return the MD5 sum of the given key, password data, and {@link
+     *         #AIMSM_BYTES}
+     */
+    private static byte[] getPassHash(MessageDigest md5,
+            ByteBlock key, ByteBlock passBytes) {
         md5.update(key.toByteArray());
         md5.update(passBytes.toByteArray());
         md5.update(AIMSM_BYTES);
@@ -286,12 +303,6 @@ public class AuthRequest extends AuthCommand {
         // right here WinAIM sends an empty 0x004c TLV, but it causes our MD5
         // password hash to stop working :(
         if (hashedPass) new Tlv(TYPE_HASHEDPASS).write(out);
-
-        // when the value of the TLV sent on this line is 0x0109, we are able to
-        // set a buddy icon using SSI (SSI item type 0x14). when the value is
-        // 0x0001, like AIM 3.5 sends, we cannot. well, we can store one on the
-        // server, but no buddy icon actually shows up in buddies' IM windows.
-        Tlv.getUShortInstance(0x0016, 0x0109).write(out);
 
         // write the version TLV's
         if (version != null) version.write(out);

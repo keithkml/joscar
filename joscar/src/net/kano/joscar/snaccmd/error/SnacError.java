@@ -38,6 +38,7 @@ package net.kano.joscar.snaccmd.error;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.MiscTools;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.flapcmd.SnacPacket;
 
@@ -45,6 +46,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.regex.Pattern;
 
 /**
  * A SNAC command representing a SNAC error sent in any supported SNAC family.
@@ -197,23 +199,13 @@ public class SnacError extends SnacCommand {
         BinaryTools.writeUShort(out, code);
     }
 
+    private static final Pattern codeFieldRE = Pattern.compile("CODE_.*");
+
     public String toString() {
         String name = null;
-        Field[] fields = SnacError.class.getFields();
-        for (int i = 0; i < fields.length; i++) {
-            Field field = fields[i];
-
-            if (!Modifier.isStatic(field.getModifiers())) continue;
-            if (!field.getName().startsWith("CODE_")) continue;
-            try {
-                if (field.getInt(null) == code) {
-                    name = field.getName();
-                }
-            } catch (IllegalAccessException e) {
-                continue;
-            }
-        }
+        name = MiscTools.findIntField(SnacError.class, code, codeFieldRE);
         return "SnacError: code=0x" + Integer.toHexString(code) + " (name: "
                 + name + ")";
     }
+
 }

@@ -51,9 +51,7 @@ import net.kano.joscar.snaccmd.rooms.RoomCommand;
 import net.kano.joscar.snaccmd.search.SearchCommand;
 import net.kano.joscar.snaccmd.ssi.SsiCommand;
 
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -70,7 +68,7 @@ import java.util.Map;
  * <code>SnacCommand</code> implementations provided by joscar may not be able
  * to handle.
  */
-public final class SnacFamilyInfoFactory {
+public class SnacFamilyInfoFactory {
     /**
      * As the only constructor, this guarantees an instance of this class can
      * never be created.
@@ -99,10 +97,38 @@ public final class SnacFamilyInfoFactory {
 
     Buddy search server:
         0x000f, 0x0001, 0x0010, 0x0629
+
+
+    From WinAIM 5.5 beta:
+
+    BOS:
+        0x0001, 0x0004, 0x0010, 0x0801
+        0x0002, 0x0001, 0x0110, 0x0801
+        0x0003, 0x0001, 0x0110, 0x0801
+        0x0004, 0x0001, 0x0110, 0x0801
+        0x0006, 0x0001, 0x0110, 0x0801
+        0x0008, 0x0001, 0x0104, 0x0001
+        0x0009, 0x0001, 0x0110, 0x0801
+        0x000a, 0x0001, 0x0110, 0x0801
+        0x000b, 0x0001, 0x0104, 0x0001
+        0x0013, 0x0003, 0x0110, 0x0801
+
+    Buddy Icon server:
+        0x0010, 0x0001, 0x0110, 0x0801
+
+    Buddy search server:
+        0x000f, 0x0001, 0x0110, 0x0801
+
+    Account admin server:
+        0x0007, 0x0001, 0x0110, 0x0801
+
+    Chat servers:
+        0x000d, 0x0001, 0x0110, 0x0801
+        0x000e, 0x0001, 0x0110, 0x0801
     */
 
     static {
-        List infos = Arrays.asList(new SnacFamilyInfo[] {
+        SnacFamilyInfo[] infos = new SnacFamilyInfo[] {
             AuthCommand.FAMILY_INFO,
             ConnCommand.FAMILY_INFO,
             LocCommand.FAMILY_INFO,
@@ -116,11 +142,13 @@ public final class SnacFamilyInfoFactory {
             IconCommand.FAMILY_INFO,
             SsiCommand.FAMILY_INFO,
             IcbmCommand.FAMILY_INFO,
-        });
+        };
 
-        for (Iterator it = infos.iterator(); it.hasNext();) {
-            SnacFamilyInfo sfi = (SnacFamilyInfo) it.next();
-            families.put(new Integer(sfi.getFamily()), sfi);
+        synchronized(families) {
+            for (int i = 0; i < infos.length; i++) {
+                SnacFamilyInfo sfi = infos[i];
+                families.put(new Integer(sfi.getFamily()), sfi);
+            }
         }
     }
 
@@ -155,10 +183,12 @@ void handleServerReadyCmd(ServerReadyCmd serverReadyCmd) {
 
         List list = new LinkedList();
 
-        for (int i = 0; i < supportedFamilies.length; i++) {
-            SnacFamilyInfo info = getFamily(supportedFamilies[i]);
+        synchronized(families) {
+            for (int i = 0; i < supportedFamilies.length; i++) {
+                SnacFamilyInfo info = getFamily(supportedFamilies[i]);
 
-            if (info != null) list.add(info);
+                if (info != null) list.add(info);
+            }
         }
 
         return (SnacFamilyInfo[]) list.toArray(new SnacFamilyInfo[0]);
@@ -172,6 +202,8 @@ void handleServerReadyCmd(ServerReadyCmd serverReadyCmd) {
      * @return a <code>SnacFamilyInfo</code> for the given family
      */
     private static SnacFamilyInfo getFamily(int family) {
-        return (SnacFamilyInfo) families.get(new Integer(family));
+        synchronized(families) {
+            return (SnacFamilyInfo) families.get(new Integer(family));
+        }
     }
 }
