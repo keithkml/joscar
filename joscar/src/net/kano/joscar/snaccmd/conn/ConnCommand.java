@@ -68,6 +68,9 @@ public abstract class ConnCommand extends SnacCommand {
     /** A command subtype for setting one's "extra info blocks." */
     public static final int CMD_SETEXTRAINFO = 0x001e;
 
+    public static final int CMD_SETENCINFO = 0x0022;
+    public static final int CMD_ENCINFOACK = 0x0023;
+
     /**
      * A command subtype for when the server is ready for the client to begin
      * logging in.

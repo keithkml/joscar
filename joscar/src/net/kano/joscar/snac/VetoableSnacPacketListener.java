@@ -37,32 +37,32 @@ package net.kano.joscar.snac;
 
 /**
  * Provides an interface for processing and intercepting SNAC packets received
- * on a <code>SnacProcessor</code>, optionally halting further processing of any
+ * on a SNAC processor, optionally halting further processing of any
  * given packet.
  */
 public interface VetoableSnacPacketListener {
     /**
-     * A value indicating that the <code>SnacProcessor</code> should stop
-     * passing the packet through other vetoable and non-vetoable listeners.
-     * This value indicates that further internal processing may be done on
-     * the packet, though as of this writing no such processing is done either
-     * way. It is suggested to use this instead of
-     * <code>STOP_PROCESSING_ALL</code>, however, to allow for future expansion
-     * of the SNAC processing code in <code>SnacProcessor</code>.
+     * A value indicating that the SNAC processor should stop passing the packet
+     * through other vetoable and non-vetoable listeners. This value indicates
+     * that further internal processing may be performed on the packet, though
+     * as of this writing no such processing is done either way. It is suggested
+     * to use this instead of <code>STOP_PROCESSING_ALL</code>, however, to
+     * allow for future expansion of the SNAC processing code internal to
+     * joscar.
      */
     static final Object STOP_PROCESSING_LISTENERS = new Object();
 
     /**
-     * A value indicating that the <code>SnacProcessor</code> should stop
-     * all further processing of a packet immediately. As of this writing, this
-     * is functionally equivalent to <code>STOP_PROCESSING_LISTENERS</code>,
-     * as no further processing is done anyway.
+     * A value indicating the SNAC processor should stop all further
+     * processing of a packet immediately. As of this writing, this is
+     * functionally equivalent to <code>STOP_PROCESSING_LISTENERS</code>, as
+     * no further processing is done anyway.
      */
     static final Object STOP_PROCESSING_ALL = new Object();
 
     /**
-     * A value indicating that the <code>SnacProcessor</code> should continue
-     * processing the given packet normally.
+     * A value indicating that the SNAC processor should continue processing
+     * the given packet normally.
      */
     static final Object CONTINUE_PROCESSING = new Object();
 

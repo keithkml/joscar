@@ -123,6 +123,8 @@ public class BosFlapConn extends BasicConn {
                         CapabilityBlock.BLOCK_VOICE,
                         CapabilityBlock.BLOCK_ADDINS,
                         CapabilityBlock.BLOCK_ICQCOMPATIBLE,
+                        CapabilityBlock.BLOCK_SHORTCAPS,
+                        CapabilityBlock.BLOCK_ENCRYPTION,
                     })));
 
             request(new MyInfoRequest());

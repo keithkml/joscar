@@ -225,9 +225,6 @@ public class AuthRequest extends AuthCommand {
         // write the version TLV's
         if (version != null) version.write(out);
 
-        // winaim sends this, so we do too.
-        Tlv.getUIntInstance(0x0014, 0x000000d2).write(out);
-
         if (locale != null) {
             String country = locale.getCountry();
             if (!country.equals("")) {

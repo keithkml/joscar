@@ -64,6 +64,7 @@ import net.kano.joscar.snaccmd.acct.ConfirmAcctCmd;
 import net.kano.joscar.snaccmd.chat.ChatMsg;
 import net.kano.joscar.snaccmd.conn.ServiceRequest;
 import net.kano.joscar.snaccmd.conn.SetExtraInfoCmd;
+import net.kano.joscar.snaccmd.conn.SetEncryptionInfoCmd;
 import net.kano.joscar.snaccmd.icbm.OldIconHashInfo;
 import net.kano.joscar.snaccmd.icbm.SendImIcbm;
 import net.kano.joscar.snaccmd.icon.UploadIconCmd;
@@ -427,6 +428,24 @@ public class JoscarTester implements CmdLineListener {
                 }));
             }
         });
+        cmdMap.put("setimenc", new CLCommand() {
+            public void handle(String line, String cmd, String[] args) {
+                byte[] bytes = null;
+                try {
+                    MessageDigest digester = MessageDigest.getInstance("MD5");
+                    bytes = digester.digest();
+                } catch (NoSuchAlgorithmException e) {
+                    e.printStackTrace();
+                }
+                System.out.println("bytes=" + bytes);
+                request(new SetEncryptionInfoCmd(new ExtraInfoBlock[] {
+                    new ExtraInfoBlock(0x0402, new ExtraInfoData(1,
+                            ByteBlock.wrap(bytes))),
+                    new ExtraInfoBlock(0x0403, new ExtraInfoData(1,
+                            ByteBlock.wrap(bytes))),
+                }));
+            }
+        });
     }
 
     protected static byte[] hashIcon(String filename) throws IOException {
@@ -651,7 +670,7 @@ public class JoscarTester implements CmdLineListener {
                 RvSession session = bosConn.rvProcessor.createRvSession(
                         args[0]);
 
-                ServerSocket socket = null;
+                ServerSocket socket;
                 try {
                     socket = new ServerSocket(7050);
 
@@ -764,7 +783,7 @@ public class JoscarTester implements CmdLineListener {
 
                 session.addListener(bosConn.rvSessionListener);
 
-                ServerSocket socket = null;
+                ServerSocket socket;
                 try {
                     socket = new ServerSocket(0);
 

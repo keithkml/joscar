@@ -60,6 +60,7 @@ public class ClientConnCmdFactory implements SnacCmdFactory {
         new CmdType(ConnCommand.FAMILY_CONN, ConnCommand.CMD_RESUME),
         new CmdType(ConnCommand.FAMILY_CONN, ConnCommand.CMD_MIGRATE_PLS),
         new CmdType(ConnCommand.FAMILY_CONN, ConnCommand.CMD_EXTRA_ACK),
+        new CmdType(ConnCommand.FAMILY_CONN, ConnCommand.CMD_ENCINFOACK),
     };
 
     public CmdType[] getSupportedTypes() {
@@ -97,6 +98,8 @@ public class ClientConnCmdFactory implements SnacCmdFactory {
             return new MigrationNotice(packet);
         } else if (command == ConnCommand.CMD_EXTRA_ACK) {
             return new ExtraInfoAck(packet);
+        } else if (command == ConnCommand.CMD_ENCINFOACK) {
+            return new EncryptionInfoAck(packet);
         } else {
             return null;
         }

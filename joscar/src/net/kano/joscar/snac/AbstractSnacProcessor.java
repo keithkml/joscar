@@ -66,15 +66,15 @@ import java.util.Iterator;
  * each for further detail.
  * <br>
  * <br>
- * It may also be of interest to note that <code>SnacProcessor</code> attaches
- * a <i>vetoable</i> packet listener to any attached <code>FlapProcessor</code>,
- * effectively removing any incoming SNAC packet from the FlapProcessor's event
- * queue. In practice this means that if you attach a <code>SnacProcessor</code>
- * to a <code>FlapProcessor</code> on which you are listening for FLAP packets,
- * your packet listener will not be called when a channel-2 packet (SNAC packet)
- * is received on that <code>FlapProcessor</code>. Instead, it will be processed
- * as a <code>SnacPacket</code> and passed to any listeners on the
- * <code>SnacProcessor</code>.
+ * It may also be of interest to note that <code>AbstractSnacProcessor</code>
+ * attaches a <i>vetoable</i> packet listener to any attached
+ * <code>FlapProcessor</code>, effectively removing any incoming SNAC packet
+ * from the FlapProcessor's event queue. In practice this means that if you
+ * attach a SNAC processor to a <code>FlapProcessor</code> on which you are
+ * listening for FLAP packets, your packet listener will not be called when a
+ * channel-2 packet (SNAC packet) is received on that
+ * <code>FlapProcessor</code>. Instead, it will be processed as a
+ * <code>SnacPacket</code> and passed to any listeners on the SNAC processor.
  * <br>
  * <br>
  * Upon receipt of a SNAC packet, the packet is processed in the following

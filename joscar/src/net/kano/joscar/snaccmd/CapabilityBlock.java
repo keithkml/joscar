@@ -41,6 +41,8 @@ import net.kano.joscar.Writable;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 
 /**
  * Represents a single "capability" that a client may have. Such capabilities
@@ -174,6 +176,16 @@ public final class CapabilityBlock implements Writable {
                 0x09, 0x46, 0x13, 0x47, 0x4c, 0x7f, 0x11, (byte) 0xd1,
                 (byte) 0x82,0x22, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00});
 
+    public static final CapabilityBlock BLOCK_ENCRYPTION =
+            new CapabilityBlock(new byte[] {
+                0x09, 0x46, 0x01, (byte) 0xff, 0x4c, 0x7f, 0x11, (byte) 0xd1,
+                (byte) 0x82, 0x22, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00});
+
+    public static final CapabilityBlock BLOCK_SHORTCAPS =
+            new CapabilityBlock(new byte[] {
+                0x09, 0x46, 0x00, 0x00, 0x4c, 0x7f, 0x11, (byte) 0xd1,
+                (byte) 0x82, 0x22, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00});
+
     /**
      * Converts the given list of capabilities to a block of bytes, suitable for
      * sending in a {@link InfoData} structure.
@@ -294,6 +306,23 @@ public final class CapabilityBlock implements Writable {
     public int hashCode() { return hashCode; }
 
     public String toString() {
-        return "CapabilityBlock: " + BinaryTools.describeData(block);
+        String name = "unknown capability block";
+        Field[] fields = CapabilityBlock.class.getFields();
+        for (int i = 0; i < fields.length; i++) {
+            Field field = fields[i];
+
+            if (!Modifier.isStatic(field.getModifiers())) continue;
+            if (!field.getName().startsWith("BLOCK_")) continue;
+            try {
+                if (field.get(null).equals(this)) {
+                    name = field.getName();
+                    break;
+                }
+            } catch (IllegalAccessException e) {
+                continue;
+            }
+        }
+        return "CapabilityBlock: " + BinaryTools.describeData(block) + " ("
+                + name + ")";
     }
 }

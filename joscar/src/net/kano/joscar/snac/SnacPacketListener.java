@@ -36,12 +36,14 @@
 package net.kano.joscar.snac;
 
 /**
- * Provides an interface for listening for incoming SNAC packets on a
- * <code>SnacProcessor</code>.
+ * Provides an interface for listening for incoming SNAC packets on a SNAC
+ * processor.
+ *
+ * @see AbstractSnacProcessor
  */
 public interface SnacPacketListener {
     /**
-     * Called when a SNAC packet is received on a <code>SnacProcessor</code>.
+     * Called when a SNAC packet is received on a SNAC processor.
      *
      * @param e an object describing the packet event
      */

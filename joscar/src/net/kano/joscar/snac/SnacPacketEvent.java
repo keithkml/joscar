@@ -41,8 +41,7 @@ import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.flapcmd.SnacCommand;
 
 /**
- * An event fired when a SNAC packet is received on a
- * <code>SnacProcessor</code>.
+ * An event fired when a SNAC packet is received on a SNAC processor.
  */
 public class SnacPacketEvent extends FlapPacketEvent {
     /**
