@@ -52,12 +52,24 @@ public class RateLimitingQueueMgr extends AbstractSnacQueueMgr {
     public static final int ERRORMARGIN_DEFAULT = 100;
 
     private int errorMargin = ERRORMARGIN_DEFAULT;
-    private boolean avoidLimiting = true;
+    private boolean defaultAvoidLimiting = true;
 
     private Map conns = new IdentityHashMap();
 
     private QueueRunner runner = null;
 
+    private SnacResponseListener responseListener = new SnacResponseListener() {
+        public void handleResponse(SnacResponseEvent e) {
+            SnacCommand cmd = e.getSnacCommand();
+
+            if (cmd instanceof RateInfoCmd) {
+                RateInfoCmd ric = (RateInfoCmd) cmd;
+
+                ConnectionQueueMgr mgr = getQueueMgr(e.getSnacProcessor());
+                mgr.setRateClasses(ric.getRateClassInfos());
+            }
+        }
+    };
     private SnacPacketListener packetListener = new SnacPacketListener() {
         public void handleSnacPacket(SnacPacketEvent e) {
             SnacCommand cmd = e.getSnacCommand();
@@ -68,24 +80,12 @@ public class RateLimitingQueueMgr extends AbstractSnacQueueMgr {
                 RateClassInfo rateInfo = rc.getRateInfo();
                 if (rateInfo != null) {
                     int code = rc.getChangeCode();
-                    updateRateClass(e.getSnacProcessor(), code, rateInfo);
+                    ConnectionQueueMgr mgr = getQueueMgr(e.getSnacProcessor());
+                    mgr.updateRateClass(code, rateInfo);
                 }
             }
         }
     };
-    private SnacResponseListener responseListener = new SnacResponseListener() {
-        public void handleResponse(SnacResponseEvent e) {
-            SnacCommand cmd = e.getSnacCommand();
-
-            if (cmd instanceof RateInfoCmd) {
-                RateInfoCmd ric = (RateInfoCmd) cmd;
-
-                setRateClasses(e.getSnacProcessor(), ric.getRateClassInfos());
-            }
-        }
-    };
-
-    final QueueRunner getRunner() { return runner; }
 
     public final void attach(SnacProcessor processor) {
         synchronized(conns) {
@@ -100,18 +100,6 @@ public class RateLimitingQueueMgr extends AbstractSnacQueueMgr {
             processor.addPacketListener(packetListener);
             processor.addGlobalResponseListener(responseListener);
         }
-    }
-
-    private ConnectionQueueMgr getQueueMgr(SnacProcessor processor) {
-        ConnectionQueueMgr rcs;
-        synchronized(conns) {
-            rcs = (ConnectionQueueMgr) conns.get(processor);
-        }
-        if (rcs == null) {
-            throw new IllegalArgumentException("this rate manager is not " +
-                    "currently attached to processor " + processor);
-        }
-        return rcs;
     }
 
     public final void detach(SnacProcessor processor) {
@@ -130,42 +118,16 @@ public class RateLimitingQueueMgr extends AbstractSnacQueueMgr {
         }
     }
 
-    public void setRateClasses(SnacProcessor processor,
-            RateClassInfo[] rateInfos) {
-        DefensiveTools.checkNull(processor, "processor");
-        DefensiveTools.checkNull(rateInfos, "rateInfos");
-
-        rateInfos = (RateClassInfo[]) rateInfos.clone();
-
-        DefensiveTools.checkNullElements(rateInfos, "rateInfos");
-
-        ConnectionQueueMgr mgr = getQueueMgr(processor);
-
-        for (int i = 0; i < rateInfos.length; i++) {
-            RateClassInfo rateInfo = rateInfos[i];
-
-            mgr.setRateClass(rateInfo);
+    public final ConnectionQueueMgr getQueueMgr(SnacProcessor processor) {
+        ConnectionQueueMgr rcs;
+        synchronized(conns) {
+            rcs = (ConnectionQueueMgr) conns.get(processor);
         }
-    }
-
-    public void updateRateClass(SnacProcessor processor, int changeCode,
-            RateClassInfo rateInfo) {
-        DefensiveTools.checkNull(processor, "processor");
-        DefensiveTools.checkNull(rateInfo, "rateInfo");
-
-        getQueueMgr(processor).updateRateClass(changeCode, rateInfo);
-    }
-
-    public synchronized final boolean isAvoidingLimiting() {
-        return avoidLimiting;
-    }
-
-    public synchronized final void setAvoidingLimiting(boolean avoidLimiting) {
-        if (avoidLimiting = this.avoidLimiting) return;
-
-        this.avoidLimiting = avoidLimiting;
-
-        if (!avoidLimiting) runner.update();
+        if (rcs == null) {
+            throw new IllegalArgumentException("this rate manager is not " +
+                    "currently attached to processor " + processor);
+        }
+        return rcs;
     }
 
     public synchronized final void setErrorMargin(int errorMargin) {
@@ -175,6 +137,18 @@ public class RateLimitingQueueMgr extends AbstractSnacQueueMgr {
     }
 
     public final synchronized int getErrorMargin() { return errorMargin; }
+
+    public synchronized final boolean getDefaultAvoidLimiting() {
+        return defaultAvoidLimiting;
+    }
+
+    public synchronized final void setDefaultAvoidLimiting(
+            boolean defaultAvoidLimiting) {
+        this.defaultAvoidLimiting = defaultAvoidLimiting;
+    }
+
+
+    final QueueRunner getRunner() { return runner; }
 
 
     public void queueSnac(SnacProcessor processor, SnacRequest request) {
@@ -198,189 +172,6 @@ public class RateLimitingQueueMgr extends AbstractSnacQueueMgr {
     protected void sendSnac(SnacProcessor processor, SnacRequest request) {
         // sigh
         super.sendSnac(processor, request);
-    }
-
-    class QueueRunner implements Runnable {
-        private boolean started = false;
-
-        private final Object lock = new Object();
-
-        private boolean updated = false;
-        private Set queues = new HashSet();
-
-        public synchronized void start() {
-            if (started) {
-                throw new IllegalStateException("already started queue " +
-                        "manager");
-            }
-            started = true;
-
-            // I think this is correct
-            updated = true;
-
-            Thread thread = new Thread(this, "SNAC queue manager");
-            thread.start();
-        }
-
-        public void run() {
-            long minWait = 0;
-            for (;;) {
-                RateQueue[] queueArray;
-                synchronized(lock) {
-                    if (!updated) {
-                        // if we haven't been updated, we need to wait until a
-                        // call to update() or until we need to send the next
-                        // command (this time is specified in minWait, if non-
-                        // zero)
-                        try {
-                            if (minWait == 0) lock.wait();
-                            else lock.wait(minWait);
-                        } catch (InterruptedException ignored) { }
-                    }
-
-                    // cache the list of queues so we don't need to lock while
-                    // iterating
-                    queueArray = (RateQueue[])
-                            queues.toArray(new RateQueue[queues.size()]);
-
-                    // and set this flag back to off while we're in the lock
-                    updated = false;
-                }
-
-                // now we go through the queues to send any "ready" commands and
-                // figure out when the next command should be sent (so we can
-                // wait that long in the next iteration of the outer loop)
-                minWait = 0;
-                for (int i = 0; i < queueArray.length; i++) {
-                    RateQueue queue = queueArray[i];
-
-                    boolean finished;
-                    long wait = 0;
-                    List reqs = null;
-                    synchronized(queue) {
-                        // if the queue is paused or there aren't any requests,
-                        // we can skip it
-                        if (queue.getParentMgr().isPaused()
-                                || !queue.hasRequests()) {
-                            continue;
-                        }
-
-                        // if there are one or more commands that can be sent
-                        // right now, dequeue them
-                        if (isReady(queue)) reqs = dequeueAll(queue);
-
-                        // see whether the queue needs to be waited upon (if it
-                        // doesn't have any queued commands, there's nothing to
-                        // wait for -- we'll be notified with a call to
-                        // update() if any are added)
-                        finished = !queue.hasRequests();
-
-                        // and, if necessary, compute how long we need to wait
-                        // for this queue (the time until the next command can
-                        // be sent)
-                        if (!finished) wait = getWaitTime(queue);
-                    }
-
-                    // if there are any commands that were dequeued above, we
-                    // send them now, outside of the lock on the queue
-                    if (reqs != null && !reqs.isEmpty()) { 
-                        sendRequests(queue, reqs);
-                    }
-
-                    // and if there's nothing more to wait for, move on to the
-                    // next queue
-                    if (finished) continue;
-
-                    // we make sure wait isn't zero, because that would cause us
-                    // to wait forever, which we don't want to do unless we
-                    // explicitly decide to do so.
-                    if (wait < 1) wait = 1;
-
-                    // now change the minimum waiting time if necessary
-                    if (minWait == 0 || wait < minWait)  minWait = wait;
-                }
-            }
-        }
-
-        private long getWaitTime(RateQueue queue) {
-            return queue.getOptimalWaitTime();
-        }
-
-        private boolean isReady(RateQueue queue) {
-            return getWaitTime(queue) <= 0;
-        }
-
-        private List dequeueAll(RateQueue queue) {
-            List reqs = null;
-            synchronized(queue) {
-                for (;;) {
-                    if (!queue.hasRequests() || !isReady(queue)) break;
-
-                    if (reqs == null) reqs = new ArrayList(5);
-                    reqs.add(queue.dequeue());
-                }
-            }
-
-            return reqs;
-        }
-
-        private void sendRequests(RateQueue queue, List reqs) {
-            SnacProcessor processor = queue.getParentMgr().getSnacProcessor();
-
-            for (Iterator it = reqs.iterator(); it.hasNext();) {
-                SnacRequest req = (SnacRequest) it.next();
-
-                sendSnac(processor, req);
-            }
-        }
-
-        public void update(RateQueue updated) {
-            if (isAvoidingLimiting()) {
-                forceUpdate();
-            } else {
-                sendRequests(updated, dequeueAll(updated));
-            }
-        }
-
-        public void update() {
-            if (isAvoidingLimiting()) {
-                forceUpdate();
-            } else {
-                flushAllQueues();
-            }
-        }
-
-        private void forceUpdate() {
-            synchronized(lock) {
-                updated = true;
-                lock.notifyAll();
-            }
-        }
-
-        private void flushAllQueues() {
-            // we make a copy of the queue list since we'd need to make a copy
-            // of something anyway (SNAC requests can't be sent inside a lock)
-            // and there's no reason to not just copy the queue list itself
-            List queues;
-            synchronized(this.queues) {
-                 queues = new ArrayList(this.queues);
-            }
-
-            for (Iterator it = queues.iterator(); it.hasNext();) {
-                RateQueue queue = (RateQueue) it.next();
-
-                sendRequests(queue, dequeueAll(queue));
-            }
-        }
-
-        public void addQueue(RateQueue queue) {
-            DefensiveTools.checkNull(queue, "queue");
-
-            synchronized(lock) {
-                queues.add(queue);
-                update(queue);
-            }
-        }
     }
 }
 
