@@ -110,7 +110,19 @@ public class AimConnection {
     private final BuddyTrustManager buddyTrustManager;
     private final CapabilityManager capabilityManager;
 
-    public AimConnection(AppSession appSession, AimSession aimSession,
+    public AimConnection(Screenname screenname, String password) {
+        this(new AimConnectionProperties(screenname, password));
+    }
+
+    public AimConnection(AimConnectionProperties props) {
+        this(new DefaultAimSession(props.getScreenname()), props);
+    }
+
+    public AimConnection(AimSession aimSession, AimConnectionProperties props) {
+        this(aimSession, aimSession.getTrustPreferences(), props);
+    }
+
+    public AimConnection(AimSession aimSession,
             TrustPreferences prefs, AimConnectionProperties props)
             throws IllegalArgumentException {
         Screenname sn = aimSession.getScreenname();
@@ -119,9 +131,7 @@ public class AimConnection {
                     + "is for screenname " + props.getScreenname() + ", but "
                     + "this connection is for " + sn);
         }
-        DefensiveTools.checkNull(appSession, "appSession");
         DefensiveTools.checkNull(aimSession, "aimSession");
-        DefensiveTools.checkNull(prefs, "prefs");
         DefensiveTools.checkNull(props, "props");
 
         if (!props.isComplete()) {
@@ -129,7 +139,7 @@ public class AimConnection {
                     + "incomplete (props.isComplete() == false)");
         }
 
-        this.appSession = appSession;
+        this.appSession = aimSession.getAppSession();
         this.aimSession = aimSession;
 
         this.screenname = sn;
@@ -138,13 +148,21 @@ public class AimConnection {
         this.buddyInfoTracker = new BuddyInfoTracker(this);
         this.loginConn = new LoginConnection(props.getLoginHost(),
                 props.getLoginPort());
-        this.password = props.getPass();
+        this.password = props.getPassword();
         this.localPrefs = prefs;
 
-        CertificateTrustManager certMgr
-                = localPrefs.getCertificateTrustManager();
-        SignerTrustManager signerMgr
-                = localPrefs.getSignerTrustManager();
+        CertificateTrustManager certMgr;
+        SignerTrustManager signerMgr;
+        if (prefs != null) {
+            certMgr = prefs.getCertificateTrustManager();
+            signerMgr = prefs.getSignerTrustManager();
+        } else {
+            logger.fine("Warning: this AIM connection's certificate and signer "
+                    + "managers will not be set because the trust manager is "
+                    + "null");
+            certMgr = null;
+            signerMgr = null;
+        }
         trustedCertificatesTracker = new TrustedCertificatesTracker(certMgr,
                 signerMgr);
         certificateInfoTrustManager
@@ -195,11 +213,11 @@ public class AimConnection {
         stateListeners.remove(l);
     }
     
-    public void addNewServiceListener(NewServiceListener l) {
+    public void addOpenedServiceListener(OpenedServiceListener l) {
         serviceListeners.addIfAbsent(l);
     }
 
-    public void removeNewServiceListener(NewServiceListener l) {
+    public void removeNewServiceListener(OpenedServiceListener l) {
         serviceListeners.remove(l);
     }
 
@@ -337,8 +355,13 @@ public class AimConnection {
                 int family = families[i];
                 List services = getServiceList(family);
                 Service service = conn.getService(family);
-                services.add(service);
-                added.add(service);
+                if (service != null) {
+                    services.add(service);
+                    added.add(service);
+                } else {
+                    logger.finer("Could not find service handler for family 0x"
+                            + Integer.toHexString(family));
+                }
             }
         }
 
@@ -346,7 +369,7 @@ public class AimConnection {
                 added.toArray(new Service[added.size()]);
 
         for (Iterator it = serviceListeners.iterator(); it.hasNext();) {
-            NewServiceListener listener = (NewServiceListener) it.next();
+            OpenedServiceListener listener = (OpenedServiceListener) it.next();
 
             listener.openedServices(this, (Service[]) services.clone());
         }
@@ -470,6 +493,8 @@ public class AimConnection {
 
             // I don't know why this could happen
             if (getState() == State.CONNECTING) {
+                logger.finer("State was CONNECTING, but now we're ONLINE. The "
+                        + "state should've been SIGNINGON.");
                 setState(State.CONNECTING, State.SIGNINGON,
                         new SigningOnStateInfo());
             }

@@ -46,8 +46,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Logger;
 
 public class TrustedCertificatesTracker {
+    private static final Logger logger
+            = Logger.getLogger(TrustedCertificatesTracker.class.getName());
+
     private final CertificateTrustManager certTrustMgr;
     private final SignerTrustManager signerTrustMgr;
 
@@ -58,36 +62,45 @@ public class TrustedCertificatesTracker {
 
     public TrustedCertificatesTracker(CertificateTrustManager certTrustMgr,
             SignerTrustManager signerTrustMgr) {
-        DefensiveTools.checkNull(certTrustMgr, "certTrustMgr");
-        DefensiveTools.checkNull(signerTrustMgr, "signerTrustMgr");
-
         this.certTrustMgr = certTrustMgr;
         this.signerTrustMgr = signerTrustMgr;
 
-        certTrustMgr.addTrustListener(new CertificateTrustListener() {
-            public void trustAdded(CertificateTrustManager manager,
-                    X509Certificate cert) {
-                System.out.println("TrustedCertificatesTracker: now trusted: "
-                        + cert.getSubjectDN());
-                certTrustAdded(cert);
-            }
+        if (certTrustMgr != null) {
+            certTrustMgr.addTrustListener(new CertificateTrustListener() {
+                public void trustAdded(CertificateTrustManager manager,
+                        X509Certificate cert) {
+                    System.out.println("TrustedCertificatesTracker: now trusted: "
+                            + cert.getSubjectDN());
+                    certTrustAdded(cert);
+                }
 
-            public void trustRemoved(CertificateTrustManager manager,
-                    X509Certificate cert) {
-                certTrustRemoved(cert);
-            }
-        });
-        signerTrustMgr.addTrustListener(new CertificateTrustListener() {
-            public void trustAdded(CertificateTrustManager manager,
-                    X509Certificate cert) {
-                signerTrustAdded(cert);
-            }
+                public void trustRemoved(CertificateTrustManager manager,
+                        X509Certificate cert) {
+                    certTrustRemoved(cert);
+                }
+            });
+        } else {
+            logger.fine("Warning: Trusted certificates tracker will not track "
+                    + "explicitly trusted certificates since the certificate "
+                    + "trust manager is null");
+        }
+        if (signerTrustMgr != null) {
+            signerTrustMgr.addTrustListener(new CertificateTrustListener() {
+                public void trustAdded(CertificateTrustManager manager,
+                        X509Certificate cert) {
+                    signerTrustAdded(cert);
+                }
 
-            public void trustRemoved(CertificateTrustManager manager,
-                    X509Certificate cert) {
-                signerTrustRemoved(cert);
-            }
-        });
+                public void trustRemoved(CertificateTrustManager manager,
+                        X509Certificate cert) {
+                    signerTrustRemoved(cert);
+                }
+            });
+        } else {
+            logger.fine("Warning: Trusted certificates tracker will not track "
+                    + "signer-trusted certificates since the signer trust "
+                    + "manager is null");
+        }
     }
 
     private void signerTrustAdded(X509Certificate signer) {
@@ -214,14 +227,24 @@ public class TrustedCertificatesTracker {
             if (trackedCerts.containsKey(holder)) return false;
 
             info = new TrustedCertificateInfoImpl(cert);
-            info.setExplicitlyTrusted(certTrustMgr.isTrusted(cert));
-            X509Certificate[] ts = signerTrustMgr.getTrustedSigners(cert);
-            for (int i = 0; i < ts.length; i++) {
-                X509Certificate signer = ts[i];
+            CertificateTrustManager certTrustMgr = this.certTrustMgr;
+            boolean explicitlyTrusted;
+            if (certTrustMgr != null) {
+                explicitlyTrusted = certTrustMgr.isTrusted(cert);
+            } else {
+                explicitlyTrusted = false;
+            }
+            info.setExplicitlyTrusted(explicitlyTrusted);
+            SignerTrustManager signerTrustMgr = this.signerTrustMgr;
+            if (signerTrustMgr != null) {
+                X509Certificate[] ts = signerTrustMgr.getTrustedSigners(cert);
+                for (int i = 0; i < ts.length; i++) {
+                    X509Certificate signer = ts[i];
 
-                if (signer == null) continue;
+                    if (signer == null) continue;
 
-                registerSignerSignee(info, signer);
+                    registerSignerSignee(info, signer);
+                }
             }
             trackedCerts.put(holder, info);
             newTrusted = info.isSomehowTrusted();

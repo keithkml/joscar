@@ -1,0 +1,10 @@
+.screenname { font-weight: bold }
+.screenname-type-outgoing { color: red }
+.screenname-type-incoming { color: blue }
+
+.lightmsg { color: gray }
+.statusmsg { font-weight: bold }
+.infomsg {  }
+.errormsg { font-weight: bold; background: red }
+
+a { color: blue; text-decoration: underline }

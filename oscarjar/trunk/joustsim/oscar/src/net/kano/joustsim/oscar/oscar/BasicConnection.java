@@ -55,7 +55,7 @@ public class BasicConnection extends OscarConnection {
                     + "BasicConnection to connect");
         }
     }
-
+    
     public synchronized ByteBlock getCookie() { return cookie; }
 
     public synchronized void setCookie(ByteBlock cookie) {

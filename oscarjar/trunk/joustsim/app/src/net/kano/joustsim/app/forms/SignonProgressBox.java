@@ -35,14 +35,13 @@
 
 package net.kano.joustsim.app.forms;
 
-import net.kano.joustsim.app.GuiSession;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joustsim.app.GuiSession;
 import net.kano.joustsim.oscar.AimConnection;
+import net.kano.joustsim.oscar.AimSession;
 import net.kano.joustsim.oscar.State;
 import net.kano.joustsim.oscar.StateEvent;
 import net.kano.joustsim.oscar.StateListener;
-import net.kano.joustsim.oscar.AimSession;
-import net.kano.joscar.DefensiveTools;
 
 import javax.swing.AbstractListModel;
 import javax.swing.DefaultListCellRenderer;

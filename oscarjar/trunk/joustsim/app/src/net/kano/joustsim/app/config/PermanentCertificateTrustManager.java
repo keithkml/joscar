@@ -35,14 +35,13 @@
 
 package net.kano.joustsim.app.config;
 
-import net.kano.joustsim.trust.DistinguishedName;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.trust.CertificateHolder;
 import net.kano.joustsim.trust.DefaultCertificateHolder;
+import net.kano.joustsim.trust.DistinguishedName;
 import net.kano.joustsim.trust.TrustException;
 import net.kano.joustsim.trust.TrustTools;
-import net.kano.joustsim.trust.DistinguishedName;
-import net.kano.joscar.DefensiveTools;
 
 import java.io.File;
 import java.io.FileOutputStream;

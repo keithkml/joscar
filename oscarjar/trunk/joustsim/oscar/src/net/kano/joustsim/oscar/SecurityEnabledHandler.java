@@ -39,6 +39,7 @@ import net.kano.joustsim.oscar.oscar.service.Service;
 import net.kano.joustsim.oscar.oscar.service.info.InfoService;
 import net.kano.joustsim.trust.PrivateKeys;
 import net.kano.joustsim.trust.PrivateKeysPreferences;
+import net.kano.joustsim.trust.TrustPreferences;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.CertificateInfo;
@@ -62,20 +63,28 @@ public class SecurityEnabledHandler implements CapabilityHandler {
         DefensiveTools.checkNull(conn, "conn");
 
         this.conn = conn;
-        conn.addNewServiceListener(new NewServiceListener() {
+        conn.addOpenedServiceListener(new OpenedServiceListener() {
             public void openedServices(AimConnection conn, Service[] services) {
                 bindToInfoService();
             }
         });
-        keysMgr = conn.getAimSession().getTrustPreferences().getPrivateKeysPreferences();
-        keysMgr.addPropertyChangeListener(new PropertyChangeListener() {
-            public void propertyChange(PropertyChangeEvent evt) {
-                String prop = evt.getPropertyName();
-                if (prop.equals(PrivateKeysPreferences.PROP_KEYS_INFO)) {
-                    updateCertInfo();
+        TrustPreferences trustPrefs = conn.getAimSession().getTrustPreferences();
+        if (trustPrefs == null) {
+            logger.fine("Warning: Key manager for SecurityEnabledHandler will "
+                    + "not be set because the AIM session's trust preferences "
+                    + "are null");
+            keysMgr = null;
+        } else {
+            keysMgr = trustPrefs.getPrivateKeysPreferences();
+            keysMgr.addPropertyChangeListener(new PropertyChangeListener() {
+                public void propertyChange(PropertyChangeEvent evt) {
+                    String prop = evt.getPropertyName();
+                    if (prop.equals(PrivateKeysPreferences.PROP_KEYS_INFO)) {
+                        updateCertInfo();
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 
     private void bindToInfoService() {
@@ -98,7 +107,10 @@ public class SecurityEnabledHandler implements CapabilityHandler {
     }
 
     private CertificateInfo generateLocalCertificateInfo() {
-        PrivateKeys keys = keysMgr.getKeysInfo();
+        PrivateKeys keys;
+        if (keysMgr != null) keys = keysMgr.getKeysInfo();
+        else keys = null;
+
         if (keys == null) {
             logger.fine("User has no private keys");
             return null;
@@ -160,5 +172,12 @@ public class SecurityEnabledHandler implements CapabilityHandler {
     }
 
     public void handleRemoved(CapabilityManager manager) {
+    }
+
+    public boolean isEnabled() {
+        if (keysMgr == null) return false;
+        PrivateKeys keys = keysMgr.getKeysInfo();
+        return keys != null && keys.getEncryptingKeys() != null
+                && keys.getSigningKeys() != null;
     }
 }

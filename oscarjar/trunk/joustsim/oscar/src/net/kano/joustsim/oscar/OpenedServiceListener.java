@@ -29,29 +29,14 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- *  File created by keith @ Mar 1, 2004
+ *  File created by keith @ Jan 26, 2004
  *
  */
 
 package net.kano.joustsim.oscar;
 
-import net.kano.joustsim.Screenname;
-import net.kano.joustsim.trust.TrustPreferences;
+import net.kano.joustsim.oscar.oscar.service.Service;
 
-public interface AimSession {
-    AppSession getAppSession();
-
-    Screenname getScreenname();
-
-    AimConnection openConnection(AimConnectionProperties props);
-
-    AimConnection getConnection();
-
-    void closeConnection();
-
-    /**
-     * This may return <code>null</code>.
-     * @return
-     */
-    TrustPreferences getTrustPreferences();
+public interface OpenedServiceListener {
+    void openedServices(AimConnection conn, Service[] services);
 }

@@ -202,6 +202,8 @@ public class OscarConnection {
         }
     }
 
+    public final ClientFlapConn getClientFlapConn() { return conn; }
+
     public synchronized void connect() throws IllegalStateException {
         if (triedConnect) {
             throw new IllegalStateException("cannot connect more than once");
@@ -288,17 +290,18 @@ public class OscarConnection {
     }
 
     protected void handleSnacPacket(SnacPacketEvent snacPacketEvent) {
-        getService(snacPacketEvent).handleSnacPacket(snacPacketEvent);
+        Service service = getService(snacPacketEvent);
+        if (service != null) service.handleSnacPacket(snacPacketEvent);
     }
 
     private Service getService(SnacPacketEvent snacPacketEvent) {
-        int family = snacPacketEvent.getSnacCommand().getFamily();
-        Service service = getService(family);
-        return service;
+        int family = snacPacketEvent.getSnacPacket().getFamily();
+        return getService(family);
     }
 
     protected void handleSnacResponse(SnacResponseEvent snacResponseEvent) {
-        getService(snacResponseEvent).handleSnacPacket(snacResponseEvent);
+        Service service = getService(snacResponseEvent);
+        if (service != null) service.handleSnacPacket(snacResponseEvent);
     }
 
 
@@ -386,6 +389,8 @@ public class OscarConnection {
         boolean allReady;
         synchronized(this) {
             unready.remove(service);
+            logger.finer(service.getClass().getName() + " is ready, waiting for "
+                    + unready.size() + ": " + unready);
             allReady = unready.isEmpty();
         }
         for (Iterator it = globalServiceListeners.iterator(); it.hasNext();) {
@@ -394,8 +399,12 @@ public class OscarConnection {
             sl.ready(service);
         }
         if (allReady) {
+            logger.finer("All services are ready");
             for (Iterator it = listeners.iterator(); it.hasNext();) {
                 OscarConnListener l = (OscarConnListener) it.next();
+
+                logger.finer("Telling " + l.getClass().getName()
+                        + " that all services are ready");
 
                 l.allFamiliesReady(this);
             }

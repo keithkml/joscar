@@ -35,19 +35,6 @@
 
 package net.kano.joustsim.oscar.oscar.service.login;
 
-import net.kano.joustsim.Screenname;
-import net.kano.joustsim.oscar.AimConnection;
-import net.kano.joustsim.oscar.oscar.LoginServiceListener;
-import net.kano.joustsim.oscar.oscar.OscarConnection;
-import net.kano.joustsim.oscar.oscar.loginstatus.AuthFailureInfo;
-import net.kano.joustsim.oscar.oscar.loginstatus.ClosedEarlyFailureInfo;
-import net.kano.joustsim.oscar.oscar.loginstatus.DisconnectedFailureInfo;
-import net.kano.joustsim.oscar.oscar.loginstatus.FlapErrorFailureInfo;
-import net.kano.joustsim.oscar.oscar.loginstatus.LoginFailureInfo;
-import net.kano.joustsim.oscar.oscar.loginstatus.LoginSuccessInfo;
-import net.kano.joustsim.oscar.oscar.loginstatus.SnacErrorFailureInfo;
-import net.kano.joustsim.oscar.oscar.loginstatus.TimeoutFailureInfo;
-import net.kano.joustsim.oscar.oscar.service.Service;
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flap.FlapCommand;
@@ -65,6 +52,19 @@ import net.kano.joscar.snaccmd.auth.KeyRequest;
 import net.kano.joscar.snaccmd.auth.KeyResponse;
 import net.kano.joscar.snaccmd.conn.SnacFamilyInfo;
 import net.kano.joscar.snaccmd.error.SnacError;
+import net.kano.joustsim.Screenname;
+import net.kano.joustsim.oscar.AimConnection;
+import net.kano.joustsim.oscar.oscar.LoginServiceListener;
+import net.kano.joustsim.oscar.oscar.OscarConnection;
+import net.kano.joustsim.oscar.oscar.loginstatus.AuthFailureInfo;
+import net.kano.joustsim.oscar.oscar.loginstatus.ClosedEarlyFailureInfo;
+import net.kano.joustsim.oscar.oscar.loginstatus.DisconnectedFailureInfo;
+import net.kano.joustsim.oscar.oscar.loginstatus.FlapErrorFailureInfo;
+import net.kano.joustsim.oscar.oscar.loginstatus.LoginFailureInfo;
+import net.kano.joustsim.oscar.oscar.loginstatus.LoginSuccessInfo;
+import net.kano.joustsim.oscar.oscar.loginstatus.SnacErrorFailureInfo;
+import net.kano.joustsim.oscar.oscar.loginstatus.TimeoutFailureInfo;
+import net.kano.joustsim.oscar.oscar.service.Service;
 
 import java.util.Iterator;
 import java.util.logging.Logger;

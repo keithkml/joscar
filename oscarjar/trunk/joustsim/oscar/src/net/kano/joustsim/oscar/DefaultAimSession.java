@@ -29,7 +29,7 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- *  File created by keith @ Mar 1, 2004
+ *  File created by keith @ Jun 10, 2004
  *
  */
 
@@ -38,20 +38,49 @@ package net.kano.joustsim.oscar;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.trust.TrustPreferences;
 
-public interface AimSession {
-    AppSession getAppSession();
+public class DefaultAimSession implements AimSession {
+    private final AppSession appSession;
+    private final Screenname screenname;
+    private final TrustPreferences trustPreferences;
 
-    Screenname getScreenname();
+    private AimConnection connection = null;
 
-    AimConnection openConnection(AimConnectionProperties props);
+    public DefaultAimSession(Screenname screenname) {
+        this(new DefaultAppSession(), screenname); 
+    }
 
-    AimConnection getConnection();
+    public DefaultAimSession(AppSession appSession, Screenname screenname) {
+        this(appSession, screenname, null);
+    }
 
-    void closeConnection();
+    public DefaultAimSession(AppSession appSession, Screenname screenname,
+            TrustPreferences trustPreferences) {
+        this.appSession = appSession;
+        this.screenname = screenname;
+        this.trustPreferences = trustPreferences;
+    }
 
-    /**
-     * This may return <code>null</code>.
-     * @return
-     */
-    TrustPreferences getTrustPreferences();
+    public AppSession getAppSession() { return appSession; }
+
+    public Screenname getScreenname() { return screenname; }
+
+
+    public AimConnection openConnection(AimConnectionProperties props) {
+        closeConnection();
+        AimConnection conn = new AimConnection(this,
+                getTrustPreferences(), props);
+        synchronized(this) {
+            this.connection = conn;
+        }
+        return conn;
+    }
+
+    public synchronized AimConnection getConnection() { return connection; }
+
+    public void closeConnection() {
+        AimConnection conn = getConnection();
+        if (conn != null) conn.disconnect();
+    }
+
+    public TrustPreferences getTrustPreferences() { return trustPreferences; }
 }

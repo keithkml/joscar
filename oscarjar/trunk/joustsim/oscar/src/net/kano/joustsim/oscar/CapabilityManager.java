@@ -43,6 +43,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
 
 public class CapabilityManager {
     private final AimConnection conn;
@@ -104,9 +106,18 @@ public class CapabilityManager {
     }
 
     public synchronized CapabilityBlock[] getHandledCapabilities() {
-        Collection blocks = handlers.keySet();
+        Collection blocks = handlers.entrySet();
+        List actual = new ArrayList(handlers.size());
+        for (Iterator it = blocks.iterator(); it.hasNext();) {
+            Map.Entry pair = (Map.Entry) it.next();
+            CapabilityHandler handler = (CapabilityHandler) pair.getValue();
+            if (handler.isEnabled()) {
+                CapabilityBlock block = (CapabilityBlock) pair.getKey();
+                actual.add(block);
+            }
+        }
         return (CapabilityBlock[])
-                blocks.toArray(new CapabilityBlock[blocks.size()]);
+                actual.toArray(new CapabilityBlock[actual.size()]);
     }
 
     private void fireCapabilityHandlerAdded(CapabilityBlock block,

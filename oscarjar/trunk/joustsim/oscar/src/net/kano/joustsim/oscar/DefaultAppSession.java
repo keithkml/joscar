@@ -29,14 +29,16 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- *  File created by keith @ Jan 26, 2004
+ *  File created by keith @ Jun 10, 2004
  *
  */
 
 package net.kano.joustsim.oscar;
 
-import net.kano.joustsim.oscar.oscar.service.Service;
+import net.kano.joustsim.Screenname;
 
-public interface NewServiceListener {
-    void openedServices(AimConnection conn, Service[] services);
+public class DefaultAppSession implements AppSession {
+    public AimSession openAimSession(Screenname sn) {
+        return new DefaultAimSession(this, sn);
+    }
 }

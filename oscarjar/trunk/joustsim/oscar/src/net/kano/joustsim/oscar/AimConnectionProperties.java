@@ -45,11 +45,14 @@ public class AimConnectionProperties {
     private String loginHost = HOST_DEFAULT;
     private int loginPort = PORT_DEFAULT;
     private Screenname screenname = null;
-    private String pass = null;
+    private String password = null;
 
-    public AimConnectionProperties(Screenname sn, String pass) {
+    public AimConnectionProperties() {
+    }
+
+    public AimConnectionProperties(Screenname sn, String password) {
         this.screenname = sn;
-        this.pass = pass;
+        this.password = password;
     }
 
     public Screenname getScreenname() { return screenname; }
@@ -73,17 +76,17 @@ public class AimConnectionProperties {
         this.loginPort = loginPort;
     }
 
-    public String getPass() { return pass; }
+    public String getPassword() { return password; }
 
-    public void setPass(String pass) {
-        DefensiveTools.checkNull(pass, "pass");
-        this.pass = pass;
+    public void setPassword(String password) {
+        DefensiveTools.checkNull(password, "pass");
+        this.password = password;
     }
 
     public boolean isComplete() {
         return loginHost != null
                 && loginPort >= 0
                 && screenname != null
-                && pass != null;
+                && password != null;
     }
 }

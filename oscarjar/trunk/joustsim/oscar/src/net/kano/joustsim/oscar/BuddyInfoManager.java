@@ -83,7 +83,7 @@ public class BuddyInfoManager {
         DefensiveTools.checkNull(conn, "conn");
 
         this.conn = conn;
-        conn.addNewServiceListener(new NewServiceListener() {
+        conn.addOpenedServiceListener(new OpenedServiceListener() {
             public void openedServices(AimConnection conn, Service[] services) {
                 initBuddyService();
                 initInfoService();

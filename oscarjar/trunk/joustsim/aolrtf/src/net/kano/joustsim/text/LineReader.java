@@ -49,6 +49,8 @@ import java.awt.Color;
 import java.util.LinkedList;
 import java.util.List;
 
+//TODO: sub/sup/h1-h3/center?
+
 class LineReader extends HTMLEditorKit.ParserCallback {
     private final StyleSheet sheet;
 

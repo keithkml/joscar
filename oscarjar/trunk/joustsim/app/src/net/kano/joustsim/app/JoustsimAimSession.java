@@ -73,7 +73,7 @@ public class JoustsimAimSession implements AimSession {
 
     public AimConnection openConnection(AimConnectionProperties props) {
         closeConnection();
-        AimConnection conn = new AimConnection(appSession, this,
+        AimConnection conn = new AimConnection(this,
                 getTrustPreferences(), props);
         synchronized(this) {
             this.connection = conn;
