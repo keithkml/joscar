@@ -38,10 +38,10 @@ package net.kano.joscar.snac;
 import net.kano.joscar.DefensiveTools;
 
 /**
- * A default implementation of a SNAC queue manager that allows one to easily
- * send a dequeued SNAC back to its source SNAC processor.
+ * A base class for SNAC queue managers which allows subclasses to easily send a
+ * dequeued SNAC back to its source SNAC processor.
  */
-public abstract class AbstractSnacQueueManager implements SnacQueueManager {
+public abstract class AbstractSnacQueueMgr implements SnacQueueManager {
     /**
      * Sends the given SNAC request over the given SNAC connection.
      *
@@ -49,8 +49,9 @@ public abstract class AbstractSnacQueueManager implements SnacQueueManager {
      * @param request the SNAC request to send
      */
     protected void sendSnac(SnacProcessor processor, SnacRequest request) {
+        DefensiveTools.checkNull(processor, "processor");
         DefensiveTools.checkNull(request, "request");
-        
+
         processor.sendSnacImmediately(request);
     }
 }
