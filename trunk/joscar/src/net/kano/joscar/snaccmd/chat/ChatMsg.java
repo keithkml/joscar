@@ -35,7 +35,12 @@
 
 package net.kano.joscar.snaccmd.chat;
 
-import net.kano.joscar.*;
+import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.EncodedStringInfo;
+import net.kano.joscar.LiveWritable;
+import net.kano.joscar.MinimalEncoder;
+import net.kano.joscar.OscarTools;
 import net.kano.joscar.tlv.MutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
@@ -49,8 +54,17 @@ import java.util.Locale;
  * Represents a single message sent or received in a chat room.
  */
 public class ChatMsg implements LiveWritable {
-    public static final String CONTENTTYPE_DEFAULT = "text/x-aolrtf";
+    /**
+     * A default content encoding always used by the official AIM clients
+     * ({@value}).
+     */
     public static final String CONTENTENCODING_DEFAULT = "binary";
+    /**
+     * A default content type for "normal" (non-secure) chat rooms ({@value}).
+     */
+    public static final String CONTENTTYPE_DEFAULT = "text/x-aolrtf";
+    /** A default content type for secure chat rooms ({@value}). */
+    public static final String CONTENTTYPE_SECURE = "application/pkcs7-mime";
 
     /**
      * Reads a chat message from the given data block.
@@ -83,7 +97,9 @@ public class ChatMsg implements LiveWritable {
      */
     private static final int TYPE_LANG = 0x0003;
 
+    /** A TLV type containing the content type string for the message. */
     private static final int TYPE_CONTENT_TYPE = 0x0004;
+    /** A TLV type containing the content encoding string for the message. */
     private static final int TYPE_CONTENT_ENCODING = 0x0005;
 
     /** The chat message. */
@@ -153,21 +169,70 @@ public class ChatMsg implements LiveWritable {
      * text. See {@link #getMessage()} for details on extracting a message from
      * an unencrypted message block.
      *
-     * @return
+     * @return the binary message data block
      */
     public final ByteBlock getMessageData() { return messageData; }
 
+    /**
+     * Returns the content type string sent with this message. Note that this
+     * will normally be {@link #CONTENTTYPE_DEFAULT} for plaintext messages and
+     * {@link #CONTENTTYPE_SECURE} for secure messages.
+     *
+     * @return the content type string sent with this message, or
+     *         <code>null</code> if none was sent
+     */
     public final String getContentType() { return contentType; }
 
+    /**
+     * Returns the content encoding string sent with this message. This value
+     * will normally be {@link #CONTENTENCODING_DEFAULT}.
+     *
+     * @return this message's content encoding string, or <code>null</code> if
+     *         none was sent
+     */
     public final String getContentEncoding() { return contentEncoding; }
 
+    /**
+     * Returns the charset in which the given message is encoded. Note that this
+     * will be <code>null</code> if no charset was sent. For details on decoding
+     * plaintext messages, see {@link #getMessage()}.
+     *
+     * @return the charset in which the given message is encoded, or
+     *         <code>null</code> if no charset value was sent
+     */
     public final String getCharset() { return charset; }
 
+    /**
+     * Returns a <code>Locale</code> object representing the language in which
+     * this message was written, or <code>null</code> if no language value was
+     * sent.
+     *
+     * @return the language in which this message was written, or
+     *         <code>null</code> if no language value was sent
+     */
     public final Locale getLanguage() { return language; }
 
     /*
      * This method returns null if contentType is non-null and not equal to
      * CONTENTTYPE_DEFAULT.
+     */
+    /**
+     * Attempts to extract the actual message body from this chat message
+     * object. This method will always return <code>null</code> if the
+     * {@linkplain #getContentType() content type} is non-<code>null</code> and
+     * is not equal to {@link #CONTENTTYPE_DEFAULT} because in such a case the
+     * message is probably in a different format than plaintext (such as in
+     * encrypted form).
+     * <br>
+     * <br>
+     * In short, this method should successfully extract a plaintext message,
+     * but will return <code>null</code> if it suspects that the message is in a
+     * different format. To force reading the message data as a plaintext
+     * message (for example, if you know that the message data is in plaintext
+     * format and not encrypted), use {@link #getMessageAsString()}.
+     *
+     * @return the plaintext message body stored in this object, or
+     *         <code>null</code> if no plaintext message is present
      */
     public final String getMessage() {
         if (contentType == null || contentType.equals(CONTENTTYPE_DEFAULT)) {
@@ -177,6 +242,18 @@ public class ChatMsg implements LiveWritable {
         }
     }
 
+    /**
+     * Decodes the message data block stored in this message using the
+     * {@linkplain #getCharset() specified charset}. Note that this method will
+     * not decode encrypted messages; rather, it will attempt to convert the
+     * encrypted form of the message to a <code>String</code> with the given
+     * charset, most likely producing a string of "garbage."
+     *
+     * @return the message body contained in this object, converted using the
+     *         associated charset
+     *
+     * @see OscarTools#getString
+     */
     public final String getMessageAsString() {
         return OscarTools.getString(messageData, charset);
     }

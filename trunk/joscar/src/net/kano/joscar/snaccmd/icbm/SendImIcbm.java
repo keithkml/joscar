@@ -131,6 +131,7 @@ public class SendImIcbm extends AbstractImIcbm {
      * @param wantsIcon whether or not to request the receiver's buddy icon
      * @param iconInfo a block of buddy icon hash information to "advertise" to
      *        the receiver
+     * @param expInfoBlocks a list of AIM Expression information blocks
      * @param ackRequested whether a {@link MessageAck} should be sent in
      *        response to this command
      */
@@ -150,6 +151,7 @@ public class SendImIcbm extends AbstractImIcbm {
      * @param wantsIcon whether or not to request the receiver's buddy icon
      * @param iconInfo a block of buddy icon hash information to "advertise" to
      *        the receiver
+     * @param expInfoBlocks a list of AIM Expression information blocks
      * @param ackRequested whether a {@link MessageAck} should be sent in
      *        response to this command
      */

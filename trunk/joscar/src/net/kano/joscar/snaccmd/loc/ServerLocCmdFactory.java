@@ -49,7 +49,7 @@ public class ServerLocCmdFactory implements SnacCmdFactory {
     private static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
         new CmdType(LocCommand.FAMILY_LOC, LocCommand.CMD_RIGHTS_REQ),
         new CmdType(LocCommand.FAMILY_LOC, LocCommand.CMD_SET_INFO),
-        new CmdType(LocCommand.FAMILY_LOC, LocCommand.CMD_GET_INFO),
+        new CmdType(LocCommand.FAMILY_LOC, LocCommand.CMD_OLD_GET_INFO),
         new CmdType(LocCommand.FAMILY_LOC, LocCommand.CMD_GET_DIR),
         new CmdType(LocCommand.FAMILY_LOC, LocCommand.CMD_SET_INTERESTS),
         new CmdType(LocCommand.FAMILY_LOC, LocCommand.CMD_SET_DIR),
@@ -69,7 +69,7 @@ public class ServerLocCmdFactory implements SnacCmdFactory {
             return new LocRightsRequest(packet);
         } else if (command == LocCommand.CMD_SET_INFO) {
             return new SetInfoCmd(packet);
-        } else if (command == LocCommand.CMD_GET_INFO) {
+        } else if (command == LocCommand.CMD_OLD_GET_INFO) {
             return new OldGetInfoCmd(packet);
         } else if (command == LocCommand.CMD_GET_DIR) {
             return new GetDirInfoCmd(packet);

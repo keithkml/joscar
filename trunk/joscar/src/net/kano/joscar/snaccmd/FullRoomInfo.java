@@ -39,6 +39,7 @@ import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.LiveWritable;
+import net.kano.joscar.snaccmd.chat.ChatMsg;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
 import net.kano.joscar.tlv.TlvTools;
@@ -56,36 +57,6 @@ import java.util.Locale;
  */
 public final class FullRoomInfo
         extends AbstractChatInfo implements LiveWritable {
-    /*
-        joining secure chat:
-        --------------------
-        exchange: 00 02
-
-        cookielen: 06
-        cookie: "create"
-        instance: 00 00
-
-        type: 01
-        something: 00 04
-
-        tlv:
-            type=0xd6
-            length=0x08
-            data="us-ascii"
-        tlv:
-            type=0xd7
-            length02
-            data="en"
-        tlv:
-            type=0xd3
-            length=0x09
-            data="Test chat"
-        tlv:
-            type=0xdb
-            type=0x16
-            data="application/pkcs7-mime"
-    */
-
     /**
      * Represents the "last instance" of a given room. It is recommended to use
      * this as the "instance" field when joining a room; as of this writing,
@@ -218,7 +189,7 @@ public final class FullRoomInfo
      * @param charset1 the charset associated with the given room
      * @param language1 the language associated with the given room, normally
      *        a two-letter language code like "en" (for English)
-     * @param contentType a content type string, like {@link #CONTENTTYPE_DEFAULT}
+     * @param contentType a content type string, like {@link ChatMsg#CONTENTTYPE_DEFAULT}
      */
     public FullRoomInfo(int exchange, String name, String charset1,
             String language1, String contentType) {

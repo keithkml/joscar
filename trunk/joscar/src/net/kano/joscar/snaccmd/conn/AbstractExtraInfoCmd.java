@@ -46,10 +46,22 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
 
+/**
+ * A base class for the two SNAC commands which contain only a sequence of
+ * {@link ExtraInfoBlock}s.
+ */
 public abstract class AbstractExtraInfoCmd extends ConnCommand {
-    /** The set of icon information blocks contained in this command. */
+    /** The set of extra information blocks contained in this command. */
     private final ExtraInfoBlock[] extraInfos;
 
+    /**
+     * Creates a new extra info block command with the given SNAC command
+     * subtype and using the data in the given incoming extra info command
+     * packet.
+     *
+     * @param command the SNAC command subtype for this command
+     * @param packet an incoming extra info command packet
+     */
     protected AbstractExtraInfoCmd(int command, SnacPacket packet) {
         super(command);
 
@@ -60,19 +72,25 @@ public abstract class AbstractExtraInfoCmd extends ConnCommand {
         extraInfos = ExtraInfoBlock.readExtraInfoBlocks(snacData);
     }
 
+    /**
+     * Creates a new outgoing extra info blocks command with the given list of
+     * extra info blocks. Note that neither <code>blocks</code> nor any of its
+     * elements can be <code>null</code>.
+     *
+     * @param command the SNAC command subtype for this command
+     * @param blocks the list of extra info blocks to send in this command
+     */
     protected AbstractExtraInfoCmd(int command, ExtraInfoBlock[] blocks) {
         super(command);
 
         DefensiveTools.checkNull(blocks, "blocks");
-        blocks = (ExtraInfoBlock[]) blocks.clone();
-        DefensiveTools.checkNullElements(blocks, "blocks");
 
-        this.extraInfos = blocks;
+        this.extraInfos = (ExtraInfoBlock[])
+                DefensiveTools.getNonnullArray(blocks, "blocks");
     }
 
     /**
-     * Returns the list of extra information blocks sent in this command. See
-     * {@link net.kano.joscar.snaccmd.ExtraInfoBlock} for details.
+     * Returns the list of extra information blocks sent in this command.
      *
      * @return this command's extra information blocks
      */

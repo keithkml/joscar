@@ -81,10 +81,6 @@ public class UploadIconAck extends IconCommand {
 
         iconInfo = ExtraInfoBlock.readExtraInfoBlock(iconBlock);
     }
-    
-    public UploadIconAck(int code) {
-        this(code, null);
-    }
 
     /**
      * Creates a new outgoing icon upload acknowledgement command with the

@@ -68,8 +68,8 @@ public abstract class ConnCommand extends SnacCommand {
     /** A command subtype for setting one's "extra info blocks." */
     public static final int CMD_SETEXTRAINFO = 0x001e;
 
+    /** A command subtype for setting one's security information. */
     public static final int CMD_SETENCINFO = 0x0022;
-    public static final int CMD_ENCINFOACK = 0x0023;
 
     /**
      * A command subtype for when the server is ready for the client to begin
@@ -114,6 +114,11 @@ public abstract class ConnCommand extends SnacCommand {
     public static final int CMD_MIGRATE_PLS = 0x0012;
     /** A command subtype for telling the client what his buddy icon is. */
     public static final int CMD_EXTRA_ACK = 0x0021;
+    /**
+     * A command subtype acknowledging the setting of one's security
+     * information.
+     */
+    public static final int CMD_ENCINFOACK = 0x0023;
 
     /**
      * Creates a new SNAC command in this family.

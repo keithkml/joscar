@@ -47,8 +47,8 @@ import net.kano.joscar.snaccmd.ExtraInfoBlock;
  */
 public class ExtraInfoAck extends AbstractExtraInfoCmd {
     /**
-     * Generates a new icon acknowledgement command from the given incoming
-     * SNAC packet.
+     * Generates a new extra info acknowledgement command from the given
+     * incoming SNAC packet.
      *
      * @param packet the incoming icon acknowledgement packet
      */
@@ -58,12 +58,12 @@ public class ExtraInfoAck extends AbstractExtraInfoCmd {
 
     /**
      * Creates a new outgoing extra info acknowledgement command with the given
-     * list of extra information blocks.
+     * list of extra information blocks. Note that neither <code>blocks</code>
+     * nor any of its elements can be <code>null</code>.
      *
-     * @param extraInfos the extra information blocks to send in this command
+     * @param blocks the extra information blocks to send in this command
      */
-    public ExtraInfoAck(ExtraInfoBlock[] extraInfos) {
-        super(CMD_EXTRA_ACK, extraInfos);
+    public ExtraInfoAck(ExtraInfoBlock[] blocks) {
+        super(CMD_EXTRA_ACK, blocks);
     }
-
 }

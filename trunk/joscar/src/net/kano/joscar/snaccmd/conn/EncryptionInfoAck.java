@@ -44,9 +44,32 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
 
+/**
+ * A SNAC command sent in response to a {@link SetEncryptionInfoCmd} to
+ * acknowledge that the client has set its encryption information. As of this
+ * writing, the significance of this command and its contents is unknown; one
+ * may wish to note, however, that normally each {@linkplain
+ * #getExtraInfoBlocks() extra info block holder} sent in this command contains
+ * two copies (as the {@linkplain ExtraInfoBlockHolder#getFirstBlock() first}
+ * <i>and</i> {@linkplain ExtraInfoBlockHolder#getSecondBlock() second} blocks)
+ * of the <code>ExtraInfoBlock</code>s sent in the
+ * <code>SetEncryptionInfoCmd</code>.
+ *
+ * @snac.src server
+ * @snac.cmd 0x01 0x23
+ *
+ * @see SetEncryptionInfoCmd
+ */
 public class EncryptionInfoAck extends ConnCommand {
+    /** The extra info blocks sent in this command. */
     private final ExtraInfoBlockHolder[] blocks;
 
+    /**
+     * Creates a new encryption information acknowledgement command from the
+     * given incoming encryption info ack SNAC packet.
+     *
+     * @param packet an incoming encryption info acknowledgement SNAC packet
+     */
     protected EncryptionInfoAck(SnacPacket packet) {
         super(CMD_ENCINFOACK);
 
@@ -57,27 +80,41 @@ public class EncryptionInfoAck extends ConnCommand {
         this.blocks = ExtraInfoBlockHolder.readBlockHolders(snacData);
     }
 
+    /**
+     * Creates a new outgoing encryption information acknowledgement packet with
+     * the given list of extra info block holder objects. Note that neither
+     * <code>blocks</code> nor any of the elements in <code>blocks</code> can be
+     * <code>null</code>.
+     *
+     * @param blocks a list of extra info block holder objects
+     */
     public EncryptionInfoAck(ExtraInfoBlockHolder[] blocks) {
         super(CMD_ENCINFOACK);
+
+        DefensiveTools.checkNull(blocks, "blocks");
 
         this.blocks = (ExtraInfoBlockHolder[])
                 DefensiveTools.getNonnullArray(blocks, "blocks");
     }
 
+    /**
+     * Returns the extra info block holders sent in this command. Note that this
+     * method will never return <code>null</code>; if no extra info block
+     * holders were sent in this command, an empty array will be returned;
+     *
+     * @return the extra info block holders sent in this command
+     */
     public final ExtraInfoBlockHolder[] getExtraInfoBlocks() {
         return (ExtraInfoBlockHolder[]) blocks.clone();
     }
 
     public void writeData(OutputStream out) throws IOException {
-        if (blocks != null) {
-            for (int i = 0; i < blocks.length; i++) {
-                blocks[i].write(out);
-            }
+        for (int i = 0; i < blocks.length; i++) {
+            blocks[i].write(out);
         }
     }
 
     public String toString() {
-        return "EncryptionInfoAck: blocks="
-                + (blocks == null ? null : Arrays.asList(blocks));
+        return "EncryptionInfoAck: blocks=" + Arrays.asList(blocks);
     }
 }

@@ -65,12 +65,12 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
     private static final int TYPE_ICON_REQ = 0x0009;
     /** A TLV type containing information about the sender's AIM Expression. */
     private static final int TYPE_EXPRESSION_INFO = 0x000d;
-
+    
     /** A TLV type containing a set of "features." */
     private static final int TYPE_FEATURES = 0x0501;
     /** A TLV type containing the message. */
     private static final int TYPE_MESSAGE_PARTS = 0x0101;
-
+    /** A TLV type containing an encryption code. */
     private static final int TYPE_ENCRYPTION_CODE = 0x0d01;
 
     /**
@@ -87,6 +87,7 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
     private boolean wantsIcon;
     /** A set of icon data provided by the user who sent this IM. */
     private OldIconHashInfo iconInfo;
+    /** A list of AIM Expressions information blocks. */
     private ExtraInfoBlock[] expressionInfoBlocks;
 
     /**
@@ -127,7 +128,8 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
             if (msgTLVs.hasTlv(TYPE_ENCRYPTION_CODE)) {
                 Tlv msgDataTlv = msgTLVs.getFirstTlv(TYPE_MESSAGE_PARTS);
                 ByteBlock block = msgDataTlv.getData().subBlock(4);
-                message = new InstantMessage(msgTLVs.getUShort(TYPE_ENCRYPTION_CODE), block);
+                int encCode = msgTLVs.getUShort(TYPE_ENCRYPTION_CODE);
+                message = new InstantMessage(encCode, block);
             } else {
                 // read each part of the multipart data
                 StringBuffer messageBuffer = new StringBuffer();
@@ -177,6 +179,7 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
      * @param autoResponse whether this is an auto-response or not
      * @param wantsIcon whether to request the receiving user's buddy icon
      * @param iconInfo a set of our own buddy icon information
+     * @param expInfoBlocks a list of AIM Expression information blocks
      */
     protected AbstractImIcbm(int command, long messageId,
             InstantMessage message, boolean autoResponse, boolean wantsIcon,
@@ -205,9 +208,7 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
      *
      * @return whether this message was an auto-response
      */
-    public final boolean isAutoResponse() {
-        return autoResponse;
-    }
+    public final boolean isAutoResponse() { return autoResponse; }
 
     /**
      * Returns whether the sender is requesting a buddy icon.
@@ -223,12 +224,19 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
      *
      * @return the sender's buddy icon information
      */
-    public final OldIconHashInfo getIconInfo() {
-        return iconInfo;
-    }
+    public final OldIconHashInfo getIconInfo() { return iconInfo; }
 
+    /**
+     * Returns the list of AIM Expression information blocks sent in this
+     * command.
+     *
+     * @return the list of AIM Expression information blocks sent in this
+     *         command, or <code>null</code> if none were sent
+     */
     public ExtraInfoBlock[] getAimExpressionInfo() {
-        return (ExtraInfoBlock[]) expressionInfoBlocks.clone();
+        return expressionInfoBlocks == null
+                ? null
+                : (ExtraInfoBlock[]) expressionInfoBlocks.clone();
     }
 
     /**
@@ -266,9 +274,7 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
                 msgout.write(encInfo.getBytes());
 
                 messageData = ByteBlock.wrap(msgout.toByteArray());
-
             }
-
 
             Tlv featuresTlv = new Tlv(TYPE_FEATURES, FEATURES_DEFAULT);
             Tlv msgPartTlv = new Tlv(TYPE_MESSAGE_PARTS, messageData);
