@@ -38,7 +38,6 @@ package net.kano.joscar.snaccmd;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.LiveWritable;
 import net.kano.joscar.Writable;
 
 import java.io.IOException;
@@ -56,11 +55,11 @@ import java.io.OutputStream;
  * {@link FullUserInfo#getExtraInfoBlocks() FullUserInfo}):
  * <ul>
  * <li> If the flags include the {@link #FLAG_HASH_PRESENT} bit, the data field
- * is a buddy icon hash (in MD5 format). If the <code>FLAG_ICON_PRESENT</code>
+ * is a buddy icon hash (in MD5 format). If the <code>FLAG_HASH_PRESENT</code>
  * bit is off,that user may not have an icon, and the data field will (normally)
  * be {@link #HASH_SPECIAL}. The significance of <code>HASH_SPECIAL</code> is
  * unknown at the time of this writing. One should note that if the flags
- * include the <code>FLAG_ICON_PRESENT</code> bit, the data block may still be
+ * include the <code>FLAG_HASH_PRESENT</code> bit, the data block may still be
  * <code>HASH_SPECIAL</code>. </li>
  * <li> When received in an {@link net.kano.joscar.snaccmd.conn.ExtraInfoAck},
  * the flags {@link #FLAG_UPLOAD_ICON} or {@link #FLAG_ALREADY_HAVE_ICON} may be
@@ -70,14 +69,14 @@ import java.io.OutputStream;
  * <code>FLAG_ALREADY_HAVE_ICON</code> is present, the server has your buddy
  * icon cached and no further action is necessary. Normally, the
  * <code>FLAG_ALREADY_HAVE_ICON</code> flag is accompanied by a
- * <code>FLAG_ICON_PRESENT</code> flag; the <code>FLAG_UPLOAD_ICON</code> flag
+ * <code>FLAG_HASH_PRESENT</code> flag; the <code>FLAG_UPLOAD_ICON</code> flag
  * normally is the only flag set (if, of course, it is set). </li>
  * </ul>
  * </li>
  * <li> When sending icon data to the server, like in a {@link
  * net.kano.joscar.ssiitem.IconItem}:
  * <ul>
- * <li> When setting a buddy icon, <code>FLAG_ICON_PRESENT</code> should be set
+ * <li> When setting a buddy icon, <code>FLAG_HASH_PRESENT</code> should be set
  * and the data block should be an MD5 hash of the icon. </li>
  * <li> When clearing (removing) a buddy icon, no flags should be set ({@link
  * #FLAG_DEFAULT}) and the data block should be <code>#HASH_SPECIAL</code>.
@@ -99,11 +98,11 @@ import java.io.OutputStream;
  *
  * Note that, as used above, a "flag" means a single bit, and a flag being
  * "present," "on"," or "included" means that the bit is "on." For example, to
- * see if an extra info data's <code>FLAG_ICON_PRESENT</code> flag is on, one
+ * see if an extra info data's <code>FLAG_HASH_PRESENT</code> flag is on, one
  * could use code such as the following:
  * <pre>
 if ((extraInfoData.getFlags()
-        & ExtraInfoData.FLAG_ICON_PRESENT) != 0) {
+        & ExtraInfoData.FLAG_HASH_PRESENT) != 0) {
     System.out.println("this extra info data block "
             + "contains a buddy icon MD5 hash!");
 }
@@ -229,7 +228,7 @@ public final class ExtraInfoData implements Writable {
     /**
      * Returns the flags stored in this extra info data object. The returned
      * value will normally be a bitwise combination of the {@link
-     * #FLAG_ICON_PRESENT FLAG_*} constants defined in this class. See
+     * #FLAG_HASH_PRESENT FLAG_*} constants defined in this class. See
      * {@linkplain ExtraInfoData above} for details on how to check for specific
      * flags.
      *

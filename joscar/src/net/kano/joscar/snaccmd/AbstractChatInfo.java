@@ -267,7 +267,7 @@ public abstract class AbstractChatInfo {
      * @param charset1 the room's associated charset
      * @param language1 the room's associatd language code
      * @param contentType a content type string, like {@link
-     *        #CONTENTTYPE_DEFAULT} or {@link ChatMsg#CONTENTTYPE_SECURE}
+     *        ChatMsg#CONTENTTYPE_DEFAULT} or {@link ChatMsg#CONTENTTYPE_SECURE}
      */
     protected AbstractChatInfo(String name, String charset1, String language1,
             String contentType) {
@@ -308,7 +308,7 @@ public abstract class AbstractChatInfo {
      * @param language2 the language code (such as "en") to place in the second
      *        language block, or <code>null</code> for none
      * @param contentType the "content type" of the chat room, like {@link
-     *        #CONTENTTYPE_DEFAULT} or {@link ChatMsg#CONTENTTYPE_SECURE}
+     *        ChatMsg#CONTENTTYPE_DEFAULT} or {@link ChatMsg#CONTENTTYPE_SECURE}
      */
     protected AbstractChatInfo(int flags, Date creation, int maxMsgLen,
             int maxOccupancy, String name, short createPerms, String charset1,
