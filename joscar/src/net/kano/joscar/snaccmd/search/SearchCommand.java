@@ -47,7 +47,7 @@ public abstract class SearchCommand extends SnacCommand {
 
     /** A set of SNAC family information for this family. */
     public static final SnacFamilyInfo FAMILY_INFO
-            = new SnacFamilyInfo(FAMILY_SEARCH, 0x0001, 0x0010, 0x0629);
+            = new SnacFamilyInfo(FAMILY_SEARCH, 0x0001, 0x0010, 0x739);
 
     /** A command subtype for requesting a list of valid chat interests. */
     public static final int CMD_INTERESTS_REQ = 0x0004;

@@ -55,7 +55,7 @@ public final class ImmutableTlvChain extends AbstractTlvChain {
      * @return a TLV chain object containing TLV's read from the given block of
      *         data
      */
-    public static TlvChain readChain(ByteBlock block) {
+    public static ImmutableTlvChain readChain(ByteBlock block) {
         return readChain(block, -1);
     }
 
@@ -72,7 +72,7 @@ public final class ImmutableTlvChain extends AbstractTlvChain {
      * @return an <i>immutable</i> TLV chain object containing TLV's read from
      *         the given block of data
      */
-    public static TlvChain readChain(ByteBlock block, int maxTlvs) {
+    public static ImmutableTlvChain readChain(ByteBlock block, int maxTlvs) {
         return new ImmutableTlvChain(block, maxTlvs);
     }
 
@@ -87,7 +87,8 @@ public final class ImmutableTlvChain extends AbstractTlvChain {
      * @return a TLV chain containing the given number of TLV's starting at the
      *         given index of the given array of TLV's
      */
-    public static TlvChain createChain(Tlv[] tlvs, int offset, int len) {
+    public static ImmutableTlvChain createChain(Tlv[] tlvs, int offset,
+            int len) {
         DefensiveTools.checkNull(tlvs, "tlvs");
 
         if (offset < 0 || len < 0 || offset + len > tlvs.length) {

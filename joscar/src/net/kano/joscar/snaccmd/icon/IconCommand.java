@@ -48,7 +48,7 @@ public abstract class IconCommand extends SnacCommand {
 
     /** A set of SNAC family information for this family. */
     public static final SnacFamilyInfo FAMILY_INFO
-            = new SnacFamilyInfo(FAMILY_ICON, 0x0001, 0x0010, 0x0629);
+            = new SnacFamilyInfo(FAMILY_ICON, 0x0001, 0x0010, 0x0739);
 
     /** A command subtype for requesting one's icon. */
     public static final int CMD_ICON_REQ = 0x0004;

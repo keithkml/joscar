@@ -48,7 +48,7 @@ public abstract class BuddyCommand extends SnacCommand {
 
     /** A SNAC family info block for this family. */
     public static final SnacFamilyInfo FAMILY_INFO
-            = new SnacFamilyInfo(FAMILY_BUDDY, 0x0001, 0x0110, 0x0629);
+            = new SnacFamilyInfo(FAMILY_BUDDY, 0x0001, 0x0110, 0x0739);
 
     /** The command subtype for a "buddy update." */
     public static final int CMD_BUDDY_STATUS = 0x000b;

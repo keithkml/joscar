@@ -36,18 +36,14 @@
 package net.kano.joscartests;
 
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.FileWritable;
 import net.kano.joscar.flap.FlapPacketEvent;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.net.ClientConnEvent;
 import net.kano.joscar.snac.SnacPacketEvent;
 import net.kano.joscar.snac.SnacResponseEvent;
-import net.kano.joscar.snaccmd.CapabilityBlock;
-import net.kano.joscar.snaccmd.FullUserInfo;
-import net.kano.joscar.snaccmd.InfoData;
-import net.kano.joscar.snaccmd.conn.MyInfoRequest;
-import net.kano.joscar.snaccmd.conn.ServerReadyCmd;
-import net.kano.joscar.snaccmd.conn.ServiceRedirect;
-import net.kano.joscar.snaccmd.conn.YourInfoCmd;
+import net.kano.joscar.snaccmd.*;
+import net.kano.joscar.snaccmd.conn.*;
 import net.kano.joscar.snaccmd.icbm.ParamInfo;
 import net.kano.joscar.snaccmd.icbm.ParamInfoCmd;
 import net.kano.joscar.snaccmd.icbm.ParamInfoRequest;
@@ -62,6 +58,12 @@ import net.kano.joscar.ssiitem.SsiItemObj;
 import net.kano.joscar.ssiitem.SsiItemObjectFactory;
 
 import java.net.InetAddress;
+import java.security.cert.CertificateFactory;
+import java.security.cert.CertificateException;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
+import java.security.NoSuchProviderException;
+import java.io.ByteArrayInputStream;
 
 public class BosFlapConn extends BasicConn {
     protected SsiItemObjectFactory itemFactory = new DefaultSsiItemObjFactory();
@@ -128,8 +130,17 @@ public class BosFlapConn extends BasicConn {
                         CapabilityBlock.BLOCK_ICQCOMPATIBLE,
                         CapabilityBlock.BLOCK_SHORTCAPS,
                         CapabilityBlock.BLOCK_ENCRYPTION,
-                    })));
-
+//                        CapabilityBlock.BLOCK_SOMETHING,
+                    }, new CertificateInfo(ByteBlock.createByteBlock(
+                            new FileWritable("/home/keith/in/cert.bin"))))));
+            request(new SetEncryptionInfoCmd(new ExtraInfoBlock[] {
+                new ExtraInfoBlock(0x0402, new ExtraInfoData(
+                        ExtraInfoData.FLAG_HASH_PRESENT,
+                        CertificateInfo.HASHA_DEFAULT)),
+                new ExtraInfoBlock(0x0403, new ExtraInfoData(
+                        ExtraInfoData.FLAG_HASH_PRESENT,
+                        CertificateInfo.HASHB_DEFAULT)),
+            }));
             request(new MyInfoRequest());
 
         } else if (cmd instanceof ParamInfoCmd) {
@@ -155,6 +166,31 @@ public class BosFlapConn extends BasicConn {
             String sn = uic.getUserInfo().getScreenname();
             System.out.println("user info for " + sn + "! "
                     + uic.getInfoData());
+
+            CertificateInfo certInfo = uic.getInfoData().getCertificateInfo();
+            if (certInfo != null) {
+                ByteBlock certData = certInfo.getCertData();
+
+                try {
+                    CertificateFactory factory
+                            = CertificateFactory.getInstance("X.509", "BC");
+                    ByteArrayInputStream stream
+                            = new ByteArrayInputStream(certData.toByteArray());
+                    Certificate cert = factory.generateCertificate(stream);
+
+                    tester.setCert(sn, cert);
+
+                    X509Certificate x = (X509Certificate) cert;
+                    System.out.println("got certificate for " + sn + ": "
+                            + x.getSubjectX500Principal().getName());
+
+
+                } catch (CertificateException e1) {
+                    e1.printStackTrace();
+                } catch (NoSuchProviderException e1) {
+                    e1.printStackTrace();
+                }
+            }
 
         } else if (cmd instanceof ServiceRedirect) {
             ServiceRedirect sr = (ServiceRedirect) cmd;

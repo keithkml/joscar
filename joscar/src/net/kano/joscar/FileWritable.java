@@ -53,16 +53,16 @@ public class FileWritable implements LiveWritable {
     /**
      * The file from which to read.
      */
-    private final File file;
+    private final String filename;
 
     /**
      * Creates a new Writable that will write the contents of the given file
      * on command.
      *
-     * @param file the file whose contents should be written
+     * @param filename the file whose contents should be written
      */
-    public FileWritable(File file) {
-        this.file = file;
+    public FileWritable(String filename) {
+        this.filename = filename;
     }
 
     /**
@@ -70,7 +70,7 @@ public class FileWritable implements LiveWritable {
      *
      * @return the file that this object represents
      */
-    public final File getFile() { return file; }
+    public final String getFilename() { return filename; }
 
     /**
      * Writes the contents of this object's file (<code>getFile()</code>) to
@@ -80,6 +80,7 @@ public class FileWritable implements LiveWritable {
      * @throws IOException if an I/O error occurs
      */
     public final void write(OutputStream out) throws IOException {
+        File file = new File(filename);
         long len = file.length();
 
         FileInputStream in = new FileInputStream(file);

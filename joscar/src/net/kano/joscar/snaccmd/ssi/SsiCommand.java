@@ -48,7 +48,7 @@ public abstract class SsiCommand extends SnacCommand {
 
     /** A set of SNAC family information for this family. */
     public static final SnacFamilyInfo FAMILY_INFO
-            = new SnacFamilyInfo(FAMILY_SSI, 0x0003, 0x0110, 0x0629);
+            = new SnacFamilyInfo(FAMILY_SSI, 0x0003, 0x0110, 0x0739);
 
     /** A command subtype for requesting SSI-related "rights." */
     public static final int CMD_RIGHTS_REQ = 0x0002;

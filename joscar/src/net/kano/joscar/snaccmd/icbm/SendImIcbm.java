@@ -39,6 +39,7 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.OscarTools;
 import net.kano.joscar.StringBlock;
+import net.kano.joscar.snaccmd.ExtraInfoBlock;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
@@ -101,7 +102,7 @@ public class SendImIcbm extends AbstractImIcbm {
      * @param message the message to send
      */
     public SendImIcbm(String sn, String message) {
-        this(sn, message, false, 0, false, null, true);
+        this(sn, message, false);
     }
 
     /**
@@ -115,7 +116,7 @@ public class SendImIcbm extends AbstractImIcbm {
      * @param autoresponse whether this message is an "auto-response" or not
      */
     public SendImIcbm(String sn, String message, boolean autoresponse) {
-        this(sn, message, autoresponse, 0, false, null, true);
+        this(sn, new InstantMessage(message), autoresponse, 0, false, null, null, true);
     }
 
     /**
@@ -131,11 +132,11 @@ public class SendImIcbm extends AbstractImIcbm {
      * @param ackRequested whether a {@link MessageAck} should be sent in
      *        response to this command
      */
-    public SendImIcbm(String sn, String message, boolean autoResponse,
+    public SendImIcbm(String sn, InstantMessage message, boolean autoResponse,
             long messageId, boolean wantsIcon, OldIconHashInfo iconInfo,
-            boolean ackRequested) {
+            ExtraInfoBlock[] expInfoBlocks, boolean ackRequested) {
         super(IcbmCommand.CMD_SEND_ICBM, messageId, message, autoResponse,
-                wantsIcon, iconInfo);
+                wantsIcon, iconInfo, expInfoBlocks);
 
         DefensiveTools.checkNull(sn, "sn");
 

@@ -64,6 +64,11 @@ public final class ExtraInfoBlock implements LiveWritable {
      */
     public static final int TYPE_AVAILMSG = 0x0002;
 
+    public static final int TYPE_AIMEXPINFO = 0x0080;
+
+    public static final int TYPE_CERTINFO_HASHA = 0x0402;
+    public static final int TYPE_CERTINFO_HASHB = 0x0403;
+
     /** The type of data contained in this extra info block. */
     private final int type;
 

@@ -38,6 +38,7 @@ package net.kano.joscar.snaccmd.icbm;
 import net.kano.joscar.*;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.AbstractIcbm;
+import net.kano.joscar.snaccmd.ExtraInfoBlock;
 import net.kano.joscar.tlv.*;
 
 import java.io.ByteArrayOutputStream;
@@ -57,26 +58,31 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
     private static final int TYPE_AUTO = 0x0004;
     /** A TLV type containing whether the user is requesting our icon. */
     private static final int TYPE_ICON_REQ = 0x0009;
+    /** A TLV type containing information about the sender's AIM Expression. */
+    private static final int TYPE_EXPRESSION_INFO = 0x000d;
 
     /** A TLV type containing a set of "features." */
     private static final int TYPE_FEATURES = 0x0501;
     /** A TLV type containing the message. */
     private static final int TYPE_MESSAGE_PARTS = 0x0101;
 
-    /** A "features block" used by WinAIM. This is, then, the block we use. */
+    private static final int TYPE_ENCRYPTION_CODE = 0x0d01;
+
+    /**
+     * A "features block" used by WinAIM 5.2. This is, then, the block we use.
+     */
     private static final ByteBlock FEATURES_DEFAULT
-            = ByteBlock.wrap(new byte[] {
-                0x01, 0x01, 0x01, 0x02, 0x01, 0x01
-            });
+            = ByteBlock.wrap(new byte[] { 0x01, 0x01, 0x02 });
 
     /** The Instant Message. */
-    private String message;
+    private InstantMessage message;
     /** Whether this message is an auto-response. */
     private boolean autoResponse;
     /** Whether the user wants our buddy icon. */
     private boolean wantsIcon;
     /** A set of icon data provided by the user who sent this IM. */
     private OldIconHashInfo iconInfo;
+    private ExtraInfoBlock[] expressionInfoBlocks;
 
     /**
      * Generates an IM ICBM from the given incoming SNAC packet and with the
@@ -112,27 +118,34 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
             // them.
             TlvChain msgTLVs = ImmutableTlvChain.readChain(messageTlv.getData());
 
-            // read each part of the multipart data
-            StringBuffer messageBuffer = new StringBuffer();
-            Tlv[] parts = msgTLVs.getTlvs(TYPE_MESSAGE_PARTS);
 
-            for (int i = 0; i < parts.length; i++) {
-                ByteBlock partBlock = parts[i].getData();
+            if (msgTLVs.hasTlv(TYPE_ENCRYPTION_CODE)) {
+                Tlv msgDataTlv = msgTLVs.getFirstTlv(TYPE_MESSAGE_PARTS);
+                ByteBlock block = msgDataTlv.getData().subBlock(4);
+                message = new InstantMessage(msgTLVs.getUShort(TYPE_ENCRYPTION_CODE), block);
+            } else {
+                // read each part of the multipart data
+                StringBuffer messageBuffer = new StringBuffer();
+                Tlv[] parts = msgTLVs.getTlvs(TYPE_MESSAGE_PARTS);
 
-                int charsetCode = BinaryTools.getUShort(partBlock, 0);
-                int charsetSubcode = BinaryTools.getUShort(partBlock, 2);
-                ByteBlock messageBlock = partBlock.subBlock(4);
+                for (int i = 0; i < parts.length; i++) {
+                    ByteBlock partBlock = parts[i].getData();
 
-                ImEncodingParams encoding
-                        = new ImEncodingParams(charsetCode, charsetSubcode);
-                String message = ImEncodedString.readImEncodedString(
-                        encoding, messageBlock);
+                    int charsetCode = BinaryTools.getUShort(partBlock, 0);
+                    int charsetSubcode = BinaryTools.getUShort(partBlock, 2);
+                    ByteBlock messageBlock = partBlock.subBlock(4);
 
-                messageBuffer.append(message);
+                    ImEncodingParams encoding
+                            = new ImEncodingParams(charsetCode, charsetSubcode);
+                    String message = ImEncodedString.readImEncodedString(
+                            encoding, messageBlock);
+
+                    messageBuffer.append(message);
+                }
+
+                // and set the message to the sum of all the parts
+                message = new InstantMessage(messageBuffer.toString());
             }
-
-            // and set the message to the sum of all the parts
-            message = messageBuffer.toString();
         } else {
             message = null;
         }
@@ -141,6 +154,12 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
             iconInfo = OldIconHashInfo.readIconHashFromImTlvData(iconData);
         } else {
             iconInfo = null;
+        }
+
+        Tlv expInfoTlv = chain.getLastTlv(TYPE_EXPRESSION_INFO);
+        if (expInfoTlv != null) {
+            ByteBlock data = expInfoTlv.getData();
+            expressionInfoBlocks = ExtraInfoBlock.readExtraInfoBlocks(data);
         }
     }
 
@@ -154,24 +173,27 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
      * @param wantsIcon whether to request the receiving user's buddy icon
      * @param iconInfo a set of our own buddy icon information
      */
-    protected AbstractImIcbm(int command, long messageId, String message,
-            boolean autoResponse, boolean wantsIcon, OldIconHashInfo iconInfo) {
+    protected AbstractImIcbm(int command, long messageId,
+            InstantMessage message, boolean autoResponse, boolean wantsIcon,
+            OldIconHashInfo iconInfo, ExtraInfoBlock[] expInfoBlocks) {
         super(IcbmCommand.FAMILY_ICBM, command, messageId, CHANNEL_IM);
+
+        expInfoBlocks = (ExtraInfoBlock[]) DefensiveTools.getImmutableArray(
+                expInfoBlocks, "expInfoBlocks");
 
         this.message = message;
         this.autoResponse = autoResponse;
         this.wantsIcon = wantsIcon;
         this.iconInfo = iconInfo;
+        this.expressionInfoBlocks = expInfoBlocks;
     }
 
     /**
      * Returns the instant message sent with this command.
      *
-     * @return the text of the message
+     * @return the instant message sent
      */
-    public final String getMessage() {
-        return message;
-    }
+    public final InstantMessage getMessage() { return message; }
 
     /**
      * Returns whether this message was an "auto-response."
@@ -188,9 +210,7 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
      * @return whether the sender wants our buddy icon (or whether we want the
      *         receiver's, if this is an outgoing IM)
      */
-    public final boolean senderWantsIcon() {
-        return wantsIcon;
-    }
+    public final boolean senderWantsIcon() { return wantsIcon; }
 
     /**
      * Returns a set of icon data provided by the sender, or <code>null</code>
@@ -202,6 +222,10 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
         return iconInfo;
     }
 
+    public ExtraInfoBlock[] getAimExpressionInfo() {
+        return (ExtraInfoBlock[]) expressionInfoBlocks.clone();
+    }
+
     /**
      * Writes the IM fields of this ICBM, such as message and icon data, to the
      * given stream, as a set of TLV's.
@@ -211,25 +235,41 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
      */
     final void writeImTlvs(OutputStream out) throws IOException {
         if (message != null) {
-            ByteArrayOutputStream msgout = new ByteArrayOutputStream();
-
-            ImEncodedString encInfo = ImEncodedString.encodeString(message);
-
-            ImEncodingParams encoding = encInfo.getEncoding();
-
-            BinaryTools.writeUShort(msgout, encoding.getCharsetCode());
-            BinaryTools.writeUShort(msgout, encoding.getCharsetSubcode());
-            msgout.write(encInfo.getBytes());
-
-            // create the two TLV's inside a TLV chain, and write it out.
             MutableTlvChain chain = new DefaultMutableTlvChain();
+            ByteBlock messageData;
+
+            if (message.isEncrypted()) {
+                Tlv encCodeTlv = Tlv.getUShortInstance(TYPE_ENCRYPTION_CODE,
+                                    message.getEncryptionCode());
+                ByteBlock encBlock = ByteBlock.wrap(new byte[] { 0, 0, 0, 0 });
+                ByteBlock encryptData = message.getEncryptedData();
+                messageData = ByteBlock.createByteBlock(
+                        new LiveWritable[] { encBlock, encryptData });
+
+                chain.addTlv(encCodeTlv);
+
+            } else {
+                ByteArrayOutputStream msgout = new ByteArrayOutputStream();
+
+                ImEncodedString encInfo
+                        = ImEncodedString.encodeString(message.getMessage());
+
+                ImEncodingParams encoding = encInfo.getEncoding();
+
+                BinaryTools.writeUShort(msgout, encoding.getCharsetCode());
+                BinaryTools.writeUShort(msgout, encoding.getCharsetSubcode());
+                msgout.write(encInfo.getBytes());
+
+                messageData = ByteBlock.wrap(msgout.toByteArray());
+
+            }
+
+
             Tlv featuresTlv = new Tlv(TYPE_FEATURES, FEATURES_DEFAULT);
+            Tlv msgPartTlv = new Tlv(TYPE_MESSAGE_PARTS, messageData);
+
             chain.addTlv(featuresTlv);
-
-            ByteBlock msgPartBlock = ByteBlock.wrap(msgout.toByteArray());
-            Tlv msgPartTlv = new Tlv(TYPE_MESSAGE_PARTS, msgPartBlock);
             chain.addTlv(msgPartTlv);
-
             new Tlv(TYPE_MESSAGE, ByteBlock.createByteBlock(chain)).write(out);
         }
 
@@ -243,5 +283,10 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
             new Tlv(TYPE_ICONINFO, iconInfoBlock).write(out);
         }
         if (wantsIcon) new Tlv(TYPE_ICON_REQ).write(out);
+
+        if (expressionInfoBlocks != null) {
+            ByteBlock blocks = ByteBlock.createByteBlock(expressionInfoBlocks);
+            new Tlv(TYPE_EXPRESSION_INFO, blocks).write(out);
+        }
     }
 }

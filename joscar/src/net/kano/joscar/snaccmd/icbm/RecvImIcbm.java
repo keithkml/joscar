@@ -39,6 +39,7 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.FullUserInfo;
+import net.kano.joscar.snaccmd.ExtraInfoBlock;
 import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
@@ -100,11 +101,12 @@ public class RecvImIcbm extends AbstractImIcbm {
      *        <code>null</code> if none was provided
      * @param canType whether or not the sender supports typing notification
      */
-    public RecvImIcbm(long messageId, FullUserInfo userInfo, String message,
-            boolean autoResponse, boolean wantsIcon, OldIconHashInfo iconInfo,
+    public RecvImIcbm(long messageId, FullUserInfo userInfo,
+            InstantMessage message, boolean autoResponse, boolean wantsIcon,
+            OldIconHashInfo iconInfo, ExtraInfoBlock[] expInfoBlocks,
             boolean canType) {
         super(IcbmCommand.CMD_ICBM, messageId, message, autoResponse,
-                wantsIcon, iconInfo);
+                wantsIcon, iconInfo, expInfoBlocks);
 
         DefensiveTools.checkNull(userInfo, "userInfo");
 

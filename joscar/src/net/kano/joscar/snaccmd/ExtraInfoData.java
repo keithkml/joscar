@@ -54,7 +54,7 @@ import java.io.OutputStream;
  * ExtraInfoBlock#TYPE_ICONHASH icon hash block} (like in a
  * {@link FullUserInfo#getExtraInfoBlocks() FullUserInfo}):
  * <ul>
- * <li> If the flags include the {@link #FLAG_ICON_PRESENT} bit, the data field
+ * <li> If the flags include the {@link #FLAG_HASH_PRESENT} bit, the data field
  * is a buddy icon hash (in MD5 format). If the <code>FLAG_ICON_PRESENT</code>
  * bit is off,that user may not have an icon, and the data field will (normally)
  * be {@link #HASH_SPECIAL}. The significance of <code>HASH_SPECIAL</code> is
@@ -109,14 +109,14 @@ if ((extraInfoData.getFlags()
  * </pre>
  */
 public final class ExtraInfoData implements LiveWritable {
-    /** A flag set with no flags on (<code>0x00</code>). */
+    /** A flagset with no flags on (<code>0x00</code>). */
     public static final int FLAG_DEFAULT = 0x00;
 
     /**
-     * A flag indicating that a buddy icon is present. See {@linkplain
-     * ExtraInfoData above} for details.
-     * */
-    public static final int FLAG_ICON_PRESENT = 0x01;
+     * A flag indicating that a hash (for example, an MD5 hash of the user's
+     * buddy icon) is present. See {@linkplain ExtraInfoData above} for details.
+     */
+    public static final int FLAG_HASH_PRESENT = 0x01;
 
     /**
      * A flag indicating that the client should upload its buddy icon. See
@@ -126,7 +126,7 @@ public final class ExtraInfoData implements LiveWritable {
 
     /**
      * A flag indicating that the server already has a copy of your buddy icon.
-     * This flag is normally accompanied by {@link #FLAG_ICON_PRESENT}. See
+     * This flag is normally accompanied by {@link #FLAG_HASH_PRESENT}. See
      * {@linkplain ExtraInfoData above} for details.
      * */
     public static final int FLAG_ALREADY_HAVE_ICON = 0x80;

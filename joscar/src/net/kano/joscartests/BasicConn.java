@@ -66,10 +66,15 @@ import net.kano.joscar.snaccmd.buddy.BuddyStatusCmd;
 import net.kano.joscar.snaccmd.conn.*;
 import net.kano.joscar.snaccmd.icbm.*;
 
+import javax.crypto.Cipher;
+import javax.crypto.NoSuchPaddingException;
 import java.io.*;
 import java.net.InetAddress;
 import java.text.DateFormat;
 import java.util.*;
+import java.security.cert.Certificate;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 
 public abstract class BasicConn extends AbstractFlapConn {
     protected final ByteBlock cookie;
@@ -250,24 +255,46 @@ public abstract class BasicConn extends AbstractFlapConn {
             RecvImIcbm icbm = (RecvImIcbm) cmd;
 
             String sn = icbm.getSenderInfo().getScreenname();
-            System.out.println("*" + sn + "* "
-                    + OscarTools.stripHtml(icbm.getMessage()));
+            InstantMessage message = icbm.getMessage();
+            if (message.isEncrypted()) {
+                ByteBlock encData = message.getEncryptedData();
+                System.out.println("got [" + encData.getLength() + "]: "
+                        + BinaryTools.describeData(encData));
+                request(new SendImIcbm(sn, message, false, 0, false, null, null,
+                        false));
 
-            OldIconHashInfo iconInfo = icbm.getIconInfo();
+                try {
+                    FileOutputStream out = new FileOutputStream("/home/keith/in/tmpencryptedmsg");
 
-            if (iconInfo != null) {
-                System.out.println("(" + sn
-                        + " has a buddy icon: " + iconInfo + ")");
-            }
+                    encData.write(out);
 
-            String str = dateFormat.format(new Date()) + " IM from "
-                    + sn + ": " + icbm.getMessage();
-            if (imLogger != null) {
-                imLogger.println(str);
-            }
-            if (frame != null) {
-                frame.echo("");
-                frame.echo(str);
+                    out.close();
+                } catch (FileNotFoundException e1) {
+                    e1.printStackTrace();
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+
+            } else {
+                System.out.println("*" + sn + "* "
+                        + OscarTools.stripHtml(message.getMessage()));
+
+                OldIconHashInfo iconInfo = icbm.getIconInfo();
+
+                if (iconInfo != null) {
+                    System.out.println("(" + sn
+                            + " has a buddy icon: " + iconInfo + ")");
+                }
+
+                String str = dateFormat.format(new Date()) + " IM from "
+                        + sn + ": " + message;
+                if (imLogger != null) {
+                    imLogger.println(str);
+                }
+                if (frame != null) {
+                    frame.echo("");
+                    frame.echo(str);
+                }
             }
 
 //            if (icbm.senderWantsIcon()) {
@@ -348,7 +375,7 @@ public abstract class BasicConn extends AbstractFlapConn {
                     CapabilityBlock.BLOCK_VOICE,
                     CapabilityBlock.BLOCK_ADDINS,
                     CapabilityBlock.BLOCK_ICQCOMPATIBLE,
-                    CapabilityBlock.BLOCK_ENCRYPTION,
+                    CapabilityBlock.BLOCK_SOMETHING,
                 });
 
                 List caps = new ArrayList(Arrays.asList(
