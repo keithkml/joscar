@@ -35,9 +35,7 @@
 
 package net.kano.joscar;
 
-import net.kano.joscar.snaccmd.CapabilityBlock;
 
-import java.util.Arrays;
 
 /**
  * A set of utilities for ensuring the validity (and non-<code>null</code>ness)

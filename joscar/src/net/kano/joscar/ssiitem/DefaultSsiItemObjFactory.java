@@ -35,8 +35,8 @@
 
 package net.kano.joscar.ssiitem;
 
-import net.kano.joscar.snaccmd.ssi.SsiItem;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.snaccmd.ssi.SsiItem;
 
 /**
  * Provides a default implementation of an SSI item object factory, converting

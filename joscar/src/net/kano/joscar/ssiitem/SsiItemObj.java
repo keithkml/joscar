@@ -35,8 +35,8 @@
 
 package net.kano.joscar.ssiitem;
 
-import net.kano.joscar.tlv.MutableTlvChain;
 import net.kano.joscar.snaccmd.ssi.SsiItem;
+import net.kano.joscar.tlv.MutableTlvChain;
 
 /**
  * An "item object" that represents a single {@linkplain SsiItem item} stored

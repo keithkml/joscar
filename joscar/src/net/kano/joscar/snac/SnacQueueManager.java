@@ -29,20 +29,47 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- *  File created by keith @ Apr 14, 2003
+ *  File created by keith @ Apr 24, 2003
  *
  */
 
 package net.kano.joscar.snac;
 
-import net.kano.joscar.DefensiveTools;
-
 /**
  * An interface for managing a "SNAC queue," which controls when individual
- * SNAC commands are sent on a <code>SnacProcessor</code>. This is useful for,
- * for example, implementing an automatic rate limiting mechanism.
+ * SNAC commands are sent on a <code>SnacProcessor</code>. Such a system is
+ * useful for, for example, implementing an automatic rate limiting mechanism.
+ *
+ * @see DefaultSnacQueueManager
  */
-public abstract class SnacQueueManager {
+public interface SnacQueueManager {
+    /**
+     * A method called to indicate that the queue should be paused until a call
+     * to {@link #unpause}. This method will never be called twice without a
+     * call to <code>unpause</code> in between; that is, it will never be called
+     * twice in a row. Note that calls to {@link #queueSnac} can and probably
+     * will be made before a call to {@link #unpause}; that is, the queue must
+     * still accept the queueing of SNAC commands while it is paused.
+     * <br>
+     * <br>
+     * Note that this will be the first method called for a given SNAC processor
+     * if this queue manager is added to the processor while the processor is
+     * paused.
+     *
+     * @param processor the SNAC processor on which to pause
+     */
+    void pause(SnacProcessor processor);
+
+    /**
+     * A method called to indicate that the queue can once again send SNACs.
+     * This method will only be called after a call to {@link #pause}, and will
+     * never be called twice without a call to {@link #pause} in between; that
+     * is, essentially, it will never be called twice in a row.
+     *
+     * @param processor the SNAC processor on which to pause
+     */
+    void unpause(SnacProcessor processor);
+
     /**
      * Enqueues the given SNAC request that for the given SNAC processor. This
      * method can just as easily send the given request immediately (via
@@ -56,30 +83,18 @@ public abstract class SnacQueueManager {
      *        created and on which it is to be sent
      * @param request the request being enqueued
      */
-    public abstract void queueSnac(SnacProcessor processor,
-            SnacRequest request);
+    void queueSnac(SnacProcessor processor, SnacRequest request);
 
     /**
      * Clears all pending (queued) SNAC commands in this SNAC manager for the
      * given SNAC processor. This is normally only called when the given SNAC
-     * processor has been disconnected.
+     * processor has been disconnected. Note that a call to this method
+     * implies a call to {@link #unpause} for the given SNAC processor as well,
+     * although no queued SNACs should be sent (as they would with an actual
+     * call to <code>unpause</code>}.
      *
      * @param processor the SNAC processor for which pending SNACs should be
      *        erased
      */
-    public abstract void  clearQueue(SnacProcessor processor);
-
-    /**
-     * Sends the given SNAC request over the given SNAC connection. The given
-     * SNAC must not have already been sent.
-     *
-     * @param processor the SNAC connection on which to send the given SNAC
-     * @param request the SNAC request to send
-     */
-    protected final void sendSnac(SnacProcessor processor,
-            SnacRequest request) {
-        DefensiveTools.checkNull(request, "request");
-        
-        processor.reallySendSnac(request);
-    }
+    void clearQueue(SnacProcessor processor);
 }

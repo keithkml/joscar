@@ -35,11 +35,11 @@
 
 package net.kano.joscar.ssiitem;
 
-import net.kano.joscar.snaccmd.ssi.SsiItem;
-import net.kano.joscar.tlv.*;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.snaccmd.ssi.SsiItem;
+import net.kano.joscar.tlv.*;
 
 /**
  * An SSI item object representing a set of "visibility settings." The

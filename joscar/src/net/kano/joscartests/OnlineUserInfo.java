@@ -36,17 +36,16 @@
 package net.kano.joscartests;
 
 import net.kano.joscar.snaccmd.FullUserInfo;
-import net.kano.joscar.snaccmd.OscarTools;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.color.ColorSpace;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorConvertOp;
-import java.beans.PropertyChangeSupport;
 import java.beans.PropertyChangeListener;
-import java.util.Date;
+import java.beans.PropertyChangeSupport;
 import java.net.URL;
+import java.util.Date;
 
 public class OnlineUserInfo {
     private static Image aimIcon, awayIcon;

@@ -12,7 +12,7 @@
  *    notice, this list of conditions and the following disclaimer in 
  *    the documentation and/or other materials provided with the 
  *    distribution. 
- *  - Neither the name of the Joust Project nor the names of its
+ *  - Neither the name of the Joust Project nor the names of its 
  *    contributors may be used to endorse or promote products derived 
  *    from this software without specific prior written permission. 
  *
@@ -29,53 +29,32 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- *  File created by keith @ Feb 24, 2003
+ *  File created by keith @ Apr 14, 2003
  *
  */
 
-package net.kano.joscar.snaccmd.acct;
+package net.kano.joscar.snac;
 
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.flapcmd.SnacPacket;
-
-import java.io.IOException;
-import java.io.OutputStream;
 
 /**
- * A SNAC command used to request that a confirmation request email be sent to
- * the email address under which this screen name is registered. When a reply
- * to that email is received by the AIM server, the screen name is "confirmed"
- * to come from that email address. Confirmation is only necessary (and allowed)
- * once per screen name.
- *
- * @snac.src client
- * @snac.cmd 0x07 0x06
- *
- * @see ConfirmAck
+ * A default implementation of a SNAC queue manager that allows one to easily
+ * send a dequeued SNAC back to its source SNAC processor. This is pretty much
+ * necessary for normal SNAC connections, but one could conceivably implement a
+ * SNAC queue manager that *never* sent commands to the original SNAC processor
+ * if one wanted. Or something.
  */
-public class ConfirmAcctCmd extends AcctCommand {
+public abstract class DefaultSnacQueueManager implements SnacQueueManager {
     /**
-     * Creates a new account confirmation request command from the given
-     * incoming SNAC packet.
+     * Sends the given SNAC request over the given SNAC connection. The given
+     * SNAC must not have already been sent.
      *
-     * @param packet an account confirmation request packet
+     * @param processor the SNAC connection on which to send the given SNAC
+     * @param request the SNAC request to send
      */
-    protected ConfirmAcctCmd(SnacPacket packet) {
-        super(CMD_CONFIRM);
-
-        DefensiveTools.checkNull(packet, "packet");
-    }
-
-    /**
-     * Creates a new outgoing account confirmation request command.
-     */
-    public ConfirmAcctCmd() {
-        super(CMD_CONFIRM);
-    }
-
-    public void writeData(OutputStream out) throws IOException { }
-
-    public String toString() {
-        return "ConfirmAcctCmd";
+    protected void sendSnac(SnacProcessor processor, SnacRequest request) {
+        DefensiveTools.checkNull(request, "request");
+        
+        processor.reallySendSnac(request);
     }
 }

@@ -38,8 +38,8 @@ package net.kano.joscar.snaccmd.chat;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.AbstractIcbm;
-import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
 
 import java.io.IOException;

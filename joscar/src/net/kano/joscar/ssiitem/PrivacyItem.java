@@ -38,8 +38,8 @@ package net.kano.joscar.ssiitem;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.snaccmd.ssi.SsiItem;
 import net.kano.joscar.snaccmd.FullUserInfo;
+import net.kano.joscar.snaccmd.ssi.SsiItem;
 import net.kano.joscar.tlv.*;
 
 /**

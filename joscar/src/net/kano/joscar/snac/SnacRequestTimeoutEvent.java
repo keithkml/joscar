@@ -35,8 +35,8 @@
 
 package net.kano.joscar.snac;
 
-import net.kano.joscar.flap.FlapProcessor;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.flap.FlapProcessor;
 
 /**
  * An event fired when a SNAC request "times out." This is not a bad thing; in

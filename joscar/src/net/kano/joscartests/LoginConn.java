@@ -36,10 +36,10 @@
 package net.kano.joscartests;
 
 import net.kano.joscar.ByteBlock;
-import net.kano.joscar.flapcmd.LoginFlapCmd;
 import net.kano.joscar.flap.ClientFlapConn;
 import net.kano.joscar.flap.FlapConnEvent;
 import net.kano.joscar.flap.FlapPacketEvent;
+import net.kano.joscar.flapcmd.LoginFlapCmd;
 import net.kano.joscar.snac.SnacCommand;
 import net.kano.joscar.snac.SnacPacketEvent;
 import net.kano.joscar.snac.SnacResponseEvent;

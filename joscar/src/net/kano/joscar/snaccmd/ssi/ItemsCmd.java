@@ -36,11 +36,11 @@
 package net.kano.joscar.snaccmd.ssi;
 
 import net.kano.joscar.ByteBlock;
-import net.kano.joscar.MiscTools;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.MiscTools;
+import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.ssiitem.AbstractItemObj;
 import net.kano.joscar.ssiitem.SsiItemObj;
-import net.kano.joscar.flapcmd.SnacPacket;
 
 import java.io.IOException;
 import java.io.OutputStream;

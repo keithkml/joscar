@@ -35,14 +35,17 @@
 
 package net.kano.joscar.snac;
 
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flap.FlapPacketEvent;
 import net.kano.joscar.flap.FlapProcessor;
 import net.kano.joscar.flap.VetoableFlapPacketListener;
-import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.flapcmd.SnacFlapCmd;
-import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.flapcmd.SnacPacket;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -240,7 +243,7 @@ public class SnacProcessor {
     private LinkedHashMap requests = new LinkedHashMap();
 
     /** A SNAC queue manager for this processor. */
-    private SnacQueueManager queueManager = null;
+    private SnacQueueManager queueManager = new ImmediateSnacQueueManager();
 
     /**
      * The FLAP packet listener we add to whichever FLAP processor to which we
@@ -284,6 +287,15 @@ public class SnacProcessor {
     }
 
     /**
+     * Returns the FLAP processor to which this SNAC processor is attached.
+     *
+     * @return this SNAC processor's FLAP processor
+     */
+    public synchronized final FlapProcessor getFlapProcessor() {
+        return flapProcessor;
+    }
+
+    /**
      * Attaches this SNAC processor to the given FLAP processor. Note that this
      * does not start a SNAC processing loop of any kind; rather, SNACs will
      * be processed during the normal processing of FLAP packets that occurs
@@ -302,34 +314,116 @@ public class SnacProcessor {
 
         detach();
 
+        attachMinimally(processor);
+    }
+
+    /**
+     * Attaches to the given FLAP processor without formally detaching from the
+     * previous processor.
+     *
+     * @param processor the processor to which to attach
+     */
+    private synchronized final void attachMinimally(FlapProcessor processor) {
         this.flapProcessor = processor;
         this.flapProcessor.addVetoablePacketListener(flapPacketListener);
     }
 
+    /** Whether or not this SNAC connection is currently "paused." */
+    private boolean paused = false;
+
     /**
-     * Returns the FLAP processor to which this SNAC processor is attached.
+     * Pauses this SNAC processor. A paused SNAC processor does not send any
+     * SNAC commands to the server until a call to {@link #unpause()}. Note that
+     * if this method is called while the processor is already paused, no action
+     * will be taken. Note that SNAC commands can still be {@linkplain #sendSnac
+     * sent} while the processor is paused; however, they will not be sent to
+     * the server until unpausing.
      *
-     * @return this SNAC processor's FLAP processor
+     * @see #unpause()
+     * @see #isPaused()
+     *
+     * @see net.kano.joscar.snaccmd.conn.PauseCmd
      */
-    public synchronized final FlapProcessor getFlapProcessor() {
-        return flapProcessor;
+    public synchronized final void pause() {
+        if (paused) return;
+
+        queueManager.pause(this);
+
+        paused = true;
     }
 
     /**
-     * Detaches from the currently attached FLAP processor, if any. The request
-     * list is cleared, to prevent responses with the same ID's on a future
-     * connection from being passed to unrelated request listeners.
+     * Unpauses this SNAC processor if previously paused with a call to {@link
+     * #pause}. SNAC commands sent during the paused period will begin to be
+     * sent to the server (depending on the implementation of the {@linkplain
+     * #setSnacQueueManager queue manager}).
+     *
+     * @see #pause()
+     * @see #isPaused()
+     *
+     * @see net.kano.joscar.snaccmd.conn.ResumeCmd
+     */
+    public synchronized final void unpause() {
+        if (!paused) return;
+
+        queueManager.unpause(this);
+
+        paused = false;
+    }
+
+    /**
+     * Returns whether this SNAC processor is currently paused.
+     *
+     * @return whether this SNAC processor is currently paused
+     *
+     * @see #pause
+     */
+    public synchronized final boolean isPaused() { return paused; }
+
+    /**
+     * Attaches to the given FLAP processor without clearing any SNAC queues.
+     * Effectively "moves" this SNAC connection transparently to the given
+     * processor.
+     *
+     * @param processor a new FLAP processor to use for this SNAC connection
+     *
+     * @see net.kano.joscar.snaccmd.conn.MigrationNotice
+     */
+    public synchronized final void migrate(FlapProcessor processor) {
+        DefensiveTools.checkNull(processor, "processor");
+
+        if (flapProcessor != null) detachMinimally();
+
+        attachMinimally(processor);
+    }
+
+    /**
+     * Detaches from the currently attached FLAP processor, if any. This method
+     * effectively <b>resets this SNAC processor</b>, causing any information
+     * about the current connection such as queued SNAC commands or SNAC request
+     * ID's to be <b>discarded</b>. This method is thus <b>not</b> useful for
+     * {@linkplain net.kano.joscar.snaccmd.conn.MigrationNotice migrating}.
+     *
+     * @see #migrate
      */
     public synchronized final void detach() {
         if (this.flapProcessor != null) {
-            this.flapProcessor.removeVetoablePacketListener(flapPacketListener);
+            detachMinimally();
 
-            if (queueManager != null) queueManager.clearQueue(this);
-
-            clearAllRequests();
-
-            this.flapProcessor = null;
+            queueManager.clearQueue(this);
         }
+    }
+
+    /**
+     * Detaches from the current FLAP processor without clearing any queued
+     * SNAC requests.
+     */
+    private synchronized final void detachMinimally() {
+        this.flapProcessor.removeVetoablePacketListener(flapPacketListener);
+
+        clearAllRequests();
+
+        this.flapProcessor = null;
     }
 
     /**
@@ -400,7 +494,17 @@ public class SnacProcessor {
      *        SNACs immediately
      */
     public synchronized final void setSnacQueueManager(SnacQueueManager mgr) {
+        // tell the old queue manager to forget about us
+        queueManager.clearQueue(this);
+
+        // we allow null for the manager argument, which means we use our own
+        // immediate SNAC queue manager
+        if (mgr == null) mgr = new ImmediateSnacQueueManager();
+
         queueManager = mgr;
+
+        // keep everything synchronized
+        if (paused) mgr.pause(this);
     }
 
     /**
@@ -635,11 +739,7 @@ public class SnacProcessor {
         logger.fine("Queueing Snac request #" + lastReqid + ": "
                 + command);
 
-        if (queueManager == null) {
-            reallySendSnac(request);
-        } else {
-            queueManager.queueSnac(this, request);
-        }
+        queueManager.queueSnac(this, request);
 
         logger.finer("Finished queueing Snac request #" + lastReqid);
     }

@@ -38,7 +38,9 @@ package net.kano.joscar.ssiitem;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.ssi.SsiItem;
-import net.kano.joscar.tlv.*;
+import net.kano.joscar.tlv.DefaultMutableTlvChain;
+import net.kano.joscar.tlv.MutableTlvChain;
+import net.kano.joscar.tlv.TlvChain;
 
 /**
  * A base class for each of the item object classes provided in this package.
