@@ -33,7 +33,7 @@
  *
  */
 
-package net.kano.joscar.taglets;
+package net.kano.joscar.build.taglets;
 
 import com.sun.javadoc.Tag;
 import com.sun.tools.doclets.Taglet;
@@ -41,17 +41,17 @@ import com.sun.tools.doclets.Taglet;
 import java.util.Map;
 
 /**
- * A javadoc taglet that provides a <code>@flap.chan</code> tag to indicate the
- * channel on which a FLAP command resides.
+ * A javadoc taglet that provides a <code>@snac.src</code> tag to indicate the
+ * source of a SNAC command (client, server, or both).
  */
-public class FlapChannelTaglet implements Taglet {
+public class SnacSourceTaglet implements Taglet {
     /**
      * Registers this taglet with the given taglet map.
      *
      * @param tagletMap a taglet map with which to register this taglet
      */
     public static void register(Map tagletMap) {
-        FlapChannelTaglet instance = new FlapChannelTaglet();
+        SnacSourceTaglet instance = new SnacSourceTaglet();
         tagletMap.put(instance.getName(), instance);
     }
 
@@ -69,12 +69,28 @@ public class FlapChannelTaglet implements Taglet {
 
     public boolean isInlineTag() { return false; }
 
-    public String getName() { return "flap.chan"; }
+    public String getName() { return "snac.src"; }
 
     public String toString(Tag tag) {
-        return "<dt title=\"The FLAP channel on which this command resides on " +
-                "a normal OSCAR connection\"><b>FLAP channel:</b></dt><dd>"
-                + tag.text() + "</dd>";
+        StringBuffer buffer = new StringBuffer();
+
+        buffer.append("<dt title=\"Where this SnacCommand comes from on a " +
+                "normal AIM/OSCAR connection\"><b>Source of this " +
+                "SNAC:</b></dt><dd> ");
+
+        String source = tag.text();
+        if (source.equals("client")) {
+            buffer.append("AIM client");
+        } else if (source.equals("server")) {
+            buffer.append("AIM server");
+        } else if (source.equals("both")) {
+            buffer.append("both AIM client and AIM server");
+        } else {
+            buffer.append(source);
+        }
+        buffer.append("</dd>");
+
+        return buffer.toString();
     }
 
     public String toString(Tag[] tags) {
