@@ -54,6 +54,7 @@ import java.math.BigInteger;
 /**
  * A base class for the five Trillian Secure IM rendezvous commands provided in
  * this package.
+ * //TODO: update trilliancrypt information
  */
 public abstract class AbstractTrillianCryptRvCmd extends RvCommand {
     /** The protocol version number used by Trillian. */
