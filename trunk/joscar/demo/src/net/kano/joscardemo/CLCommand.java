@@ -36,6 +36,8 @@
 package net.kano.joscardemo;
 
 public interface CLCommand {
+    String getExampleArgs();
+    String getDescription();
     String getArgumentsUsage();
     void handle(JoscarTester tester, String line, String cmd, String[] args);
 }

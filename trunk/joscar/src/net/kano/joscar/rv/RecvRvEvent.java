@@ -84,7 +84,7 @@ public class RecvRvEvent extends SnacPacketEvent {
             RvProcessor processor, RvSession session, RvCommand command) {
         this(TYPE_RV, other, processor, session, command, -1);
 
-        DefensiveTools.checkNull(command, "command");
+//        DefensiveTools.checkNull(command, "command");
     }
 
     /**
@@ -172,10 +172,10 @@ public class RecvRvEvent extends SnacPacketEvent {
     /**
      * Returns the RV command that was received, if any. Note that this method
      * will return <code>null</code> if this event is not a {@link #TYPE_RV}
-     * event.
+     * event, or if no <code>RvCommand</code> could be created from the
+     * associated RV packet.
      *
-     * @return the RV command that was received, or <code>null</code> if this is
-     *         not a RV command receipt event
+     * @return the RV command that was received, or <code>null</code>
      */
     public final RvCommand getRvCommand() { return rvCommand; }
 

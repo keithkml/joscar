@@ -54,6 +54,8 @@ import net.kano.joscardemo.security.SecureSessionException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.StringWriter;
+import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -71,6 +73,10 @@ import java.util.TimerTask;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
+import java.util.logging.Formatter;
+import java.util.logging.LogRecord;
+import java.util.logging.Handler;
 
 public class JoscarTester implements CmdLineListener, ServiceListener {
     public static byte[] hashIcon(String filename) throws IOException {
@@ -383,10 +389,35 @@ public class JoscarTester implements CmdLineListener, ServiceListener {
     }
 
     public static void main(String[] args) {
-        String levelstr = "off";
+        String levelstr = "fine";
         System.out.println("Connecting to AIM as " + args[0] + "...");
 
         ConsoleHandler handler = new ConsoleHandler();
+        handler.setFormatter(new Formatter() {
+            private String lineSeparator = System.getProperty("line.separator");
+
+            public String format(LogRecord record) {
+                StringBuffer sb = new StringBuffer();
+                sb.append("[");
+                sb.append(record.getLevel().getLocalizedName());
+                sb.append("] ");
+                sb.append(record.getMessage());
+                sb.append(lineSeparator);
+
+                if (record.getThrown() != null) {
+                    try {
+                        StringWriter sw = new StringWriter();
+                        PrintWriter pw = new PrintWriter(sw);
+                        record.getThrown().printStackTrace(pw);
+                        pw.close();
+                        sb.append(sw.toString());
+                    } catch (Exception ex) {
+                        // SimpleFormatter in the JDK does this, so I do too
+                    }
+                }
+                return sb.toString();
+            }
+        });
         Level level = Level.parse(levelstr.toUpperCase());
         handler.setLevel(level);
         Logger logger = Logger.getLogger("net.kano.joscar");

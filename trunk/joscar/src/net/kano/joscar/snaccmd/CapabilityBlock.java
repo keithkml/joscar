@@ -68,37 +68,29 @@ public final class CapabilityBlock implements Writable {
      * advertised in order to create or join rooms or to invite others to
      * chat rooms.
      */
-    public static final CapabilityBlock BLOCK_CHAT =
-            new CapabilityBlock(new byte[]{
-                0x74, (byte) 0x8f, 0x24, 0x20, 0x62, (byte) 0x87, 0x11,
-                (byte) 0xd1, (byte) 0x82, 0x22, 0x44, 0x45, 0x53, 0x54,
-                0x00, 0x00});
+    public static final CapabilityBlock BLOCK_CHAT = new CapabilityBlock(
+            0x74, 0x8f, 0x24, 0x20, 0x62, 0x87, 0x11, 0xd1,
+            0x82, 0x22, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00);
 
     /**
      * A capability block used to indicate that a client is able to receive
      * voice chat invitations.
      */
-    public static final CapabilityBlock BLOCK_VOICE =
-            new CapabilityBlock(new byte[]{
-                0x09, 0x46, 0x13, 0x41, 0x4c, 0x7f, 0x11, (byte) 0xd1,
-                (byte) 0x82, 0x22, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00});
+    public static final CapabilityBlock BLOCK_VOICE
+            = ShortCapabilityBlock.getCapFromShortBytes(0x13, 0x41);
 
     /**
      * A capability block used to indicate that a client can be sent files.
      */
-    public static final CapabilityBlock BLOCK_FILE_SEND =
-            new CapabilityBlock(new byte[]{
-                0x09, 0x46, 0x13, 0x43, 0x4c, 0x7f, 0x11, (byte) 0xd1,
-                (byte) 0x82, 0x22, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00});
+    public static final CapabilityBlock BLOCK_FILE_SEND
+            = ShortCapabilityBlock.getCapFromShortBytes(0x13, 0x43);
 
     /**
      * A capability block used to indicate that a client can receive a Direct
      * IM invitation.
      */
-    public static final CapabilityBlock BLOCK_DIRECTIM =
-            new CapabilityBlock(new byte[]{
-                0x09, 0x46, 0x13, 0x45, 0x4c, 0x7f, 0x11, (byte) 0xd1,
-                (byte) 0x82, 0x22, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00});
+    public static final CapabilityBlock BLOCK_DIRECTIM
+            = ShortCapabilityBlock.getCapFromShortBytes(0x13, 0x45);
 
     /**
      * A capability block used to indicate that a client can receive buddy
@@ -106,83 +98,67 @@ public final class CapabilityBlock implements Writable {
      * recent inception of the {@linkplain net.kano.joscar.snaccmd.icon icon
      * service}.
      */
-    public static final CapabilityBlock BLOCK_ICON =
-            new CapabilityBlock(new byte[]{
-                0x09, 0x46, 0x13, 0x46, 0x4c, 0x7f, 0x11, (byte) 0xd1,
-                (byte) 0x82, 0x22, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00});
+    public static final CapabilityBlock BLOCK_ICON
+            = ShortCapabilityBlock.getCapFromShortBytes(0x13, 0x46);
 
     /**
      * A capability block used to indicate that a client can receive requests
      * to list files he or she is sharing.
      */
-    public static final CapabilityBlock BLOCK_FILE_GET =
-            new CapabilityBlock(new byte[]{
-                0x09, 0x46, 0x13, 0x48, 0x4c, 0x7f, 0x11, (byte) 0xd1,
-                (byte) 0x82, 0x22, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00});
+    public static final CapabilityBlock BLOCK_FILE_GET
+            = ShortCapabilityBlock.getCapFromShortBytes(0x13, 0x48);
 
     /**
      * The first of two blocks used to indicate that a client can receive
      * invitations to play games. This block and {@link #BLOCK_GAMES2} are
      * treated as if they are the same block by WinAIM and other clients.
      */
-    public static final CapabilityBlock BLOCK_GAMES =
-            new CapabilityBlock(new byte[]{
-                0x09, 0x46, 0x13, 0x4a, 0x4c, 0x7f, 0x11, (byte) 0xd1,
-                (byte) 0x82, 0x22, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00});
+    public static final CapabilityBlock BLOCK_GAMES
+            = ShortCapabilityBlock.getCapFromShortBytes(0x13, 0x4a);
     /**
      * The second of two blocks used to indicate that a client can receive
      * invitations to play games. This block and {@link #BLOCK_GAMES} are
      * treated as if they are the same block by WinAIM and other clients.
      */
     public static final CapabilityBlock BLOCK_GAMES2 =
-            new CapabilityBlock(new byte[]{
-                0x09, 0x46, 0x13, 0x4a, 0x4c, 0x7f, 0x11, (byte) 0xd1,
-                0x22, (byte) 0x82, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00});
+            new CapabilityBlock(
+                0x09, 0x46, 0x13, 0x4a, 0x4c, 0x7f, 0x11, 0xd1,
+                0x22, 0x82, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00);
 
     /**
      * A capability block used to indicate that a client can receive a
      * copy of another user's buddy list.
      */
-    public static final CapabilityBlock BLOCK_SENDBUDDYLIST =
-            new CapabilityBlock(new byte[]{
-                0x09, 0x46, 0x13, 0x4b, 0x4c, 0x7f, 0x11, (byte) 0xd1,
-                (byte) 0x82, 0x22, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00});
+    public static final CapabilityBlock BLOCK_SENDBUDDYLIST
+            = ShortCapabilityBlock.getCapFromShortBytes(0x13, 0x4b);
 
     /**
      * A capability block used to indicate that a client can chat using
      * "Trillian encryption."
      */
     public static final CapabilityBlock BLOCK_TRILLIANCRYPT =
-            new CapabilityBlock(new byte[]{
-                (byte) 0xf2, (byte) 0xe7, (byte) 0xc7, (byte) 0xf4,
-                (byte) 0xfe, (byte) 0xad, 0x4d, (byte) 0xfb,
-                (byte) 0xb2, 0x35, 0x36, 0x79, (byte) 0x8b,
-                (byte) 0xdf, 0x00, 0x00});
+            new CapabilityBlock(
+                0xf2, 0xe7, 0xc7, 0xf4, 0xfe, 0xad, 0x4d, 0xfb,
+                0xb2, 0x35, 0x36, 0x79, 0x8b, 0xdf, 0x00, 0x00);
 
     /**
      * A capability block that indicates that a client can chat with ICQ users.
      */
-    public static final CapabilityBlock BLOCK_ICQCOMPATIBLE =
-            new CapabilityBlock(new byte[] {
-                0x09, 0x46, 0x13, 0x4d, 0x4c, 0x7f, 0x11, (byte) 0xd1,
-                (byte) 0x82, 0x22, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00});
+    public static final CapabilityBlock BLOCK_ICQCOMPATIBLE
+            = ShortCapabilityBlock.getCapFromShortBytes(0x13, 0x4d);
 
     /**
      * A capability block indicating that a client allows for using "add-ins"
      * like MS Hearts, NetMeeting, and Quake II with other buddies.
      */
-    public static final CapabilityBlock BLOCK_ADDINS =
-            new CapabilityBlock(new byte[] {
-                0x09, 0x46, 0x13, 0x47, 0x4c, 0x7f, 0x11, (byte) 0xd1,
-                (byte) 0x82,0x22, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00});
+    public static final CapabilityBlock BLOCK_ADDINS
+            = ShortCapabilityBlock.getCapFromShortBytes(0x13, 0x47);
 
     /**
      * A capability block whose purpose is unknown at the time of this writing.
      */
-    public static final CapabilityBlock BLOCK_SOMETHING =
-            new CapabilityBlock(new byte[] {
-                0x09, 0x46, 0x01, (byte) 0xff, 0x4c, 0x7f, 0x11, (byte) 0xd1,
-                (byte) 0x82, 0x22, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00});
+    public static final CapabilityBlock BLOCK_SOMETHING
+            = ShortCapabilityBlock.getCapFromShortBytes(0x01, 0xff);
 
     /**
      * A capability block indicating that the client is capable of parsing
@@ -190,10 +166,8 @@ public final class CapabilityBlock implements Writable {
      * {@link FullUserInfo#getShortCapabilityBlocks()} for more information on
      * short capability blocks.
      */
-    public static final CapabilityBlock BLOCK_SHORTCAPS =
-            new CapabilityBlock(new byte[] {
-                0x09, 0x46, 0x00, 0x00, 0x4c, 0x7f, 0x11, (byte) 0xd1,
-                (byte) 0x82, 0x22, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00});
+    public static final CapabilityBlock BLOCK_SHORTCAPS
+            = ShortCapabilityBlock.getCapFromShortBytes(0x00, 0x00);
 
     /**
      * A capability block indicating that the user is available for Secure IM
@@ -201,10 +175,8 @@ public final class CapabilityBlock implements Writable {
      * file transfer, and so on). This capability block causes a padlock icon to
      * be displayed next to one's screenname in the official AIM clients.
      */
-    public static final CapabilityBlock BLOCK_ENCRYPTION =
-            new CapabilityBlock(new byte[] {
-                0x09, 0x46, 0x00, 0x01, 0x4c, 0x7f, 0x11, (byte) 0xd1,
-                (byte) 0x82, 0x22, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00});
+    public static final CapabilityBlock BLOCK_ENCRYPTION
+            = ShortCapabilityBlock.getCapFromShortBytes(0x00, 0x01);
 
     /**
      * Converts the given list of capabilities to a block of bytes, suitable for
@@ -254,13 +226,13 @@ public final class CapabilityBlock implements Writable {
      */
     private final int hashCode;
 
-    /**
-     * Creates a capability block from the given sixteen-byte block.
-     * @param block the block from which the capability block should be
-     *        generated
-     */
-    private CapabilityBlock(byte[] block) {
-        this(ByteBlock.wrap(block));
+    public CapabilityBlock(int a, int b, int c, int d, int e, int f, int g,
+            int h, int i, int j, int k, int l, int m, int n, int o, int p) {
+        this(ByteBlock.wrap(new byte[] {
+            (byte) a, (byte) b, (byte) c, (byte) d,
+            (byte) e, (byte) f, (byte) g, (byte) h,
+            (byte) i, (byte) j, (byte) k, (byte) l,
+            (byte) m, (byte) n, (byte) o, (byte) p }));
     }
 
     /**
@@ -274,14 +246,14 @@ public final class CapabilityBlock implements Writable {
     public CapabilityBlock(ByteBlock block) throws IllegalArgumentException {
         DefensiveTools.checkNull(block, "block");
 
-        if (block.getLength() < 16) {
+        if (block.getLength() != 16) {
             throw new IllegalArgumentException("invalid capability block: "
                     + "length must be 16 (is " + (block.getLength()) + ")");
         }
 
         // store the block, copying its contents in case it came in a large
         // packet whose backing array should be thrown away
-        this.block = ByteBlock.wrap(block.subBlock(0, 16).toByteArray());
+        this.block = ByteBlock.wrap(block.toByteArray());
 
         // and compute a hash code by doing stuff to the bytes. I really have
         // no idea if this is a good hash code, but hey, it doesn't matter too
