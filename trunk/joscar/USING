@@ -8,8 +8,8 @@ THE JOSCAR LIBRARY
 
 The joscar library is heavily documented.  Every single class, method, and
 field is fully documented, and developers working with the library are urged to
-read through and understand the documentation of any and all classes he is
-using.  You can find the documentation in the docs/api/ directory of this 
+read through and understand the documentation of any and all classes he or she
+is using.  You can find the documentation in the docs/api/ directory of this 
 distribution, or on the Joust Project web site 
 (http://joust.kano.net/joscar/docs/api/).
 
@@ -25,23 +25,48 @@ joscar-based application, it can be a starting point for implementing your
 own applications using joscar.
 
 JoscarTester (and its numerous related classes) is located in the source
-directory; the classes exist in their entirety in the net.kano.joscartests
+directory; the classes exist in their entirety in the net.kano.joscardemo
 package.  To run JoscarTester, simply run 'java
-net.kano.joscartests.JoscarTester <screenname> <password>' and it will attempt
+net.kano.joscardemo.JoscarTester <screenname> <password>' and it will attempt
 to log into AOL Instant Messenger with the given screenname.  It has a simple
 command-line interface that may be explained here later; scroll to near the
 bottom of JoscarTester.java for the two lists of commands.
 
-(NOTE that the joscartests package is not included in the given .jar file.  It must be compiled from source!)
+(NOTE that the joscardemo package is not included in the given .jar file.  It
+ must be compiled from source!)
 
 Some somewhat messy classpath hacking will probably be necessary to run
 JoscarTester. Try something like this in your home joscar direcory:
 
-    java -cp bin:demo net.kano.joscartests.JoscarTester <username> <password>
+    java -cp bin:demo/bin net.kano.joscardemo.JoscarTester <username> <password>
 
 Alternatively, you can run the demo if you have Ant installed by running the
 "run-demo" target included with joscar's Ant build file:
 
     ant run-demo
+
+Unfortunately, this method does not allow user input, so using this method
+prevents one from using JoscarTester's command-line interface.
+
+--------------------------------------------------------------------------------
+
+AIM 5.2 SECURE IM / PERSONAL CERTIFICATES
+
+joscar implements the necessary data structures and SNAC commands used in AIM's
+new secure IM / personal certificates feature.
+
+To test the new secure IM/file transfer/direct IM/chat room features in the
+JoscarTester demo, you must create a PKCS12 keystore containing a signed X509v3 
+certificate and private RSA key in the same format as AIM itself requires. (See
+http://ragweed.net/aimcrypt for details on how to make your own.) This PKCS12
+store must be called "certificate-info.p12" and must reside in the current
+working directory of JoscarTester.
+
+In addition, you must download the joscar-extras package from the Joust website
+and extract it to the same directory in which the joscar package was extracted.
+Your joscar distribution should have a demo/extras/ directory containing source
+files in src/ and two jar files in lib/. You will need to recompile the demo
+(with 'ant demo') and add the two jars in demo/extras/lib/ to the classpath when
+running JoscarTester. (Note that 'ant run-demo' does this for you.)
 
 --------------------------------------------------------------------------------
