@@ -36,17 +36,47 @@
 package net.kano.joscar.ssiitem;
 
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.ssi.SsiItem;
-import net.kano.joscar.tlv.AbstractTlvChain;
-import net.kano.joscar.tlv.ImmutableTlvChain;
-import net.kano.joscar.tlv.MutableTlvChain;
+import net.kano.joscar.tlv.*;
 
 /**
- * A base class for each of the item classes in this package.
+ * A base class for each of the item object classes provided in this package.
  */
-public abstract class AbstractItem {
-    /** The "extra TLV's" in this item. */
-    private final AbstractTlvChain extraTlvs;
+public abstract class AbstractItemObj implements SsiItemObj {
+    /**
+     * Returns a list of <code>SsiItem</code>s generated from the item objects
+     * given in <code>itemObjs</code>.
+     *
+     * @param itemObjs a list of item objects to use in generating the returned
+     *        list of <code>SsiItem</code>s
+     * @return a list of <code>SsiItem</code>s generated from the given list of
+     *         item objects
+     *
+     * @see #generateSsiItem
+     */
+    public static SsiItem[] generateSsiItems(SsiItemObj[] itemObjs) {
+        DefensiveTools.checkNull(itemObjs, "itemObjs");
+
+        SsiItem[] items = new SsiItem[itemObjs.length];
+        for (int i = 0; i < itemObjs.length; i++) {
+            items[i] = itemObjs[i].generateSsiItem();
+        }
+
+        return items;
+    }
+
+    /** The "extra TLV's" in this item. This is never <code>null</code>*/
+    private final MutableTlvChain extraTlvs = new DefaultMutableTlvChain();
+
+    /**
+     * Creates a new item object with no extra TLV's. Using this constructor is
+     * equivalent to using {@link #AbstractItemObj(TlvChain) new
+     * AbstractItemObj(null)}.
+     */
+    protected AbstractItemObj() {
+        this(null);
+    }
 
     /**
      * Creates a new item object with the given set of unprocessed or otherwise
@@ -54,8 +84,8 @@ public abstract class AbstractItem {
      *
      * @param extraTlvs the extra TLV's in this item
      */
-    protected AbstractItem(AbstractTlvChain extraTlvs) {
-        this.extraTlvs = extraTlvs == null ? new MutableTlvChain() : extraTlvs;
+    protected AbstractItemObj(TlvChain extraTlvs) {
+        if (extraTlvs != null) addExtraTlvs(extraTlvs);
     }
 
     /**
@@ -64,20 +94,25 @@ public abstract class AbstractItem {
      *
      * @return a copy of this item's extra TLV's
      */
-    protected final AbstractTlvChain copyExtraTlvs() {
-        return extraTlvs == null ? null : new ImmutableTlvChain(extraTlvs);
+    protected final TlvChain copyExtraTlvs() {
+        return new DefaultMutableTlvChain(extraTlvs);
+    }
+
+    public final MutableTlvChain getExtraTlvs() {
+        return extraTlvs;
     }
 
     /**
-     * Returns the "extra TLV list" for this item. This list contains the TLV's
-     * present in this item's type-specific data block that were not processed
-     * into fields; in practice, this likely means fields inserted by another
-     * client like WinAIM that joscar does not yet recognize.
+     * Adds the given list of TLV's to this item's list of extra TLV's. Using
+     * this method is equivalent to using <code>{@link #getExtraTlvs()
+     * getExtraTlvs()}.{@link MutableTlvChain#addAll(TlvChain)
+     * addAll}(extraTlvs)</code>.
      *
-     * @return this item's "extra TLV's"
+     * @param extraTlvs the list of TLV's to append to this object's list of
+     *        extra TLV's
      */
-    public final AbstractTlvChain getExtraTlvs() {
-        return extraTlvs;
+    protected final void addExtraTlvs(TlvChain extraTlvs) {
+        this.extraTlvs.addAll(extraTlvs);
     }
 
     /**
@@ -93,18 +128,12 @@ public abstract class AbstractItem {
      * @return a new SSI item with the given properties
      */
     protected final SsiItem generateItem(String name, int parentid, int subid,
-            int type, AbstractTlvChain customTlvs) {
-        MutableTlvChain chain = new MutableTlvChain(extraTlvs);
+            int type, TlvChain customTlvs) {
+        MutableTlvChain chain = new DefaultMutableTlvChain(extraTlvs);
         if (customTlvs != null) chain.replaceAll(customTlvs);
 
         return new SsiItem(name, parentid, subid, type,
                 ByteBlock.createByteBlock(chain));
     }
 
-    /**
-     * Returns an <code>SsiItem</code> that represents this item object.
-     *
-     * @return an <code>SsiItem</code> that represents this item object
-     */
-    public abstract SsiItem getSsiItem();
 }
