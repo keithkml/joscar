@@ -210,7 +210,7 @@ public class FullUserInfo implements LiveWritable {
         ExtraInfoBlock[] extraInfos = null;
         if (extraInfoTlv != null) {
             ByteBlock extraBlocks = extraInfoTlv.getData();
-            extraInfos = ExtraInfoBlock.readExtraInfos(extraBlocks);
+            extraInfos = ExtraInfoBlock.readExtraInfoBlocks(extraBlocks);
         }
 
         block = block.subBlock(chain.getTotalSize());
@@ -504,9 +504,10 @@ public class FullUserInfo implements LiveWritable {
     }
 
     /**
-     * Returns the warning level of this user, as a "percentage." This value
-     * ranges inclusively from <code>0</code> to <code>100</code>, but will be
-     * <code>-1</code> if no warning level was sent.
+     * Returns the warning level of this user, as a "percentage," but multiplied
+     * by ten. This value normally ranges inclusively from <code>0</code> to
+     * <code>999</code> (which represents the percentage range 0% to 99.9%), but
+     * will be <code>-1</code> if no warning level was sent.
      *
      * @return the warning level of this user
      */
@@ -726,7 +727,7 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
     }
 
     public String toString() {
-        return "UserInfo for " + sn + ": " + warningLevel + "%" +
+        return "UserInfo for " + sn + ": " + (warningLevel/10) + "%" +
                 ", flags=" + flags +
                 ", accountCreated=" + accountCreated +
                 ", memberSince=" + memberSince +

@@ -95,6 +95,7 @@ public class BosFlapConn extends BasicConn {
 
         if (cmd instanceof ServerReadyCmd) {
 //            request(new SetIdleCmd(123456789));
+//            request(new SetExtraInfoCmd("I'm Available for chat!!!!"));
             request(new ParamInfoRequest());
             request(new LocRightsRequest());
             request(new SsiRightsRequest());
@@ -121,6 +122,7 @@ public class BosFlapConn extends BasicConn {
                         CapabilityBlock.BLOCK_TRILLIANCRYPT,
                         CapabilityBlock.BLOCK_VOICE,
                         CapabilityBlock.BLOCK_ADDINS,
+                        CapabilityBlock.BLOCK_ICQCOMPATIBLE,
                     })));
 
             request(new MyInfoRequest());

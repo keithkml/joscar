@@ -326,9 +326,10 @@ public abstract class BasicConn extends AbstractFlapConn {
                             e1.printStackTrace();
                             return;
                         }
-
-                        System.out.println(info.getScreenname()
-                                + " availability: " + msg);
+                        if (msg.length() > 0) {
+                            System.out.println(info.getScreenname()
+                                    + " availability: " + msg);
+                        }
                     }
                 }
             }
