@@ -29,35 +29,53 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- *  File created by keith @ Apr 22, 2003
+ *  File created by keith @ Apr 24, 2003
  *
  */
 
-package net.kano.joscar.ssiitem;
+package net.kano.joscar.rvcmd.sendfile;
 
-import net.kano.joscar.snaccmd.ssi.SsiItem;
-import net.kano.joscar.tlv.MutableTlvChain;
+import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
+import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.Tlv;
+import net.kano.joscar.DefensiveTools;
 
-/**
- * An "item object" that represents a single {@linkplain SsiItem item} stored
- * in a user's "server-stored information."
- */
-public interface SsiItemObj {
-    /**
-     * Returns the "extra TLV list" for this item. This list contains the TLV's
-     * present in this item's type-specific data block that were not processed
-     * into fields; in practice, this likely means fields inserted by another
-     * client like WinAIM that joscar does not yet recognize. Note that this
-     * value will never be <code>null</code>.
-     *
-     * @return this item's "extra TLV's"
-     */
-    MutableTlvChain getExtraTlvs();
+import java.io.OutputStream;
+import java.io.IOException;
 
-    /**
-     * Returns an <code>SsiItem</code> that represents this item object.
-     *
-     * @return an <code>SsiItem</code> that represents this item object
-     */
-    SsiItem toSsiItem();
+public class RejectFileSendRvCmd extends AbstractFileSendRvCmd {
+    public static final int ERRORCODE_CANCELLED = 0x0001;
+
+    private static final int TYPE_ERRORCODE = 0x0b;
+
+    private final int errorCode;
+
+    public RejectFileSendRvCmd(RecvRvIcbm icbm) {
+        super(icbm);
+
+        TlvChain chain = ImmutableTlvChain.readChain(icbm.getRvData());
+
+        errorCode = chain.getUShort(TYPE_ERRORCODE);
+    }
+
+    public RejectFileSendRvCmd(int errorCode) {
+        super(STATUS_DENY);
+
+        DefensiveTools.checkRange(errorCode, "errorCode", -1);
+
+        this.errorCode = errorCode;
+    }
+
+    public final int getErrorCode() { return errorCode; }
+
+    public void writeRvData(OutputStream out) throws IOException {
+        if (errorCode != -1) {
+            Tlv.getUShortInstance(TYPE_ERRORCODE, errorCode).write(out);
+        }
+    }
+
+    public String toString() {
+        return "RejectFileSendRvCmd: errorCode=" + errorCode;
+    }
 }

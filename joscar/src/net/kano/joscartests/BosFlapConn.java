@@ -109,7 +109,17 @@ public class BosFlapConn extends BasicConn {
 
         if (cmd instanceof LocRightsCmd) {
             request(new SetInfoCmd(new InfoData("this is my infoz lol",
-                    "im away?", new CapabilityBlock[0])));
+                    "im away?", new CapabilityBlock[] {
+                        CapabilityBlock.BLOCK_CHAT,
+                        CapabilityBlock.BLOCK_DIRECTIM,
+                        CapabilityBlock.BLOCK_FILE_GET,
+                        CapabilityBlock.BLOCK_FILE_SEND,
+                        CapabilityBlock.BLOCK_GAMES,
+                        CapabilityBlock.BLOCK_ICON,
+                        CapabilityBlock.BLOCK_SENDBUDDYLIST,
+                        CapabilityBlock.BLOCK_TRILLIANCRYPT,
+                        CapabilityBlock.BLOCK_VOICE
+                    })));
 
             request(new MyInfoRequest());
 

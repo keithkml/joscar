@@ -199,7 +199,7 @@ public class GroupItem extends AbstractItemObj {
         this.buddies = buddies;
     }
 
-    public synchronized SsiItem generateSsiItem() {
+    public synchronized SsiItem toSsiItem() {
         MutableTlvChain chain = new DefaultMutableTlvChain();
 
         if (buddies != null) {

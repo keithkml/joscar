@@ -387,9 +387,7 @@ public class FlapProcessor {
         // we trust ByteBlock.write so much that we don't even check for
         // Throwable!
         try {
-            System.out.println("writing block to FLAP socket");
             block.write(out);
-            System.out.println("wrote block to FLAP socket");
         } catch (IOException e) {
             handleException(FlapExceptionEvent.TYPE_CONNECTION_ERROR, e);
             return;
@@ -430,15 +428,12 @@ public class FlapProcessor {
         synchronized(readLock) {
             if (in == null) return false;
 
-            System.out.println("at before reading flap header");
             FlapHeader header = FlapHeader.readFLAPHeader(in);
-            System.out.println("read flap header: " + header);
 
             logger.finer("Read flap header " + header);
 
             if (header == null) return false;
 
-            System.out.println("at before reading rest of flap");
             FlapPacket packet = FlapPacket.readRestOfFlap(header, in);
 
             logger.finer("Read flap packet " + packet);

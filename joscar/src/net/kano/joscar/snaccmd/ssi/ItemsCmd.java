@@ -90,7 +90,7 @@ public abstract class ItemsCmd extends SsiCommand {
 
     /**
      * Creates a new item-based command with a list of <code>SsiItem</code>s
-     * {@linkplain AbstractItemObj#generateSsiItem generated} from the given list
+     * {@linkplain AbstractItemObj#toSsiItem generated} from the given list
      * of item objects.
      *
      * @param command the SNAC command subtype of this command

@@ -42,6 +42,11 @@ import net.kano.joscar.Writable;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
 
 /**
  * Represents a "Type-Length-Value" block, a very popular data structure in the
@@ -270,11 +275,53 @@ public final class Tlv implements Writable {
     }
 
     public String toString() {
-        return "TLV: type=0x" + Integer.toHexString(type) + (data != null
-                ? (", length=" + data.getLength() + ": "
-                + BinaryTools.describeData(data.getLength() > 30
-                ? data.subBlock(0, 30) : data) + (data.getLength() > 30 ? "..."
-                : ""))
-                : "");
+        StringBuffer buffer = new StringBuffer();
+        buffer.append("TLV: type=0x");
+        buffer.append(Integer.toHexString(type));
+        if (data == null) {
+            buffer.append(" (no data block)");
+        } else {
+            int len = data.getLength();
+            buffer.append(", length=" + len);
+
+            if (len > 0) {
+                CharsetDecoder ascii = Charset.forName("US-ASCII").newDecoder();
+
+                CharBuffer chars = null;
+                try {
+                    chars = ascii.decode(ByteBuffer.wrap(data.toByteArray()));
+                } catch (CharacterCodingException e) { }
+
+                boolean alternatevalue = false;
+                if (chars != null) {
+                    buffer.append(", ascii value=\"" + chars.toString() + "\"");
+                    alternatevalue = true;
+                }
+                if (len == 2) {
+                    buffer.append(", ushort value=" + getDataAsUShort());
+                    alternatevalue = true;
+                }
+                if (len == 4) {
+                    buffer.append(", uint value=" + getDataAsUInt());
+                    alternatevalue = true;
+                }
+                if (AbstractTlvChain.isCompleteTlvChain(data)) {
+                    buffer.append(", tlvchain value="
+                            + ImmutableTlvChain.readChain(data));
+                    alternatevalue = true;
+                }
+
+                if (!alternatevalue) buffer.append(" - hex: ");
+                else buffer.append(": ");
+                if (false && len > 30) {
+                    ByteBlock sub = data.subBlock(0, 30);
+                    buffer.append(BinaryTools.describeData(sub) + "...");
+                } else {
+                    buffer.append(BinaryTools.describeData(data));
+                }
+            }
+        }
+
+        return buffer.toString();
     }
 }

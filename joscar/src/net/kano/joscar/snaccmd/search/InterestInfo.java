@@ -50,7 +50,7 @@ import java.io.OutputStream;
  * <br>
  * <br>
  * Consider the given list of interests sent in an {@link InterestListCmd}.
- * <table>
+ * <table border="1" cellspacing="0">
  * <tr> <th>Type</th> <th>Parent ID</th> <th>Name</th> </tr>
  * <tr> <td><code>TYPE_CHILD</code></td> <td> 34 </td> <td>Cats</td> </tr>
  * <tr> <td><code>TYPE_CHILD</code></td> <td> 34 </td> <td>Fish</td> </tr>
@@ -83,6 +83,15 @@ import java.io.OutputStream;
  * <li> AIM Help </li>
  * </ul>
  *
+ * Note that even though "Pets" is a "parent" interest, it is still a valid
+ * chat interest (meaning one can list "Pets" as one of his or her chat
+ * interests just like with, say, "Cats").
+ * <br>
+ * <br>
+ * Also note that, by design, the sent "tree" of interests can be only one level
+ * deep; interests cannot be children of other children (for instance, it is
+ * impossible to have a "Pepperoni" interest as a sub-interest of "Pizza" in the
+ * above example because "Pizza" is already a sub-interest).
  */
 public class InterestInfo implements LiveWritable {
     /** An interest type indicating that the interest has sub-interests. */

@@ -102,6 +102,15 @@ public class SendRvIcbm extends AbstractRvIcbm {
         this.sn = sn;
     }
 
+    public SendRvIcbm(String sn, long icbmCookie, long rvCookie,
+            RvCommand command) {
+        super(IcbmCommand.CMD_SEND_ICBM, icbmCookie, rvCookie, command);
+
+        DefensiveTools.checkNull(sn, "sn");
+
+        this.sn = sn;
+    }
+
     /**
      * Returns the screenname of the user to whom this rendezvous is addressed.
      *
@@ -112,6 +121,7 @@ public class SendRvIcbm extends AbstractRvIcbm {
     protected final void writeChannelData(OutputStream out)
             throws IOException {
         OscarTools.writeScreenname(out, sn);
+        
         writeRvTlvs(out);
     }
 }

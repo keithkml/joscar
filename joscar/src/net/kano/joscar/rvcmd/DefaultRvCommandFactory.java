@@ -29,35 +29,46 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- *  File created by keith @ Apr 22, 2003
+ *  File created by keith @ Apr 24, 2003
  *
  */
 
-package net.kano.joscar.ssiitem;
+package net.kano.joscar.rvcmd;
 
-import net.kano.joscar.snaccmd.ssi.SsiItem;
-import net.kano.joscar.tlv.MutableTlvChain;
+import net.kano.joscar.rv.RvCommandFactory;
+import net.kano.joscar.snaccmd.CapabilityBlock;
+import net.kano.joscar.snaccmd.icbm.RvCommand;
+import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
+import net.kano.joscar.snaccmd.icbm.AbstractRvIcbm;
+import net.kano.joscar.rvcmd.sendfile.SendFileRvCmd;
+import net.kano.joscar.rvcmd.sendfile.RejectFileSendRvCmd;
+import net.kano.joscar.rvcmd.sendfile.AcceptFileSendRvCmd;
+import net.kano.joscartests.GenericRvCommand;
 
-/**
- * An "item object" that represents a single {@linkplain SsiItem item} stored
- * in a user's "server-stored information."
- */
-public interface SsiItemObj {
-    /**
-     * Returns the "extra TLV list" for this item. This list contains the TLV's
-     * present in this item's type-specific data block that were not processed
-     * into fields; in practice, this likely means fields inserted by another
-     * client like WinAIM that joscar does not yet recognize. Note that this
-     * value will never be <code>null</code>.
-     *
-     * @return this item's "extra TLV's"
-     */
-    MutableTlvChain getExtraTlvs();
+public class DefaultRvCommandFactory implements RvCommandFactory {
+    private static final CapabilityBlock[] SUPPORTED_CAPS
+            = new CapabilityBlock[] {
+                CapabilityBlock.BLOCK_FILE_SEND,
+            };
 
-    /**
-     * Returns an <code>SsiItem</code> that represents this item object.
-     *
-     * @return an <code>SsiItem</code> that represents this item object
-     */
-    SsiItem toSsiItem();
+    public CapabilityBlock[] getSupportedCapabilities() {
+        return (CapabilityBlock[]) SUPPORTED_CAPS.clone();
+    }
+
+    public RvCommand genRvCommand(RecvRvIcbm rvIcbm) {
+        CapabilityBlock block = rvIcbm.getCapability();
+        int status = rvIcbm.getRvStatus();
+
+        if (block.equals(CapabilityBlock.BLOCK_FILE_SEND)) {
+            if (status == AbstractRvIcbm.STATUS_REQUEST) {
+                return new SendFileRvCmd(rvIcbm);
+            } else if (status == AbstractRvIcbm.STATUS_DENY) {
+                return new RejectFileSendRvCmd(rvIcbm);
+            } else if (status == AbstractRvIcbm.STATUS_ACCEPT) {
+                return new AcceptFileSendRvCmd(rvIcbm);
+            }
+        }
+
+        return new GenericRvCommand(rvIcbm);
+    }
 }
