@@ -570,8 +570,6 @@ public class ClientSnacProcessor extends AbstractSnacProcessor {
                 requests.remove(new Long(reqid));
             }
         }
-        System.out.println("request map: " + requests.values());
-        System.out.println("request queue: " + requestQueue);
 
         if (logger.isLoggable(Level.FINER)) {
             logger.finer("Finished sending SNAC request " + request);

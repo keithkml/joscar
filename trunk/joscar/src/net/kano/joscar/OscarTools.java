@@ -35,10 +35,6 @@
 
 package net.kano.joscar;
 
-import net.kano.joscar.BinaryTools;
-import net.kano.joscar.ByteBlock;
-import net.kano.joscar.StringBlock;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
