@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<jnlp spec="1.0+"
+    codebase="http://joust.kano.net/jsim/run/"
+    href="jsim.jnlp">
+    <information>
+        <title>Joust Secure IM Lite</title>
+        <vendor>Keith Lea</vendor>
+        <homepage href="http://joust.kano.net/jsim/" />
+        <description> Secure instant messaging over AOL Instant Messenger. </description>
+        <icon href="images/icon-large" />
+        <offline-allowed/>
+    </information>
+    <security>
+        <all-permissions />
+    </security>
+    <resources>
+        <j2se version="1.4+" />
+
+        <jar href="jsim.jar" />
+		<jar href="forms_rt.jar" />
+		<jar href="joscar-0.9.3-patched.jar" />
+		<jar href="plastic-1.2.0.jar" />
+
+		<extension name="bouncycastle" href="bc.jnlp" />
+    </resources>
+    <application-desc main-class="net.kano.aimcrypto.AimCrypto" />
+</jnlp>

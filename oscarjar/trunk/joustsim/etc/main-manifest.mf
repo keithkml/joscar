@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Main-Class: net.kano.aimcrypto.AimCrypto
+Class-Path: lib/bcmail-jdk14-119.jar lib/bcprov-jdk14-119.jar
+ lib/forms_rt.jar lib/joscar-0.9.3-bin.jar
