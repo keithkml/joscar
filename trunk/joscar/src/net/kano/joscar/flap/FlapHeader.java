@@ -121,7 +121,7 @@ final class FlapHeader {
      * @throws IllegalArgumentException if the length of the given block is not
      *         six or if the block does not contain a valid FLAP header
      */
-    public FlapHeader(ByteBlock bytes) throws IllegalArgumentException {
+    FlapHeader(ByteBlock bytes) throws IllegalArgumentException {
         DefensiveTools.checkNull(bytes, "bytes");
         
         if (bytes.getLength() != 6) {

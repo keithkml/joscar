@@ -78,7 +78,7 @@ public class GetFileEntry implements LiveWritable {
      *        the file entry TLV's should be read
      * @return a Get File directory list entry read from the given list of TLV's
      */
-    public static final GetFileEntry readEntry(Tlv[] tlvs, int offset) {
+    public static GetFileEntry readEntry(Tlv[] tlvs, int offset) {
         DefensiveTools.checkNull(tlvs, "tlvs");
         DefensiveTools.checkRange(offset, "offset", 0, tlvs.length - 1);
 

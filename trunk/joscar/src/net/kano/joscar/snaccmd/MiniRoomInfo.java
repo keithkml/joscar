@@ -99,7 +99,7 @@ public final class MiniRoomInfo implements LiveWritable {
      * @param totalSize the total size of this object, as read from a block of
      *        binary data
      */
-    protected MiniRoomInfo(int exchange, String cookie, int instance,
+    private MiniRoomInfo(int exchange, String cookie, int instance,
             int totalSize) {
         DefensiveTools.checkRange(exchange, "exchange", 0);
         DefensiveTools.checkNull(cookie, "cookie");

@@ -242,7 +242,7 @@
     <delete file="${dist.pkgname}.zip" />
   </target>
 
-  <target name="dist-init" depends="-version">
+  <target name="-dist-init" depends="-version">
     <mkdir dir="${dist.home}" />
   </target>
 

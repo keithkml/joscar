@@ -136,7 +136,7 @@ public class SendBuddyListGroup implements LiveWritable {
      *         length of the structure (including the length value) and whose
      *         string value is the extracted ASCII string
      */
-    private static final StringBlock readString(ByteBlock block) {
+    private static StringBlock readString(ByteBlock block) {
         DefensiveTools.checkNull(block, "block");
 
         if (block.getLength() < 2) return null;
@@ -159,7 +159,7 @@ public class SendBuddyListGroup implements LiveWritable {
      *
      * @throws IOException if an I/O error occurs
      */
-    private static final void writeString(OutputStream out, String str)
+    private static void writeString(OutputStream out, String str)
             throws IOException {
         DefensiveTools.checkNull(out, "out");
         DefensiveTools.checkNull(str, "str");

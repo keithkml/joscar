@@ -170,7 +170,7 @@ public final class RvProxyPacket implements LiveWritable {
      * @param totalSize the total size of this packet, as read from an incoming
      *        block of binary data
      */
-    protected RvProxyPacket(int packetVersion, int cmdType, int flags,
+    private RvProxyPacket(int packetVersion, int cmdType, int flags,
             ByteBlock data, int totalSize) {
         DefensiveTools.checkRange(packetVersion, "packetVersion", 0);
         DefensiveTools.checkRange(cmdType, "cmdType", 0);

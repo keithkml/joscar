@@ -351,7 +351,7 @@ public class RvConnectionInfo implements LiveWritable {
      *
      * @throws IOException if an I/O error occurs
      */
-    private static final void writeIP(OutputStream out, int type,
+    private static void writeIP(OutputStream out, int type,
             InetAddress addr) throws IOException {
         ByteBlock addrBlock = ByteBlock.wrap(addr.getAddress());
         new Tlv(type, addrBlock).write(out);

@@ -276,7 +276,7 @@ public final class DirInfo implements LiveWritable {
      * @param totalSize the total size of the directory information block, as
      *        read from some sort of stream or data block
      */
-    protected DirInfo(String sn, String email, String first, String middle,
+    private DirInfo(String sn, String email, String first, String middle,
             String last, String maiden, String nickname, String address,
             String city, String state, String zip, String country,
             String language, int totalSize) {
