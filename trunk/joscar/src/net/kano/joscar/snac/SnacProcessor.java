@@ -500,7 +500,8 @@ public class SnacProcessor {
      * Sets this SNAC processor's SNAC queue manager. A SNAC queue manager
      * has almost complete control over when individual SNAC commands are
      * actually sent to the server. If <code>mgr</code> is <code>null</code>,
-     * as is the default value, all SNACs are sent to the server immediately.
+     * as is the default value, all SNACs will be sent to the server immediately
+     * (the queue manager will be set to an {@link ImmediateSnacQueueManager})
      *
      * @param mgr the new SNAC queue manager, or <code>null</code> to send all
      *        SNACs immediately
@@ -517,6 +518,18 @@ public class SnacProcessor {
 
         // keep everything synchronized
         if (paused) mgr.pause(this);
+    }
+
+    /**
+     * Returns this SNAC processor's current SNAC queue manager. Note that
+     * this value will <i>never</i> be <code>null</code>, even after an explicit
+     * call to {@link #setSnacQueueManager setSnacQueueManager(null)}. See that
+     * method's documentation for details.
+     *
+     * @return this SNAC processor's current SNAC queue manager
+     */
+    public synchronized final SnacQueueManager getSnacQueueManager() {
+        return queueManager;
     }
 
     /**

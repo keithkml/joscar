@@ -44,7 +44,7 @@ import java.util.Map;
  * A SNAC queue manager that sends all SNACs immediately, only queueing SNACs
  * during a pause.
  */
-public class ImmediateSnacQueueManager extends AbstractSnacQueueManager {
+public class ImmediateSnacQueueManager extends AbstractSnacQueueMgr {
     /** A map from SNAC processors to their respective SNAC queues. */
     private Map queues = new IdentityHashMap();
 
