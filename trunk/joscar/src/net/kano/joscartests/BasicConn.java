@@ -477,6 +477,7 @@ public abstract class BasicConn extends AbstractFlapConn {
 
         byte[] content = rinfo.getContent(tester.privateKey, "BC");
 
+        System.out.println(BinaryTools.describeData(ByteBlock.wrap(content)));
         OscarTools.HttpHeaderInfo hdrInfo
                 = OscarTools.parseHttpHeader(ByteBlock.wrap(content));
 

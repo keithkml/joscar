@@ -106,19 +106,39 @@ public class SendImIcbm extends AbstractImIcbm {
     }
 
     /**
-     * Creates a new outgoing IM with the given message text to the given
-     * screenname. No icon is requested, no icon hash data are provided, and an
-     * {@link MessageAck acknowledgement packet} <i>is</i> requested. Also, the
-     * ICBM message ID is set to <code>0</code>.
+     * Creates a new unencrypted outgoing IM with the given message text to
+     * the given screenname. No icon is requested, no icon hash data are
+     * provided, and an {@link MessageAck acknowledgement packet} <i>is</i>
+     * requested. Also, the ICBM message ID is set to <code>0</code>.
      *
      * @param sn the screenname to whom to send the given message
      * @param message the message to send
      * @param autoresponse whether this message is an "auto-response" or not
      */
     public SendImIcbm(String sn, String message, boolean autoresponse) {
-        this(sn, new InstantMessage(message), autoresponse, 0, false, null, null, true);
+        this(sn, new InstantMessage(message), autoresponse, 0, false, null,
+                null, true);
     }
 
+    /**
+     * Creates a new unencrypted outgoing IM with the given properties. Test
+     *
+     * @param sn the screenname to whom to send the given message
+     * @param message the message to send
+     * @param autoResponse whether this message is an "auto-response" or not
+     * @param messageId an ICBM message ID to attach to this message
+     * @param wantsIcon whether or not to request the receiver's buddy icon
+     * @param iconInfo a block of buddy icon hash information to "advertise" to
+     *        the receiver
+     * @param ackRequested whether a {@link MessageAck} should be sent in
+     *        response to this command
+     */
+    public SendImIcbm(String sn, String message, boolean autoResponse,
+            long messageId, boolean wantsIcon, OldIconHashInfo iconInfo,
+            ExtraInfoBlock[] expInfoBlocks, boolean ackRequested) {
+        this(sn, new InstantMessage(message), autoResponse, messageId,
+                wantsIcon, iconInfo, expInfoBlocks, ackRequested);
+    }
     /**
      * Creates a new outgoing IM with the given properties.
      *
