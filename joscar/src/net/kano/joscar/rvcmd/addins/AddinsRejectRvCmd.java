@@ -35,9 +35,9 @@
 
 package net.kano.joscar.rvcmd.addins;
 
-import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
-import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.rvcmd.AbstractRejectRvCmd;
+import net.kano.joscar.snaccmd.CapabilityBlock;
+import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 
 /**
  * A rendezvous command used to indicate that the user has denied an

@@ -37,17 +37,32 @@ package net.kano.joscartests;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
-import net.kano.joscar.rv.*;
+import net.kano.joscar.rv.RecvRvEvent;
+import net.kano.joscar.rv.RvSession;
+import net.kano.joscar.rv.RvSessionListener;
+import net.kano.joscar.rv.RvSnacResponseEvent;
 import net.kano.joscar.rvcmd.trillcrypt.*;
 import net.kano.joscar.snaccmd.icbm.RvCommand;
 
-import javax.crypto.*;
-import javax.crypto.spec.DHParameterSpec;
-import java.security.*;
+import javax.crypto.Cipher;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.SecretKeySpec;
+import java.math.BigInteger;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.util.Random;
 
 public class TrillianEncSession implements RvSessionListener {
+    private static final BigInteger FIVE = new BigInteger("5");
+
     private Cipher encoder;
     private Cipher decoder;
+
+    private BigInteger modulus;
+    private BigInteger myPrivate;
+    private BigInteger myPublic;
+    private BigInteger otherPublic;
+    private BigInteger sessionKey;
 
     private final RvSession rvSession;
 
@@ -55,77 +70,121 @@ public class TrillianEncSession implements RvSessionListener {
         this.rvSession = session;
     }
 
+    public void init() {
+        Random random = new Random();
+        modulus = new BigInteger(128, random);
+        myPrivate = new BigInteger(128, random).mod(modulus);
+        myPublic = FIVE.modPow(myPrivate, modulus);
+        rvSession.sendRv(new TrillianCryptReqRvCmd(modulus, myPublic));
+    }
+
+    public RvSession getRvSession() { return rvSession; }
+
+    public BigInteger getModulus() { return modulus; }
+
+    public BigInteger getMyPrivate() { return myPrivate; }
+
+    public BigInteger getMyPublic() { return myPublic; }
+
+    public BigInteger getOtherPublic() { return otherPublic; }
+
+    public BigInteger getSessionKey() { return sessionKey; }
+
     public void handleRv(RecvRvEvent event) {
         RvCommand rvc = event.getRvCommand();
+
+        System.out.println("encsession handling event!");
 
         if (rvc instanceof TrillianCryptReqRvCmd) {
             System.out.println("got request for secureim from "
                     + rvSession.getScreenname());
-            rvSession.sendRv(new TrillianCryptAcceptRvCmd(0));
+
             rvSession.addListener(this);
 
             TrillianCryptReqRvCmd cmd = (TrillianCryptReqRvCmd) rvc;
 
-            // cmd.getP(), cmd.getG()
-
             try {
-                DHParameterSpec spec
-                        = new DHParameterSpec(cmd.getP(), cmd.getG(), 1024);
+                modulus = cmd.getP();
+                otherPublic = cmd.getY();
 
-                KeyPairGenerator keyPairGen
-                        = KeyPairGenerator.getInstance("DiffieHellman");
-                keyPairGen.initialize(spec);
-                KeyPair pair = keyPairGen.generateKeyPair();
+                myPrivate = new BigInteger(128, new Random()).mod(modulus);
+                myPublic = FIVE.modPow(myPrivate, modulus);
+                initCiphers();
 
-                KeyAgreement keyAg = KeyAgreement.getInstance("DiffieHellman");
-                keyAg.init(pair.getPrivate());
-                SecretKey key = keyAg.generateSecret("Blowfish");
-
-                AlgorithmParameterGenerator algParamGen
-                        = AlgorithmParameterGenerator.getInstance("Blowfish");
-                algParamGen.init(128);
-
-                AlgorithmParameters algParam = algParamGen.generateParameters();
-
-                encoder = Cipher.getInstance("Blowfish");
-                encoder.init(Cipher.ENCRYPT_MODE, key, algParam);
-
-                decoder = Cipher.getInstance("Blowfish");
-                decoder.init(Cipher.DECRYPT_MODE, key, algParam);
+                rvSession.sendRv(new TrillianCryptAcceptRvCmd(myPublic));
             } catch (NoSuchAlgorithmException e) {
                 e.printStackTrace();
             } catch (NoSuchPaddingException e) {
                 e.printStackTrace();
-            } catch (InvalidAlgorithmParameterException e) {
+            } catch (InvalidKeyException e) {
+                e.printStackTrace();
+            }
+
+        } else if (rvc instanceof TrillianCryptAcceptRvCmd) {
+            otherPublic = ((TrillianCryptAcceptRvCmd) rvc).getY();
+            try {
+                initCiphers();
+            } catch (NoSuchAlgorithmException e) {
+                e.printStackTrace();
+            } catch (NoSuchPaddingException e) {
                 e.printStackTrace();
             } catch (InvalidKeyException e) {
                 e.printStackTrace();
             }
+            rvSession.sendRv(new TrillianCryptBeginRvCmd());
+
         } else if (rvc instanceof TrillianCryptBeginRvCmd) {
             System.out.println("encrypted session with "
                     + rvSession.getScreenname() + " begun!");
+
+
         } else if (rvc instanceof TrillianCryptMsgRvCmd) {
             TrillianCryptMsgRvCmd cmd = (TrillianCryptMsgRvCmd) rvc;
 
-            try {
-                byte[] encrypted = cmd.getEncryptedMsg().toByteArray();
-                byte[] decoded = decoder.doFinal(encrypted);
+            byte[] encrypted = cmd.getEncryptedMsg().toByteArray();
+            System.out.println("len=" + encrypted.length);
 
-                System.out.println("got encrypted message from "
-                        + rvSession.getScreenname() + ": "
-                        + BinaryTools.getAsciiString(ByteBlock.wrap(decoded)));
-            } catch (IllegalBlockSizeException e) {
-                e.printStackTrace();
-            } catch (BadPaddingException e) {
-                e.printStackTrace();
-            }
+            byte[] decoded = decoder.update(encrypted);
+            System.out.println("decoded len=" + decoded.length);
+            System.out.println("message: " + BinaryTools.getAsciiString(
+                    ByteBlock.wrap(decoded)));
+
         } else if (rvc instanceof TrillianCryptCloseRvCmd) {
             System.out.println("encryption session with "
                     + rvSession.getScreenname() + " closed!");
         }
     }
 
+    private void initCiphers() throws NoSuchAlgorithmException,
+            NoSuchPaddingException, InvalidKeyException {
+        sessionKey = otherPublic.modPow(myPrivate, modulus);
+
+        byte[] fbytes = sessionKey.toByteArray();
+        if (fbytes.length == 17) {
+            System.out.println("trimming off byte: " + fbytes[0]);
+            byte[] old = fbytes;
+            fbytes = new byte[fbytes.length - 1];
+            System.arraycopy(old, 1, fbytes, 0, fbytes.length);
+        }
+        System.out.println("bit length: " + (fbytes.length * 8));
+        System.out.println("first byte: "
+                + Integer.toString(fbytes[0], 2));
+        SecretKeySpec spec = new SecretKeySpec(fbytes, "Blowfish");
+
+        ///ECB/PKCS5Padding
+        encoder = Cipher.getInstance("Blowfish");
+        encoder.init(Cipher.ENCRYPT_MODE, spec);
+
+        decoder = Cipher.getInstance("Blowfish");
+        decoder.init(Cipher.DECRYPT_MODE, spec);
+    }
+
     public void handleSnacResponse(RvSnacResponseEvent event) {
         System.out.println("got response: " + event.getSnacCommand());
+    }
+
+    public void sendMsg(String msg) {
+        getRvSession().sendRv(new TrillianCryptMsgRvCmd(ByteBlock.wrap(
+                encoder.update(BinaryTools.getAsciiBytes(msg)))));
     }
 }

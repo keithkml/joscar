@@ -36,17 +36,26 @@
 package net.kano.joscar.rvcmd.trillcrypt;
 
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
+import net.kano.joscar.tlv.TlvChain;
 
-import java.io.OutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.util.Iterator;
 
 public class TrillianCryptBeginRvCmd extends AbstractTrillianCryptRvCmd {
     public TrillianCryptBeginRvCmd(RecvRvIcbm icbm) {
         super(icbm);
+
+        System.out.println("data: ");
+        TlvChain extras = getExtraTlvs();
+
+        for (Iterator it = extras.iterator(); it.hasNext();) {
+            System.out.println("- " + it.next());
+        }
     }
 
     public TrillianCryptBeginRvCmd() {
-        super(ENCSTATUS_BEGIN);
+        super(CMDTYPE_BEGIN);
     }
 
     protected void writeExtraTlvs(OutputStream out) throws IOException { }

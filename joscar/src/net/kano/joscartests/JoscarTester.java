@@ -42,7 +42,6 @@ import net.kano.joscar.flap.FlapCommand;
 import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rvcmd.InvitationMessage;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
-import net.kano.joscar.rvcmd.voice.VoiceReqRvCmd;
 import net.kano.joscar.rvcmd.chatinvite.ChatInvitationRvCmd;
 import net.kano.joscar.rvcmd.directim.DirectIMReqRvCmd;
 import net.kano.joscar.rvcmd.getfile.GetFileReqRvCmd;
@@ -51,6 +50,8 @@ import net.kano.joscar.rvcmd.sendbl.SendBuddyListRvCmd;
 import net.kano.joscar.rvcmd.sendfile.FileSendBlock;
 import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
 import net.kano.joscar.rvcmd.trillcrypt.TrillianCryptReqRvCmd;
+import net.kano.joscar.rvcmd.trillcrypt.TrillianCryptMsgRvCmd;
+import net.kano.joscar.rvcmd.voice.VoiceReqRvCmd;
 import net.kano.joscar.snac.SnacCommand;
 import net.kano.joscar.snac.SnacProcessor;
 import net.kano.joscar.snac.SnacRequest;
@@ -80,15 +81,14 @@ import net.kano.joscar.snaccmd.ssi.ModifyItemsCmd;
 import net.kano.joscar.snaccmd.ssi.SsiItem;
 import net.kano.joscar.ssiitem.*;
 
-import javax.crypto.interfaces.DHPublicKey;
-import javax.crypto.spec.DHPublicKeySpec;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.math.BigInteger;
 import java.net.*;
-import java.security.*;
-import java.security.spec.InvalidKeySpecException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.logging.ConsoleHandler;
@@ -282,12 +282,14 @@ public class JoscarTester implements CmdLineListener {
     protected SortedMap cmdMap = new TreeMap();
 
     OldIconHashInfo oldIconInfo;
-    File iconFile;
-    {
+    File iconFile = null;
+    { if (false) {
         try {
             ClassLoader classLoader = getClass().getClassLoader();
             URL iconResource = classLoader.getResource("images/beck.gif");
-            URI uri = new URI(iconResource.toExternalForm());
+            String ext = iconResource.toExternalForm();
+            System.out.println("ext: " + ext);
+            URI uri = new URI(ext);
             iconFile = new File(uri);
             oldIconInfo = new OldIconHashInfo(iconFile);
         } catch (IOException e) {
@@ -295,6 +297,7 @@ public class JoscarTester implements CmdLineListener {
         } catch (URISyntaxException e) {
             e.printStackTrace();
         }
+    }
     }
 
     {
@@ -645,38 +648,49 @@ public class JoscarTester implements CmdLineListener {
                 int port = socket.getLocalPort();
                 session.sendRv(new FileSendReqRvCmd(
                         new InvitationMessage("take this file lol"),
-                        RvConnectionInfo.createForOutgoingRequest(localHost, port),
+                        RvConnectionInfo.createForOutgoingRequest(localHost,
+                                port),
                         new FileSendBlock("wut up.gif", 2000000)));
+            }
+        });
+        cmdMap.put("secureimold", new CLCommand() {
+            public void handle(String line, String cmd, String[] args) {
+                RvSession session = bosConn.rvProcessor.createRvSession(
+                        args[0]);
+                System.out.println("created rv session: "
+                        + session.getRvSessionId());
+
+                session.addListener(bosConn.rvSessionListener);
+
+                session.sendRv(new TrillianCryptReqRvCmd(
+                        new BigInteger(args[1]),
+                        new BigInteger(args[2])));
             }
         });
         cmdMap.put("secureim", new CLCommand() {
             public void handle(String line, String cmd, String[] args) {
                 RvSession session = bosConn.rvProcessor.createRvSession(
                         args[0]);
+                System.out.println("created rv session: "
+                        + session.getRvSessionId());
 
                 session.addListener(bosConn.rvSessionListener);
 
-                try {
-                    KeyPairGenerator keygen
-                            = KeyPairGenerator.getInstance("DiffieHellman");
-                    KeyPair keyPair = keygen.generateKeyPair();
+                TrillianEncSession encSession = new TrillianEncSession(session);
+                encSession.init();
+                bosConn.trillianEncSessions.put(OscarTools.normalize(args[0]),
+                        encSession);
+            }
+        });
+        cmdMap.put("sim", new CLCommand() {
+            public void handle(String line, String cmd, String[] args) {
+                System.out.println("sending secure IM to " + args[0]);
+                TrillianEncSession encSession = (TrillianEncSession)
+                        bosConn.trillianEncSessions.get(
+                                OscarTools.normalize(args[0]));
 
-                    DHPublicKey key = (DHPublicKey) keyPair.getPublic();
+                encSession.sendMsg(args[1]);
 
-                    KeyFactory factory
-                            = KeyFactory.getInstance("DiffieHellman");
-
-                    DHPublicKeySpec pubSpec
-                            = (DHPublicKeySpec) factory.getKeySpec(key,
-                            DHPublicKeySpec.class);
-
-                    session.sendRv(new TrillianCryptReqRvCmd(
-                            pubSpec.getP(), pubSpec.getG()));
-                } catch (NoSuchAlgorithmException e) {
-                    e.printStackTrace();
-                } catch (InvalidKeySpecException e) {
-                    e.printStackTrace();
-                }
             }
         });
         cmdMap.put("sendbl", new CLCommand() {
@@ -813,7 +827,7 @@ public class JoscarTester implements CmdLineListener {
         System.out.println("connecting to AIM as " + args[0] + "...");
 
         ConsoleHandler handler = new ConsoleHandler();
-        handler.setLevel(Level.FINER);
+        handler.setLevel(Level.OFF);
         Logger logger = Logger.getLogger("net.kano.joscar");
         logger.addHandler(handler);
         logger.setLevel(Level.ALL);
@@ -844,7 +858,8 @@ public class JoscarTester implements CmdLineListener {
                 System.out.println("Using " + mb(total-free) + " memory of "
                         + mb(total) + " allocated");
             }
-        }, 30*1000, 5*60*1000);
+        },
+                30*1000, 5*60*1000);
     }
 
     public void sendIM(String nick, String text) {

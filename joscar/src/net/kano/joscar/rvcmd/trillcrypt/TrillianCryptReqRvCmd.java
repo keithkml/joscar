@@ -46,10 +46,10 @@ import java.math.BigInteger;
 
 public class TrillianCryptReqRvCmd extends AbstractTrillianCryptRvCmd {
     private static final int TYPE_P = 0x3e9;
-    private static final int TYPE_G = 0x3ea;
+    private static final int TYPE_Y = 0x3ea;
 
     private final BigInteger p;
-    private final BigInteger g;
+    private final BigInteger y;
 
     public TrillianCryptReqRvCmd(RecvRvIcbm icbm) {
         super(icbm);
@@ -61,33 +61,33 @@ public class TrillianCryptReqRvCmd extends AbstractTrillianCryptRvCmd {
         if (pTlv != null) p = getBigIntFromHexBlock(pTlv.getData());
         else p = null;
 
-        Tlv gTlv = chain.getLastTlv(TYPE_G);
+        Tlv gTlv = chain.getLastTlv(TYPE_Y);
 
-        if (gTlv != null) g = getBigIntFromHexBlock(gTlv.getData());
-        else g = null;
+        if (gTlv != null) y = getBigIntFromHexBlock(gTlv.getData());
+        else y = null;
     }
 
     public TrillianCryptReqRvCmd(BigInteger p, BigInteger g) {
-        super(ENCSTATUS_REQUEST);
+        super(CMDTYPE_REQUEST);
 
         this.p = p;
-        this.g = g;
+        this.y = g;
     }
 
     public final BigInteger getP() { return p; }
 
-    public final BigInteger getG() { return g; }
+    public final BigInteger getY() { return y; }
 
     protected void writeExtraTlvs(OutputStream out) throws IOException {
         if (p != null) {
             new Tlv(TYPE_P, ByteBlock.wrap(getBigIntHexBlock(p))).write(out);
         }
-        if (g != null) {
-            new Tlv(TYPE_G, ByteBlock.wrap(getBigIntHexBlock(g))).write(out);
+        if (y != null) {
+            new Tlv(TYPE_Y, ByteBlock.wrap(getBigIntHexBlock(y))).write(out);
         }
     }
 
     public String toString() {
-        return "TrillianEncryptReqRvCmd: p=" + p + ", g=" + g;
+        return "TrillianEncryptReqRvCmd: p=" + p + ", y=" + y;
     }
 }

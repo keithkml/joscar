@@ -35,17 +35,17 @@
 
 package net.kano.joscar.rvcmd.voice;
 
+import net.kano.joscar.BinaryTools;
+import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.rvcmd.AbstractRequestRvCmd;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
-import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.snaccmd.CapabilityBlock;
+import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.tlv.TlvChain;
-import net.kano.joscar.ByteBlock;
-import net.kano.joscar.BinaryTools;
-import net.kano.joscar.DefensiveTools;
 
-import java.io.OutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 
 public class VoiceReqRvCmd extends AbstractRequestRvCmd {
     public static final long VERSION_DEFAULT = 0x00000001;

@@ -119,21 +119,21 @@ public class DefaultRvCommandFactory implements RvCommandFactory {
             }
 
         } else if (block.equals(CapabilityBlock.BLOCK_TRILLIANCRYPT)) {
-            int status = AbstractTrillianCryptRvCmd.getStatusCode(rvIcbm);
+            int status = AbstractTrillianCryptRvCmd.getTrillianCmdType(rvIcbm);
 
-            if (status == AbstractTrillianCryptRvCmd.ENCSTATUS_REQUEST) {
+            if (status == AbstractTrillianCryptRvCmd.CMDTYPE_REQUEST) {
                 return new TrillianCryptReqRvCmd(rvIcbm);
 
-            } else if (status == AbstractTrillianCryptRvCmd.ENCSTATUS_ACCEPT) {
+            } else if (status == AbstractTrillianCryptRvCmd.CMDTYPE_ACCEPT) {
                 return new TrillianCryptAcceptRvCmd(rvIcbm);
 
-            } else if (status == AbstractTrillianCryptRvCmd.ENCSTATUS_BEGIN) {
+            } else if (status == AbstractTrillianCryptRvCmd.CMDTYPE_BEGIN) {
                 return new TrillianCryptBeginRvCmd(rvIcbm);
 
-            } else if (status == AbstractTrillianCryptRvCmd.ENCSTATUS_MESSAGE) {
+            } else if (status == AbstractTrillianCryptRvCmd.CMDTYPE_MESSAGE) {
                 return new TrillianCryptMsgRvCmd(rvIcbm);
 
-            } else if (status == AbstractTrillianCryptRvCmd.ENCSTATUS_CLOSE) {
+            } else if (status == AbstractTrillianCryptRvCmd.CMDTYPE_CLOSE) {
                 return new TrillianCryptCloseRvCmd(rvIcbm);
 
             } else {

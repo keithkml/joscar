@@ -37,12 +37,12 @@ package net.kano.joscar.rvcmd.directim;
 
 import net.kano.joscar.rvcmd.AbstractRequestRvCmd;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
-import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.snaccmd.CapabilityBlock;
+import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.tlv.TlvChain;
 
-import java.io.OutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 
 /**
  * A rendezvous command used to request or redirect a Direct IM ("IM Image")

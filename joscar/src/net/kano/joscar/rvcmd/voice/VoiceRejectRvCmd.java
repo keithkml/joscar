@@ -36,8 +36,8 @@
 package net.kano.joscar.rvcmd.voice;
 
 import net.kano.joscar.rvcmd.AbstractRejectRvCmd;
-import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.snaccmd.CapabilityBlock;
+import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 
 public class VoiceRejectRvCmd extends AbstractRejectRvCmd {
     public VoiceRejectRvCmd(RecvRvIcbm icbm) {

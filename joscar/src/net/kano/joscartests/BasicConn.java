@@ -51,6 +51,7 @@ import net.kano.joscar.rvcmd.icon.SendBuddyIconRvCmd;
 import net.kano.joscar.rvcmd.directim.DirectIMReqRvCmd;
 import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
 import net.kano.joscar.rvcmd.trillcrypt.TrillianCryptReqRvCmd;
+import net.kano.joscar.rvcmd.trillcrypt.AbstractTrillianCryptRvCmd;
 import net.kano.joscar.snac.*;
 import net.kano.joscar.snaccmd.*;
 import net.kano.joscar.snaccmd.buddy.BuddyOfflineCmd;
@@ -86,6 +87,7 @@ public abstract class BasicConn extends AbstractFlapConn {
             RvCommand cmd = event.getRvCommand();
 
             RvSession session = event.getRvSession();
+            RecvRvIcbm icbm = (RecvRvIcbm) event.getSnacCommand();
             System.out.println("got rendezvous on session <" + session + ">");
             System.out.println("- command: " + cmd);
 
@@ -98,16 +100,18 @@ public abstract class BasicConn extends AbstractFlapConn {
 
                 if (ip != null && port != -1) {
                     System.out.println("starting ft thread..");
-                    RecvRvIcbm icbm = (RecvRvIcbm) event.getSnacCommand();
                     long cookie = icbm.getIcbmMessageId();
                     new RecvFileThread(ip, port, session, cookie).start();
                 }
 
-            } else if (cmd instanceof TrillianCryptReqRvCmd) {
-                TrillianEncSession encSession = new TrillianEncSession(session);
-                trillianEncSessions.put(OscarTools.normalize(
-                        session.getScreenname()), encSession);
-                session.removeListener(this);
+            } else if (cmd instanceof AbstractTrillianCryptRvCmd) {
+                String key = OscarTools.normalize(session.getScreenname());
+                TrillianEncSession encSession = (TrillianEncSession)
+                        trillianEncSessions.get(key);
+                if (encSession == null) {
+                    encSession = new TrillianEncSession(session);
+                    trillianEncSessions.put(key, encSession);
+                }
                 encSession.handleRv(event);
             } else if (cmd instanceof DirectIMReqRvCmd) {
                 new DirectIMSession(tester.getScreenname(), session, event);

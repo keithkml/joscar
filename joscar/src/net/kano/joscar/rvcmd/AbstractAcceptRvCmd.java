@@ -39,8 +39,8 @@ import net.kano.joscar.MiscTools;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 
-import java.io.OutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 
 /**
  * A base class for "acceptance" rendezvous commands, or commands with no RV

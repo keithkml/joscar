@@ -35,17 +35,17 @@
 
 package net.kano.joscar.rvcmd;
 
-import net.kano.joscar.LiveWritable;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.LiveWritable;
 import net.kano.joscar.snaccmd.EncodedStringInfo;
 import net.kano.joscar.snaccmd.MinimalEncoder;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
 
-import java.util.Locale;
-import java.io.OutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.util.Locale;
 
 /**
  * A data structure containing an invitation message string and a language in

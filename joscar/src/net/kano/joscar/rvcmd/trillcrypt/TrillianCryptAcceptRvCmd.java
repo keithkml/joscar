@@ -35,77 +35,54 @@
 
 package net.kano.joscar.rvcmd.trillcrypt;
 
-import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
-import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.math.BigInteger;
 
 public class TrillianCryptAcceptRvCmd
         extends AbstractTrillianCryptRvCmd {
-    public static final int CODE_DEFAULT = 0x05;
+    private static final int TYPE_Y = 0x03eb;
 
-    private static final int TYPE_CODE = 0x03eb;
-
-    private final int code;
+    private final BigInteger y;
 
     public TrillianCryptAcceptRvCmd(RecvRvIcbm icbm) {
         super(icbm);
 
         TlvChain chain = getExtraTlvs();
 
-        Tlv codeTlv = chain.getLastTlv(TYPE_CODE);
+        Tlv codeTlv = chain.getLastTlv(TYPE_Y);
 
-        int codeValue = -1;
+        BigInteger codeValue = null;
         if (codeTlv != null) {
-            ByteBlock data = codeTlv.getData();
-
-            // hooray for sscanf.
-            ByteBlock stringBlock = data.subBlock(0, data.getLength() - 1);
-
-            String hex = BinaryTools.getAsciiString(stringBlock);
-            try {
-                codeValue = Integer.parseInt(hex, 16);
-            } catch (NumberFormatException doh) { }
+            codeValue = AbstractTrillianCryptRvCmd.getBigIntFromHexBlock(
+                    codeTlv.getData());
         }
-        code = codeValue;
+        y = codeValue;
     }
 
-    public TrillianCryptAcceptRvCmd() {
-        this(CODE_DEFAULT);
+    public TrillianCryptAcceptRvCmd(BigInteger code) {
+        super(CMDTYPE_ACCEPT);
+
+        this.y = code;
     }
 
-    public TrillianCryptAcceptRvCmd(int code) {
-        super(ENCSTATUS_ACCEPT);
-
-        DefensiveTools.checkRange(code, "code", -1);
-
-        this.code = code;
-    }
-
-    public final int getCode() { return code; }
+    public final BigInteger getY() { return y; }
 
     protected void writeExtraTlvs(OutputStream out) throws IOException {
-        if (code != -1) {
+        if (y != null) {
             // yay for sprintf.
-            ByteArrayOutputStream bout = new ByteArrayOutputStream(3);
-            byte[] stringData = Integer.toString(code, 16).getBytes("US-ASCII");
-            for (int i = stringData.length; i < 2; i++) {
-                bout.write('0');
-            }
-            bout.write(stringData);
-            bout.write(0);
-
-            new Tlv(TYPE_CODE, ByteBlock.wrap(bout.toByteArray())).write(out);
+            byte[] hexBlock
+                    = AbstractTrillianCryptRvCmd.getBigIntHexBlock(y);
+            new Tlv(TYPE_Y, ByteBlock.wrap(hexBlock)).write(out);
         }
     }
 
     public String toString() {
-        return "TrillianEncryptAcceptRvCmd: code=" + code;
+        return "TrillianEncryptAcceptRvCmd: code=" + y;
     }
 }
