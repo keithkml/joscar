@@ -41,7 +41,8 @@ import net.kano.joscar.snaccmd.EncodedStringInfo;
 import net.kano.joscar.snaccmd.MinimalEncoder;
 import net.kano.joscar.tlv.MutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.AbstractTlvChain;
+import net.kano.joscar.tlv.ImmutableTlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -58,7 +59,7 @@ public class ChatMsg implements LiveWritable {
      * @return a chat message object read from the given data block
      */
     public static ChatMsg readChatMsg(ByteBlock msgBlock) {
-        TlvChain msgChain = TlvChain.readChain(msgBlock);
+        AbstractTlvChain msgChain = ImmutableTlvChain.readChain(msgBlock);
 
         String charset = msgChain.getString(TYPE_CHARSET);
         String message = msgChain.getString(TYPE_BODY, charset);

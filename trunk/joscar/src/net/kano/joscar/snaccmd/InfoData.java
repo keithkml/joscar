@@ -38,7 +38,8 @@ package net.kano.joscar.snaccmd;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.LiveWritable;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.AbstractTlvChain;
+import net.kano.joscar.tlv.ImmutableTlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -63,7 +64,7 @@ public class InfoData implements LiveWritable {
      * @return a user info data object read from the given data block
      */
     public static InfoData readInfoData(ByteBlock block) {
-        return readInfoDataFromChain(TlvChain.readChain(block));
+        return readInfoDataFromChain(ImmutableTlvChain.readChain(block));
     }
 
     /**
@@ -73,7 +74,7 @@ public class InfoData implements LiveWritable {
      * @param chain the TLV chain containing user info TLV's
      * @return a user info data block read from the given TLV chain
      */
-    public static InfoData readInfoDataFromChain(TlvChain chain) {
+    public static InfoData readInfoDataFromChain(AbstractTlvChain chain) {
         String awayType = chain.getString(TYPE_AWAY_FMT);
         Tlv awayTlv = chain.getLastTlv(TYPE_AWAY);
         String infoType = chain.getString(TYPE_INFO_FMT);

@@ -37,7 +37,8 @@ package net.kano.joscar.snaccmd.auth;
 
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.AbstractTlvChain;
+import net.kano.joscar.tlv.ImmutableTlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -65,7 +66,7 @@ public class KeyRequest extends AuthCommand {
     protected KeyRequest(SnacPacket packet) {
         super(CMD_KEY_REQ);
 
-        TlvChain chain = TlvChain.readChain(packet.getData());
+        AbstractTlvChain chain = ImmutableTlvChain.readChain(packet.getData());
 
         sn = chain.getString(TYPE_SN);
     }

@@ -36,35 +36,75 @@
 package net.kano.joscar.ssiitem;
 
 import net.kano.joscar.ByteBlock;
-import net.kano.joscar.MiscTools;
 import net.kano.joscar.snaccmd.ssi.SsiItem;
+import net.kano.joscar.tlv.AbstractTlvChain;
+import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.MutableTlvChain;
-import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.TlvChain;
 
+/**
+ * A base class for each of the item classes in this package.
+ */
 public abstract class AbstractItem {
-    private final TlvChain extraTlvs;
+    /** The "extra TLV's" in this item. */
+    private final AbstractTlvChain extraTlvs;
 
-    protected AbstractItem(TlvChain extraTlvs) {
+    /**
+     * Creates a new item object with the given set of unprocessed or otherwise
+     * unrecognized TLV's in this item's type-specific TLV list.
+     *
+     * @param extraTlvs the extra TLV's in this item
+     */
+    protected AbstractItem(AbstractTlvChain extraTlvs) {
         this.extraTlvs = extraTlvs == null ? new MutableTlvChain() : extraTlvs;
     }
 
-    protected final TlvChain copyExtraTlvs() {
-        return extraTlvs == null ? null : new MutableTlvChain(extraTlvs);
+    /**
+     * Returns a copy of this item's extra TLV's, or <code>null</code> if this
+     * item's extra TLV list is <code>null</code>.
+     *
+     * @return a copy of this item's extra TLV's
+     */
+    protected final AbstractTlvChain copyExtraTlvs() {
+        return extraTlvs == null ? null : new ImmutableTlvChain(extraTlvs);
     }
 
-    public final TlvChain getExtraTlvs() {
+    /**
+     * Returns the "extra TLV list" for this item. This list contains the TLV's
+     * present in this item's type-specific data block that were not processed
+     * into fields; in practice, this likely means fields inserted by another
+     * client like WinAIM that joscar does not yet recognize.
+     *
+     * @return this item's "extra TLV's"
+     */
+    public final AbstractTlvChain getExtraTlvs() {
         return extraTlvs;
     }
 
-    protected final SsiItem generateItem(String name, int groupid, int buddyid,
-            int type, TlvChain customTlvs) {
+    /**
+     * Generates a new <code>SsiItem</code> from this item object with the given
+     * properties.
+     *
+     * @param name the name of the item
+     * @param parentid the "parent ID" of this item
+     * @param subid the "sub ID" of this item in its parent
+     * @param type the type of item, like {@link SsiItem#TYPE_PRIVACY}
+     * @param customTlvs a list of TLV's to insert into the type-specific data
+     *        block of the returned item
+     * @return a new SSI item with the given properties
+     */
+    protected final SsiItem generateItem(String name, int parentid, int subid,
+            int type, AbstractTlvChain customTlvs) {
         MutableTlvChain chain = new MutableTlvChain(extraTlvs);
         if (customTlvs != null) chain.replaceAll(customTlvs);
 
-        return new SsiItem(name, groupid, buddyid, type,
+        return new SsiItem(name, parentid, subid, type,
                 ByteBlock.createByteBlock(chain));
     }
 
+    /**
+     * Returns an <code>SsiItem</code> that represents this item object.
+     *
+     * @return an <code>SsiItem</code> that represents this item object
+     */
     public abstract SsiItem getSsiItem();
 }

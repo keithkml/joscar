@@ -40,7 +40,8 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.LiveWritable;
 import net.kano.joscar.tlv.MutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.AbstractTlvChain;
+import net.kano.joscar.tlv.ImmutableTlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -128,7 +129,7 @@ public class FullUserInfo implements LiveWritable {
 
         int tlvCount = BinaryTools.getUShort(block, 0);
         block = block.subBlock(2);
-        TlvChain chain = TlvChain.readChain(block, tlvCount);
+        AbstractTlvChain chain = ImmutableTlvChain.readChain(block, tlvCount);
 
         // read the TLV's we know about
         Tlv userFlagTlv = chain.getLastTlv(TYPE_USER_FLAG);
@@ -346,7 +347,7 @@ public class FullUserInfo implements LiveWritable {
     /**
      * A set of extra TLV's that were not explicitly parsed into fields.
      */
-    private final TlvChain extraTlvs;
+    private final AbstractTlvChain extraTlvs;
 
     /**
      * Creates a user info block containing only the given screenname.
@@ -432,7 +433,7 @@ public class FullUserInfo implements LiveWritable {
     public FullUserInfo(String sn, int warningLevel, int flags,
             Date accountCreated, Date memberSince, long sessAIM, long sessAOL,
             Date onSince, int idleMins, CapabilityBlock[] capabilityBlocks,
-            Boolean away, ExtraIconInfo[] iconInfos, TlvChain extraTlvs) {
+            Boolean away, ExtraIconInfo[] iconInfos, AbstractTlvChain extraTlvs) {
         this(sn, warningLevel, flags, accountCreated, memberSince, sessAIM,
                 sessAOL, onSince, idleMins, capabilityBlocks, away, iconInfos,
                 extraTlvs, -1);
@@ -468,7 +469,7 @@ public class FullUserInfo implements LiveWritable {
     private FullUserInfo(String sn, int warningLevel, int flags,
             Date accountCreated, Date memberSince, long sessAIM, long sessAOL,
             Date onSince, int idleMins, CapabilityBlock[] capabilityBlocks,
-            Boolean away, ExtraIconInfo[] iconInfos, TlvChain extraTlvs,
+            Boolean away, ExtraIconInfo[] iconInfos, AbstractTlvChain extraTlvs,
             int totalSize) {
         this.sn = sn;
         this.totalSize = totalSize;
@@ -634,7 +635,7 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
      * @return a list of TLV's present in the received user info block that were
      *         not processed into fields of this object
      */
-    public final TlvChain getExtraTlvs() {
+    public final AbstractTlvChain getExtraTlvs() {
         return extraTlvs;
     }
 

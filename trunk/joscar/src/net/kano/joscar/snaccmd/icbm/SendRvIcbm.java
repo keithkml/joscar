@@ -41,7 +41,8 @@ import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.OscarTools;
 import net.kano.joscar.snaccmd.ScreenNameBlock;
-import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.AbstractTlvChain;
+import net.kano.joscar.tlv.ImmutableTlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -73,7 +74,7 @@ public class SendRvIcbm extends AbstractRvIcbm {
         sn = snInfo.getScreenname();
 
         ByteBlock tlvBlock = channelData.subBlock(snInfo.getTotalSize());
-        TlvChain chain = TlvChain.readChain(tlvBlock);
+        AbstractTlvChain chain = ImmutableTlvChain.readChain(tlvBlock);
         processRvTlvs(chain);
     }
 

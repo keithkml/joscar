@@ -35,16 +35,20 @@
 
 package net.kano.joscar.tlv;
 
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.io.OutputStream;
-import java.io.IOException;
+import java.util.*;
 
 /**
  * Provides a means of modifying the contents of a TLV chain.
  */
-public class MutableTlvChain extends TlvChain {
+public class MutableTlvChain extends AbstractTlvChain {
+    /** A list of the TLV's in this chain, in order. */
+    private final List tlvList = new LinkedList();
+    /**
+     * A map from TLV type codes to <code>List</code>s of the TLV's in this
+     * chain with that type.
+     */
+    private final Map tlvMap = new HashMap();
+
     /**
      * Creates an empty TLV chain.
      */
@@ -78,16 +82,16 @@ public class MutableTlvChain extends TlvChain {
     public synchronized final void replaceTlv(Tlv tlv) {
         int typeCode = tlv.getType();
         Integer type = new Integer(typeCode);
-        List tlvs = (List) tlvMap.get(type);
+        List tlvs = (List) getTlvMap().get(type);
 
         int insertAt = -1;
         if (tlvs == null) {
             tlvs = new LinkedList();
-            tlvMap.put(type, tlvs);
+            getTlvMap().put(type, tlvs);
         } else if (!tlvs.isEmpty()) {
             // find the first instance of a tlv of this type
             int i = 0;
-            for (Iterator it = tlvList.iterator(); it.hasNext(); i++) {
+            for (Iterator it = getTlvList().iterator(); it.hasNext(); i++) {
                 Tlv next = (Tlv) it.next();
                 if (next.getType() == typeCode) {
                     // we found one!
@@ -98,10 +102,10 @@ public class MutableTlvChain extends TlvChain {
 
             tlvs.clear();
         }
-        if (insertAt == -1) insertAt = tlvList.size();
+        if (insertAt == -1) insertAt = getTlvList().size();
 
         tlvs.add(tlv);
-        tlvList.add(insertAt, tlv);
+        getTlvList().add(insertAt, tlv);
     }
 
     /**
@@ -112,10 +116,10 @@ public class MutableTlvChain extends TlvChain {
     public synchronized final void removeTlv(Tlv tlv) {
         int typeCode = tlv.getType();
         Integer type = new Integer(typeCode);
-        List tlvs = (List) tlvMap.get(type);
+        List tlvs = (List) getTlvMap().get(type);
 
         if (tlvs != null) while (tlvs.remove(tlv));
-        while (tlvList.remove(tlv));
+        while (getTlvList().remove(tlv));
     }
 
     /**
@@ -125,9 +129,9 @@ public class MutableTlvChain extends TlvChain {
      */
     public synchronized final void removeTlvs(int type) {
         Integer typeKey = new Integer(type);
-        List tlvs = (List) tlvMap.remove(typeKey);
+        List tlvs = (List) getTlvMap().remove(typeKey);
 
-        if (tlvs != null) tlvList.removeAll(tlvs);
+        if (tlvs != null) getTlvList().removeAll(tlvs);
     }
 
     /**
@@ -146,8 +150,8 @@ public class MutableTlvChain extends TlvChain {
      *
      * @param other the chain whose TLV's will be appended to this chain
      */
-    public synchronized final void addAll(TlvChain other) {
-        for (Iterator it = other.tlvList.iterator(); it.hasNext();) {
+    public synchronized final void addAll(AbstractTlvChain other) {
+        for (Iterator it = other.getTlvList().iterator(); it.hasNext();) {
             Tlv tlv = (Tlv) it.next();
 
             addTlvImpl(tlv);
@@ -164,55 +168,15 @@ public class MutableTlvChain extends TlvChain {
      * @param other the TLV whose TLV's will replace and/or add to TLV's in this
      *        chain
      */
-    public synchronized final void replaceAll(TlvChain other) {
-        for (Iterator it = other.tlvList.iterator(); it.hasNext();) {
+    public synchronized final void replaceAll(AbstractTlvChain other) {
+        for (Iterator it = other.getTlvList().iterator(); it.hasNext();) {
             Tlv tlv = (Tlv) it.next();
 
             replaceTlv(tlv);
         }
     }
 
-    // all this for thread safety..
+    protected synchronized List getTlvList() { return tlvList; }
 
-    protected synchronized void addTlvImpl(Tlv tlv) { super.addTlvImpl(tlv); }
-
-    public synchronized boolean hasTlv(int type) { return super.hasTlv(type); }
-
-    public synchronized Tlv[] getTlvs() { return super.getTlvs(); }
-
-    public synchronized int getTlvCount() { return super.getTlvCount(); }
-
-    public synchronized Tlv getFirstTlv(int type) {
-        return super.getFirstTlv(type);
-    }
-
-    public synchronized Tlv getLastTlv(int type) {
-        return super.getLastTlv(type);
-    }
-
-    public synchronized Tlv[] getTlvs(int type) { return super.getTlvs(type); }
-
-    public synchronized long getWritableLength() {
-        return super.getWritableLength();
-    }
-
-    public synchronized void write(OutputStream out) throws IOException {
-        super.write(out);
-    }
-
-    public synchronized String getString(int type) {
-        return super.getString(type);
-    }
-
-    public synchronized String getString(int type, String charset) {
-        return super.getString(type, charset);
-    }
-
-    public synchronized int getUShort(int type) {
-        return super.getUShort(type);
-    }
-
-    public synchronized int getTotalSize() {
-        return super.getTotalSize();
-    }
+    protected synchronized Map getTlvMap() { return tlvMap; }
 }

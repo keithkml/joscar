@@ -40,7 +40,7 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.MiscTools;
 import net.kano.joscar.tlv.MutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.AbstractTlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -300,7 +300,7 @@ public abstract class AbstractChatInfo {
      *
      * @param chain the TLV chain from which to read
      */
-    protected synchronized final void readBaseInfo(TlvChain chain) {
+    protected synchronized final void readBaseInfo(AbstractTlvChain chain) {
         flags = chain.getUShort(TYPE_FLAGS);
 
         Tlv creationTlv = chain.getLastTlv(TYPE_CREATION_DATE);

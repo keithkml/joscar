@@ -37,8 +37,9 @@ package net.kano.joscar.ssiitem;
 
 import net.kano.joscar.snaccmd.ssi.SsiItem;
 import net.kano.joscar.tlv.MutableTlvChain;
-import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.AbstractTlvChain;
 import net.kano.joscar.tlv.Tlv;
+import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 
@@ -57,7 +58,7 @@ public class VisibilityItem extends AbstractItem {
     public static VisibilityItem readVisiblityItem(SsiItem item) {
         int id = item.getSubId();
 
-        TlvChain chain = TlvChain.readChain(item.getData());
+        AbstractTlvChain chain = ImmutableTlvChain.readChain(item.getData());
 
         Tlv visMaskTlv = chain.getLastTlv(TYPE_VIS_MASK);
         long flags = -1;
@@ -77,7 +78,7 @@ public class VisibilityItem extends AbstractItem {
         this(id, flags, null);
     }
 
-    public VisibilityItem(int id, long flags, TlvChain extraTlvs) {
+    public VisibilityItem(int id, long flags, AbstractTlvChain extraTlvs) {
         super(extraTlvs);
         this.id = id;
         this.flags = flags;

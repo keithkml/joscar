@@ -38,7 +38,8 @@ package net.kano.joscar.snaccmd.invite;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.AbstractTlvChain;
+import net.kano.joscar.tlv.ImmutableTlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -73,7 +74,7 @@ public class InviteFriendCmd extends InviteCommand {
 
         ByteBlock block = packet.getData();
 
-        TlvChain chain = TlvChain.readChain(block);
+        AbstractTlvChain chain = ImmutableTlvChain.readChain(block);
 
         email = chain.getString(TYPE_EMAIL);
         message = chain.getString(TYPE_MSG);

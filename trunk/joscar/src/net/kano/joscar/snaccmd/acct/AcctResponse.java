@@ -40,7 +40,8 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.MiscTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.AbstractTlvChain;
+import net.kano.joscar.tlv.ImmutableTlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -117,7 +118,7 @@ public abstract class AcctResponse extends AcctCommand {
 
         ByteBlock tlvBlock = block.subBlock(4);
 
-        TlvChain chain = TlvChain.readChain(tlvBlock);
+        AbstractTlvChain chain = ImmutableTlvChain.readChain(tlvBlock);
 
         sn = chain.getString(TYPE_SN);
         email = chain.getString(TYPE_EMAIL);

@@ -39,7 +39,8 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.AbstractIcbm;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.AbstractTlvChain;
+import net.kano.joscar.tlv.ImmutableTlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -56,7 +57,7 @@ public abstract class AbstractChatMsgIcbm extends AbstractIcbm {
     /** The chat message block. */
     private final ChatMsg chatMsg;
     /** ICBM-type-specific TLV's. */
-    private final TlvChain chatTlvs;
+    private final AbstractTlvChain chatTlvs;
 
     /**
      * Creates a new chat ICBM with the given SNAC command subtype and with
@@ -68,7 +69,7 @@ public abstract class AbstractChatMsgIcbm extends AbstractIcbm {
     protected AbstractChatMsgIcbm(int command, SnacPacket packet) {
         super(ChatCommand.FAMILY_CHAT, command, packet);
 
-        TlvChain chain = TlvChain.readChain(getChannelData());
+        AbstractTlvChain chain = ImmutableTlvChain.readChain(getChannelData());
 
         Tlv msgTlv = chain.getLastTlv(TYPE_MSGBLOCK);
         if (msgTlv != null) {
@@ -111,7 +112,7 @@ public abstract class AbstractChatMsgIcbm extends AbstractIcbm {
      *
      * @return this ICBM's command-type-specific TLV's
      */
-    protected final TlvChain getChatTlvs() {
+    protected final AbstractTlvChain getChatTlvs() {
         return chatTlvs;
     }
 

@@ -96,7 +96,7 @@ public class SelfTest extends TestCase {
             0, 6, 0, 2, 60, 62,
             0, 7, 0, 5, 5, 6, 7, 8,
         });
-        TlvChain big = TlvChain.readChain(chainBlock);
+        AbstractTlvChain big = ImmutableTlvChain.readChain(chainBlock);
 
         assertEquals(14, big.getTotalSize());
         assertEquals(2, big.getTlvCount());
@@ -125,19 +125,19 @@ public class SelfTest extends TestCase {
         assertEquals(2, type2[0].getType());
 
 
-        TlvChain firstOfBig = TlvChain.readChain(chainBlock, 1);
+        AbstractTlvChain firstOfBig = ImmutableTlvChain.readChain(chainBlock, 1);
 
         assertEquals(1, firstOfBig.getTlvCount());
         assertEquals(2, firstOfBig.getTlvs()[0].getType());
         assertTrue(ByteBlock.wrap(new byte[] { 1, 2, 3, 4 })
                 .equals(firstOfBig.getFirstTlv(2).getData()));
 
-        TlvChain emptyBlockChain
-                = TlvChain.readChain(ByteBlock.wrap(new byte[0]), 0);
+        AbstractTlvChain emptyBlockChain
+                = ImmutableTlvChain.readChain(ByteBlock.wrap(new byte[0]), 0);
 
         assertEquals(0, emptyBlockChain.getTlvCount());
 
-        TlvChain duplicates = TlvChain.readChain(ByteBlock.wrap(new byte[] {
+        AbstractTlvChain duplicates = ImmutableTlvChain.readChain(ByteBlock.wrap(new byte[] {
             0, 1, 0, 2, 0, 100,
             0, 1, 0, 0,
             0, 1, 0, 5, 1, 2, 3, 4, 5,
@@ -155,13 +155,13 @@ public class SelfTest extends TestCase {
         assertEquals(0, matches[1].getData().getLength());
         assertEquals(5, matches[2].getData().getLength());
 
-        TlvChain tooMany = TlvChain.readChain(ByteBlock.wrap(new byte[0]), 100);
+        AbstractTlvChain tooMany = ImmutableTlvChain.readChain(ByteBlock.wrap(new byte[0]), 100);
 
         assertEquals(0, tooMany.getTlvCount());
         assertEquals(0, tooMany.getTlvs(100).length);
 
-        TlvChain tooShort
-                = TlvChain.readChain(ByteBlock.wrap(new byte[] { 1, 2 }));
+        AbstractTlvChain tooShort
+                = ImmutableTlvChain.readChain(ByteBlock.wrap(new byte[] { 1, 2 }));
 
         assertEquals(0, tooShort.getTlvCount());
     }

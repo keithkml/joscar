@@ -43,7 +43,8 @@ import net.kano.joscar.snaccmd.EncodedStringInfo;
 import net.kano.joscar.snaccmd.MinimalEncoder;
 import net.kano.joscar.tlv.MutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.AbstractTlvChain;
+import net.kano.joscar.tlv.ImmutableTlvChain;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -105,7 +106,7 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
      *
      * @param chain the TLV chain from which to read
      */
-    final void processImTlvs(TlvChain chain) {
+    final void processImTlvs(AbstractTlvChain chain) {
         // get some TLV's
         Tlv messageTlv = chain.getLastTlv(TYPE_MESSAGE);
         Tlv iconTlv = chain.getLastTlv(TYPE_ICONINFO);
@@ -118,7 +119,7 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
         if (messageTlv != null) {
             // this is a normal IM. there are TLV's in here. two or more of
             // them.
-            TlvChain msgTLVs = TlvChain.readChain(messageTlv.getData());
+            AbstractTlvChain msgTLVs = ImmutableTlvChain.readChain(messageTlv.getData());
 
             // read each part of the multipart data
             StringBuffer messageBuffer = new StringBuffer();

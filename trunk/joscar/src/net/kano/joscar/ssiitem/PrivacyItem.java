@@ -40,7 +40,8 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.snaccmd.ssi.SsiItem;
 import net.kano.joscar.tlv.MutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.AbstractTlvChain;
+import net.kano.joscar.tlv.ImmutableTlvChain;
 
 public class PrivacyItem extends AbstractItem {
     public static final int MODE_ALLOW_ALL = 0x01;
@@ -64,7 +65,7 @@ public class PrivacyItem extends AbstractItem {
     private final long visibleMask;
 
     public static PrivacyItem readPrivacyItem(SsiItem item) {
-        TlvChain chain = TlvChain.readChain(item.getData());
+        AbstractTlvChain chain = ImmutableTlvChain.readChain(item.getData());
 
         Tlv typeTlv = chain.getLastTlv(TYPE_PRIVACY_MODE);
         int type = -1;
@@ -100,7 +101,7 @@ public class PrivacyItem extends AbstractItem {
     }
 
     public PrivacyItem(int id, int mode, long classMask, long visibleMask,
-            TlvChain extraTlvs) {
+            AbstractTlvChain extraTlvs) {
         super(extraTlvs);
         this.id = id;
         this.privacyMode = mode;

@@ -40,7 +40,8 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.flap.FlapPacket;
 import net.kano.joscar.flap.FlapCommand;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.AbstractTlvChain;
+import net.kano.joscar.tlv.ImmutableTlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -94,7 +95,7 @@ public class FlapLoginCmd extends FlapCommand {
         version = BinaryTools.getUInt(flapData, 0);
 
         ByteBlock tlvData = flapData.subBlock(4);
-        TlvChain chain = TlvChain.readChain(tlvData);
+        AbstractTlvChain chain = ImmutableTlvChain.readChain(tlvData);
 
         Tlv cookieTlv = chain.getLastTlv(TYPE_COOKIE);
         if (cookieTlv != null) cookie = cookieTlv.getData();
