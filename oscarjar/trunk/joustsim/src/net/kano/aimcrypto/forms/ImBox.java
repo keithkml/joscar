@@ -238,11 +238,13 @@ public class ImBox extends JFrame {
         conn.getBuddyTrustManager().addBuddyTrustListener(new BuddyTrustAdapter() {
             public void gotUntrustedCertificateChange(BuddyTrustManager manager,
                     Screenname buddy, BuddyCertificateInfo info) {
+                if (!buddy.equals(ImBox.this.buddy)) return;
                 askAboutCertificates(info);
             }
 
             public void gotUnknownCertificateChange(BuddyTrustManager manager,
                     Screenname buddy, BuddyCertificateInfo certInfo) {
+                if (!buddy.equals(ImBox.this.buddy)) return;
                 askAboutCertificates(certInfo);
             }
         });

@@ -42,9 +42,12 @@ import net.kano.joscar.DefensiveTools;
 import java.util.Date;
 
 public class DecryptedAimMessageInfo extends MessageInfo {
+
     public static DecryptedAimMessageInfo getInstance(
             EncryptedAimMessageInfo einfo, String decrypted,
             BuddyCertificateInfo certInfo) {
+
+        DefensiveTools.checkNull(einfo, "einfo");
         DefensiveTools.checkNull(certInfo, "certInfo");
 
         EncryptedAimMessage encryptedMsg
@@ -58,8 +61,8 @@ public class DecryptedAimMessageInfo extends MessageInfo {
 
     private final BuddyCertificateInfo certInfo;
 
-    private DecryptedAimMessageInfo(Screenname from, Screenname to, Message message,
-            BuddyCertificateInfo certInfo, Date date) {
+    private DecryptedAimMessageInfo(Screenname from, Screenname to,
+            Message message, BuddyCertificateInfo certInfo, Date date) {
         super(from, to, message, date);
 
         this.certInfo = certInfo;

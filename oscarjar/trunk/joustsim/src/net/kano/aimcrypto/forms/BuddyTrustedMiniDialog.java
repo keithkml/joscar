@@ -41,12 +41,13 @@ import net.kano.aimcrypto.config.BuddyCertificateInfo;
 import net.kano.aimcrypto.config.CertificateTrustManager;
 import net.kano.aimcrypto.config.TrustException;
 import net.kano.aimcrypto.connection.AimConnection;
+import net.kano.aimcrypto.connection.BuddyInfoManager;
 import net.kano.aimcrypto.connection.oscar.service.info.BuddyTrustAdapter;
 import net.kano.aimcrypto.connection.oscar.service.info.BuddyTrustManager;
+import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 
 import javax.swing.AbstractAction;
-import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -54,8 +55,8 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
 import javax.swing.SwingUtilities;
-import java.awt.Component;
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 
@@ -70,6 +71,7 @@ public class BuddyTrustedMiniDialog extends JPanel implements MiniDialog {
     private final BuddyTrustManager buddyTrustMgr;
     private final Screenname buddy;
     private final BuddyCertificateInfo origCertificateInfo;
+    private final BuddyInfoManager buddyInfoMgr;
 
     private BuddyCertificateInfo certificateInfo = null;
 
@@ -101,6 +103,8 @@ public class BuddyTrustedMiniDialog extends JPanel implements MiniDialog {
 
         public void gotUnknownCertificateChange(BuddyTrustManager manager,
                 Screenname buddy, BuddyCertificateInfo certInfo) {
+            if (!buddy.equals(BuddyTrustedMiniDialog.this.buddy)) return;
+
             setLoadingCertInfo();
         }
     };
@@ -127,9 +131,11 @@ public class BuddyTrustedMiniDialog extends JPanel implements MiniDialog {
 
         setLoadingCertInfo();
         buddyTrustMgr.addBuddyTrustListener(trustListener);
-        if (certInfo != null && certInfo.isUpToDate()) {
+        buddyInfoMgr = conn.getBuddyInfoManager();
+        BuddyCertificateInfo newCertInfo = buddyInfoMgr.getBuddyInfo(buddy).getCertificateInfo();
+        if (newCertInfo != null && newCertInfo.isUpToDate()) {
             System.out.println("cert info is ok!");
-            updateCertInfo(certInfo);
+            updateCertInfo(newCertInfo);
         }
     }
 
@@ -149,7 +155,6 @@ public class BuddyTrustedMiniDialog extends JPanel implements MiniDialog {
     }
 
     private void updateCertInfo(BuddyCertificateInfo certInfo) {
-        System.out.println("updating cert info: " + certInfo);
         setCertInfo(certInfo);
         if (certInfo == null || hasInvalidHash(certInfo)) {
             textPane.setText("Security information for " + buddy.getFormatted()
@@ -189,8 +194,15 @@ public class BuddyTrustedMiniDialog extends JPanel implements MiniDialog {
         DefensiveTools.checkNull(certInfo, "certInfo");
 
         BuddyCertificateInfo orig = origCertificateInfo;
-        return orig != null && !orig.getCertificateInfoHash().equals(
-                certInfo.getCertificateInfoHash());
+        if (orig == null || orig == certInfo) return false;
+
+        ByteBlock origHash = orig.getCertificateInfoHash();
+        ByteBlock retrievedHash = certInfo.getCertificateInfoHash();
+        System.out.println("- orig hash: " + origHash);
+        System.out.println("- new hash: " + retrievedHash);
+        boolean equal = origHash.equals(retrievedHash);
+        System.out.println("- equal: " + equal);
+        return !equal;
     }
 
     private synchronized void setCertInfo(BuddyCertificateInfo certInfo) {

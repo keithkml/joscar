@@ -37,6 +37,7 @@ package net.kano.aimcrypto.connection.oscar.service.icbm;
 
 import net.kano.joscar.EncodedStringInfo;
 import net.kano.joscar.MinimalEncoder;
+import net.kano.aimcrypto.AimCertificateHolder;
 import org.bouncycastle.cms.CMSEnvelopedData;
 import org.bouncycastle.cms.CMSEnvelopedDataGenerator;
 import org.bouncycastle.cms.CMSException;
@@ -49,6 +50,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.security.cert.X509Certificate;
 
 public class SecureAimEncoder extends SecureAimCodec {
     public synchronized byte[] encryptMsg(String msg)
@@ -57,12 +59,16 @@ public class SecureAimEncoder extends SecureAimCodec {
             NoLocalKeysException {
 
         if (getLocalKeys() == null) throw new NoLocalKeysException();
-        if (getBuddyCerts() == null) throw new NoBuddyKeysException();
+        AimCertificateHolder buddyCerts = getBuddyCerts();
+        if (buddyCerts == null) throw new NoBuddyKeysException();
 
+        X509Certificate recip = buddyCerts.getSigningCertificate();
+        if (recip == null) throw new NoBuddyKeysException();
+        
         byte[] signedDataBlock = cmsSignString(msg);
 
         CMSEnvelopedDataGenerator gen = new CMSEnvelopedDataGenerator();
-        gen.addKeyTransRecipient(getBuddyCerts().getSigningCertificate());
+        gen.addKeyTransRecipient(recip);
         CMSEnvelopedData envData = gen.generate(
                 new CMSProcessableByteArray(signedDataBlock),
                 "2.16.840.1.101.3.4.1.2", "BC");

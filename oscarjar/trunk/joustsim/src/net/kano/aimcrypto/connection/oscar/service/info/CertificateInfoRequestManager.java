@@ -52,6 +52,7 @@ public class CertificateInfoRequestManager extends UserInfoRequestManager {
     }
 
     protected SnacCommand generateSnacCommand(final Screenname sn) {
+        System.out.println("generating cert request for " + sn);
         return new GetInfoCmd(GetInfoCmd.FLAG_CERT, sn.getFormatted());
     }
 

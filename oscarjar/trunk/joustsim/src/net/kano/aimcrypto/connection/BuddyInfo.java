@@ -112,7 +112,7 @@ public final class BuddyInfo {
             old = this.certificateInfo;
             this.certificateInfo = certificateInfo;
         }
-        pcs.firePropertyChange(PROP_CERTIFICATE_INFO, old, certificateInfo);
+        fireObjectChange(PROP_CERTIFICATE_INFO, old, certificateInfo);
     }
 
     public synchronized BuddyCertificateInfo getCertificateInfo() {
@@ -136,7 +136,7 @@ public final class BuddyInfo {
             old = this.directoryInfo;
             this.directoryInfo = directoryInfo;
         }
-        pcs.firePropertyChange(PROP_DIRECTORY_INFO, old, directoryInfo);
+        fireObjectChange(PROP_DIRECTORY_INFO, old, directoryInfo);
     }
 
     public synchronized DirInfo getDirectoryInfo() { return directoryInfo; }
@@ -147,7 +147,7 @@ public final class BuddyInfo {
             old = this.onlineSince;
             this.onlineSince = onlineSince;
         }
-        pcs.firePropertyChange(PROP_ONLINE_SINCE, old, onlineSince);
+        fireObjectChange(PROP_ONLINE_SINCE, old, onlineSince);
     }
 
     public synchronized Date getOnlineSince() { return onlineSince; }
@@ -185,7 +185,7 @@ public final class BuddyInfo {
             old = this.idleSince;
             this.idleSince = idleSince;
         }
-        pcs.firePropertyChange(PROP_IDLE_SINCE, old, idleSince);
+        fireObjectChange(PROP_IDLE_SINCE, old, idleSince);
     }
 
     public synchronized Date getIdleSince() { return idleSince; }
@@ -207,7 +207,7 @@ public final class BuddyInfo {
             old = this.awayMessage;
             this.awayMessage = awayMessage;
         }
-        pcs.firePropertyChange(PROP_AWAY_MESSAGE, old, awayMessage);
+        fireObjectChange(PROP_AWAY_MESSAGE, old, awayMessage);
     }
 
     public synchronized String getAwayMessage() { return awayMessage; }
@@ -218,7 +218,7 @@ public final class BuddyInfo {
             old = this.userProfile;
             this.userProfile = userProfile;
         }
-        pcs.firePropertyChange(PROP_USER_PROFILE, old, userProfile);
+        fireObjectChange(PROP_USER_PROFILE, old, userProfile);
     }
 
     public synchronized String getUserProfile() { return userProfile; }
@@ -229,7 +229,7 @@ public final class BuddyInfo {
             old = this.oldIconInfo;
             this.oldIconInfo = oldIconInfo;
         }
-        pcs.firePropertyChange(PROP_OLD_ICON_INFO, old, oldIconInfo);
+        fireObjectChange(PROP_OLD_ICON_INFO, old, oldIconInfo);
     }
 
     public synchronized OldIconHashInfo getOldIconInfo() { return oldIconInfo; }
@@ -240,7 +240,7 @@ public final class BuddyInfo {
             old = this.lastAimExpression;
             this.lastAimExpression = lastAimExpression;
         }
-        pcs.firePropertyChange(PROP_LAST_AIM_EXPRESSION, old, lastAimExpression);
+        fireObjectChange(PROP_LAST_AIM_EXPRESSION, old, lastAimExpression);
     }
 
     public synchronized String getLastAimExpression() {
@@ -284,5 +284,10 @@ public final class BuddyInfo {
     public synchronized boolean isCertificateInfoCurrent() {
         BuddyCertificateInfo certInfo = certificateInfo;
         return certInfo != null && certInfo.isUpToDate();
+    }
+
+    private void fireObjectChange(String property,
+            Object oldval, Object newval) {
+        if (oldval != newval) pcs.firePropertyChange(property, oldval, newval);
     }
 }

@@ -56,6 +56,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Arrays;
 
 public class BuddyInfoManager {
     private final AimConnection conn;
@@ -154,6 +155,7 @@ public class BuddyInfoManager {
 
             public void handleCertificateInfo(InfoService service, Screenname buddy,
                     BuddyCertificateInfo certInfo) {
+                System.out.println("BuddyInfoManager got cert info for " + buddy);
                 BuddyInfo buddyInfo = getBuddyInfoInstance(buddy);
                 if (certInfo != null) cacheCertInfo(certInfo);
                 buddyInfo.setCertificateInfo(certInfo);
@@ -197,7 +199,10 @@ public class BuddyInfoManager {
         }
 
         ByteBlock certHash = info.getCertInfoHash();
-        buddyInfo.setCertificateInfo(getAppropriateCertificateInfo(buddy, certHash));
+        if (certHash != null) {
+            if (certHash.getLength() == 0) certHash = null;
+            buddyInfo.setCertificateInfo(getAppropriateCertificateInfo(buddy, certHash));
+        }
 
         int idleMins = info.getIdleMins();
         Date idleSince;

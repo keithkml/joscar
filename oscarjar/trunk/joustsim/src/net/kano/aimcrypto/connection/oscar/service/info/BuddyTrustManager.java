@@ -105,6 +105,7 @@ public class BuddyTrustManager {
                 if (prop.equals(BuddyInfo.PROP_CERTIFICATE_INFO)) {
                     BuddyCertificateInfo certInfo
                             = (BuddyCertificateInfo) event.getNewValue();
+                    System.out.println("cert info for " + buddy + " changed: " + certInfo);
                     ByteBlock hash;
                     if (certInfo == null) {
                         hash = null;
@@ -114,6 +115,7 @@ public class BuddyTrustManager {
                         hash = certInfo.getCertificateInfoHash();
                         cacheCertInfo(certInfo);
                     }
+                    System.out.println("handling hash for " + buddy + ": " + hash);
                     handleBuddyHashChange(buddyInfo, hash);
                 }
             }
@@ -210,8 +212,11 @@ public class BuddyTrustManager {
             // save the buddy's new certificate hash, and determine whether his
             // trust status changed
             oldStatus = buddyTrustInfo.getTrustedStatus();
+
+            System.out.println("updating buddy hash for " + sn);
             newStatus = updateBuddyHash(sn, hash);
-            if (newStatus == null) {
+            System.out.println("new status for " + sn + " is " + newStatus);
+            if (newStatus == null || newStatus == oldStatus) {
                 // the status did not change, so there's nothing left for us to
                 // do here
                 return;
@@ -228,13 +233,13 @@ public class BuddyTrustManager {
             ByteBlock newHash) {
         DefensiveTools.checkNull(sn, "sn");
 
-        // store the new hash and get his old hash
-        ByteBlock oldHash = (ByteBlock) latestHashes.put(sn, newHash);
-
-        if (oldHash == newHash || (oldHash != null && oldHash.equals(newHash))) {
-            // the buddy's new hash is the same as his old hash
-            return null;
-        }
+//        // store the new hash and get his old hash
+//        ByteBlock oldHash = (ByteBlock) latestHashes.put(sn, newHash);
+//
+//        if (oldHash == newHash || (oldHash != null && oldHash.equals(newHash))) {
+//            // the buddy's new hash is the same as his old hash
+//            return null;
+//        }
 
         if (newHash == null) {
             // if the hash is null, the buddy can't be trusted
@@ -267,6 +272,7 @@ public class BuddyTrustManager {
         assert !Thread.holdsLock(this);
 
         if (newStatus == TrustStatus.UNKNOWN) {
+            assert certInfo != null && !certInfo.isUpToDate();
             fireUnknownCertificateChangeEvent(sn, certInfo);
 
         } else if (newStatus == TrustStatus.NOT_TRUSTED) {
@@ -356,7 +362,7 @@ public class BuddyTrustManager {
     private void cacheCertInfo(BuddyCertificateInfo certInfo) {
         DefensiveTools.checkNull(certInfo, "certInfo");
 
-        if (!certInfo.hasBothCertificates()) return;
+        if (!certInfo.hasBothCertificates() || !certInfo.isUpToDate()) return;
 
         Screenname sn = certInfo.getBuddy();
         ByteBlock hash = certInfo.getCertificateInfoHash();

@@ -42,6 +42,7 @@ import net.kano.aimcrypto.Screenname;
 
 import java.security.cert.X509Certificate;
 
+//TODO: use upToDate in equals()
 public final class BuddyCertificateInfo implements AimCertificateHolder {
     private final Screenname buddy;
     private final ByteBlock hash;
@@ -95,6 +96,7 @@ public final class BuddyCertificateInfo implements AimCertificateHolder {
 
         final BuddyCertificateInfo buddyCertificateInfo = (BuddyCertificateInfo) o;
 
+        if (upToDate != buddyCertificateInfo.upToDate) return false;
         if (!buddy.equals(buddyCertificateInfo.buddy)) return false;
         if (!hash.equals(buddyCertificateInfo.hash)) return false;
 
@@ -105,6 +107,7 @@ public final class BuddyCertificateInfo implements AimCertificateHolder {
         int result;
         result = buddy.hashCode();
         result = 29 * result + hash.hashCode();
+        result = 29 * result + (upToDate ? 1 : 0);
         return result;
     }
 }
