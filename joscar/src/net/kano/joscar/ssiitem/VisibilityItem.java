@@ -47,8 +47,7 @@ import net.kano.joscar.tlv.TlvTools;
 /**
  * An SSI item object representing a set of "visibility settings." The
  * difference between the types of data stored in this type of item and those
- * stored in {@link PrivacyItem} is very fine; in fact, in this author's
- * opinion, they should be combined.
+ * stored in {@link PrivacyItem} is very fine.
  * <br>
  * <br>
  * Note that this class is only used to store data and that <b>changes to this

@@ -64,6 +64,8 @@ public class AcctInfoRequest extends AcctCommand {
      */
     public static final int TYPE_EMAIL = 0x0011;
 
+    public static final int TYPE_SOMETHING = 0x0013;
+
     /**
      * The only subtype code ever used as of this writing.
      */

@@ -59,7 +59,9 @@ import java.io.OutputStream;
  */
 public class ServiceRequest extends ConnCommand {
     /** A TLV type containing miniature chat room information. */
-    private static final int TYPE_ROOM_INFO = 0x0001;
+    private static final int TYPE_PARAM = 0x0001;
+
+    private static final int TYPE_KEY = 0x0028;
 
     /** The SNAC family being requested. */
     private final int family;
@@ -85,7 +87,7 @@ public class ServiceRequest extends ConnCommand {
 
         TlvChain chatChain = TlvTools.readChain(tlvBlock);
 
-        Tlv chatInfoTlv = chatChain.getLastTlv(TYPE_ROOM_INFO);
+        Tlv chatInfoTlv = chatChain.getLastTlv(TYPE_PARAM);
 
         if (chatInfoTlv != null) {
             ByteBlock chatBlock = chatInfoTlv.getData();
@@ -166,7 +168,7 @@ public class ServiceRequest extends ConnCommand {
 
         if (roomInfo != null) {
             ByteBlock roomInfoBlock = ByteBlock.createByteBlock(roomInfo);
-            new Tlv(TYPE_ROOM_INFO, roomInfoBlock).write(out);
+            new Tlv(TYPE_PARAM, roomInfoBlock).write(out);
         }
     }
 

@@ -85,6 +85,8 @@ public abstract class AcctResponse extends AcctCommand {
     /** A TLV type containing an error URL. */
     private static final int TYPE_ERROR_URL = 0x0004;
 
+    private static final int TYPE_SOMETHING = 0x0013;
+
     /** The type code of this response. */
     private final int type;
     /** The result code of this response. */
