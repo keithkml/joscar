@@ -143,7 +143,7 @@ public class RecvImIcbm extends AbstractImIcbm implements RecvIcbm {
     }
 
     public String toString() {
-        return "RecvImIcbm: message from " + userInfo.getScreenname() + ": "
+        return "RecvImIcbm: message from " + userInfo + ": "
                 + getMessage();
     }
 }
