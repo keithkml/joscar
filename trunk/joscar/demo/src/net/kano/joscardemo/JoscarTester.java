@@ -146,7 +146,7 @@ public class JoscarTester implements CmdLineListener {
     protected Set services = new HashSet();
     protected Map chats = new HashMap();
 
-    private SecureSession secureSession = new SecureSession();
+    private SecureSession secureSession = SecureSession.getInstance();
 
     public JoscarTester(String sn, String pass) {
         new CmdLineReader(this);
