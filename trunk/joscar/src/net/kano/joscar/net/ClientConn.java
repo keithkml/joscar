@@ -216,15 +216,15 @@ public class ClientConn {
     /**
      * The hostname we are supposed to connect to.
      */
-    private String host = null;
+    private final String host;
     /**
      * The IP address we are supposed to connect to.
      */
-    private InetAddress ip = null;
+    private final InetAddress ip;
     /**
      * The port we are supposed to connect to.
      */
-    private int port = -1;
+    private final int port;
 
     /**
      * A list of connection listeners (state change listeners).
@@ -255,6 +255,7 @@ public class ClientConn {
         DefensiveTools.checkNull(cd, "cd");
 
         this.host = cd.getHost();
+        this.ip = cd.getAddress();
         this.port = cd.getPort();
     }
 
