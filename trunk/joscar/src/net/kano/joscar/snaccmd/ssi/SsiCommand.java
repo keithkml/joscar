@@ -72,6 +72,8 @@ public abstract class SsiCommand extends SnacCommand {
     /** A command subtype sometimes sent after changing SSI data. */
     public static final int CMD_POST_MOD = 0x0012;
 
+    public static final int CMD_REMOVE_ME = 0x0016;
+
     /**
      * A command subtype for sending the client a list of SSI-related "rights."
      */

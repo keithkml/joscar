@@ -46,7 +46,6 @@ import net.kano.joscar.tlv.TlvTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.regex.Pattern;
 
 /**
  * A SNAC command sent in response to an {@link AuthRequest}. This is the last
@@ -116,7 +115,7 @@ public class AuthResponse extends AuthCommand {
     /**
      * See {@link #ERROR_CONNECTING_TOO_MUCH_A} for a description of this code.
      */
-    public static final int ERROR_CONNECTING_TOO_MUCH_B = 28;
+    public static final int ERROR_CONNECTING_TOO_MUCH_B = 29;
     /**
      * An error code indicating that the client software is too old to connect
      * to AIM anymore.

@@ -77,6 +77,7 @@ import net.kano.joscar.snaccmd.ssi.CreateItemsCmd;
 import net.kano.joscar.snaccmd.ssi.DeleteItemsCmd;
 import net.kano.joscar.snaccmd.ssi.ModifyItemsCmd;
 import net.kano.joscar.snaccmd.ssi.SsiItem;
+import net.kano.joscar.snaccmd.ssi.RemoveMeCmd;
 import net.kano.joscar.ssiitem.BuddyItem;
 import net.kano.joscar.ssiitem.DenyItem;
 import net.kano.joscar.ssiitem.GroupItem;
@@ -1534,6 +1535,49 @@ public class CLHandler {
                     secs = Integer.parseInt(args[0]);
                 }
                 tester.request(new SetIdleCmd(secs));
+            }
+        });
+        cmdMap.put("removeme", new CLCommand() {
+            public String getExampleArgs() {
+                return "joustacular";
+            }
+
+            public String getDescription() {
+                return "Requests that your screenname be removed from the "
+                        + "given user's buddy list. This command will modify "
+                        + "the given user's buddy list so that your screenname "
+                        + "is not on it. (This may seem impossible because no "
+                        + "other client supports it, but it does in fact work. "
+                        + "It uses a protocol command that no other client "
+                        + "currently uses.)";
+            }
+
+            public String getArgumentsUsage() {
+                return "<screenname>";
+            }
+
+            public void handle(JoscarTester tester, String line, String cmd,
+                    String[] args) {
+                tester.request(new RemoveMeCmd(args[0]));
+            }
+        });
+        cmdMap.put("sendnewline", new CLCommand() {
+            public String getExampleArgs() {
+                return "joustacular";
+            }
+
+            public String getDescription() {
+                return "Sends a message containing a newline character, for "
+                        + "testing purposes.";
+            }
+
+            public String getArgumentsUsage() {
+                return "<screenname>";
+            }
+
+            public void handle(JoscarTester tester, String line, String cmd,
+                    String[] args) {
+                tester.request(new SendImIcbm(args[0], "test\ntest"));
             }
         });
         cmdMap.put("help", new CLCommand() {
