@@ -98,19 +98,14 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.Signature;
-import java.security.SignatureException;
+import java.security.*;
 import java.security.cert.Certificate;
 import java.text.DateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
+import org.bouncycastle.cms.CMSEnvelopedData;
+import org.bouncycastle.cms.CMSException;
+import org.bouncycastle.cms.KeyTransRecipientInformation;
 
 public abstract class BasicConn extends AbstractFlapConn {
     protected final ByteBlock cookie;
@@ -294,30 +289,32 @@ public abstract class BasicConn extends AbstractFlapConn {
             InstantMessage message = icbm.getMessage();
             if (message.isEncrypted()) {
                 ByteBlock encData = message.getEncryptedData();
-                System.out.println("got [" + encData.getLength() + "]: "
-                        + BinaryTools.describeData(encData));
+                System.out.println("got [" + encData.getLength() + "]");
 
                 Certificate cert = tester.getCert(sn);
                 if (cert != null) {
                     try {
-                        Signature verifier = Signature.getInstance("MD5withRSA");
-                        verifier.initVerify(cert.getPublicKey());
-                        byte[] encrypted = encData.toByteArray();
-                        boolean verified = verifier.verify(encrypted);
-                        System.out.println("verified=" + verified);
+                        CMSEnvelopedData ced = new CMSEnvelopedData(encData.toByteArray());
+                        Collection recip = ced.getRecipientInfos().getRecipients();
+                        for (Iterator it = recip.iterator(); it.hasNext(); ) {
+                            KeyTransRecipientInformation rinfo
+                                    = (KeyTransRecipientInformation) it.next();
 
-                    } catch (NoSuchAlgorithmException e1) {
+                            System.out.println("rid=" + rinfo.getRID());
+                            System.out.println("" + rinfo.getContent(tester.privateKey, "BC"));
+                        }
+                    } catch (CMSException e1) {
                         e1.printStackTrace();
-                    } catch (InvalidKeyException e1) {
-                        e1.printStackTrace();
-                    } catch (SignatureException e1) {
+                    } catch (NoSuchProviderException e1) {
                         e1.printStackTrace();
                     }
+                } else {
+                    System.out.println("cert is null for " + sn);
                 }
 
                 try {
                     FileOutputStream out = new FileOutputStream(
-                            "/home/keith/in/tmpencryptedmsg");
+                            "tmpencryptedmsg");
 
                     encData.write(out);
 
