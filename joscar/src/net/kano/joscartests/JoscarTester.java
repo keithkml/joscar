@@ -54,7 +54,7 @@ import net.kano.joscar.rvcmd.sendfile.FileSendBlock;
 import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
 import net.kano.joscar.rvcmd.trillcrypt.TrillianCryptReqRvCmd;
 import net.kano.joscar.rvcmd.voice.VoiceReqRvCmd;
-import net.kano.joscar.snac.SnacProcessor;
+import net.kano.joscar.snac.ClientSnacProcessor;
 import net.kano.joscar.snac.SnacRequest;
 import net.kano.joscar.snac.SnacRequestListener;
 import net.kano.joscar.snaccmd.*;
@@ -103,7 +103,7 @@ public class JoscarTester implements CmdLineListener {
             = new DefaultClientFactoryList();
 
     protected ClientFlapConn loginFlapConn = null, mainConn = null;
-    protected SnacProcessor loginSnacProcessor = null;
+    protected ClientSnacProcessor loginSnacProcessor = null;
 
     protected List serviceConns = new ArrayList();
 

@@ -38,7 +38,7 @@ package net.kano.joscar.ratelim;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.conn.RateClassInfo;
 import net.kano.joscar.snac.CmdType;
-import net.kano.joscar.snac.SnacProcessor;
+import net.kano.joscar.snac.ClientSnacProcessor;
 import net.kano.joscar.snac.SnacRequest;
 import net.kano.joscar.snac.SnacQueueManager;
 
@@ -59,7 +59,7 @@ public final class ConnectionQueueMgr {
     /** The rate monitor used by this connection queue manager. */
     private final RateMonitor monitor;
     /** The SNAC processor whose SNAC queues are being managed. */
-    private final SnacProcessor snacProcessor;
+    private final ClientSnacProcessor snacProcessor;
 
     /** Whether this connection is paused. */
     private boolean paused = false;
@@ -69,7 +69,7 @@ public final class ConnectionQueueMgr {
 
     /** A rate listener used to monitor rate events. */
     private RateListener rateListener = new RateListener() {
-        public void detached(RateMonitor rateMonitor, SnacProcessor processor) {
+        public void detached(RateMonitor rateMonitor, ClientSnacProcessor processor) {
             rateMonitor.removeListener(this);
         }
 
@@ -103,7 +103,7 @@ public final class ConnectionQueueMgr {
      * @param queueMgr this connection queue manager's parent rate manager
      * @param processor the SNAC processor to manage
      */
-    ConnectionQueueMgr(RateLimitingQueueMgr queueMgr, SnacProcessor processor) {
+    ConnectionQueueMgr(RateLimitingQueueMgr queueMgr, ClientSnacProcessor processor) {
         DefensiveTools.checkNull(queueMgr, "queueMgr");
         DefensiveTools.checkNull(processor, "processor");
 
@@ -136,7 +136,7 @@ public final class ConnectionQueueMgr {
      * @return the SNAC processor whose rate queues are being managed by this
      *         queue manager
      */
-    public SnacProcessor getSnacProcessor() { return snacProcessor; }
+    public ClientSnacProcessor getSnacProcessor() { return snacProcessor; }
 
     /**
      * Returns the rate queue being used for the rate class associated with the
@@ -190,7 +190,7 @@ connQueueMgr.getRateMonitor().addListener(myRateListener);
      *
      * @param request the request to enqueue
      *
-     * @see SnacQueueManager#queueSnac(SnacProcessor, SnacRequest)
+     * @see SnacQueueManager#queueSnac(ClientSnacProcessor, SnacRequest)
      */
     void queueSnac(SnacRequest request) {
         DefensiveTools.checkNull(request, "request");
@@ -212,7 +212,7 @@ connQueueMgr.getRateMonitor().addListener(myRateListener);
     /**
      * Clears the SNAC queue for the associated connection.
      *
-     * @see SnacQueueManager#clearQueue(SnacProcessor)
+     * @see SnacQueueManager#clearQueue(ClientSnacProcessor)
      */
     synchronized void clearQueue() {
         for (Iterator it = queues.values().iterator(); it.hasNext();) {
@@ -227,7 +227,7 @@ connQueueMgr.getRateMonitor().addListener(myRateListener);
     /**
      * Pauses the SNAC queue for the associated connection.
      *
-     * @see SnacQueueManager#pause(SnacProcessor)
+     * @see SnacQueueManager#pause(ClientSnacProcessor)
      */
     synchronized void pause() {
         assert !paused;
@@ -242,7 +242,7 @@ connQueueMgr.getRateMonitor().addListener(myRateListener);
     /**
      * Unpauses the SNAC queue for the associated connection.
      *
-     * @see SnacQueueManager#unpause(SnacProcessor)
+     * @see SnacQueueManager#unpause(ClientSnacProcessor)
      */
     synchronized void unpause() {
         assert paused;
@@ -260,8 +260,8 @@ connQueueMgr.getRateMonitor().addListener(myRateListener);
      * @return whether the SNAC queue for the associated connection is currently
      *         paused
      *
-     * @see SnacProcessor#pause()
-     * @see SnacProcessor#unpause()
+     * @see ClientSnacProcessor#pause()
+     * @see ClientSnacProcessor#unpause()
      */
     public synchronized boolean isPaused() { return paused; }
 

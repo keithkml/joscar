@@ -48,7 +48,7 @@ public interface SnacQueueManager {
      *
      * @param processor the SNAC processor for which this manager has been set
      */
-    void attached(SnacProcessor processor);
+    void attached(ClientSnacProcessor processor);
 
     /**
      * Called when this SNAC queue manager has been removed from being the SNAC
@@ -60,7 +60,7 @@ public interface SnacQueueManager {
      *
      * @param processor the SNAC processor for which this manager has been set
      */
-    void detached(SnacProcessor processor);
+    void detached(ClientSnacProcessor processor);
 
     /**
      * A method called to indicate that the queue should be paused until a call
@@ -78,7 +78,7 @@ public interface SnacQueueManager {
      *
      * @param processor the SNAC processor on which to pause
      */
-    void pause(SnacProcessor processor);
+    void pause(ClientSnacProcessor processor);
 
     /**
      * A method called to indicate that the queue for the given SNAC processor
@@ -89,7 +89,7 @@ public interface SnacQueueManager {
      *
      * @param processor the SNAC processor on which to pause
      */
-    void unpause(SnacProcessor processor);
+    void unpause(ClientSnacProcessor processor);
 
     /**
      * Enqueues the given SNAC request for the given SNAC processor. This method
@@ -103,7 +103,7 @@ public interface SnacQueueManager {
      *        created and on which it is to be sent
      * @param request the request being enqueued
      */
-    void queueSnac(SnacProcessor processor, SnacRequest request);
+    void queueSnac(ClientSnacProcessor processor, SnacRequest request);
 
     /**
      * Clears all pending (queued) SNAC commands in this SNAC manager for the
@@ -116,5 +116,5 @@ public interface SnacQueueManager {
      * @param processor the SNAC processor for which pending SNACs should be
      *        erased
      */
-    void clearQueue(SnacProcessor processor);
+    void clearQueue(ClientSnacProcessor processor);
 }

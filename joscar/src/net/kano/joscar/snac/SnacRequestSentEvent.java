@@ -50,7 +50,7 @@ public class SnacRequestSentEvent {
     /**
      * The SNAC processor on which the request was sent.
      */
-    private final SnacProcessor snacProcessor;
+    private final ClientSnacProcessor snacProcessor;
 
     /**
      * The request that was sent.
@@ -72,7 +72,7 @@ public class SnacRequestSentEvent {
      *        unix epoch
      */
     protected SnacRequestSentEvent(FlapProcessor flapProcessor,
-            SnacProcessor snacProcessor, SnacRequest request, long sentTime) {
+            ClientSnacProcessor snacProcessor, SnacRequest request, long sentTime) {
         DefensiveTools.checkNull(flapProcessor, "flapProcessor");
         DefensiveTools.checkNull(snacProcessor, "snacProcessor");
         DefensiveTools.checkNull(request, "request");
@@ -97,7 +97,7 @@ public class SnacRequestSentEvent {
      *
      * @return the SNAC processor on which the associated request was sent
      */
-    public SnacProcessor getSnacProcessor() {
+    public ClientSnacProcessor getSnacProcessor() {
         return snacProcessor;
     }
 

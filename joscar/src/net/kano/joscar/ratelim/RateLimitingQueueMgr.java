@@ -36,7 +36,7 @@
 package net.kano.joscar.ratelim;
 
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.snac.SnacProcessor;
+import net.kano.joscar.snac.ClientSnacProcessor;
 import net.kano.joscar.snac.SnacQueueManager;
 import net.kano.joscar.snac.SnacRequest;
 
@@ -113,9 +113,9 @@ public class RateLimitingQueueMgr implements SnacQueueManager {
      *        sent
      * @param request the request to send
      *
-     * @see SnacProcessor#sendSnacImmediately
+     * @see ClientSnacProcessor#sendSnacImmediately
      */
-    void sendSnac(SnacProcessor processor, SnacRequest request) {
+    void sendSnac(ClientSnacProcessor processor, SnacRequest request) {
         processor.sendSnacImmediately(request);
     }
 
@@ -145,7 +145,7 @@ public class RateLimitingQueueMgr implements SnacQueueManager {
      *         processor, or <code>null</code> if none is in use for the given
      *         SNAC processor
      */
-    public final ConnectionQueueMgr getQueueMgr(SnacProcessor processor) {
+    public final ConnectionQueueMgr getQueueMgr(ClientSnacProcessor processor) {
         DefensiveTools.checkNull(processor, "processor");
 
         synchronized(connMgrs) {
@@ -153,13 +153,13 @@ public class RateLimitingQueueMgr implements SnacQueueManager {
         }
     }
 
-    public void attached(SnacProcessor processor) {
+    public void attached(ClientSnacProcessor processor) {
         synchronized(connMgrs) {
             connMgrs.put(processor, new ConnectionQueueMgr(this, processor));
         }
     }
 
-    public void detached(SnacProcessor processor) {
+    public void detached(ClientSnacProcessor processor) {
         ConnectionQueueMgr mgr;
         synchronized(connMgrs) {
             mgr = (ConnectionQueueMgr) connMgrs.remove(processor);
@@ -168,21 +168,21 @@ public class RateLimitingQueueMgr implements SnacQueueManager {
         mgr.detach();
     }
 
-    public void queueSnac(SnacProcessor processor, SnacRequest request) {
+    public void queueSnac(ClientSnacProcessor processor, SnacRequest request) {
         DefensiveTools.checkNull(request, "request");
 
         getQueueMgr(processor).queueSnac(request);
     }
 
-    public void clearQueue(SnacProcessor processor) {
+    public void clearQueue(ClientSnacProcessor processor) {
         getQueueMgr(processor).clearQueue();
     }
 
-    public void pause(SnacProcessor processor) {
+    public void pause(ClientSnacProcessor processor) {
         getQueueMgr(processor).pause();
     }
 
-    public void unpause(SnacProcessor processor) {
+    public void unpause(ClientSnacProcessor processor) {
         getQueueMgr(processor).unpause();
     }
 }

@@ -36,7 +36,7 @@
 package net.kano.joscar.ratelim;
 
 import net.kano.joscar.snaccmd.conn.RateClassInfo;
-import net.kano.joscar.snac.SnacProcessor;
+import net.kano.joscar.snac.ClientSnacProcessor;
 
 /**
  * An interface for listening for rate-related events on a {@link RateMonitor}.
@@ -86,7 +86,7 @@ public interface RateListener {
      * @param processor the SNAC processor from which the given rate monitor was
      *        detached
      */
-    void detached(RateMonitor rateMonitor, SnacProcessor processor);
+    void detached(RateMonitor rateMonitor, ClientSnacProcessor processor);
 
     /**
      * Called when the rate information for the given rate monitor has been
