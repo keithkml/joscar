@@ -44,7 +44,7 @@ import net.kano.joscar.snaccmd.conn.SnacFamilyInfo;
  */
 public abstract class RoomCommand extends SnacCommand {
     /** The SNAC family code for this family. */
-    public static int FAMILY_ROOM = 0x000d;
+    public static final int FAMILY_ROOM = 0x000d;
 
     /** A set of SNAC family information for this family. */
     public static final SnacFamilyInfo FAMILY_INFO

@@ -107,8 +107,6 @@ public class AddinsReqRvCmd extends AbstractRequestRvCmd {
     public AddinsReqRvCmd(RecvRvIcbm icbm) {
         super(icbm);
 
-        DefensiveTools.checkNull(icbm, "icbm");
-
         TlvChain chain = getRvTlvs();
 
         addinUri = chain.getString(TYPE_ADDINURI);
@@ -254,7 +252,7 @@ public class AddinsReqRvCmd extends AbstractRequestRvCmd {
 
     /**
      * Returns the add-in unique ID ("UUID") block associated with the
-     * associated addin type, or <code>null</code> if none was sent
+     * associated addin type, or <code>null</code> if none was sent.
      *
      * @return the "UUID" of the associated add-in type
      */
@@ -274,7 +272,7 @@ public class AddinsReqRvCmd extends AbstractRequestRvCmd {
      * <code>COMPUTERNAME</code> in the network pathname
      * <code>\\COMPUTERNAME\FILE.HTML</code>.
      *
-     * @return
+     * @return the sender's Windows network name
      */
     public final String getComputerName() { return computerName; }
 
@@ -282,7 +280,7 @@ public class AddinsReqRvCmd extends AbstractRequestRvCmd {
      * Returns a set of "flags" sent in this add-ins invitation. As of this
      * writing, WinAIM always sends {@link #FLAGS_DEFAULT} (<code>0</code>).
      *
-     * @return
+     * @return the set of bit flags sent in this command
      */
     public final long getFlags() { return flags; }
 

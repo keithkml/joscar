@@ -37,6 +37,7 @@ package net.kano.joscar.rvcmd;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.snaccmd.icbm.RvCommand;
@@ -45,7 +46,6 @@ import net.kano.joscar.tlv.*;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Iterator;
 
 /**
  * A base class for the basic rendezvous format used by all known AIM clients.
@@ -75,13 +75,6 @@ public abstract class AbstractRvCmd extends RvCommand {
         if (block != null) {
             TlvChain chain = ImmutableTlvChain.readChain(block);
 
-            System.out.println("Incoming RV:");
-            System.out.println(" - RV status=" + icbm.getRvStatus());
-            System.out.println(" - TLVs (" + chain.getTlvCount() + "):");
-            for (Iterator it = chain.iterator(); it.hasNext();) {
-                System.out.println("   - " + it.next());
-            }
-
             Tlv serviceDataTlv = chain.getLastTlv(TYPE_SERVICE_DATA);
             if (serviceDataTlv == null) serviceData = null;
             else serviceData = serviceDataTlv.getData();
@@ -104,7 +97,7 @@ public abstract class AbstractRvCmd extends RvCommand {
      * @param rvStatus the rendezvous status code for this command
      * @param cap the capability block ("rendezvous type") of this RV command
      */
-    protected AbstractRvCmd(int rvStatus,  CapabilityBlock cap) {
+    protected AbstractRvCmd(int rvStatus, CapabilityBlock cap) {
         super(rvStatus, cap);
 
         serviceData = null;
@@ -154,6 +147,8 @@ public abstract class AbstractRvCmd extends RvCommand {
     final MutableTlvChain getMutableTlvs() { return rvTlvs; }
 
     public final void writeRvData(OutputStream out) throws IOException {
+        DefensiveTools.checkNull(out, "out");
+
         writeHeaderRvTlvs(out);
         writeRvTlvs(out);
 

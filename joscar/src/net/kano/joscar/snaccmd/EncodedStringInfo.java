@@ -64,7 +64,7 @@ public final class EncodedStringInfo {
         DefensiveTools.checkNull(data, "data");
 
         this.charset = charset;
-        this.data = data;
+        this.data = (byte[]) data.clone();
     }
 
     /**
@@ -114,6 +114,6 @@ public final class EncodedStringInfo {
      * @return the data block encoded by the associated charset
      */
     public final byte[] getData() {
-        return data;
+        return (byte[]) data.clone();
     }
 }

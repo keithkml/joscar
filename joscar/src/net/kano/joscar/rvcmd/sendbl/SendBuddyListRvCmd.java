@@ -91,11 +91,9 @@ public class SendBuddyListRvCmd extends AbstractRequestRvCmd {
 
         DefensiveTools.checkNull(groups, "groups");
 
-        groups = (SendBuddyListGroup[]) groups.clone();
+        this.groups = (SendBuddyListGroup[]) groups.clone();
 
-        DefensiveTools.checkNullElements(groups, "groups");
-
-        this.groups = groups;
+        DefensiveTools.checkNullElements(this.groups, "groups");
     }
 
     /**

@@ -37,6 +37,7 @@ package net.kano.joscar.rvcmd.trillcrypt;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.snaccmd.icbm.RvCommand;
@@ -92,6 +93,8 @@ public abstract class AbstractTrillianCryptRvCmd extends RvCommand {
      *         RV ICBM, or <code>-1</code> if none is present
      */
     public static int getTrillianCmdType(RecvRvIcbm icbm) {
+        DefensiveTools.checkNull(icbm, "icbm");
+
         ByteBlock rvData = icbm.getRvData();
 
         if (rvData == null) return -1;
@@ -113,7 +116,10 @@ public abstract class AbstractTrillianCryptRvCmd extends RvCommand {
      * @see BigInteger#BigInteger(String, int)
      */
     protected static BigInteger getBigIntFromHexBlock(ByteBlock block) {
+        DefensiveTools.checkNull(block, "block");
+
         String hexString = BinaryTools.getNullPadded(block).getString();
+
         return new BigInteger(hexString, 16);
     }
 
@@ -133,6 +139,8 @@ public abstract class AbstractTrillianCryptRvCmd extends RvCommand {
      */
     protected static byte[] getBigIntHexBlock(BigInteger num)
             throws IOException, IllegalArgumentException {
+        DefensiveTools.checkNull(num, "num");
+
         byte[] data = num.toString(16).getBytes("US-ASCII");
 
         if (data.length > 32) {
@@ -204,6 +212,9 @@ public abstract class AbstractTrillianCryptRvCmd extends RvCommand {
      */
     protected AbstractTrillianCryptRvCmd(int encVersion, int cmdType) {
         super(CMDTYPE_REQUEST, CapabilityBlock.BLOCK_TRILLIANCRYPT);
+
+        DefensiveTools.checkRange(encVersion, "version", 0);
+        DefensiveTools.checkRange(cmdType, "cmdType", 0);
 
         this.version = encVersion;
         this.cmdType = cmdType;

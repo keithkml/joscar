@@ -134,10 +134,10 @@ public class VoiceReqRvCmd extends AbstractRequestRvCmd {
     public final RvConnectionInfo getConnInfo() { return connInfo; }
 
     protected void writeRvTlvs(OutputStream out) throws IOException {
-        connInfo.write(out);
+        if (connInfo != null) connInfo.write(out);
     }
 
-    protected boolean hasServiceData() { return true; }
+    protected boolean hasServiceData() { return version != -1; }
 
     protected void writeServiceData(OutputStream out) throws IOException {
         if (version != -1) BinaryTools.writeUInt(out, version);

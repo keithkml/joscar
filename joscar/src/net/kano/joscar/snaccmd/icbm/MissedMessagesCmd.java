@@ -104,7 +104,7 @@ public class MissedMessagesCmd extends IcbmCommand {
      * @return the list of missed message blocks
      */
     public final MissedMsgInfo[] getMissedMsgInfos() {
-        return missedMsgInfos;
+        return (MissedMsgInfo[]) missedMsgInfos.clone();
     }
 
     public void writeData(OutputStream out) throws IOException {

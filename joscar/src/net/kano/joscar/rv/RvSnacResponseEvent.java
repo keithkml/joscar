@@ -36,6 +36,7 @@
 package net.kano.joscar.rv;
 
 import net.kano.joscar.snac.SnacPacketEvent;
+import net.kano.joscar.DefensiveTools;
 
 /**
  * An event that occurs when a non-RV response to a RV command or RV response is
@@ -63,6 +64,9 @@ public class RvSnacResponseEvent extends SnacPacketEvent {
     protected RvSnacResponseEvent(SnacPacketEvent cause,
             RvProcessor rvProcessor, RvSession rvSession) {
         super(cause);
+
+        DefensiveTools.checkNull(rvProcessor, "rvProcessor");
+        DefensiveTools.checkNull(rvSession, "rvSession");
 
         this.rvProcessor = rvProcessor;
         this.rvSession = rvSession;

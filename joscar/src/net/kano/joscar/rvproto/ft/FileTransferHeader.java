@@ -119,7 +119,7 @@ public final class FileTransferHeader implements LiveWritable {
     public static final int FLAG_DEFAULT = 0x20;
     /** A flag sent in a {@link #HEADERTYPE_RECEIVED} header. */
     public static final int FLAG_DONE = 0x01;
-    /** A flag sent in a {@link #HEADERTYPE_FILELIST_SENDLIST header. */
+    /** A flag sent in a {@link #HEADERTYPE_FILELIST_SENDLIST} header. */
     public static final int FLAG_FILELIST = 0x10;
 
     /** The "dummy" block sent by WinAIM. */
@@ -143,6 +143,8 @@ public final class FileTransferHeader implements LiveWritable {
      */
     public static FileTransferHeader readHeader(InputStream in)
             throws IOException {
+        DefensiveTools.checkNull(in, "in");
+
         // first we read the mini-header which contains a file transfer version
         // and the length of the whole header
         byte[] header = new byte[6];
@@ -234,7 +236,7 @@ public final class FileTransferHeader implements LiveWritable {
         ImEncodingParams encoding = new ImEncodingParams(charset, charsubset);
         String ftFilename = ImEncodedString.readImEncodedString(
                 encoding, filenameBlock);
-        SegmentedFilename segmented = SegmentedFilename.createFromFTFilename(
+        SegmentedFilename segmented = SegmentedFilename.fromFTFilename(
                 ftFilename);
 
         fsh.setFilename(segmented);
@@ -315,6 +317,8 @@ public final class FileTransferHeader implements LiveWritable {
      * @param other a header to copy
      */
     public FileTransferHeader(FileTransferHeader other) {
+        DefensiveTools.checkNull(other, "other");
+
         ftVersion = other.ftVersion;
         headerType = other.headerType;
         icbmMessageId = other.icbmMessageId;
@@ -526,7 +530,7 @@ public final class FileTransferHeader implements LiveWritable {
      * be a combination of {@linkplain #FLAG_DEFAULT the
      * <code>FLAG_<i>*</i></code> constants} defined in this class.
      *
-     * @return
+     * @return the set of bit flags sent in this header
      */
     public synchronized int getFlags() { return flags; }
 
@@ -975,6 +979,8 @@ header.setTotalFileSize(0);
      */
     public synchronized void write(OutputStream out)
             throws IOException, IllegalArgumentException {
+        DefensiveTools.checkNull(out, "out");
+
         checkValidity();
 
         // build the header block

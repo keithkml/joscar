@@ -35,6 +35,8 @@
 
 package net.kano.joscar.rvproto.ft;
 
+import net.kano.joscar.DefensiveTools;
+
 import java.util.zip.Checksum;
 
 /**
@@ -62,6 +64,8 @@ public final class FileTransferChecksum implements Checksum {
     }
 
     public void update(final byte[] input, final int offset, final int len) {
+        DefensiveTools.checkNull(input, "input");
+
         long check = (checksum >> 16) & 0xffffL;
 
         for (int i = 0; i < len; i++) {

@@ -121,7 +121,7 @@ public final class Tlv implements Writable {
 
     /**
      * Creates a TLV of the given type with no data block. Equivalent to calling
-     * {@link #Tlv(int, net.kano.joscar.LiveWritable) new Tlv(type, ByteBlock.EMPTY_BLOCK)}.
+     * {@link #Tlv(int, Writable) new Tlv(type, ByteBlock.EMPTY_BLOCK)}.
      *
      * @param type the type of this TLV
      */

@@ -134,7 +134,7 @@ send(new SsiDataCheck(secondsSinceUnixEpoch, itemCount));
      * @return the last-modification date of the client's version of the SSI
      *         data
      */
-    public final long getLastmodDate() {
+    public final long getLastModDate() {
         return lastmod;
     }
 

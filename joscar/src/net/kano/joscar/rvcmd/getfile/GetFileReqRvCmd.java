@@ -167,7 +167,7 @@ public class GetFileReqRvCmd extends AbstractRequestRvCmd {
      * <br>
      * Using this constructor is equivalent to using {@link
      * #GetFileReqRvCmd(int, RvConnectionInfo, String, int, int, long,
-     * ByteBlock) new GetFileReqRvCmd(REQTYPE_INITIAL_REQUEST, connInfo,
+     * ByteBlock) new GetFileReqRvCmd(REQTYPE_INITIALREQUEST, connInfo,
      * CHARSET_DEFAULT, CODE_DEFAULT, PROTOVERSION_DEFAULT,
      * FLAG_EXPAND_DYNAMIC, EXTRABLOCK_DEFAULT)}.
      *
@@ -185,7 +185,7 @@ public class GetFileReqRvCmd extends AbstractRequestRvCmd {
      * <br>
      * Using this constructor is equivalent to using {@link
      * #GetFileReqRvCmd(int, RvConnectionInfo, String, int, int, long,
-     * ByteBlock) new GetFileReqRvCmd(REQTYPE_INITIAL_REQUEST, connInfo,
+     * ByteBlock) new GetFileReqRvCmd(REQTYPE_INITIALREQUEST, connInfo,
      * CHARSET_DEFAULT, CODE_DEFAULT, PROTOVERSION_DEFAULT, flags,
      * EXTRABLOCK_DEFAULT)}.
      *

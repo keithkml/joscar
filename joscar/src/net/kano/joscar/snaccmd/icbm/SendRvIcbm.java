@@ -108,6 +108,7 @@ public class SendRvIcbm extends AbstractRvIcbm {
      * given by the given <code>RvCommand</code>.
      *
      * @param sn the screenname to whom this rendezvous command is being sent
+     * @param icbmMessageId an ICBM message ID for this RV ICBM
      * @param rvSessionId a rendezvous session ID on which this rendezvous
      *        exists
      * @param command a rendezvous command that will be used to create this

@@ -128,6 +128,7 @@ public interface RvSession {
      * connection. See {@link RvProcessor#attachToSnacProcessor} for details.
      *
      * @param command the RV command to send
+     * @param icbmMessageId an ICBM message ID for the outgoing RV ICBM
      *
      * @see net.kano.joscar.snaccmd.icbm.SendRvIcbm
      * @see #sendRv(RvCommand)

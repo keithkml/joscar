@@ -258,7 +258,7 @@ public abstract class AbstractTlvChain implements TlvChain {
         else return -1;
     }
 
-    public int getTotalSize() {
+    public synchronized int getTotalSize() {
         return totalSize;
     }
 

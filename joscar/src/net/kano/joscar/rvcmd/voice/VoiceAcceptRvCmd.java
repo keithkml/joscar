@@ -39,11 +39,23 @@ import net.kano.joscar.rvcmd.AbstractAcceptRvCmd;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 
+/**
+ * A rendezvous command used to accept a voice chat invitation.
+ */
 public class VoiceAcceptRvCmd extends AbstractAcceptRvCmd {
+    /**
+     * Creates a new voice chat session acceptance command from the given
+     * incoming RV ICBM.
+     *
+     * @param icbm an incoming voice chat acceptance RV ICBM command
+     */
     public VoiceAcceptRvCmd(RecvRvIcbm icbm) {
         super(icbm);
     }
 
+    /**
+     * Creates a new outgoing voice chat invitation acceptance command.
+     */
     public VoiceAcceptRvCmd() {
         super(CapabilityBlock.BLOCK_VOICE);
     }

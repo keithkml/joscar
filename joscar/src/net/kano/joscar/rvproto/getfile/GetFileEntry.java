@@ -47,18 +47,38 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Date;
 
+/**
+ * A data structure representing a single file or directory in a "Get File"
+ * directory listing.
+ */
 public class GetFileEntry implements LiveWritable {
+    /** A flag indicating that a file entry is a directory. */
     public static final long FLAG_DIR = 0x0001;
 
+    /** A TLV type containing the file's last modification date. */
     private static final int TYPE_LASTMOD = 0x0101;
+    /** A TLV type containing the file's size, in bytes. */
     private static final int TYPE_FILESIZE = 0x0303;
+    /** A TLV type containing the file name. */
     private static final int TYPE_FILENAME = 0x0404;
+    /** A TLV type containing a set of flags. */
     private static final int TYPE_FLAGS = 0x0900;
+    /** The TLV type of the last TLV in an entry. */
     private static final int TYPE_SENTINEL = 0x0909;
 
-    public static final GetFileEntry readGetFileEntry(Tlv[] tlvs, int offset) {
+    /**
+     * Reads a Get File directory list entry from the given list of TLV's. Note
+     * that the total number of TLV's read can be obtained by calling the
+     * returned <code>GetFileEntry</code>'s {@link #getTotalTlvCount()} method.
+     *
+     * @param tlvs a list of TLV's containing a Get File directory list entry
+     * @param offset the index of the first TLV in the given array from which
+     *        the file entry TLV's should be read
+     * @return a Get File directory list entry read from the given list of TLV's
+     */
+    public static final GetFileEntry readEntry(Tlv[] tlvs, int offset) {
         DefensiveTools.checkNull(tlvs, "tlvs");
-        DefensiveTools.checkRange(offset, "offset", 0, tlvs.length);
+        DefensiveTools.checkRange(offset, "offset", 0, tlvs.length - 1);
 
         boolean gotLastmod = false;
         int lastTlv = -1;
@@ -89,7 +109,7 @@ public class GetFileEntry implements LiveWritable {
         SegmentedFilename filename = null;
         String ftFilenameStr = chain.getString(TYPE_FILENAME);
         if (ftFilenameStr != null) {
-            filename = SegmentedFilename.createFromFTFilename(ftFilenameStr);
+            filename = SegmentedFilename.fromFTFilename(ftFilenameStr);
         }
 
         Tlv lastmodTlv = chain.getFirstTlv(TYPE_LASTMOD);
@@ -115,12 +135,32 @@ public class GetFileEntry implements LiveWritable {
                 totalTlvCount);
     }
 
+    /** The name of the represented file. */
     private final SegmentedFilename filename;
+    /** The size of the represented file. */
     private final long filesize;
+    /** The last-modification date of the represented file. */
     private final long lastmod;
+    /** A set of flags describing the represented file. */
     private final long flags;
+    /**
+     * The total number of TLV's read in constructing this entry, if this entry
+     * was read from an incoming list of TLV's.
+     */
     private final int totalTlvCount;
 
+    /**
+     * Creates a new Get File directory list entry with the given properties.
+     *
+     * @param filename the name of the file
+     * @param filesize the size of the file
+     * @param lastmod the last modification date of the file, in seconds since
+     *        the unix epoch
+     * @param flags a set of bit flags describing this file, like {@link
+     *        #FLAG_DIR} or <code>0</code>
+     * @param totalTlvCount the total number of TLV's read in constructing this
+     *        object
+     */
     private GetFileEntry(SegmentedFilename filename, long filesize,
             long lastmod, long flags, int totalTlvCount) {
         this.filename = filename;
@@ -130,18 +170,55 @@ public class GetFileEntry implements LiveWritable {
         this.totalTlvCount = totalTlvCount;
     }
 
+    /**
+     * Creates a new Get File directory listing entry with the properties of the
+     * given file.
+     * <br>
+     * <br>
+     * Using this constructor is equivalent to using {@link
+     * #GetFileEntry(SegmentedFilename, File) new
+     * GetFileEntry(SegmentedFilename.fromNativeFilename(file.getName()),
+     * file)}.
+     *
+     * @param file the file whose properties should be used in this entry
+     */
     public GetFileEntry(File file) {
-        this(SegmentedFilename.createFromNativeFilename(file.getPath()), file);
+        this(SegmentedFilename.fromNativeFilename(file.getName()), file);
     }
 
+    /**
+     * Creates a new Get File directory listing entry with the properties of the
+     * given file and with the given name.
+     * <br>
+     * <br>
+     * Using this constructor is equivalent to using {@link
+     * #GetFileEntry(SegmentedFilename, long, long, long) new
+     * GetFileEntry(filename, file.lastModified() / 1000,
+     * file.isDirectory() ? FLAG_DIR : 0)}.
+     *
+     * @param filename a filename to use in this entry
+     * @param file a file whose properties will be used for this entry
+     */
     public GetFileEntry(SegmentedFilename filename, File file) {
         this(filename, file.length(), file.lastModified() / 1000,
                 file.isDirectory() ? FLAG_DIR : 0);
     }
 
+    /**
+     * Creates a new Get File directory list entry with the given properties.
+     * Note that any of this method's arguments may be <code>null</code> or
+     * <code>-1</code> (depending on argument type) to indicate that that
+     * field should not be present in the created entry.
+     *
+     * @param filename the name of the file
+     * @param filesize the size of the file
+     * @param lastmod the last modification date of the file, in seconds since
+     *        the unix epoch
+     * @param flags a set of bit flags describing this file, like {@link
+     *        #FLAG_DIR} or <code>0</code>
+     */
     public GetFileEntry(SegmentedFilename filename, long filesize, long lastmod,
             long flags) {
-        DefensiveTools.checkNull(filename, "filename");
         DefensiveTools.checkRange(lastmod, "lastmod", -1);
         DefensiveTools.checkRange(filesize, "filesize", -1);
         DefensiveTools.checkRange(filesize, "flags", -1);
@@ -155,14 +232,48 @@ public class GetFileEntry implements LiveWritable {
         totalTlvCount = -1;
     }
 
+    /**
+     * Returns the filename in this directory listing entry, or
+     * <code>null</code> if none is present.
+     *
+     * @return this entry's filename
+     */
     public final SegmentedFilename getFilename() { return filename; }
 
-    public final long getFilesize() { return filesize; }
+    /**
+     * Returns the file size in this directory listing entry, or <code>-1</code>
+     * if none is present.
+     *
+     * @return this entry's file size
+     */
+    public final long getFileSize() { return filesize; }
 
+    /**
+     * Returns the last modification date in this directory listing entry, in
+     * seconds since the unix epoch. Note that this method will return
+     * <code>-1</code> if no last modification date was sent.
+     *
+     * @return this entry's last modification date
+     */
     public final long getLastmod() { return lastmod; }
 
+    /**
+     * Returns a the set of flags in this directory listing entry. This will
+     * normally be either {@link #FLAG_DIR} or <code>0</code>. Note that this
+     * value will <i>never</i> be <code>-1</code>; if no flags are sent, this
+     * value will simply be <code>0</code>.
+     *
+     * @return this entry's set of bit flags
+     */
     public final long getFlags() { return flags; }
 
+    /**
+     * Returns the total number of TLV's read in constructing this entry object.
+     * Note that this value will be <code>-1</code> if this object was not read
+     * from an incoming block of TLV's (with {@link #readEntry}).
+     *
+     * @return the total number of TLV's read in constructing this entry object
+     */
     public final int getTotalTlvCount() { return totalTlvCount; }
 
     public void write(OutputStream out) throws IOException {

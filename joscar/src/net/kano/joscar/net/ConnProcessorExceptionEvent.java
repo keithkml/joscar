@@ -107,8 +107,8 @@ public class ConnProcessorExceptionEvent {
      * Returns the type of this exception, possibly indicating when or why this
      * exception was thrown. May be one of {@link #ERRTYPE_CONNECTION_ERROR},
      * {@link #ERRTYPE_CMD_WRITE}, {@link #ERRTYPE_CMD_GEN}, and {@link
-     * #TYPE_PACKET_LISTENER}, but other classes may define their own types as
-     * well.
+     * #ERRTYPE_PACKET_LISTENER}, but other classes may define their own types
+     * as well.
      *
      * @return the type of exception that was thrown
      */

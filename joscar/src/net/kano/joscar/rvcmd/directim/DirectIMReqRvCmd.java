@@ -72,7 +72,7 @@ public class DirectIMReqRvCmd extends AbstractRequestRvCmd {
     /**
      * Creates a new outgoing initial direct IM request. That is, an outgoing
      * direct IM request RV command with a request type of {@link
-     * #REQTYPE_INITIAL_REQUEST}.
+     * #REQTYPE_INITIALREQUEST}.
      *
      * @param connInfo a connection information block describing the connection
      *        to be made
@@ -104,7 +104,7 @@ public class DirectIMReqRvCmd extends AbstractRequestRvCmd {
     public final RvConnectionInfo getConnInfo() { return connInfo; }
 
     protected void writeRvTlvs(OutputStream out) throws IOException {
-        connInfo.write(out);
+        if (connInfo != null) connInfo.write(out);
     }
 
     protected boolean hasServiceData() { return false; }

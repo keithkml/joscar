@@ -644,7 +644,12 @@ public class ClientConn {
         public void run() {
             ClientConn conn = ClientConn.this;
 
-            InetAddress ip = conn.ip;
+            InetAddress ip;
+            String host;
+            synchronized(conn) {
+                ip = conn.ip;
+                host = conn.host;
+            }
 
             // resolve the hostname, if any
             if (ip == null) {
@@ -670,9 +675,11 @@ public class ClientConn {
             }
 
             // start connecting
+            int port;
             synchronized(conn) {
                 if (cancelled) return;
                 setState(STATE_CONNECTING, null);
+                port = conn.port;
             }
 
             Socket socket;

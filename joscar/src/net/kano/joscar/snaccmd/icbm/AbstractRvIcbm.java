@@ -151,9 +151,11 @@ public abstract class AbstractRvIcbm extends AbstractIcbm {
      * Creates a new RV ICBM with the given SNAC command subtype, rendezvous
      * session ID, and the properties of the given <code>RvCommand</code>.
      * 
-     * @param command
-     * @param rvSessionId
-     * @param rvCommand
+     * @param command the SNAC command subtype for this command
+     * @param icbmMessageId an ICBM message ID for this RV ICBM
+     * @param rvSessionId this RV ICBM's RV session ID
+     * @param rvCommand an RV command whose properties should be used in this
+     *        RV ICBM
      */
     AbstractRvIcbm(int command, long icbmMessageId, long rvSessionId,
             final RvCommand rvCommand) {

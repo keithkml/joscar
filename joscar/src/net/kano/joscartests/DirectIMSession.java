@@ -40,17 +40,13 @@ import net.kano.joscar.net.ClientConn;
 import net.kano.joscar.net.ClientConnEvent;
 import net.kano.joscar.net.ClientConnListener;
 import net.kano.joscar.net.ClientConnStreamHandler;
-import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rv.RecvRvEvent;
+import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joscar.rvcmd.directim.DirectIMReqRvCmd;
-import net.kano.joscar.rvproto.directim.*;
-import net.kano.joscar.rvproto.rvproxy.ClientRvProxyConn;
-import net.kano.joscar.rvproto.rvproxy.RvProxyCmdEvent;
-import net.kano.joscar.rvproto.rvproxy.RvProxyCmdListener;
-import net.kano.joscar.rvproto.rvproxy.RvProxyProcessor;
-import net.kano.joscar.rvproto.rvproxy.cmd.RvProxyInitRecvCmd;
-import net.kano.joscar.rvproto.rvproxy.cmd.RvProxyReadyCmd;
+import net.kano.joscar.rvproto.directim.DirectImHeader;
+import net.kano.joscar.rvproto.rvproxy.RvProxyInitRecvCmd;
+import net.kano.joscar.rvproto.rvproxy.RvProxyReadyCmd;
 import net.kano.joscar.snaccmd.OscarTools;
 import net.kano.joscar.snaccmd.icbm.ImEncodedString;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
@@ -68,9 +64,6 @@ public class DirectIMSession {
     private final RvConnectionInfo connInfo;
 
     private ClientConn normalConn;
-
-    private ClientRvProxyConn proxyConn;
-    private RvProxyProcessor proxyProcessor;
 
     private ClientConn conn = null;
 
@@ -93,22 +86,22 @@ public class DirectIMSession {
     private void openProxy() {
         System.out.println("opening proxy...");
 
-        proxyConn = new ClientRvProxyConn(connInfo.getProxyIP(), 5190);
-        proxyProcessor = proxyConn.getRvProxyProcessor();
-
-        proxyConn.addConnListener(new ClientConnListener() {
-            public void stateChanged(ClientConnEvent e) {
-                handleProxyStateChange(e);
-            }
-        });
-        proxyConn.getRvProxyProcessor().addCommandListener(
-                new RvProxyCmdListener() {
-            public void handleRvProxyCmd(RvProxyCmdEvent e) {
-                handleProxyCommand(e);
-            }
-        });
-
-        proxyConn.connect();
+//        proxyConn = new ClientRvProxyConn(connInfo.getProxyIP(), 5190);
+//        proxyProcessor = proxyConn.getRvProxyProcessor();
+//
+//        proxyConn.addConnListener(new ClientConnListener() {
+//            public void stateChanged(ClientConnEvent e) {
+//                handleProxyStateChange(e);
+//            }
+//        });
+//        proxyConn.getRvProxyProcessor().addCommandListener(
+//                new RvProxyCmdListener() {
+//            public void handleRvProxyCmd(RvProxyCmdEvent e) {
+//                handleProxyCommand(e);
+//            }
+//        });
+//
+//        proxyConn.connect();
     }
 
     private void handleProxyStateChange(ClientConnEvent e) {
@@ -121,24 +114,24 @@ public class DirectIMSession {
     }
 
     private void initProxy() {
-        System.out.println("initing proxy...");
+//        System.out.println("initing proxy...");
         long cookie = ((RecvRvIcbm) rvEvent.getSnacCommand()).getIcbmMessageId();
         int port = connInfo.getPort();
         RvProxyInitRecvCmd cmd = new RvProxyInitRecvCmd(mysn, cookie, port);
 
-        proxyProcessor.sendRvProxyCmd(cmd);
+//        proxyProcessor.sendRvProxyCmd(cmd);
     }
 
-    private void handleProxyCommand(RvProxyCmdEvent e) {
-        System.out.println("got proxy command: " + e.getRvProxyCommand());
-        System.out.println("header: " + e.getRvProxyHeader());
-
-        if (e.getRvProxyCommand() instanceof RvProxyReadyCmd) {
-            proxyProcessor.detach();
-
-            startConn(proxyConn);
-        }
-    }
+//    private void handleProxyCommand(RvProxyCmdEvent e) {
+//        System.out.println("got proxy command: " + e.getRvProxyCommand());
+//        System.out.println("header: " + e.getRvProxyHeader());
+//
+//        if (e.getRvProxyCommand() instanceof RvProxyReadyCmd) {
+//            proxyProcessor.detach();
+//
+//            startConn(proxyConn);
+//        }
+//    }
 
     private void openNormally() {
         InetAddress ip = connInfo.getInternalIP();

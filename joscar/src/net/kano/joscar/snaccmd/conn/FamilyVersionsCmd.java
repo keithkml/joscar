@@ -98,7 +98,9 @@ public abstract class FamilyVersionsCmd extends ConnCommand {
      *
      * @return this command's list of SNAC family information blocks
      */
-    public final SnacFamilyInfo[] getSnacFamilyInfos() { return families; }
+    public final SnacFamilyInfo[] getSnacFamilyInfos() {
+        return (SnacFamilyInfo[]) families.clone();
+    }
 
     public void writeData(OutputStream out) throws IOException {
         if (families != null) {

@@ -101,10 +101,10 @@ public abstract class AbstractRequestRvCmd extends AbstractRvCmd {
     /**
      * Creates a new outgoing initial RV request command with the given ICBM
      * message ID, associated capability block, a request type of {@link
-     * #REQTYPE_INITIAL_REQUEST}, and a <code>0x000f</code> TLV present. Using
+     * #REQTYPE_INITIALREQUEST}, and a <code>0x000f</code> TLV present. Using
      * this constructor is equivalent to using {@link
      * #AbstractRequestRvCmd(CapabilityBlock, int)
-     * AbstractRequestRvCmd(cap, REQTYPE_INITIAL_REQUEST)}.
+     * AbstractRequestRvCmd(cap, REQTYPE_INITIALREQUEST)}.
      *
      * @param cap the capability block associated with this RV command
      */
@@ -117,7 +117,7 @@ public abstract class AbstractRequestRvCmd extends AbstractRvCmd {
      * associated capability block, and request type, and a
      * <code>0x000f</code> TLV present. Using this constructor is equivalent to
      * using {@link #AbstractRequestRvCmd(CapabilityBlock, int, boolean)
-     * AbstractRequestRvCmd(cap, REQTYPE_INITIAL_REQUEST, FPRESENT_DEFAULT)}.
+     * AbstractRequestRvCmd(cap, REQTYPE_INITIALREQUEST, FPRESENT_DEFAULT)}.
      *
      * @param cap the capability block associated with this RV command
      * @param requestType a request type, like {@link #REQTYPE_INITIALREQUEST}
@@ -131,7 +131,7 @@ public abstract class AbstractRequestRvCmd extends AbstractRvCmd {
      * associated capability block, and request type, and a <code>0x000f</code>
      * TLV present. Using this constructor is equivalent to using {@link
      * #AbstractRequestRvCmd(CapabilityBlock, int, boolean)
-     * AbstractRequestRvCmd(cap, REQTYPE_INITIAL_REQUEST, FPRESENT_DEFAULT)}.
+     * AbstractRequestRvCmd(cap, REQTYPE_INITIALREQUEST, FPRESENT_DEFAULT)}.
      *
      * @param cap the capability block associated with this RV command
      * @param requestType a request type, like {@link #REQTYPE_INITIALREQUEST}

@@ -60,6 +60,7 @@ import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.icbm.AbstractRvIcbm;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.snaccmd.icbm.RvCommand;
+import net.kano.joscar.DefensiveTools;
 
 /**
  * A default RV command factory that generates instances of the
@@ -101,6 +102,8 @@ public class DefaultRvCommandFactory implements RvCommandFactory {
     }
 
     public RvCommand genRvCommand(RecvRvIcbm rvIcbm) {
+        DefensiveTools.checkNull(rvIcbm, "rvIcbm");
+
         CapabilityBlock block = rvIcbm.getCapability();
         int rvStatus = rvIcbm.getRvStatus();
 
