@@ -170,18 +170,20 @@ public class CLHandler {
                     return;
                 }
                 byte[] data = new byte[textBytes.length + 1];
+                // the format of this block is "\005aimexpname"
                 data[0] = 0x05;
                 System.arraycopy(textBytes, 0, data, 1, textBytes.length);
                 ByteBlock block = ByteBlock.wrap(data);
 
+                ExtraInfoBlock[] expInfo = new ExtraInfoBlock[]{
+                    new ExtraInfoBlock(ExtraInfoBlock.TYPE_AIMEXPINFO_A,
+                            new ExtraInfoData(0, block)),
+                    new ExtraInfoBlock(ExtraInfoBlock.TYPE_AIMEXPINFO_B,
+                            new ExtraInfoData(0, block))
+                                        };
                 tester.request(new SendImIcbm(args[0], args[1],
                         false, 0, false, tester.getOldIconInfo(),
-                        new ExtraInfoBlock[] {
-                            new ExtraInfoBlock(ExtraInfoBlock.TYPE_AIMEXPINFO_A,
-                                    new ExtraInfoData(0, block)),
-                            new ExtraInfoBlock(ExtraInfoBlock.TYPE_AIMEXPINFO_B,
-                                    new ExtraInfoData(0, block))
-                        }, true));
+                        expInfo, true));
             }
         });
         cmdMap.put("info", new CLCommand() {

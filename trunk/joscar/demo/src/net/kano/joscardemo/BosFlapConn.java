@@ -182,12 +182,14 @@ public class BosFlapConn extends BasicConn {
             }
             request(new SetInfoCmd(new InfoData("yo", null, MY_CAPS, certInfo)));
             request(new SetEncryptionInfoCmd(new ExtraInfoBlock[] {
-                new ExtraInfoBlock(0x0402, new ExtraInfoData(
-                        ExtraInfoData.FLAG_HASH_PRESENT,
-                        CertificateInfo.HASHA_DEFAULT)),
-                new ExtraInfoBlock(0x0403, new ExtraInfoData(
-                        ExtraInfoData.FLAG_HASH_PRESENT,
-                        CertificateInfo.HASHB_DEFAULT)),
+                new ExtraInfoBlock(ExtraInfoBlock.TYPE_CERTINFO_HASHA,
+                        new ExtraInfoData(
+                            ExtraInfoData.FLAG_HASH_PRESENT,
+                            CertificateInfo.HASHA_DEFAULT)),
+                new ExtraInfoBlock(ExtraInfoBlock.TYPE_CERTINFO_HASHB,
+                        new ExtraInfoData(
+                            ExtraInfoData.FLAG_HASH_PRESENT,
+                            CertificateInfo.HASHB_DEFAULT)),
             }));
             request(new MyInfoRequest());
 
