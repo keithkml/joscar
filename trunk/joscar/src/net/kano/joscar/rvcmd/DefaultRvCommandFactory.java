@@ -61,7 +61,28 @@ import net.kano.joscar.snaccmd.icbm.AbstractRvIcbm;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.snaccmd.icbm.RvCommand;
 
+/**
+ * A default RV command factory that generates instances of the
+ * <code>RvCommand</code>s defined in the <code>net.kano.joscar.rvcmd</code>
+ * subpackages.
+ * <br>
+ * <br>
+ * This factory can generate RV commands from the following types of
+ * capabilities:
+ * <ul>
+ * <li> <code>CapabilityBlock.BLOCK_ADDINS </li>
+ * <li> <code>CapabilityBlock.BLOCK_CHAT </li>
+ * <li> <code>CapabilityBlock.BLOCK_DIRECTIM </li>
+ * <li> <code>CapabilityBlock.BLOCK_FILE_GET </li>
+ * <li> <code>CapabilityBlock.BLOCK_FILE_SEND </li>
+ * <li> <code>CapabilityBlock.BLOCK_ICON </li>
+ * <li> <code>CapabilityBlock.BLOCK_SENDBUDDYLIST </li>
+ * <li> <code>CapabilityBlock.BLOCK_TRILLIANCRYPT </li>
+ * <li> <code>CapabilityBlock.BLOCK_VOICE </li>
+ * </ul>
+ */
 public class DefaultRvCommandFactory implements RvCommandFactory {
+    /** The capabilities supported by this factory. */
     private static final CapabilityBlock[] SUPPORTED_CAPS
             = new CapabilityBlock[] {
                 CapabilityBlock.BLOCK_FILE_SEND,
@@ -84,13 +105,13 @@ public class DefaultRvCommandFactory implements RvCommandFactory {
         int rvStatus = rvIcbm.getRvStatus();
 
         if (block.equals(CapabilityBlock.BLOCK_FILE_SEND)) {
-            if (rvStatus == AbstractRvIcbm.STATUS_REQUEST) {
+            if (rvStatus == AbstractRvIcbm.RVSTATUS_REQUEST) {
                 return new FileSendReqRvCmd(rvIcbm);
 
-            } else if (rvStatus == AbstractRvIcbm.STATUS_DENY) {
+            } else if (rvStatus == AbstractRvIcbm.RVSTATUS_DENY) {
                 return new FileSendRejectRvCmd(rvIcbm);
 
-            } else if (rvStatus == AbstractRvIcbm.STATUS_ACCEPT) {
+            } else if (rvStatus == AbstractRvIcbm.RVSTATUS_ACCEPT) {
                 return new FileSendAcceptRvCmd(rvIcbm);
 
             } else {

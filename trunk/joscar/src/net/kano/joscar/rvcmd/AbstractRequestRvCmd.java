@@ -44,19 +44,48 @@ import net.kano.joscar.tlv.TlvChain;
 import java.io.IOException;
 import java.io.OutputStream;
 
+/**
+ * A base class for an RV request command. RV request commands contain a
+ * mysterious empty <code>0x000f</code> TLV, a "request type" (which is almost
+ * always {@link #REQTYPE_INITIAL_REQUEST}, and, normally, more type-specific
+ * TLV's.
+ */
 public abstract class AbstractRequestRvCmd extends AbstractRvCmd {
+    /** A request type indicating that a command is an initial request. */
     public static final int REQTYPE_INITIAL_REQUEST = 0x0001;
+    /**
+     * A request type indicating that a command is a "redirection request."
+     * This value is used to "redirect" an {@linkplain #REQTYPE_INITIAL_REQUEST
+     * initial request} to, for example, a new IP address/port.
+     */
     public static final int REQTYPE_REDIRECT = 0x0002;
 
+    /**
+     * The default value of the <code>fPresent</code> field. This value
+     * indicates that the mysterious <code>0x000f</code> TLV is present in a
+     * command.
+      */
     public static final boolean FPRESENT_DEFAULT = true;
 
+    /** A TLV type containing the "request type." */
     private static final int TYPE_REQTYPE = 0x000a;
+    /** The TLV type of the "mysterious <code>0x000f</code> TLV." */
     private static final int TYPE_F = 0x000f;
 
+    /** This command's request type code. */
     private final int reqType;
+    /**
+     * Whether this commanc contained the mysterious <code>0x000f</code> TLV.
+     */
     private final boolean fPresent;
 
-    public AbstractRequestRvCmd(RecvRvIcbm icbm) {
+    /**
+     * Creates a new RV request command from the given incoming RV request ICBM
+     * command.
+     *
+     * @param icbm an incoming RV request ICBM command
+     */
+    protected AbstractRequestRvCmd(RecvRvIcbm icbm) {
         super(icbm);
 
         TlvChain chain = getRvTlvs();
@@ -69,27 +98,81 @@ public abstract class AbstractRequestRvCmd extends AbstractRvCmd {
         });
     }
 
+    /**
+     * Creates a new outgoing initial RV request command with the given ICBM
+     * message ID, associated capability block, a request type of {@link
+     * #REQTYPE_INITIAL_REQUEST}, and a <code>0x000f</code> TLV present. Using
+     * this constructor is equivalent to using {@link
+     * #AbstractRequestRvCmd(long, CapabilityBlock, int)
+     * AbstractRequestRvCmd(icbmMessageId, cap, REQTYPE_INITIAL_REQUEST)}.
+     *
+     * @param icbmMessageId the ICBM message ID for the RV ICBM command to be
+     *        sent
+     * @param cap the capability block associated with this RV command
+     */
     protected AbstractRequestRvCmd(long icbmMessageId, CapabilityBlock cap) {
         this(icbmMessageId, cap, REQTYPE_INITIAL_REQUEST);
     }
 
+    /**
+     * Creates a new outgoing initial RV request command with the given ICBM
+     * message ID, associated capability block, and request type, and a
+     * <code>0x000f</code> TLV present. Using this constructor is equivalent to
+     * using {@link #AbstractRequestRvCmd(long, CapabilityBlock, int, boolean)
+     * AbstractRequestRvCmd(icbmMessageId, cap, REQTYPE_INITIAL_REQUEST,
+     * FPRESENT_DEFAULT)}.
+     *
+     * @param icbmMessageId the ICBM message ID for the RV ICBM command to be
+     *        sent
+     * @param cap the capability block associated with this RV command
+     * @param requestType a request type, like {@link #REQTYPE_INITIAL_REQUEST}
+     */
     protected AbstractRequestRvCmd(long icbmMessageId, CapabilityBlock cap,
             int requestType) {
         this(icbmMessageId, cap, requestType, FPRESENT_DEFAULT);
     }
 
+    /**
+     * Creates a new outgoing initial RV request command with the given ICBM
+     * message ID, associated capability block, and request type, and a
+     * <code>0x000f</code> TLV present. Using this constructor is equivalent to
+     * using {@link #AbstractRequestRvCmd(long, CapabilityBlock, int, boolean)
+     * AbstractRequestRvCmd(icbmMessageId, cap, REQTYPE_INITIAL_REQUEST,
+     * FPRESENT_DEFAULT)}.
+     *
+     * @param icbmMessageId the ICBM message ID for the RV ICBM command to be
+     *        sent
+     * @param cap the capability block associated with this RV command
+     * @param requestType a request type, like {@link #REQTYPE_INITIAL_REQUEST}
+     * @param fPresent whether this command should contain the mysterious
+     *        type <code>0x000f</code> TLV
+     */
     protected AbstractRequestRvCmd(long icbmMessageId, CapabilityBlock cap,
-            int reqType, boolean fPresent) {
+            int requestType, boolean fPresent) {
         super(icbmMessageId, RVSTATUS_REQUEST, cap);
 
-        DefensiveTools.checkRange(reqType, "reqType", -1);
+        DefensiveTools.checkRange(requestType, "requestType", -1);
 
-        this.reqType = reqType;
+        this.reqType = requestType;
         this.fPresent = fPresent;
     }
 
+    /**
+     * Returns this RV request's request type value. Will normally be one of
+     * {@link #REQTYPE_INITIAL_REQUEST} and {@link #REQTYPE_REDIRECT}.
+     *
+     * @return the type of this RV request
+     */
     public final int getRequestType() { return reqType; }
 
+    /**
+     * Returns whether this RV command contains the mysteroius
+     * <code>0x000f</code> TLV. The significance of said TLV is unknown as of
+     * this writing.
+     *
+     * @return <code>true</code> if this RV command contains the mysterious
+     *         <code>0x000f</code> TLV; <code>false</code> otherwise
+     */
     protected final boolean isFPresent() { return fPresent; }
 
     protected final void writeHeaderRvTlvs(OutputStream out)

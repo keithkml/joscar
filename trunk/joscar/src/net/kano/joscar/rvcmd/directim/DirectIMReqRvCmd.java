@@ -55,10 +55,6 @@ public class DirectIMReqRvCmd extends AbstractRequestRvCmd {
         connInfo = RvConnectionInfo.readConnectionInfo(chain);
     }
 
-    public DirectIMReqRvCmd(RvConnectionInfo connInfo) {
-        this(ICBMMSGID_DEFAULT, connInfo);
-    }
-
     public DirectIMReqRvCmd(long icbmMessageId, RvConnectionInfo connInfo) {
         super(icbmMessageId, CapabilityBlock.BLOCK_DIRECTIM);
 
