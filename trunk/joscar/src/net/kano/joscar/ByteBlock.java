@@ -608,7 +608,7 @@ public final class ByteBlock implements Writable, Serializable {
 
         // if we know the two blocks represent all the data in their backing
         // arrays, we can try to use this, which is probably faster.
-        if (offset == 0 && other.offset == 0) {
+        if (offset == 0 && other.offset == 0 && len == bytes.length) {
             return Arrays.equals(bytes, other.bytes);
         }
 
@@ -625,7 +625,8 @@ public final class ByteBlock implements Writable, Serializable {
         if (current != 0) return current;
         int code = 0;
         int delta = Math.max(1, len/128);
-        for (int i = offset; i < len; i += delta) {
+        int lim = offset + len;
+        for (int i = offset; i < lim; i += delta) {
             code = code * 29 + bytes[i];
         }
 
