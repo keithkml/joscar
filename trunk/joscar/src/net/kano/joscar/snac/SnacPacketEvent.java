@@ -48,7 +48,7 @@ public class SnacPacketEvent extends FlapPacketEvent {
     /**
      * The SNAC processor on which this packet was received.
      */
-    private final SnacProcessor snacProcessor;
+    private final AbstractSnacProcessor snacProcessor;
 
     /**
      * The packet that was received.
@@ -81,7 +81,7 @@ public class SnacPacketEvent extends FlapPacketEvent {
      *        this event
      */
     protected SnacPacketEvent(FlapPacketEvent other,
-            SnacProcessor snacProcessor,
+            AbstractSnacProcessor snacProcessor,
             SnacPacket snacPacket, SnacCommand snacCommand) {
         super(other);
 
@@ -98,7 +98,9 @@ public class SnacPacketEvent extends FlapPacketEvent {
      *
      * @return the associated SNAC connection
      */
-    public final SnacProcessor getSnacProcessor() { return snacProcessor; }
+    public final AbstractSnacProcessor getSnacProcessor() {
+        return snacProcessor;
+    }
 
     /**
      * Returns the SNAC packet that was received.

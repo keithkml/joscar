@@ -29,34 +29,49 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- *  File created by keith @ Jun 4, 2003
+ *  File created by keith @ Jun 19, 2003
  *
  */
 
 package net.kano.joscar.snac;
 
+import net.kano.joscar.flap.FlapProcessor;
+import net.kano.joscar.SeqNum;
+import net.kano.joscar.flapcmd.SnacCommand;
+
 /**
- * An interface for listening for events related to sending outgoing SNAC
- * requests.
- *
- * @see ClientSnacProcessor#addGlobalRequestListener
+ * A server-side SNAC processor. This class automatically assigns SNAC request
+ * ID's between <code>0x80000000</code> and <code>0xffffffff</code>, the
+ * required range for server request ID's. No request-response system is
+ * supported (as in {@link ClientSnacProcessor}) because this functionality is
+ * not used by the server. Additionally, no SNAC queue is implemented, as its
+ * intended use, rate limiting, only affects the client side. 
  */
-public interface OutgoingSnacRequestListener {
-    /**
-     * Called when an outgoing SNAC request was sent over a SNAC connection.
-     * This method will be called only once for each request this listener has
-     * been added to.
-     *
-     * @param e an object describing the event
-     */
-    void handleSent(SnacRequestSentEvent e);
+public class ServerSnacProcessor extends AbstractSnacProcessor {
+    /** The minimum request ID value. */
+    private static final long REQID_MIN = 0x80000000L;
+    /** The maximum request ID value. */
+    private static final long REQID_MAX = 0xffffffffL;
+
+    /** An object used to track and wrap request ID's. */
+    private final SeqNum reqid = new SeqNum(REQID_MIN, REQID_MAX);
 
     /**
-     * Called when a SNAC packet "times out" and is removed from the request
-     * list of its parent <code>SnacProcessor</code>. This will be called only
-     * once for each request to which this listener has been added.
+     * Creates a new server-side SNAC processor attached to the given FLAP
+     * processor.
      *
-     * @param event an object describing the event
+     * @param flapProcessor a FLAP processor
      */
-    void handleTimeout(SnacRequestTimeoutEvent event);
+    public ServerSnacProcessor(FlapProcessor flapProcessor) {
+        super(flapProcessor);
+    }
+
+    /**
+     * Sends the given SNAC command over this SNAC connection.
+     *
+     * @param cmd the SNAC command to send
+     */
+    public final void sendSnac(SnacCommand cmd) {
+        sendSnac(reqid.next(), cmd);
+    }
 }

@@ -64,7 +64,7 @@ import java.util.logging.Logger;
  * "times out" is, as of this writing, ten minutes, allowing a great deal of
  * time for any response to be received. That "time to live" can be increased,
  * however (or decreased), with <code>SnacProcessor</code>'s
- * {@link SnacProcessor#setRequestTtl setRequestTtl} method.
+ * {@link ClientSnacProcessor#setRequestTtl setRequestTtl} method.
  * <br>
  * <br>
  * Note that a <code>SnacRequest</code> will pass any exceptions thrown during

@@ -37,7 +37,7 @@ package net.kano.joscar.ratelim;
 
 import net.kano.joscar.CopyOnWriteArraySet;
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.snac.SnacProcessor;
+import net.kano.joscar.snac.ClientSnacProcessor;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -160,7 +160,7 @@ class QueueRunner implements Runnable {
      */
     private void dequeueReady(RateQueue queue) {
         ConnectionQueueMgr connMgr = queue.getParentMgr();
-        SnacProcessor processor = connMgr.getSnacProcessor();
+        ClientSnacProcessor processor = connMgr.getSnacProcessor();
         RateLimitingQueueMgr rateMgr = connMgr.getParentQueueMgr();
 
         synchronized(queue) {

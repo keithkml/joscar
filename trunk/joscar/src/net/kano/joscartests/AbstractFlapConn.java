@@ -47,7 +47,7 @@ import java.net.InetAddress;
 
 public abstract class AbstractFlapConn extends ClientFlapConn {
     protected JoscarTester tester;
-    protected SnacProcessor snacProcessor = new SnacProcessor(getFlapProcessor());
+    protected ClientSnacProcessor snacProcessor = new ClientSnacProcessor(getFlapProcessor());
 
     { // init
         getFlapProcessor().setFlapCmdFactory(new DefaultFlapCmdFactory());
@@ -105,7 +105,7 @@ public abstract class AbstractFlapConn extends ClientFlapConn {
         return genericReqListener;
     }
 
-    public SnacProcessor getSnacProcessor() {
+    public ClientSnacProcessor getSnacProcessor() {
         return snacProcessor;
     }
 

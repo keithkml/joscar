@@ -147,7 +147,7 @@ public class RvProcessor {
     private static final Logger logger = Logger.getLogger("net.kano.joscar.rv");
 
     /** The SNAC processor to which this RV processor is attached. */
-    private SnacProcessor snacProcessor = null;
+    private ClientSnacProcessor snacProcessor = null;
 
     /** A lock for using or modifying session-related fields. */
     private final Object sessionLock = new Object();
@@ -209,7 +209,7 @@ public class RvProcessor {
      *
      * @see #attachToSnacProcessor
      */
-    public RvProcessor(SnacProcessor snacProcessor) {
+    public RvProcessor(ClientSnacProcessor snacProcessor) {
         attachToSnacProcessor(snacProcessor);
     }
 
@@ -220,7 +220,7 @@ public class RvProcessor {
      * @return the SNAC processor to which this RV processor is currently
      *         attached
      */
-    public synchronized final SnacProcessor getSnacProcessor() {
+    public synchronized final ClientSnacProcessor getSnacProcessor() {
         return snacProcessor;
     }
 
@@ -236,7 +236,7 @@ public class RvProcessor {
      * @see #detach
      */
     public synchronized final void attachToSnacProcessor(
-            SnacProcessor snacProcessor) {
+            ClientSnacProcessor snacProcessor) {
         DefensiveTools.checkNull(snacProcessor, "snacProcessor");
 
         detach();
@@ -487,7 +487,7 @@ public class RvProcessor {
                     + " - " + info);
         }
 
-        SnacProcessor processor;
+        ClientSnacProcessor processor;
         synchronized(this) {
             processor = snacProcessor;
         }
@@ -665,7 +665,7 @@ public class RvProcessor {
      * @param req the SNAC request to send
      */
     private void sendSnac(SnacRequest req) {
-        SnacProcessor processor;
+        ClientSnacProcessor processor;
         synchronized(this) {
             processor = snacProcessor;
         }

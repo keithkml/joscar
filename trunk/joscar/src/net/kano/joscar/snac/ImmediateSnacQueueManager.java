@@ -45,12 +45,12 @@ public class ImmediateSnacQueueManager implements SnacQueueManager {
     /** A map from SNAC processors to their respective SNAC queues. */
     private final Map queues = new IdentityHashMap();
 
-    public synchronized void attached(SnacProcessor processor) {
+    public synchronized void attached(ClientSnacProcessor processor) {
         System.out.println("attaching...");
         queues.put(processor, new SnacQueue());
     }
 
-    public synchronized void detached(SnacProcessor processor) {
+    public synchronized void detached(ClientSnacProcessor processor) {
         queues.remove(processor);
     }
 
@@ -62,11 +62,11 @@ public class ImmediateSnacQueueManager implements SnacQueueManager {
      *        returned
      * @return a SNAC queue object for the given SNAC processor
      */
-    private synchronized SnacQueue getQueue(SnacProcessor processor) {
+    private synchronized SnacQueue getQueue(ClientSnacProcessor processor) {
         return (SnacQueue) queues.get(processor);
     }
 
-    public void pause(SnacProcessor processor) {
+    public void pause(ClientSnacProcessor processor) {
         SnacQueue queue = getQueue(processor);
 
         synchronized(queue) {
@@ -74,7 +74,7 @@ public class ImmediateSnacQueueManager implements SnacQueueManager {
         }
     }
 
-    public void unpause(SnacProcessor processor) {
+    public void unpause(ClientSnacProcessor processor) {
         SnacQueue queue = getQueue(processor);
 
         List dequeued;
@@ -101,12 +101,12 @@ public class ImmediateSnacQueueManager implements SnacQueueManager {
      * @param processor the SNAC processor on which to send
      * @param req the request to send
      */
-    protected static final void sendSnac(SnacProcessor processor,
+    protected static final void sendSnac(ClientSnacProcessor processor,
             SnacRequest req) {
         processor.sendSnacImmediately(req);
     }
 
-    public void queueSnac(SnacProcessor processor,
+    public void queueSnac(ClientSnacProcessor processor,
             SnacRequest request) {
         SnacQueue queue = getQueue(processor);
 
@@ -120,7 +120,7 @@ public class ImmediateSnacQueueManager implements SnacQueueManager {
         if (!paused) sendSnac(processor, request);
     }
 
-    public synchronized void clearQueue(SnacProcessor processor) {
+    public synchronized void clearQueue(ClientSnacProcessor processor) {
         queues.remove(processor);
     }
 

@@ -52,7 +52,7 @@ public class SnacRequestTimeoutEvent {
     /**
      * The SNAC processor on which this request timed out.
      */
-    private final SnacProcessor snacProcessor;
+    private final ClientSnacProcessor snacProcessor;
 
     /**
      * The request that timed out.
@@ -77,7 +77,7 @@ public class SnacRequestTimeoutEvent {
      *        exceeded
      */
     protected SnacRequestTimeoutEvent(FlapProcessor flapProcessor,
-            SnacProcessor snacProcessor, SnacRequest request, int ttl) {
+            ClientSnacProcessor snacProcessor, SnacRequest request, int ttl) {
         DefensiveTools.checkNull(flapProcessor, "flapProcessor");
         DefensiveTools.checkNull(snacProcessor, "snacProcessor");
         DefensiveTools.checkNull(request, "request");
@@ -102,7 +102,7 @@ public class SnacRequestTimeoutEvent {
      *
      * @return the SNAC connection associated with this event
      */
-    public SnacProcessor getSnacProcessor() {
+    public ClientSnacProcessor getSnacProcessor() {
         return snacProcessor;
     }
 

@@ -131,9 +131,9 @@ public final class FileTransferHeader implements LiveWritable {
     /**
      * Reads a file transfer header from the given stream. Note that this
      * method will return <code>null</code> if no valid header can be read or
-     * if the end of the stream is reached. Also note that this method will
-     * block until a complete header is read or until one of the situations
-     * mentioned above occurs.
+     * if the end of the stream is reached before a valid header can be read.
+     * Also note that this method will block until a complete header is read
+     * or until one of the situations mentioned above occurs.
      *
      * @param in the stream from which to read the header
      * @return a file transfer header read from the given stream, or

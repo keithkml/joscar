@@ -64,7 +64,7 @@ RateMonitor monitor = new RateMonitor(snacProcessor);
  * <ul>
  * <li> <code>RateMonitor</code> assumes that the default joscar implementations
  * of {@link RateInfoCmd} and {@link RateChange} are passed to its packet
- * listeners. If you have provided {@linkplain SnacProcessor#getCmdFactoryMgr
+ * listeners. If you have provided {@linkplain ClientSnacProcessor#getCmdFactoryMgr
  * custom SNAC command factories} that use custom implementations of those SNAC
  * commands, you will need to call {@link #setRateClasses(RateClassInfo[])
  * setRateClasses} and {@link #updateRateClass(int, RateClassInfo)
@@ -147,7 +147,7 @@ public class RateMonitor {
             = Logger.getLogger("net.kano.joscar.ratelim");
 
     /** The SNAC processor to which this rate monitor is attached. */
-    private SnacProcessor snacProcessor;
+    private ClientSnacProcessor snacProcessor;
 
     /** A list of listeners for rate-related events. */
     private final CopyOnWriteArrayList listeners = new CopyOnWriteArrayList();
@@ -216,7 +216,7 @@ public class RateMonitor {
      *
      * @param processor the SNAC processor whose rates should be monitored
      */
-    public RateMonitor(SnacProcessor processor) {
+    public RateMonitor(ClientSnacProcessor processor) {
         DefensiveTools.checkNull(processor, "processor");
 
         this.snacProcessor = processor;
@@ -232,7 +232,7 @@ public class RateMonitor {
      * processor.
      */
     public final void detach() {
-        SnacProcessor oldProcessor;
+        ClientSnacProcessor oldProcessor;
         synchronized(this) {
             if (snacProcessor == null) return;
 
@@ -277,7 +277,7 @@ public class RateMonitor {
      *
      * @return this rate monitor's attached SNAC processor
      */
-    public synchronized final SnacProcessor getSnacProcessor() {
+    public synchronized final ClientSnacProcessor getSnacProcessor() {
         return snacProcessor;
     }
 
@@ -428,7 +428,7 @@ public class RateMonitor {
      * @see FlapProcessor#handleException
      */
     private void handleException(Object type, Throwable t, Object info) {
-        SnacProcessor processor;
+        ClientSnacProcessor processor;
         synchronized(this) {
             processor = snacProcessor;
         }
