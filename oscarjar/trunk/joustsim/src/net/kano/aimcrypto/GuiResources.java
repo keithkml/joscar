@@ -45,16 +45,16 @@ import java.net.URL;
 public final class GuiResources {
     private static final IconResourceHolder mediumCertificateIcon
             = new IconResourceHolder("icons/certificate-medium.png");
-    private static final IconResourceHolder smallCertificateIcon
-            = new IconResourceHolder("icons/certificate-small.png");
+    private static final IconResourceHolder tinyCertificateIcon
+            = new IconResourceHolder("icons/certificate-tiny.png");
     private static final IconResourceHolder mediumLockIcon
             = new IconResourceHolder("icons/lock-medium.png");
     private static final IconResourceHolder mediumSignerIcon
             = new IconResourceHolder("icons/signer-medium.png");
-    private static final IconResourceHolder smallSignerIcon
-            = new IconResourceHolder("icons/signer-small.png");
-    private static final IconResourceHolder smallProgramIcon
-            = new IconResourceHolder("icons/program-small.gif");
+    private static final IconResourceHolder tinySignerIcon
+            = new IconResourceHolder("icons/signer-tiny.png");
+    private static final IconResourceHolder tinyProgramIcon
+            = new IconResourceHolder("icons/program-tiny.gif");
 
     private static final LFIconHolder errorIcon
             = new LFIconHolder("OptionPane.errorIcon");
@@ -76,8 +76,8 @@ public final class GuiResources {
         return mediumCertificateIcon.getIcon();
     }
 
-    public static ImageIcon getSmallCertificateIcon() {
-        return smallCertificateIcon.getIcon();
+    public static ImageIcon getTinyCertificateIcon() {
+        return tinyCertificateIcon.getIcon();
     }
 
     public static ImageIcon getMediumLockIcon() {
@@ -92,12 +92,12 @@ public final class GuiResources {
         return mediumSignerIcon.getIcon();
     }
 
-    public static ImageIcon getSmallSignerIcon() {
-        return smallSignerIcon.getIcon();
+    public static ImageIcon getTinySignerIcon() {
+        return tinySignerIcon.getIcon();
     }
 
-    public static ImageIcon getSmallProgramIcon() {
-        return smallProgramIcon.getIcon();
+    public static ImageIcon getTinyProgramIcon() {
+        return tinyProgramIcon.getIcon();
     }
 
     public static Icon getInformationIcon() {

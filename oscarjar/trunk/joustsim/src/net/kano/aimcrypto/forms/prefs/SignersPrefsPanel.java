@@ -45,7 +45,7 @@ import javax.swing.ImageIcon;
 
 public class SignersPrefsPanel extends CertificatesPrefsPanel {
     private final ImageIcon mediumSignerIcon = GuiResources.getMediumSignerIcon();
-    private final ImageIcon smallSignerIcon = GuiResources.getSmallSignerIcon();
+    private final ImageIcon smallSignerIcon = GuiResources.getTinySignerIcon();
 
     public SignersPrefsPanel(AppSession appSession, Screenname sn,
             CertificateTrustManager certTrustMgr) {

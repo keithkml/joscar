@@ -194,11 +194,9 @@ public class GuiSession {
 
             box = createBox(sn);
 
-            ImConversation imConversation = service.getImConversation(sn);
-            box.handleConversation(imConversation);
+            box.handleConversation(service.getImConversation(sn));
+            box.handleConversation(service.getSecureAimConversation(sn));
 
-            box.pack();
-            box.setSize(box.getPreferredSize());
             box.setVisible(true);
         }
         final ImBox fbox = box;
@@ -215,7 +213,7 @@ public class GuiSession {
         if (imBoxes.containsKey(sn)) {
             throw new IllegalArgumentException("box for " + sn + " already exists");
         }
-        ImBox box = new ImBox(this, sn);
+        ImBox box = new ImBox(this, conn, sn);
         box.setSize(410, 280);
         imBoxes.put(sn, box);
         return box;

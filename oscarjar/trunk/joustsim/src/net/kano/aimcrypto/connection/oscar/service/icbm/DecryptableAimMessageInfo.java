@@ -40,8 +40,10 @@ import net.kano.aimcrypto.config.BuddyCertificateInfo;
 import net.kano.aimcrypto.config.BuddyCertificateInfo;
 
 public class DecryptableAimMessageInfo extends MessageInfo {
+
     static DecryptableAimMessageInfo getInstance(
             EncryptedAimMessageInfo msgInfo, BuddyCertificateInfo securityInfo) {
+
         return new DecryptableAimMessageInfo(msgInfo.getFrom(), msgInfo.getTo(),
                 (EncryptedAimMessage) msgInfo.getMessage(), securityInfo);
     }
@@ -54,5 +56,5 @@ public class DecryptableAimMessageInfo extends MessageInfo {
         this.securityInfo = securityInfo;
     }
 
-    public BuddyCertificateInfo getSecurityInfo() { return securityInfo; }
+    public BuddyCertificateInfo getMessageCertificateInfo() { return securityInfo; }
 }

@@ -85,19 +85,16 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Image;
-import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
 import java.util.Arrays;
-import java.beans.PropertyChangeListener;
-import java.beans.PropertyChangeEvent;
 
 public class SignonWindow extends JFrame {
     private static final Object ITEM_DELETE = new Object();
@@ -118,7 +115,7 @@ public class SignonWindow extends JFrame {
     private JScrollPane errorScrollPane;
     private JPanel localPanel;
 
-    private final ImageIcon programIcon = GuiResources.getSmallProgramIcon();
+    private final ImageIcon programIcon = GuiResources.getTinyProgramIcon();
 
     private SignonAction signonAction = new SignonAction();
     private ShowPrefsAction showPrefsAction = new ShowPrefsAction();
@@ -279,11 +276,13 @@ public class SignonWindow extends JFrame {
         }
         setIconImage(image);
 
+        getRootPane().setDefaultButton(signonButton);
+
         updateButtons();
     }
 
     private void madeVisible() {
-        setEnabled(true);
+        setDisabled(false);
         reloadScreennames();
         updateButtons();
         updateSize();
@@ -372,7 +371,6 @@ public class SignonWindow extends JFrame {
                         + cfsi.getPort();
 
             } else {
-                msg = null;
                 System.err.println("unknown error: " + sinfo.getClass().getName());
                 return;
             }
@@ -511,29 +509,37 @@ public class SignonWindow extends JFrame {
         }
     }
 
+    public void setDisabled(boolean disabled) {
+        this.disabled = disabled;
+        updateButtons();
+    }
+
     private class SignonAction extends AbstractAction {
         public SignonAction() {
             super("Sign On");
 
             putValue(SHORT_DESCRIPTION, "Sign onto AIM");
-            putValue(ACCELERATOR_KEY,
-                    KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0));
             putValue(MNEMONIC_KEY, new Integer(KeyEvent.VK_S));
         }
 
         public void actionPerformed(ActionEvent e) {
-            setEnabled(false);
-            Screenname sn = new Screenname(getScreenname());
-            LocalPreferencesManager prefs = appSession.getLocalPrefs(sn);
+            final Screenname sn = new Screenname(getScreenname());
+            final LocalPreferencesManager prefs = appSession.getLocalPrefs(sn);
             if (prefs == null) return;
-            String pass = new String(passwordBox.getPassword());
-            GeneralLocalPrefs generalPrefs = prefs.getGeneralPrefs();
-            if (rememberPassBox.isSelected()) {
-                generalPrefs.setSavedPassword(pass);
-            } else {
-                generalPrefs.setSavedPassword(null);
-            }
-            guiSession.signon(sn, pass);
+
+            setDisabled(true);
+            SwingUtilities.invokeLater(new Runnable() {
+                public void run() {
+                    String pass = new String(passwordBox.getPassword());
+                    GeneralLocalPrefs generalPrefs = prefs.getGeneralPrefs();
+                    if (rememberPassBox.isSelected()) {
+                        generalPrefs.setSavedPassword(pass);
+                    } else {
+                        generalPrefs.setSavedPassword(null);
+                    }
+                    guiSession.signon(sn, pass);
+                }
+            });
         }
     }
 

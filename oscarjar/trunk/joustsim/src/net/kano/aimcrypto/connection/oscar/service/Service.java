@@ -47,6 +47,8 @@ import net.kano.joscar.flap.FlapPacketEvent;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.snac.SnacPacketEvent;
 import net.kano.joscar.snac.SnacResponseEvent;
+import net.kano.joscar.snac.SnacRequest;
+import net.kano.joscar.snac.SnacRequestListener;
 
 import java.util.Iterator;
 import java.util.logging.Logger;
@@ -120,6 +122,19 @@ public abstract class Service {
         DefensiveTools.checkNull(snac, "snac");
 
         oscarConnection.sendSnac(snac);
+    }
+
+    public void sendSnacRequest(SnacRequest request) {
+        DefensiveTools.checkNull(request, "request");
+
+        oscarConnection.sendSnacRequest(request);
+    }
+
+    public void sendSnacRequest(SnacCommand cmd, SnacRequestListener listener) {
+        DefensiveTools.checkNull(cmd, "cmd");
+        DefensiveTools.checkNull(listener, "listener");
+
+        oscarConnection.sendSnacRequest(cmd, listener);
     }
 
     protected void setReady() {

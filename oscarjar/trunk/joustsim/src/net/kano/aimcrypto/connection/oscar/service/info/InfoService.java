@@ -35,231 +35,213 @@
 
 package net.kano.aimcrypto.connection.oscar.service.info;
 
-import net.kano.aimcrypto.AimSession;
-import net.kano.aimcrypto.config.BuddyCertificateInfo;
-import net.kano.aimcrypto.config.PrivateKeysInfo;
 import net.kano.aimcrypto.Screenname;
 import net.kano.aimcrypto.config.BuddyCertificateInfo;
-import net.kano.aimcrypto.config.PrivateKeysInfo;
 import net.kano.aimcrypto.connection.AimConnection;
+import net.kano.aimcrypto.connection.CapabilityHandler;
+import net.kano.aimcrypto.connection.CapabilityListener;
+import net.kano.aimcrypto.connection.CapabilityManager;
 import net.kano.aimcrypto.connection.oscar.OscarConnection;
 import net.kano.aimcrypto.connection.oscar.service.Service;
-import net.kano.joscar.ByteBlock;
 import net.kano.joscar.CopyOnWriteArrayList;
-import net.kano.joscar.flapcmd.SnacCommand;
-import net.kano.joscar.snac.SnacPacketEvent;
+import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.CertificateInfo;
 import net.kano.joscar.snaccmd.DirInfo;
-import net.kano.joscar.snaccmd.FullUserInfo;
 import net.kano.joscar.snaccmd.InfoData;
-import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.conn.SnacFamilyInfo;
-import net.kano.joscar.snaccmd.loc.DirInfoCmd;
-import net.kano.joscar.snaccmd.loc.GetDirInfoCmd;
-import net.kano.joscar.snaccmd.loc.GetInfoCmd;
 import net.kano.joscar.snaccmd.loc.LocCommand;
 import net.kano.joscar.snaccmd.loc.SetInfoCmd;
-import net.kano.joscar.snaccmd.loc.UserInfoCmd;
 
-import java.io.InputStream;
-import java.security.NoSuchProviderException;
-import java.security.cert.CertificateEncodingException;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
 import java.util.Iterator;
 
 public class InfoService extends Service {
+    private static final CertificateInfo CERTINFO_EMPTY
+            = new CertificateInfo(null);
+
     private CopyOnWriteArrayList listeners = new CopyOnWriteArrayList();
+
+    private final InfoResponseListener infoRequestListener
+            = new InfoResponseListener() {
+        public void handleUserProfile(InfoService service, Screenname buddy,
+                String userInfo) {
+            assert InfoService.this == service;
+
+            for (Iterator it = listeners.iterator(); it.hasNext();) {
+                InfoServiceListener listener = (InfoServiceListener) it.next();
+                listener.handleUserProfile(service, buddy, userInfo);
+            }
+        }
+
+        public void handleAwayMessage(InfoService service, Screenname buddy,
+                String awayMessage) {
+            assert InfoService.this == service;
+
+            for (Iterator it = listeners.iterator(); it.hasNext();) {
+                InfoServiceListener listener = (InfoServiceListener) it.next();
+                listener.handleAwayMessage(service, buddy, awayMessage);
+            }
+        }
+
+        public void handleCertificateInfo(InfoService service, Screenname buddy,
+                BuddyCertificateInfo certInfo) {
+            assert InfoService.this == service;
+
+            for (Iterator it = listeners.iterator(); it.hasNext();) {
+                InfoServiceListener listener = (InfoServiceListener) it.next();
+                listener.handleCertificateInfo(service, buddy, certInfo);
+            }
+        }
+
+        public void handleDirectoryInfo(InfoService service, Screenname buddy,
+                DirInfo dirInfo) {
+            assert InfoService.this == service;
+
+            for (Iterator it = listeners.iterator(); it.hasNext();) {
+                InfoServiceListener listener = (InfoServiceListener) it.next();
+                listener.handleDirectoryInfo(service, buddy, dirInfo);
+            }
+        }
+    };
+    private final CapabilityManager capabilityManager;
+    private final CapabilityListener capListener = new CapabilityListener() {
+        public void capabilityHandlerAdded(CapabilityManager manager,
+                CapabilityBlock block, CapabilityHandler handler) {
+            updateCaps();
+        }
+
+        public void capabilityHandlerRemoved(CapabilityManager manager,
+                CapabilityBlock block, CapabilityHandler handler) {
+            updateCaps();
+        }
+    };
+
+    private InfoRequestManager profileRequestManager = new UserProfileRequestManager(this);
+    private InfoRequestManager awayMsgRequestManager = new AwayMessageRequestManager(this);
+    private InfoRequestManager certInfoRequestManager = new CertificateInfoRequestManager(this);
+    private InfoRequestManager dirInfoRequestManager = new DirectoryInfoRequestManager(this);
 
     private String awayMessage = null;
     private String userProfile = null;
+    private CertificateInfo certificateInfo = null;
 
     public InfoService(AimConnection aimConnection,
             OscarConnection oscarConnection) {
         super(aimConnection, oscarConnection, LocCommand.FAMILY_LOC);
-    }
 
-    public void addInfoListener(InfoListener l) {
-        listeners.addIfAbsent(l);
-    }
-
-    public void removeInfoListener(InfoListener l) {
-        listeners.remove(l);
-    }
-
-    public void connected() {
-        CertificateInfo certInfo = generateCertificateInfo();
-        System.out.println("certInfo: " + certInfo);
-        InfoData infoData = new InfoData(awayMessage, userProfile,
-                new CapabilityBlock[] {
-                    CapabilityBlock.BLOCK_ENCRYPTION
-                }, certInfo);
-        sendSnac(new SetInfoCmd(infoData));
-
-        setReady();
-    }
-
-    private CertificateInfo generateCertificateInfo() {
-        AimSession session = getAimConnection().getAimSession();
-        PrivateKeysInfo keys = session.getPrivateKeysInfo();
-        if (keys == null) {
-            System.out.println("no private keys!");
-            return null;
-        }
-
-        X509Certificate signing = keys.getSigningCertificate();
-        X509Certificate encrypting = keys.getEncryptionCertificate();
-
-        if (signing == null || encrypting == null) {
-            System.out.println("no signing or encrypting! " + signing + ", " + encrypting);
-            return null;
-        }
-
-        CertificateInfo certInfo = null;
-        if (signing == encrypting) {
-            try {
-                byte[] encCert = signing.getEncoded();
-                certInfo = new CertificateInfo(ByteBlock.wrap(encCert));
-            } catch (CertificateEncodingException e) {
-                //TODO: handle certificate errors
-                e.printStackTrace();
-            }
-        } else {
-            try {
-                byte[] encSigning = signing.getEncoded();
-                byte[] encEncrypting = encrypting.getEncoded();
-                certInfo = new CertificateInfo(ByteBlock.wrap(encEncrypting),
-                        ByteBlock.wrap(encSigning));
-            } catch (CertificateEncodingException e1) {
-                //TODO: handle certificate errors
-                e1.printStackTrace();
-            }
-        }
-        return certInfo;
+        capabilityManager = getAimConnection().getCapabilityManager();
+        capabilityManager.addCapabilityListener(capListener);
     }
 
     public SnacFamilyInfo getSnacFamilyInfo() {
         return LocCommand.FAMILY_INFO;
     }
 
-    public void requestUserProfile(Screenname sn) {
-        sendSnac(new GetInfoCmd(GetInfoCmd.FLAG_INFO, sn.getFormatted()));
-    }
-
-    public void requestAwayMessage(Screenname sn) {
-        sendSnac(new GetInfoCmd(GetInfoCmd.FLAG_AWAYMSG, sn.getFormatted()));
-    }
-
-    public void requestSecurityInfo(Screenname sn) {
-        sendSnac(new GetInfoCmd(GetInfoCmd.FLAG_CERT, sn.getFormatted()));
-    }
-
-    public void requestDirectoryInfo(Screenname sn) {
-        sendSnac(new GetDirInfoCmd(sn.getFormatted()));
-    }
-
-    public void handleSnacPacket(SnacPacketEvent snacPacketEvent) {
-        SnacCommand snac = snacPacketEvent.getSnacCommand();
-
-        if (snac instanceof UserInfoCmd) {
-            UserInfoCmd uic = (UserInfoCmd) snac;
-            handleUserInfoCmd(uic);
-
-        } else if (snac instanceof DirInfoCmd) {
-            DirInfoCmd dic = (DirInfoCmd) snac;
-            handleDirInfoCmd(dic);
+    public void connected() {
+        InfoData infoData;
+        synchronized (this) {
+            infoData = new InfoData(awayMessage, userProfile,
+                            capabilityManager.getHandledCapabilities(),
+                            certificateInfo);
         }
+        sendSnac(new SetInfoCmd(infoData));
+
+        setReady();
     }
 
-    private void handleDirInfoCmd(DirInfoCmd dic) {
-        DirInfo dirinfo = dic.getDirInfo();
-        if (dirinfo == null) return;
-
-        String snText = dirinfo.getScreenname();
-        if (snText == null) return;
-
-        Screenname sn = new Screenname(snText);
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            InfoListener listener = (InfoListener) it.next();
-
-            listener.gotDirectoryInfo(this, sn, dirinfo);
-        }
+    public void disconnected() {
+        capabilityManager.removeCapabilityListener(capListener);
     }
 
-    private void handleUserInfoCmd(UserInfoCmd uic) {
-        FullUserInfo userInfo = uic.getUserInfo();
-        if (userInfo == null) return;
-        String snText = userInfo.getScreenname();
-        if (snText == null) return;
-        InfoData infodata = uic.getInfoData();
-        if (infodata == null) return;
-
-        Screenname sn = new Screenname(snText);
-
-        String awayMsg = infodata.getAwayMessage();
-        if (awayMsg != null) {
-            for (Iterator it = listeners.iterator(); it.hasNext();) {
-                InfoListener listener = (InfoListener) it.next();
-                listener.gotAwayMessage(this, sn, awayMsg);
-            }
-        }
-
-        String profile = infodata.getInfo();
-        if (profile != null) {
-            for (Iterator it = listeners.iterator(); it.hasNext();) {
-                InfoListener listener = (InfoListener) it.next();
-                listener.gotUserProfile(this, sn, profile);
-            }
-        }
-
-        CertificateInfo certInfo = infodata.getCertificateInfo();
-        if (certInfo != null) {
-            ByteBlock signingData;
-            ByteBlock encryptionData;
-            if (certInfo.isCommon()) {
-                signingData = certInfo.getCommonCertData();
-                encryptionData = certInfo.getCommonCertData();
-            } else {
-                signingData = certInfo.getSignCertData();
-                encryptionData = certInfo.getEncCertData();
-            }
-            if (signingData == null || encryptionData == null) {
-                //TODO: report wrong signing and/or encryption certs
-                System.err.println("signingData == null || encryptionData == null");
-                System.err.println("signingData=" + signingData);
-                System.err.println("encryptionData=" + encryptionData);
-                return;
-            }
-
-            X509Certificate signing;
-            X509Certificate encryption;
-            try {
-                signing = decodeCertificate(signingData);
-                encryption = decodeCertificate(encryptionData);
-            } catch (Exception e) {
-                //TODO: report any errors thrown while decoding certificates
-                e.printStackTrace();
-                return;
-            }
-            BuddyCertificateInfo securityInfo = new BuddyCertificateInfo(sn,
-                    ByteBlock.wrap(CertificateInfo.getCertInfoHash(certInfo)),
-                    encryption, signing);
-
-            for (Iterator it = listeners.iterator(); it.hasNext();) {
-                InfoListener listener = (InfoListener) it.next();
-                System.out.println("firing listener " + listener);
-                listener.gotSecurityInfo(this, sn, securityInfo);
-            }
-        }
+    public void addInfoListener(InfoServiceListener l) {
+        listeners.addIfAbsent(l);
     }
 
-    private static X509Certificate decodeCertificate(ByteBlock certData)
-            throws NoSuchProviderException, CertificateException {
+    public void removeInfoListener(InfoServiceListener l) {
+        listeners.remove(l);
+    }
 
-        CertificateFactory factory
-                = CertificateFactory.getInstance("X.509", "BC");
-        InputStream is = ByteBlock.createInputStream(certData);
-        return (X509Certificate) factory.generateCertificate(is);
+    public synchronized String getCurrentAwayMessage() {
+        return awayMessage;
+    }
+
+    public void setAwayMessage(String awayMessage) {
+        synchronized(this) {
+            // we don't want to waste time checking the strings for equality,
+            // but we can check the references for equality to catch some
+            // unnecessary cases
+            if (this.awayMessage == awayMessage) return;
+
+            this.awayMessage = awayMessage;
+        }
+        sendSnac(new SetInfoCmd(new InfoData(
+                awayMessage == null ? InfoData.NOT_AWAY : awayMessage,
+                null, null, null)));
+    }
+
+    public synchronized String getCurrentUserProfile() {
+        return userProfile;
+    }
+
+    public void setUserProfile(String userProfile) {
+        DefensiveTools.checkNull(userProfile, "userProfile");
+
+        synchronized(this) {
+            // we don't want to waste time checking the strings for equality,
+            // but we can check the references for equality to catch some
+            // unnecessary cases
+            if (this.userProfile == userProfile) return;
+
+            this.userProfile = userProfile;
+        }
+        sendSnac(new SetInfoCmd(new InfoData(
+                userProfile == null ? "" : userProfile,
+                null, null, null)));
+    }
+
+    public synchronized CertificateInfo getCurrentCertificateInfo() {
+        return certificateInfo;
+    }
+
+    public void setCertificateInfo(CertificateInfo certificateInfo) {
+        synchronized(this) {
+            // we don't want to waste time checking the info blocks for equality
+            // but we can check the references for equality to catch some
+            // unnecessary cases
+            if (this.certificateInfo == certificateInfo) return;
+
+            this.certificateInfo = certificateInfo;
+        }
+        sendSnac(new SetInfoCmd(new InfoData(null, null, null,
+                certificateInfo == null ? CERTINFO_EMPTY : certificateInfo)));
+    }
+
+    public void requestUserProfile(Screenname buddy,
+            InfoResponseListener listener) {
+        profileRequestManager.request(buddy, listener);
+    }
+
+    public void requestAwayMessage(Screenname buddy,
+            InfoResponseListener listener) {
+        awayMsgRequestManager.request(buddy, listener);
+    }
+
+    public void requestCertificateInfo(Screenname buddy,
+            InfoResponseListener listener) {
+        certInfoRequestManager.request(buddy, listener);
+    }
+
+    public void requestDirectoryInfo(Screenname buddy,
+            InfoResponseListener listener) {
+        dirInfoRequestManager.request(buddy, listener);
+    }
+
+    private void updateCaps() {
+        sendSnac(new SetInfoCmd(new InfoData(null, null,
+                capabilityManager.getHandledCapabilities(), null)));
+    }
+
+    InfoResponseListener getInfoRequestListener() {
+        return infoRequestListener;
     }
 }

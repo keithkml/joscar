@@ -38,6 +38,7 @@ package net.kano.aimcrypto.forms;
 import net.kano.aimcrypto.GuiSession;
 import net.kano.aimcrypto.Screenname;
 import net.kano.aimcrypto.connection.AimConnection;
+import net.kano.joscar.DefensiveTools;
 
 import javax.swing.AbstractAction;
 import javax.swing.JButton;
@@ -62,12 +63,14 @@ public class DummyOnlineWindow extends JFrame {
 
     private final GuiSession guiSession;
     private AimConnection conn = null;
-    private OpenImAction openAction = new OpenImAction();
+
+    private OpenImAction openImAction = new OpenImAction();
+    private DisconnectAction disconnectAction = new DisconnectAction();
 
     {
         getContentPane().add(mainPanel);
-        openButton.setAction(openAction);
-        disconnectButton.setAction(new DisconnectAction());
+        openButton.setAction(openImAction);
+        disconnectButton.setAction(disconnectAction);
         snBox.getDocument().addDocumentListener(new DocumentListener() {
             public void changedUpdate(DocumentEvent e) {
                 changed();
@@ -95,6 +98,8 @@ public class DummyOnlineWindow extends JFrame {
     }
 
     public DummyOnlineWindow(GuiSession session) {
+        DefensiveTools.checkNull(session, "session");
+
         this.guiSession = session;
         updateSession();
     }
@@ -103,14 +108,14 @@ public class DummyOnlineWindow extends JFrame {
         this.conn = guiSession.getAimConnection();
 
         String sn = conn.getScreenname().getFormatted();
-        setTitle("Buddy List");
+        setTitle(sn);
         onlineLabel.setText("You are online as " + sn);
         snBox.setText("");
         updateButtons();
     }
 
     private void updateButtons() {
-        openAction.setEnabled(snBox.getDocument().getLength() != 0);
+        openImAction.setEnabled(snBox.getDocument().getLength() != 0);
     }
 
     private class OpenImAction extends AbstractAction {

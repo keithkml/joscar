@@ -35,14 +35,14 @@
 
 package net.kano.aimcrypto.connection.oscar.service.icbm;
 
-import net.kano.aimcrypto.config.BuddyCertificateInfo;
-import net.kano.aimcrypto.config.PrivateKeysInfo;
 import net.kano.aimcrypto.Screenname;
 import net.kano.aimcrypto.config.BuddyCertificateInfo;
+import net.kano.aimcrypto.config.PrivateKeysInfo;
 import net.kano.aimcrypto.connection.AimConnection;
 import net.kano.aimcrypto.connection.oscar.service.icbm.SecureAimDecoder.DecryptedMessageInfo;
 import net.kano.aimcrypto.connection.oscar.service.info.BuddyTrustAdapter;
 import net.kano.aimcrypto.connection.oscar.service.info.BuddyTrustManager;
+import net.kano.aimcrypto.connection.oscar.service.info.InfoResponseAdapter;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.icbm.InstantMessage;
@@ -50,9 +50,9 @@ import org.bouncycastle.cms.CMSException;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Iterator;
 
 public class SecureAimConversation extends Conversation {
     private final AimConnection conn;
@@ -63,7 +63,7 @@ public class SecureAimConversation extends Conversation {
 
     private boolean trusted = false;
 
-    private List inQueue = new LinkedList();
+    private List undecryptedQueue = new LinkedList();
 
     protected SecureAimConversation(AimConnection conn, Screenname buddy) {
         super(buddy);
@@ -84,26 +84,34 @@ public class SecureAimConversation extends Conversation {
         trustManager.addBuddyTrustListener(new BuddyTrustAdapter() {
             public void gotTrustedCertificateChange(BuddyTrustManager manager,
                     Screenname buddy, BuddyCertificateInfo info) {
+                if (!buddy.equals(getBuddy())) return;
+
                 System.out.println("got trusted cert for " + buddy);
+                currentSecurityInfo = info;
             }
 
             public void gotUntrustedCertificateChange(BuddyTrustManager manager,
                     Screenname buddy, BuddyCertificateInfo info) {
-                System.out.println("got untrusted cert for " + buddy + ", trusting");
-//                manager.trust(info);
+                if (!buddy.equals(getBuddy())) return;
+
+                System.out.println("got untrusted cert for " + buddy);
+                currentSecurityInfo = info;
             }
 
             public void gotUnknownCertificateChange(BuddyTrustManager manager,
                     Screenname buddy, ByteBlock newHash) {
                 if (!buddy.equals(getBuddy())) return;
 
-                System.out.println("requesting security info for " + buddy);
-                conn.getInfoService().requestSecurityInfo(buddy);
+                currentSecurityInfo = null;
 
+                System.out.println("requesting security info for " + buddy);
+                requestCertInfo();
             }
 
             public void buddyTrusted(BuddyTrustManager certificateManager,
                     Screenname buddy, ByteBlock trustedhash, BuddyCertificateInfo info) {
+                System.out.println("got thing for " + buddy);
+                System.out.println("inside listener for: " + getBuddy());
                 if (!buddy.equals(getBuddy())) return;
 
                 System.out.println("buddy is now trusted: " + buddy);
@@ -121,15 +129,21 @@ public class SecureAimConversation extends Conversation {
             }
         });
         Screenname buddy = getBuddy();
-        BuddyCertificateInfo info = trustManager.getCurrentSecurityInfo(buddy);
+        BuddyCertificateInfo info = trustManager.getCurrentCertificateInfo(buddy);
         if (info == null) {
             System.out.println("requesting initial security info from " + buddy);
-            conn.getInfoService().requestSecurityInfo(buddy);
+            requestCertInfo();
         } else {
             System.out.println("already have security info for " + buddy + "!");
             storeBuddyInfo(info);
         }
         trusted = trustManager.isTrusted(buddy);
+    }
+
+    private void requestCertInfo() {
+        //TODO: don't actually request info here
+        conn.getInfoService().requestCertificateInfo(getBuddy(),
+                new InfoResponseAdapter());
     }
 
     private void storeBuddyInfo(BuddyCertificateInfo info) {
@@ -193,9 +207,10 @@ public class SecureAimConversation extends Conversation {
             e.printStackTrace();
             return;
         } catch (NoLocalKeysException e) {
-            e.printStackTrace();
+            fireIncomingEvent(DecryptableAimMessageInfo.getInstance(info, currentSecurityInfo));
             return;
         } catch (NoBuddyKeysException e) {
+            fireIncomingEvent(DecryptableAimMessageInfo.getInstance(info, currentSecurityInfo));
             e.printStackTrace();
             return;
         }

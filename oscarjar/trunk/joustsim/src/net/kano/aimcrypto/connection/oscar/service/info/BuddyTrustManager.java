@@ -169,14 +169,6 @@ public class BuddyTrustManager {
                 certInfoHolder.setTrusted(trusted);
             }
 
-            oldTrusted = trustHolder.getTrustedStatus();
-            if (oldTrusted == newTrusted) {
-                // this certificate was already trusted, as far as we know
-                return;
-            }
-
-            trustHolder.setTrustedStatus(newTrusted);
-
             ByteBlock hash = (ByteBlock) latestHashes.get(sn);
             if (hash == null || !hash.equals(trustedHash)) {
                 // this isn't the buddy's current certificate, so there's
@@ -184,6 +176,14 @@ public class BuddyTrustManager {
                 // buddy could've been trusted or untrusted.
                 return;
             }
+
+            oldTrusted = trustHolder.getTrustedStatus();
+            if (oldTrusted == newTrusted) {
+                // this certificate was already trusted, as far as we know
+                return;
+            }
+
+            trustHolder.setTrustedStatus(newTrusted);
         }
 
         // if we weren't supposed to fire an event, we would've returned before
@@ -373,7 +373,7 @@ public class BuddyTrustManager {
         certTrustMgr.addTrackedCertificateInfo(certInfo);
     }
 
-    public synchronized BuddyCertificateInfo getCurrentSecurityInfo(
+    public synchronized BuddyCertificateInfo getCurrentCertificateInfo(
             Screenname sn) {
         DefensiveTools.checkNull(sn, "sn");
 
@@ -407,10 +407,25 @@ public class BuddyTrustManager {
         return (ByteBlock) latestHashes.get(sn);
     }
 
+    public synchronized BuddyCertificateInfo getBuddyCertificateInfo(Screenname sn,
+            ByteBlock hash) {
+        BuddyCertificateInfoHolder holder = getCertificateInfoHolder(sn, hash);
+        if (holder == null) return null;
+        return holder.getInfo();
+    }
+
     public synchronized boolean isTrusted(Screenname buddy) {
         BuddyCertificateInfoHolder securityInfo
                 = getCurrentCertificateInfoHolder(buddy);
         return securityInfo != null && securityInfo.isTrusted();
+    }
+
+    public synchronized boolean isTrusted(BuddyCertificateInfo info) {
+        DefensiveTools.checkNull(info, "info");
+
+        BuddyCertificateInfoHolder holder = getCertificateInfoHolder(
+                info.getBuddy(), info.getCertificateInfoHash());
+        return holder != null && holder.isTrusted();
     }
 
     private static class BuddyCertificateInfoHolder {

@@ -35,6 +35,8 @@
 
 package net.kano.aimcrypto.config;
 
+import net.kano.joscar.ByteBlock;
+
 import java.security.cert.X509Certificate;
 import java.security.cert.X509Certificate;
 import java.security.cert.CertificateException;
@@ -44,6 +46,7 @@ import java.security.NoSuchProviderException;
 import java.io.File;
 import java.io.IOException;
 import java.io.FileInputStream;
+import java.io.InputStream;
 
 public final class TrustTools {
     private TrustTools() { }
@@ -82,5 +85,14 @@ public final class TrustTools {
         }
         X509Certificate xcert = (X509Certificate) cert;
         return xcert;
+    }
+
+    public static X509Certificate decodeCertificate(ByteBlock certData)
+            throws NoSuchProviderException, CertificateException {
+
+        CertificateFactory factory
+                = CertificateFactory.getInstance("X.509", "BC");
+        InputStream is = ByteBlock.createInputStream(certData);
+        return (X509Certificate) factory.generateCertificate(is);
     }
 }

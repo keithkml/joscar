@@ -184,7 +184,7 @@ public class IcbmService extends Service {
 
     private Map secureAimConvs = new HashMap();
 
-    private SecureAimConversation getSecureAimConversation(Screenname sn) {
+    public SecureAimConversation getSecureAimConversation(Screenname sn) {
         boolean isnew = false;
         SecureAimConversation conv;
         synchronized(this) {

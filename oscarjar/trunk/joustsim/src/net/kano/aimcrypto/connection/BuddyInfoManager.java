@@ -41,10 +41,11 @@ import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.snaccmd.FullUserInfo;
 import net.kano.joscar.snaccmd.DirInfo;
 import net.kano.joscar.snaccmd.CapabilityBlock;
+import net.kano.joscar.snaccmd.ShortCapabilityBlock;
 import net.kano.aimcrypto.connection.AimConnection;
 import net.kano.aimcrypto.connection.oscar.service.buddy.BuddyServiceListener;
 import net.kano.aimcrypto.connection.oscar.service.buddy.BuddyService;
-import net.kano.aimcrypto.connection.oscar.service.info.InfoListener;
+import net.kano.aimcrypto.connection.oscar.service.info.InfoServiceListener;
 import net.kano.aimcrypto.connection.oscar.service.info.InfoService;
 import net.kano.aimcrypto.connection.oscar.service.info.InfoService;
 import net.kano.aimcrypto.connection.oscar.service.buddy.BuddyService;
@@ -128,29 +129,29 @@ public class BuddyInfoManager {
             initedInfoService = true;
         }
 
-        infoService.addInfoListener(new InfoListener() {
-            public void gotDirectoryInfo(InfoService service, Screenname buddy,
+        infoService.addInfoListener(new InfoServiceListener() {
+            public void handleDirectoryInfo(InfoService service, Screenname buddy,
                     DirInfo info) {
                 BuddyInfo buddyInfo = getBuddyInfoInstance(buddy);
                 buddyInfo.setDirectoryInfo(info);
                 System.out.println("got dir info");
             }
 
-            public void gotAwayMessage(InfoService service, Screenname buddy,
+            public void handleAwayMessage(InfoService service, Screenname buddy,
                     String awayMsg) {
                 BuddyInfo buddyInfo = getBuddyInfoInstance(buddy);
                 buddyInfo.setAwayMessage(awayMsg);
                 System.out.println("got away msg");
             }
 
-            public void gotUserProfile(InfoService service, Screenname buddy,
+            public void handleUserProfile(InfoService service, Screenname buddy,
                     String infoString) {
                 BuddyInfo buddyInfo = getBuddyInfoInstance(buddy);
                 buddyInfo.setUserProfile(infoString);
                 System.out.println("got info string");
             }
 
-            public void gotSecurityInfo(InfoService service, Screenname buddy,
+            public void handleCertificateInfo(InfoService service, Screenname buddy,
                     BuddyCertificateInfo securityInfo) {
                 BuddyInfo buddyInfo = getBuddyInfoInstance(buddy);
                 buddyInfo.setCertificateInfo(securityInfo);
@@ -177,7 +178,22 @@ public class BuddyInfoManager {
         if (awayStatus != null) buddyInfo.setAway(awayStatus.booleanValue());
 
         CapabilityBlock[] caps = info.getCapabilityBlocks();
-        if (caps != null) buddyInfo.setCapabilities(caps);
+        ShortCapabilityBlock[] shortCaps = info.getShortCapabilityBlocks();
+        if (caps != null || shortCaps != null) {
+            int numLong = caps == null ? 0 : caps.length;
+            int numShort = shortCaps == null ? 0 : shortCaps.length;
+
+            CapabilityBlock[] blocks = new CapabilityBlock[numLong + numShort];
+            if (caps != null) {
+                System.arraycopy(caps, 0, blocks, 0, caps.length);
+            }
+            if (shortCaps != null) {
+                for (int i = 0, j = numLong; i < shortCaps.length; i++, j++) {
+                    blocks[j] = shortCaps[i].toCapabilityBlock();
+                }
+            }
+            buddyInfo.setCapabilities(caps);
+        }
 
         ByteBlock certHash = info.getCertInfoHash();
         buddyInfo.setCertificateInfoHash(certHash);

@@ -60,6 +60,7 @@ import net.kano.joscar.snac.SnacPacketListener;
 import net.kano.joscar.snac.SnacRequest;
 import net.kano.joscar.snac.SnacResponseEvent;
 import net.kano.joscar.snac.SnacResponseListener;
+import net.kano.joscar.snac.SnacRequestListener;
 import net.kano.joscar.snaccmd.DefaultClientFactoryList;
 
 import java.util.ArrayList;
@@ -248,7 +249,22 @@ public class OscarConnection {
     }
 
     public void sendSnac(SnacCommand snac) {
+        DefensiveTools.checkNull(snac, "snac");
+
         snacProcessor.sendSnac(new SnacRequest(snac, null));
+    }
+
+    public void sendSnacRequest(SnacCommand snac, SnacRequestListener listener) {
+        DefensiveTools.checkNull(snac, "snac");
+        DefensiveTools.checkNull(listener, "listener");
+
+        snacProcessor.sendSnac(new SnacRequest(snac, listener));
+    }
+
+    public void sendSnacRequest(SnacRequest snac) {
+        DefensiveTools.checkNull(snac, "snac");
+
+        snacProcessor.sendSnac(snac);
     }
 
     protected void beforeConnect() { }

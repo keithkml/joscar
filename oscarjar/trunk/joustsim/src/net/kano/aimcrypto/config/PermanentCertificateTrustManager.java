@@ -47,7 +47,6 @@ import java.security.NoSuchProviderException;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -207,7 +206,7 @@ public class PermanentCertificateTrustManager
     }
 
     private File createFileForCert(X509Certificate cert)
-            throws IOException, CantSavePrefsException {
+            throws CantSavePrefsException {
         trustedCertsDir.mkdir();
         if (!trustedCertsDir.canWrite()) return null;
 
@@ -219,11 +218,15 @@ public class PermanentCertificateTrustManager
             file = new File(trustedCertsDir, fn + ".der");
             fn = fixed + "-" + n;
             n++;
+            Exception lastex = null;
             try {
                 if (file.createNewFile()) break;
-                else throw new CantSavePrefsException("couldn't create file");
             } catch (IOException e) {
-                if (n == 99) throw e;
+                lastex = e;
+            }
+
+            if (n == 99) {
+                throw new CantSavePrefsException("couldn't create file", lastex);
             }
         } while (n < 100);
 

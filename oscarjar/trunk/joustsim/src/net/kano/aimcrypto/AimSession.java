@@ -38,6 +38,7 @@ package net.kano.aimcrypto;
 import net.kano.aimcrypto.connection.AimConnection;
 import net.kano.aimcrypto.connection.AimConnectionProperties;
 import net.kano.aimcrypto.config.PrivateKeysInfo;
+import net.kano.aimcrypto.config.LocalPreferencesManager;
 import net.kano.joscar.DefensiveTools;
 
 public class AimSession {
@@ -46,15 +47,17 @@ public class AimSession {
     private AimConnection connection = null;
 
     private PrivateKeysInfo privateKeysInfo = null;
+    private final LocalPreferencesManager localPrefs;
 
-    AimSession(AppSession appSession, Screenname screenname) {
+    public AimSession(AppSession appSession, Screenname screenname) {
         DefensiveTools.checkNull(appSession, "appSession");
         DefensiveTools.checkNull(screenname, "screenname");
 
         this.appSession = appSession;
         this.screenname = screenname;
 
-        privateKeysInfo = appSession.getLocalPrefs(screenname).getLocalKeysManager().getKeysInfo();
+        localPrefs = appSession.getLocalPrefs(screenname);
+        privateKeysInfo = localPrefs.getLocalKeysManager().getKeysInfo();
     }
 
     public final AppSession getAppSession() { return appSession; }

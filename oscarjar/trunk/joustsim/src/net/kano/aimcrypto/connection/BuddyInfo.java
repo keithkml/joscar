@@ -65,13 +65,15 @@ public final class BuddyInfo {
             = "supportsTypingNotifications";
     public static final String PROP_WANTS_OUR_ICON = "wantsOurIcon";
 
+    private static final CapabilityBlock[] CAPS_EMPTY = new CapabilityBlock[0];
+    
     private Screenname screenname;
     private BuddyCertificateInfo certificateInfo = null;
     private boolean online = true;
     private DirInfo directoryInfo = null;
     private Date onlineSince = null;
     private boolean away = false;
-    private CapabilityBlock[] capabilities = null;
+    private CapabilityBlock[] capabilities = CAPS_EMPTY;
     private ByteBlock certificateInfoHash = null;
     private Date idleSince = null;
     private int warningLevel = -1;
@@ -172,6 +174,8 @@ public final class BuddyInfo {
     public synchronized boolean isAway() { return away; }
 
     void setCapabilities(CapabilityBlock[] capabilities) {
+        DefensiveTools.checkNull(capabilities, "capabilities");
+
         CapabilityBlock[] old;
         synchronized (this) {
             old = this.capabilities;

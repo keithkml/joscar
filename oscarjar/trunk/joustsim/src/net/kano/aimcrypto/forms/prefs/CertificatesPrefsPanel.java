@@ -59,6 +59,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextPane;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
+import javax.swing.JScrollPane;
 import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
@@ -90,6 +91,7 @@ public class CertificatesPrefsPanel extends JPanel {
     private static final EmptyBorder EMPTY_BORDER = new EmptyBorder(2, 5, 2, 5);
 
     private JPanel mainPanel;
+    private JLabel infoMessage;
 
     private JList trustedCertsList;
     private JButton importCertButton;
@@ -98,7 +100,7 @@ public class CertificatesPrefsPanel extends JPanel {
     private JLabel certErrorIconLabel;
     private JPanel certErrorPanel;
     private JTextPane certErrorText;
-    private JLabel infoMessage;
+    private JScrollPane errorScrollPane;
 
     private final AppSession appSession;
     private final Screenname sn;
@@ -149,7 +151,7 @@ public class CertificatesPrefsPanel extends JPanel {
 
     private final Icon errorIcon = GuiResources.getErrorIcon();
     private final ImageIcon mediumCertificateIcon = GuiResources.getMediumCertificateIcon();
-    private final ImageIcon smallCertificateIcon = GuiResources.getSmallCertificateIcon();
+    private final ImageIcon smallCertificateIcon = GuiResources.getTinyCertificateIcon();
 
     {
         setLayout(new BorderLayout());
@@ -193,6 +195,7 @@ public class CertificatesPrefsPanel extends JPanel {
             }
         });
 
+        errorScrollPane.setBorder(null);
         certErrorIconLabel.setIcon(errorIcon);
         certErrorIconLabel.setText(null);
         addComponentListener(new ComponentAdapter() {
@@ -215,7 +218,7 @@ public class CertificatesPrefsPanel extends JPanel {
             CertificateTrustManager certTrustMgr) {
         DefensiveTools.checkNull(appSession, "appSession");
         DefensiveTools.checkNull(sn, "sn");
-        DefensiveTools.checkNull(certTrustMgr, "mgr");
+        DefensiveTools.checkNull(certTrustMgr, "certTrustMgr");
 
         this.appSession = appSession;
         this.sn = sn;

@@ -42,6 +42,7 @@ import net.kano.aimcrypto.TrustedCertificatesTracker;
 import net.kano.aimcrypto.config.LocalPreferencesManager;
 import net.kano.aimcrypto.config.PermanentCertificateTrustManager;
 import net.kano.aimcrypto.config.PermanentSignerTrustManager;
+import net.kano.aimcrypto.config.BuddyCertificateInfo;
 import net.kano.aimcrypto.connection.oscar.BasicConnection;
 import net.kano.aimcrypto.connection.oscar.LoginConnection;
 import net.kano.aimcrypto.connection.oscar.LoginServiceListener;
@@ -58,9 +59,11 @@ import net.kano.aimcrypto.connection.oscar.service.icbm.IcbmService;
 import net.kano.aimcrypto.connection.oscar.service.info.CertificateInfoTrustManager;
 import net.kano.aimcrypto.connection.oscar.service.info.InfoService;
 import net.kano.aimcrypto.connection.oscar.service.info.BuddyTrustManager;
+import net.kano.aimcrypto.connection.oscar.service.info.BuddyTrustAdapter;
 import net.kano.aimcrypto.connection.oscar.service.login.LoginService;
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.ByteBlock;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.net.ClientConn;
 import net.kano.joscar.net.ClientConnEvent;
@@ -70,6 +73,7 @@ import net.kano.joscar.snaccmd.conn.ConnCommand;
 import net.kano.joscar.snaccmd.icbm.IcbmCommand;
 import net.kano.joscar.snaccmd.loc.LocCommand;
 import net.kano.joscar.snaccmd.ssi.SsiCommand;
+import net.kano.joscar.snaccmd.CapabilityBlock;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -105,6 +109,7 @@ public class AimConnection {
     private final TrustedCertificatesTracker trustedCertificatesTracker;
     private final LocalPreferencesManager localPrefs;
     private final BuddyTrustManager buddyTrustManager;
+    private final CapabilityManager capabilityManager;
 
     public AimConnection(AppSession appSession, AimSession aimSession,
             AimConnectionProperties props) throws IllegalArgumentException {
@@ -143,6 +148,30 @@ public class AimConnection {
         certificateInfoTrustManager
                 = new CertificateInfoTrustManager(trustedCertificatesTracker);
         buddyTrustManager = new BuddyTrustManager(this);
+        buddyTrustManager.addBuddyTrustListener(new BuddyTrustAdapter() {
+            public void buddyTrusted(BuddyTrustManager manager, Screenname buddy,
+                    ByteBlock hash, BuddyCertificateInfo info) {
+                System.out.println("* " + buddy + " is trusted");
+            }
+
+            public void buddyTrustRevoked(BuddyTrustManager manager, Screenname buddy,
+                    ByteBlock hash, BuddyCertificateInfo info) {
+                System.out.println("* " + buddy + " is no longer trusted");
+            }
+
+            public void gotTrustedCertificateChange(BuddyTrustManager manager,
+                    Screenname buddy, BuddyCertificateInfo info) {
+                System.out.println("* " + buddy + " has a trusted certificate");
+            }
+
+            public void gotUntrustedCertificateChange(BuddyTrustManager manager,
+                    Screenname buddy, BuddyCertificateInfo info) {
+                System.out.println("* " + buddy + " has an untrusted certificate");
+            }
+        });
+        capabilityManager = new CapabilityManager(this);
+        capabilityManager.setCapabilityHandler(CapabilityBlock.BLOCK_ENCRYPTION,
+                new SecurityEnabledHandler(this));
 
         loginConn.addOscarListener(new LoginConnListener());
         loginConn.setServiceFactory(new LoginServiceFactory());
@@ -350,6 +379,10 @@ public class AimConnection {
 
     public BuddyTrustManager getBuddyTrustManager() {
         return buddyTrustManager;
+    }
+
+    public CapabilityManager getCapabilityManager() {
+        return capabilityManager;
     }
 
     private class LoginServiceFactory implements ServiceFactory {
