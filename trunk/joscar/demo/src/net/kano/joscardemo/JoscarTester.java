@@ -96,7 +96,6 @@ import net.kano.joscar.ssiitem.RootItem;
 import net.kano.joscar.ssiitem.VisibilityItem;
 import net.kano.joscardemo.security.SecureSession;
 import net.kano.joscardemo.security.SecureSessionException;
-import net.kano.joscardemo.ui.BuddyTreeWindow;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -652,11 +651,6 @@ public class JoscarTester implements CmdLineListener {
         cmdMap.put("logims", new CLCommand() {
             public void handle(String line, String cmd, String[] args) {
                 bosConn.setLogIms(new ImTestFrame(JoscarTester.this));
-            }
-        });
-        cmdMap.put("buddytree", new CLCommand() {
-            public void handle(String line, String cmd, String[] args) {
-                new BuddyTreeWindow(JoscarTester.this);
             }
         });
         cmdMap.put("sendfile", new CLCommand() {
