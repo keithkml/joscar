@@ -74,7 +74,7 @@ public final class MiniRoomInfo implements LiveWritable {
         ByteBlock rest = block.subBlock(3 + cookielen);
         int instance = BinaryTools.getUShort(rest, 0);
 
-        // this is messy. :/
+        // this is messy
         int size = (rest.getOffset() + 2) - block.getOffset();
 
         return new MiniRoomInfo(exchange, cookie, instance, size);
@@ -151,7 +151,9 @@ public final class MiniRoomInfo implements LiveWritable {
 
     /**
      * Returns the {@linkplain net.kano.joscar.snaccmd.conn.ServiceRequest
-     * service redirect} cookie that can be used to join this room.
+     * service redirect} cookie that can be used to join this room. The name of
+     * the chat room can normally be extracted from the cookie; see {@link
+     * net.kano.joscar.OscarTools#getRoomNameFromCookie(String)} for details.
      *
      * @return the service redirect cookie associated with this room
      */

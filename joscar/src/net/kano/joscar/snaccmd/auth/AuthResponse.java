@@ -151,10 +151,10 @@ public class AuthResponse extends AuthCommand {
 
         email = chain.getString(TYPE_EMAIL);
 
+        regstatus = chain.getUShort(TYPE_REGSTATUS);
+
         errorCode = chain.getUShort(TYPE_ERRCODE);
         errorUrl = chain.getString(TYPE_ERRURL);
-
-        regstatus = chain.getUShort(TYPE_REGSTATUS);
     }
 
     /**

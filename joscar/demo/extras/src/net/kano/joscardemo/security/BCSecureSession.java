@@ -90,6 +90,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
+import java.io.FileOutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -138,6 +139,8 @@ public class BCSecureSession extends SecureSession {
 
     BCSecureSession() { }
 
+    // generic
+
     private void loadKeys() throws KeyStoreException,
             NoSuchProviderException, IOException, NoSuchAlgorithmException,
             CertificateException, UnrecoverableKeyException {
@@ -162,54 +165,6 @@ public class BCSecureSession extends SecureSession {
 
     public boolean hasCert(String sn) { return getCert(sn) != null; }
 
-    public void setChatKey(String roomName, SecretKey chatKey) {
-        chatKeys.put(roomName, chatKey);
-    }
-
-    public SecretKey getChatKey(String chat) {
-        return (SecretKey) chatKeys.get(chat);
-    }
-
-    public ByteBlock genChatSecurityInfo(FullRoomInfo chatInfo, String sn)
-            throws SecureSessionException {
-        try {
-            SecretKey key = getChatKey(chatInfo.getRoomName());
-            byte[] keyData = key.getEncoded();
-
-            Cipher c = Cipher.getInstance("1.2.840.113549.1.1.1", "BC");
-            X509Certificate cert = getCert(sn);
-            c.init(Cipher.ENCRYPT_MODE, cert);
-
-            byte[] encryptedKey = c.doFinal(keyData);
-
-            X509Name xname = new X509Name(cert.getSubjectDN().getName());
-            IssuerAndSerialNumber ias
-                    = new IssuerAndSerialNumber(xname, cert.getSerialNumber());
-            KeyTransRecipientInfo ktr = new KeyTransRecipientInfo(
-                    new RecipientIdentifier(ias),
-                    new AlgorithmIdentifier("1.2.840.113549.1.1.1"),
-                    new DEROctetString(encryptedKey));
-
-            ASN1EncodableVector vec = new ASN1EncodableVector();
-            vec.add(ktr);
-            vec.add(new DERObjectIdentifier("2.16.840.1.101.3.4.1.42"));
-
-            ByteArrayOutputStream bout = new ByteArrayOutputStream();
-            ASN1OutputStream aout = new ASN1OutputStream(bout);
-            aout.writeObject(new DERSequence(vec));
-            aout.close();
-
-            ByteArrayOutputStream bout2 = new ByteArrayOutputStream();
-            new MiniRoomInfo(chatInfo).write(bout2);
-            BinaryTools.writeUShort(bout2, bout.size());
-            bout.writeTo(bout2);
-
-            return ByteBlock.wrap(signData(bout2.toByteArray()));
-        } catch (Exception e) {
-            throw new SecureSessionException(e);
-        }
-    }
-
     private byte[] signData(byte[] dataToSign) throws SecureSessionException {
         try {
             byte[] signedData;
@@ -226,136 +181,33 @@ public class BCSecureSession extends SecureSession {
         }
     }
 
+    private byte[] getCmsSignedBlock(String msg)
+            throws IOException, SecureSessionException {
+        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        OutputStreamWriter osw = new OutputStreamWriter(bout, "US-ASCII");
+        osw.write("Content-Transfer-Encoding: binary\r\n"
+                + "Content-Type: text/x-aolrtf; charset=us-ascii\r\n"
+                + "Content-Language: en\r\n"
+                + "\r\n");
+        osw.flush();
+        bout.write(msg.getBytes());
 
-    public ByteBlock encryptIM(String sn, String msg)
-            throws SecureSessionException {
-        try {
-            X509Certificate cert = getCert(sn);
+        byte[] dataToSign = bout.toByteArray();
+        byte[] signedData = signData(dataToSign);
 
-            if (cert == null) return null;
-
-            ByteArrayOutputStream bout = new ByteArrayOutputStream();
-            OutputStreamWriter osw = new OutputStreamWriter(bout, "US-ASCII");
-            osw.write("Content-Transfer-Encoding: binary\r\n"
-                    + "Content-Type: text/x-aolrtf; charset=us-ascii\r\n"
-                    + "Content-Language: en\r\n"
-                    + "\r\n");
-            osw.flush();
-            bout.write(msg.getBytes());
-
-            byte[] dataToSign = bout.toByteArray();
-            byte[] signedData = signData(dataToSign);
-
-            bout = new ByteArrayOutputStream();
-            osw = new OutputStreamWriter(bout, "US-ASCII");
-            osw.write("Content-Transfer-Encoding: binary\r\n"
-                    + "Content-Type: application/pkcs7-mime; charset=us-ascii\r\n"
-                    + "Content-Language: en\r\n"
-                    + "\r\n");
-            osw.flush();
-            bout.write(signedData);
-
-            CMSEnvelopedDataGenerator gen = new CMSEnvelopedDataGenerator();
-            gen.addKeyTransRecipient(cert);
-            CMSEnvelopedData envData = gen.generate(
-                    new CMSProcessableByteArray(bout.toByteArray()),
-                    "2.16.840.1.101.3.4.1.2", "BC");
-
-            return ByteBlock.wrap(envData.getEncoded());
-        } catch (Exception e) {
-            throw new SecureSessionException(e);
-        }
+        bout = new ByteArrayOutputStream();
+        osw = new OutputStreamWriter(bout, "US-ASCII");
+        osw.write("Content-Transfer-Encoding: binary\r\n"
+                + "Content-Type: application/pkcs7-mime; charset=us-ascii\r\n"
+                + "Content-Language: en\r\n"
+                + "\r\n");
+        osw.flush();
+        bout.write(signedData);
+        byte[] dataToEncrypt = bout.toByteArray();
+        return dataToEncrypt;
     }
 
-    public String parseChatMessage(String chat, String sn, ByteBlock data)
-            throws SecureSessionException {
-        try {
-            InputStream in = ByteBlock.createInputStream(data);
-            ASN1InputStream ain = new ASN1InputStream(in);
-
-            ASN1Sequence seq = (ASN1Sequence) ain.readObject();
-            BERTaggedObject bert = (BERTaggedObject) seq.getObjectAt(1);
-            ASN1Sequence seq2 = (ASN1Sequence) bert.getObject();
-            EncryptedData encd = new EncryptedData(seq2);
-            EncryptedContentInfo enci = encd.getEncryptedContentInfo();
-            byte[] encryptedData = enci.getEncryptedContent().getOctets();
-
-            AlgorithmIdentifier alg = enci.getContentEncryptionAlgorithm();
-
-            byte[] iv = ((ASN1OctetString) alg.getParameters()).getOctets();
-
-            Cipher c = Cipher.getInstance(alg.getObjectId().getId(), "BC");
-            c.init(Cipher.DECRYPT_MODE, getChatKey(chat),
-                    new IvParameterSpec(iv));
-
-            ByteBlock result = ByteBlock.wrap(c.doFinal(encryptedData));
-
-            OscarTools.HttpHeaderInfo hinfo = OscarTools.parseHttpHeader(result);
-            InputStream csdin = ByteBlock.createInputStream(hinfo.getData());
-            CMSSignedData csd = new CMSSignedData(csdin);
-            X509Certificate cert = getCert(sn);
-            if (cert != null) {
-                Collection signers = csd.getSignerInfos().getSigners();
-                for (Iterator sit = signers.iterator(); sit.hasNext();) {
-                    SignerInformation si = (SignerInformation) sit.next();
-                    boolean verified = si.verify(cert, "BC");
-                    if (!verified) {
-                        System.out.println("NOTE: message not verified");
-                    }
-                }
-            } else {
-                System.out.println("[couldn't verify message because I don't "
-                        + "have a cert for " + sn + "]");
-            }
-            byte[] scBytes = (byte[]) csd.getSignedContent().getContent();
-            ByteBlock signedContent = ByteBlock.wrap(scBytes);
-            OscarTools.HttpHeaderInfo hinfo2
-                    = OscarTools.parseHttpHeader(signedContent);
-            return OscarTools.getInfoString(hinfo2.getData(),
-                    (String) hinfo2.getHeaders().get("content-type"));
-        } catch (Exception e) {
-            throw new SecureSessionException(e);
-        }
-    }
-
-    public SecretKey extractChatKey(String sn, ByteBlock data)
-            throws SecureSessionException {
-        try {
-            CMSSignedData csd
-                    = new CMSSignedData(ByteBlock.createInputStream(data));
-            Collection signers = csd.getSignerInfos().getSigners();
-            for (Iterator sit = signers.iterator(); sit.hasNext();) {
-                SignerInformation si = (SignerInformation) sit.next();
-                boolean verified = si.verify(getCert(sn), "BC");
-                if (!verified) System.out.println("NOTE: key not verified!");
-            }
-            CMSProcessableByteArray cpb
-                    = (CMSProcessableByteArray) csd.getSignedContent();
-            ByteBlock signedContent = ByteBlock.wrap((byte[]) cpb.getContent());
-            MiniRoomInfo mri = MiniRoomInfo.readMiniRoomInfo(signedContent);
-
-            ByteBlock rest = signedContent.subBlock(mri.getTotalSize());
-            int kdlen = BinaryTools.getUShort(rest, 0);
-            ByteBlock keyData = rest.subBlock(2, kdlen);
-
-            InputStream kdin = ByteBlock.createInputStream(keyData);
-            ASN1InputStream ain = new ASN1InputStream(kdin);
-            ASN1Sequence root = (ASN1Sequence) ain.readObject();
-            ASN1Sequence seq = (ASN1Sequence) root.getObjectAt(0);
-            KeyTransRecipientInfo ktr = KeyTransRecipientInfo.getInstance(seq);
-            DERObjectIdentifier keyoid
-                    = (DERObjectIdentifier) root.getObjectAt(1);
-
-            String encoid = ktr.getKeyEncryptionAlgorithm().getObjectId().getId();
-            Cipher cipher = Cipher.getInstance(encoid, "BC");
-            cipher.init(Cipher.DECRYPT_MODE, privateKey);
-
-            byte[] result = cipher.doFinal(ktr.getEncryptedKey().getOctets());
-            return new SecretKeySpec(result, keyoid.getId());
-        } catch (Exception e) {
-            throw new SecureSessionException(e);
-        }
-    }
+    // IM's
 
     public String decodeEncryptedIM(String sn, ByteBlock encData)
             throws SecureSessionException {
@@ -398,59 +250,28 @@ public class BCSecureSession extends SecureSession {
         }
     }
 
-    public byte[] encryptChatMsg(String chat, String msg)
+    public ByteBlock encryptIM(String sn, String msg)
             throws SecureSessionException {
         try {
-            ByteArrayOutputStream bout = new ByteArrayOutputStream();
-            OutputStreamWriter osw = new OutputStreamWriter(bout, "US-ASCII");
-            osw.write("Content-Transfer-Encoding: binary\r\n"
-                    + "Content-Type: text/x-aolrtf; charset=us-ascii\r\n"
-                    + "Content-Language: en\r\n"
-                    + "\r\n");
-            osw.flush();
-            bout.write(msg.getBytes());
+            X509Certificate cert = getCert(sn);
 
-            byte[] dataToSign = bout.toByteArray();
-            byte[] signedData = signData(dataToSign);
+            if (cert == null) return null;
 
-            bout = new ByteArrayOutputStream();
-            osw = new OutputStreamWriter(bout, "US-ASCII");
-            osw.write("Content-Transfer-Encoding: binary\r\n"
-                    + "Content-Type: application/pkcs7-mime; charset=us-ascii\r\n"
-                    + "Content-Language: en\r\n"
-                    + "\r\n");
-            osw.flush();
-            bout.write(signedData);
+            byte[] signedDataBlock = getCmsSignedBlock(msg);
 
-            byte[] iv = new byte[16];
-            random.nextBytes(iv);
+            CMSEnvelopedDataGenerator gen = new CMSEnvelopedDataGenerator();
+            gen.addKeyTransRecipient(cert);
+            CMSEnvelopedData envData = gen.generate(
+                    new CMSProcessableByteArray(signedDataBlock),
+                    "2.16.840.1.101.3.4.1.2", "BC");
 
-            Cipher c = Cipher.getInstance("2.16.840.1.101.3.4.1.42", "BC");
-            c.init(Cipher.ENCRYPT_MODE, getChatKey(chat), new IvParameterSpec(iv));
-
-            byte[] encrypted = c.doFinal(bout.toByteArray());
-            EncryptedContentInfo eci = new EncryptedContentInfo(
-                    new DERObjectIdentifier("1.2.840.113549.1.7.1"),
-                    new AlgorithmIdentifier(
-                            new DERObjectIdentifier("2.16.840.1.101.3.4.1.42"),
-                            new DEROctetString(iv)),
-                    new BERConstructedOctetString(encrypted));
-            EncryptedData ed = new EncryptedData(eci, null);
-            BERTaggedObject bert = new BERTaggedObject(0, ed.getDERObject());
-            DERObjectIdentifier rootid
-                    = new DERObjectIdentifier("1.2.840.113549.1.7.6");
-            ASN1EncodableVector vec = new ASN1EncodableVector();
-            vec.add(rootid);
-            vec.add(bert);
-            ByteArrayOutputStream fout = new ByteArrayOutputStream();
-            ASN1OutputStream out = new ASN1OutputStream(fout);
-            out.writeObject(new BERSequence(vec));
-            out.close();
-            return fout.toByteArray();
+            return ByteBlock.wrap(envData.getEncoded());
         } catch (Exception e) {
             throw new SecureSessionException(e);
         }
     }
+
+    // SSL
 
     public ServerSocket createSSLServerSocket(final String sn)
             throws SecureSessionException {
@@ -515,33 +336,33 @@ public class BCSecureSession extends SecureSession {
             final X509KeyManager xkm1 = xkm;
             context.init(
                     new KeyManager[] {new X509KeyManager() {
-                            public PrivateKey getPrivateKey(String string) {
-                                return xkm1.getPrivateKey(string);
-                            }
+                        public PrivateKey getPrivateKey(String string) {
+                            return xkm1.getPrivateKey(string);
+                        }
 
-                            public X509Certificate[] getCertificateChain(String string) {
-                                return xkm1.getCertificateChain(string);
-                            }
+                        public X509Certificate[] getCertificateChain(String string) {
+                            return xkm1.getCertificateChain(string);
+                        }
 
-                            public String[] getClientAliases(String string, Principal[] principals) {
-                                return xkm1.getClientAliases(string, principals);
-                            }
+                        public String[] getClientAliases(String string, Principal[] principals) {
+                            return xkm1.getClientAliases(string, principals);
+                        }
 
-                            public String[] getServerAliases(String string, Principal[] principals) {
-                                return xkm1.getServerAliases(string, principals);
-                            }
+                        public String[] getServerAliases(String string, Principal[] principals) {
+                            return xkm1.getServerAliases(string, principals);
+                        }
 
-                            public String chooseServerAlias(String string, Principal[] principals,
-                                    Socket socket) {
-                                return xkm1.chooseServerAlias(string, principals, socket);
-                            }
+                        public String chooseServerAlias(String string, Principal[] principals,
+                                Socket socket) {
+                            return xkm1.chooseServerAlias(string, principals, socket);
+                        }
 
-                            public String chooseClientAlias(String[] strings, Principal[] principals,
-                                    Socket socket) {
-                                String alias = xkm1.chooseClientAlias(strings, null, socket);
-                                return alias;
-                            }
-                        }},
+                        public String chooseClientAlias(String[] strings, Principal[] principals,
+                                Socket socket) {
+                            String alias = xkm1.chooseClientAlias(strings, null, socket);
+                            return alias;
+                        }
+                    }},
                     new TrustManager[]{new X509TrustManager() {
                         public X509Certificate[] getAcceptedIssuers() {
                             return new X509Certificate[0];
@@ -582,12 +403,190 @@ public class BCSecureSession extends SecureSession {
         }
     }
 
+    // chat
+
+
     public void generateKey(String chat) throws SecureSessionException {
         try {
             KeyGenerator kg
                     = KeyGenerator.getInstance("2.16.840.1.101.3.4.1.42");
             kg.init(new SecureRandom());
             setChatKey(chat, kg.generateKey());
+        } catch (Exception e) {
+            throw new SecureSessionException(e);
+        }
+    }
+
+    public void setChatKey(String roomName, SecretKey chatKey) {
+        chatKeys.put(roomName, chatKey);
+    }
+
+    public SecretKey getChatKey(String chat) {
+        return (SecretKey) chatKeys.get(chat);
+    }
+
+    public ByteBlock genChatSecurityInfo(FullRoomInfo chatInfo, String sn)
+            throws SecureSessionException {
+        try {
+            SecretKey key = getChatKey(chatInfo.getRoomName());
+            byte[] keyData = key.getEncoded();
+
+            Cipher c = Cipher.getInstance("1.2.840.113549.1.1.1", "BC");
+            X509Certificate cert = getCert(sn);
+            c.init(Cipher.ENCRYPT_MODE, cert);
+
+            byte[] encryptedKey = c.doFinal(keyData);
+
+            X509Name xname = new X509Name(cert.getSubjectDN().getName());
+            IssuerAndSerialNumber ias
+                    = new IssuerAndSerialNumber(xname, cert.getSerialNumber());
+            KeyTransRecipientInfo ktr = new KeyTransRecipientInfo(
+                    new RecipientIdentifier(ias),
+                    new AlgorithmIdentifier("1.2.840.113549.1.1.1"),
+                    new DEROctetString(encryptedKey));
+
+            ASN1EncodableVector vec = new ASN1EncodableVector();
+            vec.add(ktr);
+            vec.add(new DERObjectIdentifier("2.16.840.1.101.3.4.1.42"));
+
+            ByteArrayOutputStream bout = new ByteArrayOutputStream();
+            ASN1OutputStream aout = new ASN1OutputStream(bout);
+            aout.writeObject(new DERSequence(vec));
+            aout.close();
+
+            ByteArrayOutputStream bout2 = new ByteArrayOutputStream();
+            new MiniRoomInfo(chatInfo).write(bout2);
+            BinaryTools.writeUShort(bout2, bout.size());
+            bout.writeTo(bout2);
+
+            return ByteBlock.wrap(signData(bout2.toByteArray()));
+        } catch (Exception e) {
+            throw new SecureSessionException(e);
+        }
+    }
+
+    public SecretKey extractChatKey(String sn, ByteBlock data)
+            throws SecureSessionException {
+        try {
+            CMSSignedData csd
+                    = new CMSSignedData(ByteBlock.createInputStream(data));
+            Collection signers = csd.getSignerInfos().getSigners();
+            for (Iterator sit = signers.iterator(); sit.hasNext();) {
+                SignerInformation si = (SignerInformation) sit.next();
+                boolean verified = si.verify(getCert(sn), "BC");
+                if (!verified) System.out.println("NOTE: key not verified!");
+            }
+            CMSProcessableByteArray cpb
+                    = (CMSProcessableByteArray) csd.getSignedContent();
+            ByteBlock signedContent = ByteBlock.wrap((byte[]) cpb.getContent());
+            MiniRoomInfo mri = MiniRoomInfo.readMiniRoomInfo(signedContent);
+
+            ByteBlock rest = signedContent.subBlock(mri.getTotalSize());
+            int kdlen = BinaryTools.getUShort(rest, 0);
+            ByteBlock keyData = rest.subBlock(2, kdlen);
+
+            InputStream kdin = ByteBlock.createInputStream(keyData);
+            ASN1InputStream ain = new ASN1InputStream(kdin);
+            ASN1Sequence root = (ASN1Sequence) ain.readObject();
+            ASN1Sequence seq = (ASN1Sequence) root.getObjectAt(0);
+            KeyTransRecipientInfo ktr = KeyTransRecipientInfo.getInstance(seq);
+            DERObjectIdentifier keyoid
+                    = (DERObjectIdentifier) root.getObjectAt(1);
+
+            String encoid = ktr.getKeyEncryptionAlgorithm().getObjectId().getId();
+            Cipher cipher = Cipher.getInstance(encoid, "BC");
+            cipher.init(Cipher.DECRYPT_MODE, privateKey);
+
+            byte[] result = cipher.doFinal(ktr.getEncryptedKey().getOctets());
+            return new SecretKeySpec(result, keyoid.getId());
+        } catch (Exception e) {
+            throw new SecureSessionException(e);
+        }
+    }
+
+    public String parseChatMessage(String chat, String sn, ByteBlock data)
+            throws SecureSessionException {
+        try {
+            InputStream in = ByteBlock.createInputStream(data);
+            ASN1InputStream ain = new ASN1InputStream(in);
+
+            ASN1Sequence seq = (ASN1Sequence) ain.readObject();
+            BERTaggedObject bert = (BERTaggedObject) seq.getObjectAt(1);
+            ASN1Sequence seq2 = (ASN1Sequence) bert.getObject();
+            EncryptedData encd = new EncryptedData(seq2);
+            EncryptedContentInfo enci = encd.getEncryptedContentInfo();
+            byte[] encryptedData = enci.getEncryptedContent().getOctets();
+
+            AlgorithmIdentifier alg = enci.getContentEncryptionAlgorithm();
+
+            byte[] iv = ((ASN1OctetString) alg.getParameters()).getOctets();
+
+            Cipher c = Cipher.getInstance(alg.getObjectId().getId(), "BC");
+            c.init(Cipher.DECRYPT_MODE, getChatKey(chat),
+                    new IvParameterSpec(iv));
+
+            ByteBlock result = ByteBlock.wrap(c.doFinal(encryptedData));
+
+            OscarTools.HttpHeaderInfo hinfo = OscarTools.parseHttpHeader(result);
+            InputStream csdin = ByteBlock.createInputStream(hinfo.getData());
+            CMSSignedData csd = new CMSSignedData(csdin);
+            X509Certificate cert = getCert(sn);
+            if (cert != null) {
+                Collection signers = csd.getSignerInfos().getSigners();
+                for (Iterator sit = signers.iterator(); sit.hasNext();) {
+                    SignerInformation si = (SignerInformation) sit.next();
+                    boolean verified = si.verify(cert, "BC");
+                    if (!verified) {
+                        System.out.println("NOTE: message not verified");
+                    }
+                }
+            } else {
+                System.out.println("[couldn't verify message because I don't "
+                        + "have a cert for " + sn + "]");
+            }
+            byte[] scBytes = (byte[]) csd.getSignedContent().getContent();
+            ByteBlock signedContent = ByteBlock.wrap(scBytes);
+            OscarTools.HttpHeaderInfo hinfo2
+                    = OscarTools.parseHttpHeader(signedContent);
+            return OscarTools.getInfoString(hinfo2.getData(),
+                    (String) hinfo2.getHeaders().get("content-type"));
+        } catch (Exception e) {
+            throw new SecureSessionException(e);
+        }
+    }
+
+    public byte[] encryptChatMsg(String chat, String msg)
+            throws SecureSessionException {
+        try {
+            byte[] dataToEncrypt = getCmsSignedBlock(msg);
+
+            byte[] iv = new byte[16];
+            random.nextBytes(iv);
+
+            Cipher c = Cipher.getInstance("2.16.840.1.101.3.4.1.42", "BC");
+            c.init(Cipher.ENCRYPT_MODE, getChatKey(chat), new IvParameterSpec(iv));
+
+            byte[] encrypted = c.doFinal(dataToEncrypt);
+
+            EncryptedContentInfo eci = new EncryptedContentInfo(
+                    new DERObjectIdentifier("1.2.840.113549.1.7.1"),
+                    new AlgorithmIdentifier(
+                            new DERObjectIdentifier("2.16.840.1.101.3.4.1.42"),
+                            new DEROctetString(iv)),
+                    new BERConstructedOctetString(encrypted));
+            EncryptedData ed = new EncryptedData(eci, null);
+
+            BERTaggedObject bert = new BERTaggedObject(0, ed.getDERObject());
+            DERObjectIdentifier rootid
+                    = new DERObjectIdentifier("1.2.840.113549.1.7.6");
+            ASN1EncodableVector vec = new ASN1EncodableVector();
+            vec.add(rootid);
+            vec.add(bert);
+            ByteArrayOutputStream fout = new ByteArrayOutputStream();
+            ASN1OutputStream out = new ASN1OutputStream(fout);
+            out.writeObject(new BERSequence(vec));
+            out.close();
+            return fout.toByteArray();
         } catch (Exception e) {
             throw new SecureSessionException(e);
         }
