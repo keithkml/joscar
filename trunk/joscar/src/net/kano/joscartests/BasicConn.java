@@ -97,15 +97,22 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.security.*;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateNotYetValidException;
+import java.security.cert.CertificateExpiredException;
 import java.text.DateFormat;
 import java.util.*;
 
 import org.bouncycastle.cms.CMSEnvelopedData;
 import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.cms.KeyTransRecipientInformation;
+import org.bouncycastle.cms.CMSSignedData;
+import org.bouncycastle.cms.SignerInformationStore;
+import org.bouncycastle.cms.SignerInformation;
+import org.bouncycastle.cms.CMSProcessable;
 
 public abstract class BasicConn extends AbstractFlapConn {
     protected final ByteBlock cookie;
@@ -161,9 +168,10 @@ public abstract class BasicConn extends AbstractFlapConn {
                     new DirectIMSession(tester.getScreenname(), session, event);
                 }
             } else if (cmd instanceof SendBuddyIconRvCmd) {
+                /*
                 SendBuddyIconRvCmd iconCmd = (SendBuddyIconRvCmd) cmd;
                 ByteBlock iconData = iconCmd.getIconData();
-                if (false && iconData != null) {
+                if (iconData != null) {
                     try {
                         File dir = new File("buddy-icons");
                         if (!dir.isDirectory()) dir.mkdir();
@@ -179,6 +187,7 @@ public abstract class BasicConn extends AbstractFlapConn {
                         e.printStackTrace();
                     }
                 }
+                */
             } else if (cmd instanceof SendBuddyListRvCmd) {
                 session.sendResponse(RvResponse.CODE_NOT_ACCEPTING);
             } else if (cmd instanceof GetFileReqRvCmd) {
@@ -287,6 +296,7 @@ public abstract class BasicConn extends AbstractFlapConn {
 
             String sn = icbm.getSenderInfo().getScreenname();
             InstantMessage message = icbm.getMessage();
+            String msg = null;
             if (message.isEncrypted()) {
                 ByteBlock encData = message.getEncryptedData();
                 System.out.println("got [" + encData.getLength() + "]");
@@ -294,47 +304,33 @@ public abstract class BasicConn extends AbstractFlapConn {
                 Certificate cert = tester.getCert(sn);
                 if (cert != null) {
                     try {
-                        CMSEnvelopedData ced = new CMSEnvelopedData(encData.toByteArray());
-                        Collection recip = ced.getRecipientInfos().getRecipients();
-                        for (Iterator it = recip.iterator(); it.hasNext(); ) {
-                            KeyTransRecipientInformation rinfo
-                                    = (KeyTransRecipientInformation) it.next();
-
-                            System.out.println("rid=" + rinfo.getRID());
-                            System.out.println("" + rinfo.getContent(tester.privateKey, "BC"));
-                        }
+                        msg = decodeEncryptedMsg(sn, encData);
                     } catch (CMSException e1) {
                         e1.printStackTrace();
                     } catch (NoSuchProviderException e1) {
                         e1.printStackTrace();
+                    } catch (CertificateNotYetValidException e1) {
+                        e1.printStackTrace();
+                    } catch (CertificateExpiredException e1) {
+                        e1.printStackTrace();
+                    } catch (NoSuchAlgorithmException e1) {
+                        e1.printStackTrace();
                     }
                 } else {
-                    System.out.println("cert is null for " + sn);
-                }
-
-                try {
-                    FileOutputStream out = new FileOutputStream(
-                            "tmpencryptedmsg");
-
-                    encData.write(out);
-
-                    out.close();
-                } catch (FileNotFoundException e1) {
-                    e1.printStackTrace();
-                } catch (IOException e1) {
-                    e1.printStackTrace();
+                    System.out.println(sn + " tried sending an encrypted "
+                            + "message, but I don't have his/her certificate "
+                            + " - try typing 'getcertinfo " + sn + "'");
                 }
 
             } else {
-                System.out.println("*" + sn + "* "
-                        + OscarTools.stripHtml(message.getMessage()));
+                msg = OscarTools.stripHtml(message.getMessage());
 
                 OldIconHashInfo iconInfo = icbm.getIconInfo();
 
-                if (iconInfo != null) {
-                    System.out.println("(" + sn
-                            + " has a buddy icon: " + iconInfo + ")");
-                }
+//                if (iconInfo != null) {
+//                    System.out.println("(" + sn
+//                            + " has a buddy icon: " + iconInfo + ")");
+//                }
 
                 String str = dateFormat.format(new Date()) + " IM from "
                         + sn + ": " + message;
@@ -345,6 +341,10 @@ public abstract class BasicConn extends AbstractFlapConn {
                     frame.echo("");
                     frame.echo(str);
                 }
+            }
+            if (msg != null) {
+                String encFlag = (message.isEncrypted() ? "**ENCRYPTED** " : "");
+                System.out.println(encFlag + "*" + sn + "* " + msg);
             }
 
 //            if (icbm.senderWantsIcon()) {
@@ -460,6 +460,45 @@ public abstract class BasicConn extends AbstractFlapConn {
             System.out.println("rate change: current avg is "
                     + rc.getRateInfo().getCurrentAvg());
         }
+    }
+
+    private String decodeEncryptedMsg(String sn, ByteBlock encData)
+            throws CMSException, NoSuchProviderException,
+            CertificateNotYetValidException, CertificateExpiredException,
+            NoSuchAlgorithmException {
+        InputStream encin = ByteBlock.createInputStream(encData);
+        CMSEnvelopedData ced = new CMSEnvelopedData(encin);
+        Collection recip = ced.getRecipientInfos().getRecipients();
+
+        if (recip.isEmpty()) return null;
+
+        KeyTransRecipientInformation rinfo
+                = (KeyTransRecipientInformation) recip.iterator().next();
+
+        byte[] content = rinfo.getContent(tester.privateKey, "BC");
+
+        OscarTools.HttpHeaderInfo hdrInfo
+                = OscarTools.parseHttpHeader(ByteBlock.wrap(content));
+
+        InputStream in = ByteBlock.createInputStream(hdrInfo.getData());
+        CMSSignedData csd = new CMSSignedData(in);
+        SignerInformationStore signerInfos = csd.getSignerInfos();
+        Collection signers = signerInfos.getSigners();
+        for (Iterator sit = signers.iterator(); sit.hasNext();) {
+            SignerInformation si = (SignerInformation) sit.next();
+            boolean verified = si.verify(tester.getCert(sn), "BC");
+            System.out.println("verified: " + verified);
+        }
+        CMSProcessable signedContent = csd.getSignedContent();
+        ByteBlock data = ByteBlock.wrap((byte[]) signedContent.getContent());
+
+        OscarTools.HttpHeaderInfo bodyInfo
+                = OscarTools.parseHttpHeader(data);
+
+        String msg = OscarTools.getInfoString(bodyInfo.getData(),
+                (String) bodyInfo.getHeaders().get("content-type"));
+
+        return OscarTools.stripHtml(msg);
     }
 
     protected void handleSnacResponse(SnacResponseEvent e) {

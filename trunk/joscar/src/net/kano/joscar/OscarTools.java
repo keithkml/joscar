@@ -353,4 +353,62 @@ public final class OscarTools {
     public static String stripHtml(String str) {
         return htmlRE.matcher(str).replaceAll("");
     }
+
+    private static final Pattern httpHeaderRE
+            = Pattern.compile("((.*?)(?:: ?(.*))?)(\r\n|\r|\n)");
+
+    /**
+     * Note that the header keys are all lowercase
+     */ 
+    public static HttpHeaderInfo parseHttpHeader(ByteBlock data) {
+        Map map = new HashMap();
+
+        DynAsciiCharSequence seq = new DynAsciiCharSequence(data);
+        Matcher m = httpHeaderRE.matcher(seq);
+        int dataStart = -1;
+        while (true) {
+            // skip to the next match
+            if (!m.find()) break;
+
+            if (m.group(1).trim().length() == 0) {
+                dataStart = m.end();
+                break;
+            }
+
+            map.put(m.group(2).toLowerCase(), m.group(3));
+        }
+
+        return new HttpHeaderInfo(map,
+                dataStart == -1 ? null : data.subBlock(dataStart));
+    }
+
+    public static final class HttpHeaderInfo {
+        private final Map headers;
+        private final ByteBlock data;
+
+        protected HttpHeaderInfo(Map headers, ByteBlock data) {
+            this.data = data;
+            this.headers = headers;
+        }
+
+        public Map getHeaders() { return headers; }
+
+        public ByteBlock getData() { return data; }
+    }
+
+    private static class DynAsciiCharSequence implements CharSequence {
+        private final ByteBlock data;
+
+        public DynAsciiCharSequence(ByteBlock data) { this.data = data; }
+
+        public char charAt(int index) { return (char) data.get(index); }
+
+        public int length() { return data.getLength(); }
+
+        public CharSequence subSequence(int start, int end) {
+            return new DynAsciiCharSequence(data.subBlock(start, end-start));
+        }
+
+        public String toString() { return BinaryTools.getAsciiString(data); }
+    }
 }
