@@ -35,13 +35,14 @@
 
 package net.kano.aimcrypto.connection.oscar.service.icbm;
 
-import net.kano.aimcrypto.BuddySecurityInfo;
-import net.kano.aimcrypto.PrivateKeysInfo;
+import net.kano.aimcrypto.config.BuddySecurityInfo;
+import net.kano.aimcrypto.config.PrivateKeysInfo;
 import net.kano.aimcrypto.Screenname;
+import net.kano.aimcrypto.config.BuddySecurityInfo;
 import net.kano.aimcrypto.connection.AimConnection;
 import net.kano.aimcrypto.connection.oscar.service.icbm.SecureAimDecoder.DecryptedMessageInfo;
 import net.kano.aimcrypto.connection.oscar.service.info.CertificateAdapter;
-import net.kano.aimcrypto.connection.oscar.service.info.CertificateManager;
+import net.kano.aimcrypto.connection.oscar.service.info.BuddyCertificateManager;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.icbm.InstantMessage;
@@ -79,20 +80,20 @@ public class SecureAimConversation extends Conversation {
     }
 
     protected void initialize() {
-        CertificateManager certManager = conn.getCertificateManager();
+        BuddyCertificateManager certManager = conn.getCertificateManager();
         certManager.addListener(new CertificateAdapter() {
-            public void gotTrustedCertificateChange(CertificateManager manager,
+            public void gotTrustedCertificateChange(BuddyCertificateManager manager,
                     Screenname buddy, BuddySecurityInfo info) {
                 System.out.println("got trusted cert for " + buddy);
             }
 
-            public void gotUntrustedCertificateChange(CertificateManager manager,
+            public void gotUntrustedCertificateChange(BuddyCertificateManager manager,
                     Screenname buddy, BuddySecurityInfo info) {
                 System.out.println("got untrusted cert for " + buddy + ", trusting");
                 manager.trust(info);
             }
 
-            public void gotUnknownCertificateChange(CertificateManager manager,
+            public void gotUnknownCertificateChange(BuddyCertificateManager manager,
                     Screenname buddy, ByteBlock newHash) {
                 if (!buddy.equals(getBuddy())) return;
 
@@ -101,7 +102,7 @@ public class SecureAimConversation extends Conversation {
 
             }
 
-            public void buddyTrusted(CertificateManager certificateManager,
+            public void buddyTrusted(BuddyCertificateManager certificateManager,
                     Screenname buddy, ByteBlock trustedhash, BuddySecurityInfo info) {
                 if (!buddy.equals(getBuddy())) return;
 
@@ -109,7 +110,7 @@ public class SecureAimConversation extends Conversation {
                 storeBuddyInfo(info);
             }
 
-            public void buddyTrustRevoked(CertificateManager certificateManager,
+            public void buddyTrustRevoked(BuddyCertificateManager certificateManager,
                     Screenname buddy, ByteBlock hash, BuddySecurityInfo info) {
                 if (!buddy.equals(getBuddy())) return;
 

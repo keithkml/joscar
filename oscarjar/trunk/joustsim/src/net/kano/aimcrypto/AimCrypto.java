@@ -104,7 +104,8 @@ public final class AimCrypto {
         }
 
         String home = System.getProperty("user.home", "~");
-        AppSession sess = new AppSession(new File(home, ".aimcrypto"));
+        AppSession sess = new AppSession(new File(home, ".joustsim"));
+        sess.setSavePrefsOnExit(true);
 
         GuiSession guiSession = new GuiSession(sess);
         guiSession.addListener(new GuiSessionListener() {

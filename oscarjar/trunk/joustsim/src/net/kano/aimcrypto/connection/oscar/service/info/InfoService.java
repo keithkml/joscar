@@ -36,9 +36,11 @@
 package net.kano.aimcrypto.connection.oscar.service.info;
 
 import net.kano.aimcrypto.AimSession;
-import net.kano.aimcrypto.BuddySecurityInfo;
-import net.kano.aimcrypto.PrivateKeysInfo;
+import net.kano.aimcrypto.config.BuddySecurityInfo;
+import net.kano.aimcrypto.config.PrivateKeysInfo;
 import net.kano.aimcrypto.Screenname;
+import net.kano.aimcrypto.config.BuddySecurityInfo;
+import net.kano.aimcrypto.config.PrivateKeysInfo;
 import net.kano.aimcrypto.connection.AimConnection;
 import net.kano.aimcrypto.connection.oscar.OscarConnection;
 import net.kano.aimcrypto.connection.oscar.service.Service;

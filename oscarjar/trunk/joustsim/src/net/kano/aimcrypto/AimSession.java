@@ -37,6 +37,7 @@ package net.kano.aimcrypto;
 
 import net.kano.aimcrypto.connection.AimConnection;
 import net.kano.aimcrypto.connection.AimConnectionProperties;
+import net.kano.aimcrypto.config.PrivateKeysInfo;
 import net.kano.joscar.DefensiveTools;
 
 public class AimSession {

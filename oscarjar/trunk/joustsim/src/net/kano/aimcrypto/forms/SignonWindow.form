@@ -89,7 +89,6 @@
               <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="1" anchor="0" fill="1"/>
             </constraints>
             <properties>
-              <margin top="2" left="14" bottom="2" right="14"/>
               <text value="Clear"/>
             </properties>
           </component>

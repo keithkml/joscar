@@ -37,16 +37,20 @@ package net.kano.aimcrypto.forms;
 
 import net.kano.aimcrypto.AppSession;
 import net.kano.aimcrypto.DistinguishedName;
-import net.kano.aimcrypto.LoadingException;
-import net.kano.aimcrypto.PrivateKeysInfo;
-import net.kano.aimcrypto.PrivateSecurityInfo;
+import net.kano.aimcrypto.config.LoadingException;
+import net.kano.aimcrypto.config.PrivateKeysInfo;
+import net.kano.aimcrypto.config.LocalKeysManager;
 import net.kano.aimcrypto.Screenname;
+import net.kano.aimcrypto.config.LocalKeysManager;
+import net.kano.aimcrypto.config.LoadingException;
 import net.kano.joscar.DefensiveTools;
 
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.Icon;
+import javax.swing.ImageIcon;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -58,9 +62,6 @@ import javax.swing.JSeparator;
 import javax.swing.JTextPane;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
-import javax.swing.ListCellRenderer;
-import javax.swing.JComponent;
-import javax.swing.ImageIcon;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileFilter;
@@ -80,16 +81,11 @@ import java.awt.event.WindowFocusListener;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.StringWriter;
-import java.io.PrintWriter;
+import java.net.URL;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.net.URL;
-
-import junit.runner.ReloadingTestSuiteLoader;
-import com.sun.corba.se.internal.orbutil.Condition;
 
 public class CertificateOptionsPane extends JFrame {
     private static final Object VALUE_BROWSE = new Object();
@@ -117,7 +113,7 @@ public class CertificateOptionsPane extends JFrame {
 
     private final AppSession appSession;
     private final Screenname sn;
-    private final PrivateSecurityInfo securityInfo;
+    private final LocalKeysManager securityInfo;
 
     private ListComboBoxModel certificateFileList = new ListComboBoxModel();
     private ListComboBoxModel signingCertificateList = new ListComboBoxModel();
@@ -149,7 +145,7 @@ public class CertificateOptionsPane extends JFrame {
 
     {
         getContentPane().add(mainPanel);
-        currentCertsPane.setFont(mainPanel.getFont());
+        currentCertsPane.setFont(aliasesInfoLabel.getFont());
         certFileBox.setModel(certificateFileList);
         signWithBox.setModel(signingCertificateList);
         encryptWithBox.setModel(encryptingCertificateList);
@@ -194,7 +190,7 @@ public class CertificateOptionsPane extends JFrame {
                         SwingUtilities.invokeLater(new Runnable() {
                             public void run() {
                                 browseForCertificate();
-                                updateThings();
+                                updateThings(true);
                                 passwordBox.requestFocus();
                             }
                         });
@@ -203,7 +199,7 @@ public class CertificateOptionsPane extends JFrame {
                         securityInfo.switchToCertificateFile((String) realItem);
                         SwingUtilities.invokeLater(new Runnable() {
                             public void run() {
-                                updateThings();
+                                updateThings(true);
                                 passwordBox.requestFocus();
                             }
                         });
@@ -220,7 +216,7 @@ public class CertificateOptionsPane extends JFrame {
                     Object item = e.getItem();
                     if (item instanceof String) {
                         securityInfo.setSigningAlias((String) item);
-                        updateThings();
+                        updateThings(true);
                     }
                 }
             }
@@ -231,7 +227,7 @@ public class CertificateOptionsPane extends JFrame {
                     Object item = e.getItem();
                     if (item instanceof String) {
                         securityInfo.setEncryptionAlias((String) item);
-                        updateThings();
+                        updateThings(true);
                     }
                 }
             }
@@ -251,15 +247,14 @@ public class CertificateOptionsPane extends JFrame {
 
         addWindowFocusListener(new WindowFocusListener() {
             public void windowGainedFocus(WindowEvent e) {
-                updateThings();
+                updateThings(false);
             }
 
             public void windowLostFocus(WindowEvent e) { }
         });
         addComponentListener(new ComponentAdapter() {
             public void componentShown(ComponentEvent e) {
-                ensureReloaderUp();
-                updateThings();
+                updateThings(true);
             }
 
             public void componentHidden(ComponentEvent e) {
@@ -280,7 +275,7 @@ public class CertificateOptionsPane extends JFrame {
                 String oldpass = securityInfo.getPassword();
                 if (newpass.equals(oldpass)) return;
                 securityInfo.setPassword(newpass);
-                updateThings();
+                updateThings(false);
             }
         });
 
@@ -295,29 +290,53 @@ public class CertificateOptionsPane extends JFrame {
 
         this.appSession = appSession;
         this.sn = sn;
-        this.securityInfo = appSession.getPrivateSecurityInfo(sn);
+        this.securityInfo = appSession.getPrefs(sn).getLocalKeysManager();
     }
 
     private boolean loadedYet = false;
 
-    private synchronized void updateThings() {
+    private synchronized void updateThings(boolean force) {
         loadedYet = false;
         ensureReloaderUp();
-        reloader.reload();
+        reloader.reload(force);
 
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                populateUI();
-            }
-        });
+        if (force) {
+            SwingUtilities.invokeLater(new Runnable() {
+                public void run() {
+                    populateUI();
+                }
+            });
+            repaint();
+        }
     }
 
     private void populateUI() {
         ListComboBoxModel cfl = certificateFileList;
         cfl.clear();
 
-        PrivateSecurityInfo securityInfo = this.securityInfo;
-        List names = Arrays.asList(securityInfo.getPossibleCertificateNames());
+        LocalKeysManager securityInfo = this.securityInfo;
+        String[] possibleCertNames;
+        String currentName;
+        String pass;
+        boolean savePassword;
+        boolean haveKeys;
+        boolean canChangePass;
+        String[] aliasesArray;
+        String signingAlias;
+        String encryptionAlias;
+        synchronized(securityInfo) {
+            possibleCertNames = securityInfo.getPossibleCertificateNames();
+            currentName = securityInfo.getCertificateFilename();
+            pass = securityInfo.getPassword();
+            savePassword = securityInfo.getSavePassword();
+            haveKeys = securityInfo.getKeysInfo() != null;
+            canChangePass = !haveKeys && !securityInfo.isPasswordValid();
+            aliasesArray = securityInfo.getPossibleAliases();
+            signingAlias = securityInfo.getSigningAlias();
+            encryptionAlias = securityInfo.getEncryptionAlias();
+        }
+
+        List names = Arrays.asList(possibleCertNames);
         Collections.sort(names);
         cfl.clear();
         cfl.addElement(VALUE_NONE);
@@ -325,18 +344,14 @@ public class CertificateOptionsPane extends JFrame {
         cfl.addElement(VALUE_SEPARATOR);
         cfl.addElement(VALUE_BROWSE);
 
-        String currentName = securityInfo.getCertificateFilename();
         currentCertFilename = currentName;
         cfl.setSelectedItem(currentName == null ? VALUE_NONE : currentName);
         boolean valid = names.contains(currentName);
         currentCertFileValid = valid;
 
-        String pass = securityInfo.getPassword();
         passwordBox.setText(pass == null ? "" : pass);
-        savePasswordBox.setSelected(securityInfo.getSavePassword());
+        savePasswordBox.setSelected(savePassword);
         passwordLabel.setEnabled(valid);
-        boolean haveKeys = securityInfo.getKeysInfo() != null;
-        boolean canChangePass = !haveKeys && !securityInfo.isPasswordValid();
         passwordBox.setEnabled(valid && canChangePass);
         if (valid && !canChangePass) {
             passwordBox.setToolTipText("The password for this certificate file "
@@ -346,7 +361,6 @@ public class CertificateOptionsPane extends JFrame {
         }
         savePasswordBox.setEnabled(valid);
 
-        String[] aliasesArray = securityInfo.getPossibleAliases();
         List aliases;
         boolean haveAliases = aliasesArray != null;
         boolean aliasesEmpty;
@@ -365,7 +379,6 @@ public class CertificateOptionsPane extends JFrame {
         ListComboBoxModel scl = signingCertificateList;
         scl.clear();
         scl.addAll(aliases);
-        String signingAlias = securityInfo.getSigningAlias();
         scl.setSelectedItem(signingAlias == null && haveAliases
                 ? VALUE_CHOOSE : signingAlias);
         signingAliasValid = aliases.contains(signingAlias);
@@ -373,7 +386,6 @@ public class CertificateOptionsPane extends JFrame {
         ListComboBoxModel ecl = encryptingCertificateList;
         ecl.clear();
         ecl.addAll(aliases);
-        String encryptionAlias = securityInfo.getEncryptionAlias();
         ecl.setSelectedItem(encryptionAlias == null && haveAliases
                 ? VALUE_CHOOSE : encryptionAlias);
         encAliasValid = aliases.contains(encryptionAlias);
@@ -436,6 +448,7 @@ public class CertificateOptionsPane extends JFrame {
         }
 
         Icon icon = null;
+        boolean leaveAlone = false;
         if (keysInfo == null || signingCert == null || encryptingCert == null) {
             if (loadedYet) {
                 String details;
@@ -472,19 +485,34 @@ public class CertificateOptionsPane extends JFrame {
                     }
                 } else {
                     int pcn = securityInfo.getPossibleCertificateNames().length;
+                    if (securityInfo.getCertificateFilename() != null) {
+                        String details2;
+                        if (pcn == 0) {
+                            details2 = "importing a different certificate file";
+                        } else {
+                            details2 = "selecting a different certificate file "
+                                    + "above";
+                        }
+                        details = "The certificate file you selected could not "
+                                + "be found. Try importing the file again or "
+                                + details2 + ".";
+                    } else {
+                        String word;
+                        if (pcn == 0) word = "Import";
+                        else word = "Select";
 
-                    String word;
-                    if (pcn == 0) word = "Import";
-                    else word = "Select";
-
-                    details = word + " a certificate file above to enable "
-                            + "security features.";
+                        details = word + " a certificate file above to enable "
+                                + "security features.";
+                    }
                 }
+
                 currentCertsPane.setText("Your outgoing messages are not "
                         + "secure.\n\n" + details);
                 icon = warningIcon;
             } else if (currentCertsPane.getText().trim().length() == 0) {
                 currentCertsPane.setText("Loading certificates...");
+            } else {
+                leaveAlone = true;
             }
 
         } else {
@@ -500,8 +528,8 @@ public class CertificateOptionsPane extends JFrame {
             if (encryptorName == null) encryptorName = "(Unknown)";
 
             if (signerName.equals(encryptorName)) {
-                currentCertsPane.setText("Outgoing messages are signed and "
-                        + "encrypted by " + signerName + ".");
+                currentCertsPane.setText("Your secure messages are "
+                        + "signed and encrypted by " + signerName + ".");
             } else {
                 currentCertsPane.setText("Outgoing messages are signed by "
                         + signerName + ", and encrypted by "
@@ -520,8 +548,10 @@ public class CertificateOptionsPane extends JFrame {
 //            lastException.printStackTrace(new PrintWriter(stringWriter));
 //            currentCertsPane.setText(stringWriter.toString());
 //        }
-        certInfoIconLabel.setIcon(icon);
-        certInfoIconLabel.setVisible(icon != null);
+        if (!leaveAlone) {
+            certInfoIconLabel.setIcon(icon);
+            certInfoIconLabel.setVisible(icon != null);
+        }
     }
 
     private boolean browseForCertificate() {
@@ -591,6 +621,10 @@ public class CertificateOptionsPane extends JFrame {
         }
     }
 
+    public void setLastException(LoadingException lastException) {
+        this.lastException = lastException;
+    }
+
     private class CertReloaderThread extends Thread {
         private final Object reloadLock = new Object();
         private boolean shouldReload = false;
@@ -601,46 +635,52 @@ public class CertificateOptionsPane extends JFrame {
                 populateUI();
             }
         };
+        private boolean forceRepaint = false;
 
         public void run() {
             while (!Thread.interrupted()) {
+                boolean force;
                 try {
-                    waitForReloadRequest();
+                    force = waitForReloadRequest();
                 } catch (InterruptedException e) {
                     break;
                 }
-                reloadIfNecessary();
+                reloadIfNecessary(force);
                 if (shouldShutdown) break;
             }
         }
 
-        public void reload() {
+        public void reload(boolean force) {
             synchronized(reloadLock) {
                 shouldReload = true;
+                forceRepaint = force;
                 reloadLock.notifyAll();
             }
         }
 
-        private void waitForReloadRequest() throws InterruptedException {
+        private boolean waitForReloadRequest() throws InterruptedException {
             while (true) {
                 synchronized(reloadLock) {
-                    reloadLock.wait();
                     if (shouldReload || shouldShutdown) {
                         shouldReload = false;
-                        return;
+                        return forceRepaint;
                     }
+                    reloadLock.wait();
                 }
             }
         }
 
-        private void reloadIfNecessary() {
+        private void reloadIfNecessary(boolean force) {
+            boolean repaint = false;
             try {
-                securityInfo.reloadIfNecessary();
+                CertificateOptionsPane.this.setLastException(null);
+                repaint = securityInfo.reloadIfNecessary();
             } catch (LoadingException e) {
-                lastException = e;
+                setLastException(e);
+                repaint = true;
             } finally {
                 loadedYet = true;
-                SwingUtilities.invokeLater(populator);
+                if (repaint || force) SwingUtilities.invokeLater(populator);
             }
         }
 

@@ -36,25 +36,26 @@
 package net.kano.aimcrypto.connection.oscar.service.info;
 
 import net.kano.aimcrypto.Screenname;
-import net.kano.aimcrypto.BuddySecurityInfo;
+import net.kano.aimcrypto.config.BuddySecurityInfo;
+import net.kano.aimcrypto.config.BuddySecurityInfo;
 import net.kano.joscar.ByteBlock;
 
 public interface CertificateListener {
-    void gotTrustedCertificateChange(CertificateManager manager,
+    void gotTrustedCertificateChange(BuddyCertificateManager manager,
             Screenname buddy, BuddySecurityInfo info);
-    void gotUntrustedCertificateChange(CertificateManager manager,
+    void gotUntrustedCertificateChange(BuddyCertificateManager manager,
             Screenname buddy, BuddySecurityInfo info);
-    void gotUnknownCertificateChange(CertificateManager manager,
+    void gotUnknownCertificateChange(BuddyCertificateManager manager,
             Screenname buddy, ByteBlock newHash);
 
-    void trustAdded(CertificateManager manager, Screenname buddy, 
+    void trustAdded(BuddyCertificateManager manager, Screenname buddy,
             BuddySecurityInfo info);
-    void trustRevoked(CertificateManager manager, Screenname buddy,
+    void trustRevoked(BuddyCertificateManager manager, Screenname buddy,
             ByteBlock hash);
 
-    void buddyTrusted(CertificateManager certificateManager, Screenname buddy,
+    void buddyTrusted(BuddyCertificateManager certificateManager, Screenname buddy,
             ByteBlock hash, BuddySecurityInfo info);
 
-    void buddyTrustRevoked(CertificateManager certificateManager,
+    void buddyTrustRevoked(BuddyCertificateManager certificateManager,
             Screenname buddy, ByteBlock hash, BuddySecurityInfo info);
 }

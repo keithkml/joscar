@@ -35,8 +35,9 @@
 
 package net.kano.aimcrypto.connection.oscar.service.icbm;
 
-import net.kano.aimcrypto.PrivateKeysInfo;
+import net.kano.aimcrypto.config.PrivateKeysInfo;
 import net.kano.aimcrypto.AimCertificateHolder;
+import net.kano.aimcrypto.config.PrivateKeysInfo;
 
 public abstract class SecureAimCodec {
     private PrivateKeysInfo localKeys = null;

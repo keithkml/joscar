@@ -41,7 +41,8 @@ import net.kano.joscar.snaccmd.DirInfo;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.icbm.OldIconHashInfo;
 import net.kano.aimcrypto.Screenname;
-import net.kano.aimcrypto.BuddySecurityInfo;
+import net.kano.aimcrypto.config.BuddySecurityInfo;
+import net.kano.aimcrypto.config.BuddySecurityInfo;
 
 import java.util.Date;
 import java.beans.PropertyChangeSupport;

@@ -51,7 +51,7 @@ import net.kano.aimcrypto.connection.oscar.service.bos.BosService;
 import net.kano.aimcrypto.connection.oscar.service.buddy.BuddyService;
 import net.kano.aimcrypto.connection.oscar.service.icbm.IcbmService;
 import net.kano.aimcrypto.connection.oscar.service.info.InfoService;
-import net.kano.aimcrypto.connection.oscar.service.info.CertificateManager;
+import net.kano.aimcrypto.connection.oscar.service.info.BuddyCertificateManager;
 import net.kano.aimcrypto.connection.oscar.service.login.LoginService;
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
@@ -94,7 +94,7 @@ public class AimConnection {
     private CopyOnWriteArrayList serviceListeners = new CopyOnWriteArrayList();
 
     private BuddyInfoManager buddyInfoManager = new BuddyInfoManager(this);
-    private final CertificateManager certManager;
+    private final BuddyCertificateManager certManager;
 
     public AimConnection(AppSession appSession, AimSession aimSession,
             AimConnectionProperties props) throws IllegalArgumentException {
@@ -118,7 +118,7 @@ public class AimConnection {
 
         this.screenname = sn;
 
-        this.certManager = new CertificateManager(this,
+        this.certManager = new BuddyCertificateManager(this,
                 appSession.getCertificateManager());
 
         loginConn = new LoginConnection(props.getLoginHost(),
@@ -132,7 +132,7 @@ public class AimConnection {
 
     public final AimSession getAimSession() { return aimSession; }
 
-    public CertificateManager getCertificateManager() { return certManager; }
+    public BuddyCertificateManager getCertificateManager() { return certManager; }
 
     public final Screenname getScreenname() { return screenname; }
 

@@ -51,7 +51,8 @@ import net.kano.aimcrypto.connection.oscar.service.buddy.BuddyService;
 import net.kano.aimcrypto.connection.oscar.service.buddy.BuddyServiceListener;
 import net.kano.aimcrypto.connection.oscar.service.Service;
 import net.kano.aimcrypto.Screenname;
-import net.kano.aimcrypto.BuddySecurityInfo;
+import net.kano.aimcrypto.config.BuddySecurityInfo;
+import net.kano.aimcrypto.config.BuddySecurityInfo;
 
 import java.util.Map;
 import java.util.HashMap;

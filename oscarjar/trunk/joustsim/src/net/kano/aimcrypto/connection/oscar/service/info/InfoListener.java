@@ -36,7 +36,8 @@
 package net.kano.aimcrypto.connection.oscar.service.info;
 
 import net.kano.aimcrypto.Screenname;
-import net.kano.aimcrypto.BuddySecurityInfo;
+import net.kano.aimcrypto.config.BuddySecurityInfo;
+import net.kano.aimcrypto.config.BuddySecurityInfo;
 import net.kano.joscar.snaccmd.DirInfo;
 
 public interface InfoListener {

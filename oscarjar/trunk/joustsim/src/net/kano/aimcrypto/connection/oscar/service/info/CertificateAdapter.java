@@ -36,35 +36,36 @@
 package net.kano.aimcrypto.connection.oscar.service.info;
 
 import net.kano.aimcrypto.Screenname;
-import net.kano.aimcrypto.BuddySecurityInfo;
+import net.kano.aimcrypto.config.BuddySecurityInfo;
+import net.kano.aimcrypto.config.BuddySecurityInfo;
 import net.kano.joscar.ByteBlock;
 
 public abstract class CertificateAdapter implements CertificateListener {
-    public void gotTrustedCertificateChange(CertificateManager manager,
+    public void gotTrustedCertificateChange(BuddyCertificateManager manager,
             Screenname buddy, BuddySecurityInfo info) {
     }
 
-    public void gotUntrustedCertificateChange(CertificateManager manager,
+    public void gotUntrustedCertificateChange(BuddyCertificateManager manager,
             Screenname buddy, BuddySecurityInfo info) {
     }
 
-    public void gotUnknownCertificateChange(CertificateManager manager,
+    public void gotUnknownCertificateChange(BuddyCertificateManager manager,
             Screenname buddy, ByteBlock newHash) {
     }
 
-    public void trustAdded(CertificateManager manager, Screenname buddy,
+    public void trustAdded(BuddyCertificateManager manager, Screenname buddy,
             BuddySecurityInfo info) {
     }
 
-    public void trustRevoked(CertificateManager manager, Screenname buddy,
+    public void trustRevoked(BuddyCertificateManager manager, Screenname buddy,
             ByteBlock hash) {
     }
 
-    public void buddyTrusted(CertificateManager certificateManager,
+    public void buddyTrusted(BuddyCertificateManager certificateManager,
             Screenname buddy, ByteBlock trustedhash, BuddySecurityInfo info) {
     }
 
-    public void buddyTrustRevoked(CertificateManager certificateManager,
+    public void buddyTrustRevoked(BuddyCertificateManager certificateManager,
             Screenname buddy, ByteBlock hash, BuddySecurityInfo info) {
     }
 }

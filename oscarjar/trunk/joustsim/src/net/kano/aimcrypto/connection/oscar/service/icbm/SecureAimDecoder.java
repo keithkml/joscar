@@ -37,7 +37,8 @@ package net.kano.aimcrypto.connection.oscar.service.icbm;
 
 import net.kano.aimcrypto.AimCertificateHolder;
 import net.kano.aimcrypto.KeyPair;
-import net.kano.aimcrypto.PrivateKeysInfo;
+import net.kano.aimcrypto.config.PrivateKeysInfo;
+import net.kano.aimcrypto.config.PrivateKeysInfo;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.OscarTools;
@@ -58,6 +59,7 @@ import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPrivateKey;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Collections;
 
 public class SecureAimDecoder extends SecureAimCodec {
     public synchronized DecryptedMessageInfo decryptMessage(

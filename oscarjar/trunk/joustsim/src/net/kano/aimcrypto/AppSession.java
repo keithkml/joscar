@@ -35,30 +35,23 @@
 
 package net.kano.aimcrypto;
 
-import net.kano.aimcrypto.connection.oscar.service.info.CertificateManager;
-import net.kano.aimcrypto.exceptions.BadKeyPrefsException;
-import net.kano.aimcrypto.exceptions.BadKeysException;
+import net.kano.aimcrypto.config.AppConfiguration;
+import net.kano.aimcrypto.connection.oscar.service.info.BuddyCertificateManager;
 import net.kano.joscar.DefensiveTools;
 
-import javax.swing.DefaultComboBoxModel;
 import java.io.File;
-import java.io.FileFilter;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 public class AppSession {
-    private static final DirFilter DIR_FILTER = new DirFilter();
-
-    private Map securityInfos = new HashMap();
+    private Map prefs = new HashMap();
     private Map sessions = new HashMap();
 
     private File baseDir;
-    private File securityDir;
-    private CertificateManager certificateManager = new CertificateManager();
+    private Thread shutdownHook = null;
 
     public AppSession(File baseDir) throws IllegalArgumentException {
         DefensiveTools.checkNull(baseDir, "baseDir");
@@ -73,56 +66,40 @@ public class AppSession {
         }
 
         this.baseDir = baseDir;
-
-        securityDir = new File(baseDir, "security");
     }
 
-    public synchronized PrivateSecurityInfo getPrivateSecurityInfo(Screenname sn) {
-        PrivateSecurityInfo si = (PrivateSecurityInfo) securityInfos.get(sn);
-        if (si == null) {
-            si = new PrivateSecurityInfo(sn, new File(
-                    new File(securityDir, "local-keys"), sn.getNormal()));
-            try {
-                si.loadPrefs();
-            } catch (IOException e) {
-                //TODO: loading prefs failed
-                e.printStackTrace();
-            }
-            securityInfos.put(sn, si);
+
+    public synchronized void setSavePrefsOnExit(boolean save) {
+        if (shutdownHook == null) {
+            if (!save) return;
+            shutdownHook = new Thread() {
+                public void run() {
+                    saveAllPrefs();
+                }
+            };
         }
-        return si;
+
+        Runtime runtime = Runtime.getRuntime();
+        if (save) {
+            runtime.addShutdownHook(shutdownHook);
+        } else {
+            runtime.removeShutdownHook(shutdownHook);
+            shutdownHook = null;
+        }
     }
 
-    public PrivateSecurityInfo loadKeys(Screenname sn)
-            throws IOException, FileNotFoundException, BadKeysException,
-            BadKeyPrefsException, LoadingException {
-        DefensiveTools.checkNull(sn, "sn");
-
-        PrivateSecurityInfo si = getPrivateSecurityInfo(sn);
-
-        si.loadPrefs();
-        si.reloadIfNecessary();
-
-        return si;
+    private synchronized void saveAllPrefs() {
+        for (Iterator it = prefs.values().iterator(); it.hasNext();) {
+            AppConfiguration configuration = (AppConfiguration) it.next();
+            configuration.saveAllPrefs();
+        }
     }
+
 
     public AimSession openAimSession(Screenname sn) {
         AimSession sess = new AimSession(this, sn);
-        PrivateSecurityInfo keys = null;
-        try {
-            keys = loadKeys(sn);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (BadKeysException e) {
-            e.printStackTrace();
-        } catch (BadKeyPrefsException e) {
-            e.printStackTrace();
-        } catch (LoadingException e) {
-            e.printStackTrace();
-        }
 
         synchronized(this) {
-            securityInfos.put(sn, keys);
             List snsesses = (List) sessions.get(sn);
             if (snsesses == null) {
                 snsesses = new ArrayList();
@@ -131,17 +108,21 @@ public class AppSession {
 
             snsesses.add(sess);
         }
-        if (keys != null) sess.setPrivateKeysInfo(keys.getKeysInfo());
         return sess;
     }
 
-    public CertificateManager getCertificateManager() {
-        return certificateManager;
+    public synchronized AppConfiguration getPrefs(Screenname sn) {
+        AppConfiguration appconfig = (AppConfiguration) prefs.get(sn);
+        if (appconfig == null) {
+            appconfig = new AppConfiguration(sn,
+                    new File(new File(baseDir, "config"), sn.getNormal()));
+            prefs.put(sn, appconfig);
+        }
+        return appconfig;
     }
 
-    private static class DirFilter implements FileFilter {
-        public boolean accept(File pathname) {
-            return pathname.isDirectory();
-        }
+    public BuddyCertificateManager getCertificateManager() {
+        //TODO: appsession's certmanager
+        return null;
     }
 }

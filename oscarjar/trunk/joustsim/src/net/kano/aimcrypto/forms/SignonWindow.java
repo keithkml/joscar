@@ -50,6 +50,8 @@ import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.KeyStroke;
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.event.ActionEvent;
@@ -58,6 +60,8 @@ import java.awt.event.WindowEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.awt.Image;
+import java.net.URL;
 
 public class SignonWindow extends JFrame {
     private JPanel mainPanel;
@@ -68,6 +72,12 @@ public class SignonWindow extends JFrame {
     private JButton signonButton;
     private JButton optionsButton;
     private JButton clearButton;
+
+    private final ImageIcon programIcon;
+    {
+        URL iconUrl = getClass().getClassLoader().getResource("icons/program-small.gif");
+        programIcon = iconUrl == null ? null : new ImageIcon(iconUrl);
+    }
 
     private SignonAction signonAction = new SignonAction();
     private ClearAction clearAction = new ClearAction();
@@ -106,6 +116,12 @@ public class SignonWindow extends JFrame {
                 setSize(getPreferredSize());
             }
         });
+        ImageIcon icon = programIcon;
+        Image image = null;
+        if (icon != null) {
+            image = icon.getImage();
+        }
+        setIconImage(image);
     }
 
     public SignonWindow(GuiSession session) {

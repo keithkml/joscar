@@ -35,7 +35,8 @@
 
 package net.kano.aimcrypto.connection.oscar.service.icbm;
 
-import net.kano.aimcrypto.BuddySecurityInfo;
+import net.kano.aimcrypto.config.BuddySecurityInfo;
+import net.kano.aimcrypto.config.BuddySecurityInfo;
 import net.kano.aimcrypto.connection.oscar.service.icbm.ConversationListener;
 import net.kano.aimcrypto.connection.oscar.service.icbm.SecureAimConversation;
 
