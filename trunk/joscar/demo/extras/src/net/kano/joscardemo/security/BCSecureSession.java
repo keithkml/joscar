@@ -81,16 +81,15 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509KeyManager;
 import javax.net.ssl.X509TrustManager;
-import javax.net.ssl.SSLSocketFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
-import java.io.FileOutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -138,8 +137,6 @@ public class BCSecureSession extends SecureSession {
     }
 
     BCSecureSession() { }
-
-    // generic
 
     private void loadKeys() throws KeyStoreException,
             NoSuchProviderException, IOException, NoSuchAlgorithmException,

@@ -49,6 +49,10 @@ import java.io.OutputStream;
  * increasing the amount of idle time as time progresses. When the user becomes
  * unidle, the command should be sent with an idle time value of zero
  *  (<code>SetIdleCmd.IDLETIME_NOT_IDLE</code>).
+ * <br><br>
+ * The idle time is sent in this command in terms of the number of seconds the
+ * user has been idle, but when reported to buddies in a {@link
+ * net.kano.joscar.snaccmd.FullUserInfo}, it is reported in minutes.
  *
  * @snac.src client
  * @snac.cmd 0x01 0x11
@@ -97,9 +101,7 @@ public class SetIdleCmd extends ConnCommand {
      *
      * @return the user's idle time, in seconds
      */
-    public final long getSecondsIdle() {
-        return seconds;
-    }
+    public final long getSecondsIdle() { return seconds; }
 
     public void writeData(OutputStream out) throws IOException {
         BinaryTools.writeUInt(out, seconds);

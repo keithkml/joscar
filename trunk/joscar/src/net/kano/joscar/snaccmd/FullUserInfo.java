@@ -52,7 +52,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.regex.Pattern;
 
 /**
  * A very widely used structure that represents a single screen name and various
@@ -608,9 +607,7 @@ public class FullUserInfo implements LiveWritable {
      *
      * @return this user info object's associated screenname
      */
-    public final String getScreenname() {
-        return sn;
-    }
+    public final String getScreenname() { return sn; }
 
     /**
      * Returns the warning level of this user, or <code>null</code> if no
@@ -618,9 +615,7 @@ public class FullUserInfo implements LiveWritable {
      *
      * @return the warning level of this user
      */
-    public final WarningLevel getWarningLevel() {
-        return warningLevel;
-    }
+    public final WarningLevel getWarningLevel() { return warningLevel; }
 
     /**
      * Returns this user's "user mask" flags. This is normally a bitwise
@@ -639,9 +634,7 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
      *
      * @return this user's "user mask"
      */
-    public final int getFlags() {
-        return flags;
-    }
+    public final int getFlags() { return flags; }
 
     /**
      * Returns the date at which this user's account was created, or
@@ -650,9 +643,7 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
      *
      * @return the date at which this user's account was created
      */
-    public final Date getAccountCreated() {
-        return accountCreated;
-    }
+    public final Date getAccountCreated() { return accountCreated; }
 
     /**
      * Returns the date since which this user has been a member of AIM, or
@@ -661,9 +652,7 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
      * 
      * @return the date since which this user has been a member of AIM
      */
-    public final Date getMemberSince() {
-        return memberSince;
-    }
+    public final Date getMemberSince() { return memberSince; }
 
     /**
      * Returns the number of seconds for which this user has been online, if
@@ -672,9 +661,7 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
      *
      * @return this user's "session length," if this user is on AIM and not AOL
      */
-    public final long getSessionLengthAIM() {
-        return sessionLengthAIM;
-    }
+    public final long getSessionLengthAIM() { return sessionLengthAIM; }
 
     /**
      * Returns the number of seconds for which this user has been online, if
@@ -683,9 +670,7 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
      *
      * @return this user's "session length," if this user is on AOL
      */
-    public final long getSessionLengthAOL() {
-        return sessionLengthAOL;
-    }
+    public final long getSessionLengthAOL() { return sessionLengthAOL; }
 
     /**
      * Returns the date at which this user began the current session (that is,
@@ -694,19 +679,19 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
      *
      * @return the date at which this user logged in
      */
-    public final Date getOnSince() {
-        return onSince;
-    }
+    public final Date getOnSince() { return onSince; }
 
     /**
      * Returns the number of minutes for which this user has been idle, or
      * <code>-1</code> if this field was not sent.
+     * <br><br>
+     * This value is stored as the number of minutes for which the user has been
+     * idle, but when sent in a {@link net.kano.joscar.snaccmd.conn.SetIdleCmd},
+     * the value is stored in seconds.
      *
      * @return the number of minutes this user has spent idle
      */
-    public final int getIdleMins() {
-        return idleMins;
-    }
+    public final int getIdleMins() { return idleMins; }
 
     /**
      * Returns the list of "capability blocks" which this user is advertising,
@@ -727,9 +712,7 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
      *
      * @return whether this user is currently away
      */
-    public final Boolean getAwayStatus() {
-        return away;
-    }
+    public final Boolean getAwayStatus() { return away; }
 
     /**
      * Returns the list of extra information objects this user is advertising,

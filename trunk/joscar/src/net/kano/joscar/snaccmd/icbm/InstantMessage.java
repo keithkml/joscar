@@ -40,6 +40,11 @@ import net.kano.joscar.DefensiveTools;
 
 /**
  * Represents a single instant message, either plain or encrypted.
+ * <br><br>
+ * Normally, a message your client receives will only be encrypted if your
+ * client specifically advertises a security certificate in its {@link
+ * net.kano.joscar.snaccmd.loc.SetInfoCmd} and {@link
+ * net.kano.joscar.snaccmd.conn.SetEncryptionInfoCmd}.
  */
 public class InstantMessage {
     /** A default encryption code used by the offiical AIM clients. */
@@ -104,6 +109,9 @@ public class InstantMessage {
      * is <code>true</code>, encrypted message data can be retrieved using
      * {@link #getEncryptedData()}. If the returned value is <code>false</code>,
      * the message body text can be retrieved using {@link #getMessage()}.
+     * <br><br>
+     * Normally, a message your client receives will only be encrypted if your
+     * client specifically advertises a security certificate.
      *
      * @return whether or not this message is encrypted
      */
