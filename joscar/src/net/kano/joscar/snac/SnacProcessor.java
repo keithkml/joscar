@@ -40,7 +40,6 @@ import net.kano.joscar.flap.FlapProcessor;
 import net.kano.joscar.flap.VetoableFlapPacketListener;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.flapcmd.SnacFlapCmd;
-import net.kano.joscar.flapcmd.MutableSnacPacket;
 import net.kano.joscar.DefensiveTools;
 
 import java.util.*;
@@ -433,8 +432,6 @@ public class SnacProcessor {
      * @param e the FLAP packet event to process
      */
     private synchronized void processPacket(FlapPacketEvent e) {
-        SnacCommand cmd = null;
-
         SnacFlapCmd flapCmd = ((SnacFlapCmd) e.getFlapCommand());
         SnacPacket snacPacket = flapCmd.getSnacPacket();
 
@@ -462,7 +459,7 @@ public class SnacProcessor {
             snacPacket = mutablePacket.toSnacPacket();
         }
 
-        cmd = generateSnacCommand(snacPacket);
+        SnacCommand cmd = generateSnacCommand(snacPacket);
 
         logger.fine("Converted Snac packet " + snacPacket + " to " + cmd);
 
@@ -755,7 +752,7 @@ public class SnacProcessor {
      * A simple class holding a SNAC request and related request-specific
      * information.
      */
-    private class RequestInfo {
+    private static class RequestInfo {
         /**
          * The SNAC request with which this object is associated.
          */

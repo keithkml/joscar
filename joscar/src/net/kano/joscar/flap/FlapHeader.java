@@ -91,16 +91,13 @@ final class FlapHeader {
         boolean paritied = false;
 
         while (pos < header.length) {
+            System.out.println("reading " + (header.length - pos)
+                    + " bytes into flap header");
             final int count = in.read(header, pos, header.length - pos);
 
             if (count == -1) {
-                // the connection died, or we got an EOF or something. let's
-                // try reading a single byte, to generate an IOException in this
-                // case, as we prefer to know what happened to our socket. this
-                // might be bad, if there are more data somehow, but the read
-                // spec says i only returns -1 if EOF was found, which means
-                // there are no more data. so this is okay. maybe ;(
-                in.read();
+                // the connection died, or we got an EOF or something.
+                System.out.println("connection died; returning null");
                 return null;
             }
 
@@ -117,13 +114,7 @@ final class FlapHeader {
             }
         }
 
-        if (pos == header.length) {
-            // we got a full header!
-            return new FlapHeader(ByteBlock.wrap(header));
-        } else {
-            // oh. the connection died. this still shouldn't happen.
-            return null;
-        }
+        return new FlapHeader(ByteBlock.wrap(header));
     }
 
     /**

@@ -45,21 +45,21 @@ import net.kano.joscar.flap.FlapPacket;
  * package, such as <code>SnacFlapCmd</code>.
  */
 public class DefaultFlapCmdFactory implements FlapCommandFactory {
-    /**
-     * Generates a <code>FlapCommand</code> from the given packet. The returned
-     * <code>FlapCommand</code> will be an instance of a class in this package.
-     *
-     * @param packet the packet from which a <code>FlapCommand</code> should be
-     *        generated
-     * @return a <code>FlapCommand</code> to represent the given packet
-     */
     public FlapCommand genFlapCommand(FlapPacket packet) {
         int channel = packet.getChannel();
 
-        if (channel == FlapLoginCmd.CHANNEL_LOGIN) {
-            return new FlapLoginCmd(packet);
+        if (channel == LoginFlapCmd.CHANNEL_LOGIN) {
+            return new LoginFlapCmd(packet);
+
         } else if (channel == SnacFlapCmd.CHANNEL_SNAC) {
             return new SnacFlapCmd(packet);
+
+        } else if (channel == FlapErrorCmd.CHANNEL_ERROR) {
+            return new FlapErrorCmd(packet);
+
+        } else if (channel == CloseFlapCmd.CHANNEL_CLOSE) {
+            return new CloseFlapCmd(packet);
+            
         } else {
             return null;
         }

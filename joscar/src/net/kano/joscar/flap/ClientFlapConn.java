@@ -35,6 +35,7 @@
 
 package net.kano.joscar.flap;
 
+import javax.net.SocketFactory;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -136,6 +137,13 @@ public class ClientFlapConn extends FlapProcessor {
     public static final Object REASON_ON_PURPOSE = "ON_PURPOSE";
 
     /**
+     * A reason indicating that the reason for a state change to
+     * <code>NOT_CONNECTED</code> was that the socket was closed for some
+     * reason. This normally means some sort of network failure.
+     */
+    public static final Object REASON_CONN_CLOSED = "CONN_CLOSED";
+
+    /**
      * The current state of the connection.
      */
     private Object state = STATE_NOT_CONNECTED;
@@ -159,6 +167,9 @@ public class ClientFlapConn extends FlapProcessor {
      * The port we are supposed to connect to.
      */
     private int port = -1;
+
+    /** A socket factory for generating outgoing sockets. */
+    private SocketFactory socketFactory = null;
 
     /**
      * A list of connection listeners (state change listeners).
@@ -374,10 +385,73 @@ public class ClientFlapConn extends FlapProcessor {
     public synchronized void disconnect() {
         if (state == STATE_NOT_CONNECTED || state == STATE_FAILED) return;
 
-        detach();
+        // I'm not sure which order is the best for these
         connThread.cancel();
+        connThread = null;
+
+        if (!socket.isClosed()) {
+            try { socket.close(); } catch (IOException ignored) { }
+        }
+
+        detach();
+
         setState(STATE_NOT_CONNECTED, REASON_ON_PURPOSE);
-        try { socket.close(); } catch (IOException ignored) { }
+
+    }
+
+    /**
+     * Sets the socket factory this FLAP connection should use to create an
+     * outgoing socket. If <code>socketFactory</code> is <code>null</code>, as
+     * is the default value, <code>new Socket(..)</code> is used in place of a
+     * using a socket factory.
+     *
+     * @param socketFactory a socket factory to use in creating the outgoing
+     *        OSCAR connection, or <code>null</code> to not use a factory
+     */
+    public synchronized final void setSocketFactory(
+            SocketFactory socketFactory) {
+        this.socketFactory = socketFactory;
+    }
+
+    /**
+     * Sets this FLAP connection's socket factory. This factory will be used
+     * to create the outgoing socket to the OSCAR server. Note that if this is
+     * <code>null</code> (the default value) then <code>new Socket(..)</code> is
+     * used in place of using a socket factory to create a socket.
+     *
+     * @return the socket factory associated with this FLAP connection
+     */
+    public synchronized final SocketFactory getSocketFactory() {
+        return socketFactory;
+    }
+
+    /**
+     * Creates a new outgoing socket to the given host on the given port using
+     * this FLAP connection's socket factory. If no socket factory is set,
+     * a new <code>java.net.Socket</code> is created.
+     *
+     * @param host the host to which to connect
+     * @param port the port on which to connect
+     * @return an outgoing socket to the given host and port
+     *
+     * @throws IOException if an I/O error occurs
+     */
+    private Socket createSocket(InetAddress host, int port)
+            throws IOException {
+        // this method can't be synchronized because there's no reason to freeze
+        // the state of the connection while waiting for a socket to open; all
+        // we need is to know what the current socket factory is, so we lock
+        // for that, then create the socket afterwards.
+        SocketFactory factory;
+        synchronized(this) {
+            factory = socketFactory;
+        }
+
+        if (factory != null) {
+            return factory.createSocket(host, port);
+        } else {
+            return new Socket(host, port);
+        }
     }
 
     /**
@@ -398,65 +472,94 @@ public class ClientFlapConn extends FlapProcessor {
         }
 
         /**
-         * Returns whether this connection attempt has been cancelled. Note that
-         * this synchronizes on the parent ClientFlapConn to ensure that
-         * cancellation is recognized as soon as possible. I think that makes
-         * sense.
-         *
-         * @return whether this connection attempt has been cancelled
-         */
-        private boolean isCancelled() {
-            synchronized(ClientFlapConn.this) {
-                return cancelled;
-            }
-        }
-
-        /**
          * Starts the connection / FLAP read thread.
          */
         public void run() {
-            InetAddress ip = ClientFlapConn.this.ip;
+            ClientFlapConn conn = ClientFlapConn.this;
+
+            InetAddress ip = conn.ip;
 
             if (ip == null) {
-                setState(STATE_RESOLVING, null);
+                synchronized(conn) {
+                    if (cancelled) return;
+
+                    setState(STATE_RESOLVING, null);
+                }
                 try {
                     ip = InetAddress.getByName(host);
                 } catch (UnknownHostException e) {
-                    if (isCancelled()) return;
+                    synchronized(conn) {
+                        if (cancelled) return;
 
-                    setState(STATE_FAILED, e);
+                        setState(STATE_FAILED, e);
+                    }
                     return;
                 }
-                if (isCancelled()) return;
             }
 
-            setState(STATE_CONNECTING, null);
+            synchronized(conn) {
+                if (cancelled) return;
+
+                setState(STATE_CONNECTING, null);
+            }
 
             Socket socket;
             try {
-                socket = new Socket(ip, port);
-                if (isCancelled()) return;
-                attachToSocket(socket);
-                if (isCancelled()) return;
+                synchronized(conn) {
+                    if (cancelled) return;
+                    socket = createSocket(ip, port);
+                }
+
+                synchronized(conn) {
+                    if (cancelled) return;
+                    attachToSocket(socket);
+                }
             } catch (IOException e) {
-                if (isCancelled()) return;
-                setState(STATE_FAILED, e);
+                synchronized(conn) {
+                    if (cancelled) return;
+
+                    setState(STATE_FAILED, e);
+                }
                 return;
             }
 
-            if (isCancelled()) return;
-            setSocket(socket);
+            synchronized(conn) {
+                if (cancelled) return;
+                setSocket(socket);
+            }
 
-            if (isCancelled()) return;
-            setState(STATE_CONNECTED, null);
+            synchronized(conn) {
+                if (cancelled) return;
+                setState(STATE_CONNECTED, null);
+            }
 
             try {
-                runFlapLoop();
+                for (;;) {
+                    synchronized(conn) {
+                        if (cancelled) break;
+                    }
+                    if (!readNextFlap()) break;
+                }
             } catch (IOException e) {
-                if (isCancelled()) return;
-                setState(STATE_NOT_CONNECTED, e);
-                try { socket.close(); } catch (IOException ignored) { }
-                return;
+                synchronized(conn) {
+                    if (cancelled) return;
+
+                    setState(STATE_NOT_CONNECTED, e);
+
+                    if (!socket.isClosed()) {
+                        try { socket.close(); } catch (IOException ignored) { }
+                    }
+                }
+            } finally {
+                synchronized(conn) {
+                    if (cancelled) return;
+
+                    setState(STATE_NOT_CONNECTED, REASON_CONN_CLOSED);
+
+                    if (!socket.isClosed()) {
+                        try { socket.close(); } catch (IOException ignored) { }
+                    }
+                }
             }
         }
     }

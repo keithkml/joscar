@@ -38,7 +38,6 @@ package net.kano.joscar.snac;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.flapcmd.SnacPacket;
-import net.kano.joscar.flapcmd.MutableSnacPacket;
 import net.kano.joscar.snac.SnacPreprocessor;
 
 /**

@@ -35,7 +35,6 @@
 
 package net.kano.joscar.snac;
 
-import net.kano.joscar.flapcmd.MutableSnacPacket;
 
 /**
  * Provides an interface for "preprocessing" a SNAC packet before it is formally

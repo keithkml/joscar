@@ -255,7 +255,7 @@ public class AuthResponse extends AuthCommand {
 
     /**
      * Returns the login cookie that should be {@linkplain
-     * net.kano.joscar.flapcmd.FlapLoginCmd#FlapLoginCmd(long, ByteBlock)
+     * net.kano.joscar.flapcmd.LoginFlapCmd#LoginFlapCmd(long, ByteBlock)
      * provided} to the given {@linkplain #getServer BOS server} upon
      * connecting.
      *

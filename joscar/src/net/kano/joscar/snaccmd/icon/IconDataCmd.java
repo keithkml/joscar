@@ -94,8 +94,6 @@ public class IconDataCmd extends IconCommand {
         int iconSize = BinaryTools.getUShort(rest, 0);
 
         iconData = rest.subBlock(2, iconSize);
-
-        rest = rest.subBlock(2 + iconSize);
     }
 
     /**

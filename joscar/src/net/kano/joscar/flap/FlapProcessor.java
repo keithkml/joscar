@@ -121,6 +121,9 @@ public class FlapProcessor {
      */
     private OutputStream out = null;
 
+    /** A lock for reading from the stream. */
+    private final Object readLock = new Object();
+
     /**
      * The sequence number of the next FLAP packet; increased on each packet
      * send.
@@ -381,8 +384,12 @@ public class FlapProcessor {
         logger.fine("Sending Flap packet " + packet + ": " + block.getLength()
                 + " total bytes");
 
+        // we trust ByteBlock.write so much that we don't even check for
+        // Throwable!
         try {
+            System.out.println("writing block to FLAP socket");
             block.write(out);
+            System.out.println("wrote block to FLAP socket");
         } catch (IOException e) {
             handleException(FlapExceptionEvent.TYPE_CONNECTION_ERROR, e);
             return;
@@ -403,40 +410,44 @@ public class FlapProcessor {
      * @throws IOException if an I/O error occurs
      */
     public final void runFlapLoop() throws IOException {
-        for (;;) {
-            synchronized(this) {
-                if (in == null) return;
-            }
-            readNextFlap();
-        }
+        // grab packets
+        while (readNextFlap());
+
+        // the connection is dead.
     }
 
     /**
      * Reads and processes a single FLAP packet from the attached input stream.
+     * If this method returns <code>false</code>, it is safe to assume that the
+     * connection died.
      *
      * @return <code>true</code> if a packet was successfully read;
      *         <code>false</code> otherwise
+     *
      * @throws IOException if an I/O error occurs
-     * @throws NullPointerException if this FLAP processor is not attached to an
-     *         input stream
      */
-    public final boolean readNextFlap()
-            throws NullPointerException, IOException {
-        if (in == null) throw new NullPointerException();
+    public final boolean readNextFlap() throws IOException {
+        synchronized(readLock) {
+            if (in == null) return false;
 
-        FlapHeader header = FlapHeader.readFLAPHeader(in);
+            System.out.println("at before reading flap header");
+            FlapHeader header = FlapHeader.readFLAPHeader(in);
+            System.out.println("read flap header: " + header);
 
-        logger.finer("Read flap header " + header);
+            logger.finer("Read flap header " + header);
 
-        if (header == null) return false;
+            if (header == null) return false;
 
-        FlapPacket packet = FlapPacket.readRestOfFlap(header, in);
+            System.out.println("at before reading rest of flap");
+            FlapPacket packet = FlapPacket.readRestOfFlap(header, in);
 
-        logger.finer("Read flap packet " + packet);
+            logger.finer("Read flap packet " + packet);
+            if (packet == null) return false;
 
-        handlePacket(packet);
+            handlePacket(packet);
 
-        return true;
+            return true;
+        }
     }
 
     /**

@@ -38,7 +38,7 @@ package net.kano.joscartests;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.flap.FlapCommand;
 import net.kano.joscar.flap.FlapPacketEvent;
-import net.kano.joscar.flapcmd.FlapLoginCmd;
+import net.kano.joscar.flapcmd.LoginFlapCmd;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snac.*;
 import net.kano.joscar.snaccmd.*;
@@ -112,8 +112,12 @@ public abstract class BasicConn extends AbstractFlapConn {
     protected void handleFlapPacket(FlapPacketEvent e) {
         FlapCommand cmd = e.getFlapCommand();
 
-        if (cmd instanceof FlapLoginCmd) {
-            send(new FlapLoginCmd(cookie));
+        if (cmd instanceof LoginFlapCmd) {
+            send(new LoginFlapCmd(cookie));
+        } else {
+            System.out.println("got FLAP command on channel 0x"
+                    + Integer.toHexString(e.getFlapPacket().getChannel())
+                    + ": " + cmd);
         }
     }
 
