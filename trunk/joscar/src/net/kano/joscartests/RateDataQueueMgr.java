@@ -98,25 +98,42 @@ public class RateDataQueueMgr extends ImmediateSnacQueueManager {
         }
 
         public void setRateInfo(RateClassInfo rateInfo) {
+            printDifferences(this.rateInfo.getCurrentAvg());
+            printDifferences(6000);
+
             this.rateInfo = rateInfo;
 
-            printDifferences();
+            timestamps.clear();
         }
 
-        private void printDifferences() {
+        public RateClassInfo getRateInfo() { return rateInfo; }
+
+        private void printDifferences(long avg) {
             LinkedList diffs = new LinkedList();
 
+            System.out.println("starting with avg: " + avg);
             long last = 0;
             for (Iterator it = timestamps.iterator(); it.hasNext();) {
                 long cur = ((Long) it.next()).longValue();
+                long diff = cur - last;
                 if (last != 0) {
-                    diffs.addFirst(new Long(cur - last));
+                    diffs.addFirst(new Long(diff));
                 }
+
+                if (last != 0) {
+                    long winSize = rateInfo.getWindowSize();
+                    long max = rateInfo.getMax();
+
+                    avg = ((avg * (winSize - 1)) + diff) / winSize;
+                    if (avg > max) avg = max;
+                }
+
                 last = cur;
             }
 
             System.out.println("last " + diffs.size() + " differences: "
                     + diffs);
+            System.out.println("i think the average is: " + avg);
         }
     }
 }

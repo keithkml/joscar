@@ -40,9 +40,9 @@ import net.kano.joscar.flapcmd.SnacCommand;
 
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
  * Encapsulates a single outgoing SNAC request and its corresponding incoming
@@ -104,12 +104,12 @@ public class SnacRequest {
     /**
      * A list of listeners for this-request-specific events.
      */
-    private List listeners = new ArrayList();
+    private List listeners = null;
 
     /**
      * A list of responses this request has received, just to waste memory.
      */
-    private List responses = new LinkedList();
+    private List responses = null;
 
     /**
      * The date at which this outgoing request was originally sent.
@@ -124,6 +124,13 @@ public class SnacRequest {
      * locally.
      */
     private boolean storingResponses = false;
+
+    /**
+     * A SNAC request response list containing no SNAC responses. This field is
+     * present to avoid creating new empty arrays.
+     */
+    private static final SnacResponseEvent[] NO_SNAC_RESPONSES
+            = new SnacResponseEvent[0];
 
     /**
      * Creates a new <code>SnacRequest</code> for the given command and adds the
@@ -164,6 +171,10 @@ public class SnacRequest {
      * @param l the listener to add
      */
     public synchronized final void addListener(SnacRequestListener l) {
+        DefensiveTools.checkNull(l, "l");
+
+        if (listeners == null) listeners = new ArrayList(4);
+
         listeners.add(l);
     }
 
@@ -173,7 +184,9 @@ public class SnacRequest {
      * @param l the listener to remove
      */
     public synchronized final void removeListener(SnacRequestListener l) {
-        listeners.remove(l);
+        DefensiveTools.checkNull(l, "l");
+
+        if (listeners != null) listeners.remove(l);
     }
 
     /**
@@ -184,7 +197,7 @@ public class SnacRequest {
      * @return whether there are listeners associated with this request
      */
     public synchronized final boolean hasListeners() {
-        return !listeners.isEmpty();
+        return listeners != null && !listeners.isEmpty();
     }
 
     /**
@@ -194,9 +207,7 @@ public class SnacRequest {
      * @return the outgoing <code>SnacCommand</code> associated with this
      *         request
      */
-    public final SnacCommand getCommand() {
-        return command;
-    }
+    public final SnacCommand getCommand() { return command; }
 
     /**
      * Returns whether this request object is currently set to store responses
@@ -239,8 +250,11 @@ public class SnacRequest {
      * @see #setStoringResponses
      */
     public synchronized final SnacResponseEvent[] getResponses() {
+        // this is for performance.
+        if (responses == null || responses.isEmpty()) return NO_SNAC_RESPONSES;
+
         return (SnacResponseEvent[])
-                responses.toArray(new SnacResponseEvent[0]);
+                responses.toArray(new SnacResponseEvent[responses.size()]);
     }
 
     /**
@@ -250,24 +264,30 @@ public class SnacRequest {
      * @param event an object describing this event
      */
     synchronized final void sent(SnacRequestSentEvent event) {
-        logger.finer("Snac request sent: " + this);
+        boolean logFiner = logger.isLoggable(Level.FINER);
+
+        if (logFiner) logger.finer("Snac request sent: " + this);
 
         sentAt = event.getSentTime();
 
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            SnacRequestListener listener = (SnacRequestListener) it.next();
+        if (hasListeners()) {
+            for (Iterator it = listeners.iterator(); it.hasNext();) {
+                SnacRequestListener listener = (SnacRequestListener) it.next();
 
-            logger.finer("Running response listener " + listener);
+                if (logFiner) {
+                    logger.finer("Running response listener " + listener);
+                }
 
-            try {
-                listener.handleSent(event);
-            } catch (Throwable t) {
-                event.getFlapProcessor().handleException(
-                        ERRTYPE_SNAC_RESPONSE_LISTENER, t, listener);
+                try {
+                    listener.handleSent(event);
+                } catch (Throwable t) {
+                    event.getFlapProcessor().handleException(
+                            ERRTYPE_SNAC_RESPONSE_LISTENER, t, listener);
+                }
             }
         }
 
-        logger.finer("Finished processing Snac request send");
+        if (logFiner) logger.finer("Finished processing Snac request send");
     }
 
     /**
@@ -276,25 +296,34 @@ public class SnacRequest {
      * @param event an object describing this event
      */
     synchronized final void gotResponse(SnacResponseEvent event) {
-        logger.finer("Processing response " + event.getSnacPacket()
-                + " to Snac request " + this);
+        boolean logFiner = logger.isLoggable(Level.FINER);
 
-        responses.add(event);
+        if (logFiner) {
+            logger.finer("Processing response " + event.getSnacPacket()
+                    + " to Snac request " + this);
+        }
 
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            SnacRequestListener listener = (SnacRequestListener) it.next();
+        if (storingResponses) {
+            if (responses == null) responses = new ArrayList();
+            responses.add(event);
+        }
 
-            logger.finer("Running response listener " + listener);
+        if (hasListeners()) {
+            for (Iterator it = listeners.iterator(); it.hasNext();) {
+                SnacRequestListener listener = (SnacRequestListener) it.next();
 
-            try {
-                listener.handleResponse(event);
-            } catch (Throwable t) {
-                event.getFlapProcessor().handleException(
-                        ERRTYPE_SNAC_RESPONSE_LISTENER, t, listener);
+                if (logFiner) logger.finer("Running response listener " + listener);
+
+                try {
+                    listener.handleResponse(event);
+                } catch (Throwable t) {
+                    event.getFlapProcessor().handleException(
+                            ERRTYPE_SNAC_RESPONSE_LISTENER, t, listener);
+                }
             }
         }
 
-        logger.finer("Finished handling response");
+        if (logFiner) logger.finer("Finished handling response");
     }
 
     /**
@@ -305,27 +334,33 @@ public class SnacRequest {
      * @param event an object describing this event
      */
     synchronized final void timedOut(SnacRequestTimeoutEvent event) {
-        logger.finer("Snac request " + this + " timed out");
+        boolean logFiner = logger.isLoggable(Level.FINER);
 
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            SnacRequestListener listener = (SnacRequestListener) it.next();
+        if (logFiner) logger.finer("Snac request " + this + " timed out");
 
-            logger.finer("Running response listener " + listener
-                    + " for request timeout");
+        if (hasListeners()) {
+            for (Iterator it = listeners.iterator(); it.hasNext();) {
+                SnacRequestListener listener = (SnacRequestListener) it.next();
 
-            try {
-                listener.handleTimeout(event);
-            } catch (Throwable t) {
-                event.getFlapProcessor().handleException(
-                        ERRTYPE_SNAC_RESPONSE_LISTENER, t, listener);
+                if (logFiner) {
+                    logger.finer("Running response listener " + listener
+                            + " for request timeout");
+                }
+
+                try {
+                    listener.handleTimeout(event);
+                } catch (Throwable t) {
+                    event.getFlapProcessor().handleException(
+                            ERRTYPE_SNAC_RESPONSE_LISTENER, t, listener);
+                }
             }
         }
 
-        logger.finer("Finished handling Snac request timeout");
+        if (logFiner) logger.finer("Finished handling Snac request timeout");
     }
 
     public String toString() {
-        return "SnacRequest for " + command + ": " + listeners.size()
-                + " listeners, " + responses.size() + " responses";
+        return "SnacRequest for " + command + ": listeners: " + listeners
+                + ", responses: " + responses;
     }
 }

@@ -40,6 +40,8 @@ import net.kano.joscar.FileWritable;
 import net.kano.joscar.OscarTools;
 import net.kano.joscar.flap.ClientFlapConn;
 import net.kano.joscar.flap.FlapCommand;
+import net.kano.joscar.flapcmd.SnacCommand;
+import net.kano.joscar.flapcmd.SnacFlapCmd;
 import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rvcmd.InvitationMessage;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
@@ -52,7 +54,6 @@ import net.kano.joscar.rvcmd.sendfile.FileSendBlock;
 import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
 import net.kano.joscar.rvcmd.trillcrypt.TrillianCryptReqRvCmd;
 import net.kano.joscar.rvcmd.voice.VoiceReqRvCmd;
-import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.snac.SnacProcessor;
 import net.kano.joscar.snac.SnacRequest;
 import net.kano.joscar.snac.SnacRequestListener;
@@ -756,7 +757,7 @@ public class JoscarTester implements CmdLineListener {
                     return;
                 }
 
-                bosConn.getFlapProcessor().send(new MysteryFlapCmd());
+                bosConn.getFlapProcessor().sendFlap(new MysteryFlapCmd());
                 try {
                     session.sendRv(new GetFileReqRvCmd(
                             RvConnectionInfo.createForOutgoingRequest(
@@ -781,6 +782,28 @@ public class JoscarTester implements CmdLineListener {
                                     -1)));
                 } catch (UnknownHostException e) {
                     e.printStackTrace();
+                }
+            }
+        });
+        cmdMap.put("reqid", new CLCommand() {
+            public void handle(String line, String cmd, String[] args) {
+                bosConn.getFlapProcessor().sendFlap(new SnacFlapCmd(
+                        Long.parseLong(args[0]),
+                        new SendImIcbm("joustacular", "hi")));
+            }
+        });
+        cmdMap.put("testrate", new CLCommand() {
+            public void handle(String line, String cmd, String[] args) {
+                Timer timer = new Timer();
+                if (args[0].equals("random")) {
+                    timer.schedule(new TestRateTimerTask(), 0);
+                } else {
+                    timer.scheduleAtFixedRate(new TimerTask() {
+                        public void run() {
+                            bosConn.getSnacProcessor().sendSnac(new SnacRequest(
+                                    new SendImIcbm("joustacular", "hi"), null));
+                        }
+                    }, 0, Integer.parseInt(args[0]));
                 }
             }
         });
@@ -913,5 +936,25 @@ public class JoscarTester implements CmdLineListener {
     public OnlineUserInfo[] getOnlineUsers() {
         return (OnlineUserInfo[])
                 userInfos.values().toArray(new OnlineUserInfo[0]);
+    }
+
+    private class TestRateTimerTask extends TimerTask {
+        private Random random;
+
+        public TestRateTimerTask() {
+            random = new Random();
+        }
+
+        public TestRateTimerTask(Random random) {
+            this.random = random;
+        }
+
+        public void run() {
+            bosConn.getSnacProcessor().sendSnac(new SnacRequest(
+                    new SendImIcbm("joustacular", "hi"), null));
+            int time = random.nextInt(4000) + 1000;
+            System.out.println("waiting " + time + "ms");
+            new Timer().schedule(new TestRateTimerTask(random), time);
+        }
     }
 }

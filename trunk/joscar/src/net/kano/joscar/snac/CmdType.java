@@ -35,6 +35,9 @@
 
 package net.kano.joscar.snac;
 
+import net.kano.joscar.flapcmd.SnacCommand;
+import net.kano.joscar.DefensiveTools;
+
 /**
  * Represents a single SNAC command type, or a group of all SNAC command types
  * in a single family, or all SNAC commands. In practice, provides a means of
@@ -54,6 +57,20 @@ public final class CmdType {
      * CmdType(CmdType.ALL, CmdType.ALL)</code>. In fact, that's what it is.
      */
     public static final CmdType CMDTYPE_ALL = new CmdType(ALL, ALL);
+
+    /**
+     * Returns a <code>CmdType</code> that represents the command type of the
+     * given SNAC command object.
+     *
+     * @param command a SNAC command
+     * @return a command type object representing the type of the given SNAC
+     *         command
+     */
+    public static CmdType ofCmd(SnacCommand command) {
+        DefensiveTools.checkNull(command, "command");
+
+        return new CmdType(command.getFamily(), command.getCommand());
+    }
 
     /**
      * The SNAC family of this command type, or <code>ALL</code>.

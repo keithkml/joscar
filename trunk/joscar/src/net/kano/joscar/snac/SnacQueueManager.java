@@ -40,16 +40,17 @@ package net.kano.joscar.snac;
  * SNAC commands are sent on a <code>SnacProcessor</code>. Such a system is
  * useful for, for example, implementing an automatic rate limiting mechanism.
  *
- * @see DefaultSnacQueueManager
+ * @see DefaultSnacQueueMgr
  */
 public interface SnacQueueManager {
     /**
      * A method called to indicate that the queue should be paused until a call
-     * to {@link #unpause}. This method will never be called twice without a
-     * call to <code>unpause</code> in between; that is, it will never be called
-     * twice in a row. Note that calls to {@link #queueSnac} can and probably
-     * will be made before a call to {@link #unpause}; that is, the queue must
-     * still accept the queueing of SNAC commands while it is paused.
+     * to {@link #unpause}. This method will never be called for a given
+     * <code>SnacProcessor</code> twice without a call to <code>unpause</code>
+     * in between; that is, it will never be called twice in a row. Note that
+     * calls to {@link #queueSnac} can and probably will be made before a call
+     * to {@link #unpause}; that is, the queue must still accept the queueing of
+     * SNAC commands while it is paused.
      * <br>
      * <br>
      * Note that this will be the first method called for a given SNAC processor
@@ -61,23 +62,23 @@ public interface SnacQueueManager {
     void pause(SnacProcessor processor);
 
     /**
-     * A method called to indicate that the queue can once again send SNACs.
-     * This method will only be called after a call to {@link #pause}, and will
-     * never be called twice without a call to {@link #pause} in between; that
-     * is, essentially, it will never be called twice in a row.
+     * A method called to indicate that the queue for the given SNAC processor
+     * can once again send SNACs. This method will only be called after a call
+     * to {@link #pause}, and will never be called twice for a SNAC processor
+     * without a call to {@link #pause} in between; that is, essentially, it
+     * will never be called twice in a row for a given SNAC processor.
      *
      * @param processor the SNAC processor on which to pause
      */
     void unpause(SnacProcessor processor);
 
     /**
-     * Enqueues the given SNAC request that for the given SNAC processor. This
-     * method can just as easily send the given request immediately (via
+     * Enqueues the given SNAC request for the given SNAC processor. This method
+     * can just as easily send the given request immediately (via
      * <code>sendSnac</code>) as it can enqueue it to be sent later. Note that
      * the given request will <i>not</i> be sent at all until it is sent from
      * this SNAC queue manager using <code>sendSnac</code>. It is not
-     * recommended that the given request be modified before it is sent with
-     * <code>sendSnac</code>.
+     * recommended that a request be modified before it is sent.
      *
      * @param processor the SNAC processor on which the given request was
      *        created and on which it is to be sent
@@ -90,7 +91,7 @@ public interface SnacQueueManager {
      * given SNAC processor. This is normally only called when the given SNAC
      * processor has been disconnected. Note that a call to this method
      * implies a call to {@link #unpause} for the given SNAC processor as well,
-     * although no queued SNACs should be sent (as they would with an actual
+     * although no queued SNACs should be sent (as they might be with an actual
      * call to <code>unpause</code>}.
      *
      * @param processor the SNAC processor for which pending SNACs should be

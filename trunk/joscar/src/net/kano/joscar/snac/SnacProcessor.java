@@ -39,14 +39,12 @@ import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flap.FlapPacketEvent;
 import net.kano.joscar.flap.FlapProcessor;
 import net.kano.joscar.flap.VetoableFlapPacketListener;
+import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.flapcmd.SnacFlapCmd;
 import net.kano.joscar.flapcmd.SnacPacket;
-import net.kano.joscar.flapcmd.SnacCommand;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.*;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -196,22 +194,20 @@ public class SnacProcessor {
     private static final Logger logger
             = Logger.getLogger("net.kano.joscar.snac");
 
-    /**
-     * The maximum request ID value before it wraps to zero.
-     */
-    private static final long REQID_MAX = 0xffffffL;
+    private static final long REQID_MIN_CLIENT = 1;
+    private static final long REQID_MAX_CLIENT = 0x80000000L - 1L;
+
+    private static final long REQID_MIN_SERVER = 0x80000000L;
+    private static final long REQID_MAX_SERVER = 0xffffffffL;
+
+    /** The minimum request ID value. */
+    private static final long REQID_MIN = REQID_MIN_CLIENT;
+
+    /** The maximum request ID value before it wraps to {@link #REQID_MIN}. */
+    private static final long REQID_MAX = REQID_MAX_CLIENT;
 
     /** The request ID of the last SNAC command sent. */
-    private long lastReqid;
-
-    {
-        //TODO: reqid's
-//         this algorithm seems to do what I want.
-//        lastReqid = Math.min(Math.abs((new Random().nextLong()
-//            / (Long.MAX_VALUE / BinaryTools.UINT_MAX))) + 1,
-//            BinaryTools.UINT_MAX);
-        lastReqid = 1;
-    }
+    private long lastReqid = REQID_MIN;
 
     /**
      * The FLAP processor to which this SNAC processor is attached.
@@ -248,7 +244,8 @@ public class SnacProcessor {
      * A map from request ID's (<code>Integer</code>s) to
      *  <code>RequestInfo</code>s, which contain <code>SnacRequest</code>s.
      */
-    private LinkedHashMap requests = new LinkedHashMap();
+    private Map requests = new HashMap();
+    private final List requestQueue = new LinkedList();
 
     /** Whether or not this SNAC connection is currently "paused." */
     private boolean paused = false;
@@ -264,8 +261,10 @@ public class SnacProcessor {
             = new VetoableFlapPacketListener() {
         public Object handlePacket(FlapPacketEvent e) {
             if (e.getFlapCommand() instanceof SnacFlapCmd) {
-                logger.finer("SnacProcessor intercepted channel-2 snac " +
-                        "command");
+                if (logger.isLoggable(Level.FINER)) {
+                    logger.finer("SnacProcessor intercepted channel-2 snac "
+                            + "command");
+                }
 
                 processPacket(e);
 
@@ -525,6 +524,13 @@ public class SnacProcessor {
      * amount of time, SNAC requests will be removed from the request list,
      * and any future responses will be processed as if they were normal
      * <code>SnacPacket</code>s and not responses to requests.
+     * <br>
+     * <br>
+     * Note that this value must be at least zero. A value of zero enables
+     * several special cases to use less memory and CPU time involved in sending
+     * SNAC requests. A value of zero also means that SNAC requests' listeners
+     * will <i>never</i> be called with responses, as request ID's are not
+     * stored at all.
      *
      * @param requestTtl the new "time to live" for SNAC requests, in seconds
      */
@@ -549,6 +555,9 @@ public class SnacProcessor {
      * @param e the FLAP packet event to process
      */
     private synchronized void processPacket(FlapPacketEvent e) {
+        boolean logFine = logger.isLoggable(Level.FINE);
+        boolean logFiner = logger.isLoggable(Level.FINER);
+
         SnacFlapCmd flapCmd = ((SnacFlapCmd) e.getFlapCommand());
         SnacPacket snacPacket = flapCmd.getSnacPacket();
 
@@ -560,15 +569,19 @@ public class SnacProcessor {
                 mutablePacket = new MutableSnacPacket(snacPacket);
             }
 
-            logger.finer("Running snac preprocessor " + preprocessor);
+            if (logFiner) {
+                logger.finer("Running snac preprocessor " + preprocessor);
+            }
 
             try {
                 preprocessor.process(mutablePacket);
             } catch (Throwable t) {
-                logger.finer("Preprocessor " + preprocessor + " threw " +
-                        "exception " + t);
-                flapProcessor.handleException(ERRTYPE_SNAC_PACKET_PREPROCESSOR, t,
-                        preprocessor);
+                if (logFiner) {
+                    logger.finer("Preprocessor " + preprocessor + " threw " +
+                            "exception " + t);
+                }
+                flapProcessor.handleException(ERRTYPE_SNAC_PACKET_PREPROCESSOR,
+                        t, preprocessor);
                 continue;
             }
         }
@@ -578,7 +591,9 @@ public class SnacProcessor {
 
         SnacCommand cmd = generateSnacCommand(snacPacket);
 
-        logger.fine("Converted Snac packet " + snacPacket + " to " + cmd);
+        if (logFine) {
+            logger.fine("Converted Snac packet " + snacPacket + " to " + cmd);
+        }
 
         Long key = new Long(snacPacket.getReqid());
         RequestInfo reqInfo = (RequestInfo) requests.get(key);
@@ -587,8 +602,10 @@ public class SnacProcessor {
 
         if (reqInfo != null) {
             SnacRequest request = reqInfo.getRequest();
-            logger.finer("This Snac packet is a response to a request; " +
-                    "processing");
+            if (logFiner) {
+                logger.finer("This Snac packet is a response to a request; " +
+                        "processing");
+            }
             try {
                 processResponse(event, request);
             } catch (Throwable t) {
@@ -602,7 +619,10 @@ public class SnacProcessor {
             VetoableSnacPacketListener listener
                     = (VetoableSnacPacketListener) it.next();
 
-            logger.finer("Running vetoable Snac packet listener " + listener);
+            if (logFiner) {
+                logger.finer("Running vetoable Snac packet listener "
+                        + listener);
+            }
 
             Object result;
             try {
@@ -620,7 +640,9 @@ public class SnacProcessor {
         for (Iterator it = packetListeners.iterator(); it.hasNext();) {
             SnacPacketListener listener = (SnacPacketListener) it.next();
 
-            logger.finer("Running Snac packet listener " + listener);
+            if (logFiner) {
+                logger.finer("Running Snac packet listener " + listener);
+            }
 
             try {
                 listener.handleSnacPacket(event);
@@ -630,7 +652,7 @@ public class SnacProcessor {
             }
         }
 
-        logger.finer("Finished processing Snac");
+        if (logFiner) logger.finer("Finished processing Snac");
     }
 
     /**
@@ -677,7 +699,9 @@ public class SnacProcessor {
         SnacRequestTimeoutEvent event = new SnacRequestTimeoutEvent(
                 flapProcessor, this, request, requestTtl);
 
-        logger.finer("Snac request timed out: " + request);
+        if (logger.isLoggable(Level.FINER)) {
+            logger.finer("Snac request timed out: " + request);
+        }
         request.timedOut(event);
     }
 
@@ -685,13 +709,14 @@ public class SnacProcessor {
      * "Times out" all requests on the request list.
      */
     private synchronized final void clearAllRequests() {
-        for (final Iterator it = requests.values().iterator(); it.hasNext();) {
-            final RequestInfo reqInfo = (RequestInfo) it.next();
+        for (Iterator it = requests.values().iterator(); it.hasNext();) {
+            RequestInfo reqInfo = (RequestInfo) it.next();
 
             timeoutRequest(reqInfo);
         }
 
         requests.clear();
+        requestQueue.clear();
     }
 
     /**
@@ -699,24 +724,35 @@ public class SnacProcessor {
      * lifetime has passed the {@link #requestTtl}.
      */
     private synchronized final void cleanRequests() {
-        final long time = System.currentTimeMillis();
-        for (final Iterator it = requests.values().iterator(); it.hasNext();) {
-            final RequestInfo reqInfo = (RequestInfo) it.next();
+        if (requestQueue.isEmpty()) return;
 
-            final long sentTime = reqInfo.getSentTime();
+        if (requestTtl == 0) {
+            clearAllRequests();
+            return;
+        }
+
+        long time = System.currentTimeMillis();
+
+        long ttlms = requestTtl * 1000;
+
+        for (Iterator it = requestQueue.iterator(); it.hasNext();) {
+            RequestInfo reqInfo = (RequestInfo) it.next();
+
+            long sentTime = reqInfo.getSentTime();
             if (sentTime == -1) continue;
 
-            final long diff = time - sentTime;
+            long diff = time - sentTime;
 
             // these are in order, so this is okay. it may not be in the future,
             // with rate limiting and such.
-            if (diff / 1000 < requestTtl) break;
+            if (diff < ttlms) break;
 
-            System.out.println("timing out request #"
-                    + reqInfo.getRequest().getReqid());
+            // tell the request it's timed out
             timeoutRequest(reqInfo);
 
+            // and remove the request from the queue and the reqid map
             it.remove();
+            requests.remove(new Long(reqInfo.getRequest().getReqid()));
         }
     }
 
@@ -734,12 +770,16 @@ public class SnacProcessor {
 
         registerSnacRequest(request);
 
-        logger.fine("Queueing Snac request #" + lastReqid + ": "
-                + command);
+        if (logger.isLoggable(Level.FINE)) {
+            logger.fine("Queueing Snac request #" + lastReqid + ": "
+                    + command);
+        }
 
         queueManager.queueSnac(this, request);
 
-        logger.finer("Finished queueing Snac request #" + lastReqid);
+        if (logger.isLoggable(Level.FINER)) {
+            logger.finer("Finished queueing Snac request #" + lastReqid);
+        }
     }
 
     /**
@@ -753,7 +793,9 @@ public class SnacProcessor {
     public synchronized final void sendSnacImmediately(SnacRequest request) {
         DefensiveTools.checkNull(request, "request");
 
-        logger.fine("Sending SNAC request " + request);
+        if (logger.isLoggable(Level.FINE)) {
+            logger.fine("Sending SNAC request " + request);
+        }
 
         RequestInfo reqInfo = registerSnacRequest(request);
 
@@ -763,13 +805,21 @@ public class SnacProcessor {
         }
 
         long reqid = reqInfo.getRequest().getReqid();
-        flapProcessor.send(new SnacFlapCmd(reqid, request.getCommand()));
+        flapProcessor.sendFlap(new SnacFlapCmd(reqid, request.getCommand()));
 
         long sentTime = System.currentTimeMillis();
         reqInfo.sent(sentTime);
         request.sent(new SnacRequestSentEvent(flapProcessor, this, request,
                 sentTime));
-        logger.finer("Finished sending SNAC request " + request);
+        if (requestTtl != 0) {
+            requestQueue.add(reqInfo);
+        } else {
+            requests.remove(new Long(reqid));
+        }
+
+        if (logger.isLoggable(Level.FINER)) {
+            logger.finer("Finished sending SNAC request " + request);
+        }
     }
 
     /**
@@ -789,10 +839,8 @@ public class SnacProcessor {
         // this is sent as an unsigned int, so it has to wrap like one. we
         // avoid request ID zero because that seems like a value the server
         // might use to denote a lack of a request ID.
-        if (lastReqid == REQID_MAX) lastReqid = 1;
+        if (lastReqid == REQID_MAX) lastReqid = REQID_MIN;
         else lastReqid++;
-
-        System.out.println("sending snac request " + lastReqid);
 
         request.setReqid(lastReqid);
 
@@ -928,7 +976,6 @@ public class SnacProcessor {
          * @return this <code>RequestInfo</code>'s associated SNAC request
          */
         public final SnacRequest getRequest() { return request; }
-
 
         /**
          * Returns the time, in milliseconds since unix epoch, at which the
