@@ -41,6 +41,7 @@ import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.TlvTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -118,7 +119,7 @@ public class AuthRequest extends AuthCommand {
 
         DefensiveTools.checkNull(packet, "packet");
 
-        TlvChain chain = ImmutableTlvChain.readChain(packet.getData());
+        TlvChain chain = TlvTools.readChain(packet.getData());
 
         sn = chain.getString(TYPE_SN);
         encryptedPass = chain.hasTlv(TYPE_ENCPASS)

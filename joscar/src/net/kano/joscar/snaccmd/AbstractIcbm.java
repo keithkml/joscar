@@ -38,6 +38,7 @@ package net.kano.joscar.snaccmd;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.MiscTools;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.flapcmd.SnacPacket;
 
@@ -194,7 +195,7 @@ public abstract class AbstractIcbm extends SnacCommand {
             throws IOException;
 
     public String toString() {
-        return "AbstractIcbm: channel=" + this.channel + ", messageId="
-                + this.getIcbmMessageId();
+        return MiscTools.getClassName(this) + ": channel=" + this.channel
+                + ", messageId=" + this.getIcbmMessageId();
     }
 }

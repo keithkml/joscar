@@ -73,6 +73,8 @@ public class RateInfoCmd extends ConnCommand {
 
         ByteBlock snacData = packet.getData();
 
+        System.out.println("len: " + snacData.getLength());
+
         int rates = BinaryTools.getUShort(snacData, 0);
         RateClassInfo[] infos = new RateClassInfo[rates];
 

@@ -42,6 +42,7 @@ import net.kano.joscar.snaccmd.DirInfo;
 import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.TlvTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -94,7 +95,7 @@ public class SearchBuddiesCmd extends SearchCommand {
 
         ByteBlock snacData = packet.getData();
 
-        TlvChain chain = ImmutableTlvChain.readChain(snacData);
+        TlvChain chain = TlvTools.readChain(snacData);
 
         type = chain.getUShort(TYPE_SEARCH_TYPE);
         email = chain.getString(TYPE_EMAIL);

@@ -47,6 +47,7 @@ import net.kano.joscar.snac.SnacResponseEvent;
 import net.kano.joscar.snaccmd.DirInfo;
 import net.kano.joscar.snaccmd.FullRoomInfo;
 import net.kano.joscar.snaccmd.MiniRoomInfo;
+import net.kano.joscar.snaccmd.ExchangeInfo;
 import net.kano.joscar.snaccmd.conn.RateInfoCmd;
 import net.kano.joscar.snaccmd.conn.ServiceRedirect;
 import net.kano.joscar.snaccmd.conn.ServiceRequest;
@@ -193,33 +194,42 @@ public class ServiceConn extends BasicConn {
 
             final FullRoomInfo roomInfo = rr.getRoomInfo();
 
-            System.out.println("requesting chat service for room "
-                    + roomInfo.getName());
+            if (roomInfo != null) {
+                System.out.println("requesting chat service for room "
+                        + roomInfo.getName());
 
-            MiniRoomInfo miniInfo = new MiniRoomInfo(roomInfo);
+                MiniRoomInfo miniInfo = new MiniRoomInfo(roomInfo);
 
-            ServiceRequest request = new ServiceRequest(miniInfo);
-            
-            SnacRequestListener listener = new SnacRequestAdapter() {
-                public void handleResponse(SnacResponseEvent e) {
-                    SnacCommand cmd = e.getSnacCommand();
+                ServiceRequest request = new ServiceRequest(miniInfo);
 
-                    System.out.println("got chat service request " +
-                            "response: " + e.getSnacPacket() + " ( "
-                            + e.getSnacCommand() + ")");
-                    if (cmd instanceof ServiceRedirect) {
-                        ServiceRedirect sr = (ServiceRedirect) cmd;
+                SnacRequestListener listener = new SnacRequestAdapter() {
+                    public void handleResponse(SnacResponseEvent e) {
+                        SnacCommand cmd = e.getSnacCommand();
 
-                        tester.connectToChat(roomInfo, sr.getRedirectHost(),
-                                sr.getCookie());
-                    } else {
-                        // pass it off to the default handler
-                        handleSnacPacket(e);
+                        System.out.println("got chat service request " +
+                                "response: " + e.getSnacPacket() + " ( "
+                                + e.getSnacCommand() + ")");
+                        if (cmd instanceof ServiceRedirect) {
+                            ServiceRedirect sr = (ServiceRedirect) cmd;
+
+                            tester.connectToChat(roomInfo, sr.getRedirectHost(),
+                                    sr.getCookie());
+                        } else {
+                            // pass it off to the default handler
+                            handleSnacPacket(e);
+                        }
                     }
-                }
-            };
+                };
 
-            dispatchRequest(request, listener);
+                dispatchRequest(request, listener);
+            }
+            ExchangeInfo[] exis = rr.getExchangeInfos();
+            if (exis != null && exis.length > 0) {
+                System.out.println("Exchange infos:");
+                for (int i = 0; i < exis.length; i++) {
+                    System.out.println("- " + exis[i]);
+                }
+            }
         }
     }
 }

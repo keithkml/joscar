@@ -39,11 +39,7 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.ExtraInfoData;
 import net.kano.joscar.snaccmd.ssi.SsiItem;
-import net.kano.joscar.tlv.DefaultMutableTlvChain;
-import net.kano.joscar.tlv.ImmutableTlvChain;
-import net.kano.joscar.tlv.MutableTlvChain;
-import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.*;
 
 /**
  * An SSI item object holding information about a buddy icon. Note that
@@ -104,7 +100,7 @@ public class IconItem extends AbstractItemObj {
         name = item.getName();
         id = item.getId();
 
-        TlvChain chain = ImmutableTlvChain.readChain(item.getData());
+        TlvChain chain = TlvTools.readChain(item.getData());
 
         Tlv iconTlv = chain.getLastTlv(TYPE_ICON_HASH);
 
@@ -118,7 +114,7 @@ public class IconItem extends AbstractItemObj {
 
         alias = chain.getString(TYPE_ALIAS);
 
-        MutableTlvChain extraTlvs = new DefaultMutableTlvChain(chain);
+        MutableTlvChain extraTlvs = TlvTools.getMutableCopy(chain);
 
         extraTlvs.removeTlvs(new int[] { TYPE_ICON_HASH, TYPE_ALIAS });
 
@@ -240,7 +236,7 @@ public class IconItem extends AbstractItemObj {
     }
 
     public synchronized SsiItem toSsiItem() {
-        MutableTlvChain chain = new DefaultMutableTlvChain();
+        MutableTlvChain chain = TlvTools.createMutableChain();
 
         if (iconInfo != null) {
             ByteBlock iconData = ByteBlock.createByteBlock(iconInfo);

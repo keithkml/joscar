@@ -41,6 +41,7 @@ import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.TlvTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -55,6 +56,13 @@ import java.io.OutputStream;
  * @see AcctModAck
  */
 public class AcctModCmd extends AcctCommand {
+    /* "Nothing about me" */
+    public static final int REGSTATUS_NONE = 0x0001;
+    /* "Only that I have an account" */
+    public static final int REGSTATUS_PARTIAL = 0x0002;
+    /* "My screenname" */
+    public static final int REGSTATUS_FULL = 0x0003;
+
     /** A command type indicating that the screen name is being reformatted. */
     private static final int TYPE_SN = 0x0001;
     /**
@@ -62,11 +70,13 @@ public class AcctModCmd extends AcctCommand {
      * changed.
      */
     private static final int TYPE_EMAIL = 0x0011;
+    private static final int TYPE_REGSTATUS = 0x0013;
 
     /** The new screenname. */
     private final String sn;
     /** The new email address. */
     private final String email;
+    private final int regstatus;
 
     /**
      * Generates an account modification command object from the given incoming
@@ -81,24 +91,41 @@ public class AcctModCmd extends AcctCommand {
 
         ByteBlock snacData = packet.getData();
 
-        TlvChain chain = ImmutableTlvChain.readChain(snacData);
+        TlvChain chain = TlvTools.readChain(snacData);
 
         sn = chain.getString(TYPE_SN);
         email = chain.getString(TYPE_EMAIL);
+        regstatus = chain.getUShort(TYPE_REGSTATUS);
+    }
+
+    public AcctModCmd(int regstatus) {
+        this(null, null, regstatus);
+    }
+
+    public AcctModCmd(String sn, String email) {
+        this(sn, email, -1);
     }
 
     /**
      * Creates an outgoing account modification command that sets the given
-     * screenname and/or registered email address.
+     * screenname and/or registered email address. Note that any of
+     * <code>sn</code>, <code>email</code>, and <code>regstatus</code> can be
+     * <code>null</code> or <code>-1</code> to indicate that the given field
+     * should not be modified.
      *
-     * @param sn a newly formatted screenname
-     * @param email a new registered email address for this screenname
+     * @param sn a newly formatted screenname, or <code>null</code> to indicate
+     *        that this field should not be modified
+     * @param email a new registered email address for this screenname, or
+     *        <code>null</code> to indicate that this field should not be modified
      */
-    public AcctModCmd(String sn, String email) {
+    public AcctModCmd(String sn, String email, int regstatus) {
         super(CMD_ACCT_MOD);
+
+        DefensiveTools.checkRange(regstatus, "regstatus", -1);
 
         this.sn = sn;
         this.email = email;
+        this.regstatus = regstatus;
     }
 
     /**
@@ -121,12 +148,22 @@ public class AcctModCmd extends AcctCommand {
         return email;
     }
 
+    public final int getRegistrationVisStatus() { return regstatus; }
+
     public void writeData(OutputStream out) throws IOException {
-        if (sn != null) Tlv.getStringInstance(TYPE_SN, sn).write(out);
-        if (email != null) Tlv.getStringInstance(TYPE_EMAIL, email).write(out);
+        if (sn != null) {
+            Tlv.getStringInstance(TYPE_SN, sn).write(out);
+        }
+        if (email != null) {
+            Tlv.getStringInstance(TYPE_EMAIL, email).write(out);
+        }
+        if (regstatus != -1) {
+            Tlv.getUShortInstance(TYPE_REGSTATUS, regstatus).write(out);
+        }
     }
 
     public String toString() {
-        return "AccountModCmd: sn=" + sn + ", email=" + email;
+        return "AccountModCmd: sn=" + sn + ", email=" + email
+                + ", regstatus=" + regstatus;
     }
 }

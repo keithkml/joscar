@@ -41,11 +41,7 @@ import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.snaccmd.icbm.RvCommand;
-import net.kano.joscar.tlv.DefaultMutableTlvChain;
-import net.kano.joscar.tlv.ImmutableTlvChain;
-import net.kano.joscar.tlv.MutableTlvChain;
-import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -103,7 +99,7 @@ public abstract class AbstractTrillianCryptRvCmd extends RvCommand {
 
         if (rvData == null) return -1;
 
-        TlvChain chain = ImmutableTlvChain.readChain(rvData);
+        TlvChain chain = TlvTools.readChain(rvData);
 
         return chain.getUShort(TYPE_CMDTYPE);
     }
@@ -183,12 +179,12 @@ public abstract class AbstractTrillianCryptRvCmd extends RvCommand {
     protected AbstractTrillianCryptRvCmd(RecvRvIcbm icbm) {
         super(icbm);
 
-        TlvChain chain = ImmutableTlvChain.readChain(icbm.getRvData());
+        TlvChain chain = TlvTools.readChain(icbm.getRvData());
 
         version = chain.getUShort(TYPE_VERSION);
         cmdType = chain.getUShort(TYPE_CMDTYPE);
 
-        MutableTlvChain extras = new DefaultMutableTlvChain(chain);
+        MutableTlvChain extras = TlvTools.getMutableCopy(chain);
         extras.removeTlvs(new int[] { TYPE_VERSION, TYPE_CMDTYPE });
 
         extraTlvs = extras;

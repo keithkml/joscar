@@ -47,13 +47,40 @@ import net.kano.joscar.snaccmd.chat.RecvChatMsgIcbm;
 import net.kano.joscar.snaccmd.chat.SendChatMsgIcbm;
 import net.kano.joscar.snaccmd.chat.UsersJoinedCmd;
 import net.kano.joscar.snaccmd.chat.UsersLeftCmd;
+import org.bouncycastle.asn1.ASN1EncodableVector;
+import org.bouncycastle.asn1.ASN1OutputStream;
+import org.bouncycastle.asn1.BERConstructedOctetString;
+import org.bouncycastle.asn1.BERSequence;
+import org.bouncycastle.asn1.BERTaggedObject;
+import org.bouncycastle.asn1.DERObjectIdentifier;
+import org.bouncycastle.asn1.DEROctetString;
+import org.bouncycastle.asn1.cms.EncryptedContentInfo;
+import org.bouncycastle.asn1.cms.EncryptedData;
+import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
+import org.bouncycastle.cms.CMSException;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
+import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.net.InetAddress;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
+import java.util.Random;
 import java.util.Set;
 
 public class ChatConn extends ServiceConn {
@@ -64,6 +91,8 @@ public class ChatConn extends ServiceConn {
     protected boolean joined = false;
 
     protected Set members = new HashSet();
+    private SecretKey secretKey;
+    private Random random = new Random();
 
     public ChatConn(JoscarTester tester, ByteBlock cookie,
             FullRoomInfo roomInfo) {
@@ -204,5 +233,128 @@ public class ChatConn extends ServiceConn {
 
     public String toString() {
         return "ChatConn: " + roomInfo.getRoomName();
+    }
+
+    SecretKey getKey() {
+        return secretKey;
+    }
+
+    void setKey(SecretKey key) {
+        this.secretKey = key;
+    }
+
+
+    /*
+        ASN1Sequence seq = (ASN1Sequence) ain.readObject();
+        BERTaggedObject bert = (BERTaggedObject) seq.getObjectAt(1);
+        ASN1Sequence seq2 = (ASN1Sequence) bert.getObject();
+        EncryptedData encd = new EncryptedData(seq2);
+        EncryptedContentInfo enci = encd.getEncryptedContentInfo();
+        byte[] encryptedData = enci.getEncryptedContent().getOctets();
+
+        AlgorithmIdentifier alg = enci.getContentEncryptionAlgorithm();
+
+        byte[] iv = ((ASN1OctetString) alg.getParameters()).getOctets();
+
+        Cipher c = Cipher.getInstance(alg.getObjectId().getId(), "BC");
+        c.init(Cipher.DECRYPT_MODE, conn.getKey(), new IvParameterSpec(iv));
+
+        ByteBlock result = ByteBlock.wrap(c.doFinal(encryptedData));
+
+        OscarTools.HttpHeaderInfo hinfo = OscarTools.parseHttpHeader(result);
+        InputStream csdin = ByteBlock.createInputStream(hinfo.getData());
+        CMSSignedData csd = new CMSSignedData(csdin);
+        byte[] scBytes = (byte[]) csd.getSignedContent().getContent();
+        ByteBlock signedContent = ByteBlock.wrap(scBytes);
+        OscarTools.HttpHeaderInfo hinfo2
+                = OscarTools.parseHttpHeader(signedContent);
+        return OscarTools.getInfoString(hinfo2.getData(),
+        (String) hinfo2.getHeaders().get("content-type"));
+    */
+
+    void sendEncMsg(String msg) {
+        byte[] encrypted;
+        try {
+            encrypted = encryptMsg(msg);
+
+            FileOutputStream fout = new FileOutputStream("tmpmyencryptedmsg");
+            fout.write(encrypted);
+            fout.close();
+
+            request(new SendChatMsgIcbm(
+                    new ChatMsg("application/pkcs7-mime", "binary", "us-ascii",
+                            ByteBlock.wrap(encrypted), Locale.getDefault())));
+            System.out.println("sent encrypted msg..");
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (NoSuchProviderException e) {
+            e.printStackTrace();
+        } catch (CMSException e) {
+            e.printStackTrace();
+        } catch (NoSuchPaddingException e) {
+            e.printStackTrace();
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+        } catch (InvalidAlgorithmParameterException e) {
+            e.printStackTrace();
+        } catch (IllegalBlockSizeException e) {
+            e.printStackTrace();
+        } catch (BadPaddingException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private byte[] encryptMsg(String msg) throws IOException,
+            NoSuchAlgorithmException, NoSuchProviderException, CMSException,
+            NoSuchPaddingException, InvalidKeyException,
+            InvalidAlgorithmParameterException, IllegalBlockSizeException,
+            BadPaddingException {
+        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        OutputStreamWriter osw = new OutputStreamWriter(bout);
+        osw.write("Content-Transfer-Encoding: binary\r\n"
+                + "Content-Type: text/x-aolrtf; charset=us-ascii\r\n"
+                + "Content-Language: en\r\n"
+                + "\r\n");
+        osw.flush();
+        bout.write(msg.getBytes());
+
+        byte[] dataToSign = bout.toByteArray();
+        byte[] signedData = tester.signData(dataToSign);
+
+        bout = new ByteArrayOutputStream();
+        osw = new OutputStreamWriter(bout);
+        osw.write("Content-Transfer-Encoding: binary\r\n"
+                + "Content-Type: application/pkcs7-mime; charset=us-ascii\r\n"
+                + "Content-Language: en\r\n"
+                + "\r\n");
+        osw.flush();
+        bout.write(signedData);
+
+        byte[] iv = new byte[16];
+        random.nextBytes(iv);
+
+        Cipher c = Cipher.getInstance("2.16.840.1.101.3.4.1.42", "BC");
+        c.init(Cipher.ENCRYPT_MODE, secretKey, new IvParameterSpec(iv));
+
+        byte[] encrypted = c.doFinal(bout.toByteArray());
+        EncryptedContentInfo eci = new EncryptedContentInfo(
+                new DERObjectIdentifier("1.2.840.113549.1.7.1"),
+                new AlgorithmIdentifier(
+                        new DERObjectIdentifier("2.16.840.1.101.3.4.1.42"),
+                        new DEROctetString(iv)),
+                        new BERConstructedOctetString(encrypted));
+        EncryptedData ed = new EncryptedData(eci, null);
+        BERTaggedObject bert = new BERTaggedObject(0, ed.getDERObject());
+        DERObjectIdentifier rootid = new DERObjectIdentifier("1.2.840.113549.1.7.6");
+        ASN1EncodableVector vec = new ASN1EncodableVector();
+        vec.add(rootid);
+        vec.add(bert);
+        ByteArrayOutputStream fout = new ByteArrayOutputStream();
+        ASN1OutputStream out = new ASN1OutputStream(fout);
+        out.writeObject(new BERSequence(vec));
+        out.close();
+        return fout.toByteArray();
     }
 }

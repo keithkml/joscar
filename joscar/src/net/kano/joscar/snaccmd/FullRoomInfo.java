@@ -39,9 +39,9 @@ import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.LiveWritable;
-import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.TlvTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -56,6 +56,36 @@ import java.util.Locale;
  */
 public final class FullRoomInfo
         extends AbstractChatInfo implements LiveWritable {
+    /*
+        joining secure chat:
+        --------------------
+        exchange: 00 02
+
+        cookielen: 06
+        cookie: "create"
+        instance: 00 00
+
+        type: 01
+        something: 00 04
+
+        tlv:
+            type=0xd6
+            length=0x08
+            data="us-ascii"
+        tlv:
+            type=0xd7
+            length02
+            data="en"
+        tlv:
+            type=0xd3
+            length=0x09
+            data="Test chat"
+        tlv:
+            type=0xdb
+            type=0x16
+            data="application/pkcs7-mime"
+    */
+
     /**
      * Represents the "last instance" of a given room. It is recommended to use
      * this as the "instance" field when joining a room; as of this writing,
@@ -78,11 +108,7 @@ public final class FullRoomInfo
      */
     private static final int TYPE_ROOM_NAME = 0x006a;
 
-    /**
-     * A TLV type containing the room members. As of this writing I have never
-     * seen it used.
-     */
-    private static final int TYPE_MEMBERS = 0x0073;
+    private static final int CODE_DEFAULT = 0x0000;
 
     /**
      * A <code>FullRoomInfo</code> is just a <code>MiniRoomInfo</code> with some
@@ -112,6 +138,8 @@ public final class FullRoomInfo
      */
     private final int type;
 
+    private final int code;
+
     /**
      * The name of the room.
      */
@@ -134,12 +162,11 @@ public final class FullRoomInfo
         ByteBlock rest = block.subBlock(mini.getTotalSize());
 
         type = BinaryTools.getUByte(rest, 0);
+        code = BinaryTools.getUShort(rest, 1);
 
-        // note that we skip four bytes here (we don't know what they are
-        // for but they seem to always be zero)
-        ByteBlock roomBlock = rest.subBlock(5);
+        ByteBlock roomBlock = rest.subBlock(3);
 
-        TlvChain chain = ImmutableTlvChain.readChain(roomBlock);
+        TlvChain chain = TlvTools.readChain(roomBlock);
 
         // TLV userlistTlv = chain.getLastTlv(TYPE_MEMBERS);
 
@@ -176,7 +203,23 @@ public final class FullRoomInfo
      */
     public FullRoomInfo(int exchange, String name, String charset1,
             String language1) {
-        super(name, charset1, language1);
+        this(exchange, name, charset1, language1, null);
+    }
+
+    /**
+     * Creates a chat room information object with the given properties. This
+     * constructor is useful for passing to {@link
+     * net.kano.joscar.snaccmd.rooms.JoinRoomCmd}s.
+     *
+     * @param exchange the exchange on which the chat room resides
+     * @param name the name of the chat room
+     * @param charset1 the charset associated with the given room
+     * @param language1 the language associated with the given room, normally
+     *        a two-letter language code like "en" (for English)
+     */
+    public FullRoomInfo(int exchange, String name, String charset1,
+            String language1, String contentType) {
+        super(name, charset1, language1, contentType);
 
         DefensiveTools.checkRange(exchange, "exchange", 0);
 
@@ -184,6 +227,7 @@ public final class FullRoomInfo
         this.cookie = "create";
         this.instance = INSTANCE_LAST;
         this.type = TYPE_SHORT;
+        this.code = CODE_DEFAULT;
         this.roomName = null;
     }
 
@@ -243,9 +287,7 @@ public final class FullRoomInfo
         mini.write(out);
 
         BinaryTools.writeUByte(out, type);
-
-        // I guess this is just zero
-        BinaryTools.writeUShort(out, 0);
+        BinaryTools.writeUShort(out, code);
 
         writeBaseInfo(out);
         if (roomName != null) {

@@ -58,6 +58,10 @@ public class GetFileAcceptRvCmd extends AbstractAcceptRvCmd {
      * Creates a new outgoing Get File acceptance command.
      */
     public GetFileAcceptRvCmd() {
-        super(CapabilityBlock.BLOCK_FILE_GET);
+        this(false);
+    }
+
+    public GetFileAcceptRvCmd(boolean encrypted) {
+        super(CapabilityBlock.BLOCK_FILE_GET, encrypted);
     }
 }

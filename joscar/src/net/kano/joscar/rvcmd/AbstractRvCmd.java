@@ -40,11 +40,7 @@ import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.snaccmd.icbm.RvCommand;
-import net.kano.joscar.tlv.DefaultMutableTlvChain;
-import net.kano.joscar.tlv.ImmutableTlvChain;
-import net.kano.joscar.tlv.MutableTlvChain;
-import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -76,13 +72,13 @@ public abstract class AbstractRvCmd extends RvCommand {
         ByteBlock block = icbm.getRvData();
 
         if (block != null) {
-            TlvChain chain = ImmutableTlvChain.readChain(block);
+            TlvChain chain = TlvTools.readChain(block);
 
             Tlv serviceDataTlv = chain.getLastTlv(TYPE_SERVICE_DATA);
             if (serviceDataTlv == null) serviceData = null;
             else serviceData = serviceDataTlv.getData();
 
-            MutableTlvChain extras = new DefaultMutableTlvChain(chain);
+            MutableTlvChain extras = TlvTools.getMutableCopy(chain);
             extras.removeTlvs(new int[] {
                 TYPE_SERVICE_DATA
             });
@@ -90,7 +86,7 @@ public abstract class AbstractRvCmd extends RvCommand {
             rvTlvs = extras;
         } else {
             serviceData = null;
-            rvTlvs = new DefaultMutableTlvChain();
+            rvTlvs = TlvTools.createMutableChain();
         }
     }
 

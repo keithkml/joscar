@@ -42,6 +42,7 @@ import net.kano.joscar.LiveWritable;
 import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.TlvTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -77,18 +78,32 @@ public class CertificateInfo implements LiveWritable {
     public static CertificateInfo readCertInfoBlock(ByteBlock block) {
         DefensiveTools.checkNull(block, "block");
 
-        TlvChain chain = ImmutableTlvChain.readChain(block);
+        TlvChain chain = TlvTools.readChain(block);
 
         int code = -1;
-        Tlv codeTlv = chain.getLastTlv(TYPE_CODE);
+        Tlv codeTlv = chain.getLastTlv(TYPE_NUMCERTS);
         if (codeTlv != null) {
             code = codeTlv.getDataAsUShort();
         }
 
-        ByteBlock certData = null;
-        Tlv certTlv = chain.getLastTlv(TYPE_CERTDATA);
-        if (certTlv != null) {
-            certData = certTlv.getData();
+        ByteBlock commonCertData = null;
+        ByteBlock encCertData = null;
+        ByteBlock signCertData = null;
+        if (code == 1) {
+            Tlv commonCertTlv = chain.getLastTlv(TYPE_COMMONCERTDATA);
+            if (commonCertTlv != null) {
+                commonCertData = commonCertTlv.getData();
+            }
+        } else if (code == 2) {
+            Tlv encCertTlv = chain.getLastTlv(TYPE_ENCCERTDATA);
+            if (encCertTlv != null) {
+                encCertData = encCertTlv.getData();
+            }
+
+            Tlv signCertTlv = chain.getLastTlv(TYPE_SIGNCERTDATA);
+            if (signCertTlv != null) {
+                signCertData = signCertTlv.getData();
+            }
         }
 
         ByteBlock hashA = null;
@@ -108,37 +123,61 @@ public class CertificateInfo implements LiveWritable {
             if (infoBlock != null) hashB = infoBlock.getExtraData().getData();
         }
 
-        return new CertificateInfo(code, certData, hashA, hashB);
+        return new CertificateInfo(commonCertData, encCertData, signCertData,
+                hashA, hashB);
     }
 
-    private static final int TYPE_CODE = 0x0004;
-    private static final int TYPE_CERTDATA = 0x0001;
+    private static final int TYPE_NUMCERTS = 0x0004;
+    private static final int TYPE_COMMONCERTDATA = 0x0001;
+    private static final int TYPE_ENCCERTDATA = 0x0001;
+    private static final int TYPE_SIGNCERTDATA = 0x0002;
     private static final int TYPE_HASH_A = 0x0005;
     private static final int TYPE_HASH_B = 0x0006;
 
-
-    private final int code;
-    private final ByteBlock certData;
+    private final ByteBlock commonCertData;
+    private final ByteBlock encCertData;
+    private final ByteBlock signCertData;
     private final ByteBlock hashA;
     private final ByteBlock hashB;
 
-    public CertificateInfo(ByteBlock certData) {
-        this(CODE_DEFAULT, certData, HASHA_DEFAULT, HASHB_DEFAULT);
+    public CertificateInfo(ByteBlock commonCertData) {
+        this(commonCertData, null, null, HASHA_DEFAULT, HASHB_DEFAULT);
     }
 
-    public CertificateInfo(int code, ByteBlock certData, ByteBlock hashA,
-            ByteBlock hashB) {
-        DefensiveTools.checkRange(code, "code", -1);
+    public CertificateInfo(ByteBlock encCertData, ByteBlock signCertData,
+            ByteBlock hashA, ByteBlock hashB) {
+        this(null, encCertData, signCertData, hashA, hashB);
+    }
 
-        this.code = code;
-        this.certData = certData;
+    private CertificateInfo(ByteBlock commonCertData, ByteBlock encCertData,
+            ByteBlock signCertData, ByteBlock hashA, ByteBlock hashB) {
+        if (commonCertData == null
+                && (encCertData == null || signCertData == null)) {
+            throw new IllegalArgumentException("commonCertData is null but "
+                    + (encCertData == null ? "encCertData is null" : "")
+                    + (signCertData == null ? (encCertData == null ? ", " : "")
+                    + "signCertData is null" : ""));
+        }
+        if (commonCertData != null
+                && (encCertData != null || signCertData != null)) {
+            throw new IllegalArgumentException("commonCertData is not null but "
+                    + (encCertData != null ? "encCertData is not null" : "")
+                    + (signCertData != null ? (encCertData != null ? ", " : "")
+                    + "signCertData is not null" : ""));
+        }
+
+        this.commonCertData = commonCertData;
+        this.encCertData = encCertData;
+        this.signCertData = signCertData;
         this.hashA = hashA;
         this.hashB = hashB;
     }
 
-    public final int getCode() { return code; }
+    public final ByteBlock getCommonCertData() { return commonCertData; }
 
-    public final ByteBlock getCertData() { return certData; }
+    public final ByteBlock getEncCertData() { return encCertData; }
+
+    public final ByteBlock getSignCertData() { return signCertData; }
 
     public final ByteBlock getHashA() { return hashA; }
 
@@ -153,8 +192,19 @@ public class CertificateInfo implements LiveWritable {
     }
 
     public void write(OutputStream out) throws IOException {
-        if (code != -1) Tlv.getUShortInstance(TYPE_CODE, code).write(out);
-        if (certData != null) new Tlv(TYPE_CERTDATA, certData).write(out);
+        int numCerts;
+        if (commonCertData != null) numCerts = 1;
+        else numCerts = 2;
+        Tlv.getUShortInstance(TYPE_NUMCERTS, numCerts).write(out);
+
+        if (numCerts == 1) {
+            if (commonCertData != null) {
+                new Tlv(TYPE_COMMONCERTDATA, commonCertData).write(out);
+            }
+        } else {
+            new Tlv(TYPE_ENCCERTDATA, encCertData).write(out);
+            new Tlv(TYPE_SIGNCERTDATA, signCertData).write(out);
+        }
         if (hashA != null) {
             writeHash(out, TYPE_HASH_A, ExtraInfoBlock.TYPE_CERTINFO_HASHA,
                     hashA);
@@ -166,7 +216,7 @@ public class CertificateInfo implements LiveWritable {
     }
 
     public String toString() {
-        return "CertificateInfo: code=" + code + ", certdata=["
-                + BinaryTools.describeData(certData) + "]";
+        return "CertificateInfo: certdata=["
+                + BinaryTools.describeData(commonCertData) + "]";
     }
 }

@@ -107,7 +107,9 @@ public class RvConnectionInfo implements LiveWritable {
      * connection via an AOL Proxy Server.
      */
     private static final int TYPE_PROXIED = 0x0010;
+    private static final int TYPE_ENCRYPTED = 0x0011;
 
+    private final boolean encrypted;
     /**
      * Whether or not this connection information block describes a "proxied"
      * connection.
@@ -159,8 +161,9 @@ public class RvConnectionInfo implements LiveWritable {
 
         boolean proxied = chain.hasTlv(TYPE_PROXIED);
 
+        boolean encrypted = chain.hasTlv(TYPE_ENCRYPTED);
         return new RvConnectionInfo(internalIP, externalIP, proxyIP, port,
-                proxied);
+                proxied, encrypted);
     }
 
     /**
@@ -177,7 +180,7 @@ public class RvConnectionInfo implements LiveWritable {
             InetAddress internalIP, int port) {
         DefensiveTools.checkNull(internalIP, "internalIP");
 
-        return new RvConnectionInfo(internalIP, null, null, port, false);
+        return new RvConnectionInfo(internalIP, null, null, port, false, false);
     }
 
     /**
@@ -199,7 +202,7 @@ public class RvConnectionInfo implements LiveWritable {
             Inet4Address proxyIP, int port) {
         DefensiveTools.checkNull(proxyIP, "proxyIP");
 
-        return new RvConnectionInfo(null, null, proxyIP, port, true);
+        return new RvConnectionInfo(null, null, proxyIP, port, true, false);
     }
 
     /**
@@ -239,8 +242,8 @@ public class RvConnectionInfo implements LiveWritable {
      * @see #createForOutgoingProxiedRequest
      */
     public RvConnectionInfo(InetAddress internalIP, Inet4Address externalIP,
-            Inet4Address proxyIP, int port, boolean proxied) {
-
+            Inet4Address proxyIP, int port, boolean proxied,
+            boolean encrypted) {
         DefensiveTools.checkRange(port, "port", -1);
 
         this.internalIP = internalIP;
@@ -248,6 +251,7 @@ public class RvConnectionInfo implements LiveWritable {
         this.proxyIP = proxyIP;
         this.port = port;
         this.proxied = proxied;
+        this.encrypted = encrypted;
     }
 
     /**
@@ -302,6 +306,8 @@ public class RvConnectionInfo implements LiveWritable {
      */
     public final int getPort() { return port; }
 
+    public final boolean isEncrypted() { return encrypted; }
+
     /**
      * Writes an IP address (in raw byte format) to the given stream as a TLV
      * of the given type.
@@ -324,10 +330,13 @@ public class RvConnectionInfo implements LiveWritable {
         if (proxyIP != null) writeIP(out, TYPE_PROXYIP, proxyIP);
         if (port != -1) Tlv.getUShortInstance(TYPE_PORT, port).write(out);
         if (proxied) new Tlv(TYPE_PROXIED).write(out);
+        if (encrypted) new Tlv(TYPE_ENCRYPTED).write(out);
     }
 
     public String toString() {
-        return "ConnectionInfo: " + (proxied ? "(proxied) " : "") + 
+        return "ConnectionInfo: " +
+                (proxied ? "(proxied) " : "") +
+                (encrypted ? "(encrypted) " : "") +
                 "internalIP=" + internalIP +
                 ", externalIP=" + externalIP +
                 ", proxyIP=" + proxyIP +

@@ -44,6 +44,7 @@ import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.TlvTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -77,7 +78,7 @@ public class SendRvIcbm extends AbstractRvIcbm {
         sn = snInfo.getString();
 
         ByteBlock tlvBlock = channelData.subBlock(snInfo.getTotalSize());
-        TlvChain chain = ImmutableTlvChain.readChain(tlvBlock);
+        TlvChain chain = TlvTools.readChain(tlvBlock);
         processRvTlvs(chain);
     }
 

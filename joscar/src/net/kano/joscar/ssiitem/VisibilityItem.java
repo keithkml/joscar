@@ -39,11 +39,7 @@ import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.ssi.SsiItem;
-import net.kano.joscar.tlv.DefaultMutableTlvChain;
-import net.kano.joscar.tlv.ImmutableTlvChain;
-import net.kano.joscar.tlv.MutableTlvChain;
-import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.*;
 
 /**
  * An SSI item object representing a set of "visibility settings." The
@@ -96,7 +92,7 @@ public class VisibilityItem extends AbstractItemObj {
 
         id = item.getId();
 
-        TlvChain chain = ImmutableTlvChain.readChain(item.getData());
+        TlvChain chain = TlvTools.readChain(item.getData());
 
         Tlv visMaskTlv = chain.getLastTlv(TYPE_VIS_MASK);
         if (visMaskTlv != null) {
@@ -107,7 +103,7 @@ public class VisibilityItem extends AbstractItemObj {
             flags = 0;
         }
 
-        MutableTlvChain extras = new DefaultMutableTlvChain(chain);
+        MutableTlvChain extras = TlvTools.getMutableCopy(chain);
         extras.removeTlvs(new int[] { TYPE_VIS_MASK });
         addExtraTlvs(extras);
     }
@@ -186,7 +182,7 @@ if ((visItem.getVisFlags() & VisibilityItem.MASK_SHOW_TYPING) {
     }
 
     public synchronized SsiItem toSsiItem() {
-        MutableTlvChain chain = new DefaultMutableTlvChain();
+        MutableTlvChain chain = TlvTools.createMutableChain();
 
         if (flags != 0) {
             byte[] flagBytes = BinaryTools.getUInt(flags);

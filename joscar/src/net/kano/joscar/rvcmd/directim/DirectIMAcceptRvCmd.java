@@ -58,6 +58,10 @@ public class DirectIMAcceptRvCmd extends AbstractAcceptRvCmd {
      * Creates a new outgoing direct IM acceptance command.
      */
     public DirectIMAcceptRvCmd() {
-        super(CapabilityBlock.BLOCK_DIRECTIM);
+        this(false);
+    }
+
+    public DirectIMAcceptRvCmd(boolean encrypted) {
+        super(CapabilityBlock.BLOCK_DIRECTIM, encrypted);
     }
 }

@@ -42,6 +42,7 @@ import net.kano.joscar.MinimalEncoder;
 import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.TlvTools;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -64,7 +65,7 @@ public final class DirInfo implements LiveWritable {
      *         given block
      */
     public static DirInfo readDirInfo(ByteBlock block) {
-        return readDirInfo(ImmutableTlvChain.readChain(block));
+        return readDirInfo(TlvTools.readChain(block));
     }
 
     /**
@@ -80,7 +81,7 @@ public final class DirInfo implements LiveWritable {
      * @return a directory information object
      */
     public static DirInfo readDirInfo(ByteBlock block, int maxTlvs) {
-        return readDirInfo(ImmutableTlvChain.readChain(block, maxTlvs));
+        return readDirInfo(TlvTools.readChain(block, maxTlvs));
     }
 
     /**

@@ -44,6 +44,7 @@ import net.kano.joscar.OscarTools;
 import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.TlvTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -68,7 +69,7 @@ public class InfoData implements LiveWritable {
      * @return a user info data object read from the given data block
      */
     public static InfoData readInfoData(ByteBlock block) {
-        return readInfoDataFromChain(ImmutableTlvChain.readChain(block));
+        return readInfoDataFromChain(TlvTools.readChain(block));
     }
 
     /**
@@ -90,7 +91,8 @@ public class InfoData implements LiveWritable {
 
         String awayMessage = null;
         if (awayTlv != null) {
-            awayMessage = OscarTools.getInfoString(awayTlv.getData(), awayType);
+            awayMessage
+                    = OscarTools.getInfoString(awayTlv.getData(), awayType);
         }
 
         String info = null;
@@ -110,7 +112,7 @@ public class InfoData implements LiveWritable {
 
         return new InfoData(info, awayMessage, caps, certInfo);
     }
-    
+
     /**
      * A TLV type containing the "format" of the user info. This is generally of
      * the form <code>text/x-aolrtf; charset=us-ascii</code>.
@@ -276,32 +278,32 @@ public class InfoData implements LiveWritable {
 
     public String toString() {
         StringBuffer buffer = new StringBuffer();
-	buffer.append("InfoData:");
-	if (info != null && info.length() > 0) {
-	    String display = info;
-	    if (display.length() > 20) {
-		display = display.substring(0, 20) + "...";
-	    }
-	    buffer.append("  info: ");
-	    buffer.append(display);
-	}
-	if (awayMessage != null && awayMessage.length() > 0) {
-	    String display = awayMessage;
-	    if (display.length() > 20) {
-		display = display.substring(0, 20) + "...";
-	    }
-	    buffer.append("  away: ");
-	    buffer.append(display);
-	}
-	if (caps != null && caps.length > 0) {
-	    buffer.append("  capabilities: ");
-	    buffer.append(caps.length);
-	}
+        buffer.append("InfoData:");
+        if (info != null && info.length() > 0) {
+            String display = info;
+            if (display.length() > 20) {
+                display = display.substring(0, 20) + "...";
+            }
+            buffer.append("  info: ");
+            buffer.append(display);
+        }
+        if (awayMessage != null && awayMessage.length() > 0) {
+            String display = awayMessage;
+            if (display.length() > 20) {
+                display = display.substring(0, 20) + "...";
+            }
+            buffer.append("  away: ");
+            buffer.append(display);
+        }
+        if (caps != null && caps.length > 0) {
+            buffer.append("  capabilities: ");
+            buffer.append(caps.length);
+        }
         if (certInfo != null) {
             buffer.append("  certinfo: ");
             buffer.append(certInfo);
         }
 
-	return buffer.toString();
+        return buffer.toString();
     }
 }

@@ -41,6 +41,7 @@ import net.kano.joscar.snaccmd.AbstractIcbm;
 import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.TlvTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -69,7 +70,7 @@ public abstract class AbstractChatMsgIcbm extends AbstractIcbm {
     protected AbstractChatMsgIcbm(int command, SnacPacket packet) {
         super(ChatCommand.FAMILY_CHAT, command, packet);
 
-        TlvChain chain = ImmutableTlvChain.readChain(getChannelData());
+        TlvChain chain = TlvTools.readChain(getChannelData());
 
         Tlv msgTlv = chain.getLastTlv(TYPE_MSGBLOCK);
         if (msgTlv != null) {

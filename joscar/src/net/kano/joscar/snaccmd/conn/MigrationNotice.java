@@ -42,6 +42,7 @@ import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.TlvTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -87,7 +88,7 @@ public class MigrationNotice extends ConnCommand {
 
         ByteBlock tlvBlock = snacData.subBlock(2+familyCount*2);
 
-        TlvChain chain = ImmutableTlvChain.readChain(tlvBlock);
+        TlvChain chain = TlvTools.readChain(tlvBlock);
 
         host = chain.getString(TYPE_HOST);
 

@@ -79,7 +79,7 @@ public abstract class LocCommand extends SnacCommand {
      * information.
      */
     public static final int CMD_SET_DIR_ACK = 0x000a;
-    public static final int CMD_GET_CERT_INFO = 0x0015;
+    public static final int CMD_NEW_GET_INFO = 0x0015;
 
     /**
      * Creates a new command in the location family.

@@ -67,6 +67,10 @@ public final class FileTransferHeader implements LiveWritable {
      */
     public static final int HEADERTYPE_RECEIVED = 0x0204;
 
+    public static final int HEADERTYPE_RESUME = 0x0205;
+    public static final int HEADERTYPE_RESUME_SENDHEADER = 0x0106;
+    public static final int HEADERTYPE_RESUME_ACK = 0x0207;
+
     /**
      * A header type used in Get File indicating that a file list is about to be
      * sent.
@@ -219,23 +223,30 @@ public final class FileTransferHeader implements LiveWritable {
         int charset = BinaryTools.getUShort(rest, 88);
         int charsubset = BinaryTools.getUShort(rest, 90);
 
-        // okay, first things first, this filename is stored as a
-        // null-terminated string. we loop until we get to the null, then chop
-        // the non-null part into its own block.
         ByteBlock filenameBlock = rest.subBlock(92);
-        int firstNull;
-        for (firstNull = 0; firstNull < filenameBlock.getLength();
-             firstNull++) {
-            if (filenameBlock.get(firstNull) == 0) break;
-        }
-        filenameBlock = filenameBlock.subBlock(0, firstNull);
-//        rest = rest.subBlock(92 + filenameBlock.getLength());
 
         ImEncodingParams encoding = new ImEncodingParams(charset, charsubset);
         String ftFilename = ImEncodedString.readImEncodedString(
                 encoding, filenameBlock);
+        int firstNull = ftFilename.indexOf('\0');
+        int lastNull = ftFilename.lastIndexOf('\0');
+        if (firstNull != lastNull) {
+            // there might be embedded null unicode characters, so we scan back
+            // from the last one for the first non-null character
+            for (int i = lastNull - 1; i >= 0; i--) {
+                if (ftFilename.charAt(i) != '\0') {
+                    firstNull = i + 1;
+                    break;
+                }
+            }
+        }
+        if (firstNull != -1) ftFilename = ftFilename.substring(0, firstNull);
         SegmentedFilename segmented = SegmentedFilename.fromFTFilename(
                 ftFilename);
+        for (int i = 0; i < ftFilename.length(); i++) {
+            char ch = ftFilename.charAt(i);
+            System.out.println("char " + ch + " = " + (int) ch);
+        }
 
         fsh.setFilename(segmented);
 

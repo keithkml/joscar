@@ -44,11 +44,7 @@ import net.kano.joscar.LiveWritable;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.AbstractIcbm;
 import net.kano.joscar.snaccmd.ExtraInfoBlock;
-import net.kano.joscar.tlv.DefaultMutableTlvChain;
-import net.kano.joscar.tlv.ImmutableTlvChain;
-import net.kano.joscar.tlv.MutableTlvChain;
-import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -125,7 +121,7 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
         if (messageTlv != null) {
             // this is a normal IM. there are TLV's in here. two or more of
             // them.
-            TlvChain msgTLVs = ImmutableTlvChain.readChain(messageTlv.getData());
+            TlvChain msgTLVs = TlvTools.readChain(messageTlv.getData());
 
 
             if (msgTLVs.hasTlv(TYPE_ENCRYPTION_CODE)) {
@@ -244,7 +240,7 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
      */
     final void writeImTlvs(OutputStream out) throws IOException {
         if (message != null) {
-            MutableTlvChain chain = new DefaultMutableTlvChain();
+            MutableTlvChain chain = TlvTools.createMutableChain();
             ByteBlock messageData;
 
             if (message.isEncrypted()) {

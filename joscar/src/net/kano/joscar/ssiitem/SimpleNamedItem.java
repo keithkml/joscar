@@ -40,6 +40,7 @@ import net.kano.joscar.MiscTools;
 import net.kano.joscar.snaccmd.ssi.SsiItem;
 import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.TlvTools;
 
 /**
  * A base class for the two item types that only contain a name and reside in
@@ -63,7 +64,7 @@ public abstract class SimpleNamedItem extends AbstractItemObj {
      */
     protected SimpleNamedItem(SsiItem item) {
         this(item.getName(), item.getId(),
-                ImmutableTlvChain.readChain(item.getData()));
+                TlvTools.readChain(item.getData()));
     }
 
     /**

@@ -41,6 +41,7 @@ import net.kano.joscar.rvcmd.InvitationMessage;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.MiniRoomInfo;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
+import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
 
 import java.io.IOException;
@@ -50,10 +51,14 @@ import java.io.OutputStream;
  * A rendezvous command used to invite a user to a chat room.
  */
 public class ChatInvitationRvCmd extends AbstractRequestRvCmd {
+    private static final int TYPE_SECURITYINFO = 0x2713;
+
     /** The chat invitation message. */
     private final InvitationMessage invMessage;
     /** A room information block containing information about the chat room. */
     private final MiniRoomInfo roomInfo;
+
+    private final ByteBlock securityInfo;
 
     /**
      * Creates a new chat room invitation RV command from the given incoming
@@ -67,6 +72,10 @@ public class ChatInvitationRvCmd extends AbstractRequestRvCmd {
         TlvChain chain = getRvTlvs();
 
         invMessage = InvitationMessage.readInvitationMessage(chain);
+
+        Tlv securityInfoTlv = chain.getLastTlv(TYPE_SECURITYINFO);
+        if (securityInfoTlv != null) securityInfo = securityInfoTlv.getData();
+        else securityInfo = null;
 
         ByteBlock serviceData = getServiceData();
         if (serviceData == null) roomInfo = null;
@@ -98,10 +107,16 @@ public class ChatInvitationRvCmd extends AbstractRequestRvCmd {
      */
     public ChatInvitationRvCmd(MiniRoomInfo roomInfo,
             InvitationMessage message) {
+        this(roomInfo, message, null);
+    }
+
+    public ChatInvitationRvCmd(MiniRoomInfo roomInfo,
+            InvitationMessage message, ByteBlock securityInfo) {
         super(CapabilityBlock.BLOCK_CHAT);
 
         this.roomInfo = roomInfo;
         this.invMessage = message;
+        this.securityInfo = securityInfo;
     }
 
     /**
@@ -111,6 +126,8 @@ public class ChatInvitationRvCmd extends AbstractRequestRvCmd {
      *         <code>null</code> if none was included
      */
     public final InvitationMessage getInvMessage() { return invMessage; }
+
+    public final ByteBlock getSecurityInfo() { return securityInfo; }
 
     /**
      * Returns the room information block describing the chat room to which
@@ -128,10 +145,21 @@ public class ChatInvitationRvCmd extends AbstractRequestRvCmd {
     public final MiniRoomInfo getRoomInfo() { return roomInfo; }
 
     protected void writeRvTlvs(OutputStream out) throws IOException {
-        if (invMessage != null) invMessage.write(out);
+        if (invMessage != null) {
+            invMessage.write(out);
+        }
+        if (securityInfo != null) {
+            new Tlv(TYPE_SECURITYINFO, securityInfo).write(out);
+        }
     }
 
     protected void writeServiceData(OutputStream out) throws IOException {
         if (roomInfo != null) roomInfo.write(out);
+    }
+
+    public String toString() {
+        return "ChatInvitationRvCmd: "
+                + (securityInfo != null ? "(secure) " : "" )
+                + "roomInfo=<" + roomInfo + ">: " + invMessage;
     }
 }

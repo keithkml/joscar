@@ -49,6 +49,8 @@ public class ServerRoomCmdFactory implements SnacCmdFactory {
     private static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
         new CmdType(RoomCommand.FAMILY_ROOM, RoomCommand.CMD_RIGHTS_REQ),
         new CmdType(RoomCommand.FAMILY_ROOM, RoomCommand.CMD_EXCH_INFO_REQ),
+        new CmdType(RoomCommand.FAMILY_ROOM, RoomCommand.CMD_MORE_ROOM_INFO),
+        new CmdType(RoomCommand.FAMILY_ROOM, RoomCommand.CMD_JOIN_ROOM),
     };
 
     public CmdType[] getSupportedTypes() {
@@ -64,6 +66,10 @@ public class ServerRoomCmdFactory implements SnacCmdFactory {
             return new RoomRightsRequest(packet);
         } else if (command == RoomCommand.CMD_EXCH_INFO_REQ) {
             return new ExchangeInfoReq(packet);
+        } else if (command == RoomCommand.CMD_MORE_ROOM_INFO) {
+            return new RoomInfoReq(packet);
+        } else if (command == RoomCommand.CMD_JOIN_ROOM) {
+            return new JoinRoomCmd(packet);
         } else {
             return null;
         }

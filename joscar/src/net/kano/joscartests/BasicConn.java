@@ -44,13 +44,7 @@ import net.kano.joscar.flapcmd.LoginFlapCmd;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.ratelim.RateLimitingQueueMgr;
-import net.kano.joscar.rv.NewRvSessionEvent;
-import net.kano.joscar.rv.RecvRvEvent;
-import net.kano.joscar.rv.RvProcessor;
-import net.kano.joscar.rv.RvProcessorListener;
-import net.kano.joscar.rv.RvSession;
-import net.kano.joscar.rv.RvSessionListener;
-import net.kano.joscar.rv.RvSnacResponseEvent;
+import net.kano.joscar.rv.*;
 import net.kano.joscar.rvcmd.AbstractRequestRvCmd;
 import net.kano.joscar.rvcmd.DefaultRvCommandFactory;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
@@ -66,53 +60,34 @@ import net.kano.joscar.snac.SnacPacketEvent;
 import net.kano.joscar.snac.SnacRequest;
 import net.kano.joscar.snac.SnacRequestListener;
 import net.kano.joscar.snac.SnacResponseEvent;
-import net.kano.joscar.snaccmd.CapabilityBlock;
-import net.kano.joscar.snaccmd.ExtraInfoBlock;
-import net.kano.joscar.snaccmd.ExtraInfoData;
-import net.kano.joscar.snaccmd.FullUserInfo;
-import net.kano.joscar.snaccmd.MiniUserInfo;
-import net.kano.joscar.snaccmd.SnacFamilyInfoFactory;
+import net.kano.joscar.snaccmd.*;
+import net.kano.joscar.snaccmd.rooms.RoomInfoReq;
 import net.kano.joscar.snaccmd.buddy.BuddyOfflineCmd;
 import net.kano.joscar.snaccmd.buddy.BuddyStatusCmd;
-import net.kano.joscar.snaccmd.conn.ClientReadyCmd;
-import net.kano.joscar.snaccmd.conn.ClientVersionsCmd;
-import net.kano.joscar.snaccmd.conn.RateAck;
-import net.kano.joscar.snaccmd.conn.RateChange;
-import net.kano.joscar.snaccmd.conn.RateClassInfo;
-import net.kano.joscar.snaccmd.conn.RateInfoCmd;
-import net.kano.joscar.snaccmd.conn.RateInfoRequest;
-import net.kano.joscar.snaccmd.conn.ServerReadyCmd;
-import net.kano.joscar.snaccmd.conn.SnacFamilyInfo;
-import net.kano.joscar.snaccmd.conn.WarningNotification;
-import net.kano.joscar.snaccmd.icbm.InstantMessage;
-import net.kano.joscar.snaccmd.icbm.OldIconHashInfo;
-import net.kano.joscar.snaccmd.icbm.RecvImIcbm;
-import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
-import net.kano.joscar.snaccmd.icbm.RvCommand;
-import net.kano.joscar.snaccmd.icbm.RvResponse;
+import net.kano.joscar.snaccmd.conn.*;
+import net.kano.joscar.snaccmd.icbm.*;
+import org.bouncycastle.cms.*;
+import org.bouncycastle.asn1.ASN1InputStream;
+import org.bouncycastle.asn1.ASN1Sequence;
+import org.bouncycastle.asn1.DERObjectIdentifier;
+import org.bouncycastle.asn1.cms.KeyTransRecipientInfo;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
-import java.io.InputStream;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import java.io.*;
 import java.net.InetAddress;
-import java.security.*;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.InvalidKeyException;
 import java.security.cert.Certificate;
-import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.CertificateExpiredException;
+import java.security.cert.CertificateNotYetValidException;
 import java.text.DateFormat;
 import java.util.*;
-
-import org.bouncycastle.cms.CMSEnvelopedData;
-import org.bouncycastle.cms.CMSException;
-import org.bouncycastle.cms.KeyTransRecipientInformation;
-import org.bouncycastle.cms.CMSSignedData;
-import org.bouncycastle.cms.SignerInformationStore;
-import org.bouncycastle.cms.SignerInformation;
-import org.bouncycastle.cms.CMSProcessable;
 
 public abstract class BasicConn extends AbstractFlapConn {
     protected final ByteBlock cookie;
@@ -136,7 +111,9 @@ public abstract class BasicConn extends AbstractFlapConn {
             RvCommand cmd = event.getRvCommand();
 
             RvSession session = event.getRvSession();
-            RecvRvIcbm icbm = (RecvRvIcbm) event.getSnacCommand();
+            SnacCommand snaccmd = event.getSnacCommand();
+            if (!(snaccmd instanceof RecvRvIcbm)) return;
+            RecvRvIcbm icbm = (RecvRvIcbm) snaccmd;
             System.out.println("got rendezvous on session <" + session + ">");
             System.out.println("- command: " + cmd);
 
@@ -150,7 +127,8 @@ public abstract class BasicConn extends AbstractFlapConn {
                 if (ip != null && port != -1) {
                     System.out.println("starting ft thread..");
                     long cookie = icbm.getIcbmMessageId();
-                    new RecvFileThread(ip, port, session, cookie).start();
+                    new RecvFileThread(tester, ip, port, session, cookie,
+                            connInfo.isEncrypted()).start();
                 }
 
             } else if (cmd instanceof AbstractTrillianCryptRvCmd) {
@@ -198,10 +176,74 @@ public abstract class BasicConn extends AbstractFlapConn {
                 session.sendRv(cmd);
             } else if (cmd instanceof ChatInvitationRvCmd) {
                 ChatInvitationRvCmd circ = (ChatInvitationRvCmd) cmd;
-                System.out.println("room info: " + circ.getRoomInfo());
+
+                ByteBlock securityInfo = circ.getSecurityInfo();
+                if (securityInfo != null) {
+                    String sn = icbm.getSender().getScreenname();
+                    String cookie = circ.getRoomInfo().getCookie();
+                    String roomName = OscarTools.getRoomNameFromCookie(cookie);
+                    try {
+                        tester.setChatKey(roomName, getChatKey(sn, securityInfo));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (CMSException e) {
+                        e.printStackTrace();
+                    } catch (NoSuchProviderException e) {
+                        e.printStackTrace();
+                    } catch (NoSuchPaddingException e) {
+                        e.printStackTrace();
+                    } catch (NoSuchAlgorithmException e) {
+                        e.printStackTrace();
+                    } catch (InvalidKeyException e) {
+                        e.printStackTrace();
+                    } catch (IllegalBlockSizeException e) {
+                        e.printStackTrace();
+                    } catch (BadPaddingException e) {
+                        e.printStackTrace();
+                    } catch (CertificateNotYetValidException e) {
+                        e.printStackTrace();
+                    } catch (CertificateExpiredException e) {
+                        e.printStackTrace();
+                    }
+                }
+                tester.request(new RoomInfoReq(circ.getRoomInfo()));
             }
         }
+        private SecretKey getChatKey(String sn, ByteBlock data) throws IOException,
+                CMSException, NoSuchProviderException, NoSuchPaddingException,
+                NoSuchAlgorithmException, InvalidKeyException,
+                IllegalBlockSizeException, BadPaddingException,
+                CertificateNotYetValidException, CertificateExpiredException {
+            CMSSignedData csd = new CMSSignedData(ByteBlock.createInputStream(data));
+            Collection signers = csd.getSignerInfos().getSigners();
+            for (Iterator sit = signers.iterator(); sit.hasNext();) {
+                SignerInformation si = (SignerInformation) sit.next();
+                boolean verified = si.verify(tester.getCert(sn), "BC");
+                if (!verified) System.out.println("NOTE: key not verified!");
+            }
+            CMSProcessableByteArray cpb
+                    = (CMSProcessableByteArray) csd.getSignedContent();
+            ByteBlock signedContent = ByteBlock.wrap((byte[]) cpb.getContent());
+            MiniRoomInfo mri = MiniRoomInfo.readMiniRoomInfo(signedContent);
 
+            ByteBlock rest = signedContent.subBlock(mri.getTotalSize());
+            int kdlen = BinaryTools.getUShort(rest, 0);
+            ByteBlock keyData = rest.subBlock(2, kdlen);
+
+            InputStream kdin = ByteBlock.createInputStream(keyData);
+            ASN1InputStream ain = new ASN1InputStream(kdin);
+            ASN1Sequence root = (ASN1Sequence) ain.readObject();
+            ASN1Sequence seq = (ASN1Sequence) root.getObjectAt(0);
+            KeyTransRecipientInfo ktr = KeyTransRecipientInfo.getInstance(seq);
+            DERObjectIdentifier keyoid = (DERObjectIdentifier) root.getObjectAt(1);
+
+            String encoid = ktr.getKeyEncryptionAlgorithm().getObjectId().getId();
+            Cipher cipher = Cipher.getInstance(encoid, "BC");
+            cipher.init(Cipher.DECRYPT_MODE, tester.privateKey);
+
+            byte[] result = cipher.doFinal(ktr.getEncryptedKey().getOctets());
+            return new SecretKeySpec(result, keyoid.getId());
+        }
         public void handleSnacResponse(RvSnacResponseEvent event) {
             System.out.println("got SNAC response for <"
                     + event.getRvSession() + ">: "
@@ -325,22 +367,23 @@ public abstract class BasicConn extends AbstractFlapConn {
             } else {
                 msg = OscarTools.stripHtml(message.getMessage());
 
-                OldIconHashInfo iconInfo = icbm.getIconInfo();
-
+//                OldIconHashInfo iconInfo = icbm.getIconInfo();
+//
 //                if (iconInfo != null) {
 //                    System.out.println("(" + sn
 //                            + " has a buddy icon: " + iconInfo + ")");
 //                }
 
-                String str = dateFormat.format(new Date()) + " IM from "
-                        + sn + ": " + message;
-                if (imLogger != null) {
-                    imLogger.println(str);
-                }
-                if (frame != null) {
-                    frame.echo("");
-                    frame.echo(str);
-                }
+                sendRequest(new SnacRequest(new SendImIcbm(sn, msg), null));
+            }
+            String str = dateFormat.format(new Date()) + " IM from "
+                    + sn + ": " + msg;
+            if (imLogger != null) {
+                imLogger.println(str);
+            }
+            if (frame != null) {
+                frame.echo("");
+                frame.echo(str);
             }
             if (msg != null) {
                 String encFlag = (message.isEncrypted() ? "**ENCRYPTED** " : "");
@@ -477,7 +520,6 @@ public abstract class BasicConn extends AbstractFlapConn {
 
         byte[] content = rinfo.getContent(tester.privateKey, "BC");
 
-        System.out.println(BinaryTools.describeData(ByteBlock.wrap(content)));
         OscarTools.HttpHeaderInfo hdrInfo
                 = OscarTools.parseHttpHeader(ByteBlock.wrap(content));
 
@@ -519,6 +561,7 @@ public abstract class BasicConn extends AbstractFlapConn {
             int[] classes = new int[rateClasses.length];
             for (int i = 0; i < rateClasses.length; i++) {
                 classes[i] = rateClasses[i].getRateClass();
+//                System.out.println("- " + rateClasses[i] + ": " + Arrays.asList(rateClasses[i].getCommands()));
             }
 
             request(new RateAck(classes));

@@ -42,6 +42,7 @@ import net.kano.joscar.snaccmd.ExtraInfoBlock;
 import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.TlvTools;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -73,7 +74,7 @@ public class SetExtraInfoCmd extends ConnCommand {
 
         ByteBlock data = packet.getData();
 
-        TlvChain chain = ImmutableTlvChain.readChain(data);
+        TlvChain chain = TlvTools.readChain(data);
 
         Tlv dataTlv = chain.getLastTlv(TYPE_DATA);
 

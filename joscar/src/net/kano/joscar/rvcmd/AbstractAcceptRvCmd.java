@@ -36,6 +36,7 @@
 package net.kano.joscar.rvcmd;
 
 import net.kano.joscar.MiscTools;
+import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 
@@ -47,6 +48,9 @@ import java.io.OutputStream;
  * data and a status code of {@link #RVSTATUS_ACCEPT}.
  */
 public abstract class AbstractAcceptRvCmd extends AbstractRvCmd {
+    private static final int TYPE_ENCRYPTED = 0x0011;
+    private final boolean encrypted;
+
     /**
      * Creates a new RV "accept" command from the given incoming acceptance RV
      * ICBM.
@@ -55,6 +59,8 @@ public abstract class AbstractAcceptRvCmd extends AbstractRvCmd {
      */
     protected AbstractAcceptRvCmd(RecvRvIcbm icbm) {
         super(icbm);
+
+        encrypted = getRvTlvs().hasTlv(TYPE_ENCRYPTED);
     }
 
     /**
@@ -64,10 +70,21 @@ public abstract class AbstractAcceptRvCmd extends AbstractRvCmd {
      * @param cap the capability block associated with this RV command
      */
     protected AbstractAcceptRvCmd(CapabilityBlock cap) {
-        super(RVSTATUS_ACCEPT, cap);
+        this(cap, false);
     }
 
-    protected final void writeHeaderRvTlvs(OutputStream out) { }
+    protected AbstractAcceptRvCmd(CapabilityBlock cap, boolean encrypted) {
+        super(RVSTATUS_ACCEPT, cap);
+
+        this.encrypted = encrypted;
+    }
+
+    public final boolean isEncrypted() { return encrypted; }
+
+    protected final void writeHeaderRvTlvs(OutputStream out)
+            throws IOException {
+        if (encrypted) new Tlv(TYPE_ENCRYPTED).write(out);
+    }
 
     /**
      * Provides a default implementation for writing this command's RV TLV's.
@@ -81,6 +98,6 @@ public abstract class AbstractAcceptRvCmd extends AbstractRvCmd {
     protected void writeRvTlvs(OutputStream out) throws IOException { }
 
     public String toString() {
-        return MiscTools.getClassName(this);
+        return MiscTools.getClassName(this) + ": encrypted=" + encrypted;
     }
 }

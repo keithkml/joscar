@@ -43,6 +43,7 @@ import net.kano.joscar.StringBlock;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.TlvTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -105,7 +106,7 @@ public class RvResponse extends IcbmCommand {
 
         ByteBlock rest = snData.subBlock(snInfo.getTotalSize());
 
-        TlvChain chain = ImmutableTlvChain.readChain(rest);
+        TlvChain chain = TlvTools.readChain(rest);
 
         code = chain.getUShort(TYPE_RESULT_CODE);
     }
