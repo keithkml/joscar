@@ -37,14 +37,25 @@ package net.kano.joscar.rvproto.ft;
 
 import java.util.zip.Checksum;
 
-public final class FileSendChecksum implements Checksum {
+/**
+ * An implementation of the checksumming method used by AOL Instant Messenger's
+ * file transfer protocol.
+ */
+public final class FileTransferChecksum implements Checksum {
+    /** The checksum of an empty set of data. */
     private static final long CHECKSUM_INIT = 0xffff0000;
 
+    /** The checksum value. */
     private long checksum;
 
     { // init
         reset();
     }
+
+    /**
+     * Creates a new file transfer checksum computer object.
+     */
+    public FileTransferChecksum() { }
 
     public void update(int value) {
         update(new byte[] { (byte) value }, 0, 1);
