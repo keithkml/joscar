@@ -37,11 +37,12 @@ package net.kano.joscar.ssiitem;
 
 import net.kano.joscar.snaccmd.ssi.SsiItem;
 import net.kano.joscar.tlv.MutableTlvChain;
-import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.AbstractTlvChain;
+import net.kano.joscar.tlv.ImmutableTlvChain;
 
 public class PermitItem extends SimpleNamedItem {
     public static PermitItem readPermitItem(SsiItem item) {
-        TlvChain chain = TlvChain.readChain(item.getData());
+        AbstractTlvChain chain = ImmutableTlvChain.readChain(item.getData());
 
         MutableTlvChain mutey = new MutableTlvChain(chain);
 
@@ -56,7 +57,7 @@ public class PermitItem extends SimpleNamedItem {
         super(sn, id);
     }
 
-    public PermitItem(String sn, int id, TlvChain extraTlvs) {
+    public PermitItem(String sn, int id, AbstractTlvChain extraTlvs) {
         super(sn, id, extraTlvs);
     }
 

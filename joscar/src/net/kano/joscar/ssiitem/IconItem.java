@@ -40,7 +40,8 @@ import net.kano.joscar.snaccmd.IconHashInfo;
 import net.kano.joscar.snaccmd.ssi.SsiItem;
 import net.kano.joscar.tlv.MutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.AbstractTlvChain;
+import net.kano.joscar.tlv.ImmutableTlvChain;
 
 public class IconItem extends AbstractItem {
     public static final String NAME_DEFAULT = "1";
@@ -59,7 +60,7 @@ public class IconItem extends AbstractItem {
     public static IconItem readIconItem(SsiItem item) {
         String name = item.getName();
 
-        TlvChain chain = TlvChain.readChain(item.getData());
+        AbstractTlvChain chain = ImmutableTlvChain.readChain(item.getData());
 
         Tlv iconTlv = chain.getLastTlv(TYPE_ICON_HASH);
 
@@ -90,7 +91,7 @@ public class IconItem extends AbstractItem {
     }
 
     public IconItem(String name, int id, IconHashInfo iconInfo, String alias,
-            TlvChain extraTlvs) {
+            AbstractTlvChain extraTlvs) {
         super(extraTlvs);
         this.name = name;
         this.id = id;

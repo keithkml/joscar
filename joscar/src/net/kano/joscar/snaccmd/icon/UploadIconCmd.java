@@ -40,7 +40,8 @@ import net.kano.joscar.Writable;
 import net.kano.joscar.LiveWritable;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.AbstractTlvChain;
+import net.kano.joscar.tlv.ImmutableTlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -72,7 +73,7 @@ public class UploadIconCmd extends IconCommand {
 
         ByteBlock snacData = packet.getData();
 
-        TlvChain chain = TlvChain.readChain(snacData);
+        AbstractTlvChain chain = ImmutableTlvChain.readChain(snacData);
 
         Tlv iconTlv = chain.getLastTlv(TYPE_ICON_DATA);
 

@@ -40,7 +40,8 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.snaccmd.ssi.SsiItem;
 import net.kano.joscar.tlv.MutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.AbstractTlvChain;
+import net.kano.joscar.tlv.ImmutableTlvChain;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -55,7 +56,7 @@ public class RootItem extends AbstractItem {
     private final int[] groupids;
 
     public static RootItem readRootItem(SsiItem item) {
-        TlvChain chain = TlvChain.readChain(item.getData());
+        AbstractTlvChain chain = ImmutableTlvChain.readChain(item.getData());
 
         Tlv groupTlv = chain.getLastTlv(TYPE_GROUPIDS);
 
@@ -90,7 +91,7 @@ public class RootItem extends AbstractItem {
         this(groupids, null);
     }
 
-    public RootItem(int[] groupids, TlvChain extraTlvs) {
+    public RootItem(int[] groupids, AbstractTlvChain extraTlvs) {
         super(extraTlvs);
 
         this.groupids = groupids;

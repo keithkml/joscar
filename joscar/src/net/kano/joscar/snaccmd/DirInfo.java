@@ -38,7 +38,8 @@ package net.kano.joscar.snaccmd;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.LiveWritable;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.AbstractTlvChain;
+import net.kano.joscar.tlv.ImmutableTlvChain;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -51,7 +52,7 @@ import java.io.OutputStream;
 public final class DirInfo implements LiveWritable {
     /**
      * Reads a directory information entry from the given block. Equivalent to
-     * calling {@link #readDirInfo(TlvChain)
+     * calling {@link #readDirInfo(AbstractTlvChain)
      * readDirInfo(TlvChain.readChain(block))}. The total number of bytes read
      * can be retrieved by calling <code>getTotalSize</code> on the returned
      * object.
@@ -61,14 +62,14 @@ public final class DirInfo implements LiveWritable {
      *         given block
      */
     public static DirInfo readDirInfo(ByteBlock block) {
-        return readDirInfo(TlvChain.readChain(block));
+        return readDirInfo(ImmutableTlvChain.readChain(block));
     }
 
     /**
      * Reads a directory information block from the given block, only reading
      * the given number of TLV's from the block. (Directory info blocks consist
      * of a series of TLV's.) Using this method is equivalent to calling
-     * {@link #readDirInfo(TlvChain) readDirInfo(TlvChain.readChain(block,
+     * {@link #readDirInfo(AbstractTlvChain) readDirInfo(TlvChain.readChain(block,
      * maxTlvs))}. The total number of bytes read can be retrieved by calling
      * <code>getTotalSize</code> on the returned object.
      *
@@ -77,7 +78,7 @@ public final class DirInfo implements LiveWritable {
      * @return a directory information object
      */
     public static DirInfo readDirInfo(ByteBlock block, int maxTlvs) {
-        return readDirInfo(TlvChain.readChain(block, maxTlvs));
+        return readDirInfo(ImmutableTlvChain.readChain(block, maxTlvs));
     }
 
     /**
@@ -90,7 +91,7 @@ public final class DirInfo implements LiveWritable {
      * @return a directory information object generated from the TLV's in the
      *         given chain
      */
-    public static DirInfo readDirInfo(TlvChain chain) {
+    public static DirInfo readDirInfo(AbstractTlvChain chain) {
         if (chain.getTlvCount() == 0) return null;
 
         String charset = OscarTools.getValidCharset(

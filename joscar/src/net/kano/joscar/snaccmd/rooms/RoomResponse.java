@@ -41,7 +41,8 @@ import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.ExchangeInfo;
 import net.kano.joscar.snaccmd.FullRoomInfo;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.AbstractTlvChain;
+import net.kano.joscar.tlv.ImmutableTlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -96,7 +97,7 @@ public class RoomResponse extends RoomCommand {
 
         ByteBlock snacData = packet.getData();
 
-        TlvChain chain = TlvChain.readChain(snacData);
+        AbstractTlvChain chain = ImmutableTlvChain.readChain(snacData);
 
         Tlv maxRoomTlv = chain.getLastTlv(TYPE_MAX_ROOMS);
 

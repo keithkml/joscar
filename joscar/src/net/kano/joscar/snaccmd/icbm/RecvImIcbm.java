@@ -39,7 +39,8 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.FullUserInfo;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.AbstractTlvChain;
+import net.kano.joscar.tlv.ImmutableTlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -76,7 +77,7 @@ public class RecvImIcbm extends AbstractImIcbm {
 
         ByteBlock tlvBlock = snacData.subBlock(userInfo.getTotalSize());
 
-        TlvChain chain = TlvChain.readChain(tlvBlock);
+        AbstractTlvChain chain = ImmutableTlvChain.readChain(tlvBlock);
 
         processImTlvs(chain);
 

@@ -40,7 +40,8 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.OscarTools;
 import net.kano.joscar.snaccmd.ScreenNameBlock;
-import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.AbstractTlvChain;
+import net.kano.joscar.tlv.ImmutableTlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -96,7 +97,7 @@ public class RvErrorCmd extends IcbmCommand {
 
         ByteBlock rest = snData.subBlock(snInfo.getTotalSize());
 
-        TlvChain chain = TlvChain.readChain(rest);
+        AbstractTlvChain chain = ImmutableTlvChain.readChain(rest);
 
         code = chain.getUShort(TYPE_ERROR_CODE);
     }

@@ -40,30 +40,73 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.snaccmd.ssi.SsiItem;
 import net.kano.joscar.tlv.MutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.AbstractTlvChain;
+import net.kano.joscar.tlv.ImmutableTlvChain;
 
+/**
+ * An SSI item object representing a buddy on the user's buddy list. A buddy
+ * item contains a set of buddy alert flags (for the different types of alerts),
+ * an alert sound filename, a buddy comment, and (though WinAIM does not yet
+ * support it) an "alias" or "display name" for the buddy.
+ */
 public class BuddyItem extends AbstractItem {
+    /**
+     * An alert action flag indicating that a window should be popped up when
+     * the buddy alert is activated.
+     */
     public static final int MASK_ACTION_POPUP = 0x01;
+    /**
+     * An alert action flag indicating that a sound should be played when the
+     * buddy alert is activated. The sound file is specified in {@link
+     * #getAlertSound getAlertSound}.
+     */
     public static final int MASK_ACTION_PLAY_SOUND = 0x02;
 
+    /**
+     * An alert flag indicating that the buddy's alert should be activated when
+     * he or she signs on.
+     */
     public static final int MASK_WHEN_ONLINE = 0x01;
+    /**
+     * An alert flag indicating that the buddy's alert should be activated when
+     * he or she comes back from being idle.
+     */
     public static final int MASK_WHEN_UNIDLE = 0x02;
+    /**
+     * An alert flag indicating that the buddy's alert should be activated when
+     * he or she comes back from being away.
+     */
     public static final int MASK_WHEN_UNAWAY = 0x04;
 
+    /** A TLV type containing the user's "alias," or "display name." */
     private static final int TYPE_ALIAS = 0x0131;
+    /** A TLV type containing the user's "buddy comment." */
     private static final int TYPE_COMMENT = 0x013c;
+    /**
+     * A TLV type containing the filename of a sound to play when an alert for
+     * this buddy is activated.
+     */
     private static final int TYPE_ALERT_SOUND = 0x013e;
+    /** A TLV type containing a set of buddy alert flags. */
     private static final int TYPE_ALERT_FLAGS = 0x13d;
 
+    /** The buddy's screenname. */
     private final String sn;
+    /** The ID of the parent group of this buddy. */
     private final int parent;
+    /** The ID of this buddy in its parent group. */
     private final int id;
 
+    /** The buddy's "alias." */
     private final String alias;
+    /** The buddy's buddy comment. */
     private final String comment;
 
+    /** A bit mask for what to do when an alert is activated. */
     private final int alertActionMask;
+    /** A bit mask for when to activate a buddy alert for this buddy. */
     private final int alertWhenMask;
+    /** A sound to play when an alert is activated. */
     private final String alertSound;
 
     public static BuddyItem readBuddyItem(SsiItem item) {
@@ -72,7 +115,7 @@ public class BuddyItem extends AbstractItem {
         int parent = item.getParentId();
         int id = item.getSubId();
 
-        TlvChain chain = TlvChain.readChain(item.getData());
+        AbstractTlvChain chain = ImmutableTlvChain.readChain(item.getData());
 
         String alias = chain.getString(TYPE_ALIAS);
         String comment = chain.getString(TYPE_COMMENT);
@@ -95,8 +138,8 @@ public class BuddyItem extends AbstractItem {
             TYPE_ALIAS, TYPE_COMMENT, TYPE_ALERT_SOUND, TYPE_ALERT_FLAGS
         });
 
-        return new BuddyItem(sn, parent, id, alias, comment, alertWhenMask, alertActionMask,
-                alertSound, extraTlvs);
+        return new BuddyItem(sn, parent, id, alias, comment, alertWhenMask,
+                alertActionMask, alertSound, extraTlvs);
     }
 
     public BuddyItem(BuddyItem other) {
@@ -107,7 +150,7 @@ public class BuddyItem extends AbstractItem {
 
     public BuddyItem(String sn, int parent, int id, String alias,
             String comment, int alertWhenMask, int alertActionMask,
-            String alertSound, TlvChain extraTlvs) {
+            String alertSound, AbstractTlvChain extraTlvs) {
         super(extraTlvs);
 
         this.sn = sn;

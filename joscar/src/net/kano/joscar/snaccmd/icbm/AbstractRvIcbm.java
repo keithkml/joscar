@@ -42,7 +42,7 @@ import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.AbstractIcbm;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.AbstractTlvChain;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -89,7 +89,7 @@ public abstract class AbstractRvIcbm extends AbstractIcbm {
      *
      * @param chain the chain from which to read.
      */
-    final void processRvTlvs(TlvChain chain) {
+    final void processRvTlvs(AbstractTlvChain chain) {
         ByteBlock rvBlock = chain.getLastTlv(TYPE_RV_DATA).getData();
 
         status = BinaryTools.getUShort(rvBlock, 0);

@@ -35,10 +35,9 @@
 
 package net.kano.joscar.ssiitem;
 
-import net.kano.joscar.snaccmd.ssi.SsiItem;
-import net.kano.joscar.tlv.MutableTlvChain;
-import net.kano.joscar.tlv.TlvChain;
 import net.kano.joscar.MiscTools;
+import net.kano.joscar.snaccmd.ssi.SsiItem;
+import net.kano.joscar.tlv.AbstractTlvChain;
 
 public abstract class SimpleNamedItem extends AbstractItem {
     protected static final int GROUPID_DEFAULT = 0;
@@ -54,7 +53,7 @@ public abstract class SimpleNamedItem extends AbstractItem {
         this(sn, id, null);
     }
 
-    protected SimpleNamedItem(String sn, int id, TlvChain extraTlvs) {
+    protected SimpleNamedItem(String sn, int id, AbstractTlvChain extraTlvs) {
         super(extraTlvs);
 
         this.sn = sn;

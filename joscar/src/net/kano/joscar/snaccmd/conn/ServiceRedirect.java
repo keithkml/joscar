@@ -38,7 +38,8 @@ package net.kano.joscar.snaccmd.conn;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.AbstractTlvChain;
+import net.kano.joscar.tlv.ImmutableTlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -83,7 +84,7 @@ public class ServiceRedirect extends ConnCommand {
 
         ByteBlock snacData = packet.getData();
 
-        TlvChain chain = TlvChain.readChain(snacData);
+        AbstractTlvChain chain = ImmutableTlvChain.readChain(snacData);
 
         family = chain.getUShort(TYPE_FAMILY);
 

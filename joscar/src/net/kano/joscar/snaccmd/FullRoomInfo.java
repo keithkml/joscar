@@ -39,7 +39,8 @@ import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.LiveWritable;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.AbstractTlvChain;
+import net.kano.joscar.tlv.ImmutableTlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -136,7 +137,7 @@ public final class FullRoomInfo
         // for but they seem to always be zero)
         ByteBlock roomBlock = rest.subBlock(5);
 
-        TlvChain chain = TlvChain.readChain(roomBlock);
+        AbstractTlvChain chain = ImmutableTlvChain.readChain(roomBlock);
 
         // TLV userlistTlv = chain.getLastTlv(TYPE_MEMBERS);
 

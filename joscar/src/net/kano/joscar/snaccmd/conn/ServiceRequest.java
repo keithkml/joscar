@@ -41,7 +41,8 @@ import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.MiniRoomInfo;
 import net.kano.joscar.snaccmd.chat.ChatCommand;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.AbstractTlvChain;
+import net.kano.joscar.tlv.ImmutableTlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -79,7 +80,7 @@ public class ServiceRequest extends ConnCommand {
 
         ByteBlock tlvBlock = snacData.subBlock(2);
 
-        TlvChain chatChain = TlvChain.readChain(tlvBlock);
+        AbstractTlvChain chatChain = ImmutableTlvChain.readChain(tlvBlock);
 
         Tlv chatInfoTlv = chatChain.getLastTlv(TYPE_ROOM_INFO);
 
