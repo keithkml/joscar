@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2002, The Joust Project
+ *  Copyright (c) 2002-2003, The Joust Project
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
