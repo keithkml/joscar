@@ -35,14 +35,8 @@
 
 package net.kano.joscar.snaccmd.conn;
 
-import net.kano.joscar.ByteBlock;
-import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.ExtraInfoBlock;
-
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.Arrays;
 
 /**
  * A SNAC command sent to tell the client what his or her current "extra
@@ -51,10 +45,7 @@ import java.util.Arrays;
  * @snac.src server
  * @snac.cmd 0x01 0x21
  */
-public class ExtraInfoAck extends ConnCommand {
-    /** The set of icon information blocks contained in this command. */
-    private final ExtraInfoBlock[] extraInfos;
-
+public class ExtraInfoAck extends AbstractExtraInfoCmd {
     /**
      * Generates a new icon acknowledgement command from the given incoming
      * SNAC packet.
@@ -62,13 +53,7 @@ public class ExtraInfoAck extends ConnCommand {
      * @param packet the incoming icon acknowledgement packet
      */
     protected ExtraInfoAck(SnacPacket packet) {
-        super(CMD_EXTRA_ACK);
-
-        DefensiveTools.checkNull(packet, "packet");
-
-        ByteBlock snacData = packet.getData();
-
-        extraInfos = ExtraInfoBlock.readExtraInfoBlocks(snacData);
+        super(CMD_EXTRA_ACK, packet);
     }
 
     /**
@@ -78,30 +63,7 @@ public class ExtraInfoAck extends ConnCommand {
      * @param extraInfos the extra information blocks to send in this command
      */
     public ExtraInfoAck(ExtraInfoBlock[] extraInfos) {
-        super(CMD_EXTRA_ACK);
-
-        this.extraInfos = (ExtraInfoBlock[]) (extraInfos == null
-                ? null
-                : extraInfos.clone());
+        super(CMD_EXTRA_ACK, extraInfos);
     }
 
-    /**
-     * Returns the list of extra information blocks sent in this command. See
-     * {@link ExtraInfoBlock} for details.
-     *
-     * @return this command's extra information blocks
-     */
-    public final ExtraInfoBlock[] getExtraInfos() {
-        return (ExtraInfoBlock[]) (extraInfos == null ? null
-                : extraInfos.clone());
-    }
-
-    public void writeData(OutputStream out) throws IOException {
-        if (extraInfos != null) ByteBlock.createByteBlock(extraInfos).write(out);
-    }
-
-    public String toString() {
-        return "ExtraInfoAck: infos=" +
-                (extraInfos == null ? null : Arrays.asList(extraInfos));
-    }
 }

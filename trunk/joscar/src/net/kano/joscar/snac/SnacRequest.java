@@ -50,20 +50,20 @@ import java.util.logging.Logger;
  * The general procedure for using a <code>SnacRequest</code> is to create a
  * <code>SnacRequest</code> containing the outgoing request you want to send
  * to the server; adding one or more listeners for future responses; and sending
- * the request over a SNAC connection with a <code>SnacProcessor</code>'s
+ * the request over a SNAC connection with a <code>ClientSnacProcessor</code>'s
  * <code>sendSnac</code> method. Your <code>SnacRequestListener</code> (or
  * <code>SnacRequestAdapter</code>) is notified when the request is sent,
  * when it receives a response, and when it "times out."
  * <br>
  * <br>
  * When a request "times out," it is removed from its parent
- * <code>SnacProcessor</code>'s request list. (This is done mainly for memory
- * conservation reasons.) If a response to the request is received after it has
- * "timed out," it will be processed as a normal SNAC packet and not as a
+ * <code>ClientSnacProcessor</code>'s request list. (This is done mainly for
+ * memory conservation reasons.) If a response to the request is received after
+ * it has "timed out," it will be processed as a normal SNAC packet and not as a
  * response to an outgoing request. The default time after which a request
  * "times out" is, as of this writing, ten minutes, allowing a great deal of
  * time for any response to be received. That "time to live" can be increased,
- * however (or decreased), with <code>SnacProcessor</code>'s
+ * however (or decreased), with <code>ClientSnacProcessor</code>'s
  * {@link ClientSnacProcessor#setRequestTtl setRequestTtl} method.
  * <br>
  * <br>
@@ -152,7 +152,8 @@ public class SnacRequest {
     }
 
     /**
-     * Sets this request's request ID on its parent <code>SnacProcessor</code>.
+     * Sets this request's request ID on its parent
+     * <code>ClientSnacProcessor</code>.
      *
      * @param requestID this request's ID
      */
@@ -160,7 +161,7 @@ public class SnacRequest {
 
     /**
      * Returns this request's request ID on its parent
-     * <code>SnacProcessor</code>.
+     * <code>ClientSnacProcessor</code>.
      *
      * @return this request's ID
      */

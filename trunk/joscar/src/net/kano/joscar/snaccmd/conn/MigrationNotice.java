@@ -119,9 +119,7 @@ public class MigrationNotice extends ConnCommand {
      *
      * @return the host to which the client should migrate
      */
-    public final String getHost() {
-        return host;
-    }
+    public final String getHost() { return host; }
 
     /**
      * Returns the login cookie to be used upon migrating (connecting) to the
@@ -129,9 +127,7 @@ public class MigrationNotice extends ConnCommand {
      *
      * @return a login cookie for the migration destination server
      */
-    public final ByteBlock getCookie() {
-        return cookie;
-    }
+    public final ByteBlock getCookie() { return cookie; }
 
     /**
      * Returns the SNAC families supported by the host to which the client

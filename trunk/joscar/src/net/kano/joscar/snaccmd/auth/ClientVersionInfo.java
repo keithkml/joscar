@@ -60,6 +60,8 @@ public final class ClientVersionInfo implements LiveWritable {
     private static final int TYPE_POINT = 0x0019;
     /** A TLV type containing the user's client's build number. */
     private static final int TYPE_BUILD = 0x001a;
+    /** A TLV type containing the user's client's "distribution code." */
+    private static final int TYPE_DISTCODE = 0x0014;
 
     /** A version string describing the client. */
     private final String versionString;
@@ -71,6 +73,8 @@ public final class ClientVersionInfo implements LiveWritable {
     private final int point;
     /** The client's build number. */
     private final int build;
+    /** The client's "distribution code." */
+    private final int distCode;
 
     /**
      * Reads a client version information block from the given TLV chain.
@@ -87,8 +91,10 @@ public final class ClientVersionInfo implements LiveWritable {
         int minor = chain.getUShort(TYPE_MINOR);
         int point = chain.getUShort(TYPE_POINT);
         int build = chain.getUShort(TYPE_BUILD);
+        int distCode = chain.getUShort(TYPE_DISTCODE);
 
-        return new ClientVersionInfo(verString, major, minor, point, build);
+        return new ClientVersionInfo(verString, major, minor, point, build,
+                distCode);
     }
 
     /**
@@ -101,19 +107,23 @@ public final class ClientVersionInfo implements LiveWritable {
      * @param minor a "minor version," like <code>1</code> in the above example
      * @param point a "point version"; WinAIM 5.1 sends <code>0</code>
      * @param build a "build number," <code>3036</code> in the above example
+     * @param distCode a "distribution code," whose meaning is unknown at the
+     *        time of this writing
      */
     public ClientVersionInfo(String versionString, int major, int minor,
-            int point, int build) {
+            int point, int build, int distCode) {
         DefensiveTools.checkRange(major, "major", -1);
         DefensiveTools.checkRange(minor, "minor", -1);
         DefensiveTools.checkRange(point, "point", -1);
-        DefensiveTools.checkRange(point, "build", -1);
+        DefensiveTools.checkRange(build, "build", -1);
+        DefensiveTools.checkRange(distCode, "distCode", -1);
 
         this.versionString = versionString;
         this.major = major;
         this.minor = minor;
         this.point = point;
         this.build = build;
+        this.distCode = distCode;
     }
 
     /**
@@ -160,6 +170,14 @@ public final class ClientVersionInfo implements LiveWritable {
      */
     public int getBuild() { return build; }
 
+    /**
+     * Returns the client's "distribution code." As of this writing, the
+     * significance of the distribution code is unknown.
+     *
+     * @return the client's "distribution code"
+     */
+    public int getDistCode() { return distCode; }
+
     public void write(OutputStream out) throws IOException {
         if (versionString != null) {
             Tlv.getStringInstance(TYPE_VERSION_STRING, versionString).write(out);
@@ -176,6 +194,7 @@ public final class ClientVersionInfo implements LiveWritable {
                 ", major=" + major +
                 ", minor=" + minor +
                 ", point=" + point +
-                ", build=" + build;
+                ", build=" + build +
+                ", distCode=" + distCode;
     }
 }

@@ -157,17 +157,12 @@ public final class ExtraInfoData implements LiveWritable {
     public static ExtraInfoData readExtraInfoData(ByteBlock block) {
         DefensiveTools.checkNull(block, "block");
 
-        if (block.getLength() < 1) return null;
+        if (block.getLength() < 2) return null;
 
         int code = BinaryTools.getUByte(block, 0);
-
-        if (block.getLength() < 2) return new ExtraInfoData(code, null, 1);
-
         int len = BinaryTools.getUByte(block, 1);
 
-        if (block.getLength() < len + 2) {
-            return new ExtraInfoData(code, null, 1);
-        }
+        if (block.getLength() < len + 2) return null;
 
         ByteBlock hash = block.subBlock(2, len);
 

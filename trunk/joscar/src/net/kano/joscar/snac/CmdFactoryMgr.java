@@ -38,8 +38,7 @@ package net.kano.joscar.snac;
 /**
  * Provides a central means of producing <code>SnacCommand</code>s from
  * <code>SnacPacket</code>s by merging a "default factory list" with the
- * factories registered by the user of <code>SnacProcessor</code> in a logical
- * manner.
+ * factories registered by the user of SNAC processor in a logical manner.
  * <br>
  * <br>
  * This class effectively handles several different "levels" of SNAC factories,

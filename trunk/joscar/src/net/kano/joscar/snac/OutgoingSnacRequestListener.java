@@ -53,8 +53,8 @@ public interface OutgoingSnacRequestListener {
 
     /**
      * Called when a SNAC packet "times out" and is removed from the request
-     * list of its parent <code>SnacProcessor</code>. This will be called only
-     * once for each request to which this listener has been added.
+     * list of its parent <code>ClientSnacProcessor</code>. This will be called 
+     * only once for each request to which this listener has been added.
      *
      * @param event an object describing the event
      */

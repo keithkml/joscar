@@ -628,4 +628,8 @@ public final class ByteBlock implements Writable, Serializable {
 
         return hashCode;
     }
+
+    public String toString() {
+        return BinaryTools.describeData(this);
+    }
 }

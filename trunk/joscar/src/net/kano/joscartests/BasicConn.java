@@ -347,6 +347,8 @@ public abstract class BasicConn extends AbstractFlapConn {
                     CapabilityBlock.BLOCK_TRILLIANCRYPT,
                     CapabilityBlock.BLOCK_VOICE,
                     CapabilityBlock.BLOCK_ADDINS,
+                    CapabilityBlock.BLOCK_ICQCOMPATIBLE,
+                    CapabilityBlock.BLOCK_ENCRYPTION,
                 });
 
                 List caps = new ArrayList(Arrays.asList(
@@ -359,8 +361,18 @@ public abstract class BasicConn extends AbstractFlapConn {
                         System.out.println("- " + it.next());
                     }
                 }
+/*
+                caps = new ArrayList(known);
+                caps.removeAll(Arrays.asList(info.getCapabilityBlocks()));
+                if (!caps.isEmpty()) {
+                    System.out.println(sn + " is missing " + caps.size()
+                            + " caps:");
+                    for (Iterator it = caps.iterator(); it.hasNext();) {
+                        System.out.println("- " + it.next());
+                    }
+                }
+*/
             }
-
         } else if (cmd instanceof BuddyOfflineCmd) {
             BuddyOfflineCmd boc = (BuddyOfflineCmd) cmd;
 

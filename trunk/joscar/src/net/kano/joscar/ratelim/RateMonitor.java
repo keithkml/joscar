@@ -73,7 +73,7 @@ RateMonitor monitor = new RateMonitor(snacProcessor);
  * ignore it.) </li>
  *  <li> <code>RateMonitor</code>'s behavior is undefined if it is attached to a
  * SNAC processor that is already connected. That is, <b>only create
- * <code>RateMonitor</code>s for <code>SnacProcessor</code>s which are not
+ * <code>RateMonitor</code>s for <code>ClientSnacProcessor</code>s which are not
  * already connected</b>. Also note that when a SNAC processor is disconnected
  * or detached, one should either throw out any rate monitors attached to it or
  * call {@link #reset} for each. </li>

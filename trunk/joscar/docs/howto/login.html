@@ -56,7 +56,7 @@ flapProcessor.addPacketListener(listener);
 
 
 <pre>
-SnacProcessor snacProcessor = new SnacProcessor(flapProcessor);
+ClientSnacProcessor snacProcessor = new ClientSnacProcessor(flapProcessor);
 </pre>
 </p>
 
@@ -207,7 +207,7 @@ Here's how the connection to the authorizer goes:
 Socket socket = new Socket("login.oscar.aol.com", 5190);
 
 FlapProcessor fp = new FlapProcessor(socket);
-SnacProcessor sp = new SnacProcessor(fp);
+ClientSnacProcessor sp = new ClientSnacProcessor(fp);
 
 <i>sp.addPreprocessor(new FamilyVersionPreprocessor());</i>
 <i>sp.setDefaultSnacCmdFactoryList(new DefaultClientFactoryList());</i>

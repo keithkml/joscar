@@ -37,8 +37,9 @@ package net.kano.joscar.snac;
 
 /**
  * An interface for managing a "SNAC queue," which controls when individual
- * SNAC commands are sent on a <code>SnacProcessor</code>. Such a system is
- * useful for, for example, implementing an automatic rate limiting mechanism.
+ * SNAC commands are sent on a <code>ClientSnacProcessor</code>. Such a system
+ * is useful for, for example, implementing an automatic rate limiting
+ * mechanism.
  */
 public interface SnacQueueManager {
     /**
@@ -65,11 +66,11 @@ public interface SnacQueueManager {
     /**
      * A method called to indicate that the queue should be paused until a call
      * to {@link #unpause}. This method will never be called for a given
-     * <code>SnacProcessor</code> twice without a call to <code>unpause</code>
-     * in between; that is, it will never be called twice in a row. Note that
-     * calls to {@link #queueSnac} can and probably will be made before a call
-     * to {@link #unpause}; that is, the queue must still accept the queueing of
-     * SNAC commands while it is paused.
+     * <code>ClientSnacProcessor</code> twice without a call to
+     * <code>unpause</code> in between; that is, it will never be called twice
+     * in a row. Note that calls to {@link #queueSnac} can and probably will be
+     * made before a call to {@link #unpause}; that is, the queue must still
+     * accept the queueing of SNAC commands while it is paused.
      * <br>
      * <br>
      * Note that this will be the first method called for a given SNAC processor

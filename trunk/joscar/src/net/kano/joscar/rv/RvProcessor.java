@@ -98,10 +98,10 @@ import java.util.logging.Level;
  * </table>
  * <br>
  * When {@linkplain #attachToSnacProcessor attached} to a
- * <code>SnacProcessor</code>, an instance of this class will intercept all
- * <code>RecvRvIcbm</code>s and all <code>RvResponse</code>s. After attaching
- * an RV processor to a given SNAC processor, that SNAC processor's packet
- * listeners will no longer receive packet events for either of these two
+ * <code>ClientSnacProcessor</code>, an instance of this class will intercept
+ * all <code>RecvRvIcbm</code>s and all <code>RvResponse</code>s. After
+ * attaching an RV processor to a given SNAC processor, that SNAC processor's
+ * packet listeners will no longer receive packet events for either of these two
  * commands (until detaching the RV processor).
  * <br>
  * <br>

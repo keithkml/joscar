@@ -38,9 +38,9 @@ package net.kano.joscar.snac;
 
 /**
  * Provides an interface for "preprocessing" a SNAC packet before it is formally
- *  processed. A <code>SnacProcessor</code> has the ability to modify a packet
- * before that packet is formally processed by a <code>SnacProcessor</code> and
- * its listeners.
+ * processed. A <code>SnacPreprocessor</code> has the ability to modify a
+ * packet before that packet is formally processed by a SNAC processor and its
+ * listeners.
  */
 public interface SnacPreprocessor {
     /**
