@@ -12,7 +12,7 @@
  *    notice, this list of conditions and the following disclaimer in 
  *    the documentation and/or other materials provided with the 
  *    distribution. 
- *  - Neither the name of the Joust Project nor the names of its
+ *  - Neither the name of the Joust Project nor the names of its 
  *    contributors may be used to endorse or promote products derived 
  *    from this software without specific prior written permission. 
  *
@@ -29,51 +29,35 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- *  File created by keith @ Mar 3, 2003
+ *  File created by keith @ Apr 22, 2003
  *
  */
 
-package net.kano.joscar.snaccmd.ssi;
+package net.kano.joscar.ssiitem;
 
-import net.kano.joscar.BinaryTools;
-import net.kano.joscar.ByteBlock;
-import net.kano.joscar.flapcmd.SnacPacket;
+import net.kano.joscar.tlv.MutableTlvChain;
+import net.kano.joscar.snaccmd.ssi.SsiItem;
 
-import java.io.IOException;
-import java.io.OutputStream;
+/**
+ * An "item object" that represents a single {@linkplain SsiItem item} stored
+ * in a user's "server-stored information."
+ */
+public interface SsiItemObj {
+    /**
+     * Returns the "extra TLV list" for this item. This list contains the TLV's
+     * present in this item's type-specific data block that were not processed
+     * into fields; in practice, this likely means fields inserted by another
+     * client like WinAIM that joscar does not yet recognize. Note that this
+     * value will never be <code>null</code>.
+     *
+     * @return this item's "extra TLV's"
+     */
+    MutableTlvChain getExtraTlvs();
 
-public class SsiDataModAck extends SsiCommand {
-    public static final int RESULT_SUCCESS = 0x0000;
-    public static final int RESULT_NO_SUCH_ITEM = 0x0002;
-    public static final int RESULT_CANT_ADD_ANOTHER_ROOT_GROUP = 0x0003;
-    public static final int RESULT_ID_TAKEN = 0x000a;
-    public static final int RESULT_MAX_ITEMS = 0x000c;
-    public static final int RESULT_NO_ICQ = 0x000d;
-
-    private final int result;
-
-    protected SsiDataModAck(SnacPacket packet) {
-        super(CMD_MOD_ACK);
-
-        ByteBlock snacData = packet.getData();
-
-        result = BinaryTools.getUShort(snacData, 0);
-    }
-
-    public SsiDataModAck(int result) {
-        super(CMD_MOD_ACK);
-        this.result = result;
-    }
-
-    public final int getResult() {
-        return result;
-    }
-
-    public void writeData(OutputStream out) throws IOException {
-        BinaryTools.writeUShort(out, result);
-    }
-
-    public String toString() {
-        return "SsiDataModAck: result=0x" + Integer.toHexString(result);
-    }
+    /**
+     * Returns an <code>SsiItem</code> that represents this item object.
+     *
+     * @return an <code>SsiItem</code> that represents this item object
+     */
+    SsiItem generateSsiItem();
 }
