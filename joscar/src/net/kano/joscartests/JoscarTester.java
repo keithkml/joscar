@@ -87,8 +87,9 @@ import java.io.*;
 import java.math.BigInteger;
 import java.net.*;
 import java.security.*;
-import java.security.interfaces.RSAPublicKey;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.interfaces.RSAPublicKey;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.logging.ConsoleHandler;
@@ -323,7 +324,7 @@ public class JoscarTester implements CmdLineListener {
                 ByteBlock block = ByteBlock.wrap(data);
 
                 request(new SendImIcbm(args[0], new InstantMessage(args[1]),
-                        false, 0, true, oldIconInfo, new ExtraInfoBlock[] {
+                        false, 0, false, oldIconInfo, new ExtraInfoBlock[] {
                             new ExtraInfoBlock(0x0080, new ExtraInfoData(0, block)),
                             new ExtraInfoBlock(0x0082, new ExtraInfoData(0, block))
                         }, true));
@@ -860,11 +861,21 @@ public class JoscarTester implements CmdLineListener {
                 }
 
                 try {
-                    Cipher cipher = Cipher.getInstance(args[2], "BC");
+                    System.out.println("privateKey=" + privateKey.getClass()
+                            + ": " + privateKey);
+                    Signature signer = Signature.getInstance("MD5withRSA");
+                    signer.initSign(privateKey);
+
+                    Cipher cipher = Cipher.getInstance("RSA", "BC");
                     RSAPublicKey pubKey = (RSAPublicKey) cert.getPublicKey();
-                    System.out.println("keys: " + pubKey.getModulus() + ", " + pubKey.getPublicExponent());
+                    System.out.println("keys: " + pubKey.getModulus() + ", "
+                            + pubKey.getPublicExponent());
                     cipher.init(Cipher.ENCRYPT_MODE, pubKey);
+                    System.out.println("blocksize: " + cipher.getBlockSize());
                     byte[] data = cipher.doFinal(args[1].getBytes("US-ASCII"));
+
+                    signer.update(data);
+                    data = signer.sign();
 
                     System.out.println("sending [" + data.length + "]: "
                             + BinaryTools.describeData(
@@ -879,6 +890,18 @@ public class JoscarTester implements CmdLineListener {
                 }
             }
         });
+    }
+
+    PrivateKey privateKey;
+
+    private void loadPrivateKey() throws KeyStoreException,
+            NoSuchProviderException, IOException, NoSuchAlgorithmException,
+            CertificateException, UnrecoverableKeyException {
+        KeyStore ks = KeyStore.getInstance("PKCS12", "BC");
+        ks.load(new FileInputStream("/home/keith/in/mycert.p12"),
+                "password".toCharArray());
+        privateKey = (PrivateKey) ks.getKey("My AIM",
+                "password".toCharArray());
     }
 
     private class MysteryFlapCmd extends FlapCommand {
@@ -962,6 +985,12 @@ public class JoscarTester implements CmdLineListener {
             Security.addProvider((Provider) bcp.newInstance());
         } catch (Throwable e) {
             System.out.println("[couldn't load Bouncy Castle JCE provider]");
+        }
+
+        try {
+            tester.loadPrivateKey();
+        } catch (Exception e) {
+            System.out.println("couldn't load private key: " + e.getMessage());
         }
     }
 
