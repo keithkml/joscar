@@ -92,12 +92,12 @@ public final class DefensiveTools {
      * @param val the value to check
      * @param name the name of this variable, for debugging purposes
      *
-     * @throws NullPointerException if the given value is <code>null</code>
+     * @throws IllegalArgumentException if the given value is <code>null</code>
      */
     public static final void checkNull(Object val, String name)
-            throws NullPointerException {
+            throws IllegalArgumentException {
         if (val == null) {
-            throw new NullPointerException("value of " + name
+            throw new IllegalArgumentException("value of " + name
                     + " cannot be null");
         }
     }
@@ -108,11 +108,11 @@ public final class DefensiveTools {
      * @param array an array of objects
      * @param arrayName the name of this array, for debugging purposes
      *
-     * @throws NullPointerException if an element of the given array is
+     * @throws IllegalArgumentException if an element of the given array is
      *         <code>null</code>
      */
     public static void checkNullElements(Object[] array, String arrayName)
-            throws NullPointerException {
+            throws IllegalArgumentException {
         checkNull(array, arrayName);
 
         for (int i = 0; i < array.length; i++) {

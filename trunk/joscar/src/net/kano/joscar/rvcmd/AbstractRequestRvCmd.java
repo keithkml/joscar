@@ -47,15 +47,15 @@ import java.io.OutputStream;
 /**
  * A base class for an RV request command. RV request commands contain a
  * mysterious empty <code>0x000f</code> TLV, a "request type" (which is almost
- * always {@link #REQTYPE_INITIAL_REQUEST}, and, normally, more type-specific
+ * always {@link #REQTYPE_INITIALREQUEST}, and, normally, more type-specific
  * TLV's.
  */
 public abstract class AbstractRequestRvCmd extends AbstractRvCmd {
     /** A request type indicating that a command is an initial request. */
-    public static final int REQTYPE_INITIAL_REQUEST = 0x0001;
+    public static final int REQTYPE_INITIALREQUEST = 0x0001;
     /**
      * A request type indicating that a command is a "redirection request."
-     * This value is used to "redirect" an {@linkplain #REQTYPE_INITIAL_REQUEST
+     * This value is used to "redirect" an {@linkplain #REQTYPE_INITIALREQUEST
      * initial request} to, for example, a new IP address/port.
      */
     public static final int REQTYPE_REDIRECT = 0x0002;
@@ -109,7 +109,7 @@ public abstract class AbstractRequestRvCmd extends AbstractRvCmd {
      * @param cap the capability block associated with this RV command
      */
     protected AbstractRequestRvCmd(CapabilityBlock cap) {
-        this(cap, REQTYPE_INITIAL_REQUEST);
+        this(cap, REQTYPE_INITIALREQUEST);
     }
 
     /**
@@ -120,7 +120,7 @@ public abstract class AbstractRequestRvCmd extends AbstractRvCmd {
      * AbstractRequestRvCmd(cap, REQTYPE_INITIAL_REQUEST, FPRESENT_DEFAULT)}.
      *
      * @param cap the capability block associated with this RV command
-     * @param requestType a request type, like {@link #REQTYPE_INITIAL_REQUEST}
+     * @param requestType a request type, like {@link #REQTYPE_INITIALREQUEST}
      */
     protected AbstractRequestRvCmd(CapabilityBlock cap, int requestType) {
         this(cap, requestType, FPRESENT_DEFAULT);
@@ -134,7 +134,7 @@ public abstract class AbstractRequestRvCmd extends AbstractRvCmd {
      * AbstractRequestRvCmd(cap, REQTYPE_INITIAL_REQUEST, FPRESENT_DEFAULT)}.
      *
      * @param cap the capability block associated with this RV command
-     * @param requestType a request type, like {@link #REQTYPE_INITIAL_REQUEST}
+     * @param requestType a request type, like {@link #REQTYPE_INITIALREQUEST}
      * @param fPresent whether this command should contain the mysterious
      *        type <code>0x000f</code> TLV
      */
@@ -150,7 +150,7 @@ public abstract class AbstractRequestRvCmd extends AbstractRvCmd {
 
     /**
      * Returns this RV request's request type value. Will normally be one of
-     * {@link #REQTYPE_INITIAL_REQUEST} and {@link #REQTYPE_REDIRECT}.
+     * {@link #REQTYPE_INITIALREQUEST} and {@link #REQTYPE_REDIRECT}.
      *
      * @return the type of this RV request
      */

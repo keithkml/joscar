@@ -44,11 +44,23 @@ import net.kano.joscar.tlv.TlvChain;
 import java.io.IOException;
 import java.io.OutputStream;
 
+/**
+ * A rendezvous command used to send an encrypted message over a Trillian
+ * Secure IM connection.
+ */
 public class TrillianCryptMsgRvCmd extends AbstractTrillianCryptRvCmd {
+    /** A TLV type containing the encrypted message. */
     private static final int TYPE_MSG = 0x3f2;
 
+    /** The encrypted message. */
     private final ByteBlock encryptedMsg;
 
+    /**
+     * Creates a new Trillian Encrypted message command from the given incoming
+     * encrypted message RV ICBM.
+     *
+     * @param icbm an incoming Trillian Encrypted message RV ICBM command
+     */
     public TrillianCryptMsgRvCmd(RecvRvIcbm icbm) {
         super(icbm);
 
@@ -59,12 +71,24 @@ public class TrillianCryptMsgRvCmd extends AbstractTrillianCryptRvCmd {
         else encryptedMsg = encMsgTlv.getData();
     }
 
+    /**
+     * Creates a new outgoing Trillian Encrypted message command with the given
+     * encrypted message data.
+     *
+     * @param encryptedMsg the encrypted message data
+     */
     public TrillianCryptMsgRvCmd(ByteBlock encryptedMsg) {
         super(CMDTYPE_MESSAGE);
 
         this.encryptedMsg = encryptedMsg;
     }
 
+    /**
+     * Returns the encrypted message block sent in this command.
+     *
+     * @return this command's encrypted message block, or <code>null</code> if
+     *         none was sent
+     */
     public final ByteBlock getEncryptedMsg() { return encryptedMsg; }
 
     protected void writeExtraTlvs(OutputStream out) throws IOException {

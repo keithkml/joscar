@@ -44,45 +44,67 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigInteger;
 
-public class TrillianCryptAcceptRvCmd
-        extends AbstractTrillianCryptRvCmd {
-    private static final int TYPE_Y = 0x03eb;
+/**
+ * A rendezvous command used to accept a Trillian Encryption session. This
+ * command appears to send back a Diffie-Hellman public value (<code>y</code>),
+ * but as of this writing it is still unclear how the values fit together.
+ */
+public class TrillianCryptAcceptRvCmd extends AbstractTrillianCryptRvCmd {
+    /** A TLV type containing a Diffie-Hellman public value. */
+    private static final int TYPE_PUBLICVALUE = 0x03eb;
 
-    private final BigInteger y;
+    /** The Diffie-Hellman public value. */
+    private final BigInteger publicValue;
 
+    /**
+     * Creates a new Trillian Encryption session acceptance command from the
+     * given incoming session acceptance RV ICBM.
+     *
+     * @param icbm an incoming Trillian Encryption session acceptance RV ICBM
+     *        command
+     */
     public TrillianCryptAcceptRvCmd(RecvRvIcbm icbm) {
         super(icbm);
 
         TlvChain chain = getExtraTlvs();
 
-        Tlv codeTlv = chain.getLastTlv(TYPE_Y);
+        Tlv codeTlv = chain.getLastTlv(TYPE_PUBLICVALUE);
 
-        BigInteger codeValue = null;
+        BigInteger publicValue = null;
         if (codeTlv != null) {
-            codeValue = AbstractTrillianCryptRvCmd.getBigIntFromHexBlock(
-                    codeTlv.getData());
+            publicValue = getBigIntFromHexBlock(codeTlv.getData());
         }
-        y = codeValue;
+        this.publicValue = publicValue;
     }
 
-    public TrillianCryptAcceptRvCmd(BigInteger code) {
+    /**
+     * Creates a new outgoing Trillian Encryption session acceptance command
+     * with the given Diffie-Hellman public value.
+     *
+     * @param publicValue a Diffie-Hellman public value
+     */
+    public TrillianCryptAcceptRvCmd(BigInteger publicValue) {
         super(CMDTYPE_ACCEPT);
 
-        this.y = code;
+        this.publicValue = publicValue;
     }
 
-    public final BigInteger getY() { return y; }
+    /**
+     * Returns the Diffie-Hellman public value sent in this command.
+     *
+     * @return this command's Diffie-Hellman public value, or <code>null</code>
+     *         if none was sent
+     */
+    public final BigInteger getPublicValue() { return publicValue; }
 
     protected void writeExtraTlvs(OutputStream out) throws IOException {
-        if (y != null) {
-            // yay for sprintf.
-            byte[] hexBlock
-                    = AbstractTrillianCryptRvCmd.getBigIntHexBlock(y);
-            new Tlv(TYPE_Y, ByteBlock.wrap(hexBlock)).write(out);
+        if (publicValue != null) {
+            byte[] hexBlock = getBigIntHexBlock(publicValue);
+            new Tlv(TYPE_PUBLICVALUE, ByteBlock.wrap(hexBlock)).write(out);
         }
     }
 
     public String toString() {
-        return "TrillianEncryptAcceptRvCmd: code=" + y;
+        return "TrillianEncryptAcceptRvCmd: code=" + publicValue;
     }
 }

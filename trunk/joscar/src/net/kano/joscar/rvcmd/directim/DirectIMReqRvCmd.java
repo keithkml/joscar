@@ -78,7 +78,7 @@ public class DirectIMReqRvCmd extends AbstractRequestRvCmd {
      *        to be made
      */
     public DirectIMReqRvCmd(RvConnectionInfo connInfo) {
-        this(REQTYPE_INITIAL_REQUEST, connInfo);
+        this(REQTYPE_INITIALREQUEST, connInfo);
     }
 
     /**

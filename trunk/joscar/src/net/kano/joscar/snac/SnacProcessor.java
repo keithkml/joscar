@@ -721,11 +721,8 @@ public class SnacProcessor {
      * features such as rate limiting prevention.
      *
      * @param request the SNAC request to send
-     * @throws NullPointerException if this SNAC connection is not currently
-     *         attached to a FLAP connection
      */
-    public synchronized final void sendSnac(SnacRequest request)
-            throws NullPointerException {
+    public synchronized final void sendSnac(SnacRequest request) {
         DefensiveTools.checkNull(request, "request");
 
         SnacCommand command = request.getCommand();
@@ -745,12 +742,10 @@ public class SnacProcessor {
      * queue and any {@linkplain #pause pausing} status that may be present.
      *
      * @param request the request to send
-     * @throws NullPointerException if the given request is <code>null</code>
      *
      * @see #setSnacQueueManager
      */
-    public synchronized final void sendSnacImmediately(SnacRequest request)
-            throws NullPointerException {
+    public synchronized final void sendSnacImmediately(SnacRequest request) {
         DefensiveTools.checkNull(request, "request");
 
         logger.fine("Sending SNAC request " + request);
@@ -791,6 +786,8 @@ public class SnacProcessor {
         // might use to denote a lack of a request ID.
         if (lastReqid == REQID_MAX) lastReqid = 1;
         else lastReqid++;
+
+        System.out.println("sending snac request " + lastReqid);
 
         request.setReqid(lastReqid);
 

@@ -43,7 +43,7 @@ import net.kano.joscar.DefensiveTools;
  *
  * @see ImEncodedString
  */
-public class ImEncodingParams {
+public final class ImEncodingParams {
     /** A charset code indicating US-ASCII encoding. */
     public static final int CHARSET_ASCII = 0x0000;
     /** A charset code indicating ISO-8859-1 encoding. */

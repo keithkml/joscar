@@ -39,7 +39,7 @@ import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rvcmd.SegmentedFilename;
-import net.kano.joscar.rvproto.ft.FileSendHeader;
+import net.kano.joscar.rvproto.ft.FileTransferHeader;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -67,14 +67,15 @@ public class SendFileThread extends Thread {
             final OutputStream out = socket.getOutputStream();
             InputStream in = socket.getInputStream();
 
-            FileSendHeader fsh = new FileSendHeader();
+            FileTransferHeader fsh = new FileTransferHeader();
             fsh.setDefaults();
             fsh.setFileCount(1);
             fsh.setFilesLeft(1);
-            fsh.setFilename(SegmentedFilename.createFromNativeFilename("wut up.gif"));
+            fsh.setFilename(
+                    SegmentedFilename.createFromNativeFilename("wut up.gif"));
             fsh.setFileSize(2000000);
             fsh.setTotalFileSize(2000000);
-            fsh.setHeaderType(FileSendHeader.HEADERTYPE_SENDHEADER);
+            fsh.setHeaderType(FileTransferHeader.HEADERTYPE_SENDHEADER);
             fsh.setPartCount(1);
             fsh.setPartsLeft(1);
             fsh.setLastmod(System.currentTimeMillis() / 1000);
@@ -86,7 +87,7 @@ public class SendFileThread extends Thread {
 
             System.out.println("waiting for ack header..");
 
-            FileSendHeader inFsh = FileSendHeader.readFileSendHeader(in);
+            FileTransferHeader inFsh = FileTransferHeader.readHeader(in);
 
             System.out.println("got ack:" + inFsh);
 

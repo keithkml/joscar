@@ -42,15 +42,15 @@ import net.kano.joscar.flap.FlapPacketEvent;
 import net.kano.joscar.flapcmd.LoginFlapCmd;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.rv.*;
+import net.kano.joscar.rvcmd.AbstractRequestRvCmd;
 import net.kano.joscar.rvcmd.DefaultRvCommandFactory;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joscar.rvcmd.addins.AddinsReqRvCmd;
-import net.kano.joscar.rvcmd.getfile.GetFileReqRvCmd;
-import net.kano.joscar.rvcmd.sendbl.SendBuddyListRvCmd;
-import net.kano.joscar.rvcmd.icon.SendBuddyIconRvCmd;
 import net.kano.joscar.rvcmd.directim.DirectIMReqRvCmd;
+import net.kano.joscar.rvcmd.getfile.GetFileReqRvCmd;
+import net.kano.joscar.rvcmd.icon.SendBuddyIconRvCmd;
+import net.kano.joscar.rvcmd.sendbl.SendBuddyListRvCmd;
 import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
-import net.kano.joscar.rvcmd.trillcrypt.TrillianCryptReqRvCmd;
 import net.kano.joscar.rvcmd.trillcrypt.AbstractTrillianCryptRvCmd;
 import net.kano.joscar.snac.*;
 import net.kano.joscar.snaccmd.*;
@@ -114,7 +114,10 @@ public abstract class BasicConn extends AbstractFlapConn {
                 }
                 encSession.handleRv(event);
             } else if (cmd instanceof DirectIMReqRvCmd) {
-                new DirectIMSession(tester.getScreenname(), session, event);
+                if (((DirectIMReqRvCmd) cmd).getRequestType()
+                        == AbstractRequestRvCmd.REQTYPE_INITIALREQUEST) {
+                    new DirectIMSession(tester.getScreenname(), session, event);
+                }
             } else if (cmd instanceof SendBuddyIconRvCmd) {
                 SendBuddyIconRvCmd iconCmd = (SendBuddyIconRvCmd) cmd;
                 ByteBlock iconData = iconCmd.getIconData();
@@ -259,12 +262,12 @@ public abstract class BasicConn extends AbstractFlapConn {
                 frame.echo(str);
             }
 
-            if (icbm.senderWantsIcon()) {
-                System.out.println(sn + " wants our icon.. sending.");
-                RvSession sess = rvProcessor.createRvSession(sn);
-                sess.sendRv(new SendBuddyIconRvCmd(tester.oldIconInfo,
-                        new FileWritable(tester.iconFile)));
-            }
+//            if (icbm.senderWantsIcon()) {
+//                System.out.println(sn + " wants our icon.. sending.");
+//                RvSession sess = rvProcessor.createRvSession(sn);
+//                sess.sendRv(new SendBuddyIconRvCmd(tester.oldIconInfo,
+//                        new FileWritable(tester.iconFile)));
+//            }
 
         } else if (cmd instanceof WarningNotification) {
             WarningNotification wn = (WarningNotification) cmd;

@@ -36,24 +36,28 @@
 package net.kano.joscar.rvcmd.trillcrypt;
 
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
-import net.kano.joscar.tlv.TlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Iterator;
 
+/**
+ * A rendezvous command used to "begin" a Trillian Encryption session.
+ */
 public class TrillianCryptBeginRvCmd extends AbstractTrillianCryptRvCmd {
+    /**
+     * Creates a new Trillian Encryption session start command from the given
+     * incoming session start RV ICBM.
+     *
+     * @param icbm an incoming Trillian Encryption session start RV ICBM
+     *        command
+     */
     public TrillianCryptBeginRvCmd(RecvRvIcbm icbm) {
         super(icbm);
-
-        System.out.println("data: ");
-        TlvChain extras = getExtraTlvs();
-
-        for (Iterator it = extras.iterator(); it.hasNext();) {
-            System.out.println("- " + it.next());
-        }
     }
 
+    /**
+     * Creates a new outgoing Trillian Encryption session start command.
+     */
     public TrillianCryptBeginRvCmd() {
         super(CMDTYPE_BEGIN);
     }

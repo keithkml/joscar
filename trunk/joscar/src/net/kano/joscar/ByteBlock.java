@@ -88,11 +88,12 @@ public final class ByteBlock implements Writable, Serializable {
      *
      * @param bytes the data to "wrap" in the <code>ByteBlock</code>
      * @return a <code>ByteBlock</code> backed by the given array
-     * @throws NullPointerException if the given byte array is <code>null</code>
+     * @throws IllegalArgumentException if the given byte array is
+     *         <code>null</code>
      *
      * @see #wrap(byte[], int, int)
      */
-    public static ByteBlock wrap(byte[] bytes) throws NullPointerException {
+    public static ByteBlock wrap(byte[] bytes) throws IllegalArgumentException {
         return new ByteBlock(bytes, 0, bytes.length);
     }
 
@@ -122,14 +123,14 @@ public final class ByteBlock implements Writable, Serializable {
      *        <code>ByteBlock</code>
      * @return a <code>ByteBlock</code> backed by the given array after the
      *         given index
-     * @throws NullPointerException if the given array is <code>null</code>
+     * @throws IllegalArgumentException if the given array is <code>null</code>
      * @throws IndexOutOfBoundsException if the given offset is less than zero
      *         or greater than the given array's length
      *
      * @see #wrap(byte[], int, int)
      */
     public static ByteBlock wrap(byte[] bytes, int offset)
-            throws NullPointerException, IndexOutOfBoundsException {
+            throws IllegalArgumentException, IndexOutOfBoundsException {
         return new ByteBlock(bytes, offset, bytes.length - offset);
     }
 
@@ -155,7 +156,8 @@ public final class ByteBlock implements Writable, Serializable {
      *        returned <code>ByteBlock</code>
      * @return a <code>ByteBlock</code> backed by the given number of bytes
      *         after the given index
-     * @throws NullPointerException if the given byte array is <code>null</code>
+     * @throws IllegalArgumentException if the given byte array is
+     *         <code>null</code>
      * @throws IndexOutOfBoundsException if the given offset is less than zero
      *         or greater than the length of the given byte array, or if the
      *         given length is less than zero or greater than the length of
@@ -163,7 +165,7 @@ public final class ByteBlock implements Writable, Serializable {
      *         + len > bytes.length</code>)
      */
     public static ByteBlock wrap(byte[] bytes, int offset, int len)
-            throws NullPointerException, IndexOutOfBoundsException {
+            throws IllegalArgumentException, IndexOutOfBoundsException {
         return new ByteBlock(bytes, offset, len);
     }
 
@@ -346,16 +348,16 @@ public final class ByteBlock implements Writable, Serializable {
      *        of this block
      * @param len the length of the data represented by this block
      *
-     * @throws NullPointerException if the given byte array is <code>null</code>
+     * @throws IllegalArgumentException if the given byte array is
+     *         <code>null</code>
      * @throws IndexOutOfBoundsException if <code>offset</code> or
      *         <code>len</code> are negative or if <code>offset + len >
      *         bytes.length</code>
      */
     private ByteBlock(byte[] bytes, int offset, int len)
-            throws NullPointerException, IndexOutOfBoundsException {
-        if (bytes == null) {
-            throw new NullPointerException("byte array is null");
-        }
+            throws IllegalArgumentException, IndexOutOfBoundsException {
+        DefensiveTools.checkNull(bytes, "bytes");
+        
         if (offset < 0) {
             throw new IndexOutOfBoundsException("offset (" + offset + ") < 0");
         }
