@@ -33,35 +33,52 @@
  *
  */
 
-package net.kano.joscartests;
+package net.kano.joscartests.ui;
 
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.FullUserInfo;
 
+import javax.swing.*;
+import java.awt.*;
+import java.awt.color.ColorSpace;
+import java.awt.image.BufferedImage;
+import java.awt.image.ColorConvertOp;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
+import java.net.URL;
 import java.util.Date;
 
 public class OnlineUserInfo {
-//    private static Image aimIcon, awayIcon;
-//    private static ColorConvertOp grayscaler = new ColorConvertOp(
-//            ColorSpace.getInstance(ColorSpace.CS_GRAY), null);
+    private static Image aimIcon, awayIcon;
+    private static ColorConvertOp grayscaler = new ColorConvertOp(
+            ColorSpace.getInstance(ColorSpace.CS_GRAY), null);
 
-    static {
-//        ClassLoader loader = OnlineUserInfo.class.getClassLoader();
-//        Toolkit toolkit = Toolkit.getDefaultToolkit();
-//        URL aimIconUrl = loader.getResource("images/icons/aim.png");
-//        URL awayIconUrl = loader.getResource("images/icons/away.png");
-//        aimIcon = toolkit.createImage(aimIconUrl);
-//        awayIcon = toolkit.createImage(awayIconUrl);
+    private static final Object initLock = new Object();
+    private static boolean inited = false;
+
+    private static void initImages() {
+        System.out.println("initing..");
+        synchronized(initLock) {
+            if (inited) return;
+
+            ClassLoader loader = OnlineUserInfo.class.getClassLoader();
+            Toolkit toolkit = Toolkit.getDefaultToolkit();
+            URL aimIconUrl = loader.getResource("images/icons/aim.png");
+            URL awayIconUrl = loader.getResource("images/icons/away.png");
+            aimIcon = toolkit.createImage(aimIconUrl);
+            awayIcon = toolkit.createImage(awayIconUrl);
+            inited = true;
+        }
     }
 
     private boolean online = false;
     private FullUserInfo userInfo = null;
     private Date idleSince = null;
-//    private Image icon = null;
+    private BufferedImage icon = null;
 
     private PropertyChangeSupport pcs = new PropertyChangeSupport(this);
-//    private Icon imageIcon = null;
+    private boolean iconNeedsUpdating = false;
+    private Icon imageIcon = null;
 
     public synchronized void addPropertyChangeListener(
             PropertyChangeListener l) {
@@ -72,15 +89,15 @@ public class OnlineUserInfo {
             PropertyChangeListener l) {
         pcs.removePropertyChangeListener(l);
     }
-//
-//    public synchronized void setIcon(Image image) {
-//        Image old = this.icon;
-//        this.icon = image;
-//
-//        updateImageIcon();
-//
-//        pcs.firePropertyChange("icon", old, this.icon);
-//    }
+
+    public synchronized void setIcon(BufferedImage image) {
+        Image old = this.icon;
+        this.icon = image;
+
+        updateImageIcon();
+
+        pcs.firePropertyChange("icon", old, this.icon);
+    }
 
     public synchronized void setOnline(boolean online) {
         boolean old = this.online;
@@ -91,7 +108,7 @@ public class OnlineUserInfo {
     }
 
     public synchronized void setUserInfo(FullUserInfo info) {
-        if (info == null) throw new NullPointerException();
+        DefensiveTools.checkNull(info, "info");
 
         FullUserInfo old = userInfo;
         userInfo = info;
@@ -113,42 +130,44 @@ public class OnlineUserInfo {
     }
 
     private synchronized void updateImageIcon() {
-//        imageIcon = genImageIcon(this);
+        iconNeedsUpdating = true;
     }
 
-//    public static Icon genImageIcon(OnlineUserInfo info) {
-//        Image icon = info.getIcon();
-//        if (icon == null) icon = aimIcon;
-//        Image scaledIcon = icon.getScaledInstance(32, 32, Image.SCALE_SMOOTH);
-//        int width = 32;
-//        int height = 32;
-//        BufferedImage bi = null;
-//        if (info.isAway()) {
-//            BufferedImage img = new BufferedImage(width, height,
-//                    BufferedImage.TYPE_4BYTE_ABGR);
-//            Graphics g = img.getGraphics();
-//            g.drawImage(scaledIcon, 0, 0, width, height, null);
-//            int aw = awayIcon.getWidth(null);
-//            int ah = awayIcon.getHeight(null);
-//            g.drawImage(awayIcon, width-aw, height-ah, aw, ah, null);
-//            bi = img;
-//        }
-//        if (info.getIdleSince() != null) {
-//            if (bi == null) {
-//                bi = new BufferedImage(width, height,
-//                        BufferedImage.TYPE_4BYTE_ABGR);
-//                bi.getGraphics().drawImage(scaledIcon, 0, 0, width, height,
-//                        null);
-//            }
-//
-//            bi = grayscaler.filter(bi, null);
-//        }
-//        if (bi != null) scaledIcon = bi;
-//        ImageIcon imageIcon = new ImageIcon(scaledIcon);
-//        return imageIcon;
-//    }
+    public static Icon genImageIcon(OnlineUserInfo info) {
+        initImages();
 
-//    public synchronized Icon getImageIcon() { return imageIcon; }
+        Image icon = info.getIcon();
+        if (icon == null) icon = aimIcon;
+        int width = 32;
+        int height = 32;
+        BufferedImage bi = new BufferedImage(width, height,
+                BufferedImage.TYPE_4BYTE_ABGR);
+        Graphics2D g = bi.createGraphics();
+        g.drawImage(icon, 0, 0, width, height, null);
+
+        if (info.isAway()) {
+            int aw = awayIcon.getWidth(null);
+            int ah = awayIcon.getHeight(null);
+            g.drawImage(awayIcon, width-aw, height-ah, aw, ah, null);
+        }
+        if (info.getIdleSince() != null) {
+            bi = grayscaler.filter(bi, null);
+        }
+        ImageIcon imageIcon = new ImageIcon(bi);
+        return imageIcon;
+    }
+
+    public synchronized Icon getImageIcon() {
+        checkIcon();
+        return imageIcon;
+    }
+
+    private synchronized void checkIcon() {
+        if (iconNeedsUpdating) {
+            iconNeedsUpdating = false;
+            imageIcon = genImageIcon(this);
+        }
+    }
 
     public synchronized String getScreenname() {
         return userInfo == null ? null : userInfo.getScreenname();
@@ -164,5 +183,8 @@ public class OnlineUserInfo {
         return userInfo != null && userInfo.getIdleMins() > 0;
     }
     public synchronized Date getIdleSince() { return idleSince; }
-//    public synchronized Image getIcon() { return icon; }
+    public synchronized BufferedImage getIcon() {
+        checkIcon();
+        return icon;
+    }
 }

@@ -33,15 +33,11 @@
  *
  */
 
-package net.kano.joscartests;
+package net.kano.joscartests.ui;
 
-import javax.swing.JLabel;
-import javax.swing.JTree;
-import javax.swing.UIManager;
+import javax.swing.*;
 import javax.swing.tree.TreeCellRenderer;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Font;
+import java.awt.*;
 import java.util.Date;
 
 public class OnlineBuddyCellRenderer implements TreeCellRenderer {
@@ -91,7 +87,7 @@ public class OnlineBuddyCellRenderer implements TreeCellRenderer {
             StringBuffer text = new StringBuffer();
             text.append("<HTML>");
             text.append(info.getScreenname());
-//            buddyLabel.setIcon(info.getImageIcon());
+            buddyLabel.setIcon(info.getImageIcon());
             if (info.isAway() && info.getIdleSince() != null) {
                 text.append("<BR>Away, Idle "
                         + getIdleString(info.getIdleSince()));

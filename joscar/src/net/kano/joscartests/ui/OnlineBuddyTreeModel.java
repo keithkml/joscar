@@ -33,9 +33,11 @@
  *
  */
 
-package net.kano.joscartests;
+package net.kano.joscartests.ui;
 
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.OscarTools;
+import net.kano.joscartests.JoscarTester;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
@@ -78,9 +80,6 @@ public class OnlineBuddyTreeModel extends DefaultTreeModel {
             register(users[i]);
             indices[i] = i;
         }
-
-        fireTreeNodesInserted(getRoot(), new Object[] { getRoot() },
-                indices, users);
     }
 
     private PropertyChangeListener pclistener = new PropertyChangeListener() {
@@ -94,7 +93,6 @@ public class OnlineBuddyTreeModel extends DefaultTreeModel {
 
             if (!info.isOnline()) {
                 unregister(info);
-                fireTreeNodesRemoved(source, path, indices, objs);
             } else {
                 fireTreeNodesChanged(source, path, indices, objs);
             }
@@ -102,13 +100,39 @@ public class OnlineBuddyTreeModel extends DefaultTreeModel {
     };
 
     private synchronized void register(OnlineUserInfo info) {
+        DefensiveTools.checkNull(info, "info");
+
         info.addPropertyChangeListener(pclistener);
-        onlineBuddies.put(OscarTools.normalize(info.getScreenname()), info);
+        String sn = OscarTools.normalize(info.getScreenname());
+        boolean isNew = !onlineBuddies.containsKey(sn);
+        onlineBuddies.put(sn, info);
+
+        Object source = getRoot();
+        Object[] path = new Object[] { source };
+        int[] indices = new int[] { getIndexOfChild(getRoot(), info) };
+        Object[] changed = new Object[] { info };
+
+        if (isNew) {
+            fireTreeNodesInserted(source, path, indices, changed);
+        } else {
+            fireTreeNodesChanged(source, path, indices, changed);
+        }
     }
 
     private synchronized void unregister(OnlineUserInfo info) {
+        String sn = OscarTools.normalize(info.getScreenname());
+        if (!onlineBuddies.containsKey(sn)) return;
+
         info.removePropertyChangeListener(pclistener);
-        onlineBuddies.remove(OscarTools.normalize(info.getScreenname()));
+        int index = getIndexOfChild(getRoot(), info);
+        onlineBuddies.remove(sn);
+
+        Object source = getRoot();
+        Object[] path = new Object[] { source };
+        int[] indices = new int[] { index };
+        Object[] changed = new Object[] { info };
+
+        fireTreeNodesRemoved(source, path, indices, changed);
     }
 
     public synchronized int getIndexOfChild(Object parent, Object child) {

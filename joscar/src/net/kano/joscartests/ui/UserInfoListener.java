@@ -33,42 +33,9 @@
  *
  */
 
-package net.kano.joscartests;
+package net.kano.joscartests.ui;
 
-import javax.swing.JFrame;
-import javax.swing.JTree;
-import java.util.Timer;
-import java.util.TimerTask;
-
-public class BuddyTreeWindow extends JFrame {
-    private JoscarTester tester;
-    protected JTree tree;
-
-    public BuddyTreeWindow(JoscarTester tester) {
-        super("Buddy List");
-        this.tester = tester;
-        initComponents();
-        setSize(150, 400);
-        tree.setDoubleBuffered(true);
-        setVisible(true);
-    }
-
-    private void initComponents() {
-        tree = new JTree(new OnlineBuddyTreeModel(tester));
-        tree.setEditable(false);
-        tree.setRootVisible(true);
-        tree.setShowsRootHandles(true);
-        tree.setCellRenderer(new OnlineBuddyCellRenderer());
-        getContentPane().add(tree);
-    }
-
-    Timer idleUpdater = new Timer(true);
-
-    {
-        idleUpdater.scheduleAtFixedRate(new TimerTask() {
-            public void run() {
-                tree.repaint();
-            }
-        }, 1*1000, 1*1000);
-    }
+public interface UserInfoListener {
+    void userOnline(String sn, OnlineUserInfo info);
+    void userOffline(String sn);
 }
