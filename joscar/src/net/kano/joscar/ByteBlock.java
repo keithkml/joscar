@@ -74,11 +74,11 @@ import java.util.Arrays;
  * <i>and</i> with the added security of being immutable (that is, read-only).
  */
 public final class ByteBlock implements Writable, Serializable {
+    private static final byte[] BYTES_EMPTY = new byte[0];
     /**
      * A <code>ByteBlock</code> with a length of 0.
      */
     public static final ByteBlock EMPTY_BLOCK = new ByteBlock();
-    private static final byte[] BYTES_EMPTY = new byte[0];
 
     /**
      * Returns a ByteBlock logically equivalent to the given byte array.
@@ -439,7 +439,7 @@ public final class ByteBlock implements Writable, Serializable {
      */
     public byte[] toByteArray() {
         if (offset == 0 && len == bytes.length) {
-            // this is slightly faster
+            // this is faster
             return (byte[]) bytes.clone();
         } else {
             byte[] array = new byte[len];

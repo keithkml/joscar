@@ -240,11 +240,11 @@ public abstract class ConnProcessor {
         Iterator iterator = errorHandlers.iterator();
         if (!iterator.hasNext()) {
             if (logger.isLoggable(Level.WARNING)) {
-                logger.warning("CONNPROCESSOR HAS NO ERROR HANDLERS, DUMPING:");
-                logger.warning("ERROR TYPE: " + type);
-                logger.warning("ERROR INFO: " + info);
-                logger.warning("EXCEPTION: " + t.getMessage());
-                logger.warning(Arrays.asList(t.getStackTrace()).toString());
+                logger.log(Level.WARNING,
+                        "CONNPROCESSOR HAS NO ERROR HANDLERS, DUMPING:\n"
+                        + "ERROR TYPE: " + type + "\n"
+                        + "ERROR INFO: " + info,
+                        t);
             }
 
             return;
