@@ -39,6 +39,7 @@ import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.MiscTools;
+import net.kano.joscar.snaccmd.chat.ChatMsg;
 import net.kano.joscar.tlv.*;
 
 import java.io.IOException;
@@ -52,10 +53,6 @@ import java.util.Date;
  * information}.
  */
 public abstract class AbstractChatInfo {
-    /** A default content type for "normal" (non-secure) chat rooms. */
-    public static final String CONTENTTYPE_DEFAULT = "text/x-aolrtf";
-    /** A default content type for secure chat rooms. */
-    public static final String CONTENTTYPE_SECURE = "application/pkcs7-mime";
 
     /**
      * A value indicating that this block is a "short" information block. At the
@@ -253,14 +250,14 @@ public abstract class AbstractChatInfo {
 
     /**
      * Creates a chat information block with the given properties and a content
-     * type of {@link #CONTENTTYPE_DEFAULT}.
+     * type of {@link ChatMsg#CONTENTTYPE_DEFAULT}.
      *
      * @param name the name of the chat room
      * @param charset1 the room's associated charset
      * @param language1 the room's associatd language code
      */
     protected AbstractChatInfo(String name, String charset1, String language1) {
-        this(name, charset1, language1, CONTENTTYPE_DEFAULT);
+        this(name, charset1, language1, ChatMsg.CONTENTTYPE_DEFAULT);
     }
 
     /**
@@ -270,7 +267,7 @@ public abstract class AbstractChatInfo {
      * @param charset1 the room's associated charset
      * @param language1 the room's associatd language code
      * @param contentType a content type string, like {@link
-     *        #CONTENTTYPE_DEFAULT} or {@link #CONTENTTYPE_SECURE}
+     *        #CONTENTTYPE_DEFAULT} or {@link ChatMsg#CONTENTTYPE_SECURE}
      */
     protected AbstractChatInfo(String name, String charset1, String language1,
             String contentType) {
@@ -311,7 +308,7 @@ public abstract class AbstractChatInfo {
      * @param language2 the language code (such as "en") to place in the second
      *        language block, or <code>null</code> for none
      * @param contentType the "content type" of the chat room, like {@link
-     *        #CONTENTTYPE_DEFAULT} or {@link #CONTENTTYPE_SECURE}
+     *        #CONTENTTYPE_DEFAULT} or {@link ChatMsg#CONTENTTYPE_SECURE}
      */
     protected AbstractChatInfo(int flags, Date creation, int maxMsgLen,
             int maxOccupancy, String name, short createPerms, String charset1,
@@ -563,8 +560,8 @@ public abstract class AbstractChatInfo {
 
     /**
      * Returns the content type string contained in this chat information block.
-     * Note that this will normally be {@link #CONTENTTYPE_DEFAULT} for normal
-     * chat rooms and {@link #CONTENTTYPE_SECURE} for secure chat rooms. The
+     * Note that this will normally be {@link ChatMsg#CONTENTTYPE_DEFAULT} for normal
+     * chat rooms and {@link ChatMsg#CONTENTTYPE_SECURE} for secure chat rooms. The
      * returned value may also be <code>null</code> if no content type string
      * was sent in this chat information block.
      *

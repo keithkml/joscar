@@ -56,9 +56,6 @@ import java.io.OutputStream;
  *
  * @see GetInfoCmd
  * @see UserInfoCmd
- * @deprecated Use {@link GetInfoCmd} instead: it is normally not as heavily
- *             rate limited and it allows one to request info and away message
- *             (and other properties) in one single command.
  */
 public class OldGetInfoCmd extends LocCommand {
     /**
@@ -88,7 +85,7 @@ public class OldGetInfoCmd extends LocCommand {
      * @param packet an incoming info request packet
      */
     protected OldGetInfoCmd(SnacPacket packet) {
-        super(CMD_GET_INFO);
+        super(CMD_OLD_GET_INFO);
 
         DefensiveTools.checkNull(packet, "packet");
 
@@ -112,7 +109,7 @@ public class OldGetInfoCmd extends LocCommand {
      *        #TYPE_AWAYMSG}
      */
     public OldGetInfoCmd(int type, String sn) {
-        super(CMD_GET_INFO);
+        super(CMD_OLD_GET_INFO);
 
         DefensiveTools.checkRange(type, "type", 0);
         DefensiveTools.checkNull(sn, "sn");

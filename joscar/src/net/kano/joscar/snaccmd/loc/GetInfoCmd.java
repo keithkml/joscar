@@ -45,15 +45,45 @@ import net.kano.joscar.flapcmd.SnacPacket;
 import java.io.IOException;
 import java.io.OutputStream;
 
+/**
+ * A SNAC command used by newer clients to request information about a buddy.
+ * This command is generally recommended over {@link OldGetInfoCmd} because it
+ * is normally not as heavily rate limited and because it allows one to retrieve
+ * a buddy's away message and user profile in a single command. This command is
+ * also the only known way to retrieve a buddy's {@linkplain
+ * InfoData#getCertificateInfo() security information}.
+ *
+ * @snac.src client
+ * @snac.cmd 0x02 0x15
+ */
 public class GetInfoCmd extends LocCommand {
-    public static final long FLAG_DEFAULT = 0x00000000;
+    /**
+     * A flag indicating that the user's user profile ("info") is being
+     * requested.
+     */
     public static final long FLAG_INFO = 0x00000001;
+    /** A flag indicating that the user's away message is being requested. */
     public static final long FLAG_AWAYMSG = 0x00000002;
+    /**
+     * A flag indicating that the user's {@linkplain
+     * InfoData#getCertificateInfo() security information} is being requested.
+      */
     public static final long FLAG_CERT = 0x00000008;
 
+    /**
+     * A set of flags describing what type(s) of information are being
+     * requested.
+     */
     private final long flags;
+    /** The screenname of the user whose information is being requested. */
     private final String sn;
 
+    /**
+     * Creates a new get-user-info command from the given incoming get-user-info
+     * SNAC packet.
+     *
+     * @param packet an incoming get-user-info SNAC packet
+     */
     protected GetInfoCmd(SnacPacket packet) {
         super(CMD_NEW_GET_INFO);
 
@@ -73,6 +103,27 @@ public class GetInfoCmd extends LocCommand {
         }
     }
 
+    /**
+     * Creates a new outgoing get-user-info command with the given flags for the
+     * given screenname. {@linkplain #FLAG_AWAYMSG Flags} can be combined using
+     * bitwise operations, as follows:
+     * <pre>
+void getInfoAndAwayMessage(String sn) {
+    send(new GetInfoCmd(GetInfoCmd.FLAG_AWAYMSG
+           | GetInfoCmd.FLAG_INFO, sn));
+}
+void getAwayMessage(String sn) {
+    send(new GetInfoCmd(GetInfoCmd.FLAG_AWAYMSG, sn));
+}
+void getSecurityInfo(String sn) {
+    send(new GetInfoCmd(GetInfoCmd.FLAG_CERT, sn));
+}
+</pre>
+     *
+     * @param flags a set of bit flags, normally a bitwise combination of the
+     *        {@link #FLAG_AWAYMSG FLAG_*} constants defined in this class
+     * @param sn the screenname of the user whose information is being requested
+     */
     public GetInfoCmd(long flags, String sn) {
         super(CMD_NEW_GET_INFO);
 
@@ -83,8 +134,28 @@ public class GetInfoCmd extends LocCommand {
         this.sn = sn;
     }
 
+    /**
+     * Returns the request type flags sent in this command. This will normally
+     * be a bitwise combination of the {@link #FLAG_AWAYMSG FLAGS_*} constants
+     * defined in this class. To check for the presence of a certain flag, one
+     * could use code such as the following:
+     * <pre>
+if ((getInfoCmd.getFlags()
+        & GetInfoCmd.FLAG_AWAYMSG) != 0) {
+    System.out.println("user requested away message for "
+            + getInfoCmd.getScreenname());
+}
+</pre>
+     *
+     * @return the request type flags sent in this command
+     */
     public final long getFlags() { return flags; }
 
+    /**
+     * Returns the screenname of the user whose information is being requested.
+     *
+     * @return the screenname of the user whose information is being requested
+     */
     public final String getScreenname() { return sn; }
 
     public void writeData(OutputStream out) throws IOException {

@@ -56,8 +56,8 @@ public abstract class LocCommand extends SnacCommand {
     public static final int CMD_RIGHTS_RESP = 0x0003;
     /** A command subtype for setting one's "info." */
     public static final int CMD_SET_INFO = 0x0004;
-    /** A command subtype for getting another user's "info." */
-    public static final int CMD_GET_INFO = 0x0005;
+    /** A command subtype formerly used for getting another user's "info." */
+    public static final int CMD_OLD_GET_INFO = 0x0005;
     /** A command subtype containing a user's "info." */
     public static final int CMD_USER_INFO = 0x0006;
     /**
@@ -79,6 +79,7 @@ public abstract class LocCommand extends SnacCommand {
      * information.
      */
     public static final int CMD_SET_DIR_ACK = 0x000a;
+    /** A command subtype used to request information about a user. */
     public static final int CMD_NEW_GET_INFO = 0x0015;
 
     /**

@@ -40,7 +40,6 @@ import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.ExtraInfoBlock;
 import net.kano.joscar.snaccmd.FullUserInfo;
-import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
 import net.kano.joscar.tlv.TlvTools;
@@ -101,6 +100,7 @@ public class RecvImIcbm extends AbstractImIcbm {
      * @param iconInfo a set of icon information provided by the sender, or
      *        <code>null</code> if none was provided
      * @param canType whether or not the sender supports typing notification
+     * @param expInfoBlocks a list of AIM Expression information blocks
      */
     public RecvImIcbm(long messageId, FullUserInfo userInfo,
             InstantMessage message, boolean autoResponse, boolean wantsIcon,

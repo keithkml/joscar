@@ -38,10 +38,18 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.BinaryTools;
 
-public class TlvTools {
+/**
+ * Provides a set of utilites for working with TLV chains.
+ */
+public final class TlvTools {
+    /**
+     * Ensures that this class is never instantiated.
+     */
+    private TlvTools() { }
+
     /**
      * Reads a TLV chain from the given block of TLV's. Calling this method is
-     * equivalent to calling {@link #readChain(net.kano.joscar.ByteBlock, int)
+     * equivalent to calling {@link #readChain(ByteBlock, int)
      * readChain(block, -1)}. The total number of bytes read can be read by
      * calling the <code>getTotalSize</code> method of the returned
      * <code>TlvChain</code>.
@@ -96,13 +104,38 @@ public class TlvTools {
         return new ImmutableTlvChain(tlvs, offset, len);
     }
 
-    public static DefaultMutableTlvChain createMutableChain() {
+    /**
+     * Returns a new empty mutable TLV chain.
+     *
+     * @return a new empty mutable TLV chain
+     */
+    public static MutableTlvChain createMutableChain() {
         return new DefaultMutableTlvChain();
     }
 
-    public static DefaultMutableTlvChain getMutableCopy(
-            TlvChain other) {
+    /**
+     * Returns a copy of the given TLV chain that can be modified.
+     * (Modifications to the returned chain will not be reflected in the
+     * original chain.)
+     *
+     * @param other the TLV chain to copy
+     * @return a mutable TLV chain containing the same TLV's as the given chain
+     */
+    public static MutableTlvChain getMutableCopy(TlvChain other) {
         return new DefaultMutableTlvChain(other);
+    }
+
+    /**
+     * Returns a copy of the given TLV chain that cannot be modified.
+     * (Modifications to the original chain will not be reflected in the
+     * returned chain.)
+     *
+     * @param other the TLV chain to copy
+     * @return an immutable TLV chain containing the same TLV's as the given
+     *         chain
+     */
+    public static ImmutableTlvChain getImmutableCopy(TlvChain other) {
+        return new ImmutableTlvChain(other);
     }
 
     /**
@@ -127,10 +160,5 @@ public class TlvTools {
 
         // we should never get here
         throw new IllegalStateException();
-    }
-
-    public static ImmutableTlvChain getImmutableCopy(
-            TlvChain other) {
-        return new ImmutableTlvChain(other);
     }
 }
