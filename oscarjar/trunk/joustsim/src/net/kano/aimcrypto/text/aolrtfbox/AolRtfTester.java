@@ -95,7 +95,9 @@ public class AolRtfTester {
         tb.add(foregroundActionGreen);
         tb.add(new AbstractAction("Write") {
             public void actionPerformed(ActionEvent e) {
-                System.out.println(textpane.getText());
+                String text = textpane.getText();
+                textpane.setText(text);
+                System.out.println(text);
             }
         });
 //        textpane.setText("<body bgcolor=green><font style=\"background: red\">"

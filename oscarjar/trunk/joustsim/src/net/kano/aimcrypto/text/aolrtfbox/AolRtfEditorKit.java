@@ -84,6 +84,15 @@ public class AolRtfEditorKit extends HTMLEditorKit {
         return doc;
     }
 
+    protected void createInputAttributes(Element element,
+            MutableAttributeSet set) {
+        super.createInputAttributes(element, set);
+    }
+
+    public String getContentType() {
+        return "text/x-aolrtf";
+    }
+
     protected HTMLEditorKit.Parser getParser() {
         return new AolRtfTranslatingParser();
     }
@@ -154,9 +163,7 @@ public class AolRtfEditorKit extends HTMLEditorKit {
                     if (sizeVal != null) {
                         String sizeStr = sizeVal.toString();
                         String translated = translateFontSize(sizeStr);
-                        System.out.println("translated: " + translated);
                         if (translated == null) translated = sizeStr;
-                        System.out.println("setting font size to " + translated);
                         sheet.addCSSAttribute(nattr,
                                 CSS.Attribute.FONT_SIZE,
                                 translated);
@@ -321,7 +328,10 @@ public class AolRtfEditorKit extends HTMLEditorKit {
             if (fontFamily != null) fixed.put("face", fontFamily.toString());
 
             Object size = attr.getAttribute(CSS.Attribute.FONT_SIZE);
-            if (size != null) fixed.put("size", convertFontSizeFromCss(size.toString()));
+            if (size != null) {
+                String sizeFromCss = convertFontSizeFromCss(size.toString());
+                if (sizeFromCss != null) fixed.put("size", sizeFromCss);
+            }
 
             Object fg = attr.getAttribute(CSS.Attribute.COLOR);
             if (fg != null) fixed.put("color", fg.toString());
@@ -335,7 +345,7 @@ public class AolRtfEditorKit extends HTMLEditorKit {
 
         private String convertFontSizeFromCss(String s) {
             FontSizeTranslator trans = getFontSizeTranslator();
-            if (trans == null) return s;
+            if (trans == null) return null;
             else return trans.getHtmlFontSizeFromCss(s);
         }
 
@@ -388,8 +398,6 @@ public class AolRtfEditorKit extends HTMLEditorKit {
                     super.output(chars, off, i-off);
                     off = i + 1;
                     write("<br>");
-                    System.err.println("escaping BR: ");
-                    new Throwable().printStackTrace();
                 }
             }
             super.output(chars, off, length - (off - start));

@@ -43,7 +43,7 @@ import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
 public abstract class FontSizeTranslator {
-    private static final Pattern PATTERN_PTPX = Pattern.compile("(\\d+)(?:pt|px)");
+    private static final Pattern PATTERN_PTPX = Pattern.compile("(\\d+)(?:pt|px)?");
 
     public boolean convertHtmlFontSizeToCSS(StyleSheet sheet,
             MutableAttributeSet html,
@@ -63,12 +63,13 @@ public abstract class FontSizeTranslator {
 
     public String getHtmlFontSizeFromCss(String s) {
         String normal = s.toLowerCase().trim();
-        Matcher m = PATTERN_PTPX.matcher(s);
+        Matcher m = PATTERN_PTPX.matcher(normal);
         if (m.matches()) {
             int real = Integer.parseInt(m.group(1));
-            return String.valueOf(getAbsoluteFromReal(real));
+            int absolute = getAbsoluteFromReal(real);
+            return String.valueOf(absolute);
         } else {
-            return s;
+            return null;
         }
     }
 
@@ -117,7 +118,7 @@ public abstract class FontSizeTranslator {
 
             int middle = ((top-bottom)/2) + bottom;
             if (realPointSize <= middle) return i;
-            else return i+i;
+            else return i+1;
         }
         return lastIndex;
     }
