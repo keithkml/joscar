@@ -475,6 +475,25 @@ public final class BinaryTools {
         } catch (UnsupportedEncodingException impossible) { return null; }
     }
 
+    /**
+     * Reads a null-padded ASCII string from the start of the given block. The
+     * returned <code>StringBlock</code> contains an ASCII string formed from
+     * all of the bytes in the given block before the first null byte
+     * (<code>0x00</code>) or the end of the block. Note that the
+     * <code>totalSize</code> field of the returned <code>StringBlock</code> is
+     * the length of the string <i>without</i> the null byte. This is to avoid
+     * confusion when reading strings padded with more than one null byte or
+     * those not padded at all (that is, when the block consists only of an
+     * ASCII string with no null bytes).
+     *
+     * @param block a block of data containing an ASCII string followed by zero
+     *        or more null (<code>0x00</code>) bytes
+     * @return a <code>StringBlock</code> containing the string extracted from
+     *         the given block and the size of the string <i>without the null
+     *         byte(s)</i> extracted, in bytes
+     *
+     * @see #getAsciiString
+     */
     public static StringBlock getNullPadded(ByteBlock block) {
         int firstNull;
         for (firstNull = 0; firstNull < block.getLength();
@@ -486,6 +505,19 @@ public final class BinaryTools {
         return new StringBlock(getAsciiString(block), block.getLength());
     }
 
+    /**
+     * Writes the given block to the given stream, padded to a given length with
+     * null bytes (<code>0x00</code>). This method is guaranteed to write
+     * exactly <code>len</code> bytes to the given stream, only writing the
+     * first <code>len</code> bytes of the given block (and no null bytes) if
+     * <code>block.getLength() > len</code>.
+     *
+     * @param out a stream to which to write
+     * @param block the block to write to the given stream
+     * @param len the total number of bytes to write to the given stream
+     *
+     * @throws IOException if an I/O error occurs
+     */
     public static void writeNullPadded(OutputStream out, ByteBlock block,
             int len) throws IOException {
         if (block.getLength() <= len) {

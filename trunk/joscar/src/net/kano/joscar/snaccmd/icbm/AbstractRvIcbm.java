@@ -133,6 +133,14 @@ public abstract class AbstractRvIcbm extends AbstractIcbm {
         this.rvDataWriter = rvDataWriter;
     }
 
+    /**
+     * Creates a new RV ICBM with the given SNAC command subtype, rendezvous
+     * session ID, and the properties of the given <code>RvCommand</code>.
+     * 
+     * @param command
+     * @param rvSessionId
+     * @param rvCommand
+     */
     AbstractRvIcbm(int command, long rvSessionId, final RvCommand rvCommand) {
         this(command, rvCommand.getIcbmMessageId(), rvCommand.getRvStatus(),
                 rvSessionId, rvCommand.getCapabilityBlock(),
@@ -146,7 +154,7 @@ public abstract class AbstractRvIcbm extends AbstractIcbm {
     /**
      * Returns the status code of this rendezvous. Will normally be one of
      * {@link #STATUS_REQUEST}, {@link #STATUS_ACCEPT}, and {@link
-     * #STATUS_DENY}.
+     * #RVSTATUS_DENY}.
      *
      * @return this rendezvous's status code
      */

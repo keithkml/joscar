@@ -48,7 +48,7 @@ public abstract class AbstractAcceptRvCmd extends AbstractRvCmd {
     }
 
     public AbstractAcceptRvCmd(long icbmMessageId, CapabilityBlock cap) {
-        super(icbmMessageId, STATUS_ACCEPT, cap);
+        super(icbmMessageId, RVSTATUS_ACCEPT, cap);
     }
 
     protected final void writeHeaderRvTlvs(OutputStream out) { }

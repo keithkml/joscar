@@ -65,6 +65,7 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
     /** A TLV type containing the message. */
     private static final int TYPE_MESSAGE_PARTS = 0x0101;
 
+    /** A "features block" used by WinAIM. This is, then, the block we use. */
     private static final ByteBlock FEATURES_DEFAULT
             = ByteBlock.wrap(new byte[] {
                 0x01, 0x01, 0x01, 0x02, 0x01, 0x01
@@ -124,8 +125,8 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
                 int charsetSubcode = BinaryTools.getUShort(partBlock, 2);
                 ByteBlock messageBlock = partBlock.subBlock(4);
 
-                ImEncoding encoding
-                        = new ImEncoding(charsetCode, charsetSubcode);
+                ImEncodingParams encoding
+                        = new ImEncodingParams(charsetCode, charsetSubcode);
                 String message = ImEncodedString.readImEncodedString(
                         encoding, messageBlock);
 
@@ -216,7 +217,7 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
 
             ImEncodedString encInfo = ImEncodedString.encodeString(message);
 
-            ImEncoding encoding = encInfo.getEncoding();
+            ImEncodingParams encoding = encInfo.getEncoding();
 
             BinaryTools.writeUShort(msgout, encoding.getCharsetCode());
             BinaryTools.writeUShort(msgout, encoding.getCharsetSubcode());

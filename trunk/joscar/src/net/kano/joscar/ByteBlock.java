@@ -294,6 +294,14 @@ public final class ByteBlock implements Writable, Serializable {
         return new String(block.bytes, block.offset, block.len, charset);
     }
 
+    /**
+     * Returns an <code>InputStream</code> that simply reads from the given byte
+     * block. Semantics of the returned <code>InputStream</code> are those of
+     * <code>ByteArrayOutputStream</code>.
+     *
+     * @param data the block for which a stream should be created
+     * @return an input stream using the given byte block as a backing buffer
+     */
     public static InputStream createInputStream(ByteBlock data) {
         return new ByteArrayInputStream(data.bytes, data.offset, data.len);
     }

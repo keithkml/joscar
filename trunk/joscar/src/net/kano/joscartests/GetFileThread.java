@@ -41,7 +41,7 @@ import net.kano.joscar.rvcmd.SegmentedFilename;
 import net.kano.joscar.rvproto.ft.FileSendHeader;
 import net.kano.joscar.rvproto.getfile.GetFileList;
 import net.kano.joscar.rvproto.getfile.GetFileEntry;
-import net.kano.joscar.snaccmd.icbm.ImEncoding;
+import net.kano.joscar.snaccmd.icbm.ImEncodingParams;
 
 import java.io.IOException;
 import java.io.InputStream;

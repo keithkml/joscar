@@ -37,23 +37,55 @@ package net.kano.joscar.rv;
 
 import net.kano.joscar.snac.SnacPacketEvent;
 
+/**
+ * An event that occurs when a non-RV response to a RV command or RV response is
+ * received. For example, if one attempts to send a file to a user who is not
+ * currently online, a {@link net.kano.joscar.snaccmd.error.SnacError} will
+ * likely be received.
+ *
+ * @see SnacPacketEvent
+ */
 public class RvSnacResponseEvent extends SnacPacketEvent {
+    /** The RV processor on which this response was received. */
     private final RvProcessor rvProcessor;
+    /** The RV session on which this response was received. */
     private final RvSession rvSession;
 
-    public RvSnacResponseEvent(SnacPacketEvent cause, RvProcessor rvProcessor,
-            RvSession rvSession) {
+    /**
+     * Creates a new RV SNAC response event with the given properties.
+     *
+     * @param cause the SNAC packet event that was received in response to an
+     *        RV command
+     * @param rvProcessor the RV processor on which this response was received
+     * @param rvSession the RV session whose initial RV command caused this
+     *        response
+     */
+    protected RvSnacResponseEvent(SnacPacketEvent cause,
+            RvProcessor rvProcessor, RvSession rvSession) {
         super(cause);
 
         this.rvProcessor = rvProcessor;
         this.rvSession = rvSession;
     }
 
-    public final RvProcessor getRvProcessor() {
-        return rvProcessor;
-    }
+    /**
+     * Returns the RV processor on which the associated SNAC response was
+     * received.
+     *
+     * @return the RV processor on which the associated SNAC response was
+     *         recieved
+     */
+    public final RvProcessor getRvProcessor() { return rvProcessor; }
 
-    public final RvSession getRvSession() {
-        return rvSession;
-    }
+    /**
+     * Returns the RV session on which the associated SNAC response was
+     * received. While the SNAC response likely did not contain a rendezvous
+     * session ID (and thus does not intrinsically have an associated RV
+     * session), it is still associated with an RV session in the sense that
+     * the RV command to which it is a response was sent over a RV session. I
+     * hope that makes sense.
+     *
+     * @return the RV session on which the associated SNAC response was recieved
+     */
+    public final RvSession getRvSession() { return rvSession; }
 }

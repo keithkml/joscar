@@ -127,7 +127,7 @@ public class RecvFileThread extends Thread {
                 doneHeader.setHeaderType(FileSendHeader.HEADERTYPE_RECEIVED);
                 doneHeader.setFlags(doneHeader.getFlags()
                         | FileSendHeader.FLAG_DONE);
-                doneHeader.setNumReceived(doneHeader.getNumReceived() + 1);
+                doneHeader.setBytesReceived(doneHeader.getBytesReceived() + 1);
                 doneHeader.setIcbmMessageId(cookie);
                 doneHeader.write(socketOut);
 //            }

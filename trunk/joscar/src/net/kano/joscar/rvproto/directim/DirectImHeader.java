@@ -38,20 +38,22 @@ package net.kano.joscar.rvproto.directim;
 import net.kano.joscar.LiveWritable;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.icbm.ImEncodedString;
-import net.kano.joscar.snaccmd.icbm.ImEncoding;
+import net.kano.joscar.snaccmd.icbm.ImEncodingParams;
 
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.ByteArrayOutputStream;
 
-public class DirectImHeader implements LiveWritable {
+public final class DirectImHeader implements LiveWritable {
     public static final String DCVERSION_DEFAULT = "ODC2";
 
+    public static final long FLAG_TYPINGPACKET = 0x02;
     public static final long FLAG_TYPING = 0x08;
     public static final long FLAG_TYPED = 0x04;
-    public static final long FLAG_TYPINGPACKET = 0x02;
+
     public static final long FLAG_AUTORESPONSE = 0x01;
 
     public static DirectImHeader createTypingHeader() {
@@ -96,13 +98,13 @@ public class DirectImHeader implements LiveWritable {
 
         return hdr;
     }
-    private String dcVersion;
-    private long messageId;
-    private long dataLength;
-    private ImEncoding encoding;
-    private long flags;
-    private String sn;
-    private int headerSize;
+    private String dcVersion = null;
+    private long messageId = 0;
+    private long dataLength = -1;
+    private ImEncodingParams encoding = null;
+    private long flags = -1;
+    private String sn = null;
+    private int headerSize = -1;
 
     public static DirectImHeader readDirectIMHeader(InputStream in)
             throws IOException {
@@ -149,7 +151,7 @@ public class DirectImHeader implements LiveWritable {
         hdr.setDataLength(BinaryTools.getUInt(header, 22));
         int charsetCode = BinaryTools.getUShort(header, 26);
         int charsetSubcode = BinaryTools.getUShort(header, 28);
-        hdr.setEncoding(new ImEncoding(charsetCode, charsetSubcode));
+        hdr.setEncoding(new ImEncodingParams(charsetCode, charsetSubcode));
         hdr.setFlags(BinaryTools.getUInt(header, 30));
 
         ByteBlock snBlock = header.subBlock(38, 16);
@@ -164,7 +166,7 @@ public class DirectImHeader implements LiveWritable {
 
     public synchronized final long getDataLength() { return dataLength; }
 
-    public synchronized final ImEncoding getEncoding() { return encoding; }
+    public synchronized final ImEncodingParams getEncoding() { return encoding; }
 
     public synchronized final long getFlags() { return flags; }
 
@@ -184,7 +186,7 @@ public class DirectImHeader implements LiveWritable {
         this.dataLength = dataLength;
     }
 
-    public synchronized final void setEncoding(ImEncoding encoding) {
+    public synchronized final void setEncoding(ImEncodingParams encoding) {
         this.encoding = encoding;
     }
 
@@ -202,7 +204,18 @@ public class DirectImHeader implements LiveWritable {
         this.dcVersion = DCVERSION_DEFAULT;
     }
 
-    public void write(OutputStream out) throws IOException {
+    private synchronized void checkValidity() {
+        DefensiveTools.checkNull(dcVersion, "dcVersion");
+        DefensiveTools.checkRange(dataLength, "dataLength", 0);
+        DefensiveTools.checkNull(encoding, "encoding");
+        DefensiveTools.checkRange(flags, "flags", 0);
+        DefensiveTools.checkNull(sn, "sn");
+    }
+
+    public void write(OutputStream out) throws IOException,
+            IllegalArgumentException {
+        checkValidity();
+
         ByteArrayOutputStream hout = new ByteArrayOutputStream(76);
 
         hout.write(BinaryTools.getAsciiBytes(dcVersion));
@@ -239,5 +252,4 @@ public class DirectImHeader implements LiveWritable {
                 ", sn='" + sn + "'" +
                 ", headerSize=" + headerSize;
     }
-
 }

@@ -53,6 +53,13 @@ import java.util.*;
  * See {@link #getTlvList} and {@link #getTlvMap} for details.
  */
 public abstract class AbstractTlvChain implements TlvChain {
+    /**
+     * Returns whether the given block might be a valid, complete TLV chain. A
+     * complete TLV chain contains no data after the chain.
+     *
+     * @param block a block of data that might contain a complete TLV chain
+     * @return whether or not the given block represents a complete TLV chain
+     */
     public static boolean isCompleteTlvChain(ByteBlock block) {
         final int len = block.getLength();
 

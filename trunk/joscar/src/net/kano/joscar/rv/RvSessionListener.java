@@ -35,8 +35,26 @@
 
 package net.kano.joscar.rv;
 
+/**
+ * An interface for listening for incoming events on a certain rendezvous
+ * session.
+ *
+ * @see RvSession#addListener
+ */
 public interface RvSessionListener {
+    /**
+     * Called when a rendezvous command or response is received on an RV
+     * session to which this listener has been added.
+     *
+     * @param event an object describing the event
+     */
     void handleRv(RecvRvEvent event);
 
+    /**
+     * Called when a <i>non-RV</i> SNAC response was received in response to an
+     * RV command sent over an RV session to which this listener has been added. 
+     *
+     * @param event an object describing an event
+     */
     void handleSnacResponse(RvSnacResponseEvent event);
 }

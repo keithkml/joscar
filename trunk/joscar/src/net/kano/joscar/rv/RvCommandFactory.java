@@ -39,8 +39,41 @@ import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.snaccmd.icbm.RvCommand;
 
+/**
+ * An interface for producing <code>RvCommand</code>s from incoming rendezvous
+ * ICBM commands.
+ */
 public interface RvCommandFactory {
+    /**
+     * Returns the types of RV commands that this factory may be able to
+     * generate in <code>genRvCommand</code>. Note that a capability block's
+     * presence in the returned array does not mean that a call to {@link
+     * #genRvCommand} must return a non-<code>null</code> value; it simply means
+     * that this factory can be used to handle commands of that type.
+     * <br>
+     * <br>
+     * Note that if this method returns <code>null</code>, it will be used to
+     * by the <code>RvProcessor</code> to which it is added to handle all types
+     * of commands do not otherwise have an associated factory. See {@link
+     * RvProcessor#registerRvCmdFactory(CapabilityBlock, RvCommandFactory)} for
+     * details.
+     *
+     * @return the capabilities (RV types) that this factory may be able to
+     *         convert, or <code>null</code> if it can handle all types of
+     *         rendezvous commands
+     */
     CapabilityBlock[] getSupportedCapabilities();
 
+    /**
+     * Attempts to generate a <code>RvCommand</code> from the data in the given
+     * <code>RecvRvIcbm</code>. Note that this method can return
+     * <code>null</code> if an RV command cannot be generated for any reason
+     * (such as if the given command is in an invalid format
+     *
+     * @param rvIcbm the incoming rendezvous ICBM command from which a
+     *        <code>RvCommand</code> should be generated
+     * @return a <code>RvCommand</code> generated from the given incoming RV
+     *         ICBM, or <code>null</code> if none could be generated
+     */
     RvCommand genRvCommand(RecvRvIcbm rvIcbm);
 }

@@ -37,33 +37,111 @@ package net.kano.joscar.rv;
 
 import net.kano.joscar.snac.SnacPacketEvent;
 import net.kano.joscar.snaccmd.icbm.RvCommand;
+import net.kano.joscar.DefensiveTools;
 
+/**
+ * An event that occurs when a new rendezvous {@linkplain RvCommand command} or
+ * {@linkplain net.kano.joscar.snaccmd.icbm.RvResponse response} is received in
+ * a {@linkplain RvSession rendezvous session}.
+ */
 public class RecvRvEvent extends SnacPacketEvent {
+    /**
+     * An event type indicating that a rendezvous command was received.
+     *
+     * @see #getRvCommand()
+     */
     public static final Object TYPE_RV = "TYPE_RV";
+    /**
+     * An event type indicating that a RV response was received.
+     *
+     * @see #getRvResponseCode
+     */
     public static final Object TYPE_RESPONSE = "TYPE_RESPONSE";
 
+    /** The type of event that this object represents. */
     private final Object type;
 
+    /** The RV processor on which the RV command/response was received. */
     private final RvProcessor rvProcessor;
+    /** The RV session on which the RV command/response was received. */
     private final RvSession rvSession;
 
+    /** The RV command recieved, if any. */
     private final RvCommand rvCommand;
+    /** The response code of the response received, if any. */
     private final int responseCode;
 
+    /**
+     * Creates a new incoming rendezvous event with the given properties and a
+     * type of {@link #TYPE_RV}.
+     *
+     * @param other the SNAC packet event on which this event was received
+     * @param processor the RV processor on which this event was recieved
+     * @param session the RV session on which this event was received
+     * @param command the RV command that was received
+     */
     protected RecvRvEvent(SnacPacketEvent other,
             RvProcessor processor, RvSession session, RvCommand command) {
         this(TYPE_RV, other, processor, session, command, -1);
+
+        DefensiveTools.checkNull(command, "command");
     }
 
+    /**
+     * Creates a new incoming rendezvous event with the given properties and a
+     * type of {@link #TYPE_RESPONSE}.
+     *
+     * @param other the SNAC packet event on which this event was received
+     * @param processor the RV processor on which this event was recieved
+     * @param session the RV session on which this event was received
+     * @param resultCode the result code of the received RV response
+     */
     protected RecvRvEvent(SnacPacketEvent other,
             RvProcessor processor, RvSession session, int resultCode) {
         this(TYPE_RV, other, processor, session, null, resultCode);
+
+        DefensiveTools.checkRange(resultCode, "resultCode", -1);
     }
 
+    /**
+     * Creates a new incoming rendezvous event with the given properties.
+     *
+     * @param type
+     * @param other the SNAC packet event on which this event was received
+     * @param rvProcessor the RV processor on which this event was recieved
+     * @param rvSession the RV session on which this event was received
+     * @param rvCommand the RV command that was received, if any
+     * @param responseCode the result code of the received RV response
+     */
     private RecvRvEvent(Object type, SnacPacketEvent other,
             RvProcessor rvProcessor, RvSession rvSession, RvCommand rvCommand,
             int responseCode) {
         super(other);
+
+        DefensiveTools.checkNull(type, "type");
+        DefensiveTools.checkNull(rvProcessor, "rvProcessor");
+        DefensiveTools.checkNull(rvSession, "rvSession");
+
+        if (type != TYPE_RV && type != TYPE_RESPONSE) {
+            throw new IllegalArgumentException("type (" + type + ") must be " +
+                    "one of TYPE_RV and TYPE_RESPONSE");
+        }
+
+        if ((rvCommand == null && responseCode == -1)
+                || (rvCommand != null && responseCode != -1)) {
+            throw new IllegalArgumentException("only one of rvCommand and " +
+                    "responseCode can have a non-null or nonnegative value");
+        }
+
+        if (type == TYPE_RV && rvCommand == null) {
+            throw new IllegalArgumentException("type is TYPE_RV but " +
+                    "rvCommand is null");
+        }
+
+        if (type == TYPE_RESPONSE && responseCode == -1) {
+            throw new IllegalArgumentException("type is TYPE_RESPONSE but " +
+                    "responseCode is -1");
+        }
 
         this.type = type;
         this.rvProcessor = rvProcessor;
@@ -72,20 +150,60 @@ public class RecvRvEvent extends SnacPacketEvent {
         this.responseCode = responseCode;
     }
 
-    public final Object getType() { return type; }
+    /**
+     * Returns the type of event that this object represents. Will be one of
+     * {@link #TYPE_RV} and {@link #TYPE_RESPONSE}. If {@link #TYPE_RV},
+     * the value returned by {@link #getRvResponseCode} will be <code>-1</code>
+     * and the value returned by {@link #getRvCommand} will be
+     * non-<code>null</code>. If {@link #TYPE_RESPONSE}, the converse will be
+     * true: the value returned by {@link #getRvResponseCode} will <i>not</i> be
+     * <code>-1</code> and the value returned by {@link #getRvCommand} will be
+     * <code>null</code>.
+     *
+     * @return the event type represented by this object
+     */
+    public final Object getRvEventType() { return type; }
 
+    /**
+     * Returns the RV processor on which the associated RV command/response was
+     * received.
+     *
+     * @return the RV processor for which this event occurred
+     */
     public final RvProcessor getRvProcessor() { return rvProcessor; }
 
+    /**
+     * Returns the RV session on which the associated RV command/response was
+     * received.
+     *
+     * @return the RV session on which this event occurred
+     */
     public final RvSession getRvSession() { return rvSession; }
 
+    /**
+     * Returns the RV command that was received, if any. Note that this method
+     * will return <code>null</code> if this event is not a {@link #TYPE_RV}
+     * event.
+     *
+     * @return the RV command that was received, or <code>null</code> if this is
+     *         not a RV command receipt event
+     */
     public final RvCommand getRvCommand() { return rvCommand; }
 
-    public final int getResponseCode() { return responseCode; }
+    /**
+     * Returns the RV response code that was received, if any. Note that this
+     * method will return <code>-1</code> if this event is not a {@link
+     * #TYPE_RESPONSE} event.
+     *
+     * @return the RV response code that was received, or <code>-1</code> if
+     *         this is not a RV response receipt event
+     */
+    public final int getRvResponseCode() { return responseCode; }
 
     public String toString() {
-        return "RecvRvEvent: " +
+        return "RecvRvEvent for " + rvSession.getScreenname() + ": " +
                 (type == TYPE_RV
                 ? "rvCommand=" + rvCommand
-                : "responseCode=" + responseCode);
+                : "rvResponseCode=" + responseCode);
     }
 }
