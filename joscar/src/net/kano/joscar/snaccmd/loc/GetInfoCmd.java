@@ -168,13 +168,10 @@ if ((getInfoCmd.getFlags()
         }
     }
 
-    /** A regular expression pattern matching FLAG_* fields in this class. */
-    private static final Pattern flagFieldRE = Pattern.compile("FLAG_.*");
-
     public String toString() {
         return "GetInfoCmd: flags=" + flags + " ("
                 + MiscTools.getFlagFieldsString(GetInfoCmd.class, flags,
-                        flagFieldRE) + ")"
+                        "FLAG_.*") + ")"
                 + ", sn=" + sn;
     }
 }

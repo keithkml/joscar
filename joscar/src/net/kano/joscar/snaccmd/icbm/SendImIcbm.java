@@ -56,7 +56,7 @@ import java.io.OutputStream;
  *
  * @see RecvImIcbm
  */
-public class SendImIcbm extends AbstractImIcbm {
+public class SendImIcbm extends AbstractImIcbm implements SendIcbm {
     /**
      * A TLV type present if an acknowledgement of this message was requested.
      */
@@ -192,11 +192,6 @@ public class SendImIcbm extends AbstractImIcbm {
         this.ackRequested = ackRequested;
     }
 
-    /**
-     * Returns the screenname to whom this message is to be sent.
-     *
-     * @return the screenname of the recipient of this message
-     */
     public final String getScreenname() { return sn; }
 
     /**

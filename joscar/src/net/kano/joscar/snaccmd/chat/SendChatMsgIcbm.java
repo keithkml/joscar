@@ -117,9 +117,7 @@ public class SendChatMsgIcbm extends AbstractChatMsgIcbm {
      * @return whether this message should be "reflected" back to the sender as
      *         normal chat text
      */
-    public final boolean isToBeReflected() {
-        return toBeReflected;
-    }
+    public final boolean isToBeReflected() { return toBeReflected; }
 
     protected void writeChatTlvs(OutputStream out) throws IOException {
         if (toBeReflected) new Tlv(TYPE_REFLECT).write(out);

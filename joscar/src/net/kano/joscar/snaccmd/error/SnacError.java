@@ -197,12 +197,9 @@ public class SnacError extends SnacCommand {
         BinaryTools.writeUShort(out, code);
     }
 
-    /** A regular expression pattern matching CODE_* fields in this class. */
-    private static final Pattern codeFieldRE = Pattern.compile("CODE_.*");
-
     public String toString() {
         String name = null;
-        name = MiscTools.findIntField(SnacError.class, code, codeFieldRE);
+        name = MiscTools.findIntField(SnacError.class, code, "CODE_.*");
         return "SnacError: code=0x" + Integer.toHexString(code) + " (name: "
                 + name + ")";
     }

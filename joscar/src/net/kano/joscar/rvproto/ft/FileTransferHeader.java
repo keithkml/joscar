@@ -1075,19 +1075,12 @@ header.setTotalFileSize(0);
         fullBuffer.writeTo(out);
     }
 
-    /**
-     * A regular expression pattern matching HEADERTYPE_* flags of this class.
-     */
-    private static final Pattern headerFieldRE = Pattern.compile("HEADERTYPE_.*");
-    /** A regular expression pattern matching FLAG_* flags of this class. */
-    private static final Pattern flagFieldRE = Pattern.compile("FLAG_.*");
-
     public synchronized String toString() {
         return "FileTransferHeader:" +
                 "\n ftVersion='" + ftVersion + "'" +
                 "\n headerType=0x" + Integer.toHexString(headerType)
                 + " (" + MiscTools.findIntField(FileTransferHeader.class,
-                        headerType, headerFieldRE) + ")" +
+                        headerType, "HEADERTYPE_.*") + ")" +
                 "\n icbmMessageId=" + icbmMessageId +
                 "\n encryption=" + encryption +
                 "\n compression=" + compression +
@@ -1108,7 +1101,7 @@ header.setTotalFileSize(0);
                 "\n clientid='" + clientid + "'" +
                 "\n flags=0x" + Integer.toHexString(flags)
                 + " (" + MiscTools.getFlagFieldsString(FileTransferHeader.class,
-                        flags, flagFieldRE) + ")" +
+                        flags, "FLAG_.*") + ")" +
                 "\n listNameOffset=" + listNameOffset +
                 "\n listSizeOffset=" + listSizeOffset +
                 "\n macFileInfo=" + BinaryTools.describeData(macFileInfo) +

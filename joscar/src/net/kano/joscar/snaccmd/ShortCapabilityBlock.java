@@ -236,12 +236,9 @@ public class ShortCapabilityBlock implements Writable {
         return BinaryTools.getUShort(data, 0);
     }
 
-    /** A regular expression pattern matching BLOCK_* fields in this class. */
-    private static final Pattern blockFieldRE = Pattern.compile("BLOCK_.*");
-
     public String toString() {
         String name = MiscTools.findEqualField(CapabilityBlock.class, toCapabilityBlock(),
-                blockFieldRE);
+                "BLOCK_.*");
         return "ShortCapabilityBlock: " + BinaryTools.describeData(data) + " ("
                 + (name == null ? "unknown" : name) + ")";
     }

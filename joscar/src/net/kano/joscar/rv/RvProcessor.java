@@ -488,7 +488,7 @@ public class RvProcessor {
     /**
      * Passes the given parameters to this processor's (grand)parent FLAP
      * processor. If this processor is not currently attached to a SNAC
-     * processor, information is printed to <code>System.err</code>.
+     * processor, information is printed to a JDK logger.
      *
      * @param type the type of exception event being fired
      * @param t the exception that was thrown
@@ -585,12 +585,12 @@ public class RvProcessor {
 
         if (logger.logFineEnabled()) {
             logger.logFine("Generating RV for <" + cmd.getCapability() + "> from "
-                    + cmd.getSender().getScreenname());
+                    + cmd.getSenderInfo().getScreenname());
         }
 
         // find or create a session object for the received RV
         RvSessionImpl session = getOrCreateIncomingSession(cmd.getRvSessionId(),
-                cmd.getSender().getScreenname());
+                cmd.getSenderInfo().getScreenname());
 
         // generate an RV command object
         RvCommand rvCommand;

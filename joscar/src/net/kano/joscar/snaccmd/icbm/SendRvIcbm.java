@@ -56,7 +56,7 @@ import java.io.OutputStream;
  *
  * @see RecvRvIcbm
  */
-public class SendRvIcbm extends AbstractRvIcbm {
+public class SendRvIcbm extends AbstractRvIcbm implements SendIcbm {
     /** The screenname of the recipient of this rendezvous command. */
     private final String sn;
 

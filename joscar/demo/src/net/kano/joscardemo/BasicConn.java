@@ -205,7 +205,7 @@ public abstract class BasicConn extends AbstractFlapConn {
 
                 ByteBlock securityInfo = circ.getSecurityInfo();
                 if (securityInfo != null) {
-                    String sn = icbm.getSender().getScreenname();
+                    String sn = icbm.getSenderInfo().getScreenname();
                     String cookie = circ.getRoomInfo().getCookie();
                     String roomName = OscarTools.getRoomNameFromCookie(cookie);
                     try {

@@ -55,7 +55,7 @@ import java.io.OutputStream;
  *
  * @see SendRvIcbm
  */
-public class RecvRvIcbm extends AbstractRvIcbm {
+public class RecvRvIcbm extends AbstractRvIcbm implements RecvIcbm {
     /** A block describing the sender of this rendezvous ICBM. */
     private final FullUserInfo sender;
 
@@ -101,12 +101,7 @@ public class RecvRvIcbm extends AbstractRvIcbm {
         this.sender = sender;
     }
 
-    /**
-     * Returns a user information block for the user who sent this rendezvous.
-     *
-     * @return user information for the sender of this rendezvous
-     */
-    public final FullUserInfo getSender() { return sender; }
+    public final FullUserInfo getSenderInfo() { return sender; }
 
     protected final void writeChannelData(OutputStream out)
             throws IOException {

@@ -333,26 +333,19 @@ if ((getFileReq.getFlags() & GetFileReqRvCmd.FLAG_EXPAND_DYNAMIC) != 0) {
         }
     }
 
-    /** A regular expression matching CODE_* fields in this class. */
-    private static final Pattern codeFieldRE = Pattern.compile("CODE_.*");
-    /** A regular expression matching PROTOVERSION_* fields in this class. */
-    private static final Pattern protoFieldRE = Pattern.compile("PROTOVERSION_.*");
-    /** A regular expression matching FLAG_* fields in this class. */
-    private static final Pattern flagFieldRE = Pattern.compile("FLAG_.*");
-
     public String toString() {
         return "GetFileReqRvCmd: connInfo=<" + connInfo + ">, code=0x"
                 + Integer.toHexString(code) + " ("
                 + MiscTools.findIntField(GetFileReqRvCmd.class, code,
-                        codeFieldRE)
+                        "CODE_.*")
                 + "), proto=0x"
                 + Integer.toHexString(protoVersion) + " ("
                 + MiscTools.findIntField(GetFileReqRvCmd.class, protoVersion,
-                        protoFieldRE)
+                        "PROTOVERSION_.*")
                 + "), flags=0x"
                 + Long.toHexString(flags) + " ("
                 + MiscTools.getFlagFieldsString(GetFileReqRvCmd.class, flags,
-                        flagFieldRE)
+                        "FLAG_.*")
                 + "), extraBlock="
                 + (extraBlock == null ? null
                 : BinaryTools.describeData(extraBlock));

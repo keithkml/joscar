@@ -320,12 +320,9 @@ public final class CapabilityBlock implements Writable {
 
     public int hashCode() { return hashCode; }
 
-    /** A regular expression pattern matching BLOCK_* fields in this class. */
-    private static final Pattern blockFieldRE = Pattern.compile("BLOCK_.*");
-
     public String toString() {
         String name = MiscTools.findEqualField(CapabilityBlock.class, this,
-                blockFieldRE);
+                "BLOCK_.*");
         return "CapabilityBlock: " + BinaryTools.describeData(block)
                 + " (" + (name == null ? "unknown capability block" : name) + ")";
     }

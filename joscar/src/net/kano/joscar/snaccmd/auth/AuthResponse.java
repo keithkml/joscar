@@ -51,9 +51,17 @@ import java.util.regex.Pattern;
 /**
  * A SNAC command sent in response to an {@link AuthRequest}. This is the last
  * step of the authorization process.
+ * <br><br>
+ * AIM's login process uses many error codes for the same thing. Each of the
+ * error codes recognized by AIM 5.2 is present in this class as {@link
+ * #ERROR_ACCOUNT_DELETED ERROR_*} constants. Codes with the same meaning are
+ * given the same name, followed by a letter. To interpret these error codes
+ * correctly, a client should handle each <i>ERROR_*_[A-Z]</i> code as the same
+ * error code.
  *
  * @snac.src server
  * @snac.cmd 0x17 0x03
+ *
  * @see AuthRequest
  */
 public class AuthResponse extends AuthCommand {
@@ -61,23 +69,74 @@ public class AuthResponse extends AuthCommand {
      * An error code indicating that the screenname and/or password provided is
      * not valid.
      */
-    public static final int ERROR_INVALID_SN_OR_PASS = 0x0005;
-    /** An error code indicating that the user's account has been suspended. */
-    public static final int ERROR_ACCOUNT_SUSPENDED = 0x0011;
-    /** An error code indicating that AIM is currently unavailable. */
-    public static final int ERROR_TEMP_UNAVAILABLE = 0x0014;
+    public static final int ERROR_INVALID_SN_OR_PASS_A = 1;
     /**
-     * An error code indicating that the user has been connecting too
-     * frequently. When this happens WinAIM suggests that the user wait ten
-     * minutes to reconnect, but you really don't have to wait all that long
-     * in my experience.
+     * See {@link #ERROR_INVALID_SN_OR_PASS_A} for a description of this code.
      */
-    public static final int ERROR_CONNECTING_TOO_MUCH = 0x0018;
+    public static final int ERROR_INVALID_SN_OR_PASS_B = 4;
+    /**
+     * An error code indicating that the given password is wrong. AIM 5.2
+     * suggests that in this case, the user delete his or her "stored password"
+     * and re-enter it on the signon screen.
+     */
+    public static final int ERROR_BAD_PASSWORD = 5;
+    /**
+     * An error code indicating that the format of the <code>AuthRequest</code>
+     * SNAC was invalid. AIM 5.2 says "internal error."
+     */
+    public static final int ERROR_BAD_INPUT = 6;
+    /**
+     * An error code indicating that the user's account has been deleted.
+     */
+    public static final int ERROR_ACCOUNT_DELETED = 8;
+    /**
+     * An error code indicating that the user's signing on has been blocked for
+     * some reason.
+     */
+    public static final int ERROR_SIGNON_BLOCKED = 17;
+    /** An error code indicating that AIM is currently unavailable. */
+    public static final int ERROR_TEMP_UNAVAILABLE_A = 12;
+    /** See {@link #ERROR_TEMP_UNAVAILABLE_A} for a description of this code. */
+    public static final int ERROR_TEMP_UNAVAILABLE_B = 13;
+    /** See {@link #ERROR_TEMP_UNAVAILABLE_A} for a description of this code. */
+    public static final int ERROR_TEMP_UNAVAILABLE_C = 19;
+    /** See {@link #ERROR_TEMP_UNAVAILABLE_A} for a description of this code. */
+    public static final int ERROR_TEMP_UNAVAILABLE_D = 20;
+    /** See {@link #ERROR_TEMP_UNAVAILABLE_A} for a description of this code. */
+    public static final int ERROR_TEMP_UNAVAILABLE_E = 21;
+    /** See {@link #ERROR_TEMP_UNAVAILABLE_A} for a description of this code. */
+    public static final int ERROR_TEMP_UNAVAILABLE_F = 26;
+    /** See {@link #ERROR_TEMP_UNAVAILABLE_A} for a description of this code. */
+    public static final int ERROR_TEMP_UNAVAILABLE_G = 31;
+    /**
+     * An error code indicating that the user has been reconnecting too
+     * frequently, and should try again.
+     */
+    public static final int ERROR_CONNECTING_TOO_MUCH_A = 24;
+    /**
+     * See {@link #ERROR_CONNECTING_TOO_MUCH_A} for a description of this code.
+     */
+    public static final int ERROR_CONNECTING_TOO_MUCH_B = 28;
     /**
      * An error code indicating that the client software is too old to connect
      * to AIM anymore.
      */
-    public static final int ERROR_CLIENT_TOO_OLD = 0x001c;
+    public static final int ERROR_CLIENT_TOO_OLD = 27;
+    /**
+     * An error code that does not show any dialog in AIM 5.2. Instead, it
+     * brings the user back to the signon screen without warning.
+     */
+    public static final int ERROR_SOMETHING_FUNNY = 28;
+    /**
+     * An error code indicating that the user entered an invalid SecurID. This
+     * code normally only applies to AIM administrators/moderators.
+     */
+    public static final int ERROR_INVALID_SECURID = 32;
+    /**
+     * An error code indicating that the user is under 13 years of age, and thus
+     * cannot use AIM.
+     */
+    public static final int ERROR_UNDER_13 = 34;
 
     /** A TLV type containing the user's screenname. */
     private static final int TYPE_SN = 0x0001;
@@ -181,7 +240,7 @@ public class AuthResponse extends AuthCommand {
      * Creates an outgoing authorization response command with the given error
      * code and URL and no other properties.
      *
-     * @param errorCode an error code, like {@link #ERROR_ACCOUNT_SUSPENDED}
+     * @param errorCode an error code, like {@link #ERROR_ACCOUNT_DELETED}
      * @param errorUrl a URL explaining the given error code, or
      *        <code>null</code> for none
      */
@@ -337,34 +396,29 @@ public class AuthResponse extends AuthCommand {
         }
     }
 
-    /** A regular expression pattern matching ERROR_* fields in this class. */
-    private static final Pattern errorFieldRE = Pattern.compile("ERROR_.*");
-    /**
-     * A regular expression pattern matching REGSTATUS_* fields in this class.
-     */
-    private static final Pattern regFieldRE = Pattern.compile("REGSTATUS_.*");
-
     public String toString() {
         String errorName = null;
         if (errorCode != -1) {
             errorName = MiscTools.findIntField(AuthResponse.class, errorCode,
-                    errorFieldRE);
+                    "ERROR_.*");
         }
         String regName = null;
         if (regstatus != -1) {
             regName = MiscTools.findIntField(AcctModCmd.class, regstatus,
-                    regFieldRE);
+                    "REGSTATUS_.*");
         }
 
         return "AuthResponse: " +
                 "sn='" + sn + "'" +
                 ", server='" + server + "'" +
                 ", port=" + port +
-                (regstatus == -1 ? "" : ", regStatus=0x" + Integer.toHexString(regstatus)
+                (regstatus == -1 ? "" : ", regStatus=0x"
+                + Integer.toHexString(regstatus)
                 + " (" + (regName == null ? "unknown status code" : regName)
                 + ")") +
                 ", email='" + email + "'" +
-                (errorCode == -1 ? "" : ", errorCode=0x" + Integer.toHexString(errorCode)
+                (errorCode == -1 ? "" : ", errorCode=0x"
+                + Integer.toHexString(errorCode)
                 + " (" + (errorName == null ? "unknown error code" : errorName)
                 + ")") +
                 (errorUrl == null ? "" : ", errorURL='" + errorUrl + "'");
