@@ -46,7 +46,7 @@ import net.kano.joscar.snac.SnacCmdFactory;
  */
 public class ClientChatCmdFactory implements SnacCmdFactory {
     /** A list of command types supported by this factory. */
-    private static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
+    protected static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
         new CmdType(ChatCommand.FAMILY_CHAT, ChatCommand.CMD_ROOM_UPDATE),
         new CmdType(ChatCommand.FAMILY_CHAT, ChatCommand.CMD_USERS_JOINED),
         new CmdType(ChatCommand.FAMILY_CHAT, ChatCommand.CMD_USERS_LEFT),

@@ -46,7 +46,7 @@ import net.kano.joscar.snac.SnacCmdFactory;
  */
 public class ServerAuthCmdFactory implements SnacCmdFactory {
     /** A list of command types supported by this package. */
-    private static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
+    protected static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
         new CmdType(AuthCommand.FAMILY_AUTH, AuthCommand.CMD_KEY_REQ),
         new CmdType(AuthCommand.FAMILY_AUTH, AuthCommand.CMD_AUTH_REQ)
     };

@@ -72,7 +72,7 @@ public final class OscarTools {
      * @param data the block containing a single-byte length followed by a
      *        screen name in US-ASCII format
      * @return an object containing the screenname and the total number of bytes
-     *         read
+     *         read, or <code>null</code>
      */
     public static StringBlock readScreenname(ByteBlock data) {
         if (data.getLength() < 1) return null;

@@ -49,18 +49,24 @@ import java.io.OutputStream;
 import java.util.Arrays;
 
 /**
- * A SNAC command used to set the user's list of {@linkplain ExtraInfoBlock
- * "extra info blocks."}
+ * A SNAC command used to set the user's online status (ICQ-only) and the list
+ * of {@linkplain ExtraInfoBlock "extra info blocks."}
  *
  * @snac.src client
  * @snac.cmd 0x01 0x1e
  */
 public class SetExtraInfoCmd extends ConnCommand {
+    public static final int ICQSTATUS_NONE = -1;
+
+    /** A TLV type for the ICQ online status. */
+    private static final int TYPE_ICQSTATUS = 0x0006;
     /** A TLV type for the extra info blocks. */
     private static final int TYPE_DATA = 0x001d;
 
+    /** The user's ICQ online status, if any. */
+    private final long icqstatus;
     /** The extra info blocks stored in this command. */
-    private ExtraInfoBlock[] blocks;
+    private final ExtraInfoBlock[] blocks;
 
     /**
      * Generates a new set-extra-info-blocks command from the given incoming
@@ -75,6 +81,13 @@ public class SetExtraInfoCmd extends ConnCommand {
 
         TlvChain chain = TlvTools.readChain(data);
 
+        Tlv statusTlv = chain.getLastTlv(TYPE_ICQSTATUS);
+        if (statusTlv != null) {
+            icqstatus = statusTlv.getDataAsUInt();
+        } else {
+            icqstatus = -1;
+        }
+
         Tlv dataTlv = chain.getLastTlv(TYPE_DATA);
 
         if (dataTlv != null) {
@@ -86,18 +99,35 @@ public class SetExtraInfoCmd extends ConnCommand {
         }
     }
 
+    public SetExtraInfoCmd(ExtraInfoBlock[] blocks) {
+        this(ICQSTATUS_NONE, blocks);
+    }
+
     /**
      * Creates a new set-extra-info-blocks command containing the given extra
-     * information blocks.
+     * information blocks and with the given ICQ status code.
      *
+     * @param icqstatus an ICQ availability status code
      * @param blocks a list of extra information blocks
      */
-    public SetExtraInfoCmd(ExtraInfoBlock[] blocks) {
+    public SetExtraInfoCmd(int icqstatus, ExtraInfoBlock[] blocks) {
         super(CMD_SETEXTRAINFO);
 
+        DefensiveTools.checkRange(icqstatus, "icqstatus", -1);
+
+        this.icqstatus = icqstatus;
         this.blocks = (ExtraInfoBlock[]) DefensiveTools.getSafeNonnullArrayCopy(
                 blocks, "blocks");
     }
+
+    /**
+     * Returns the ICQ online status sent in this command, or <code>-1</code> if
+     * this field was not set.
+     *
+     * @return this command's ICQ online status, or <code>-1</code> if this
+     *         field was not set
+     */
+    public final long getIcqStatus() { return icqstatus; }
 
     /**
      * Returns a list of the extra info blocks sent in this command.
@@ -109,6 +139,9 @@ public class SetExtraInfoCmd extends ConnCommand {
     }
 
     public void writeData(OutputStream out) throws IOException {
+        if (icqstatus != -1) {
+            Tlv.getUIntInstance(TYPE_ICQSTATUS, icqstatus).write(out);
+        }
         if (blocks != null) {
             ByteArrayOutputStream bout = new ByteArrayOutputStream();
             for (int i = 0; i < blocks.length; i++) {
@@ -120,6 +153,7 @@ public class SetExtraInfoCmd extends ConnCommand {
 
     public String toString() {
         return "SetExtraInfoCmd: blocks="
-                + (blocks == null ? null : Arrays.asList(blocks));
+                + (blocks == null ? null : Arrays.asList(blocks))
+                + (icqstatus != -1 ? ", icqstatus=" + icqstatus : "");
     }
 }

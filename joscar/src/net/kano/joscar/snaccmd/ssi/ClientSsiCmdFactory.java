@@ -46,7 +46,7 @@ import net.kano.joscar.snac.SnacCmdFactory;
  */
 public class ClientSsiCmdFactory implements SnacCmdFactory {
     /** The SNAC command types supported by this factory. */
-    private static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
+    protected static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
         new CmdType(SsiCommand.FAMILY_SSI, SsiCommand.CMD_RIGHTS),
         new CmdType(SsiCommand.FAMILY_SSI, SsiCommand.CMD_SSI_DATA),
         new CmdType(SsiCommand.FAMILY_SSI, SsiCommand.CMD_UNCHANGED),

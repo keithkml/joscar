@@ -46,7 +46,7 @@ import net.kano.joscar.snac.SnacCmdFactory;
  */
 public class ClientSearchCmdFactory implements SnacCmdFactory {
     /** The SNAC command types supported by this factory. */
-    private static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
+    protected static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
         new CmdType(SearchCommand.FAMILY_SEARCH, SearchCommand.CMD_INTERESTS),
         new CmdType(SearchCommand.FAMILY_SEARCH, SearchCommand.CMD_RESULTS),
     };

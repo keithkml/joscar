@@ -46,7 +46,7 @@ import net.kano.joscar.snac.SnacCmdFactory;
  */
 public class ClientConnCmdFactory implements SnacCmdFactory {
     /** A list of command types supported by this factory. */
-    private static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
+    protected static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
         new CmdType(ConnCommand.FAMILY_CONN, ConnCommand.CMD_SERVER_READY),
         new CmdType(ConnCommand.FAMILY_CONN, ConnCommand.CMD_SERV_VERS),
         new CmdType(ConnCommand.FAMILY_CONN, ConnCommand.CMD_RATE_INFO),

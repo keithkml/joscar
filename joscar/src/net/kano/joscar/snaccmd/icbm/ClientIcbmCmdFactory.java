@@ -47,7 +47,7 @@ import net.kano.joscar.snaccmd.AbstractIcbm;
  */
 public class ClientIcbmCmdFactory implements SnacCmdFactory {
     /** The supported SNAC command types. */
-    private static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
+    protected static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
         new CmdType(IcbmCommand.FAMILY_ICBM, IcbmCommand.CMD_PARAM_INFO),
         new CmdType(IcbmCommand.FAMILY_ICBM, IcbmCommand.CMD_ICBM),
         new CmdType(IcbmCommand.FAMILY_ICBM, IcbmCommand.CMD_RECV_TYPING),

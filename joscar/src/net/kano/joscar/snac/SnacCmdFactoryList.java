@@ -67,7 +67,7 @@ public abstract class SnacCmdFactoryList {
       * @param type the command type to register
       * @param factory the factory to be registered with the given command type
       */
-    protected synchronized final void register(CmdType type,
+    public synchronized final void register(CmdType type,
             SnacCmdFactory factory) {
         DefensiveTools.checkNull(type, "type");
 
@@ -82,7 +82,7 @@ public abstract class SnacCmdFactoryList {
      *
      * @param factory the factory to register
      */
-    protected synchronized final void registerAll(
+    public synchronized final void registerAll(
             SnacCmdFactory factory) {
         DefensiveTools.checkNull(factory, "factory");
 
@@ -102,7 +102,7 @@ public abstract class SnacCmdFactoryList {
      *        unregistered
      * @param factory the factory to unregister for the given type
      */
-    protected synchronized final void unregister(CmdType type,
+    public synchronized final void unregister(CmdType type,
             SnacCmdFactory factory) {
         DefensiveTools.checkNull(type, "type");
 
@@ -117,7 +117,7 @@ public abstract class SnacCmdFactoryList {
      *
      * @param factory the factory to completely unregister
      */
-    protected synchronized final void unregisterAll(SnacCmdFactory factory) {
+    public synchronized final void unregisterAll(SnacCmdFactory factory) {
         DefensiveTools.checkNull(factory, "factory");
 
         Collection c = factories.values();
@@ -130,7 +130,7 @@ public abstract class SnacCmdFactoryList {
      * Unregisters all SNAC factories from all registered command types.
      * Effectively resets this factory list.
      */
-    protected synchronized final void unregisterAll() {
+    public synchronized final void unregisterAll() {
         factories.clear();
     }
 
