@@ -38,7 +38,6 @@ package net.kano.joscar.snaccmd.conn;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
-import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
 import net.kano.joscar.tlv.TlvTools;
@@ -101,7 +100,9 @@ public class ServiceRedirect extends ConnCommand {
                 String portString = hostString.substring(colonPos + 1);
                 try {
                     portTmp = Integer.parseInt(portString);
-                } catch (NumberFormatException e) { }
+                } catch (NumberFormatException e) {
+                    // it's okay; we'll use -1
+                }
                 port = portTmp;
             } else {
                 host = hostString;

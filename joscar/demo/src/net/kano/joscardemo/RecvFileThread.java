@@ -39,8 +39,8 @@ import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rvcmd.sendfile.FileSendAcceptRvCmd;
 import net.kano.joscar.rvproto.ft.FileTransferChecksum;
 import net.kano.joscar.rvproto.ft.FileTransferHeader;
-import net.kano.joscartests.security.SecureSession;
-import net.kano.joscartests.security.SecureSessionException;
+import net.kano.joscardemo.security.SecureSession;
+import net.kano.joscardemo.security.SecureSessionException;
 
 import java.io.File;
 import java.io.FileInputStream;

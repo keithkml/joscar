@@ -58,10 +58,11 @@
   <property name="tests.reports" location="${tests.home}/reports" />
 
   <property name="share" location="share" />
-  <property name="taglets.bin" location="${share}/build" />
-  <property name="tasks.bin" location="${share}/build" />
+  <property name="taglets.bin" location="${share}/bin" />
+  <property name="tasks.bin" location="${share}/bin" />
 
-  <property name="demo.bin" location="demo" />
+  <property name="demo.bin" location="demo/bin" />
+  <property name="demo.src" location="demo/src" />
 
 
   <target name="version">
@@ -101,7 +102,7 @@
 
   <target name="demo" depends="joscar">
     <mkdir dir="${demo.bin}" />
-    <javac srcdir="${joscar.src}" includes="net/kano/joscartests/"
+    <javac srcdir="${demo.src}" includes="net/kano/joscardemo/"
            classpath="${joscar.bin}" destdir="${demo.bin}" />
   </target>
 
@@ -112,7 +113,7 @@
     <input message="Type password for ${demo.sn} and press Enter" 
            addproperty="demo.pass" />
     <java classpath="bin:demo" fork="true" 
-          classname="net.kano.joscartests.JoscarTester">
+          classname="net.kano.joscardemo.JoscarTester">
       <arg value="${demo.sn}" />
       <arg value="${demo.pass}" />
     </java>
