@@ -299,15 +299,12 @@ public class GetFileEntry implements LiveWritable {
         new Tlv(TYPE_SENTINEL).write(out);
     }
 
-    /** A regular expression pattern matching FLAG_* flags of this class. */
-    private static final Pattern flagFieldRE = Pattern.compile("FLAG_.*");
-
     public String toString() {
         return "GetFileEntry: file=<" + filename + ">, "
                 + ((float) filesize / 1024)
                 + " KB, last modified " + new Date(lastmod * 1000)
                 + " (flags=" + flags + " - "
                 + MiscTools.getFlagFieldsString(GetFileEntry.class, flags,
-                        flagFieldRE) + ")";
+                        "FLAG_.*") + ")";
     }
 }

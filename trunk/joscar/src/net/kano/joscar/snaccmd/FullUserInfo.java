@@ -869,24 +869,17 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
         chain.write(out);
     }
 
-    /** A regular expression pattern matching MASK_* fields in this class. */
-    private static final Pattern flagFieldRE = Pattern.compile("MASK_.*");
-    /**
-     * A regular expression pattern matching ICQSTATUS_* fields in this class.
-     */
-    private static final Pattern icqFieldRE = Pattern.compile("ICQSTATUS_.*");
-
     public String toString() {
         return "UserInfo for " + sn + 
                 (warningLevel != null && warningLevel.intValue() != 0
                 ? " <" + warningLevel.floatValue() + "%>"  : "") +
                 ": flags=0x" + Integer.toHexString(flags) + " ("
                 + MiscTools.getFlagFieldsString(FullUserInfo.class, flags,
-                        flagFieldRE) + ")" +
+                        "MASK_.*") + ")" +
 
                 (icqstatus == -1 ? "" : ", ICQ status=" 
                 + MiscTools.getFlagFieldsString(FullUserInfo.class, icqstatus,
-                        icqFieldRE)) +
+                        "ICQSTATUS_.*")) +
 
                 (accountCreated != null ? ", acctCrtd=" + accountCreated : "") +
 

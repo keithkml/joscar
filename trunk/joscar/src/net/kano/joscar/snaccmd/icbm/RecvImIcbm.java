@@ -55,7 +55,7 @@ import java.io.OutputStream;
  *
  * @see SendImIcbm
  */
-public class RecvImIcbm extends AbstractImIcbm {
+public class RecvImIcbm extends AbstractImIcbm implements RecvIcbm {
     /** A TLV type present if the sender supports typing notification. */
     private static final int TYPE_CAN_TYPE = 0x000b;
 
@@ -123,9 +123,7 @@ public class RecvImIcbm extends AbstractImIcbm {
      *
      * @return a user information block for the sender of this IM
      */
-    public final FullUserInfo getSenderInfo() {
-        return userInfo;
-    }
+    public final FullUserInfo getSenderInfo() { return userInfo; }
 
     /**
      * Returns whether or not the sender supports {@linkplain

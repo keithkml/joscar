@@ -40,6 +40,7 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.MiscTools;
 import net.kano.joscar.Writable;
+import net.kano.joscar.snaccmd.WarningLevel;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -79,9 +80,9 @@ public class ParamInfo implements Writable {
     /** The maximum length of a message that can be sent and received. */
     private final int maxMsgLen;
     /** The maximum warning level that one can have to send a message. */
-    private final int maxSenderWarning;
+    private final WarningLevel maxSenderWarning;
     /** The maximum warning level that one can have to receive a message. */
-    private final int maxReceiverWarning;
+    private final WarningLevel maxReceiverWarning;
     /** The minimum distance between IM's to or from the client. */
     private final long minMsgInterval;
 
@@ -101,8 +102,10 @@ public class ParamInfo implements Writable {
         int maxchan = BinaryTools.getUShort(block, 0);
         long flags = BinaryTools.getUInt(block, 2);
         int maxmsglen = BinaryTools.getUShort(block, 6);
-        int maxsendwarn = BinaryTools.getUShort(block, 8);
-        int maxrecvwarn = BinaryTools.getUShort(block, 10);
+        WarningLevel maxsendwarn = WarningLevel.getInstanceFromX10(
+                BinaryTools.getUShort(block, 8));
+        WarningLevel maxrecvwarn = WarningLevel.getInstanceFromX10(
+                BinaryTools.getUShort(block, 10));
         long minint = BinaryTools.getUInt(block, 12);
 
         return new ParamInfo(maxchan, flags, maxmsglen, maxsendwarn,
@@ -138,8 +141,8 @@ new ParamInfo(ParamInfo.FLAGS_MISSEDCALLS_ALLOWED
      *        messages to or from the client, in milliseconds (WinAIM uses
      *        <code>0</code>)
      */
-    public ParamInfo(long flags, int maxMsgLen, int maxSenderWarning,
-            int maxReceiverWarning, long minMsgInterval) {
+    public ParamInfo(long flags, int maxMsgLen, WarningLevel maxSenderWarning,
+            WarningLevel maxReceiverWarning, long minMsgInterval) {
         this(MAXCHAN_DEFAULT, flags, maxMsgLen, maxSenderWarning,
                 maxReceiverWarning, minMsgInterval);
     }
@@ -175,12 +178,13 @@ new ParamInfo(ParamInfo.FLAGS_MISSEDCALLS_ALLOWED
      *        <code>0</code>)
      */
     public ParamInfo(int maxChannel, long flags, int maxMsgLen,
-            int maxSenderWarning, int maxReceiverWarning, long minMsgInterval) {
+            WarningLevel maxSenderWarning, WarningLevel maxReceiverWarning,
+            long minMsgInterval) {
         DefensiveTools.checkRange(maxChannel, "maxChannel", 0);
         DefensiveTools.checkRange(flags, "flags", 0);
         DefensiveTools.checkRange(maxMsgLen, "maxMsgLen", 0);
-        DefensiveTools.checkRange(maxSenderWarning, "maxSenderWarning", 0);
-        DefensiveTools.checkRange(maxReceiverWarning, "maxReceiverWarning", 0);
+        DefensiveTools.checkNull(maxSenderWarning, "maxSenderWarning");
+        DefensiveTools.checkNull(maxReceiverWarning, "maxReceiverWarning");
         DefensiveTools.checkRange(minMsgInterval, "minMsgInterval", 0);
 
         this.maxChannel = maxChannel;
@@ -231,25 +235,23 @@ if ((paramInfo.getFlags() & ParamInfo.FLAG_TYPING_NOTIFICATION) != 0) {
 
     /**
      * Returns the maximum warning level necessary for sending IM's to or from
-     * the client, as a percentage times 10. This defaults to <code>999</code>,
-     * for <code>99.9%</code>.
+     * the client.
      *
      * @return the maximum warning level necessary for sending IM's to or from
      *         the client
      */
-    public final int getMaxSenderWarning() {
+    public final WarningLevel getMaxSenderWarning() {
         return maxSenderWarning;
     }
 
     /**
      * Returns the maximum warning level necessary for receiving IM's by the
-     * client or those sent by the client to another user, as a percentage times
-     * 10. This defaults to <code>999</code>, for <code>99.9%</code>.
+     * client or those sent by the client to another use.
      *
      * @return the maximum warning level necessary for receiving IM's by the
      *         client and receiving IM's sent by the client to another user
      */
-    public final int getMaxReceiverWarning() {
+    public final WarningLevel getMaxReceiverWarning() {
         return maxReceiverWarning;
     }
 
@@ -271,20 +273,17 @@ if ((paramInfo.getFlags() & ParamInfo.FLAG_TYPING_NOTIFICATION) != 0) {
         BinaryTools.writeUShort(out, maxChannel);
         BinaryTools.writeUInt(out, flags);
         BinaryTools.writeUShort(out, maxMsgLen);
-        BinaryTools.writeUShort(out, maxSenderWarning);
-        BinaryTools.writeUShort(out, maxReceiverWarning);
+        BinaryTools.writeUShort(out, maxSenderWarning.getX10Value());
+        BinaryTools.writeUShort(out, maxReceiverWarning.getX10Value());
         BinaryTools.writeUInt(out, minMsgInterval);
     }
-
-    /** A regular expression pattern matching FLAG_* fields in this class. */
-    private static final Pattern flagFieldRE = Pattern.compile("FLAG_.*");
 
     public String toString() {
         return "ParamInfo: " +
                 "maxChannel=" + maxChannel +
                 ", flags=0x" + Long.toHexString(flags)
                 + " (" + MiscTools.getFlagFieldsString(ParamInfo.class, flags,
-                        flagFieldRE) + ")" +
+                        "FLAG_.*") + ")" +
                 ", maxMsgLen=" + maxMsgLen +
                 ", maxSenderWarning=" + maxSenderWarning +
                 ", maxReceiverWarning=" + maxReceiverWarning +

@@ -38,6 +38,7 @@ package net.kano.joscar.snaccmd.chat;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.FullUserInfo;
+import net.kano.joscar.snaccmd.icbm.RecvIcbm;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
 
@@ -50,7 +51,7 @@ import java.io.OutputStream;
  * @snac.src server
  * @snac.cmd 0x0e 0x06
  */
-public class RecvChatMsgIcbm extends AbstractChatMsgIcbm {
+public class RecvChatMsgIcbm extends AbstractChatMsgIcbm implements RecvIcbm {
     /**
      * A TLV type containing the user info block of the sender of this message.
      */

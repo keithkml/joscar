@@ -295,13 +295,10 @@ public class SsiItem implements LiveWritable, Serializable {
         if (data != null) data.write(out);
     }
 
-    /** A regular expression pattern matching TYPE_* fields in this class. */
-    private static final Pattern typeFieldRE = Pattern.compile("TYPE_.*");
-
     public String toString() {
         return "SsiItem '" + name + "', type=0x" + Integer.toHexString(type)
                 + " (" + MiscTools.findIntField(SsiItem.class, type,
-                        typeFieldRE) + "), parentid=0x"
+                        "TYPE_.*") + "), parentid=0x"
                 + Integer.toHexString(parentid) + ", id=0x"
                 + Integer.toHexString(id);
     }

@@ -220,13 +220,10 @@ public final class ExtraInfoBlock implements Writable {
         if (extraData != null) extraData.write(out);
     }
 
-    /** A regular expression pattern matching TYPE_* fields in this class. */
-    private static final Pattern typeFieldRE = Pattern.compile("TYPE_.*");
-
     public String toString() {
         return "ExtraInfoBlock: type=0x" + Long.toHexString(type) + " ("
                 + MiscTools.findIntField(ExtraInfoBlock.class, type,
-                        typeFieldRE)+ ")"
+                        "TYPE_.*")+ ")"
                 + ", extraData=<" + extraData + ">";
     }
 }

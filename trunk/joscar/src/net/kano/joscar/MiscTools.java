@@ -94,12 +94,13 @@ public final class MiscTools {
      *
      * @param cl a class
      * @param value the value to search for
-     * @param p a pattern that matches the fields to be searched, or
-     *        <code>null</code> to match all fields of the class
+     * @param pattern a regular expression pattern that matches the fields to be
+     *        searched, or <code>null</code> to match all fields of the class
      * @return the name of a field matching the given constraints
      */
-    public static String findIntField(Class cl, long value, Pattern p) {
+    public static String findIntField(Class cl, long value, String pattern) {
         Field[] fields = cl.getFields();
+        Pattern p = pattern == null ? null : Pattern.compile(pattern);
 
         for (int i = 0; i < fields.length; i++) {
             Field field = fields[i];
@@ -133,11 +134,13 @@ public final class MiscTools {
      *
      * @param cl a class
      * @param value the value to search for
-     * @param p a pattern that matches the fields to be searched, or
-     *        <code>null</code> to match all fields of the class
+     * @param pattern a regular expression pattern that matches the fields to be
+     *        searched, or <code>null</code> to match all fields of the class
      * @return the name of a field matching the given constraints
      */
-    public static String findEqualField(Class cl, Object value, Pattern p) {
+    public static String findEqualField(Class cl, Object value, String pattern) {
+        Pattern p = pattern == null ? null : Pattern.compile(pattern);
+
         Field[] fields = cl.getFields();
         for (int i = 0; i < fields.length; i++) {
             Field field = fields[i];
@@ -188,16 +191,16 @@ class Something {
      *
      * @param cl the class containing the fields
      * @param value the value to match
-     * @param pattern the regular expression pattern that matching fields must
-     *        match
+     * @param p the regular expression pattern that matching fields must match
      * @return an array of field names matching the given criteria
      *
-     * @see #getFlagFieldsString(Class, long, java.util.regex.Pattern)
+     * @see #getFlagFieldsString(Class, long, String)
      */
     public static String[] findFlagFields(Class cl, long value,
-            Pattern pattern) {
+            String p) {
         Field[] fields = cl.getFields();
         SortedMap matches = new TreeMap(Collections.reverseOrder());
+        Pattern pattern = p == null ? null : Pattern.compile(p);
 
         for (int i = 0; i < fields.length; i++) {
             Field field = fields[i];
@@ -258,7 +261,7 @@ class Something {
      * @return a string containing the names of the matching fields
      */
     public static String getFlagFieldsString(Class cl, long value,
-            Pattern pattern) {
+            String pattern) {
         String[] fields = findFlagFields(cl, value, pattern);
 
         StringBuffer b = new StringBuffer();

@@ -268,13 +268,10 @@ public final class ExtraInfoData implements Writable {
         }
     }
 
-    /** A regular expression pattern matching FLAG_* fields in this class. */
-    private static final Pattern flagFieldRE = Pattern.compile("FLAG_.*");
-
     public String toString() {
         return "ExtraInfoData: flags=0x" + Integer.toHexString(flags) + " ("
                 + MiscTools.getFlagFieldsString(ExtraInfoData.class, flags,
-                        flagFieldRE)+ ")"
+                        "FLAG_.*")+ ")"
                 + ", data=" + BinaryTools.describeData(data);
     }
 }

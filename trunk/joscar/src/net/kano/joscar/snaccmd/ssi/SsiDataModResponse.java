@@ -157,12 +157,6 @@ public class SsiDataModResponse extends SsiCommand {
         }
     }
 
-    /**
-     * A regular expression matching the names of the <code>RESULT_*</code>
-     * fields in this class.
-     */
-    private static final Pattern resultFieldRE = Pattern.compile("RESULT_.*");
-
     public String toString() {
         StringBuffer string = new StringBuffer();
         string.append("SsiDataModAck: results=");
@@ -174,7 +168,7 @@ public class SsiDataModResponse extends SsiCommand {
             string.append(Integer.toHexString(result));
 
             String field = MiscTools.findIntField(SsiDataModResponse.class,
-                    result, resultFieldRE);
+                    result, "RESULT_.*");
             if (field != null) {
                 string.append(" (");
                 string.append(field);

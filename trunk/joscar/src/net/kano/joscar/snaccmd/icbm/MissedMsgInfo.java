@@ -207,12 +207,9 @@ public class MissedMsgInfo implements LiveWritable {
         BinaryTools.writeUShort(out, reason);
     }
 
-    /** A pattern matching the REASON_* fields of this class. */
-    private Pattern reasonFieldRE = Pattern.compile("REASON_.*");
-
     public String toString() {
         String reasonValue = MiscTools.findIntField(MissedMsgInfo.class, reason,
-                reasonFieldRE);
+                "REASON_.*");
         if (reasonValue == null) {
             reasonValue = "0x" + Integer.toHexString(reason);
         }

@@ -529,9 +529,6 @@ header.setScreenname("");
         hout.writeTo(out);
     }
 
-    /** A regular expression pattern matching FLAG_* fields in this class. */
-    private static final Pattern flagFieldRE = Pattern.compile("FLAG_.*");
-
     public synchronized String toString() {
         return "DirectIMHeader: " +
                 "msgid=" + messageId +
@@ -539,7 +536,7 @@ header.setScreenname("");
                 ", encoding=" + encoding +
                 ", flags=0x" + Long.toHexString(flags)
                 + " (" + MiscTools.getFlagFieldsString(DirectImHeader.class,
-                        flags, flagFieldRE)
+                        flags, "FLAG_.*")
                 + "), sn='" + sn + "'" +
                 ", headerSize=" + headerSize;
     }
