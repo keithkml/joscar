@@ -35,7 +35,7 @@
 
 package net.kano.aimcrypto.connection;
 
-import net.kano.aimcrypto.connection.StateInfo;
+
 
 public final class NotConnectedStateInfo extends StateInfo {
     private static final NotConnectedStateInfo INSTANCE = new NotConnectedStateInfo();

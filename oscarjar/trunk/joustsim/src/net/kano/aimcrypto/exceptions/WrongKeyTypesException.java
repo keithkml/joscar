@@ -35,7 +35,7 @@
 
 package net.kano.aimcrypto.exceptions;
 
-import net.kano.aimcrypto.exceptions.BadKeysException;
+
 
 public class WrongKeyTypesException extends BadKeysException {
     private final Class wrongPrivateKeyType;

@@ -35,8 +35,8 @@
 
 package net.kano.aimcrypto;
 
-import java.security.interfaces.RSAPrivateKey;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.RSAPrivateKey;
 
 public class KeyPair {
     private final RSAPrivateKey privateKey;

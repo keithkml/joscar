@@ -36,16 +36,16 @@
 package net.kano.aimcrypto.connection.oscar.service.info;
 
 import net.kano.aimcrypto.Screenname;
-import net.kano.joscar.snaccmd.loc.GetDirInfoCmd;
-import net.kano.joscar.snaccmd.loc.DirInfoCmd;
-import net.kano.joscar.snaccmd.DirInfo;
-import net.kano.joscar.snac.SnacRequestAdapter;
-import net.kano.joscar.snac.SnacResponseEvent;
-import net.kano.joscar.snac.SnacRequestTimeoutEvent;
 import net.kano.joscar.flapcmd.SnacCommand;
+import net.kano.joscar.snac.SnacRequestAdapter;
+import net.kano.joscar.snac.SnacRequestTimeoutEvent;
+import net.kano.joscar.snac.SnacResponseEvent;
+import net.kano.joscar.snaccmd.DirInfo;
+import net.kano.joscar.snaccmd.loc.DirInfoCmd;
+import net.kano.joscar.snaccmd.loc.GetDirInfoCmd;
 
-import java.util.Set;
 import java.util.Iterator;
+import java.util.Set;
 
 public class DirectoryInfoRequestManager extends InfoRequestManager {
     public DirectoryInfoRequestManager(InfoService service) {

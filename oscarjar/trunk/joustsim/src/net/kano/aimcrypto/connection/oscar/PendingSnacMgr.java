@@ -37,10 +37,10 @@ package net.kano.aimcrypto.connection.oscar;
 
 import net.kano.joscar.snac.SnacRequest;
 
-import java.util.Map;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.ArrayList;
+import java.util.Map;
 
 public class PendingSnacMgr {
     protected Map snacs = new HashMap();

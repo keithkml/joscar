@@ -35,8 +35,6 @@
 
 package net.kano.aimcrypto.config;
 
-import net.kano.joscar.MiscTools;
-
 import java.io.File;
 
 public abstract class DefaultFileBasedResource implements FileBasedResource {
@@ -56,7 +54,7 @@ public abstract class DefaultFileBasedResource implements FileBasedResource {
         return lastmod == lastModWhenLoaded;
     }
 
-    public synchronized boolean reloadIfNecessary() throws LoadingException {
+    public boolean reloadIfNecessary() throws LoadingException {
         if (isUpToDate()) {
             return false;
         }

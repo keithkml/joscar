@@ -38,8 +38,8 @@ package net.kano.aimcrypto.forms;
 import javax.swing.AbstractListModel;
 import javax.swing.MutableComboBoxModel;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Collection;
+import java.util.List;
 
 public class ListComboBoxModel
         extends AbstractListModel implements MutableComboBoxModel {

@@ -40,13 +40,14 @@ import net.kano.aimcrypto.config.BuddyCertificateInfo;
 import net.kano.aimcrypto.connection.oscar.service.Service;
 import net.kano.aimcrypto.connection.oscar.service.buddy.BuddyService;
 import net.kano.aimcrypto.connection.oscar.service.buddy.BuddyServiceListener;
+import net.kano.aimcrypto.connection.oscar.service.info.BuddyHashHolder;
 import net.kano.aimcrypto.connection.oscar.service.info.InfoService;
 import net.kano.aimcrypto.connection.oscar.service.info.InfoServiceListener;
-import net.kano.aimcrypto.connection.oscar.service.info.BuddyHashHolder;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.CapabilityBlock;
+import net.kano.joscar.snaccmd.CertificateInfo;
 import net.kano.joscar.snaccmd.DirInfo;
 import net.kano.joscar.snaccmd.FullUserInfo;
 import net.kano.joscar.snaccmd.ShortCapabilityBlock;
@@ -56,7 +57,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Arrays;
 
 public class BuddyInfoManager {
     private final AimConnection conn;
@@ -160,6 +160,10 @@ public class BuddyInfoManager {
                 if (certInfo != null) cacheCertInfo(certInfo);
                 buddyInfo.setCertificateInfo(certInfo);
             }
+
+            public void handleInvalidCertificates(InfoService service,
+                    Screenname buddy, CertificateInfo origCertInfo, Throwable ex) {
+            }
         });
     }
 
@@ -254,8 +258,7 @@ public class BuddyInfoManager {
     }
 
     public synchronized BuddyInfo getBuddyInfo(Screenname buddy) {
-        //TODO: should this never return null?
-        return (BuddyInfo) buddyInfos.get(buddy);
+        return getBuddyInfoInstance(buddy);
     }
 
     private void fireGlobalPropertyChangeEvent(PropertyChangeEvent evt) {

@@ -36,7 +36,6 @@
 package net.kano.aimcrypto.connection;
 
 import net.kano.aimcrypto.connection.oscar.loginstatus.LoginFailureInfo;
-import net.kano.aimcrypto.connection.StateInfo;
 import net.kano.joscar.DefensiveTools;
 
 public final class LoginFailureStateInfo extends StateInfo {

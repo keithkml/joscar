@@ -160,10 +160,10 @@ public class BuddyInfoTracker {
 
         BuddyInfo buddyInfo = buddyInfoMgr.getBuddyInfo(buddy);
         InfoService infoService = getInfoService();
-        if (buddyInfo == null || !buddyInfo.isCertificateInfoCurrent()) {
+        if (!buddyInfo.isCertificateInfoCurrent()) {
             infoService.requestCertificateInfo(buddy);
         }
-        if (buddyInfo == null || buddyInfo.isAway() && buddyInfo.getAwayMessage() == null) {
+        if (buddyInfo.isAway() && buddyInfo.getAwayMessage() == null) {
             infoService.requestAwayMessage(buddy);
         }
     }
@@ -174,7 +174,8 @@ public class BuddyInfoTracker {
 
         DefensiveTools.checkNull(buddy, "buddy");
 
-        //TODO: implement stopTracking
+        // there's nothing to do, since we don't register any listeners at the
+        // buddy level
     }
 
     public synchronized boolean isTracked(Screenname buddy) {

@@ -35,9 +35,8 @@
 
 package net.kano.aimcrypto.connection.oscar.service.buddy;
 
-import net.kano.joscar.snaccmd.FullUserInfo;
 import net.kano.aimcrypto.Screenname;
-import net.kano.aimcrypto.connection.oscar.service.buddy.BuddyService;
+import net.kano.joscar.snaccmd.FullUserInfo;
 
 public interface BuddyServiceListener {
     void gotBuddyStatus(BuddyService service, Screenname buddy,

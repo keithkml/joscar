@@ -37,12 +37,19 @@ package net.kano.aimcrypto.connection.oscar.service.bos;
 
 import net.kano.aimcrypto.connection.AimConnection;
 import net.kano.aimcrypto.connection.oscar.OscarConnection;
+import net.kano.aimcrypto.AimSession;
+import net.kano.aimcrypto.config.GeneralLocalPrefs;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.MiscTools;
+import net.kano.joscar.flapcmd.SnacCommand;
+import net.kano.joscar.snac.SnacPacketEvent;
 import net.kano.joscar.snaccmd.CertificateInfo;
 import net.kano.joscar.snaccmd.ExtraInfoBlock;
 import net.kano.joscar.snaccmd.ExtraInfoData;
 import net.kano.joscar.snaccmd.conn.SetEncryptionInfoCmd;
 import net.kano.joscar.snaccmd.conn.SetIdleCmd;
+import net.kano.joscar.snaccmd.conn.MyInfoRequest;
+import net.kano.joscar.snaccmd.conn.YourInfoCmd;
 
 import java.util.Date;
 
@@ -54,7 +61,7 @@ public class MainBosService extends BosService {
         super(aimConnection, oscarConnection);
     }
 
-    protected void beforeClientReady() {
+    protected void serverReady() {
         ExtraInfoBlock[] blocks = new ExtraInfoBlock[] {
             new ExtraInfoBlock(ExtraInfoBlock.TYPE_CERTINFO_HASHA,
                     new ExtraInfoData(ExtraInfoData.FLAG_HASH_PRESENT,
@@ -65,6 +72,21 @@ public class MainBosService extends BosService {
                             CertificateInfo.HASHB_DEFAULT)),
         };
         sendSnac(new SetEncryptionInfoCmd(blocks));
+        sendSnac(new MyInfoRequest());
+    }
+
+    public void handleSnacPacket(SnacPacketEvent snacPacketEvent) {
+        SnacCommand snac = snacPacketEvent.getSnacCommand();
+
+        if (snac instanceof YourInfoCmd) {
+            YourInfoCmd yic = (YourInfoCmd) snac;
+            String formattedsn = yic.getUserInfo().getScreenname();
+            AimSession session = getAimConnection().getAimSession();
+            GeneralLocalPrefs prefs = session.getLocalPrefs().getGeneralPrefs();
+            prefs.setScreennameFormat(formattedsn);
+        }
+
+        super.handleSnacPacket(snacPacketEvent);
     }
 
     public void setIdleSince(Date at) throws IllegalArgumentException {

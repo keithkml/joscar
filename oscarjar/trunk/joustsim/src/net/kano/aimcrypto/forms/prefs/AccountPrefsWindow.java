@@ -39,6 +39,7 @@ import net.kano.aimcrypto.AppSession;
 import net.kano.aimcrypto.Screenname;
 import net.kano.joscar.DefensiveTools;
 
+import javax.swing.AbstractAction;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
@@ -48,24 +49,21 @@ import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
+import javax.swing.JViewport;
+import javax.swing.KeyStroke;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
-import javax.swing.ScrollPaneLayout;
-import javax.swing.JViewport;
-import javax.swing.AbstractAction;
-import javax.swing.KeyStroke;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.EventQueue;
 import java.awt.Font;
-import java.awt.CardLayout;
-import java.awt.event.WindowFocusListener;
-import java.awt.event.WindowEvent;
-import java.awt.event.KeyEvent;
 import java.awt.event.ActionEvent;
-import java.util.Iterator;
+import java.awt.event.KeyEvent;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowFocusListener;
 
 public class AccountPrefsWindow extends JFrame {
     private JViewport currentPaneHolder;
@@ -156,6 +154,8 @@ public class AccountPrefsWindow extends JFrame {
     }
 
     private void updatePane() {
+        assert EventQueue.isDispatchThread();
+
         final PrefsPane current = (PrefsPane) sectionsList.getSelectedValue();
         final PrefsPane old;
         synchronized(this) {
@@ -171,6 +171,10 @@ public class AccountPrefsWindow extends JFrame {
             });
         }
         Component view = current == null ? null : current.getPrefsComponent();
+        if (current != null) {
+            currentPaneHolder.setView(null);
+            current.prefsPaneToBeShown();
+        }
         currentPaneHolder.setView(view);
         currentPaneHolder.repaint();
         if (current != null) {

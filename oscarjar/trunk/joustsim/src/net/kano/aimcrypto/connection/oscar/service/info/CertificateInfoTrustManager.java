@@ -35,23 +35,23 @@
 
 package net.kano.aimcrypto.connection.oscar.service.info;
 
-import net.kano.aimcrypto.TrustedCertificatesTracker;
-import net.kano.aimcrypto.TrustedCertsListener;
 import net.kano.aimcrypto.TrustedCertificateInfo;
+import net.kano.aimcrypto.TrustedCertificatesListener;
+import net.kano.aimcrypto.TrustedCertificatesTracker;
 import net.kano.aimcrypto.config.BuddyCertificateInfo;
-import net.kano.aimcrypto.config.DefaultCertificateHolder;
 import net.kano.aimcrypto.config.CertificateHolder;
-import net.kano.joscar.DefensiveTools;
+import net.kano.aimcrypto.config.DefaultCertificateHolder;
 import net.kano.joscar.CopyOnWriteArrayList;
+import net.kano.joscar.DefensiveTools;
 
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Iterator;
-import java.util.ArrayList;
-import java.util.List;
 
 public class CertificateInfoTrustManager {
     private final TrustedCertificatesTracker certTrustMgr;
@@ -65,7 +65,7 @@ public class CertificateInfoTrustManager {
 
         this.certTrustMgr = certTrustMgr;
 
-        certTrustMgr.addTrustedCertsListener(new TrustedCertsListener() {
+        certTrustMgr.addTrustedCertsListener(new TrustedCertificatesListener() {
             public void certificateTrusted(TrustedCertificatesTracker manager,
                     TrustedCertificateInfo info) {
                 handleCertChange(info.getCertificate());
@@ -171,6 +171,8 @@ public class CertificateInfoTrustManager {
         X509Certificate encCert = certInfo.getEncryptionCertificate();
         X509Certificate signingCert = certInfo.getSigningCertificate();
 
+        assert encCert != null && signingCert != null;
+
         BuddyHashHolder hashHolder = new BuddyHashHolder(certInfo.getBuddy(),
                 certInfo.getCertificateInfoHash());
         BuddyCertificateInfoHolder holder
@@ -184,9 +186,15 @@ public class CertificateInfoTrustManager {
         }
 
         certTrustMgr.addTrackedCertificate(encCert);
-        certTrustMgr.addTrackedCertificate(signingCert);
-        if (updateTrusted(holder)) {
+        if (signingCert != encCert) {
+            certTrustMgr.addTrackedCertificate(signingCert);
+        }
+        boolean trusted = updateTrusted(holder);
+        if (trusted) {
+            System.out.println("certificate for " + certInfo.getBuddy() + " is trusted");
             fireCertInfoTrustedEvent(holder);
+        } else {
+            System.out.println("certificate for " + certInfo.getBuddy() + " is NOT trusted");
         }
     }
 

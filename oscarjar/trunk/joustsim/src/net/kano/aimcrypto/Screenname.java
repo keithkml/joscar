@@ -35,8 +35,8 @@
 
 package net.kano.aimcrypto;
 
-import net.kano.joscar.OscarTools;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.OscarTools;
 
 public final class Screenname implements Comparable {
     private final String format;
@@ -54,6 +54,12 @@ public final class Screenname implements Comparable {
     public String getFormatted() { return format; }
 
     public String getNormal() { return normal; }
+
+    public boolean matches(String screenname) {
+        DefensiveTools.checkNull(screenname, "screenname");
+
+        return OscarTools.normalize(screenname).equals(normal);
+    }
 
     public int compareTo(Object o) {
         return format.compareTo(format);

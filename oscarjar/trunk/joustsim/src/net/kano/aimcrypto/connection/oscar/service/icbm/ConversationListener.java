@@ -35,15 +35,18 @@
 
 package net.kano.aimcrypto.connection.oscar.service.icbm;
 
-import net.kano.aimcrypto.connection.oscar.service.icbm.Conversation;
+
 
 public interface ConversationListener {
     /** This may never be called */
     void conversationOpened(Conversation c);
+    /** This may be called without ever calling conversationOpened */
+    void conversationClosed(Conversation c);
+
     /** This may be called after conversationClosed is called */
     void gotMessage(Conversation c, MessageInfo minfo);
     /** This may be called after conversationClosed is called */
     void sentMessage(Conversation c, MessageInfo minfo);
-    /** This may be called without ever calling conversationOpened */
-    void conversationClosed(Conversation c);
+
+    void canSendMessageChanged(Conversation c, boolean canSend);
 }

@@ -36,7 +36,6 @@
 package net.kano.aimcrypto.connection;
 
 import net.kano.aimcrypto.connection.oscar.loginstatus.LoginSuccessInfo;
-import net.kano.aimcrypto.connection.StateInfo;
 
 public final class ConnectingStateInfo extends StateInfo {
     private LoginSuccessInfo loginSuccessInfo;

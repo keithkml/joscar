@@ -35,33 +35,10 @@
 
 package net.kano.aimcrypto.connection.oscar;
 
-import net.kano.aimcrypto.Screenname;
-import net.kano.aimcrypto.connection.oscar.loginstatus.AuthFailureInfo;
-import net.kano.aimcrypto.connection.oscar.loginstatus.ClosedEarlyFailureInfo;
-import net.kano.aimcrypto.connection.oscar.loginstatus.DisconnectedFailureInfo;
-import net.kano.aimcrypto.connection.oscar.loginstatus.FlapErrorFailureInfo;
-import net.kano.aimcrypto.connection.oscar.loginstatus.LoginFailureInfo;
-import net.kano.aimcrypto.connection.oscar.loginstatus.LoginSuccessInfo;
-import net.kano.aimcrypto.connection.oscar.loginstatus.SnacErrorFailureInfo;
-import net.kano.aimcrypto.connection.oscar.loginstatus.TimeoutFailureInfo;
-import net.kano.aimcrypto.connection.oscar.service.login.LoginService;
 import net.kano.aimcrypto.connection.oscar.service.Service;
+import net.kano.aimcrypto.connection.oscar.service.login.LoginService;
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.flap.FlapCommand;
-import net.kano.joscar.flap.FlapPacketEvent;
-import net.kano.joscar.flapcmd.CloseFlapCmd;
-import net.kano.joscar.flapcmd.FlapErrorCmd;
-import net.kano.joscar.flapcmd.LoginFlapCmd;
-import net.kano.joscar.flapcmd.SnacCommand;
-import net.kano.joscar.snac.SnacResponseEvent;
-import net.kano.joscar.snac.SnacPacketEvent;
-import net.kano.joscar.snaccmd.auth.AuthRequest;
-import net.kano.joscar.snaccmd.auth.AuthResponse;
-import net.kano.joscar.snaccmd.auth.ClientVersionInfo;
-import net.kano.joscar.snaccmd.auth.KeyRequest;
-import net.kano.joscar.snaccmd.auth.KeyResponse;
 import net.kano.joscar.snaccmd.auth.AuthCommand;
-import net.kano.joscar.snaccmd.error.SnacError;
 
 import java.util.Timer;
 import java.util.TimerTask;
@@ -78,6 +55,7 @@ public class LoginConnection extends OscarConnection {
 
     public synchronized void setTimeoutSecs(int timeoutSecs) {
         checkFieldModify();
+
         DefensiveTools.checkRange(timeoutSecs, "timeoutSecs", 0);
 
         this.timeoutSecs = timeoutSecs;

@@ -41,7 +41,6 @@ import javax.swing.JFrame;
 import javax.swing.JTabbedPane;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import java.awt.LayoutManager;
 
 public class ImWindow extends JFrame {
     private JTabbedPane tabs;

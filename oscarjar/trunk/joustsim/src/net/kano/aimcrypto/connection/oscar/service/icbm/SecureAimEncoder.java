@@ -35,9 +35,9 @@
 
 package net.kano.aimcrypto.connection.oscar.service.icbm;
 
+import net.kano.aimcrypto.AimCertificateHolder;
 import net.kano.joscar.EncodedStringInfo;
 import net.kano.joscar.MinimalEncoder;
-import net.kano.aimcrypto.AimCertificateHolder;
 import org.bouncycastle.cms.CMSEnvelopedData;
 import org.bouncycastle.cms.CMSEnvelopedDataGenerator;
 import org.bouncycastle.cms.CMSException;

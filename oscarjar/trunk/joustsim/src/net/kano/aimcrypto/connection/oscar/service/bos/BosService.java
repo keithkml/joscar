@@ -43,7 +43,6 @@ import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.net.ClientConnEvent;
 import net.kano.joscar.ratelim.RateMonitor;
 import net.kano.joscar.snac.SnacPacketEvent;
-import net.kano.joscar.snaccmd.SnacFamilyInfoFactory;
 import net.kano.joscar.snaccmd.conn.ClientReadyCmd;
 import net.kano.joscar.snaccmd.conn.ClientVersionsCmd;
 import net.kano.joscar.snaccmd.conn.ConnCommand;
@@ -55,9 +54,6 @@ import net.kano.joscar.snaccmd.conn.ServerReadyCmd;
 import net.kano.joscar.snaccmd.conn.SnacFamilyInfo;
 
 import java.util.logging.Logger;
-import java.util.LinkedList;
-import java.util.ArrayList;
-import java.util.List;
 
 public class BosService extends Service {
     private static final Logger logger = Logger.getLogger(BosService.class.getName());
@@ -129,10 +125,18 @@ public class BosService extends Service {
 
             sendSnac(new RateAck(classes));
 
-            beforeClientReady();
-
-            setReady();
+            trySetReady();
         }
+    }
+
+    protected void trySetReady() {
+        reallySetReady();
+    }
+
+    protected void reallySetReady() {
+        beforeClientReady();
+
+        setReady();
     }
 
     protected void beforeClientReady() {

@@ -37,8 +37,8 @@ package net.kano.aimcrypto;
 
 import net.kano.joscar.DefensiveTools;
 
-import javax.swing.ImageIcon;
 import javax.swing.Icon;
+import javax.swing.ImageIcon;
 import javax.swing.UIManager;
 import java.net.URL;
 

@@ -35,21 +35,25 @@
 
 package net.kano.aimcrypto.config;
 
+import net.kano.aimcrypto.Screenname;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import org.bouncycastle.util.encoders.Base64;
 
-import java.util.Properties;
-import java.util.HashSet;
-import java.util.Set;
 import java.io.File;
-import java.io.IOException;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.channels.FileChannel;
+import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public final class PrefTools {
+    private static final Logger logger
+            = Logger.getLogger(PrefTools.class.getName());
+
     private PrefTools() { }
 
     public static String getBase64Decoded(String encoded) {
@@ -103,7 +107,8 @@ public final class PrefTools {
         try {
             channel.lock(0L, Long.MAX_VALUE, val);
         } catch (Exception nobigdeal) {
-            //TODO: file lock failed
+            logger.log(Level.WARNING, "Couldn't acquire lock for " + channel,
+                    nobigdeal);
         }
     }
 
@@ -155,5 +160,44 @@ public final class PrefTools {
 
     private static boolean deleteFile(File file) {
         return file.delete();
+    }
+
+    public static File getGlobalConfigDir(File configDir) {
+        return new File(configDir, "global");
+    }
+
+    public static File getLocalConfigDir(File configDir) {
+        return new File(configDir, "local");
+    }
+
+    public static File getConfigDir(File baseDir) {
+        return new File(baseDir, "config");
+    }
+
+    public static File getLocalPrefsDirForScreenname(File localPrefsDir,
+            Screenname sn) {
+        String normal = sn.getNormal();
+        if (normal.length() == 0) return null;
+        return new File(localPrefsDir, normal);
+    }
+
+    public static File getLocalCertsDir(File keysDir) {
+        return new File(keysDir, "certs");
+    }
+
+    public static File getTrustedSignersDir(File trustDir) {
+        return new File(trustDir, "trusted-signers");
+    }
+
+    public static File getTrustedCertsDir(File trustDir) {
+        return new File(trustDir, "trusted-certs");
+    }
+
+    public static File getLocalTrustDir(File localConfigDir) {
+        return new File(localConfigDir, "trust");
+    }
+
+    public static File getLocalKeysDir(File localConfigDir) {
+        return new File(localConfigDir, "local-keys");
     }
 }

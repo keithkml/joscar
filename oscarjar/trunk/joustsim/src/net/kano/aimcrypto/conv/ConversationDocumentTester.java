@@ -35,21 +35,17 @@
 
 package net.kano.aimcrypto.conv;
 
+import javax.swing.JFrame;
+import javax.swing.JTextPane;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
-import javax.swing.text.Element;
 import javax.swing.text.Document;
-import javax.swing.text.SimpleAttributeSet;
-import javax.swing.text.MutableAttributeSet;
-import javax.swing.text.StyleConstants;
+import javax.swing.text.Element;
 import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.HTMLEditorKit;
-import javax.swing.text.html.HTML;
 import javax.swing.text.html.StyleSheet;
-import javax.swing.JTextPane;
-import javax.swing.JFrame;
-import java.io.IOException;
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Enumeration;
 
@@ -96,7 +92,7 @@ public class ConversationDocumentTester extends HTMLDocument {
             for (;;) {
                 String line = br.readLine();
                 if (line == null) break;
-                AolRtfText convline = AolRtfText.readLine(ss, line);
+                AolRtfString convline = AolRtfString.readLine(ss, line);
                 ElementSpec[] els = convline.generateDocumentElements();
                 cd.insert(root.getEndOffset()-1, els);
                 printElTree(root);

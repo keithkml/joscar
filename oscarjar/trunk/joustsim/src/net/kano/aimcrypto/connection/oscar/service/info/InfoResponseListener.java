@@ -37,6 +37,7 @@ package net.kano.aimcrypto.connection.oscar.service.info;
 
 import net.kano.aimcrypto.Screenname;
 import net.kano.aimcrypto.config.BuddyCertificateInfo;
+import net.kano.joscar.snaccmd.CertificateInfo;
 import net.kano.joscar.snaccmd.DirInfo;
 
 public interface InfoResponseListener {
@@ -46,6 +47,8 @@ public interface InfoResponseListener {
             String awayMessage);
     void handleCertificateInfo(InfoService service, Screenname buddy,
             BuddyCertificateInfo certInfo);
+    void handleInvalidCertificates(InfoService service, Screenname buddy,
+            CertificateInfo origCertInfo, Throwable ex);
     void handleDirectoryInfo(InfoService service, Screenname buddy,
             DirInfo dirInfo);
 }

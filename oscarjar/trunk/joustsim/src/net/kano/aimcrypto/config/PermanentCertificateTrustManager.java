@@ -56,9 +56,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class PermanentCertificateTrustManager
         extends DefaultCertificateTrustManager implements FileBasedResource {
+    private static final Logger logger
+            = Logger.getLogger(PermanentCertificateTrustManager.class.getName());
+
     private static TrustedCertInfo loadCertificatePermanently(File loadedFromFile)
             throws NoSuchProviderException, CertificateException,
             IOException, IllegalArgumentException {
@@ -335,15 +340,9 @@ public class PermanentCertificateTrustManager
                         TrustedCertInfo info = loadCertificatePermanently(file);
                         addTrust(info);
                         addedInfos.add(info);
-                    } catch (NoSuchProviderException e) {
-                        //TODO: handle cert loading exception
-                        e.printStackTrace();
-                    } catch (CertificateException e) {
-                        e.printStackTrace();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } catch (CantBeAddedException e) {
-                        e.printStackTrace();
+                    } catch (Exception e) {
+                        logger.log(Level.WARNING, "Couldn't load trusted "
+                                + "certificate " + file.getName(), e);
                     }
                 }
             }

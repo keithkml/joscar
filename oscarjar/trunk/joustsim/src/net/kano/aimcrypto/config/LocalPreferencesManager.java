@@ -35,15 +35,18 @@
 
 package net.kano.aimcrypto.config;
 
-import net.kano.joscar.DefensiveTools;
-import net.kano.aimcrypto.connection.oscar.service.info.BuddyCertificateManager;
-import net.kano.aimcrypto.config.LocalKeysManager;
 import net.kano.aimcrypto.Screenname;
+import net.kano.joscar.DefensiveTools;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class LocalPreferencesManager {
+    private static final Logger logger
+            = Logger.getLogger(LocalPreferencesManager.class.getName());
+
     private final Screenname screenname;
     private final File configDir;
     private final File keysDir;
@@ -68,12 +71,13 @@ public class LocalPreferencesManager {
         this.screenname = screenname;
         this.configDir = localConfigDir;
 
-        this.keysDir = new File(this.configDir, "local-keys");
-        this.trustDir = new File(this.configDir, "trust");
-        this.trustedCertsDir = new File(trustDir, "trusted-certs");
-        this.trustedSignersDir = new File(trustDir, "trusted-signers");
+        this.keysDir = PrefTools.getLocalKeysDir(localConfigDir);
+        File trustDir = PrefTools.getLocalTrustDir(localConfigDir);
+        this.trustDir = trustDir;
+        this.trustedCertsDir = PrefTools.getTrustedCertsDir(trustDir);
+        this.trustedSignersDir = PrefTools.getTrustedSignersDir(trustDir);
 
-        this.generalPrefs = new GeneralLocalPrefs(screenname, this.configDir);
+        this.generalPrefs = new GeneralLocalPrefs(screenname, localConfigDir);
         this.localKeysManager = new LocalKeysManager(screenname, keysDir);
         this.certificateTrustManager = new PermanentCertificateTrustManager(
                 screenname, trustedCertsDir);
@@ -81,84 +85,131 @@ public class LocalPreferencesManager {
                 screenname, trustedSignersDir);
     }
 
-    public Screenname getScreenname() {
-        return screenname;
-    }
+    public Screenname getScreenname() { return screenname; }
 
-    public synchronized boolean saveAllPrefs() {
+    public boolean saveAllPrefs() {
         boolean perfect = true;
+
+        boolean loadedGeneralPrefs;
+        boolean loadedLocalKeys;
+
+        synchronized(this) {
+            loadedGeneralPrefs = this.loadedGeneralPrefs;
+            loadedLocalKeys = this.loadedLocalKeys;
+        }
+
         try {
             if (loadedGeneralPrefs) generalPrefs.savePrefs();
         } catch (Exception e) {
-            //TODO: saving general prefs failed
+            logger.log(Level.WARNING, "Couldn't save general preferences for "
+                    + screenname, e);
             perfect = false;
         }
         try {
             if (loadedLocalKeys) localKeysManager.savePrefs();
         } catch (Exception e) {
-            //TODO: saving security info failed
+            logger.log(Level.WARNING, "Couldn't save local keys preferences "
+                    + "for " + screenname, e);
             perfect = false;
         }
         return perfect;
     }
 
     public GeneralLocalPrefs getGeneralPrefs() {
+        boolean needsLoading;
+
         synchronized(this) {
             if (!loadedGeneralPrefs) {
-                loadedGeneralPrefs = true;
-                try {
-                    generalPrefs.loadPrefs();
-                } catch (IOException e) {
-                    //TODO: loading general prefs failed
-                    e.printStackTrace();
-                }
+                loadedGeneralPrefs= true;
+                needsLoading = true;
+            } else {
+                needsLoading = false;
+            }
+        }
+        if (needsLoading) {
+            try {
+                generalPrefs.loadPrefs();
+            } catch (IOException e) {
+                logger.log(Level.WARNING, "Couldn't load general preferences "
+                        + "for " + screenname, e);
             }
         }
         return generalPrefs;
     }
 
     public LocalKeysManager getLocalKeysManager() {
+        boolean needsLoading;
+
         synchronized(this) {
             if (!loadedLocalKeys) {
                 loadedLocalKeys = true;
-                try {
-                    localKeysManager.loadPrefs();
-                } catch (IOException e) {
-                    //TODO: loading prefs failed
-                    e.printStackTrace();
-                }
+                needsLoading = true;
+            } else {
+                needsLoading = false;
+            }
+        }
+        if (needsLoading) {
+            try {
+                localKeysManager.loadPrefs();
+            } catch (IOException e) {
+                logger.log(Level.WARNING, "Couldn't load local keys "
+                        + "preferences for " + screenname, e);
             }
         }
         return localKeysManager;
     }
 
-    public PermanentCertificateTrustManager getStoredCertificateTrustManager() {
-        synchronized(this) {
-            if (!loadedCertManager) {
-                loadedCertManager = true;
-                try {
-                    certificateTrustManager.reloadIfNecessary();
-                } catch (LoadingException e) {
-                    //TODO: loading trusted certs failed
-                    e.printStackTrace();
-                }
-            }
-        }
+    public PermanentCertificateTrustManager
+            getStoredCertificateTrustManager() {
+//        if (!loadedCertManager) {
+//            loadedCertManager = true;
+//            try {
+//                certificateTrustManager.reloadIfNecessary();
+//            } catch (LoadingException e) {
+//                logger.log(Level.WARNING, "Couldn't load certificate trust "
+//                        + "preferences for " + screenname, e);
+//            }
+//        }
         return certificateTrustManager;
     }
 
-    public PermanentSignerTrustManager getStoredSignerTrustManager() {
-        synchronized(this) {
-            if (!loadedSignerManager) {
-                loadedSignerManager = true;
-                try {
-                    signerTrustManager.reloadIfNecessary();
-                } catch (LoadingException e) {
-                    //TODO: loading trusted signers failed
-                    e.printStackTrace();
-                }
-            }
-        }
+    public PermanentSignerTrustManager
+            getStoredSignerTrustManager() {
+//        if (!loadedSignerManager) {
+//            loadedSignerManager = true;
+//            try {
+//                signerTrustManager.reloadIfNecessary();
+//            } catch (LoadingException e) {
+//                logger.log(Level.WARNING, "Couldn't load signer trust "
+//                        + "preferences for " + screenname, e);
+//            }
+//        }
         return signerTrustManager;
+    }
+
+    public boolean loadEverything() {
+        boolean perfect = true;
+        try {
+            getLocalKeysManager().reloadIfNecessary();
+        } catch (LoadingException e) {
+            logger.log(Level.WARNING, "Couldn't load local keys for "
+                    + screenname, e);
+            perfect = false;
+        }
+        try {
+            getStoredCertificateTrustManager().reloadIfNecessary();
+        } catch (LoadingException e) {
+            logger.log(Level.WARNING, "Couldn't load trusted certificates for "
+                    + screenname, e);
+            perfect = false;
+        }
+        try {
+            getStoredSignerTrustManager().reloadIfNecessary();
+        } catch (LoadingException e) {
+            logger.log(Level.WARNING, "Couldn't load trusted signers for "
+                    + screenname, e);
+            perfect = false;
+        }
+        return perfect;
     }
 }

@@ -37,11 +37,6 @@ package net.kano.aimcrypto.connection.oscar.service.icbm;
 
 import net.kano.aimcrypto.Screenname;
 import net.kano.aimcrypto.connection.AimConnection;
-import net.kano.aimcrypto.connection.oscar.service.icbm.Conversation;
-import net.kano.aimcrypto.connection.oscar.service.icbm.ConversationException;
-import net.kano.aimcrypto.connection.oscar.service.icbm.ConversationListener;
-import net.kano.aimcrypto.connection.oscar.service.icbm.IcbmService;
-import net.kano.joscar.snaccmd.icbm.SendImIcbm;
 
 import java.util.Iterator;
 

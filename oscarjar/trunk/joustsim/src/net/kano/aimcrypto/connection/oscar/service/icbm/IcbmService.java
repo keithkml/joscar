@@ -42,8 +42,6 @@ import net.kano.aimcrypto.connection.BuddyInfo;
 import net.kano.aimcrypto.connection.BuddyInfoManager;
 import net.kano.aimcrypto.connection.oscar.OscarConnection;
 import net.kano.aimcrypto.connection.oscar.service.Service;
-import net.kano.aimcrypto.connection.oscar.service.info.BuddyTrustManager;
-import net.kano.joscar.ByteBlock;
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.snac.SnacPacketEvent;
@@ -136,8 +134,6 @@ public class IcbmService extends Service {
 
             Screenname sn = new Screenname(msg.getUserInfo().getScreenname());
             ImConversation conv = getImConversation(sn);
-
-            //TODO: handle icbm buddy info
 
             conv.handleMissedMsg(MissedImInfo.getInstance(getScreenname(),
                     msg));

@@ -35,29 +35,23 @@
 
 package net.kano.aimcrypto;
 
-import net.kano.aimcrypto.forms.SignonWindow;
+import com.jgoodies.plaf.plastic.Plastic3DLookAndFeel;
+import com.jgoodies.plaf.plastic.theme.SkyBluer;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
-import javax.swing.plaf.metal.MetalLookAndFeel;
 import java.io.File;
-import java.io.StringWriter;
 import java.io.PrintWriter;
-import java.util.logging.ConsoleHandler;
-import java.util.logging.Logger;
-import java.util.logging.Level;
-import java.util.logging.Formatter;
-import java.util.logging.LogRecord;
-import java.util.Date;
+import java.io.StringWriter;
 import java.security.Security;
 import java.text.DateFormat;
-
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import com.jgoodies.plaf.plastic.Plastic3DLookAndFeel;
-import com.jgoodies.plaf.plastic.PlasticLookAndFeel;
-import com.jgoodies.plaf.plastic.theme.DesertBlue;
-import com.jgoodies.plaf.plastic.theme.SkyBluer;
-import com.jgoodies.clearlook.ClearLookManager;
+import java.util.Date;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Formatter;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 
 public final class AimCrypto {
     private AimCrypto() { }

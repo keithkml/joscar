@@ -42,8 +42,6 @@ import java.security.Principal;
 import java.security.cert.X509Certificate;
 import java.util.Vector;
 
-import net.kano.joscar.MiscTools;
-
 public class DistinguishedName {
     public static DistinguishedName getIssuerInstance(X509Certificate cert) {
         return getInstance(cert.getIssuerDN());

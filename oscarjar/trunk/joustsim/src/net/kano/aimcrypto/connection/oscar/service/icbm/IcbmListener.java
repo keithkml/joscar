@@ -36,8 +36,6 @@
 package net.kano.aimcrypto.connection.oscar.service.icbm;
 
 import net.kano.aimcrypto.Screenname;
-import net.kano.aimcrypto.connection.oscar.service.icbm.Conversation;
-import net.kano.aimcrypto.connection.oscar.service.icbm.IcbmBuddyInfo;
 
 public interface IcbmListener {
     void newConversation(IcbmService service, Conversation conv);

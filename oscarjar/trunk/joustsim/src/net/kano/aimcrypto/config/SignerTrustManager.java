@@ -36,7 +36,6 @@
 package net.kano.aimcrypto.config;
 
 import java.security.cert.X509Certificate;
-import java.security.cert.X509Certificate;
 
 public interface SignerTrustManager extends CertificateTrustManager {
     boolean isSignedByTrustedSigner(X509Certificate cert);

@@ -62,7 +62,7 @@ public class InfoService extends Service {
     private CopyOnWriteArrayList listeners = new CopyOnWriteArrayList();
 
     private final InfoResponseListener infoRequestListener
-            = new InfoResponseListener() {
+            = new InfoResponseAdapter() {
         public void handleUserProfile(InfoService service, Screenname buddy,
                 String userInfo) {
             assert InfoService.this == service;

@@ -37,17 +37,14 @@ package net.kano.aimcrypto.forms;
 
 import net.kano.joscar.DefensiveTools;
 
+import javax.swing.BoxLayout;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
-import javax.swing.BoxLayout;
-import java.awt.BorderLayout;
 import java.awt.Component;
-import java.awt.Dimension;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.Arrays;
 
 public class MiniDialogStack extends JPanel {
     private Set popping = new LinkedHashSet();

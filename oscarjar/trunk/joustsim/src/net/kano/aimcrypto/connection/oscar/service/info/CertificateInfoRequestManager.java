@@ -45,6 +45,7 @@ import net.kano.joscar.snaccmd.InfoData;
 import net.kano.joscar.snaccmd.loc.GetInfoCmd;
 
 import java.security.cert.X509Certificate;
+import java.util.Iterator;
 
 public class CertificateInfoRequestManager extends UserInfoRequestManager {
     public CertificateInfoRequestManager(InfoService service) {
@@ -78,10 +79,7 @@ public class CertificateInfoRequestManager extends UserInfoRequestManager {
             encryptionData = certInfo.getEncCertData();
         }
         if (signingData == null || encryptionData == null) {
-            //TODO: report wrong signing and/or encryption certs
-            System.err.println("Bad certs for For " + sn + ":");
-            System.err.println("- signingData=" + signingData);
-            System.err.println("- encryptionData=" + encryptionData);
+            fireInvalidCertsException(sn, null, certInfo);
             return null;
         }
 
@@ -91,14 +89,21 @@ public class CertificateInfoRequestManager extends UserInfoRequestManager {
             signing = TrustTools.decodeCertificate(signingData);
             encryption = TrustTools.decodeCertificate(encryptionData);
         } catch (Exception e) {
-            //TODO: report any errors thrown while decoding certificates
-            e.printStackTrace();
+            fireInvalidCertsException(sn, e, certInfo);
             return null;
         }
 
         return new BuddyCertificateInfo(sn,
                 ByteBlock.wrap(CertificateInfo.getCertInfoHash(certInfo)),
                 encryption, signing);
+    }
+
+    private void fireInvalidCertsException(Screenname sn,
+            Exception e, CertificateInfo origCertInfo) {
+        for (Iterator it = getListeners(sn).iterator(); it.hasNext();) {
+            InfoResponseListener listener = (InfoResponseListener) it.next();
+            listener.handleInvalidCertificates(getService(), sn, origCertInfo, e);
+        }
     }
 
     protected Object getDesiredValue(InfoData infodata) {

@@ -39,7 +39,6 @@ import net.kano.aimcrypto.AimCertificateHolder;
 import net.kano.aimcrypto.KeyPair;
 import net.kano.aimcrypto.config.PrivateKeysInfo;
 import net.kano.joscar.ByteBlock;
-import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.OscarTools;
 import org.bouncycastle.cms.CMSEnvelopedData;
 import org.bouncycastle.cms.CMSException;
@@ -138,23 +137,5 @@ public class SecureAimDecoder extends SecureAimCodec {
         if (msg == null) throw new EmptyMessageException();
 
         return new DecryptedMessageInfo(msg, buddyCerts);
-    }
-
-    public final class DecryptedMessageInfo {
-        private final String str;
-        private final AimCertificateHolder buddyCertInfo;
-
-        private DecryptedMessageInfo(String str,
-                AimCertificateHolder certInfo) {
-            DefensiveTools.checkNull(str, "str");
-            DefensiveTools.checkNull(certInfo, "certInfo");
-
-            this.str = str;
-            this.buddyCertInfo = certInfo;
-        }
-
-        public String getMessage() { return str; }
-
-        public AimCertificateHolder getCertificateInfo() { return buddyCertInfo; }
     }
 }

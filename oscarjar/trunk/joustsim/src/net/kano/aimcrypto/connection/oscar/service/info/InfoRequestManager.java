@@ -38,11 +38,11 @@ package net.kano.aimcrypto.connection.oscar.service.info;
 import net.kano.aimcrypto.Screenname;
 import net.kano.joscar.DefensiveTools;
 
-import java.util.Set;
-import java.util.LinkedHashSet;
 import java.util.Collections;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
 
 public abstract class InfoRequestManager {
     private final InfoService service;

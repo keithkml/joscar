@@ -35,24 +35,12 @@
 
 package net.kano.aimcrypto.conv;
 
-import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
-import javax.swing.text.Element;
-import javax.swing.text.Document;
-import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.MutableAttributeSet;
+import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
-import javax.swing.text.html.HTMLDocument;
-import javax.swing.text.html.HTMLEditorKit;
 import javax.swing.text.html.HTML;
-import javax.swing.text.html.StyleSheet;
-import javax.swing.text.html.CSS;
-import javax.swing.JTextPane;
-import javax.swing.JFrame;
-import java.io.IOException;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.util.Enumeration;
+import javax.swing.text.html.HTMLDocument;
 
 public class ConversationDocument extends HTMLDocument {
     private static final ElementSpec BR_SPEC;
@@ -64,7 +52,7 @@ public class ConversationDocument extends HTMLDocument {
                 new char[] { ' ' }, 0, 1);
     }
 
-    public void addLine(AolRtfText line) {
+    public void addLine(AolRtfString line) {
         try {
             ElementSpec[] els = line.generateDocumentElements();
             ElementSpec[] more = new ElementSpec[els.length + 1];

@@ -37,19 +37,14 @@ package net.kano.aimcrypto.forms.prefs;
 
 import net.kano.aimcrypto.AppSession;
 import net.kano.aimcrypto.Screenname;
-import net.kano.aimcrypto.forms.prefs.SignersPrefsPanel;
 import net.kano.aimcrypto.config.LocalPreferencesManager;
 import net.kano.aimcrypto.config.PermanentCertificateTrustManager;
 import net.kano.aimcrypto.config.PermanentSignerTrustManager;
 import net.kano.joscar.DefensiveTools;
 
-import javax.swing.JPanel;
-import javax.swing.BoxLayout;
 import javax.swing.Icon;
-import javax.swing.border.LineBorder;
+import javax.swing.JPanel;
 import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.Color;
 import java.awt.Component;
 
 public class TrustPrefsPane extends JPanel implements PrefsPane {
@@ -127,6 +122,9 @@ public class TrustPrefsPane extends JPanel implements PrefsPane {
     }
 
     public void prefsWindowFocusLost() {
+    }
+
+    public void prefsPaneToBeShown() {
     }
 
     public void prefsPaneShown() {

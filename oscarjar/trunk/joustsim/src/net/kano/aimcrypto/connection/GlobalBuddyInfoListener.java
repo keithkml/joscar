@@ -35,7 +35,6 @@
 
 package net.kano.aimcrypto.connection;
 
-import net.kano.aimcrypto.connection.BuddyInfoManager;
 import net.kano.aimcrypto.Screenname;
 
 import java.beans.PropertyChangeEvent;

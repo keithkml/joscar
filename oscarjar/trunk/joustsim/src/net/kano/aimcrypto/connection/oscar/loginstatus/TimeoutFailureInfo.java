@@ -35,7 +35,7 @@
 
 package net.kano.aimcrypto.connection.oscar.loginstatus;
 
-import net.kano.aimcrypto.connection.oscar.loginstatus.LoginFailureInfo;
+
 
 public final class TimeoutFailureInfo extends LoginFailureInfo {
     private final int timeoutSecs;

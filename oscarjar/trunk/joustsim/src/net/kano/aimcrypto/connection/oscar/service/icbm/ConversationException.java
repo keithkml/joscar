@@ -35,7 +35,7 @@
 
 package net.kano.aimcrypto.connection.oscar.service.icbm;
 
-import net.kano.aimcrypto.connection.oscar.service.icbm.Conversation;
+
 
 public class ConversationException extends RuntimeException {
     protected final Conversation conversation;

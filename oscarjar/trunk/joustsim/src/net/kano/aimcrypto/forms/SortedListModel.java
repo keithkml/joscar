@@ -36,12 +36,12 @@
 package net.kano.aimcrypto.forms;
 
 import javax.swing.AbstractListModel;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 
 public class SortedListModel extends AbstractListModel {
     private final List list = new ArrayList();

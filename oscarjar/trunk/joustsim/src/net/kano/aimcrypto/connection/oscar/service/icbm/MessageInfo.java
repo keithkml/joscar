@@ -36,7 +36,6 @@
 package net.kano.aimcrypto.connection.oscar.service.icbm;
 
 import net.kano.aimcrypto.Screenname;
-import net.kano.aimcrypto.connection.oscar.service.icbm.Message;
 
 import java.util.Date;
 

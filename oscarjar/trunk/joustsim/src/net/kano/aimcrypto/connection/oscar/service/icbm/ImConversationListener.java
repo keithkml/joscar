@@ -35,8 +35,7 @@
 
 package net.kano.aimcrypto.connection.oscar.service.icbm;
 
-import net.kano.aimcrypto.connection.oscar.service.icbm.ConversationListener;
-import net.kano.aimcrypto.connection.oscar.service.icbm.ImConversation;
+
 
 public interface ImConversationListener extends ConversationListener {
     void missedMessages(ImConversation conv, MissedImInfo info);

@@ -35,21 +35,21 @@
 
 package net.kano.aimcrypto.connection.oscar.service.buddy;
 
+import net.kano.aimcrypto.Screenname;
 import net.kano.aimcrypto.connection.AimConnection;
 import net.kano.aimcrypto.connection.oscar.OscarConnection;
 import net.kano.aimcrypto.connection.oscar.service.Service;
-import net.kano.aimcrypto.Screenname;
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.snac.SnacPacketEvent;
-import net.kano.joscar.snaccmd.buddy.BuddyCommand;
-import net.kano.joscar.snaccmd.buddy.BuddyStatusCmd;
-import net.kano.joscar.snaccmd.buddy.BuddyOfflineCmd;
-import net.kano.joscar.snaccmd.conn.SnacFamilyInfo;
 import net.kano.joscar.snaccmd.FullUserInfo;
+import net.kano.joscar.snaccmd.buddy.BuddyCommand;
+import net.kano.joscar.snaccmd.buddy.BuddyOfflineCmd;
+import net.kano.joscar.snaccmd.buddy.BuddyStatusCmd;
+import net.kano.joscar.snaccmd.conn.SnacFamilyInfo;
 
-import java.util.logging.Logger;
 import java.util.Iterator;
+import java.util.logging.Logger;
 
 public class BuddyService extends Service {
     private static final Logger logger

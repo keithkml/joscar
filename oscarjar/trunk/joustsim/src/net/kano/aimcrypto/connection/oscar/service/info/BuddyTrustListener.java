@@ -35,20 +35,13 @@
 
 package net.kano.aimcrypto.connection.oscar.service.info;
 
-import net.kano.aimcrypto.Screenname;
-import net.kano.aimcrypto.config.BuddyCertificateInfo;
 
-//TODO: buddy trust event objects?
+
 public interface BuddyTrustListener {
-    void gotTrustedCertificateChange(BuddyTrustManager manager,
-            Screenname buddy, BuddyCertificateInfo certInfo);
-    void gotUntrustedCertificateChange(BuddyTrustManager manager,
-            Screenname buddy, BuddyCertificateInfo certInfo);
-    void gotUnknownCertificateChange(BuddyTrustManager manager,
-            Screenname buddy, BuddyCertificateInfo certInfo);
+    void gotTrustedCertificateChange(BuddyTrustEvent event);
+    void gotUntrustedCertificateChange(BuddyTrustEvent event);
+    void gotUnknownCertificateChange(BuddyTrustEvent event);
 
-    void buddyTrusted(BuddyTrustManager manager, Screenname buddy,
-            BuddyCertificateInfo certInfo);
-    void buddyTrustRevoked(BuddyTrustManager manager, Screenname buddy,
-            BuddyCertificateInfo certInfo);
+    void buddyTrusted(BuddyTrustEvent event);
+    void buddyTrustRevoked(BuddyTrustEvent event);
 }

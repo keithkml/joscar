@@ -283,7 +283,7 @@ public final class BuddyInfo {
 
     public synchronized boolean isCertificateInfoCurrent() {
         BuddyCertificateInfo certInfo = certificateInfo;
-        return certInfo != null && certInfo.isUpToDate();
+        return certInfo == null || certInfo.isUpToDate();
     }
 
     private void fireObjectChange(String property,

@@ -35,11 +35,11 @@
 
 package net.kano.aimcrypto.connection.oscar.service.icbm;
 
-import net.kano.joscar.snaccmd.icbm.RecvImIcbm;
-import net.kano.joscar.snaccmd.icbm.InstantMessage;
-import net.kano.joscar.snaccmd.ExtraInfoBlock;
-import net.kano.joscar.ByteBlock;
 import net.kano.joscar.BinaryTools;
+import net.kano.joscar.ByteBlock;
+import net.kano.joscar.snaccmd.ExtraInfoBlock;
+import net.kano.joscar.snaccmd.icbm.InstantMessage;
+import net.kano.joscar.snaccmd.icbm.RecvImIcbm;
 
 public class BasicInstantMessage extends SimpleMessage {
     static BasicInstantMessage getInstance(RecvImIcbm icbm) {

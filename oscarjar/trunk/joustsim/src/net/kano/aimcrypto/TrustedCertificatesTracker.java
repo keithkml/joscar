@@ -35,12 +35,12 @@
 
 package net.kano.aimcrypto;
 
-import net.kano.aimcrypto.config.DefaultCertificateHolder;
-import net.kano.aimcrypto.config.CertificateTrustManager;
-import net.kano.aimcrypto.config.SignerTrustManager;
-import net.kano.aimcrypto.config.CertificateTrustListener;
-import net.kano.aimcrypto.config.TrustTools;
 import net.kano.aimcrypto.config.CertificateHolder;
+import net.kano.aimcrypto.config.CertificateTrustListener;
+import net.kano.aimcrypto.config.CertificateTrustManager;
+import net.kano.aimcrypto.config.DefaultCertificateHolder;
+import net.kano.aimcrypto.config.SignerTrustManager;
+import net.kano.aimcrypto.config.TrustTools;
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 
@@ -73,6 +73,8 @@ public class TrustedCertificatesTracker {
         certTrustMgr.addTrustListener(new CertificateTrustListener() {
             public void trustAdded(CertificateTrustManager manager,
                     X509Certificate cert) {
+                System.out.println("TrustedCertificatesTracker: now trusted: "
+                        + cert.getSubjectDN());
                 certTrustAdded(cert);
             }
 
@@ -147,7 +149,7 @@ public class TrustedCertificatesTracker {
         assert !Thread.holdsLock(this);
 
         for (Iterator it = listeners.iterator(); it.hasNext();) {
-            TrustedCertsListener listener = (TrustedCertsListener) it.next();
+            TrustedCertificatesListener listener = (TrustedCertificatesListener) it.next();
             listener.certificateTrusted(this, info);
         }
     }
@@ -156,7 +158,7 @@ public class TrustedCertificatesTracker {
         assert !Thread.holdsLock(this);
 
         for (Iterator it = listeners.iterator(); it.hasNext();) {
-            TrustedCertsListener listener = (TrustedCertsListener) it.next();
+            TrustedCertificatesListener listener = (TrustedCertificatesListener) it.next();
             listener.certificateNoLongerTrusted(this, info);
         }
     }
@@ -178,7 +180,11 @@ public class TrustedCertificatesTracker {
             info.setExplicitlyTrusted(true);
             newTrusted = !wasTrusted && info.isSomehowTrusted();
         }
-        if (newTrusted) fireNowTrustedEvent(info);
+        if (newTrusted) {
+            System.out.println("TrustedCertificatesTracker: cert is now "
+                    + "trusted, firing events: " + cert.getSubjectDN());
+            fireNowTrustedEvent(info);
+        }
     }
 
     private void certTrustRemoved(X509Certificate cert) {
@@ -196,11 +202,11 @@ public class TrustedCertificatesTracker {
         if (noLongerTrusted) fireNoLongerTrustedEvent(info);
     }
 
-    public void addTrustedCertsListener(TrustedCertsListener l) {
+    public void addTrustedCertsListener(TrustedCertificatesListener l) {
         listeners.addIfAbsent(l);
     }
 
-    public void removeTrustedCertsListener(TrustedCertsListener l) {
+    public void removeTrustedCertsListener(TrustedCertificatesListener l) {
         listeners.remove(l);
     }
 
@@ -212,8 +218,6 @@ public class TrustedCertificatesTracker {
         synchronized(this) {
             CertificateHolder holder = new DefaultCertificateHolder(cert);
             if (trackedCerts.containsKey(holder)) return false;
-
-            DefensiveTools.checkNull(cert, "cert");
 
             info = new TrustedCertificateInfoImpl(cert);
             info.setExplicitlyTrusted(certTrustMgr.isTrusted(cert));
@@ -229,7 +233,11 @@ public class TrustedCertificatesTracker {
             newTrusted = info.isSomehowTrusted();
         }
 
-        if (newTrusted) fireNowTrustedEvent(info);
+        if (newTrusted) {
+            System.out.println("TrustedCertificatesTracker: cert "
+                    + cert.getSubjectDN() + " is now trusted");
+            fireNowTrustedEvent(info);
+        }
 
         return true;
     }

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="net.kano.aimcrypto.forms.SignonWindow">
+<form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="net.kano.aimcrypto.forms.SignonBox">
   <grid id="96b0" binding="mainPanel" row-count="5" column-count="1" hgap="5" vgap="-1">
     <margin top="10" left="5" bottom="5" right="5"/>
     <constraints>
@@ -45,7 +45,9 @@
                     <preferred-size width="110" height="-1"/>
                   </grid>
                 </constraints>
-                <properties/>
+                <properties>
+                  <toolTipText value="Enter your AIM password"/>
+                </properties>
               </component>
               <component id="4e9e7" class="javax.swing.JCheckBox" binding="rememberPassBox">
                 <constraints>
@@ -55,6 +57,7 @@
                 <properties>
                   <enabled value="true"/>
                   <text value="Remember password"/>
+                  <toolTipText value="Remember your password for this screenname so you don't have to type it each time"/>
                 </properties>
               </component>
             </children>
@@ -86,6 +89,7 @@
             </constraints>
             <properties>
               <text value="Sign On"/>
+              <toolTipText value="Sign on to AIM"/>
             </properties>
           </component>
           <component id="ca43f" class="javax.swing.JButton" binding="closeButton">
@@ -95,6 +99,7 @@
             </constraints>
             <properties>
               <text value="Close"/>
+              <toolTipText value="Close this window"/>
             </properties>
           </component>
         </children>
@@ -185,9 +190,6 @@
 
   &lt;/head&gt;
   &lt;body&gt;
-    &lt;p&gt;
-
-    &lt;/p&gt;
   &lt;/body&gt;
 &lt;/html&gt;
 "/>

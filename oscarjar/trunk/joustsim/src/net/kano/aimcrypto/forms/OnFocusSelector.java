@@ -36,10 +36,9 @@
 package net.kano.aimcrypto.forms;
 
 import javax.swing.text.JTextComponent;
-import java.awt.event.FocusListener;
-import java.awt.event.FocusEvent;
 import java.awt.Component;
-import java.security.cert.X509Certificate;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 
 public class OnFocusSelector implements FocusListener {
     public void focusGained(FocusEvent e) {

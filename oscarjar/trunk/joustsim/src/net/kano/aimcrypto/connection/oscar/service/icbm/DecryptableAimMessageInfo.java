@@ -37,7 +37,6 @@ package net.kano.aimcrypto.connection.oscar.service.icbm;
 
 import net.kano.aimcrypto.Screenname;
 import net.kano.aimcrypto.config.BuddyCertificateInfo;
-import net.kano.aimcrypto.config.BuddyCertificateInfo;
 
 import java.util.Date;
 

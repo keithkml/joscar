@@ -49,8 +49,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class AppSession {
+    private static final Logger logger
+            = Logger.getLogger(AppSession.class.getName());
+
     private final File baseDir;
     private final File configDir;
     private final File localPrefsDir;
@@ -81,13 +86,13 @@ public class AppSession {
         }
 
         this.baseDir = baseDir;
-        this.configDir = new File(baseDir, "config");
-        this.localPrefsDir = new File(configDir, "local");
-        this.globalPrefsDir = new File(configDir, "global");
+        File configDir = PrefTools.getConfigDir(baseDir);
+        this.configDir = configDir;
+        this.localPrefsDir = PrefTools.getLocalConfigDir(configDir);
+        this.globalPrefsDir = PrefTools.getGlobalConfigDir(configDir);
 
-        this.globalPrefs = new GlobalPrefs(configDir, globalPrefsDir);
+        this.globalPrefs = new GlobalPrefs(configDir);
     }
-
 
     public synchronized void setSavePrefsOnExit(boolean save) {
         if (shutdownHook == null) {
@@ -112,8 +117,7 @@ public class AppSession {
         try {
             globalPrefs.savePrefs();
         } catch (Exception e) {
-            //TODO: saving prefs failed
-            e.printStackTrace();
+            logger.log(Level.WARNING, "Couldn't save global prefs", e);
         }
         for (Iterator it = prefs.values().iterator(); it.hasNext();) {
             LocalPreferencesManager prefs = (LocalPreferencesManager) it.next();
@@ -200,9 +204,7 @@ public class AppSession {
     }
 
     private File getLocalPrefsDir(Screenname sn) {
-        String normal = sn.getNormal();
-        if (normal.length() == 0) return null;
-        return new File(localPrefsDir, normal);
+        return PrefTools.getLocalPrefsDirForScreenname(this.localPrefsDir, sn);
     }
 
     public boolean hasLocalPrefs(Screenname sn) {

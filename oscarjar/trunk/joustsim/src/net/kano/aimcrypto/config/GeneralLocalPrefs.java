@@ -107,6 +107,10 @@ public class GeneralLocalPrefs implements Preferences {
     }
 
     public synchronized void setScreennameFormat(String screennameFormat) {
+        if (screennameFormat != null && !screenname.matches(screennameFormat)) {
+            throw new IllegalArgumentException(screennameFormat + " is not a "
+                    + "valid screenname format for " + screenname);
+        }
         this.screennameFormat = screennameFormat;
     }
 

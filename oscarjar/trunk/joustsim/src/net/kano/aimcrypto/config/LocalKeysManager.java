@@ -64,9 +64,14 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Properties;
+import java.beans.PropertyChangeSupport;
+import java.beans.PropertyChangeListener;
 
 public final class LocalKeysManager
         extends DefaultFileBasedResource implements Preferences {
+
+    public static final String PROP_KEYS_INFO = "keysInfo";
+
     private static final String PROP_CERTFILE = "certificate-file";
     private static final String PROP_SIGNALIAS = "signing-alias";
     private static final String PROP_ENCALIAS = "encryption-alias";
@@ -89,18 +94,28 @@ public final class LocalKeysManager
     private boolean savePassword = false;
     private File prefsFile;
 
+    private PropertyChangeSupport pcs = new PropertyChangeSupport(this);
+
     public LocalKeysManager(Screenname screenname, File keysDir) {
         DefensiveTools.checkNull(screenname, "screenname");
-        DefensiveTools.checkNull(keysDir, "baseDir");
+        DefensiveTools.checkNull(keysDir, "keysDir");
 
         this.screenname = screenname;
         this.keysDir = keysDir;
-        this.certsDir = new File(keysDir, "certs");
+        this.certsDir = PrefTools.getLocalCertsDir(keysDir);
         this.prefsFile = new File(keysDir, "key-prefs.properties");
         this.possibleCerts = new PossibleCertificateList();
     }
 
     public Screenname getScreenname() { return screenname; }
+
+    public void addPropertyChangeListener(PropertyChangeListener l) {
+        pcs.addPropertyChangeListener(l);
+    }
+
+    public void removePropertyChangeListener(PropertyChangeListener l) {
+        pcs.removePropertyChangeListener(l);
+    }
 
     public boolean isUpToDate() {
         return possibleCerts.isUpToDate() && keysLoader.isUpToDate();
@@ -374,11 +389,16 @@ public final class LocalKeysManager
                 NoSuchAlgorithmException, CertificateException,
                 UnrecoverableKeyException, BadKeyPrefsException {
 
+            assert !Thread.holdsLock(this);
+
             String encAlias;
             String signAlias;
             File certFile;
             String pass;
+            PrivateKeysInfo oldKeysInfo;
+            String prop = null;
             synchronized(this) {
+                oldKeysInfo = keysInfo;
                 clearStuff();
 
                 encAlias = encryptionAlias;
@@ -386,12 +406,14 @@ public final class LocalKeysManager
                 certFile = certificateFile;
                 pass = password;
                 if (pass == null) {
-                    throw new BadKeyPrefsException(PROP_PASSWORD);
+                    prop = PROP_PASSWORD;
                 } else if (certFile == null) {
-                    throw new BadKeyPrefsException(PROP_CERTFILE);
+                    prop = PROP_CERTFILE;
                 }
-                keysModified = certFile.lastModified();
+                if (certFile != null) keysModified = certFile.lastModified();
             }
+            pcs.firePropertyChange(PROP_KEYS_INFO, oldKeysInfo, null);
+            if (prop != null) throw new BadKeysException(prop);
 
             char[] passChars = pass.toCharArray();
 
@@ -427,12 +449,14 @@ public final class LocalKeysManager
 
             PrivateKeysInfo newkeys = new PrivateKeysInfo(signingKeys,
                     encryptionKeys);
+
             synchronized(this) {
                 keysInfo = newkeys;
                 loadedFromFile = certFile;
                 loadedSigningAlias = signAlias;
                 loadedEncAlias = encAlias;
             }
+            pcs.firePropertyChange(PROP_KEYS_INFO, null, newkeys);
         }
 
         private String[] loadPossibleAliases(KeyStore ks) throws KeyStoreException {

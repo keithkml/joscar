@@ -39,15 +39,16 @@ import net.kano.aimcrypto.AppSession;
 import net.kano.aimcrypto.DistinguishedName;
 import net.kano.aimcrypto.GuiResources;
 import net.kano.aimcrypto.Screenname;
-import net.kano.aimcrypto.forms.SortedListModel;
 import net.kano.aimcrypto.config.CantBeAddedException;
 import net.kano.aimcrypto.config.CantSavePrefsException;
 import net.kano.aimcrypto.config.CertificateTrustListener;
-import net.kano.aimcrypto.config.TrustException;
 import net.kano.aimcrypto.config.CertificateTrustManager;
+import net.kano.aimcrypto.config.TrustException;
+import net.kano.aimcrypto.forms.SortedListModel;
 import net.kano.joscar.DefensiveTools;
 
 import javax.swing.AbstractAction;
+import javax.swing.Action;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
@@ -56,10 +57,11 @@ import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JTextPane;
+import javax.swing.KeyStroke;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
-import javax.swing.JScrollPane;
 import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
@@ -74,6 +76,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
 import java.security.cert.X509Certificate;
@@ -85,8 +89,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-//TODO: clear error message on other activity
-//TODO: add Delete keybinding, context menu
 public class CertificatesPrefsPanel extends JPanel {
     private static final EmptyBorder EMPTY_BORDER = new EmptyBorder(2, 5, 2, 5);
 
@@ -100,7 +102,6 @@ public class CertificatesPrefsPanel extends JPanel {
     private JLabel certErrorIconLabel;
     private JPanel certErrorPanel;
     private JTextPane certErrorText;
-    private JScrollPane errorScrollPane;
 
     private final AppSession appSession;
     private final Screenname sn;
@@ -152,6 +153,7 @@ public class CertificatesPrefsPanel extends JPanel {
     private final Icon errorIcon = GuiResources.getErrorIcon();
     private final ImageIcon mediumCertificateIcon = GuiResources.getMediumCertificateIcon();
     private final ImageIcon smallCertificateIcon = GuiResources.getTinyCertificateIcon();
+    private final JPopupMenu popupMenu = new JPopupMenu();
 
     {
         setLayout(new BorderLayout());
@@ -195,7 +197,6 @@ public class CertificatesPrefsPanel extends JPanel {
             }
         });
 
-        errorScrollPane.setBorder(null);
         certErrorIconLabel.setIcon(errorIcon);
         certErrorIconLabel.setText(null);
         addComponentListener(new ComponentAdapter() {
@@ -210,6 +211,22 @@ public class CertificatesPrefsPanel extends JPanel {
         });
 
         setPanelDescription(null);
+
+        KeyStroke deleteKey = KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0);
+        Object removeName = removeCertAction.getValue(Action.NAME);
+        trustedCertsList.getInputMap().put(deleteKey, removeName);
+        trustedCertsList.getActionMap().put(removeName, removeCertAction);
+        popupMenu.add(importCertAction);
+        popupMenu.addSeparator();
+        popupMenu.add(removeCertAction);
+        trustedCertsList.add(popupMenu);
+        trustedCertsList.addMouseListener(new MouseAdapter() {
+            public void mousePressed(MouseEvent e) {
+                if (SwingUtilities.isRightMouseButton(e)) {
+                    popupMenu.show(e.getComponent(), e.getX(), e.getY());
+                }
+            }
+        });
 
         updateCertButtons();
     }
@@ -441,7 +458,7 @@ public class CertificatesPrefsPanel extends JPanel {
                 || root.endsWith(".pem");
     }
 
-    private void clearCertErrorLabel() {
+    public void clearCertErrorLabel() {
         certErrorPanel.setVisible(false);
     }
 
@@ -468,6 +485,7 @@ public class CertificatesPrefsPanel extends JPanel {
         public void actionPerformed(ActionEvent e) {
             SwingUtilities.invokeLater(new Runnable() {
                 public void run() {
+                    clearCertErrorLabel();
                     importCert();
                 }
             });
@@ -483,6 +501,7 @@ public class CertificatesPrefsPanel extends JPanel {
         }
 
         public void actionPerformed(ActionEvent e) {
+            clearCertErrorLabel();
             removeSelectedCerts();
         }
     }

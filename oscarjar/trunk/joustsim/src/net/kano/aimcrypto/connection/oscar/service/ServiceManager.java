@@ -36,13 +36,13 @@
 package net.kano.aimcrypto.connection.oscar.service;
 
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.snaccmd.auth.AuthCommand;
 import net.kano.joscar.snaccmd.conn.ConnCommand;
 import net.kano.joscar.snaccmd.icbm.IcbmCommand;
-import net.kano.joscar.snaccmd.auth.AuthCommand;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.Collection;
 
 public final class ServiceManager {
     private final Map services = new TreeMap();

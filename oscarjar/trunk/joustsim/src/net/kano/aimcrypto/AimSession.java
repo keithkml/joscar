@@ -35,10 +35,11 @@
 
 package net.kano.aimcrypto;
 
+import net.kano.aimcrypto.config.LocalPreferencesManager;
+import net.kano.aimcrypto.config.PrivateKeysInfo;
+import net.kano.aimcrypto.config.LocalKeysManager;
 import net.kano.aimcrypto.connection.AimConnection;
 import net.kano.aimcrypto.connection.AimConnectionProperties;
-import net.kano.aimcrypto.config.PrivateKeysInfo;
-import net.kano.aimcrypto.config.LocalPreferencesManager;
 import net.kano.joscar.DefensiveTools;
 
 public class AimSession {
@@ -46,7 +47,6 @@ public class AimSession {
     private final Screenname screenname;
     private AimConnection connection = null;
 
-    private PrivateKeysInfo privateKeysInfo = null;
     private final LocalPreferencesManager localPrefs;
 
     public AimSession(AppSession appSession, Screenname screenname) {
@@ -57,21 +57,20 @@ public class AimSession {
         this.screenname = screenname;
 
         localPrefs = appSession.getLocalPrefs(screenname);
-        privateKeysInfo = localPrefs.getLocalKeysManager().getKeysInfo();
+        Thread keysLoaderThread = new Thread(new Runnable() {
+            public void run() {
+                localPrefs.loadEverything();
+            }
+        }, "Prefs loader: " + screenname);
+        keysLoaderThread.start();
     }
 
     public final AppSession getAppSession() { return appSession; }
 
     public final Screenname getScreenname() { return screenname; }
 
-    public PrivateKeysInfo getPrivateKeysInfo() { return privateKeysInfo; }
-
-    public void setPrivateKeysInfo(PrivateKeysInfo privateKeysInfo) {
-        this.privateKeysInfo = privateKeysInfo;
-    }
-
     public AimConnection openConnection(AimConnectionProperties props) {
-        //TODO: close old connection
+        closeConnection();
         AimConnection conn = new AimConnection(appSession, this, props);
         synchronized(this) {
             this.connection = conn;
@@ -81,8 +80,12 @@ public class AimSession {
 
     public synchronized AimConnection getConnection() { return connection; }
 
-    public void close() {
+    public void closeConnection() {
         AimConnection conn = getConnection();
         if (conn != null) conn.disconnect();
+    }
+
+    public LocalPreferencesManager getLocalPrefs() {
+        return localPrefs;
     }
 }

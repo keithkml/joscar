@@ -36,7 +36,6 @@
 package net.kano.aimcrypto.connection.oscar.loginstatus;
 
 import net.kano.joscar.snaccmd.error.SnacError;
-import net.kano.aimcrypto.connection.oscar.loginstatus.LoginFailureInfo;
 
 public final class SnacErrorFailureInfo extends LoginFailureInfo {
     private final int snacError;

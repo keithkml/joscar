@@ -35,11 +35,11 @@
 
 package net.kano.aimcrypto.conv;
 
-import java.util.Random;
-import java.util.List;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Random;
 
 public class ListTester {
     private final Object obj = new Object();

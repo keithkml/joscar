@@ -35,20 +35,20 @@
 
 package net.kano.aimcrypto.connection.oscar.service;
 
+import net.kano.aimcrypto.Screenname;
 import net.kano.aimcrypto.connection.AimConnection;
 import net.kano.aimcrypto.connection.oscar.OscarConnection;
-import net.kano.aimcrypto.Screenname;
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.MiscTools;
-import net.kano.joscar.snaccmd.conn.SnacFamilyInfo;
 import net.kano.joscar.flap.FlapCommand;
 import net.kano.joscar.flap.FlapPacketEvent;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.snac.SnacPacketEvent;
-import net.kano.joscar.snac.SnacResponseEvent;
 import net.kano.joscar.snac.SnacRequest;
 import net.kano.joscar.snac.SnacRequestListener;
+import net.kano.joscar.snac.SnacResponseEvent;
+import net.kano.joscar.snaccmd.conn.SnacFamilyInfo;
 
 import java.util.Iterator;
 import java.util.logging.Logger;
@@ -138,7 +138,6 @@ public abstract class Service {
     }
 
     protected void setReady() {
-        //TODO: optimize logging statements
         logger.finer(MiscTools.getClassName(this) + " is ready");
 
         synchronized(this) {

@@ -66,5 +66,5 @@ public class EncryptedAimMessageInfo extends MessageInfo {
         this.certificateInfo = certInfo;
     }
 
-    public BuddyCertificateInfo getCertificateInfo() { return certificateInfo; }
+    public BuddyCertificateInfo getMessageCertificates() { return certificateInfo; }
 }

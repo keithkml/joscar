@@ -35,7 +35,6 @@
 
 package net.kano.aimcrypto.connection.oscar.service.icbm;
 
-import net.kano.aimcrypto.config.PrivateKeysInfo;
 import net.kano.aimcrypto.AimCertificateHolder;
 import net.kano.aimcrypto.config.PrivateKeysInfo;
 

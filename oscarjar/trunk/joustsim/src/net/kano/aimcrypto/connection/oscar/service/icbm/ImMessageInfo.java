@@ -36,14 +36,8 @@
 package net.kano.aimcrypto.connection.oscar.service.icbm;
 
 import net.kano.aimcrypto.Screenname;
-import net.kano.aimcrypto.config.BuddyCertificateInfo;
-import net.kano.aimcrypto.connection.oscar.service.icbm.BasicInstantMessage;
-import net.kano.joscar.snaccmd.icbm.RecvImIcbm;
-import net.kano.joscar.snaccmd.ExtraInfoBlock;
-import net.kano.joscar.snaccmd.ExtraInfoData;
 import net.kano.joscar.snaccmd.FullUserInfo;
-import net.kano.joscar.ByteBlock;
-import net.kano.joscar.BinaryTools;
+import net.kano.joscar.snaccmd.icbm.RecvImIcbm;
 
 import java.util.Date;
 

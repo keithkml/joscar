@@ -35,7 +35,7 @@
 
 package net.kano.aimcrypto.connection.oscar.service.icbm;
 
-import net.kano.aimcrypto.connection.oscar.service.icbm.Message;
+
 
 
 public class SimpleMessage implements Message {

@@ -35,9 +35,11 @@
 
 package net.kano.aimcrypto.conv;
 
-import javax.swing.text.html.HTMLEditorKit;
 import javax.swing.text.Document;
+import javax.swing.text.Element;
+import javax.swing.text.View;
 import javax.swing.text.ViewFactory;
+import javax.swing.text.html.HTMLEditorKit;
 
 public class ConversationEditorKit extends HTMLEditorKit {
     public Document createDefaultDocument() {
@@ -49,6 +51,18 @@ public class ConversationEditorKit extends HTMLEditorKit {
     }
 
     public ViewFactory getViewFactory() {
-        return super.getViewFactory();
+        return new ConversationViewFactory(super.getViewFactory());
+    }
+
+    private static class ConversationViewFactory implements ViewFactory {
+        private final ViewFactory parent;
+
+        public ConversationViewFactory(ViewFactory parent) {
+            this.parent = parent;
+        }
+
+        public View create(Element elem) {
+            return parent.create(elem);
+        }
     }
 }

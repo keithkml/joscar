@@ -35,8 +35,8 @@
 
 package net.kano.aimcrypto.connection;
 
-import net.kano.joscar.snaccmd.auth.ClientVersionInfo;
 import net.kano.aimcrypto.connection.oscar.LoginConnection;
+import net.kano.joscar.snaccmd.auth.ClientVersionInfo;
 
 public final class AuthorizingStateInfo extends StateInfo {
     private final String host;

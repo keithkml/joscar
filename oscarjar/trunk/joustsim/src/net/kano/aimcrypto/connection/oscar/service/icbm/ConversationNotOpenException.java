@@ -35,8 +35,7 @@
 
 package net.kano.aimcrypto.connection.oscar.service.icbm;
 
-import net.kano.aimcrypto.connection.oscar.service.icbm.Conversation;
-import net.kano.aimcrypto.connection.oscar.service.icbm.ConversationException;
+
 
 public class ConversationNotOpenException extends ConversationException {
     public ConversationNotOpenException(Conversation conversation) {

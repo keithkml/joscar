@@ -39,10 +39,10 @@ import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Collection;
 
 public class CapabilityManager {
     private final AimConnection conn;

@@ -47,9 +47,9 @@ import net.kano.joscar.flap.FlapCommand;
 import net.kano.joscar.flap.FlapPacketEvent;
 import net.kano.joscar.flap.FlapPacketListener;
 import net.kano.joscar.flap.FlapProcessor;
+import net.kano.joscar.flapcmd.CloseFlapCmd;
 import net.kano.joscar.flapcmd.DefaultFlapCmdFactory;
 import net.kano.joscar.flapcmd.SnacCommand;
-import net.kano.joscar.flapcmd.CloseFlapCmd;
 import net.kano.joscar.net.ClientConn;
 import net.kano.joscar.net.ClientConnEvent;
 import net.kano.joscar.net.ClientConnListener;
@@ -58,9 +58,9 @@ import net.kano.joscar.snac.FamilyVersionPreprocessor;
 import net.kano.joscar.snac.SnacPacketEvent;
 import net.kano.joscar.snac.SnacPacketListener;
 import net.kano.joscar.snac.SnacRequest;
+import net.kano.joscar.snac.SnacRequestListener;
 import net.kano.joscar.snac.SnacResponseEvent;
 import net.kano.joscar.snac.SnacResponseListener;
-import net.kano.joscar.snac.SnacRequestListener;
 import net.kano.joscar.snaccmd.DefaultClientFactoryList;
 
 import java.util.ArrayList;
@@ -282,7 +282,7 @@ public class OscarConnection {
             CloseFlapCmd cfc = (CloseFlapCmd) flap;
 
             if (cfc.getCode() != 0) {
-                //TODO: handle connection closed code
+                //TODO: send connection closed reason code to listeners?
             }
         }
     }

@@ -47,6 +47,7 @@ public interface PrefsPane {
     Component getPrefsComponent();
     void prefsWindowFocused();
     void prefsWindowFocusLost();
+    void prefsPaneToBeShown();
     void prefsPaneShown();
     void prefsPaneHidden();
 }

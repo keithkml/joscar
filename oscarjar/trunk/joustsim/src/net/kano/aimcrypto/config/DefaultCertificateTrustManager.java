@@ -39,17 +39,11 @@ import net.kano.aimcrypto.Screenname;
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 
+import java.io.File;
 import java.security.cert.X509Certificate;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
-import java.security.NoSuchProviderException;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
-import java.io.File;
-import java.io.IOException;
-import java.io.FileInputStream;
 
 public class DefaultCertificateTrustManager implements CertificateTrustManager {
     private final Screenname buddy;

@@ -37,15 +37,15 @@ package net.kano.aimcrypto;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
-import java.security.NoSuchProviderException;
 import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.Security;
 import java.security.cert.CertificateException;
 import java.util.Enumeration;
-import java.io.FileInputStream;
-import java.io.IOException;
 
 public class ListAliases {
     public static void main(String[] args) {

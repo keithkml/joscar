@@ -37,8 +37,8 @@ package net.kano.aimcrypto.config;
 
 import net.kano.aimcrypto.Screenname;
 
-import java.security.cert.X509Certificate;
 import java.io.File;
+import java.security.cert.X509Certificate;
 
 public interface CertificateTrustManager {
     Screenname getBuddy();

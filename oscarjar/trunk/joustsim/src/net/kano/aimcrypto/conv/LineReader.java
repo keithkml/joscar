@@ -37,30 +37,35 @@ package net.kano.aimcrypto.conv;
 
 import net.kano.joscar.DefensiveTools;
 
-import javax.swing.text.html.HTMLEditorKit;
-import javax.swing.text.html.StyleSheet;
-import javax.swing.text.html.HTML;
-import javax.swing.text.html.CSS;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.MutableAttributeSet;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
-import java.util.List;
+import javax.swing.text.html.CSS;
+import javax.swing.text.html.HTML;
+import javax.swing.text.html.HTMLEditorKit;
+import javax.swing.text.html.StyleSheet;
+import javax.swing.text.html.HTMLDocument;
 import java.util.LinkedList;
+import java.util.List;
+import java.awt.Color;
 
 class LineReader extends HTMLEditorKit.ParserCallback {
-    private final StyleSheet styles;
+    private final StyleSheet sheet;
 
     private List elements = new LinkedList();
     private LinkedList attrs = new LinkedList();
+    private Color bgColor = null;
 
     public LineReader(StyleSheet styles) {
         DefensiveTools.checkNull(styles, "styles");
 
-        this.styles = styles;
+        this.sheet = styles;
 
         push(styles.getEmptySet());
     }
+
+    public Color getBgColor() { return bgColor; }
 
     public LineElement[] getElements() {
         return (LineElement[])
@@ -96,7 +101,12 @@ class LineReader extends HTMLEditorKit.ParserCallback {
     }
 
     public void handleStartTag(HTML.Tag t, MutableAttributeSet a, int pos) {
-        if (t == HTML.Tag.B || t == HTML.Tag.STRONG) {
+        if (t == HTML.Tag.BODY) {
+            Object bgval = a.getAttribute(HTML.Attribute.BGCOLOR);
+            if (bgval != null) {
+                bgColor = sheet.stringToColor(bgval.toString());
+            }
+        } else if (t == HTML.Tag.B || t == HTML.Tag.STRONG) {
             pushCssAttr(CSS.Attribute.FONT_WEIGHT, "bold");
 
         } else if (t == HTML.Tag.I || t == HTML.Tag.EM) {
@@ -109,15 +119,15 @@ class LineReader extends HTMLEditorKit.ParserCallback {
             pushCssAttr(CSS.Attribute.TEXT_DECORATION, "line-through");
 
         } else if (t == HTML.Tag.A) {
-            AttributeSet attrs = styles.addAttribute(getCurrentAttr(),
+            AttributeSet attrs = sheet.addAttribute(getCurrentAttr(),
                     StyleConstants.NameAttribute, t);
-            attrs = styles.addAttribute(attrs, t, a.copyAttributes());
+            attrs = sheet.addAttribute(attrs, t, a.copyAttributes());
             pushAttrs(attrs);
 
         } else if (t == HTML.Tag.FONT) {
             MutableAttributeSet html = new SimpleAttributeSet(a);
             MutableAttributeSet css = new SimpleAttributeSet();
-            styles.removeAttribute(css, HTML.Tag.IMPLIED);
+            sheet.removeAttribute(css, HTML.Tag.IMPLIED);
             convertKey(html, HTML.Attribute.SIZE, css, CSS.Attribute.FONT_SIZE);
             convertKey(html, HTML.Attribute.FACE, css, CSS.Attribute.FONT_FAMILY);
             convertKey(html, HTML.Attribute.COLOR, css, CSS.Attribute.COLOR);
@@ -138,13 +148,13 @@ class LineReader extends HTMLEditorKit.ParserCallback {
             MutableAttributeSet dest, CSS.Attribute csskey) {
         Object val = src.getAttribute(htmlkey);
         if (val != null && val instanceof String) {
-            styles.addCSSAttributeFromHTML(dest, csskey, (String) val);
+            sheet.addCSSAttributeFromHTML(dest, csskey, (String) val);
             src.removeAttribute(htmlkey);
         }
     }
 
     private void pushAttrs(AttributeSet attrs) {
-        push(styles.addAttributes(getCurrentAttr(), attrs));
+        push(sheet.addAttributes(getCurrentAttr(), attrs));
     }
 
     private void pushCssAttr(CSS.Attribute attr, String val) {
@@ -157,7 +167,7 @@ class LineReader extends HTMLEditorKit.ParserCallback {
             proval = existingval.toString() + ',' + val;
         }
         MutableAttributeSet newset = new SimpleAttributeSet(current);
-        styles.addCSSAttribute(newset, attr, proval);
+        sheet.addCSSAttribute(newset, attr, proval);
         push(newset);
     }
 

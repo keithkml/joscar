@@ -35,14 +35,13 @@
 
 package net.kano.aimcrypto.config;
 
-import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.ByteBlock;
 import net.kano.aimcrypto.AimCertificateHolder;
 import net.kano.aimcrypto.Screenname;
+import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 
 import java.security.cert.X509Certificate;
 
-//TODO: use upToDate in equals()
 public final class BuddyCertificateInfo implements AimCertificateHolder {
     private final Screenname buddy;
     private final ByteBlock hash;

@@ -35,11 +35,9 @@
 
 package net.kano.aimcrypto.config;
 
-import net.kano.joscar.DefensiveTools;
 import net.kano.aimcrypto.AimCertificateHolder;
 import net.kano.aimcrypto.KeyPair;
 
-import java.security.interfaces.RSAPrivateKey;
 import java.security.cert.X509Certificate;
 
 public final class PrivateKeysInfo implements AimCertificateHolder {

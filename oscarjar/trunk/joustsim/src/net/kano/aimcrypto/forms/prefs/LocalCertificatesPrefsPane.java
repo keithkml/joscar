@@ -68,6 +68,7 @@ import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledEditorKit;
 import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
@@ -83,7 +84,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-//TODO: this class modifies the model outside the event thread
 public class LocalCertificatesPrefsPane extends JPanel implements PrefsPane {
     private static final Object VALUE_BROWSE = new Object();
     private static final Object VALUE_SEPARATOR = new Object();
@@ -309,6 +309,10 @@ public class LocalCertificatesPrefsPane extends JPanel implements PrefsPane {
     public void prefsWindowFocusLost() {
     }
 
+    public void prefsPaneToBeShown() {
+        populateUI();
+    }
+
     public void prefsPaneShown() {
         updateThings(true);
     }
@@ -334,6 +338,8 @@ public class LocalCertificatesPrefsPane extends JPanel implements PrefsPane {
     }
 
     private void populateUI() {
+        assert EventQueue.isDispatchThread();
+
         ListComboBoxModel cfl = certificateFileList;
         cfl.clear();
 
@@ -452,13 +458,6 @@ public class LocalCertificatesPrefsPane extends JPanel implements PrefsPane {
             }
             component.setFont(font);
         }
-
-//        Dimension pref = getPreferredSize();
-//        int width = getWidth();
-//        int height = getHeight();
-//        if (pref.width > width) width = pref.width;
-//        if (pref.height > height) height = pref.height;
-//        setSize(width, height);
     }
 
     private void updateSecurityDescription() {

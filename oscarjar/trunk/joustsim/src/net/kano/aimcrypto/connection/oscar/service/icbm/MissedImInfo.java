@@ -35,8 +35,8 @@
 
 package net.kano.aimcrypto.connection.oscar.service.icbm;
 
-import net.kano.joscar.snaccmd.icbm.MissedMsgInfo;
 import net.kano.aimcrypto.Screenname;
+import net.kano.joscar.snaccmd.icbm.MissedMsgInfo;
 
 public class MissedImInfo {
     public static final Reason REASON_TOO_FAST

@@ -2,31 +2,31 @@
  *  Copyright (c) 2004, The Joust Project
  *  All rights reserved.
  *
- *  Redistribution and use in source and binary forms, with or without 
- *  modification, are permitted provided that the following conditions 
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
  *  are met:
  *
- *  - Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
- *  - Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in 
- *    the documentation and/or other materials provided with the 
- *    distribution. 
- *  - Neither the name of the Joust Project nor the names of its 
- *    contributors may be used to endorse or promote products derived 
- *    from this software without specific prior written permission. 
+ *  - Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  - Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  - Neither the name of the Joust Project nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
  *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS 
- *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT 
- *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS 
- *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE 
- *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
- *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, 
- *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER 
- *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN 
- *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  *  File created by keith @ Feb 6, 2004
@@ -40,7 +40,7 @@ import net.kano.aimcrypto.config.BuddyCertificateInfo;
 import net.kano.aimcrypto.connection.AimConnection;
 import net.kano.aimcrypto.connection.BuddyInfo;
 import net.kano.aimcrypto.connection.BuddyInfoManager;
-import net.kano.aimcrypto.connection.GlobalBuddyInfoListener;
+import net.kano.aimcrypto.connection.GlobalBuddyInfoAdapter;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
@@ -54,28 +54,11 @@ import java.util.Map;
 public class BuddyTrustManager {
     private final BuddyInfoManager buddyInfoManager;
 
-    private static boolean isValidCombination(ByteBlock hash,
-            BuddyCertificateInfo certInfo) {
-        if (hash == null) {
-            // if the hash is null, the certificate info has to be null
-            return certInfo == null;
-        } else {
-            if (certInfo == null) {
-                // the certificate info is unknown
-                return true;
-            } else {
-                // the certificate info is known, so we have to make sure it
-                // corresponds to the given hash
-                return certInfo.getCertificateInfoHash().equals(hash);
-            }
-        }
-    }
-
     private final AimConnection conn;
     private final CertificateInfoTrustManager certTrustMgr;
 
     private Map trustInfos = new HashMap();
-    private Map latestHashes = new HashMap();
+    private Map latestInfos = new HashMap();
     private Map cachedCertInfos = new HashMap();
 
     private CopyOnWriteArrayList listeners = new CopyOnWriteArrayList();
@@ -84,19 +67,15 @@ public class BuddyTrustManager {
         DefensiveTools.checkNull(conn, "conn");
 
         this.conn = conn;
+        this.buddyInfoManager = conn.getBuddyInfoManager();
         this.certTrustMgr = conn.getCertificateInfoTrustManager();
 
-        this.buddyInfoManager = conn.getBuddyInfoManager();
+        if (buddyInfoManager == null || certTrustMgr == null) {
+            throw new IllegalArgumentException("conenction has no buddy info "
+                    + "manager and/or certificate trust manager");
+        }
 
-        buddyInfoManager.addGlobalBuddyInfoListener(new GlobalBuddyInfoListener() {
-            public void newBuddyInfo(BuddyInfoManager manager, Screenname buddy,
-                    BuddyInfo info) {
-            }
-
-            public void receivedStatusUpdate(BuddyInfoManager manager,
-                    Screenname buddy, BuddyInfo info) {
-            }
-
+        buddyInfoManager.addGlobalBuddyInfoListener(new GlobalBuddyInfoAdapter() {
             public void buddyInfoChanged(BuddyInfoManager manager,
                     Screenname buddy, BuddyInfo buddyInfo,
                     PropertyChangeEvent event) {
@@ -106,17 +85,12 @@ public class BuddyTrustManager {
                     BuddyCertificateInfo certInfo
                             = (BuddyCertificateInfo) event.getNewValue();
                     System.out.println("cert info for " + buddy + " changed: " + certInfo);
-                    ByteBlock hash;
-                    if (certInfo == null) {
-                        hash = null;
-                    } else {
+                    if (certInfo != null) {
                         // we want to cache this certificate before we handle
                         // the buddy's new hash
-                        hash = certInfo.getCertificateInfoHash();
                         cacheCertInfo(certInfo);
                     }
-                    System.out.println("handling hash for " + buddy + ": " + hash);
-                    handleBuddyHashChange(buddyInfo, hash);
+                    handleBuddyHashChange(buddyInfo, certInfo);
                 }
             }
         });
@@ -135,6 +109,10 @@ public class BuddyTrustManager {
                 handleCertInfoTrustChange(certInfo, false);
             }
         });
+    }
+
+    public AimConnection getAimConnection() {
+        return conn;
     }
 
     public void addBuddyTrustListener(BuddyTrustListener l) {
@@ -174,7 +152,10 @@ public class BuddyTrustManager {
                 certInfoHolder.setTrusted(trusted);
             }
 
-            ByteBlock hash = (ByteBlock) latestHashes.get(sn);
+            BuddyCertificateInfo curCertInfo = (BuddyCertificateInfo) latestInfos.get(sn);
+            ByteBlock hash = curCertInfo == null
+                    ? null
+                    : curCertInfo.getCertificateInfoHash();
             if (hash == null || !hash.equals(trustedHash)) {
                 // this isn't the buddy's current certificate, so there's
                 // nothing left to do (no listeners need to be called since no
@@ -196,16 +177,11 @@ public class BuddyTrustManager {
         fireChangeEvents(sn, certInfo, oldTrusted, newTrusted);
     }
 
-    private void handleBuddyHashChange(BuddyInfo info, ByteBlock hash) {
+    private void handleBuddyHashChange(BuddyInfo info, BuddyCertificateInfo certInfo) {
         Screenname sn = info.getScreenname();
-        BuddyCertificateInfo certInfo;
         TrustStatus oldStatus;
         TrustStatus newStatus;
         synchronized(this) {
-            BuddyCertificateInfoHolder certInfoHolder
-                    = getCertificateInfoHolder(sn, hash);
-            certInfo = certInfoHolder == null ? null : certInfoHolder.getInfo();
-
             // get the trust info for this buddy
             BuddyTrustInfoHolder buddyTrustInfo = getTrustInfoInstance(sn);
 
@@ -214,9 +190,9 @@ public class BuddyTrustManager {
             oldStatus = buddyTrustInfo.getTrustedStatus();
 
             System.out.println("updating buddy hash for " + sn);
-            newStatus = updateBuddyHash(sn, hash);
+            newStatus = updateBuddyHash(sn, certInfo);
             System.out.println("new status for " + sn + " is " + newStatus);
-            if (newStatus == null || newStatus == oldStatus) {
+            if (newStatus == null) {
                 // the status did not change, so there's nothing left for us to
                 // do here
                 return;
@@ -230,18 +206,18 @@ public class BuddyTrustManager {
     }
 
     private synchronized TrustStatus updateBuddyHash(Screenname sn,
-            ByteBlock newHash) {
+            BuddyCertificateInfo certInfo) {
         DefensiveTools.checkNull(sn, "sn");
 
-//        // store the new hash and get his old hash
-//        ByteBlock oldHash = (ByteBlock) latestHashes.put(sn, newHash);
-//
-//        if (oldHash == newHash || (oldHash != null && oldHash.equals(newHash))) {
-//            // the buddy's new hash is the same as his old hash
-//            return null;
-//        }
+        // store the new hash and get his old hash
+        BuddyCertificateInfo oldInfo = (BuddyCertificateInfo) latestInfos.put(sn, certInfo);
 
-        if (newHash == null) {
+        if (oldInfo == certInfo || (oldInfo != null && oldInfo.equals(certInfo))) {
+            // the buddy's new hash is the same as his old hash
+            return null;
+        }
+
+        if (certInfo == null || certInfo.getCertificateInfoHash() == null) {
             // if the hash is null, the buddy can't be trusted
             return TrustStatus.NOT_TRUSTED;
 
@@ -250,8 +226,16 @@ public class BuddyTrustManager {
             // is trusted by seeing if we have a copy of the certificate info
             // corresponding to his buddy hash, and then seeing whether it's
             // trusted according to the trust manager
+
+            if (!certInfo.isUpToDate()) {
+                // we don't have this certificate, so this buddy has an UNKNOWN
+                // certificate
+                return TrustStatus.UNKNOWN;
+            }
+
+            ByteBlock hash = certInfo.getCertificateInfoHash();
             BuddyCertificateInfoHolder certHolder
-                    = getCertificateInfoHolder(sn, newHash);
+                    = getCertificateInfoHolder(sn, hash);
             if (certHolder == null) {
                 // we don't have this certificate, so this buddy has an UNKNOWN
                 // certificate
@@ -272,7 +256,7 @@ public class BuddyTrustManager {
         assert !Thread.holdsLock(this);
 
         if (newStatus == TrustStatus.UNKNOWN) {
-            assert certInfo != null && !certInfo.isUpToDate();
+            assert certInfo == null || !certInfo.isUpToDate();
             fireUnknownCertificateChangeEvent(sn, certInfo);
 
         } else if (newStatus == TrustStatus.NOT_TRUSTED) {
@@ -301,9 +285,11 @@ public class BuddyTrustManager {
             BuddyCertificateInfo certInfo) {
         assert !Thread.holdsLock(this);
 
+        BuddyTrustEvent event = new BuddyTrustEvent(this, sn, certInfo);
+
         for (Iterator it = listeners.iterator(); it.hasNext();) {
             BuddyTrustListener listener = (BuddyTrustListener) it.next();
-            listener.gotTrustedCertificateChange(this, sn, certInfo);
+            listener.gotTrustedCertificateChange(event);
         }
     }
 
@@ -311,9 +297,11 @@ public class BuddyTrustManager {
             BuddyCertificateInfo certInfo) {
         assert !Thread.holdsLock(this);
 
+        BuddyTrustEvent event = new BuddyTrustEvent(this, sn, certInfo);
+
         for (Iterator it = listeners.iterator(); it.hasNext();) {
             BuddyTrustListener listener = (BuddyTrustListener) it.next();
-            listener.gotUntrustedCertificateChange(this, sn, certInfo);
+            listener.gotUntrustedCertificateChange(event);
         }
     }
 
@@ -321,9 +309,11 @@ public class BuddyTrustManager {
             BuddyCertificateInfo certInfo) {
         assert !Thread.holdsLock(this);
 
+        BuddyTrustEvent event = new BuddyTrustEvent(this, sn, certInfo);
+
         for (Iterator it = listeners.iterator(); it.hasNext();) {
             BuddyTrustListener listener = (BuddyTrustListener) it.next();
-            listener.gotUnknownCertificateChange(this, sn, certInfo);
+            listener.gotUnknownCertificateChange(event);
         }
     }
 
@@ -331,9 +321,11 @@ public class BuddyTrustManager {
             BuddyCertificateInfo certInfo) {
         assert !Thread.holdsLock(this);
 
+        BuddyTrustEvent event = new BuddyTrustEvent(this, sn, certInfo);
+
         for (Iterator it = listeners.iterator(); it.hasNext();) {
             BuddyTrustListener listener = (BuddyTrustListener) it.next();
-            listener.buddyTrusted(this, sn, certInfo);
+            listener.buddyTrusted(event);
         }
     }
 
@@ -341,9 +333,11 @@ public class BuddyTrustManager {
             BuddyCertificateInfo certInfo) {
         assert !Thread.holdsLock(this);
 
+        BuddyTrustEvent event = new BuddyTrustEvent(this, sn, certInfo);
+
         for (Iterator it = listeners.iterator(); it.hasNext();) {
             BuddyTrustListener listener = (BuddyTrustListener) it.next();
-            listener.buddyTrustRevoked(this, sn, certInfo);
+            listener.buddyTrustRevoked(event);
         }
     }
 
@@ -377,8 +371,8 @@ public class BuddyTrustManager {
             cachedCertInfos.put(hashHolder, certInfoHolder);
         }
         // we want to call this outside the lock since it might call our
-        // listeners right back, which might cause us to fire our listeners,
-        // which shouldn't be done inside a lock
+        // listeners right back, which might eventually cause us to fire our
+        // listeners, which shouldn't be done inside a lock
         certTrustMgr.addTrackedCertificateInfo(certInfo);
     }
 
@@ -403,7 +397,7 @@ public class BuddyTrustManager {
     }
 
     public synchronized ByteBlock getCurrentCertificateInfoHash(Screenname sn) {
-        return (ByteBlock) latestHashes.get(sn);
+        return ((BuddyCertificateInfo) latestInfos.get(sn)).getCertificateInfoHash();
     }
 
     public synchronized boolean isTrusted(Screenname buddy) {

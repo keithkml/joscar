@@ -35,8 +35,8 @@
 
 package net.kano.aimcrypto.connection;
 
-import net.kano.joscar.DefensiveTools;
 import net.kano.aimcrypto.Screenname;
+import net.kano.joscar.DefensiveTools;
 
 public class AimConnectionProperties {
     public static final String HOST_DEFAULT = "login.oscar.aol.com";

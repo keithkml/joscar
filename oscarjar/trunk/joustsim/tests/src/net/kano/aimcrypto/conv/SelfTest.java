@@ -43,7 +43,7 @@ import javax.swing.text.html.StyleSheet;
 public class SelfTest extends TestCase {
     private LineElement[] getElements(String str) {
         StyleSheet ss = new StyleSheet();
-        AolRtfText cl = AolRtfText.readLine(ss, str);
+        AolRtfString cl = AolRtfString.readLine(ss, str);
         LineElement[] elements = cl.getElements();
         return elements;
     }

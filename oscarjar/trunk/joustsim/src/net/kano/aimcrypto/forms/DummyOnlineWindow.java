@@ -49,9 +49,9 @@ import javax.swing.JTextField;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.awt.event.KeyEvent;
 
 public class DummyOnlineWindow extends JFrame {
     private JPanel mainPanel;
@@ -121,6 +121,8 @@ public class DummyOnlineWindow extends JFrame {
     private class OpenImAction extends AbstractAction {
         public OpenImAction() {
             super("IM");
+
+            putValue(SHORT_DESCRIPTION, "Open an IM window with this buddy");
         }
 
         public void actionPerformed(ActionEvent e) {
@@ -133,10 +135,13 @@ public class DummyOnlineWindow extends JFrame {
     private class DisconnectAction extends AbstractAction {
         public DisconnectAction() {
             super("Disconnect");
+
+            putValue(MNEMONIC_KEY, new Integer(KeyEvent.VK_D));
+            putValue(SHORT_DESCRIPTION, "Disconnect from AIM");
         }
 
         public void actionPerformed(ActionEvent e) {
-            guiSession.disconnect();
+            guiSession.signoff();
         }
     }
 
@@ -145,10 +150,12 @@ public class DummyOnlineWindow extends JFrame {
             super("Preferences");
 
             putValue(MNEMONIC_KEY, new Integer(KeyEvent.VK_P));
+            putValue(SHORT_DESCRIPTION, "View this screenname's account "
+                    + "preferences");
         }
 
         public void actionPerformed(ActionEvent e) {
-            guiSession.showPrefsWindow(conn.getScreenname());
+            guiSession.openPrefsWindow(conn.getScreenname());
         }
     }
 }

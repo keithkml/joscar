@@ -35,20 +35,28 @@
 
 package net.kano.aimcrypto.connection;
 
-import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.ByteBlock;
-import net.kano.joscar.snaccmd.CertificateInfo;
-import net.kano.aimcrypto.AimSession;
+import net.kano.aimcrypto.config.LocalKeysManager;
+import net.kano.aimcrypto.config.PrivateKeysInfo;
 import net.kano.aimcrypto.connection.oscar.service.Service;
 import net.kano.aimcrypto.connection.oscar.service.info.InfoService;
-import net.kano.aimcrypto.config.PrivateKeysInfo;
+import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.snaccmd.CertificateInfo;
 
-import java.security.cert.X509Certificate;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.security.cert.CertificateEncodingException;
+import java.security.cert.X509Certificate;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class SecurityEnabledHandler implements CapabilityHandler {
+    private static final Logger logger
+            = Logger.getLogger(SecurityEnabledHandler.class.getName());
+
     private final AimConnection conn;
     private boolean boundInfoService = false;
+    private final LocalKeysManager keysMgr;
 
     public SecurityEnabledHandler(AimConnection conn) {
         DefensiveTools.checkNull(conn, "conn");
@@ -59,9 +67,18 @@ public class SecurityEnabledHandler implements CapabilityHandler {
                 bindToInfoService();
             }
         });
+        keysMgr = conn.getAimSession().getLocalPrefs().getLocalKeysManager();
+        keysMgr.addPropertyChangeListener(new PropertyChangeListener() {
+            public void propertyChange(PropertyChangeEvent evt) {
+                String prop = evt.getPropertyName();
+                if (prop.equals(LocalKeysManager.PROP_KEYS_INFO)) {
+                    updateCertInfo();
+                }
+            }
+        });
     }
 
-    private synchronized void bindToInfoService() {
+    private void bindToInfoService() {
         InfoService infoService;
         synchronized(this) {
             if (boundInfoService) return;
@@ -70,46 +87,71 @@ public class SecurityEnabledHandler implements CapabilityHandler {
             boundInfoService = true;
         }
 
+        updateCertInfo();
+    }
+
+    private void updateCertInfo() {
+        InfoService infoService = conn.getInfoService();
+        if (infoService == null) return;
+
         infoService.setCertificateInfo(generateLocalCertificateInfo());
     }
 
     private CertificateInfo generateLocalCertificateInfo() {
-        AimSession session = conn.getAimSession();
-        PrivateKeysInfo keys = session.getPrivateKeysInfo();
+        PrivateKeysInfo keys = keysMgr.getKeysInfo();
         if (keys == null) {
-            System.out.println("no private keys!");
+            logger.fine("User has no private keys");
             return null;
         }
 
         X509Certificate signing = keys.getSigningCertificate();
         X509Certificate encrypting = keys.getEncryptionCertificate();
 
-        if (signing == null || encrypting == null) {
-            System.out.println("no signing or encrypting! " + signing + ", "
-                    + encrypting);
+        if (signing == null && encrypting == null) {
+            logger.fine("User has no signing or encrypting key, but has some "
+                    + "kind of private keys info stored");
+            return null;
+        }
+        if (signing == null) {
+            logger.fine("User has no signing key");
+            return null;
+        }
+        if (encrypting == null) {
+            logger.fine("User has no encrypting key");
             return null;
         }
 
-        CertificateInfo certInfo = null;
+        CertificateInfo certInfo;
         if (signing == encrypting) {
             try {
                 byte[] encCert = signing.getEncoded();
                 certInfo = new CertificateInfo(ByteBlock.wrap(encCert));
             } catch (CertificateEncodingException e) {
-                //TODO: handle certificate errors
-                e.printStackTrace();
+                logger.log(Level.WARNING, "Could not encode common certificate "
+                        + "to upload to server", e);
+                return null;
             }
 
         } else {
+        byte[] encSigning;
+        byte[] encEncrypting;
             try {
-                byte[] encSigning = signing.getEncoded();
-                byte[] encEncrypting = encrypting.getEncoded();
-                certInfo = new CertificateInfo(ByteBlock.wrap(encEncrypting),
-                        ByteBlock.wrap(encSigning));
+                encSigning = signing.getEncoded();
             } catch (CertificateEncodingException e1) {
-                //TODO: handle certificate errors
-                e1.printStackTrace();
+                logger.log(Level.WARNING, "Could not encode signing "
+                        + "certificate to upload to server", e1);
+                return null;
             }
+            try {
+                encEncrypting = encrypting.getEncoded();
+            } catch (CertificateEncodingException e1) {
+                logger.log(Level.WARNING, "Could not encode encrypting "
+                        + "certificate to upload to server", e1);
+                return null;
+
+            }
+            certInfo = new CertificateInfo(ByteBlock.wrap(encEncrypting),
+                    ByteBlock.wrap(encSigning));
         }
         return certInfo;
     }

@@ -150,8 +150,21 @@ public abstract class Conversation {
         }
     }
 
+    protected void fireCanSendChangedEvent(boolean canSend) {
+        assert !Thread.holdsLock(this);
+
+        for (Iterator it = listeners.iterator(); it.hasNext();) {
+            ConversationListener listener = (ConversationListener) it.next();
+            listener.canSendMessageChanged(this, canSend);
+        }
+    }
+
     protected synchronized void checkOpen() throws ConversationNotOpenException {
         if (!open) throw new ConversationNotOpenException(this);
+    }
+
+    public boolean canSendMessage() {
+        return true;
     }
 
     public abstract void sendMessage(Message msg)

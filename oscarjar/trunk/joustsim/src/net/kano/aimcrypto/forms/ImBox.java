@@ -40,19 +40,18 @@ import net.kano.aimcrypto.Screenname;
 import net.kano.aimcrypto.config.BuddyCertificateInfo;
 import net.kano.aimcrypto.connection.AimConnection;
 import net.kano.aimcrypto.connection.oscar.service.icbm.Conversation;
+import net.kano.aimcrypto.connection.oscar.service.icbm.ConversationAdapter;
+import net.kano.aimcrypto.connection.oscar.service.icbm.ConversationException;
 import net.kano.aimcrypto.connection.oscar.service.icbm.ConversationListener;
-import net.kano.aimcrypto.connection.oscar.service.icbm.ConversationNotOpenException;
 import net.kano.aimcrypto.connection.oscar.service.icbm.DecryptableAimMessageInfo;
 import net.kano.aimcrypto.connection.oscar.service.icbm.ImConversation;
 import net.kano.aimcrypto.connection.oscar.service.icbm.Message;
 import net.kano.aimcrypto.connection.oscar.service.icbm.MessageInfo;
 import net.kano.aimcrypto.connection.oscar.service.icbm.SecureAimConversation;
-import net.kano.aimcrypto.connection.oscar.service.icbm.SecureAimConversationListener;
 import net.kano.aimcrypto.connection.oscar.service.icbm.SimpleMessage;
-import net.kano.aimcrypto.connection.oscar.service.icbm.ConversationException;
-import net.kano.aimcrypto.connection.oscar.service.info.BuddyTrustManager;
 import net.kano.aimcrypto.connection.oscar.service.info.BuddyTrustAdapter;
-import net.kano.aimcrypto.conv.AolRtfText;
+import net.kano.aimcrypto.connection.oscar.service.info.BuddyTrustEvent;
+import net.kano.aimcrypto.conv.AolRtfString;
 import net.kano.aimcrypto.conv.ConversationDocument;
 import net.kano.aimcrypto.conv.ConversationEditorKit;
 import net.kano.joscar.DefensiveTools;
@@ -66,37 +65,32 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTextPane;
 import javax.swing.JToolBar;
-import javax.swing.JViewport;
 import javax.swing.SwingUtilities;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.MutableAttributeSet;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
-import java.awt.BorderLayout;
-import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
-import java.awt.event.WindowListener;
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.ItemListener;
-import java.awt.event.ItemEvent;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.HashSet;
-import java.util.Set;
 import java.util.Iterator;
+import java.util.Set;
 
-//TODO: this class modifies the model outside of the event thread
 public class ImBox extends JFrame {
     private JSplitPane splitPane;
     private JScrollPane textScrollPane;
@@ -123,8 +117,10 @@ public class ImBox extends JFrame {
     private Set convs = new HashSet();
     private SendAction sendAction = new SendAction();
 
+    private Set alreadyAskedCerts = new HashSet();
+
     private final ConversationListener conversationListener
-            = new ConversationListener() {
+            = new ConversationAdapter() {
         public void conversationOpened(Conversation c) {
             updateButtons();
         }
@@ -141,15 +137,31 @@ public class ImBox extends JFrame {
             String body = message.getMessageBody();
             System.out.println("got message: " + MiscTools.getClassName(minfo)
                     + " - " + body);
-            if (body != null) convDoc.addLine(AolRtfText.readLine(body));
+            if (body != null) {
+                final AolRtfString parsed = AolRtfString.readLine(body);
+                SwingUtilities.invokeLater(new Runnable() {
+                    public void run() {
+                        convDoc.addLine(parsed);
+                    }
+                });
+            }
         }
 
         public void sentMessage(Conversation c, MessageInfo minfo) {
             Message msg = minfo.getMessage();
-            convDoc.addLine(AolRtfText.readLine(msg.getMessageBody()));
+            final AolRtfString parsed = AolRtfString.readLine(msg.getMessageBody());
+            SwingUtilities.invokeLater(new Runnable() {
+                public void run() {
+                    convDoc.addLine(parsed);
+                }
+            });
         }
 
         public void conversationClosed(Conversation c) {
+            updateButtons();
+        }
+
+        public void canSendMessageChanged(Conversation c, boolean canSend) {
             updateButtons();
         }
     };
@@ -182,11 +194,10 @@ public class ImBox extends JFrame {
         });
 
         textScrollPane.setBorder(null);
-//        inputScrollPane.setBorder(null);
 
         inputBox.setEditorKit(inputKit);
         inputDoc = (ConversationDocument) inputBox.getDocument();
-        inputBox.setCursor(Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR));
+        inputKit.setDefaultCursor(Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR));
         convBox.setEditorKit(convKit);
         convDoc = (ConversationDocument) convBox.getDocument();
 
@@ -236,16 +247,14 @@ public class ImBox extends JFrame {
         this.conn = conn;
         this.buddy = buddy;
         conn.getBuddyTrustManager().addBuddyTrustListener(new BuddyTrustAdapter() {
-            public void gotUntrustedCertificateChange(BuddyTrustManager manager,
-                    Screenname buddy, BuddyCertificateInfo info) {
-                if (!buddy.equals(ImBox.this.buddy)) return;
-                askAboutCertificates(info);
+            public void gotUntrustedCertificateChange(BuddyTrustEvent event) {
+                if (!event.isFor(ImBox.this.buddy)) return;
+                askAboutCertificates(event.getCertInfo());
             }
 
-            public void gotUnknownCertificateChange(BuddyTrustManager manager,
-                    Screenname buddy, BuddyCertificateInfo certInfo) {
-                if (!buddy.equals(ImBox.this.buddy)) return;
-                askAboutCertificates(certInfo);
+            public void gotUnknownCertificateChange(BuddyTrustEvent event) {
+                if (!event.isFor(ImBox.this.buddy)) return;
+                askAboutCertificates(event.getCertInfo());
             }
         });
     }
@@ -256,8 +265,13 @@ public class ImBox extends JFrame {
         conversation.addConversationListener(conversationListener);
 
         convs.add(conversation);
-        typesModel.addElement(new ConversationInfo(conversation));
-        updateButtons();
+        final ConversationInfo convInfo = new ConversationInfo(conversation);
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                typesModel.addElement(convInfo);
+                updateButtons();
+            }
+        });
     }
 
     private synchronized void closeAllConversations() {
@@ -268,13 +282,22 @@ public class ImBox extends JFrame {
     }
 
     private void askAboutCertificates(BuddyCertificateInfo certInfo) {
+        ByteBlock hash = certInfo.getCertificateInfoHash();
+        boolean wasnew = alreadyAskedCerts.add(hash);
+        if (!wasnew) return;
+
         System.out.println("asking for certificates for " + buddy + ": " + certInfo);
-        miniDialogStack.popup(new BuddyTrustedMiniDialog(conn, buddy, certInfo));
+        miniDialogStack.popup(new BuddyTrustMiniDialog(conn, buddy, certInfo));
     }
 
     private void updateButtons() {
         Conversation conversation = getCurrentConversation();
-        final boolean enabled = conversation != null && conversation.isOpen();
+        System.out.println("updating buttons for " + MiscTools.getClassName(conversation));
+        System.out.println((conversation != null) + "-"
+                + (conversation != null && conversation.isOpen()) + "-"
+                + (conversation != null && conversation.canSendMessage()));
+        final boolean enabled = conversation != null && conversation.isOpen()
+                && conversation.canSendMessage();
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
                 sendAction.setEnabled(enabled);
@@ -288,6 +311,11 @@ public class ImBox extends JFrame {
 
     public synchronized void setCurrentConversation(Conversation conv) {
         this.currentConversation = conv;
+        updateButtons();
+    }
+
+    public void setValidBox(boolean valid) {
+        //TODO: disable things in the box
     }
 
     private static class ConversationInfo {
@@ -345,9 +373,10 @@ public class ImBox extends JFrame {
             try {
                 conversation.sendMessage(new SimpleMessage(inputBox.getText()));
                 inputBox.setText("");
+                //TODO: return focus to whomever had it
 
             } catch (ConversationException ex) {
-                //TODO: print error message
+                //TODO: print error message when message can't be sent
                 ex.printStackTrace();
             }
         }

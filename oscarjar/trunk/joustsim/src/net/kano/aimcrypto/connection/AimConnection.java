@@ -42,7 +42,6 @@ import net.kano.aimcrypto.TrustedCertificatesTracker;
 import net.kano.aimcrypto.config.LocalPreferencesManager;
 import net.kano.aimcrypto.config.PermanentCertificateTrustManager;
 import net.kano.aimcrypto.config.PermanentSignerTrustManager;
-import net.kano.aimcrypto.config.BuddyCertificateInfo;
 import net.kano.aimcrypto.connection.oscar.BasicConnection;
 import net.kano.aimcrypto.connection.oscar.LoginConnection;
 import net.kano.aimcrypto.connection.oscar.LoginServiceListener;
@@ -52,28 +51,29 @@ import net.kano.aimcrypto.connection.oscar.loginstatus.LoginFailureInfo;
 import net.kano.aimcrypto.connection.oscar.loginstatus.LoginSuccessInfo;
 import net.kano.aimcrypto.connection.oscar.service.Service;
 import net.kano.aimcrypto.connection.oscar.service.ServiceFactory;
-import net.kano.aimcrypto.connection.oscar.service.SsiService;
-import net.kano.aimcrypto.connection.oscar.service.bos.BosService;
+import net.kano.aimcrypto.connection.oscar.service.ssi.SsiService;
+import net.kano.aimcrypto.connection.oscar.service.ssi.SsiService;
+import net.kano.aimcrypto.connection.oscar.service.bos.MainBosService;
 import net.kano.aimcrypto.connection.oscar.service.buddy.BuddyService;
 import net.kano.aimcrypto.connection.oscar.service.icbm.IcbmService;
+import net.kano.aimcrypto.connection.oscar.service.info.BuddyTrustAdapter;
+import net.kano.aimcrypto.connection.oscar.service.info.BuddyTrustEvent;
+import net.kano.aimcrypto.connection.oscar.service.info.BuddyTrustManager;
 import net.kano.aimcrypto.connection.oscar.service.info.CertificateInfoTrustManager;
 import net.kano.aimcrypto.connection.oscar.service.info.InfoService;
-import net.kano.aimcrypto.connection.oscar.service.info.BuddyTrustManager;
-import net.kano.aimcrypto.connection.oscar.service.info.BuddyTrustAdapter;
 import net.kano.aimcrypto.connection.oscar.service.login.LoginService;
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.ByteBlock;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.net.ClientConn;
 import net.kano.joscar.net.ClientConnEvent;
+import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.auth.AuthCommand;
 import net.kano.joscar.snaccmd.buddy.BuddyCommand;
 import net.kano.joscar.snaccmd.conn.ConnCommand;
 import net.kano.joscar.snaccmd.icbm.IcbmCommand;
 import net.kano.joscar.snaccmd.loc.LocCommand;
 import net.kano.joscar.snaccmd.ssi.SsiCommand;
-import net.kano.joscar.snaccmd.CapabilityBlock;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -151,24 +151,20 @@ public class AimConnection {
                 = new CertificateInfoTrustManager(trustedCertificatesTracker);
         buddyTrustManager = new BuddyTrustManager(this);
         buddyTrustManager.addBuddyTrustListener(new BuddyTrustAdapter() {
-            public void buddyTrusted(BuddyTrustManager manager, Screenname buddy,
-                    BuddyCertificateInfo info) {
-                System.out.println("* " + buddy + " is trusted");
+            public void buddyTrusted(BuddyTrustEvent event) {
+                System.out.println("* " + event.getBuddy() + " is trusted");
             }
 
-            public void buddyTrustRevoked(BuddyTrustManager manager, Screenname buddy,
-                    BuddyCertificateInfo info) {
-                System.out.println("* " + buddy + " is no longer trusted");
+            public void buddyTrustRevoked(BuddyTrustEvent event) {
+                System.out.println("* " + event.getBuddy() + " is no longer trusted");
             }
 
-            public void gotTrustedCertificateChange(BuddyTrustManager manager,
-                    Screenname buddy, BuddyCertificateInfo info) {
-                System.out.println("* " + buddy + " has a trusted certificate");
+            public void gotTrustedCertificateChange(BuddyTrustEvent event) {
+                System.out.println("* " + event.getBuddy() + " has a trusted certificate");
             }
 
-            public void gotUntrustedCertificateChange(BuddyTrustManager manager,
-                    Screenname buddy, BuddyCertificateInfo info) {
-                System.out.println("* " + buddy + " has an untrusted certificate");
+            public void gotUntrustedCertificateChange(BuddyTrustEvent event) {
+                System.out.println("* " + event.getBuddy() + " has an untrusted certificate");
             }
         });
         capabilityManager = new CapabilityManager(this);
@@ -224,7 +220,6 @@ public class AimConnection {
     }
 
     public void disconnect() {
-        //TODO: disconnect
         closeConnections();
     }
 
@@ -239,9 +234,9 @@ public class AimConnection {
         else return null;
     }
 
-    public BosService getBosService() {
+    public MainBosService getBosService() {
         Service service = getService(ConnCommand.FAMILY_CONN);
-        if (service instanceof BosService) return (BosService) service;
+        if (service instanceof MainBosService) return (MainBosService) service;
         else return null;
     }
 
@@ -318,12 +313,12 @@ public class AimConnection {
     }
 
     private void internalDisconnected() {
-        //TODO: close all related OSCAR connections
         setState(null, State.DISCONNECTED, new DisconnectedStateInfo());
         closeConnections();
     }
 
     private void closeConnections() {
+        //TODO: close all related OSCAR connections
         loginConn.disconnect();
         BasicConnection mainConn = this.mainConn;
         if (mainConn != null) mainConn.disconnect();
@@ -406,7 +401,7 @@ public class AimConnection {
     private class BasicServiceFactory implements ServiceFactory {
         public Service getService(OscarConnection conn, int family) {
             if (family == ConnCommand.FAMILY_CONN) {
-                return new BosService(AimConnection.this, conn);
+                return new MainBosService(AimConnection.this, conn);
             } else if (family == IcbmCommand.FAMILY_ICBM) {
                 return new IcbmService(AimConnection.this, conn);
             } else if (family == BuddyCommand.FAMILY_BUDDY) {

@@ -38,11 +38,11 @@ package net.kano.aimcrypto.config;
 import net.kano.joscar.DefensiveTools;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.FileFilter;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 public class GlobalPrefs implements Preferences, FileBasedResource {
     private static final FileFilter FILTER_VISIBLE_DIRS = new FileFilter() {
@@ -61,14 +61,12 @@ public class GlobalPrefs implements Preferences, FileBasedResource {
 
     private String[] knownScreennames = SNS_EMPTY;
 
-    public GlobalPrefs(File configDir, File globalPrefsDir) {
+    public GlobalPrefs(File configDir) {
         DefensiveTools.checkNull(configDir, "configDir");
-        DefensiveTools.checkNull(globalPrefsDir, "globalPrefsDir");
 
         this.configDir = configDir;
-        //TODO: replace new File() with something more portable, in general
-        this.localPrefsDir = new File(configDir, "local");
-        this.globalPrefsDir = globalPrefsDir;
+        this.localPrefsDir = PrefTools.getLocalConfigDir(configDir);
+        this.globalPrefsDir = PrefTools.getGlobalConfigDir(configDir);
         this.globalPrefsFile = new File(globalPrefsDir, "prefs.properties");
         this.snLoader = new KnownScreennamesLoader();
     }
