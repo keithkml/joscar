@@ -35,6 +35,19 @@
 
 package net.kano.joscar.rv;
 
-public interface RvListener {
-    void handleNewIncomingSession(NewRvSessionEvent event);
+/**
+ * An interface for handling and possibly initializing new rendezvous sessions
+ * created on a <code>RvProcessor</code>.
+ */
+public interface RvProcessorListener {
+    /**
+     * Called when a new RV session is created on a <code>RvProcessor</code> to
+     * which this listener has been added. See {@link NewRvSessionEvent} for
+     * details.
+     *
+     * @param event an object describing the session's creation
+     *
+     * @see NewRvSessionEvent
+     */
+    void handleNewSession(NewRvSessionEvent event);
 }
