@@ -38,6 +38,7 @@ package net.kano.joscar.snac;
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.SeqNum;
+import net.kano.joscar.MiscTools;
 import net.kano.joscar.flap.FlapProcessor;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.flapcmd.SnacPacket;
@@ -134,10 +135,10 @@ public class ClientSnacProcessor extends AbstractSnacProcessor {
     public static final int REQUEST_TTL_DEFAULT = 15*60;
 
     /** The minimum request ID value. */
-    private static final long REQID_MIN = 1;
+    public static final long REQID_MIN = 0;
 
     /** The maximum request ID value before it wraps to {@link #REQID_MIN}. */
-    private static final long REQID_MAX = 0x80000000L - 1L;
+    public static final long REQID_MAX = 0x80000000L - 1L;
 
     /** An object used to generate sequential SNAC request ID's. */
     private final SeqNum reqid = new SeqNum(REQID_MIN, REQID_MAX);
@@ -367,7 +368,9 @@ public class ClientSnacProcessor extends AbstractSnacProcessor {
      * several special cases to use less memory and CPU time involved in sending
      * SNAC requests. A value of zero also means that SNAC requests' listeners
      * will <i>never</i> be called with responses, as request ID's are not
-     * stored at all.
+     * stored at all. Additionally, with a value of zero, SNAC requests'
+     * listeners will <i>never</i> be called with timeout events, as all
+     * requests will "time out" immediately.
      *
      * @param requestTtl the new "time to live" for SNAC requests, in seconds
      */
@@ -473,8 +476,9 @@ public class ClientSnacProcessor extends AbstractSnacProcessor {
 
                 long diff = time - sentTime;
 
-                // these are in order, so this is okay. it may not be in the
-                // future, with rate limiting and such.
+                // these are in the order in which they were sent, so once we've
+                // found one that was sent more recently than the TTL states,
+                // we've found them all. so we break.
                 if (diff < ttlms) break;
 
                 // queue this request up to be timed out
@@ -511,8 +515,7 @@ public class ClientSnacProcessor extends AbstractSnacProcessor {
         long reqid = reqInfo.getRequest().getReqid();
 
         if (logger.isLoggable(Level.FINE)) {
-            logger.fine("Queueing Snac request #" + reqid + ": "
-                    + command);
+            logger.fine("Queueing Snac request #" + reqid + ": " + command);
         }
 
         SnacQueueManager queueMgr;
@@ -567,6 +570,8 @@ public class ClientSnacProcessor extends AbstractSnacProcessor {
                 requests.remove(new Long(reqid));
             }
         }
+        System.out.println("request map: " + requests.values());
+        System.out.println("request queue: " + requestQueue);
 
         if (logger.isLoggable(Level.FINER)) {
             logger.finer("Finished sending SNAC request " + request);
@@ -575,7 +580,7 @@ public class ClientSnacProcessor extends AbstractSnacProcessor {
 
     /**
      * Performs the various tasks necessary for notifying any request listeners
-     * (including out own <code>RequestInfo</code>) that a SNAC request has been
+     * (including our own <code>RequestInfo</code>) that a SNAC request has been
      * sent.
      *
      * @param reqInfo the request information object whose request was sent
@@ -766,10 +771,19 @@ public class ClientSnacProcessor extends AbstractSnacProcessor {
 
         /**
          * Returns the time, in milliseconds since unix epoch, at which the
-         * associated request was sent.
+         * associated request was sent. If this request has not yet been sent,
+         * <code>-1</code> will be returned.
          *
-         * @return the time at which the associated SNAC request was sent
+         * @return the time at which the associated SNAC request was sent, or
+         *         <code>-1</code> if it was not yet sent
          */
         public synchronized final long getSentTime() { return sent; }
+
+        public String toString() {
+            return "Request " + MiscTools.getClassName(request.getCommand())
+                    + ": " + (sent == -1 ? "not sent"
+                    : "sent " + ((System.currentTimeMillis() - sent) / 1000)
+                    + "s ago");
+        }
     }
 }
