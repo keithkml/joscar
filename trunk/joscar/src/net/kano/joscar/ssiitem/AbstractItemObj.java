@@ -41,6 +41,7 @@ import net.kano.joscar.snaccmd.ssi.SsiItem;
 import net.kano.joscar.tlv.DefaultMutableTlvChain;
 import net.kano.joscar.tlv.MutableTlvChain;
 import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.TlvTools;
 
 /**
  * A base class for each of the item object classes provided in this package.
@@ -69,7 +70,7 @@ public abstract class AbstractItemObj implements SsiItemObj {
     }
 
     /** The "extra TLV's" in this item. This is never <code>null</code>*/
-    private final MutableTlvChain extraTlvs = new DefaultMutableTlvChain();
+    private final MutableTlvChain extraTlvs = TlvTools.createMutableChain();
 
     /**
      * Creates a new item object with no extra TLV's. Using this constructor is
@@ -97,7 +98,7 @@ public abstract class AbstractItemObj implements SsiItemObj {
      * @return a copy of this item's extra TLV's
      */
     protected final TlvChain copyExtraTlvs() {
-        return new DefaultMutableTlvChain(extraTlvs);
+        return TlvTools.getMutableCopy(extraTlvs);
     }
 
     public final MutableTlvChain getExtraTlvs() {
@@ -131,7 +132,7 @@ public abstract class AbstractItemObj implements SsiItemObj {
      */
     protected final SsiItem generateItem(String name, int parentid, int subid,
             int type, TlvChain customTlvs) {
-        MutableTlvChain chain = new DefaultMutableTlvChain(extraTlvs);
+        MutableTlvChain chain = TlvTools.getMutableCopy(extraTlvs);
         if (customTlvs != null) chain.replaceAll(customTlvs);
 
         return new SsiItem(name, parentid, subid, type,

@@ -39,6 +39,7 @@ import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.snaccmd.icbm.RvCommand;
 import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.TlvTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -50,7 +51,7 @@ public class GenericRvCommand extends RvCommand {
     public GenericRvCommand(RecvRvIcbm rvIcbm) {
         super(rvIcbm);
 
-        chain = ImmutableTlvChain.readChain(rvIcbm.getRvData());
+        chain = TlvTools.readChain(rvIcbm.getRvData());
     }
 
     public void writeRvData(OutputStream out) throws IOException { }

@@ -41,6 +41,7 @@ import net.kano.joscar.rvcmd.SegmentedFilename;
 import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.TlvTools;
 
 import java.io.File;
 import java.io.IOException;
@@ -103,7 +104,7 @@ public class GetFileEntry implements LiveWritable {
 
         if (totalTlvCount == 0) return null;
 
-        TlvChain chain = ImmutableTlvChain.createChain(tlvs, offset,
+        TlvChain chain = TlvTools.createChain(tlvs, offset,
                 totalTlvCount);
 
         SegmentedFilename filename = null;

@@ -36,76 +36,14 @@
 package net.kano.joscar.tlv;
 
 import net.kano.joscar.ByteBlock;
-import net.kano.joscar.DefensiveTools;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * An immutable TLV chain, a TLV chain that cannot be modified after its
  * creation. 
  */
 public final class ImmutableTlvChain extends AbstractTlvChain {
-    /**
-     * Reads a TLV chain from the given block of TLV's. Calling this method is
-     * equivalent to calling {@link #readChain(ByteBlock, int) readChain(block,
-     * -1)}. The total number of bytes read can be read by calling the
-     * <code>getTotalSize</code> method of the returned <code>TlvChain</code>.
-     *
-     * @param block the data block containing zero or more TLV's
-     * @return a TLV chain object containing TLV's read from the given block of
-     *         data
-     */
-    public static ImmutableTlvChain readChain(ByteBlock block) {
-        return readChain(block, -1);
-    }
-
-    /**
-     * Reads a TLV chain from the given block of TLV's, stopping after reading
-     * the number of TLV's specified by <code>maxTlvs</code>. If
-     * <code>maxTlvs</code> is <code>-1</code>, all possible TLV's are read. The
-     * total number of bytes read can be read by calling the
-     * <code>getTotalSize</code> method of the returned <code>TlvChain</code>.
-     *
-     * @param block block the data block containing zero or more TLV's
-     * @param maxTlvs the maximum number of TLV's to read, or <code>-1</code> to
-     *        read all possible TLV's in the given block
-     * @return an <i>immutable</i> TLV chain object containing TLV's read from
-     *         the given block of data
-     */
-    public static ImmutableTlvChain readChain(ByteBlock block, int maxTlvs) {
-        return new ImmutableTlvChain(block, maxTlvs);
-    }
-
-    /**
-     * Creates a new immutable TLV chain with the given number of TLV's starting
-     * from the given offset of the given TLV array. Note that no element of
-     * <code>tlvs</code> can be <code>null</code>.
-     *
-     * @param tlvs the list of (non-<code>null</code>) TLV's
-     * @param offset the index of the first TLV that this chain should contain
-     * @param len the number of TLV's to include in this chain
-     * @return a TLV chain containing the given number of TLV's starting at the
-     *         given index of the given array of TLV's
-     */
-    public static ImmutableTlvChain createChain(Tlv[] tlvs, int offset,
-            int len) {
-        DefensiveTools.checkNull(tlvs, "tlvs");
-
-        if (offset < 0 || len < 0 || offset + len > tlvs.length) {
-            throw new ArrayIndexOutOfBoundsException("offset=" + offset
-                    + ", len=" + len + ", tlvs.length=" + tlvs.length);
-        }
-
-        DefensiveTools.checkNullElements(tlvs, "tlvs", offset, len);
-
-        return new ImmutableTlvChain(tlvs, offset, len);
-    }
-
     /** A list of the TLV's in this chain, in order. */
     private final List tlvList = new LinkedList();
     /**
@@ -122,7 +60,7 @@ public final class ImmutableTlvChain extends AbstractTlvChain {
      * @param offset the index of the first TLV that this chain should contain
      * @param len the number of TLV's to include in this chain
      */
-    private ImmutableTlvChain(Tlv[] tlvs, int offset, int len) {
+    ImmutableTlvChain(Tlv[] tlvs, int offset, int len) {
         List list = Arrays.asList(tlvs).subList(offset, offset + len);
         for (Iterator it = list.iterator(); it.hasNext();) {
             addTlvImpl((Tlv) it.next());
@@ -140,15 +78,8 @@ public final class ImmutableTlvChain extends AbstractTlvChain {
      * @param maxTlvs the maximum number of TLV's to read, or <code>-1</code> to
      *        read all possible TLV's in the given block
      */
-    private ImmutableTlvChain(ByteBlock block, int maxTlvs) {
+    ImmutableTlvChain(ByteBlock block, int maxTlvs) {
         initFromBlock(block, maxTlvs);
-    }
-
-    /**
-     * Creates a new, empty TLV chain.
-     */
-    protected ImmutableTlvChain() {
-        super(-1);
     }
 
     /**
@@ -157,7 +88,7 @@ public final class ImmutableTlvChain extends AbstractTlvChain {
      *
      * @param other a TLV chain to copy
      */
-    public ImmutableTlvChain(TlvChain other) {
+    ImmutableTlvChain(TlvChain other) {
         copy(other);
     }
 

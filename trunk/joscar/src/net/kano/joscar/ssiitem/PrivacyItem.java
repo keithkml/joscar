@@ -40,11 +40,7 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.FullUserInfo;
 import net.kano.joscar.snaccmd.ssi.SsiItem;
-import net.kano.joscar.tlv.DefaultMutableTlvChain;
-import net.kano.joscar.tlv.ImmutableTlvChain;
-import net.kano.joscar.tlv.MutableTlvChain;
-import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.*;
 
 /**
  * An SSI item object containing various privacy-related settings.
@@ -115,7 +111,7 @@ public class PrivacyItem extends AbstractItemObj {
     public PrivacyItem(SsiItem item) {
         DefensiveTools.checkNull(item, "item");
 
-        TlvChain chain = ImmutableTlvChain.readChain(item.getData());
+        TlvChain chain = TlvTools.readChain(item.getData());
 
         id = item.getId();
 
@@ -140,7 +136,7 @@ public class PrivacyItem extends AbstractItemObj {
             visibleMask = -1;
         }
 
-        MutableTlvChain extraTlvs = new DefaultMutableTlvChain(chain);
+        MutableTlvChain extraTlvs = TlvTools.getMutableCopy(chain);
 
         extraTlvs.removeTlvs(new int[] {
             TYPE_PRIVACY_MODE, TYPE_CLASS_MASK, TYPE_VISIBILE_MASK
@@ -332,7 +328,7 @@ if ((privacyItem.getVisibleMask() & PrivacyItem.VISMASK_HIDE_WIRELESS) != 0) {
     }
 
     public synchronized SsiItem toSsiItem() {
-        MutableTlvChain chain = new DefaultMutableTlvChain();
+        MutableTlvChain chain = TlvTools.createMutableChain();
 
         if (privacyMode != -1) {
             chain.addTlv(new Tlv(TYPE_PRIVACY_MODE,

@@ -41,11 +41,7 @@ import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.LiveWritable;
 import net.kano.joscar.OscarTools;
 import net.kano.joscar.StringBlock;
-import net.kano.joscar.tlv.DefaultMutableTlvChain;
-import net.kano.joscar.tlv.ImmutableTlvChain;
-import net.kano.joscar.tlv.MutableTlvChain;
-import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.*;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -141,7 +137,7 @@ public class FullUserInfo implements LiveWritable {
 
         int tlvCount = BinaryTools.getUShort(block, 0);
         block = block.subBlock(2);
-        TlvChain chain = ImmutableTlvChain.readChain(block, tlvCount);
+        TlvChain chain = TlvTools.readChain(block, tlvCount);
 
         // read the TLV's we know about
         Tlv userFlagTlv = chain.getLastTlv(TYPE_USER_FLAG);
@@ -157,7 +153,7 @@ public class FullUserInfo implements LiveWritable {
         Tlv shortCapTlv = chain.getLastTlv(TYPE_SHORT_CAPS);
         Tlv securityTlv = chain.getLastTlv(TYPE_CERT_INFO_HASH);
 
-        MutableTlvChain extras = new DefaultMutableTlvChain(chain);
+        MutableTlvChain extras = TlvTools.getMutableCopy(chain);
         extras.removeTlvs(new int[] {
             TYPE_USER_FLAG, TYPE_ACCT_CREATED, TYPE_ON_SINCE, TYPE_IDLE_MINS,
             TYPE_MEMBER_SINCE, TYPE_CAPS, TYPE_SESS_LEN_AIM, TYPE_SESS_LEN_AOL,
@@ -238,7 +234,7 @@ public class FullUserInfo implements LiveWritable {
         ImmutableTlvChain securityChain = null;
         if (securityTlv != null) {
             ByteBlock securityData = securityTlv.getData();
-            securityChain = ImmutableTlvChain.readChain(securityData);
+            securityChain = TlvTools.readChain(securityData);
         }
 
         block = block.subBlock(chain.getTotalSize());
@@ -246,7 +242,7 @@ public class FullUserInfo implements LiveWritable {
         // and store this for use by fun things.
         int totalSize = block.getOffset() - start;
 
-        ImmutableTlvChain extrasImmutable = new ImmutableTlvChain(extras);
+        ImmutableTlvChain extrasImmutable = TlvTools.getImmutableCopy(extras);
 
         return new FullUserInfo(sn, warningLevel, flags, accountCreated,
                 memberSince, sessLengthAIM, sessLengthAOL, onSince, idleMins,
@@ -733,7 +729,7 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
 
         BinaryTools.writeUByte(out, warningLevel);
 
-        MutableTlvChain chain = new DefaultMutableTlvChain();
+        MutableTlvChain chain = TlvTools.createMutableChain();
 
         if (flags != -1 || away != null) {
             int flags = this.flags;

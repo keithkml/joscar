@@ -39,11 +39,7 @@ import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.ssi.SsiItem;
-import net.kano.joscar.tlv.DefaultMutableTlvChain;
-import net.kano.joscar.tlv.ImmutableTlvChain;
-import net.kano.joscar.tlv.MutableTlvChain;
-import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -87,7 +83,7 @@ public class RootItem extends AbstractItemObj {
     public RootItem(SsiItem item) {
         DefensiveTools.checkNull(item, "item");
 
-        TlvChain chain = ImmutableTlvChain.readChain(item.getData());
+        TlvChain chain = TlvTools.readChain(item.getData());
 
         Tlv groupTlv = chain.getLastTlv(TYPE_GROUPIDS);
 
@@ -103,7 +99,7 @@ public class RootItem extends AbstractItemObj {
             groupids = null;
         }
 
-        MutableTlvChain extraTlvs = new DefaultMutableTlvChain(chain);
+        MutableTlvChain extraTlvs = TlvTools.getMutableCopy(chain);
 
         extraTlvs.removeTlvs(new int[] { TYPE_GROUPIDS });
 
@@ -176,7 +172,7 @@ public class RootItem extends AbstractItemObj {
     }
 
     public synchronized SsiItem toSsiItem() {
-        MutableTlvChain chain = new DefaultMutableTlvChain();
+        MutableTlvChain chain = TlvTools.createMutableChain();
 
         if (groupids != null) {
             ByteArrayOutputStream out

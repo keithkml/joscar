@@ -43,6 +43,7 @@ import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.TlvTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -81,7 +82,7 @@ public class SetInterestsCmd extends LocCommand {
 
         ByteBlock snacData = packet.getData();
 
-        TlvChain chain = ImmutableTlvChain.readChain(snacData);
+        TlvChain chain = TlvTools.readChain(snacData);
 
         String charset = chain.getString(TYPE_CHARSET);
 

@@ -38,6 +38,7 @@ package net.kano.joscartests;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.FileWritable;
 import net.kano.joscar.OscarTools;
+import net.kano.joscar.BinaryTools;
 import net.kano.joscar.flap.ClientFlapConn;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.flapcmd.SnacFlapCmd;
@@ -74,7 +75,6 @@ import net.kano.joscar.snaccmd.icbm.OldIconHashInfo;
 import net.kano.joscar.snaccmd.icbm.SendImIcbm;
 import net.kano.joscar.snaccmd.icon.UploadIconCmd;
 import net.kano.joscar.snaccmd.invite.InviteFriendCmd;
-import net.kano.joscar.snaccmd.loc.GetCertificateInfoCmd;
 import net.kano.joscar.snaccmd.loc.GetDirInfoCmd;
 import net.kano.joscar.snaccmd.loc.GetInfoCmd;
 import net.kano.joscar.snaccmd.loc.SetDirInfoCmd;
@@ -96,16 +96,48 @@ import net.kano.joscar.ssiitem.PermitItem;
 import net.kano.joscar.ssiitem.PrivacyItem;
 import net.kano.joscar.ssiitem.RootItem;
 import net.kano.joscar.ssiitem.VisibilityItem;
+import org.bouncycastle.asn1.ASN1InputStream;
+import org.bouncycastle.asn1.ASN1OctetString;
+import org.bouncycastle.asn1.ASN1Sequence;
+import org.bouncycastle.asn1.BERTaggedObject;
+import org.bouncycastle.asn1.DEROctetString;
+import org.bouncycastle.asn1.ASN1OutputStream;
+import org.bouncycastle.asn1.DERObjectIdentifier;
+import org.bouncycastle.asn1.DERSequence;
+import org.bouncycastle.asn1.ASN1EncodableVector;
+import org.bouncycastle.asn1.cms.EncryptedContentInfo;
+import org.bouncycastle.asn1.cms.EncryptedData;
+import org.bouncycastle.asn1.cms.KeyTransRecipientInfo;
+import org.bouncycastle.asn1.cms.RecipientIdentifier;
+import org.bouncycastle.asn1.cms.IssuerAndSerialNumber;
+import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
+import org.bouncycastle.asn1.x509.X509Name;
 import org.bouncycastle.cms.CMSEnvelopedData;
 import org.bouncycastle.cms.CMSEnvelopedDataGenerator;
+import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.cms.CMSProcessableByteArray;
 import org.bouncycastle.cms.CMSSignedData;
 import org.bouncycastle.cms.CMSSignedDataGenerator;
+import org.bouncycastle.cms.SignerInformation;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
+import javax.crypto.KeyGenerator;
+import javax.crypto.spec.IvParameterSpec;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLServerSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
@@ -115,6 +147,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.MessageDigest;
@@ -122,13 +157,18 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.Provider;
+import java.security.SecureRandom;
 import java.security.Security;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.security.cert.CertificateExpiredException;
+import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.X509Certificate;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -164,6 +204,7 @@ public class JoscarTester implements CmdLineListener {
     protected BosFlapConn bosConn = null;
     protected Set services = new HashSet();
     protected Map chats = new HashMap();
+    private Map keys = new HashMap();
 
     public JoscarTester(String sn, String pass) {
         new CmdLineReader(this);
@@ -232,51 +273,8 @@ public class JoscarTester implements CmdLineListener {
         ChatConn conn = new ChatConn(host, DEFAULT_SERVICE_PORT, this, cookie,
                 roomInfo);
 
-        conn.addChatListener(new ChatConnListener() {
-            public void connFailed(ChatConn conn, Object reason) { }
-
-            public void connected(ChatConn conn) { }
-
-            public void joined(ChatConn conn, FullUserInfo[] members) {
-                String name = conn.getRoomInfo().getName();
-                chats.put(OscarTools.normalize(name), conn);
-
-                System.out.println("*** Joined "
-                        + conn.getRoomInfo().getRoomName() + ", members:");
-                for (int i = 0; i < members.length; i++) {
-                    System.out.println("  " + members[i].getScreenname());
-                }
-            }
-
-            public void left(ChatConn conn, Object reason) {
-                String name = conn.getRoomInfo().getName();
-                chats.remove(OscarTools.normalize(name));
-
-                System.out.println("*** Left "
-                        + conn.getRoomInfo().getRoomName());
-            }
-
-            public void usersJoined(ChatConn conn, FullUserInfo[] members) {
-                for (int i = 0; i < members.length; i++) {
-                    System.out.println("*** " + members[i].getScreenname()
-                            + " joined " + conn.getRoomInfo().getRoomName());
-                }
-            }
-
-            public void usersLeft(ChatConn conn, FullUserInfo[] members) {
-                for (int i = 0; i < members.length; i++) {
-                    System.out.println("*** " + members[i].getScreenname()
-                            + " left " + conn.getRoomInfo().getRoomName());
-                }
-            }
-
-            public void gotMsg(ChatConn conn, FullUserInfo sender,
-                    ChatMsg msg) {
-                System.out.println("<" + sender.getScreenname()
-                        + ":#" + conn.getRoomInfo().getRoomName() + "> "
-                        + OscarTools.stripHtml(msg.getMessage()));
-            }
-        });
+        conn.addChatListener(new MyChatConnListener());
+        conn.setKey((SecretKey) keys.get(roomInfo.getRoomName()));
 
         conn.connect();
     }
@@ -320,7 +318,7 @@ public class JoscarTester implements CmdLineListener {
         }
     }
 
-    private SnacRequest request(SnacCommand cmd) {
+    SnacRequest request(SnacCommand cmd) {
         return request(cmd, null);
     }
 
@@ -405,8 +403,9 @@ public class JoscarTester implements CmdLineListener {
         });
         cmdMap.put("info", new CLCommand() {
             public void handle(String line, String cmd, String[] args) {
-                request(new GetInfoCmd(GetInfoCmd.TYPE_AWAYMSG, args[0]));
-                request(new GetInfoCmd(GetInfoCmd.TYPE_INFO, args[0]));
+//                request(new OldGetInfoCmd(OldGetInfoCmd.TYPE_AWAYMSG, args[0]));
+//                request(new OldGetInfoCmd(OldGetInfoCmd.TYPE_INFO, args[0]));
+                request(new GetInfoCmd(GetInfoCmd.FLAG_AWAYMSG | GetInfoCmd.FLAG_INFO, args[0]));
             }
         });
         cmdMap.put("dirinfo", new CLCommand() {
@@ -523,7 +522,7 @@ public class JoscarTester implements CmdLineListener {
         });
         cmdMap.put("getcertinfo", new CLCommand() {
             public void handle(String line, String cmd, String[] args) {
-                request(new GetCertificateInfoCmd(args[0]));
+                request(new GetInfoCmd(GetInfoCmd.FLAG_CERT, args[0]));
             }
         });
         // WORKS
@@ -898,46 +897,15 @@ public class JoscarTester implements CmdLineListener {
         });
         cmdMap.put("encim", new CLCommand() {
             public void handle(String line, String cmd, String[] args) {
-                X509Certificate cert = getCert(args[0]);
-
-                if (cert == null) {
-                    System.out.println("no cert for " + args[0] + "!");
-                    return;
-                }
-
                 try {
-                    ByteArrayOutputStream bout = new ByteArrayOutputStream();
-                    OutputStreamWriter osw = new OutputStreamWriter(bout);
-                    osw.write("Content-Transfer-Encoding: binary\r\n"
-                            + "Content-Type: text/x-aolrtf; charset=us-ascii\r\n"
-                            + "Content-Language: en\r\n"
-                            + "\r\n");
-                    osw.flush();
-                    bout.write(args[1].getBytes());
+                    ByteBlock encodedMsg = encryptMsg(args[0], args[1]);
 
-                    CMSSignedDataGenerator sgen = new CMSSignedDataGenerator();
-                    sgen.addSigner(privateKey, pubCert, CMSSignedDataGenerator.DIGEST_MD5);
-                    CMSSignedData csd = sgen.generate(
-                            new CMSProcessableByteArray(bout.toByteArray()),
-                            true, "BC");
-
-                    bout = new ByteArrayOutputStream();
-                    osw = new OutputStreamWriter(bout);
-                    osw.write("Content-Transfer-Encoding: binary\r\n"
-                            + "Content-Type: application/pkcs7-mime; charset=us-ascii\r\n"
-                            + "Content-Language: en\r\n"
-                            + "\r\n");
-                    osw.flush();
-                    bout.write(csd.getEncoded());
-
-                    CMSEnvelopedDataGenerator gen = new CMSEnvelopedDataGenerator();
-                    gen.addKeyTransRecipient(cert);
-                    CMSEnvelopedData envData = gen.generate(
-                            new CMSProcessableByteArray(bout.toByteArray()),
-                            "2.16.840.1.101.3.4.1.2", "BC");
+                    if (encodedMsg == null) {
+                        System.out.println("no cert for " + args[0] + "!");
+                    }
 
                     request(new SendImIcbm(args[0], new InstantMessage(
-                            ByteBlock.wrap(envData.getEncoded())), false, 0,
+                            encodedMsg), false, 0,
                             false, null, null, true));
 
                 } catch (Exception e) {
@@ -945,20 +913,282 @@ public class JoscarTester implements CmdLineListener {
                 }
             }
         });
+        cmdMap.put("encsendfile", new CLCommand() {
+            public void handle(String line, String cmd, String[] args) {
+                final String sn = args[0];
+                RvSession session = bosConn.rvProcessor.createRvSession(
+                        sn);
+
+                ServerSocket socket;
+                try {
+                    KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
+                    kmf.init(keystore, "pass".toCharArray());
+                    SSLContext context = SSLContext.getInstance("SSL");
+                    context.init(kmf.getKeyManagers(),
+                            new TrustManager[] { new X509TrustManager() {
+                        public X509Certificate[] getAcceptedIssuers() {
+                            return new X509Certificate[0];
+                        }
+
+                        public void checkClientTrusted(X509Certificate[] certs,
+                                String string) throws CertificateException {
+                            checkTrusted(certs);
+                        }
+
+                        public void checkServerTrusted(X509Certificate[] certs,
+                                String string) throws CertificateException {
+                            checkTrusted(certs);
+                        }
+
+                        private void checkTrusted(X509Certificate[] certs)
+                                throws CertificateException {
+                            System.out.println("checking trust for " + Arrays.asList(certs));
+                            X509Certificate usercert = getCert(sn);
+                            for (int i = 0; i < certs.length; i++) {
+                                if (certs[i].equals(usercert)) return;
+                            }
+                            throw new CertificateException();
+                        }
+                    } },
+                            new SecureRandom());
+
+                    SSLServerSocketFactory factory = context.getServerSocketFactory();
+                    SSLServerSocket sss = (SSLServerSocket) factory.createServerSocket(7050);
+                    sss.setNeedClientAuth(true);
+                    socket = sss;
+
+                    new SendFileThread(session, socket).start();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    return;
+                } catch (UnrecoverableKeyException e) {
+                    e.printStackTrace();
+                    return;
+                } catch (NoSuchAlgorithmException e) {
+                    e.printStackTrace();
+                    return;
+                } catch (KeyStoreException e) {
+                    e.printStackTrace();
+                    return;
+                } catch (KeyManagementException e) {
+                    e.printStackTrace();
+                    return;
+                }
+
+                session.addListener(bosConn.rvSessionListener);
+
+                InetAddress localHost = bosConn.getSocket().getLocalAddress();
+                int port = socket.getLocalPort();
+                session.sendRv(new FileSendReqRvCmd(
+                        new InvitationMessage("take this file lol"),
+                        new RvConnectionInfo(localHost, null, null, port, false, true),
+                        new FileSendBlock("wut up.gif", 2000000)));
+            }
+        });
+        cmdMap.put("encjoinroom", new CLCommand() {
+            public void handle(String line, String cmd, String[] args) {
+                FullRoomInfo roomInfo = new FullRoomInfo(
+                        Integer.parseInt(args[0]), args[1], "us-ascii", "en",
+                        "application/pkcs7-mime");
+                handleRequest(new SnacRequest(new JoinRoomCmd(roomInfo), null));
+            }
+        });
+        cmdMap.put("encchatsay", new CLCommand() {
+            public void handle(String line, String cmd, String[] args) {
+                getChatConn(args[0]).sendEncMsg(args[1]);
+            }
+        });
+        cmdMap.put("fakeinvite", new CLCommand() {
+            public void handle(String line, String cmd, String[] args) {
+                RvSession session = bosConn.rvProcessor.createRvSession(
+                        args[0]);
+
+                session.addListener(bosConn.rvSessionListener);
+
+                session.sendRv(new ChatInvitationRvCmd(
+                        new MiniRoomInfo(4, args[1], 0),
+                        new InvitationMessage("wut up d00d")));
+            }
+        });
+        /*
+            CMSSignedData csd = new CMSSignedData(ByteBlock.createInputStream(data));
+            CMSProcessableByteArray cpb
+            = (CMSProcessableByteArray) csd.getSignedContent();
+            ByteBlock signedContent = ByteBlock.wrap((byte[]) cpb.getContent());
+            MiniRoomInfo mri = MiniRoomInfo.readMiniRoomInfo(signedContent);
+
+            ByteBlock rest = signedContent.subBlock(mri.getTotalSize());
+            int kdlen = BinaryTools.getUShort(rest, 0);
+            ByteBlock keyData = rest.subBlock(2, kdlen);
+
+            InputStream kdin = ByteBlock.createInputStream(keyData);
+            ASN1InputStream ain = new ASN1InputStream(kdin);
+            ASN1Sequence root = (ASN1Sequence) ain.readObject();
+            ASN1Sequence seq = (ASN1Sequence) root.getObjectAt(0);
+            KeyTransRecipientInfo ktr = KeyTransRecipientInfo.getInstance(seq);
+            DERObjectIdentifier keyoid = (DERObjectIdentifier) root.getObjectAt(1);
+
+            String encoid = ktr.getKeyEncryptionAlgorithm().getObjectId().getId();
+            Cipher cipher = Cipher.getInstance(encoid, "BC");
+            cipher.init(Cipher.DECRYPT_MODE, tester.privateKey);
+
+            byte[] result = cipher.doFinal(ktr.getEncryptedKey().getOctets());
+            return new SecretKeySpec(result, keyoid.getId());
+        */
+        cmdMap.put("encinvite", new CLCommand() {
+
+            private ByteBlock genSecurityInfo(ChatConn conn, String sn)
+                    throws NoSuchProviderException, NoSuchPaddingException,
+                    NoSuchAlgorithmException, InvalidKeyException,
+                    IllegalBlockSizeException, BadPaddingException, IOException,
+                    CMSException {
+                SecretKey key = conn.getKey();
+                byte[] keyData = key.getEncoded();
+
+                Cipher c = Cipher.getInstance("1.2.840.113549.1.1.1", "BC");
+                X509Certificate cert = getCert(sn);
+                c.init(Cipher.ENCRYPT_MODE, cert);
+
+                byte[] encryptedKey = c.doFinal(keyData);
+
+                X509Name xname = new X509Name(cert.getSubjectDN().getName());
+                IssuerAndSerialNumber ias
+                        = new IssuerAndSerialNumber(xname, cert.getSerialNumber());
+                KeyTransRecipientInfo ktr = new KeyTransRecipientInfo(
+                        new RecipientIdentifier(ias),
+                        new AlgorithmIdentifier("1.2.840.113549.1.1.1"),
+                        new DEROctetString(encryptedKey));
+
+                ASN1EncodableVector vec = new ASN1EncodableVector ();
+                vec.add(ktr);
+                vec.add(new DERObjectIdentifier("2.16.840.1.101.3.4.1.42"));
+
+                ByteArrayOutputStream bout = new ByteArrayOutputStream();
+                ASN1OutputStream aout = new ASN1OutputStream(bout);
+                aout.writeObject(new DERSequence(vec));
+                aout.close();
+
+                ByteArrayOutputStream bout2 = new ByteArrayOutputStream();
+                new MiniRoomInfo(conn.getRoomInfo()).write(bout2);
+                BinaryTools.writeUShort(bout2, bout.size());
+                bout.writeTo(bout2);
+
+                return ByteBlock.wrap(signData(bout2.toByteArray()));
+            }
+
+            public void handle(String line, String cmd, String[] args) {
+                RvSession session = bosConn.rvProcessor.createRvSession(
+                        args[0]);
+
+                ChatConn conn = (ChatConn) chats.get(args[1]);
+
+                session.addListener(bosConn.rvSessionListener);
+
+                try {
+                    ByteBlock secInfo = genSecurityInfo(conn, args[0]);
+                    session.sendRv(new ChatInvitationRvCmd(
+                            new MiniRoomInfo(conn.getRoomInfo()),
+                            new InvitationMessage("yo"),
+                            secInfo));
+                } catch (NoSuchProviderException e) {
+                    e.printStackTrace();
+                } catch (NoSuchPaddingException e) {
+                    e.printStackTrace();
+                } catch (NoSuchAlgorithmException e) {
+                    e.printStackTrace();
+                } catch (InvalidKeyException e) {
+                    e.printStackTrace();
+                } catch (IllegalBlockSizeException e) {
+                    e.printStackTrace();
+                } catch (BadPaddingException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (CMSException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        cmdMap.put("enccreateroom", new CLCommand() {
+            public void handle(String line, String cmd, String[] args) {
+                FullRoomInfo roomInfo = new FullRoomInfo(
+                        Integer.parseInt(args[0]), args[1], "us-ascii", "en",
+                        "application/pkcs7-mime");
+                try {
+                    KeyGenerator kg = KeyGenerator.getInstance("2.16.840.1.101.3.4.1.42");
+                    kg.init(new SecureRandom());
+                    setChatKey(args[1], kg.generateKey());
+                    handleRequest(new SnacRequest(new JoinRoomCmd(roomInfo), null));
+                } catch (NoSuchAlgorithmException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
     }
 
+    ByteBlock encryptMsg(String sn, String msg)
+            throws IOException, NoSuchAlgorithmException, NoSuchProviderException,
+            CMSException {
+        X509Certificate cert = getCert(sn);
+
+        if (cert == null) return null;
+
+        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        OutputStreamWriter osw = new OutputStreamWriter(bout);
+        osw.write("Content-Transfer-Encoding: binary\r\n"
+                + "Content-Type: text/x-aolrtf; charset=us-ascii\r\n"
+                + "Content-Language: en\r\n"
+                + "\r\n");
+        osw.flush();
+        bout.write(msg.getBytes());
+
+        byte[] dataToSign = bout.toByteArray();
+        byte[] signedData = signData(dataToSign);
+
+        bout = new ByteArrayOutputStream();
+        osw = new OutputStreamWriter(bout);
+        osw.write("Content-Transfer-Encoding: binary\r\n"
+                + "Content-Type: application/pkcs7-mime; charset=us-ascii\r\n"
+                + "Content-Language: en\r\n"
+                + "\r\n");
+        osw.flush();
+        bout.write(signedData);
+
+        CMSEnvelopedDataGenerator gen = new CMSEnvelopedDataGenerator();
+        gen.addKeyTransRecipient(cert);
+        CMSEnvelopedData envData = gen.generate(
+                new CMSProcessableByteArray(bout.toByteArray()),
+                "2.16.840.1.101.3.4.1.2", "BC");
+
+        return ByteBlock.wrap(envData.getEncoded());
+    }
+
+    byte[] signData(byte[] dataToSign)
+            throws NoSuchAlgorithmException, NoSuchProviderException, CMSException,
+            IOException {
+        byte[] signedData;
+        CMSSignedDataGenerator sgen = new CMSSignedDataGenerator();
+        sgen.addSigner(privateKey, pubCert, CMSSignedDataGenerator.DIGEST_MD5);
+        CMSSignedData csd = sgen.generate(
+                new CMSProcessableByteArray(dataToSign),
+                true, "BC");
+        signedData = csd.getEncoded();
+        return signedData;
+    }
+
+    KeyStore keystore;
     PrivateKey privateKey;
     X509Certificate pubCert;
 
-    private void loadPrivateKey() throws KeyStoreException,
+    private void loadKeys() throws KeyStoreException,
             NoSuchProviderException, IOException, NoSuchAlgorithmException,
             CertificateException, UnrecoverableKeyException {
-        KeyStore ks = KeyStore.getInstance("PKCS12", "BC");
-        ks.load(new FileInputStream("certificate-info.p12"),
+        keystore = KeyStore.getInstance("PKCS12", "BC");
+        keystore.load(new FileInputStream("certificate-info.p12"),
                 "pass".toCharArray());
-        String alias = (String) ks.aliases().nextElement();
-        pubCert = (X509Certificate) ks.getCertificate(alias);
-        privateKey = (PrivateKey) ks.getKey(alias,
+        String alias = (String) keystore.aliases().nextElement();
+        pubCert = (X509Certificate) keystore.getCertificate(alias);
+        privateKey = (PrivateKey) keystore.getKey(alias,
                 "pass".toCharArray());
     }
 
@@ -1011,7 +1241,7 @@ public class JoscarTester implements CmdLineListener {
         }
 
         try {
-            tester.loadPrivateKey();
+            tester.loadKeys();
         } catch (Exception e) {
             System.out.println("couldn't load private key: " + e.getMessage());
         }
@@ -1107,6 +1337,12 @@ public class JoscarTester implements CmdLineListener {
         return (X509Certificate) certs.get(OscarTools.normalize(sn));
     }
 
+    public void setChatKey(String roomName, SecretKey chatKey) {
+        keys.put(roomName, chatKey);
+        ChatConn conn = getChatConn(roomName);
+        if (conn != null) conn.setKey(chatKey);
+    }
+
     private class TestRateTimerTask extends TimerTask {
         private Random random;
 
@@ -1124,6 +1360,135 @@ public class JoscarTester implements CmdLineListener {
             int time = random.nextInt(4000) + 1000;
             System.out.println("waiting " + time + "ms");
             new Timer().schedule(new TestRateTimerTask(random), time);
+        }
+    }
+
+    private class MyChatConnListener implements ChatConnListener {
+        public void connFailed(ChatConn conn, Object reason) { }
+
+        public void connected(ChatConn conn) { }
+
+        public void joined(ChatConn conn, FullUserInfo[] members) {
+            String name = conn.getRoomInfo().getName();
+            chats.put(OscarTools.normalize(name), conn);
+
+            System.out.println("*** Joined "
+                    + conn.getRoomInfo().getRoomName() + ", members:");
+            for (int i = 0; i < members.length; i++) {
+                System.out.println("  " + members[i].getScreenname());
+            }
+        }
+
+        public void left(ChatConn conn, Object reason) {
+            String name = conn.getRoomInfo().getName();
+            chats.remove(OscarTools.normalize(name));
+
+            System.out.println("*** Left "
+                    + conn.getRoomInfo().getRoomName());
+        }
+
+        public void usersJoined(ChatConn conn, FullUserInfo[] members) {
+            for (int i = 0; i < members.length; i++) {
+                System.out.println("*** " + members[i].getScreenname()
+                        + " joined " + conn.getRoomInfo().getRoomName());
+            }
+        }
+
+        public void usersLeft(ChatConn conn, FullUserInfo[] members) {
+            for (int i = 0; i < members.length; i++) {
+                System.out.println("*** " + members[i].getScreenname()
+                        + " left " + conn.getRoomInfo().getRoomName());
+            }
+        }
+
+        public void gotMsg(ChatConn conn, FullUserInfo sender,
+                ChatMsg msg) {
+            String msgStr = msg.getMessage();
+            String ct = msg.getContentType();
+            if (msgStr == null && ct.equals("application/pkcs7-mime")) {
+                ByteBlock msgData = msg.getMessageData();
+
+                try {
+                    msgStr = parseChatMessage(conn, sender.getScreenname(), msgData);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (NoSuchAlgorithmException e) {
+                    e.printStackTrace();
+                } catch (NoSuchPaddingException e) {
+                    e.printStackTrace();
+                } catch (NoSuchProviderException e) {
+                    e.printStackTrace();
+                } catch (InvalidKeyException e) {
+                    e.printStackTrace();
+                } catch (InvalidAlgorithmParameterException e) {
+                    e.printStackTrace();
+                } catch (IllegalBlockSizeException e) {
+                    e.printStackTrace();
+                } catch (BadPaddingException e) {
+                    e.printStackTrace();
+                } catch (CMSException e) {
+                    e.printStackTrace();
+                } catch (CertificateNotYetValidException e) {
+                    e.printStackTrace();
+                } catch (CertificateExpiredException e) {
+                    e.printStackTrace();
+                }
+            }
+            System.out.println("<" + sender.getScreenname()
+                    + ":#" + conn.getRoomInfo().getRoomName() + "> "
+                    + OscarTools.stripHtml(msgStr));
+        }
+
+
+        private String parseChatMessage(ChatConn conn, String sn, ByteBlock data)
+                throws IOException,
+                NoSuchAlgorithmException, NoSuchPaddingException,
+                NoSuchProviderException, InvalidKeyException,
+                InvalidAlgorithmParameterException, IllegalBlockSizeException,
+                BadPaddingException, CMSException, CertificateNotYetValidException,
+                CertificateExpiredException {
+            InputStream in = ByteBlock.createInputStream(data);
+            ASN1InputStream ain = new ASN1InputStream(in);
+
+            ASN1Sequence seq = (ASN1Sequence) ain.readObject();
+            BERTaggedObject bert = (BERTaggedObject) seq.getObjectAt(1);
+            ASN1Sequence seq2 = (ASN1Sequence) bert.getObject();
+            EncryptedData encd = new EncryptedData(seq2);
+            EncryptedContentInfo enci = encd.getEncryptedContentInfo();
+            byte[] encryptedData = enci.getEncryptedContent().getOctets();
+
+            AlgorithmIdentifier alg = enci.getContentEncryptionAlgorithm();
+
+            byte[] iv = ((ASN1OctetString) alg.getParameters()).getOctets();
+
+            Cipher c = Cipher.getInstance(alg.getObjectId().getId(), "BC");
+            c.init(Cipher.DECRYPT_MODE, conn.getKey(), new IvParameterSpec(iv));
+
+            ByteBlock result = ByteBlock.wrap(c.doFinal(encryptedData));
+
+            OscarTools.HttpHeaderInfo hinfo = OscarTools.parseHttpHeader(result);
+            InputStream csdin = ByteBlock.createInputStream(hinfo.getData());
+            CMSSignedData csd = new CMSSignedData(csdin);
+            X509Certificate cert = getCert(sn);
+            if (cert != null) {
+                Collection signers = csd.getSignerInfos().getSigners();
+                for (Iterator sit = signers.iterator(); sit.hasNext();) {
+                    SignerInformation si = (SignerInformation) sit.next();
+                    boolean verified = si.verify(cert, "BC");
+                    if (!verified) {
+                        System.out.println("NOTE: message not verified");
+                    }
+                }
+            } else {
+                System.out.println("[couldn't verify message because I don't "
+                        + "have a cert for " + sn + "]");
+            }
+            byte[] scBytes = (byte[]) csd.getSignedContent().getContent();
+            ByteBlock signedContent = ByteBlock.wrap(scBytes);
+            OscarTools.HttpHeaderInfo hinfo2
+                    = OscarTools.parseHttpHeader(signedContent);
+            return OscarTools.getInfoString(hinfo2.getData(),
+                    (String) hinfo2.getHeaders().get("content-type"));
         }
     }
 }

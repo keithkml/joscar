@@ -42,6 +42,7 @@ import net.kano.joscar.flap.FlapPacket;
 import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.TlvTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -87,7 +88,7 @@ public class CloseFlapCmd extends FlapCommand {
 
         ByteBlock flapData = packet.getData();
 
-        TlvChain chain = ImmutableTlvChain.readChain(flapData);
+        TlvChain chain = TlvTools.readChain(flapData);
 
         code = chain.getUShort(TYPE_CODE);
 

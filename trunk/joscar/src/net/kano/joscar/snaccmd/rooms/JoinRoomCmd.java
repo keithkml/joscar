@@ -36,6 +36,7 @@
 package net.kano.joscar.snaccmd.rooms;
 
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.FullRoomInfo;
 
@@ -43,7 +44,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * A SNAC command used to join (or create) a chat room whose name is already
+ * A SNAC command used to join or create a chat room whose name is already
  * known. This command should normally be used when joining a room to which one
  * has not been already invited. The response to this command, normally a {@link
  * RoomResponse}, contains a room information block and a cookie, which can then
@@ -68,6 +69,8 @@ public class JoinRoomCmd extends RoomCommand {
      */
     protected JoinRoomCmd(SnacPacket packet) {
         super(CMD_JOIN_ROOM);
+
+        DefensiveTools.checkNull(packet, "packet");
 
         ByteBlock snacData = packet.getData();
 
@@ -97,7 +100,7 @@ public class JoinRoomCmd extends RoomCommand {
     }
 
     public void writeData(OutputStream out) throws IOException {
-        roomInfo.write(out);
+        if (roomInfo != null) roomInfo.write(out);
     }
 
     public String toString() {

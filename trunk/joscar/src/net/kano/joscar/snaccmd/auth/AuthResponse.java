@@ -41,6 +41,7 @@ import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.TlvTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -103,7 +104,7 @@ public class AuthResponse extends AuthCommand {
     /** The cookie to provide to the BOS server upon connecting. */
     private final ByteBlock cookie;
     /** The user's "registration status" code. */
-    private final int regStatus;
+    private final int regstatus;
 
     /** The user's registered email address. */
     private final String email;
@@ -124,7 +125,7 @@ public class AuthResponse extends AuthCommand {
 
         DefensiveTools.checkNull(packet, "packet");
 
-        TlvChain chain = ImmutableTlvChain.readChain(packet.getData());
+        TlvChain chain = TlvTools.readChain(packet.getData());
 
         sn = chain.getString(TYPE_SN);
 
@@ -154,7 +155,7 @@ public class AuthResponse extends AuthCommand {
         errorCode = chain.getUShort(TYPE_ERRCODE);
         errorUrl = chain.getString(TYPE_ERRURL);
 
-        regStatus = chain.getUShort(TYPE_REGSTATUS);
+        regstatus = chain.getUShort(TYPE_REGSTATUS);
     }
 
     /**
@@ -217,7 +218,7 @@ public class AuthResponse extends AuthCommand {
         this.server = server;
         this.port = port;
         this.cookie = cookie;
-        this.regStatus = regStatus;
+        this.regstatus = regStatus;
         this.email = email;
         this.errorCode = errorCode;
         this.errorUrl = errorUrl;
@@ -266,14 +267,15 @@ public class AuthResponse extends AuthCommand {
     }
 
     /**
-     * Returns the user's "registration status code," or <code>-1</code> if none
-     * was sent. As of this writing I am unsure of the significance of this
-     * value, but it seems to always be <code>3</code>.
+     * Returns the user's "registration status visibility code," or
+     * <code>-1</code> if none was sent. This will normally be one of the
+     * {@link net.kano.joscar.snaccmd.acct.AcctModCmd#REGSTATUS_NONE
+     * REGSTATUS_*} constants defined in {@link net.kano.joscar.snaccmd.acct.AcctModCmd}.
      *
-     * @return the user's registration status code
+     * @return the user's registration status visibility code
      */
-    public final int getRegStatus() {
-        return regStatus;
+    public final int getRegstatus() {
+        return regstatus;
     }
 
     /**
@@ -330,8 +332,8 @@ public class AuthResponse extends AuthCommand {
         if (email != null) {
             Tlv.getStringInstance(TYPE_EMAIL, email).write(out);
         }
-        if (regStatus != -1) {
-            Tlv.getUShortInstance(TYPE_REGSTATUS, regStatus).write(out);
+        if (regstatus != -1) {
+            Tlv.getUShortInstance(TYPE_REGSTATUS, regstatus).write(out);
         }
     }
 
@@ -340,7 +342,7 @@ public class AuthResponse extends AuthCommand {
                 "sn='" + sn + "'" +
                 ", server='" + server + "'" +
                 ", port=" + port +
-                ", regStatus=" + regStatus +
+                ", regStatus=" + regstatus +
                 ", email='" + email + "'" +
                 ", errorCode=" + Integer.toHexString(errorCode) +
                 ", errorURL='" + errorUrl + "'";

@@ -36,6 +36,7 @@
 package net.kano.joscar.snaccmd.rooms;
 
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.MiniRoomInfo;
 
@@ -67,6 +68,8 @@ public class RoomInfoReq extends RoomCommand {
     protected RoomInfoReq(SnacPacket packet) {
         super(CMD_MORE_ROOM_INFO);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
 
         roomInfo = MiniRoomInfo.readMiniRoomInfo(snacData);
@@ -86,10 +89,10 @@ public class RoomInfoReq extends RoomCommand {
     }
 
     public void writeData(OutputStream out) throws IOException {
-        roomInfo.write(out);
+        if (roomInfo != null) roomInfo.write(out);
     }
 
     public String toString() {
-        return "RoomSnacMoreInfo: " + roomInfo;
+        return "RoomInfoReq: " + roomInfo;
     }
 }

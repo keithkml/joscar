@@ -35,18 +35,13 @@
 
 package net.kano.joscar.tlv;
 
-import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.OscarTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * A base class for TLV chains, implementing basic functionality while leaving
@@ -57,29 +52,6 @@ import java.util.Map;
  * See {@link #getTlvList} and {@link #getTlvMap} for details.
  */
 public abstract class AbstractTlvChain implements TlvChain {
-    /**
-     * Returns whether the given block might be a valid, complete TLV chain. A
-     * complete TLV chain contains no data after the chain.
-     *
-     * @param block a block of data that might contain a complete TLV chain
-     * @return whether or not the given block represents a complete TLV chain
-     */
-    public static boolean isCompleteTlvChain(ByteBlock block) {
-        final int len = block.getLength();
-
-        for (int i = 0; i < len;) {
-            if (i + 3 >= len) return false;
-
-            int tlvlen = BinaryTools.getUShort(block, i + 2);
-            i += 2 + tlvlen;
-
-            if (i == len) return true;
-            if (i > len) return false;
-        }
-
-        // we should never get here
-        throw new IllegalStateException();
-    }
 
     /** The total size of this chain, as read from an incoming stream. */
     private int totalSize;

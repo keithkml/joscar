@@ -45,6 +45,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.net.URLDecoder;
 
 /**
  * Provides a set of tools for performing OSCAR-specific functions.
@@ -410,5 +411,23 @@ public final class OscarTools {
         }
 
         public String toString() { return BinaryTools.getAsciiString(data); }
+    }
+
+    // "!aol://2719:10-4-heydudewhatsup"
+    private static final Pattern roomNameRE
+            = Pattern.compile("!aol://\\d+:\\d+-\\d+-(.*)");
+
+    public static final String getRoomNameFromCookie(String cookie) {
+        Matcher m = roomNameRE.matcher(cookie);
+        if (!m.matches()) return null;
+
+        String encodedName = m.group(1);
+
+        String name = null;
+        try {
+            name = URLDecoder.decode(encodedName, "us-ascii");
+        } catch (UnsupportedEncodingException impossible) { }
+        
+        return name;
     }
 }

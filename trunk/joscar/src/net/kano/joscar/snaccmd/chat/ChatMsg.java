@@ -35,16 +35,11 @@
 
 package net.kano.joscar.snaccmd.chat;
 
-import net.kano.joscar.ByteBlock;
-import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.EncodedStringInfo;
-import net.kano.joscar.LiveWritable;
-import net.kano.joscar.MinimalEncoder;
-import net.kano.joscar.tlv.DefaultMutableTlvChain;
-import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.*;
 import net.kano.joscar.tlv.MutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.TlvTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -54,6 +49,9 @@ import java.util.Locale;
  * Represents a single message sent or received in a chat room.
  */
 public class ChatMsg implements LiveWritable {
+    public static final String CONTENTTYPE_DEFAULT = "text/x-aolrtf";
+    public static final String CONTENTENCODING_DEFAULT = "binary";
+
     /**
      * Reads a chat message from the given data block.
      *
@@ -63,13 +61,16 @@ public class ChatMsg implements LiveWritable {
     public static ChatMsg readChatMsg(ByteBlock msgBlock) {
         DefensiveTools.checkNull(msgBlock, "msgBlock");
 
-        TlvChain msgChain = ImmutableTlvChain.readChain(msgBlock);
+        TlvChain msgChain = TlvTools.readChain(msgBlock);
 
+        String contentType = msgChain.getString(TYPE_CONTENT_TYPE);
+        String contentEncoding = msgChain.getString(TYPE_CONTENT_ENCODING);
         String charset = msgChain.getString(TYPE_CHARSET);
-        String message = msgChain.getString(TYPE_BODY, charset);
+        ByteBlock messageData = msgChain.getLastTlv(TYPE_BODY).getData();
         String language = msgChain.getString(TYPE_LANG);
 
-        return new ChatMsg(message, new Locale(language));
+        return new ChatMsg(contentType, contentEncoding, charset, messageData,
+                new Locale(language));
     }
 
     /** A TLV type containing the charset in which this message is encoded. */
@@ -82,10 +83,17 @@ public class ChatMsg implements LiveWritable {
      */
     private static final int TYPE_LANG = 0x0003;
 
+    private static final int TYPE_CONTENT_TYPE = 0x0004;
+    private static final int TYPE_CONTENT_ENCODING = 0x0005;
+
     /** The chat message. */
-    private final String message;
+    private final ByteBlock messageData;
     /** The locale (language code only) under which this message was written. */
     private final Locale language;
+
+    private final String contentType;
+    private final String contentEncoding;
+    private String charset;
 
 
     /**
@@ -99,65 +107,89 @@ public class ChatMsg implements LiveWritable {
         this(message, Locale.getDefault());
     }
 
-    /**
-     * Creates a chat message with the given locale's language code.
-     *
-     * @param message the text of this chat message
-     * @param locale the locale in which this message was supposedly written
-     *        (only the language field of <code>locale</code> will be used)
-     */
     public ChatMsg(String message, Locale locale) {
-        this.message = message;
+        EncodedStringInfo stringInfo = MinimalEncoder.encodeMinimally(message);
+        this.contentType = CONTENTTYPE_DEFAULT;
+        this.contentEncoding = CONTENTENCODING_DEFAULT;
+        this.charset = stringInfo.getCharset();
+        this.messageData = ByteBlock.wrap(stringInfo.getData());
         this.language = locale;
     }
 
-    /**
-     * Returns the text of this chat message.
-     *
-     * @return this chat message's message text
-     */
-    public final String getMessage() {
-        return message;
+    public ChatMsg(String contentType, String contentEncoding, String charset,
+            ByteBlock messageData, Locale language) {
+        this.contentType = contentType;
+        this.contentEncoding = contentEncoding;
+        this.charset = charset;
+        this.messageData = messageData;
+        this.language = language;
     }
 
-    /**
-     * Returns a <code>Locale</code> containing the language in which this
-     * message was allegedly written.
-     *
-     * @return a <code>Locale</code> containing the language field of this chat
-     *         message block
+    public final ByteBlock getMessageData() { return messageData; }
+
+    public final String getContentType() { return contentType; }
+
+    public final String getContentEncoding() { return contentEncoding; }
+
+    public final String getCharset() { return charset; }
+
+    public final Locale getLanguage() { return language; }
+
+    /*
+     * This method returns null if contentType is non-null and not equal to
+     * CONTENTTYPE_DEFAULT.
      */
-    public final Locale getLanguage() {
-        return language;
+    public final String getMessage() {
+        if (contentType == null || contentType.equals(CONTENTTYPE_DEFAULT)) {
+            return getMessageAsString();
+        } else {
+            return null;
+        }
+    }
+
+    public final String getMessageAsString() {
+        return OscarTools.getString(messageData, charset);
     }
 
     public void write(OutputStream out) throws IOException {
-        MutableTlvChain msgChain = new DefaultMutableTlvChain();
+        MutableTlvChain msgChain = TlvTools.createMutableChain();
 
-        if (message != null) {
-            EncodedStringInfo encInfo = MinimalEncoder.encodeMinimally(message);
-
-            Object charset = encInfo.getCharset();
-            if (charset != null) {
-                msgChain.addTlv(Tlv.getStringInstance(TYPE_CHARSET,
-                        charset.toString()));
-            }
-
-            ByteBlock msgData = ByteBlock.wrap(encInfo.getData());
-            msgChain.addTlv(new Tlv(TYPE_BODY, msgData));
+        if (contentType != null) {
+            msgChain.addTlv(Tlv.getStringInstance(
+                    TYPE_CONTENT_TYPE, contentType));
         }
-
+        if (charset != null) {
+            msgChain.addTlv(Tlv.getStringInstance(TYPE_CHARSET, charset));
+        }
         if (language != null) {
             msgChain.addTlv(Tlv.getStringInstance(TYPE_LANG,
                     language.getLanguage()));
+        }
+        if (contentEncoding != null) {
+            msgChain.addTlv(Tlv.getStringInstance(
+                    TYPE_CONTENT_ENCODING, contentEncoding));
+        }
+        if (messageData != null) {
+            msgChain.addTlv(new Tlv(TYPE_BODY, messageData));
         }
 
         msgChain.write(out);
     }
 
     public String toString() {
-        return "ChatMsg in lang="
-                + (language == null ? null : language.getDisplayLanguage())
-                + ": " + message;
+        StringBuffer sb = new StringBuffer();
+        sb.append("ChatMsg: ");
+        String msgStr = getMessage();
+        if (msgStr != null) {
+            sb.append(msgStr + ": ");
+        }
+        sb.append("contentType=" + contentType);
+        sb.append(", charset=" + charset);
+        sb.append(", language="
+                + (language != null ? language.getLanguage() : null));
+        sb.append(", contentEncoding=" + contentEncoding);
+        sb.append(", msgData: " + messageData.getLength() + " bytes");
+
+        return sb.toString();
     }
 }

@@ -58,6 +58,10 @@ public class FileSendAcceptRvCmd extends AbstractAcceptRvCmd {
      * Creates a new outgoing file transfer acceptance command.
      */
     public FileSendAcceptRvCmd() {
-        super(CapabilityBlock.BLOCK_FILE_SEND);
+        this(false);
+    }
+
+    public FileSendAcceptRvCmd(boolean encrypted) {
+        super(CapabilityBlock.BLOCK_FILE_SEND, encrypted);
     }
 }

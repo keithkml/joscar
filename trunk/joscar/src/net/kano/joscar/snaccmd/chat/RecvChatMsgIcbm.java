@@ -111,4 +111,8 @@ public class RecvChatMsgIcbm extends AbstractChatMsgIcbm {
             new Tlv(TYPE_USERINFO, senderBlock).write(out);
         }
     }
+
+    public String toString() {
+        return "RecvChatMsgIcbm: user=<" + senderInfo + "> - " + super.toString();
+    }
 }

@@ -42,6 +42,7 @@ import net.kano.joscar.LiveWritable;
 import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.TlvTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -84,7 +85,7 @@ public class GetFileList implements LiveWritable {
         String version = BinaryTools.getAsciiString(block.subBlock(0, 4));
 
         ByteBlock rest = block.subBlock(4);
-        TlvChain chain = ImmutableTlvChain.readChain(rest);
+        TlvChain chain = TlvTools.readChain(rest);
 
         Tlv[] tlvs = chain.getTlvs();
 

@@ -42,6 +42,7 @@ import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.TlvTools;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -78,7 +79,7 @@ public class SsiRightsCmd extends SsiCommand {
 
         ByteBlock snacData = packet.getData();
 
-        TlvChain chain = ImmutableTlvChain.readChain(snacData);
+        TlvChain chain = TlvTools.readChain(snacData);
 
         Tlv maximaTlv = chain.getLastTlv(TYPE_MAXIMA);
 

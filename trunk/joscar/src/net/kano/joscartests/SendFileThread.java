@@ -59,6 +59,7 @@ public class SendFileThread extends Thread {
     }
 
     public void run() {
+        Timer timer = null;
         try {
             System.out.println("waiting for connection..");
             Socket socket = serverSocket.accept();
@@ -66,6 +67,11 @@ public class SendFileThread extends Thread {
 
             final OutputStream out = socket.getOutputStream();
             InputStream in = socket.getInputStream();
+
+//            byte[] data = new byte[1024];
+//            int ct = in.read(data);
+//            System.out.println("ct=" + ct);
+//            System.out.println(ByteBlock.wrap(data));
 
             FileTransferHeader fsh = new FileTransferHeader();
             fsh.setDefaults();
@@ -91,7 +97,16 @@ public class SendFileThread extends Thread {
 
             System.out.println("got ack:" + inFsh);
 
-            Timer timer = new Timer();
+            if (inFsh.getHeaderType() == FileTransferHeader.HEADERTYPE_RESUME) {
+                fsh.setHeaderType(FileTransferHeader.HEADERTYPE_RESUME_SENDHEADER);
+                fsh.write(out);
+
+                inFsh = FileTransferHeader.readHeader(in);
+
+                System.out.println("resumesendresponse: " + inFsh);
+            }
+
+            timer = new Timer();
             timer.scheduleAtFixedRate(new TimerTask() {
                 public void run() {
                     try {
@@ -101,7 +116,7 @@ public class SendFileThread extends Thread {
                         e.printStackTrace();
                     }
                 }
-            }, 0, 2000);
+            }, 10000, 2000);
 
             for (;;) {
                 System.out.println("trying to read..");
@@ -109,7 +124,7 @@ public class SendFileThread extends Thread {
 
                 if (b == -1) break;
 
-                System.out.println("got shizzy: "
+                System.out.println("got stuff: "
                         + BinaryTools.describeData(ByteBlock.wrap(
                                 new byte[] { (byte) b })));
             }
@@ -117,6 +132,8 @@ public class SendFileThread extends Thread {
         } catch (IOException e) {
             e.printStackTrace();
             return;
+        } finally {
+            if (timer != null) timer.cancel();
         }
     }
 }

@@ -49,7 +49,6 @@ import java.util.Map;
  */
 public class DefaultMutableTlvChain
         extends AbstractTlvChain implements MutableTlvChain {
-
     /** A list of the TLV's in this chain, in order. */
     private final List tlvList = new LinkedList();
     /**
@@ -61,7 +60,7 @@ public class DefaultMutableTlvChain
     /**
      * Creates an empty TLV chain.
      */
-    public DefaultMutableTlvChain() { }
+    protected DefaultMutableTlvChain() { }
 
     /**
      * Creates a TLV chain containing the same TLV's as the given chain.
@@ -70,7 +69,7 @@ public class DefaultMutableTlvChain
      *
      * @see #addAll
      */
-    public DefaultMutableTlvChain(TlvChain other) {
+    protected DefaultMutableTlvChain(TlvChain other) {
         copy(other);
     }
 

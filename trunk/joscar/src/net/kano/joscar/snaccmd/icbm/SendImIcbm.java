@@ -44,6 +44,7 @@ import net.kano.joscar.snaccmd.ExtraInfoBlock;
 import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.TlvTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -84,7 +85,7 @@ public class SendImIcbm extends AbstractImIcbm {
 
         ByteBlock rest = snacData.subBlock(snInfo.getTotalSize());
 
-        TlvChain imTlvs = ImmutableTlvChain.readChain(rest);
+        TlvChain imTlvs = TlvTools.readChain(rest);
 
         processImTlvs(imTlvs);
 

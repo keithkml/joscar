@@ -95,7 +95,7 @@ public class ExchangeInfoReq extends RoomCommand {
     }
 
     public void writeData(OutputStream out) throws IOException {
-        BinaryTools.writeUShort(out, exchange);
+        if (exchange != -1) BinaryTools.writeUShort(out, exchange);
     }
 
     public String toString() {

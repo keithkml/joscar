@@ -42,6 +42,7 @@ import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.TlvTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -97,7 +98,7 @@ public class ConfirmAck extends AcctCommand {
 
         ByteBlock tlvBlock = snacData.subBlock(2);
 
-        TlvChain chain = ImmutableTlvChain.readChain(tlvBlock);
+        TlvChain chain = TlvTools.readChain(tlvBlock);
 
         errorUrl = chain.getString(TYPE_ERROR_URL);
     }

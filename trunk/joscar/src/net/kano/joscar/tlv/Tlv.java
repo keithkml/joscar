@@ -306,9 +306,9 @@ public final class Tlv implements Writable {
                     buffer.append(", uint value=" + getDataAsUInt());
                     alternatevalue = true;
                 }
-                if (AbstractTlvChain.isCompleteTlvChain(data)) {
+                if (TlvTools.isCompleteTlvChain(data)) {
                     buffer.append(", tlvchain value="
-                            + ImmutableTlvChain.readChain(data));
+                            + TlvTools.readChain(data));
                     alternatevalue = true;
                 }
 

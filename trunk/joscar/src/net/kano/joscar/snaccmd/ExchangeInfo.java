@@ -41,6 +41,7 @@ import net.kano.joscar.LiveWritable;
 import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.TlvTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -96,7 +97,7 @@ public final class ExchangeInfo extends AbstractChatInfo implements LiveWritable
 
         ByteBlock tlvBlock = block.subBlock(2);
 
-        TlvChain chain = ImmutableTlvChain.readChain(tlvBlock);
+        TlvChain chain = TlvTools.readChain(tlvBlock);
 
         readBaseInfo(chain);
 

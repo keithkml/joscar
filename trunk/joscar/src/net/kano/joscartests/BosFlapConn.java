@@ -126,9 +126,14 @@ public class BosFlapConn extends BasicConn {
         if (cmd instanceof LocRightsCmd) {
             try {
                 Certificate cert = tester.pubCert;
-                byte[] encoded = cert.getEncoded();
-                CertificateInfo certInfo = new CertificateInfo(
-                        ByteBlock.wrap(encoded));
+                CertificateInfo certInfo;
+                if (cert == null) {
+                    certInfo = null;
+                } else {
+                    byte[] encoded = cert.getEncoded();
+                    certInfo = new CertificateInfo(
+                            ByteBlock.wrap(encoded));
+                }
                 request(new SetInfoCmd(new InfoData("yo",
                         null, new CapabilityBlock[] {
                             CapabilityBlock.BLOCK_CHAT,
@@ -181,12 +186,12 @@ public class BosFlapConn extends BasicConn {
             UserInfoCmd uic = (UserInfoCmd) cmd;
 
             String sn = uic.getUserInfo().getScreenname();
-            System.out.println("user info for " + sn + "! "
+            System.out.println("user info for " + sn + ": "
                     + uic.getInfoData());
 
             CertificateInfo certInfo = uic.getInfoData().getCertificateInfo();
             if (certInfo != null) {
-                ByteBlock certData = certInfo.getCertData();
+                ByteBlock certData = certInfo.getCommonCertData();
 
                 try {
                     CertificateFactory factory

@@ -46,12 +46,12 @@ import java.io.OutputStream;
 
 /**
  * A SNAC command containing a certain type of information about another user.
- * Normally sent in response to a {@link GetInfoCmd}.
+ * Normally sent in response to a {@link OldGetInfoCmd}.
  *
  * @snac.src server
  * @snac.cmd 0x02 0x06
  *
- * @see GetInfoCmd
+ * @see OldGetInfoCmd
  */
 public class UserInfoCmd extends LocCommand {
     /**

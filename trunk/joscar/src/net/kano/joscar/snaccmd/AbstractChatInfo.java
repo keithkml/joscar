@@ -39,10 +39,7 @@ import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.MiscTools;
-import net.kano.joscar.tlv.DefaultMutableTlvChain;
-import net.kano.joscar.tlv.MutableTlvChain;
-import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.*;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -173,6 +170,9 @@ public abstract class AbstractChatInfo {
      */
     private static final int TYPE_LANG_2 = 0x00d9;
 
+    private static final int TYPE_SOMETHING = 0x00da;
+
+    private static final int TYPE_CONTENT_TYPE = 0x00db;
     /**
      * This chat information object's "flags," such as
      * <code>MASK_CAN_PEEK</code>.
@@ -224,6 +224,10 @@ public abstract class AbstractChatInfo {
      */
     private String language2;
 
+    private String contentType;
+
+    private int something;
+
     /**
      * The TLV chain that will be written upon a call to
      * <code>writeBaseInfo</code>, stored locally in case of a call to
@@ -244,8 +248,13 @@ public abstract class AbstractChatInfo {
      * @param language1 the room's associatd language code
      */
     protected AbstractChatInfo(String name, String charset1, String language1) {
+        this(name, charset1, language1, null);
+    }
+
+    protected AbstractChatInfo(String name, String charset1, String language1,
+            String contentType) {
         this(-1, null, -1, -1, name, (short) -1, charset1, language1, null,
-                null);
+                null, contentType);
     }
 
     /**
@@ -283,7 +292,8 @@ public abstract class AbstractChatInfo {
      */
     protected AbstractChatInfo(int flags, Date creation, int maxMsgLen,
             int maxOccupancy, String name, short createPerms, String charset1,
-            String language1, String charset2, String language2) {
+            String language1, String charset2, String language2,
+            String contentType) {
         DefensiveTools.checkRange(flags, "flags", -1);
         DefensiveTools.checkRange(maxMsgLen, "maxMsgLen", -1);
         DefensiveTools.checkRange(maxOccupancy, "maxOccupancy", -1);
@@ -299,6 +309,7 @@ public abstract class AbstractChatInfo {
         this.language1 = language1;
         this.charset2 = charset2;
         this.language2 = language2;
+        this.contentType = contentType;
     }
 
     /**
@@ -338,6 +349,10 @@ public abstract class AbstractChatInfo {
 
         charset2 = chain.getString(TYPE_CHARSET_2);
         language2 = chain.getString(TYPE_LANG_2);
+
+        contentType = chain.getString(TYPE_CONTENT_TYPE);
+
+        something = chain.getUShort(TYPE_SOMETHING);
     }
 
     /**
@@ -345,9 +360,11 @@ public abstract class AbstractChatInfo {
      * if one has not already been created.
      */
     private synchronized final void ensureTlvChainExists() {
-        if (tlvChain != null) return;
+        if (tlvChain != null) {
+            return;
+        }
 
-        tlvChain = new DefaultMutableTlvChain();
+        tlvChain = TlvTools.createMutableChain();
 
         if (flags != -1) {
             tlvChain.addTlv(Tlv.getUShortInstance(TYPE_FLAGS, flags));
@@ -357,8 +374,7 @@ public abstract class AbstractChatInfo {
                     creation.getTime() / 1000));
         }
         if (maxMsgLen != -1) {
-            tlvChain.addTlv(Tlv.getUShortInstance(TYPE_MAX_MSG_LEN,
-                    maxMsgLen));
+            tlvChain.addTlv(Tlv.getUShortInstance(TYPE_MAX_MSG_LEN, maxMsgLen));
         }
         if (maxOccupancy != -1) {
             tlvChain.addTlv(Tlv.getUShortInstance(TYPE_MAX_OCCUPANCY,
@@ -372,18 +388,23 @@ public abstract class AbstractChatInfo {
                     ByteBlock.wrap(BinaryTools.getUByte(createPerms))));
         }
         if (charset1 != null) {
-            tlvChain.addTlv(Tlv.getStringInstance(TYPE_CHARSET_1,
-                    charset1));
+            tlvChain.addTlv(Tlv.getStringInstance(TYPE_CHARSET_1, charset1));
         }
         if (language1 != null) {
             tlvChain.addTlv(Tlv.getStringInstance(TYPE_LANG_1, language1));
         }
         if (charset2 != null) {
-            tlvChain.addTlv(Tlv.getStringInstance(TYPE_CHARSET_2,
-                    charset2));
+            tlvChain.addTlv(Tlv.getStringInstance(TYPE_CHARSET_2, charset2));
         }
         if (language2 != null) {
             tlvChain.addTlv(Tlv.getStringInstance(TYPE_LANG_2, language2));
+        }
+        if (contentType != null) {
+            tlvChain.addTlv(
+                    Tlv.getStringInstance(TYPE_CONTENT_TYPE, contentType));
+        }
+        if (something != -1) {
+            tlvChain.addTlv(Tlv.getUShortInstance(TYPE_SOMETHING, something));
         }
     }
 
@@ -517,17 +538,23 @@ public abstract class AbstractChatInfo {
         return language2;
     }
 
+    public synchronized final String getContentType() { return contentType; }
+
+    public synchronized final int getSomething() { return something; }
+
     public synchronized String toString() {
-        return MiscTools.getClassName(this) + ": " +
-                "flags=" + flags +
-                ", creation=" + creation +
-                ", maxMsgLen=" + maxMsgLen +
-                ", maxOccupancy=" + maxOccupancy +
-                ", name='" + name + "'" +
-                ", createPerms=" + createPerms +
-                ", charset1='" + charset1 + "'" +
-                ", charset2='" + charset2 + "'" +
-                ", language1='" + language1 + "'" +
-                ", language2='" + language2 + "'";
+        return MiscTools.getClassName(this) + ": "
+                + "flags=" + flags
+                + ", creation=" + creation
+                + ", maxMsgLen=" + maxMsgLen
+                + ", maxOccupancy=" + maxOccupancy
+                + ", name='" + name + "'"
+                + ", createPerms=" + createPerms
+                + ", charset1='" + charset1 + "'"
+                + ", charset2='" + charset2 + "'"
+                + ", language1='" + language1 + "'"
+                + ", language2='" + language2 + "'"
+                + ", contentType='" + contentType + "'"
+                + ", something=" + something;
     }
 }

@@ -39,11 +39,7 @@ import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.ssi.SsiItem;
-import net.kano.joscar.tlv.DefaultMutableTlvChain;
-import net.kano.joscar.tlv.ImmutableTlvChain;
-import net.kano.joscar.tlv.MutableTlvChain;
-import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.*;
 
 /**
  * An SSI item object representing a buddy on the user's buddy list. A buddy
@@ -130,7 +126,7 @@ public class BuddyItem extends AbstractItemObj {
         groupid = item.getParentId();
         id = item.getId();
 
-        TlvChain chain = ImmutableTlvChain.readChain(item.getData());
+        TlvChain chain = TlvTools.readChain(item.getData());
 
         alias = chain.getString(TYPE_ALIAS);
         comment = chain.getString(TYPE_COMMENT);
@@ -151,7 +147,7 @@ public class BuddyItem extends AbstractItemObj {
             alertWhenMask = 0;
         }
 
-        MutableTlvChain extraTlvs = new DefaultMutableTlvChain(chain);
+        MutableTlvChain extraTlvs = TlvTools.getMutableCopy(chain);
 
         extraTlvs.removeTlvs(new int[] {
             TYPE_ALIAS, TYPE_COMMENT, TYPE_ALERT_SOUND, TYPE_ALERT_FLAGS
@@ -408,7 +404,7 @@ if ((buddyItem.getAlertWhenMask() & BuddyItem.MASK_WHEN_ONLINE) != 0) {
 
 
     public synchronized SsiItem toSsiItem() {
-        MutableTlvChain chain = new DefaultMutableTlvChain();
+        MutableTlvChain chain = TlvTools.createMutableChain();
 
         if (alias != null) {
             chain.addTlv(Tlv.getStringInstance(TYPE_ALIAS, alias));
