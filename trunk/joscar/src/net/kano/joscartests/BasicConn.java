@@ -66,15 +66,15 @@ import net.kano.joscar.snaccmd.buddy.BuddyStatusCmd;
 import net.kano.joscar.snaccmd.conn.*;
 import net.kano.joscar.snaccmd.icbm.*;
 
-import javax.crypto.Cipher;
-import javax.crypto.NoSuchPaddingException;
 import java.io.*;
 import java.net.InetAddress;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.Signature;
+import java.security.SignatureException;
+import java.security.cert.Certificate;
 import java.text.DateFormat;
 import java.util.*;
-import java.security.cert.Certificate;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 
 public abstract class BasicConn extends AbstractFlapConn {
     protected final ByteBlock cookie;
@@ -132,7 +132,7 @@ public abstract class BasicConn extends AbstractFlapConn {
             } else if (cmd instanceof SendBuddyIconRvCmd) {
                 SendBuddyIconRvCmd iconCmd = (SendBuddyIconRvCmd) cmd;
                 ByteBlock iconData = iconCmd.getIconData();
-                if (iconData != null) {
+                if (false && iconData != null) {
                     try {
                         File dir = new File("buddy-icons");
                         if (!dir.isDirectory()) dir.mkdir();
@@ -260,11 +260,34 @@ public abstract class BasicConn extends AbstractFlapConn {
                 ByteBlock encData = message.getEncryptedData();
                 System.out.println("got [" + encData.getLength() + "]: "
                         + BinaryTools.describeData(encData));
-                request(new SendImIcbm(sn, message, false, 0, false, null, null,
-                        false));
+
+                byte len1 = encData.get(70);
+                ByteBlock block1 = encData.subBlock(71, len1);
+
+                byte len2 = encData.get(71+len1+27);
+                ByteBlock block2 = encData.subBlock(71+len1+28, len2);
+
+                Certificate cert = tester.getCert(sn);
+                if (cert != null) {
+                    try {
+                        Signature verifier = Signature.getInstance("MD5withRSA");
+                        verifier.initVerify(cert.getPublicKey());
+                        byte[] encrypted = encData.toByteArray();
+                        boolean verified = verifier.verify(encrypted);
+                        System.out.println("verified=" + verified);
+
+                    } catch (NoSuchAlgorithmException e1) {
+                        e1.printStackTrace();
+                    } catch (InvalidKeyException e1) {
+                        e1.printStackTrace();
+                    } catch (SignatureException e1) {
+                        e1.printStackTrace();
+                    }
+                }
 
                 try {
-                    FileOutputStream out = new FileOutputStream("/home/keith/in/tmpencryptedmsg");
+                    FileOutputStream out = new FileOutputStream(
+                            "/home/keith/in/tmpencryptedmsg");
 
                     encData.write(out);
 
