@@ -33,7 +33,7 @@
  *
  */
 
-package net.kano.joscar.taglets;
+package net.kano.joscar.build.taglets;
 
 import com.sun.javadoc.Tag;
 import com.sun.tools.doclets.Taglet;
