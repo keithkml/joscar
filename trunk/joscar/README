@@ -123,6 +123,10 @@ The Joust Project would like to thank Mark Doliner and Sean Egan of the Gaim
 Project (http://gaim.sf.net/) for their assistance in explaining parts of the
 Oscar protocol.
 
+Huge thanks to Sam Stephenson for designing and hosting the website, writing
+various materials distributed with joscar, and for lots of help debugging and
+other things like that.
+
 Thanks go to Ka-Hing Cheung for help with setting up the project's CVS 
 repository on SourceForge.
 
