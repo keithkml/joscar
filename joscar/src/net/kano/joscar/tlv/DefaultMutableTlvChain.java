@@ -91,13 +91,14 @@ public class DefaultMutableTlvChain
         } else if (!tlvs.isEmpty()) {
             // find the first instance of a tlv of this type
             int i = 0;
-            for (Iterator it = getTlvList().iterator(); it.hasNext(); i++) {
+            for (Iterator it = getTlvList().iterator(); it.hasNext();) {
                 Tlv next = (Tlv) it.next();
                 if (next.getType() == typeCode) {
                     // we found one!
                     if (insertAt == -1) insertAt = i;
                     it.remove();
                 }
+                i++;
             }
 
             tlvs.clear();
@@ -116,7 +117,9 @@ public class DefaultMutableTlvChain
         List tlvs = (List) getTlvMap().get(type);
 
         // isn't this neat
-        if (tlvs != null) while (tlvs.remove(tlv));
+        if (tlvs != null) {
+            while (tlvs.remove(tlv));
+        }
         while (getTlvList().remove(tlv));
     }
 

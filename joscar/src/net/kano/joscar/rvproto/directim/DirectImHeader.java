@@ -509,6 +509,7 @@ header.setScreenname("");
         hout.write(new byte[8]);
         BinaryTools.writeUInt(hout, dataLength);
 
+        ImEncodingParams encoding = this.encoding;
         if (encoding != null) {
             BinaryTools.writeUShort(hout, encoding.getCharsetCode());
             BinaryTools.writeUShort(hout, encoding.getCharsetSubcode());
