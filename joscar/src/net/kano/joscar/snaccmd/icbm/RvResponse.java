@@ -136,7 +136,9 @@ public class RvResponse extends IcbmCommand {
     }
 
     /**
-     * Returns the rendezvous session ID of the rendezvous being responded-to..
+     * Returns the rendezvous session ID of the rendezvous being responded-to.
+     * Note that this value seems to always be <code>0</code> when coming from
+     * a Windows AIM client.
      *
      * @return the failed rendezvous's RV session ID
      */

@@ -95,9 +95,7 @@ public final class ImmutableTlvChain extends AbstractTlvChain {
                     + ", len=" + len + ", tlvs.length=" + tlvs.length);
         }
 
-        for (int i = offset; i < len; i++) {
-            DefensiveTools.checkNull(tlvs[i], "tlvs[] elements");
-        }
+        DefensiveTools.checkNullElements(tlvs, "tlvs");
 
         return new ImmutableTlvChain(tlvs, offset, len);
     }

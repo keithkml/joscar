@@ -46,11 +46,26 @@ import net.kano.joscar.tlv.TlvChain;
 import java.io.IOException;
 import java.io.OutputStream;
 
+/**
+ * A rendezvous command used to attempt to send one or more files to another
+ * user.
+ */
 public class FileSendReqRvCmd extends AbstractRequestRvCmd {
+    /** The "invitation message" for this request. */
     private final InvitationMessage invMessage;
+    /**
+     * The connection information block describing the connection to be made.
+     */
     private final RvConnectionInfo connInfo;
+    /** An object describing the file or files being sent. */
     private final FileSendBlock fileSendBlock;
 
+    /**
+     * Creates a new file send request from the given incoming file send request
+     * RV ICBM.
+     *
+     * @param icbm an incoming file send request RV ICBM
+     */
     public FileSendReqRvCmd(RecvRvIcbm icbm) {
         super(icbm);
 
@@ -66,28 +81,92 @@ public class FileSendReqRvCmd extends AbstractRequestRvCmd {
         connInfo = RvConnectionInfo.readConnectionInfo(chain);
     }
 
+    /**
+     * Creates a new outgoing initial file send request with the given message,
+     * connection information, and file transfer information block. As an
+     * initial request, the created request's request type will be {@link
+     * #REQTYPE_INITIAL_REQUEST}.
+     * <br>
+     * <br>
+     * Using this constructor is equivalent to using {@link
+     * #FileSendReqRvCmd(int, InvitationMessage, RvConnectionInfo,
+     * FileSendBlock) new FileSendReqRvCmd(REQTYPE_INITIAL_REQUEST, message,
+     * connInfo, file)}.
+     *
+     * @param message an "invitation message," a message displayed to the user
+     *        upon receiving this request, or <code>null</code> to not include
+     *        an invitation message
+     * @param connInfo a connection information block describing the connection
+     *        to be made, or <code>null</code> to not specify connection
+     *        information
+     * @param fileInfo an object describing the file or files being sent
+     */
     public FileSendReqRvCmd(InvitationMessage message,
-            RvConnectionInfo connInfo, FileSendBlock file) {
-        this(REQTYPE_INITIAL_REQUEST, message, connInfo, file);
+            RvConnectionInfo connInfo, FileSendBlock fileInfo) {
+        this(REQTYPE_INITIAL_REQUEST, message, connInfo, fileInfo);
     }
 
+    /**
+     * Creates a new outgoing file send connection redirection command with the
+     * given connection information.
+     * <br>
+     * <br>
+     * Using this constructor is equivalent to using {@link
+     * #FileSendReqRvCmd(int, InvitationMessage, RvConnectionInfo,
+     * FileSendBlock) new FileSendReqRvCmd(REQTYPE_REDIRECT, null, connInfo,
+     * null)}.
+     *
+     * @param connInfo a block of connection information describing the
+     *        connection to which a file send connection has been redirected
+     */
     public FileSendReqRvCmd(RvConnectionInfo connInfo) {
         this(REQTYPE_REDIRECT, null, connInfo, null);
     }
 
+    /**
+     * Creates a new outgoing file send request command with the given
+     * properties.
+     *
+     * @param requestType a request type, like {@link #REQTYPE_INITIAL_REQUEST}
+     * @param message an "invitation message," a message displayed to the user
+     *        upon receiving this request, or <code>null</code> to not include
+     *        an invitation message
+     * @param connInfo a connection information block describing the connection
+     *        to be made, or <code>null</code> to not specify connection
+     *        information
+     * @param fileInfo an object describing the file or files being sent
+     */
     public FileSendReqRvCmd(int requestType, InvitationMessage message,
-            RvConnectionInfo connInfo, FileSendBlock fileSendBlock) {
+            RvConnectionInfo connInfo, FileSendBlock fileInfo) {
         super(CapabilityBlock.BLOCK_FILE_SEND, requestType);
 
         this.connInfo = connInfo;
-        this.fileSendBlock = fileSendBlock;
+        this.fileSendBlock = fileInfo;
         this.invMessage = message;
     }
 
+    /**
+     * Returns the invitation message sent in this command, or <code>null</code>
+     * if none was sent.
+     *
+     * @return this request's "invitation message"
+     */
     public final InvitationMessage getMessage() { return invMessage; }
 
+    /**
+     * Returns the connection information block sent in this request.
+     *
+     * @return the connection information block sent in this request
+     */
     public final RvConnectionInfo getConnInfo() { return connInfo; }
 
+    /**
+     * Returns an object containing information about the file or files being
+     * sent, or <code>null</code> if no such information was sent.
+     *
+     * @return an object containing information about the file or files being
+     *         transferred
+     */
     public final FileSendBlock getFileSendBlock() { return fileSendBlock; }
 
     public void writeRvTlvs(OutputStream out) throws IOException {
