@@ -50,94 +50,18 @@ class RateQueue {
 
     private final ConnectionQueueMgr parentMgr;
 
-    private RateClassInfo rateInfo;
     private LinkedList queue = new LinkedList();
-    private long last = -1;
-    private long runningAvg;
-    private boolean limited = false;
 
     public RateQueue(ConnectionQueueMgr parentMgr, RateClassInfo rateInfo) {
         DefensiveTools.checkNull(parentMgr, "parentMgr");
         DefensiveTools.checkNull(rateInfo, "rateInfo");
 
         this.parentMgr = parentMgr;
-        this.rateInfo = rateInfo;
-        this.runningAvg = rateInfo.getMax();
     }
 
     public ConnectionQueueMgr getParentMgr() { return parentMgr; }
 
-    public synchronized RateClassInfo getRateInfo() { return rateInfo; }
-
-    public synchronized void setRateInfo(RateClassInfo rateInfo) {
-        DefensiveTools.checkNull(rateInfo, "rateInfo");
-
-        this.rateInfo = rateInfo;
-        // I'm not sure if this max call is necessary, or correct, but I know
-        // sometimes the server will give you really crazy values (in the range
-        // of several minutes) for an average. but that is only on the initial
-        // rate class packet. either way I think your average can never
-        // correctly be greater than the max.
-        runningAvg = Math.min(rateInfo.getCurrentAvg(), rateInfo.getMax());
-    }
-
     public synchronized int getQueueSize() { return queue.size(); }
-
-    public synchronized long getRunningAvg() { return runningAvg; }
-
-    public synchronized boolean isLimited() {
-        updateLimitedStatus();
-
-        return limited;
-    }
-
-    private synchronized void updateLimitedStatus() {
-        if (limited) {
-            long avg = computeCurrentAvg();
-            if (avg > rateInfo.getClearAvg() + getErrorMargin()) {
-                if (logger.isLoggable(Level.FINE)) {
-                    logger.fine("We think that rate class "
-                            + rateInfo.getRateClass() + " is not limited "
-                            + "anymore (avg is " + avg + ")");
-                }
-                limited = false;
-            }
-        }
-    }
-
-    private int getErrorMargin() {
-        return parentMgr.getParentQueueMgr().getErrorMargin();
-    }
-
-    public synchronized long getOptimalWaitTime() {
-        return getOptimalWaitTime(getErrorMargin());
-    }
-
-    public synchronized long getOptimalWaitTime(int errorMargin) {
-        long minAvg;
-        if (isLimited()) minAvg = rateInfo.getClearAvg();
-        else minAvg = rateInfo.getLimitedAvg();
-
-        return getWaitTime(minAvg + errorMargin);
-    }
-
-    public synchronized long getWaitTime(long minAvg) {
-        if (last == -1) return 0;
-
-        long winSize = rateInfo.getWindowSize();
-        long sinceLast = System.currentTimeMillis() - last;
-
-        long minLastDiff = (winSize * minAvg) - (runningAvg  * (winSize - 1));
-        long toWait = minLastDiff - sinceLast;
-
-        if (logger.isLoggable(Level.FINE)) {
-            logger.fine("Class " + rateInfo.getRateClass()
-                    + " should be waiting " + toWait + "ms (avg is "
-                    + computeCurrentAvg() + "ms)");
-        }
-
-        return Math.max(toWait, 0);
-    }
 
     public synchronized void enqueue(SnacRequest req) {
         DefensiveTools.checkNull(req, "req");
@@ -157,12 +81,6 @@ class RateQueue {
     public synchronized SnacRequest dequeue() {
         if (queue.isEmpty()) return null;
 
-        long cur = System.currentTimeMillis();
-        if (last != -1) {
-            runningAvg = computeCurrentAvg(cur);
-        }
-        last = cur;
-
         SnacRequest request = (SnacRequest) queue.removeFirst();
 
         if (logger.isLoggable(Level.FINE)) {
@@ -174,67 +92,7 @@ class RateQueue {
         return request;
     }
 
-    private synchronized long computeCurrentAvg(long currentTime) {
-        long diff = currentTime - last;
-        long winSize = rateInfo.getWindowSize();
-        long max = rateInfo.getMax();
-        return Math.min(max, (runningAvg * (winSize - 1) + diff) / winSize);
-    }
-
-    private synchronized long computeCurrentAvg() {
-        return computeCurrentAvg(System.currentTimeMillis());
-    }
-
     public synchronized void clear() {
         queue.clear();
-    }
-
-    public synchronized void setChangeCode(int changeCode) {
-        if (changeCode == RateChange.CODE_LIMITED) {
-            if (logger.isLoggable(Level.FINE)) {
-                logger.fine("Rate class " + rateInfo.getRateClass()
-                        + ") is now rate-limited!");
-            }
-            limited = true;
-        } else if (changeCode == RateChange.CODE_LIMIT_CLEARED) {
-            if (logger.isLoggable(Level.FINE)) {
-                logger.fine("Rate class " + rateInfo.getRateClass()
-                        + ") is no longer rate-limited, according to server");
-            }
-            limited = false;
-        }
-    }
-
-    public synchronized long getPotentialAvg(long time) {
-        return computeCurrentAvg(time);
-    }
-
-    public synchronized int getPossibleCmdCount() {
-        return getPossibleCmdCount(runningAvg);
-    }
-
-    public synchronized int getMaxCmdCount() {
-        return getPossibleCmdCount(rateInfo.getMax());
-    }
-
-    private int getPossibleCmdCount(long initialAvg) {
-        long diff = System.currentTimeMillis() - last;
-        long winSize = rateInfo.getWindowSize();
-        long limited = rateInfo.getLimitedAvg() + getErrorMargin();
-        long avg = initialAvg;
-        int count = 0;
-
-        while (avg > limited) {
-            avg = (diff + avg * (winSize - 1)) / winSize;
-
-            // after the first iteration we set diff to 0, since the difference
-            // will be zero
-            diff = 0;
-
-            count++;
-        }
-
-        // the loop iterates once past the maximum
-        return count - 1;
     }
 }

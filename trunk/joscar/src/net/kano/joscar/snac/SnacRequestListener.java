@@ -36,27 +36,11 @@
 package net.kano.joscar.snac;
 
 /**
- * Provides an interface for listening for events related to a specific
- * <code>SnacRequest</code>.
+ * An interface for listening for both incoming and outgoing events related
+ * to a specific <code>SnacRequest</code>.
  *
  * @see SnacRequest#addListener
  */
-public interface SnacRequestListener extends SnacResponseListener {
-    /**
-     * Called when an outgoing SNAC request was sent over a SNAC connection.
-     * This method will be called only once for each request this listener has
-     * been added to.
-     *
-     * @param e an object describing the event
-     */
-    void handleSent(SnacRequestSentEvent e);
-
-    /**
-     * Called when a SNAC packet "times out" and is removed from the request
-     * list of its parent <code>SnacProcessor</code>. This will be called only
-     * once for each request to which this listener has been added.
-     *
-     * @param event an object describing the event
-     */
-    void handleTimeout(SnacRequestTimeoutEvent event);
+public interface SnacRequestListener
+        extends SnacResponseListener, OutgoingSnacRequestListener {
 }

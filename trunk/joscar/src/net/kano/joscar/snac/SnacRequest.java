@@ -41,8 +41,8 @@ import net.kano.joscar.flapcmd.SnacCommand;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.logging.Logger;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Encapsulates a single outgoing SNAC request and its corresponding incoming
@@ -153,9 +153,7 @@ public class SnacRequest {
      *
      * @param requestID this request's ID
      */
-    final void setReqid(long requestID) {
-        this.reqid = requestID;
-    }
+    final void setReqid(long requestID) { this.reqid = requestID; }
 
     /**
      * Returns this request's request ID on its parent
@@ -312,7 +310,9 @@ public class SnacRequest {
             for (Iterator it = listeners.iterator(); it.hasNext();) {
                 SnacRequestListener listener = (SnacRequestListener) it.next();
 
-                if (logFiner) logger.finer("Running response listener " + listener);
+                if (logFiner) {
+                    logger.finer("Running response listener " + listener);
+                }
 
                 try {
                     listener.handleResponse(event);

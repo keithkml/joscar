@@ -248,6 +248,11 @@ public class SnacProcessor {
     private List preprocessors = new ArrayList();
 
     /**
+     * The outgoing SNAC request listeners registered on this SNAC connection.
+     */
+    private List requestListeners = new ArrayList();
+
+    /**
      * The SNAC request response listeners registered on this SNAC connection.
      */
     private List responseListeners = new ArrayList();
@@ -274,7 +279,7 @@ public class SnacProcessor {
     private Map requests = new HashMap();
     private final List requestQueue = new LinkedList();
 
-    /** Whether or not this SNAC connection is currently "paused." */
+    /** Whether or not this SNAC connection is currently paused. */
     private boolean paused = false;
 
     /** A SNAC queue manager for this processor. */
@@ -488,6 +493,32 @@ public class SnacProcessor {
     }
 
     /**
+     * Adds a global request listener to listen for outgoing SNAC requests sent
+     * on this connection. The given listener will be used as if it had been
+     * manually added to each outgoing request.
+     *
+     * @param l the listener to add
+     */
+    public synchronized final void addGlobalRequestListener(
+            OutgoingSnacRequestListener l) {
+        DefensiveTools.checkNull(l, "l");
+
+        if (!requestListeners.contains(l)) requestListeners.add(l);
+    }
+
+    /**
+     * Removes a global request listener from the list of listeners.
+     *
+     * @param l the listener to remove
+     */
+    public synchronized final void removeGlobalRequestListener(
+            OutgoingSnacRequestListener l) {
+        DefensiveTools.checkNull(l, "l");
+
+        requestListeners.remove(l);
+    }
+
+    /**
      * Adds a "global response listener" to listen for incoming SNAC request
      * responses. The given listener will be notified of any incoming responses
      * to previously sent outgoing SNAC requests. See {@linkplain SnacProcessor
@@ -655,6 +686,7 @@ public class SnacProcessor {
 
             try {
                 preprocessor.process(mutablePacket);
+
             } catch (Throwable t) {
                 if (logFiner) {
                     logger.finer("Preprocessor " + preprocessor + " threw " +
@@ -665,6 +697,7 @@ public class SnacProcessor {
                 continue;
             }
         }
+
         if (mutablePacket != null && mutablePacket.isChanged()) {
             snacPacket = mutablePacket.toSnacPacket();
         }
@@ -781,6 +814,21 @@ public class SnacProcessor {
         if (logger.isLoggable(Level.FINER)) {
             logger.finer("Snac request timed out: " + request);
         }
+
+        // tell the global listeners
+        for (Iterator it = requestListeners.iterator(); it.hasNext();) {
+            OutgoingSnacRequestListener l
+                    = (OutgoingSnacRequestListener) it.next();
+
+            try {
+                l.handleTimeout(event);
+            } catch (Throwable t) {
+                flapProcessor.handleException(ERRTYPE_SNAC_REQUEST_LISTENER,
+                        t, l);
+            }
+        }
+
+        // tell the request itself
         request.timedOut(event);
     }
 
@@ -888,10 +936,8 @@ public class SnacProcessor {
         long reqid = reqInfo.getRequest().getReqid();
         flapProcessor.sendFlap(new SnacFlapCmd(reqid, request.getCommand()));
 
-        long sentTime = System.currentTimeMillis();
-        reqInfo.sent(sentTime);
-        request.sent(new SnacRequestSentEvent(flapProcessor, this, request,
-                sentTime));
+        fireSentEvent(reqInfo);
+
         if (requestTtl != 0) {
             requestQueue.add(reqInfo);
         } else {
@@ -901,6 +947,41 @@ public class SnacProcessor {
         if (logger.isLoggable(Level.FINER)) {
             logger.finer("Finished sending SNAC request " + request);
         }
+    }
+
+    /**
+     * Performs the various tasks necessary for notifying any request listeners
+     * (including out own <code>RequestInfo</code>) that a SNAC request has been
+     * sent.
+     *
+     * @param reqInfo the request information object whose request was sent
+     */
+    private void fireSentEvent(RequestInfo reqInfo) {
+        SnacRequest request = reqInfo.getRequest();
+        long now = System.currentTimeMillis();
+
+        // record the sent time locally
+        reqInfo.sent(now);
+
+        // create the event object
+        SnacRequestSentEvent event = new SnacRequestSentEvent(flapProcessor,
+                this, request, now);
+
+        // tell the global request listeners first
+        for (Iterator it = requestListeners.iterator(); it.hasNext();) {
+            OutgoingSnacRequestListener l
+                    = (OutgoingSnacRequestListener) it.next();
+
+            try {
+                l.handleSent(event);
+            } catch (Throwable t) {
+                flapProcessor.handleException(ERRTYPE_SNAC_REQUEST_LISTENER,
+                        t, l);
+            }
+        }
+
+        // then tell the request itself about it
+        request.sent(event);
     }
 
     /**

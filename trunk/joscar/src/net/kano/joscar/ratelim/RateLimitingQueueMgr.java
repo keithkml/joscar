@@ -58,66 +58,6 @@ public class RateLimitingQueueMgr extends AbstractSnacQueueMgr {
 
     private QueueRunner runner = null;
 
-    private SnacResponseListener responseListener = new SnacResponseListener() {
-        public void handleResponse(SnacResponseEvent e) {
-            SnacCommand cmd = e.getSnacCommand();
-
-            if (cmd instanceof RateInfoCmd) {
-                RateInfoCmd ric = (RateInfoCmd) cmd;
-
-                ConnectionQueueMgr mgr = getQueueMgr(e.getSnacProcessor());
-                mgr.setRateClasses(ric.getRateClassInfos());
-            }
-        }
-    };
-    private SnacPacketListener packetListener = new SnacPacketListener() {
-        public void handleSnacPacket(SnacPacketEvent e) {
-            SnacCommand cmd = e.getSnacCommand();
-
-            if (cmd instanceof RateChange) {
-                RateChange rc = (RateChange) cmd;
-
-                RateClassInfo rateInfo = rc.getRateInfo();
-                if (rateInfo != null) {
-                    int code = rc.getChangeCode();
-                    ConnectionQueueMgr mgr = getQueueMgr(e.getSnacProcessor());
-                    mgr.updateRateClass(code, rateInfo);
-                }
-            }
-        }
-    };
-
-    public final void attach(SnacProcessor processor) {
-        synchronized(conns) {
-            if (conns.containsKey(processor)) {
-                throw new IllegalArgumentException("already attached to " +
-                        "processor " + processor);
-            }
-
-            conns.put(processor, new ConnectionQueueMgr(this, processor));
-
-            processor.setSnacQueueManager(this);
-            processor.addPacketListener(packetListener);
-            processor.addGlobalResponseListener(responseListener);
-        }
-    }
-
-    public final void detach(SnacProcessor processor) {
-        synchronized(conns) {
-            if (conns.remove(processor) == null) {
-                throw new IllegalArgumentException("not attached to processor "
-                        + processor);
-            }
-            processor.removePacketListener(packetListener);
-            processor.removeGlobalResponseListener(responseListener);
-            synchronized(processor) {
-                if (processor.getSnacQueueManager() == this) {
-                    processor.setSnacQueueManager(null);
-                }
-            }
-        }
-    }
-
     public final ConnectionQueueMgr getQueueMgr(SnacProcessor processor) {
         ConnectionQueueMgr rcs;
         synchronized(conns) {
