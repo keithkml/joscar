@@ -39,7 +39,6 @@ import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
-import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
 import net.kano.joscar.tlv.TlvTools;
@@ -143,9 +142,10 @@ public class SsiRightsCmd extends SsiCommand {
     }
 
     public String toString() {
-        StringBuffer buffer = new StringBuffer(maxima.length * 12);
+        StringBuffer buffer = null;
 
         if (maxima != null) {
+            buffer = new StringBuffer(maxima.length * 12);
             for (int i = 0; i < maxima.length; i++) {
                 buffer.append("0x");
                 buffer.append(Integer.toHexString(i));
@@ -154,6 +154,6 @@ public class SsiRightsCmd extends SsiCommand {
                 buffer.append(", ");
             }
         }
-        return "SsiRightsCmd: " + maxima.length + " maxima: " + buffer;
+        return "SsiRightsCmd: maxima: " + buffer;
     }
 }

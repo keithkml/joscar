@@ -38,10 +38,12 @@ package net.kano.joscar.snaccmd.ssi;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.MiscTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.regex.Pattern;
 
 /**
  * A SNAC command used to acknowledge the modification of the user's
@@ -85,11 +87,13 @@ public class SsiDataModResponse extends SsiCommand {
     /**
      * A result code indicating that ICQ users cannot be added to an AIM buddy
      * list.
+     *
+     * @see net.kano.joscar.snaccmd.CapabilityBlock#BLOCK_ICQCOMPATIBLE
      */
     public static final int RESULT_NO_ICQ = 0x000d;
 
-    /** The result code. */
-    private final int result;
+    /** The result codes. */
+    private final int[] results;
 
     /**
      * Generates a new SSI data modification response command from the
@@ -104,39 +108,80 @@ public class SsiDataModResponse extends SsiCommand {
 
         ByteBlock snacData = packet.getData();
 
-        result = BinaryTools.getUShort(snacData, 0);
+        int items = snacData.getLength() / 2;
+        results = new int[items];
+
+        for (int i = 0; i < items; i++) {
+            results[i] = BinaryTools.getUShort(snacData, i*2);
+        }
     }
 
     /**
      * Creates a new outgoing SSI modification response with the given result
-     * code.
+     * codes.
      *
-     * @param result a result code, like {@link #RESULT_SUCCESS}
+     * @param results a list of result codes (like {@link #RESULT_SUCCESS})
      */
-    public SsiDataModResponse(int result) {
+    public SsiDataModResponse(int[] results) {
         super(CMD_MOD_ACK);
 
-        DefensiveTools.checkRange(result, "result", 0);
+        DefensiveTools.checkNull(results, "results");
 
-        this.result = result;
+        results = (int[]) results.clone();
+
+        for (int i = 0; i < results.length; i++) {
+            int result = results[i];
+
+            DefensiveTools.checkRange(result, "results elements", 0);
+        }
+
+        this.results = results;
     }
 
     /**
-     * Returns the result code associated with this SSI modification response.
-     * Normally one of the {@linkplain #RESULT_SUCCESS
-     * <code>RESULT_<i>*</i></code> constants}.
+     * Returns the result codes associated with this SSI modification response.
+     * Each result code is normally one of the {@linkplain #RESULT_SUCCESS
+     * <code>RESULT_<i>*</i></code> constants} defined in this class.
      *
-     * @return the result code sent in this SSI modification response
+     * @return the result codes sent in this SSI modification response
      */
-    public final int getResult() {
-        return result;
-    }
+    public final int[] getResults() { return (int[]) results.clone(); }
 
     public void writeData(OutputStream out) throws IOException {
-        BinaryTools.writeUShort(out, result);
+        for (int i = 0; i < results.length; i++) {
+            int result = results[i];
+
+            BinaryTools.writeUShort(out, result);
+        }
     }
 
+    /**
+     * A regular expression matching the names of the <code>RESULT_*</code>
+     * fields in this class.
+     */
+    private static final Pattern resultFieldRE = Pattern.compile("RESULT_.*");
+
     public String toString() {
-        return "SsiDataModAck: result=0x" + Integer.toHexString(result);
+        StringBuffer string = new StringBuffer();
+        string.append("SsiDataModAck: results=");
+
+        for (int i = 0; i < results.length; i++) {
+            int result = results[i];
+
+            string.append("0x");
+            string.append(Integer.toHexString(result));
+
+            String field = MiscTools.findIntField(SsiDataModResponse.class,
+                    result, resultFieldRE);
+            if (field != null) {
+                string.append(" (");
+                string.append(field);
+                string.append(")");
+            }
+
+            if (i != results.length - 1) string.append(", ");
+        }
+
+        return string.toString();
     }
 }

@@ -57,7 +57,7 @@ public abstract class AuthCommand extends SnacCommand {
 
     /** A SNAC family information object for this family. */
     public static final SnacFamilyInfo FAMILY_INFO
-            = new SnacFamilyInfo(FAMILY_AUTH, 0, 0, 0);
+            = new SnacFamilyInfo(FAMILY_AUTH, 0x0001, 0x0110, 0x0801);
 
     /**
      * Creates a new SNAC command in this family with the given command subtype.

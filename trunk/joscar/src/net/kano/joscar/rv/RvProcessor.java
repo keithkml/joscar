@@ -185,14 +185,18 @@ public class RvProcessor {
             SnacCommand cmd = event.getSnacCommand();
 
             if (cmd instanceof RecvRvIcbm) {
-                logger.finer("RvProcessor got RecvRvIcbm: " + cmd);
+                if (logger.isLoggable(Level.FINER)) {
+                    logger.finer("RvProcessor got RecvRvIcbm: " + cmd);
+                }
 
                 processRv(event);
 
                 return STOP_PROCESSING_LISTENERS;
 
             } else if (cmd instanceof RvResponse) {
-                logger.finer("RvProcessor got RvResponse: " + cmd);
+                if (logger.isLoggable(Level.FINER)) {
+                    logger.finer("RvProcessor got RvResponse: " + cmd);
+                }
 
                 processResponse(event);
 

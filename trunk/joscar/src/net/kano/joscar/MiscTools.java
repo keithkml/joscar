@@ -35,6 +35,10 @@
 
 package net.kano.joscar;
 
+import java.util.regex.Pattern;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+
 /**
  * Provides a set of miscellaneous tools used throughout joscar.
  */
@@ -76,5 +80,87 @@ public final class MiscTools {
      */
     public static String getClassName(String fullName) {
         return fullName.substring(fullName.lastIndexOf('.') + 1);
+    }
+
+    /**
+     * Finds a <code>static final</code> field of the given class whose name
+     * matches the given pattern and whose value is equal to the given
+     * <code>value</code>. The field's name is returned, or <code>null</code> if
+     * no field is found.
+     *
+     * @param cl a class
+     * @param value the value to search for
+     * @param p a pattern that matches the fields to be searched, or
+     *        <code>null</code> to match all fields of the class
+     * @return the name of a field matching the given constraints
+     */
+    public static String findIntField(Class cl, long value, Pattern p) {
+        Field[] fields = cl.getFields();
+
+        for (int i = 0; i < fields.length; i++) {
+            Field field = fields[i];
+
+            int modifiers = field.getModifiers();
+
+            // only accept static final fields
+            if (!Modifier.isStatic(modifiers) || !Modifier.isFinal(modifiers)) {
+                continue;
+            }
+
+            String fieldName = field.getName();
+            if (p != null && !p.matcher(fieldName).matches()) continue;
+
+            try {
+                if (field.getLong(null) == value) return fieldName;
+            } catch (IllegalAccessException e) {
+                continue;
+            }
+        }
+
+        // we couldn't find anything
+        return null;
+    }
+
+    /**
+     * Finds a <code>static final</code> field of the given class whose name
+     * matches the given pattern and whose value is equal to the given
+     * <code>value</code>. The field's name is returned, or <code>null</code> if
+     * no field is found.
+     *
+     * @param cl a class
+     * @param value the value to search for
+     * @param p a pattern that matches the fields to be searched, or
+     *        <code>null</code> to match all fields of the class
+     * @return the name of a field matching the given constraints
+     */
+    public static String findEqualField(Class cl, Object value, Pattern p) {
+        Field[] fields = cl.getFields();
+        for (int i = 0; i < fields.length; i++) {
+            Field field = fields[i];
+
+            int modifiers = field.getModifiers();
+            if (!Modifier.isStatic(modifiers) || !Modifier.isFinal(modifiers)) {
+                continue;
+            }
+
+            String fieldName = field.getName();
+            if (p != null && !p.matcher(fieldName).matches()) continue;
+
+            Object fieldValue;
+            try {
+                fieldValue = field.get(null);
+            } catch (IllegalAccessException e) {
+                continue;
+            }
+            if (fieldValue == null) {
+                if (value == null) return fieldName;
+            } else {
+                // fieldValue is not null
+                if (fieldValue.equals(value)) return fieldName;
+            }
+        }
+
+        // we didn't find anything
+        return null;
     }
 }

@@ -156,6 +156,8 @@ void computeNewAvg(long lastSent, long oldAvg,
  * however, all is back to normal, as if limiting had never taken place.
  */
 public class RateClassInfo implements Writable {
+    private static final int RATECLASSINFO_SIZE = 35;
+
     /** The rate class ID of this rate class information block. */
     private final int rateClass;
     /** The "window size." */
@@ -190,7 +192,7 @@ public class RateClassInfo implements Writable {
      *         data
      */
     public static RateClassInfo readRateClassInfo(ByteBlock block) {
-        if (block.getLength() < 35) return null;
+        if (block.getLength() < RATECLASSINFO_SIZE) return null;
 
         return new RateClassInfo(block);
     }
@@ -348,7 +350,7 @@ public class RateClassInfo implements Writable {
     }
 
     public long getWritableLength() {
-        return 35;
+        return RATECLASSINFO_SIZE;
     }
 
     public void write(OutputStream out) throws IOException {

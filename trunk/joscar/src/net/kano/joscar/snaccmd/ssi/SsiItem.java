@@ -39,10 +39,12 @@ import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.LiveWritable;
+import net.kano.joscar.MiscTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.util.regex.Pattern;
 
 /**
  * A data structure used to store various types of "items" on the server. These
@@ -276,9 +278,13 @@ public class SsiItem implements LiveWritable, Serializable {
         if (data != null) data.write(out);
     }
 
+    private static final Pattern typeFieldRE = Pattern.compile("TYPE_.*");
+
     public String toString() {
         return "SsiItem '" + name + "', type=0x" + Integer.toHexString(type)
-                + ", parentid=0x" + Integer.toHexString(parentid) + ", id=0x"
+                + "(" + MiscTools.findIntField(SsiItem.class, type,
+                        typeFieldRE) + "), parentid=0x"
+                + Integer.toHexString(parentid) + ", id=0x"
                 + Integer.toHexString(id);
     }
 }

@@ -192,7 +192,7 @@ public final class ClientVersionInfo implements LiveWritable {
      *
      * @return the client's "distribution code"
      */
-    public int getDistCode() { return distCode; }
+    public long getDistCode() { return distCode; }
 
     public void write(OutputStream out) throws IOException {
         if (versionString != null) {

@@ -37,6 +37,8 @@ package net.kano.joscar.snaccmd.auth;
 
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.MiscTools;
+import net.kano.joscar.snaccmd.acct.AcctModCmd;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
@@ -44,6 +46,7 @@ import net.kano.joscar.tlv.TlvTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.regex.Pattern;
 
 /**
  * A SNAC command sent in response to an {@link AuthRequest}. This is the last
@@ -334,14 +337,32 @@ public class AuthResponse extends AuthCommand {
         }
     }
 
+    private static final Pattern errorFieldRE = Pattern.compile("ERROR_.*");
+    private static final Pattern regFieldRE = Pattern.compile("REGSTATUS_.*");
+
     public String toString() {
+        String errorName = null;
+        if (errorCode != -1) {
+            errorName = MiscTools.findIntField(AuthResponse.class, errorCode,
+                    errorFieldRE);
+        }
+        String regName = null;
+        if (regstatus != -1) {
+            regName = MiscTools.findIntField(AcctModCmd.class, regstatus,
+                    regFieldRE);
+        }
+
         return "AuthResponse: " +
                 "sn='" + sn + "'" +
                 ", server='" + server + "'" +
                 ", port=" + port +
-                ", regStatus=" + regstatus +
+                (regstatus == -1 ? "" : ", regStatus=0x" + Integer.toHexString(regstatus)
+                + " (" + (regName == null ? "unknown status code" : regName)
+                + ")") +
                 ", email='" + email + "'" +
-                ", errorCode=" + Integer.toHexString(errorCode) +
-                ", errorURL='" + errorUrl + "'";
+                (errorCode == -1 ? "" : ", errorCode=0x" + Integer.toHexString(errorCode)
+                + " (" + (errorName == null ? "unknown error code" : errorName)
+                + ")") +
+                (errorUrl == null ? "" : ", errorURL='" + errorUrl + "'");
     }
 }

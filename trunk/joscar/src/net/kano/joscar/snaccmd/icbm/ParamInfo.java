@@ -68,7 +68,7 @@ public class ParamInfo implements Writable {
      * A bit mask indicating that receiving {@link RecvTypingNotification}s is
      * supported.
      */
-    public static final long FLAG_TYPING_NOTIFICATION = 0x00000010;
+    public static final long FLAG_TYPING_NOTIFICATION = 0x00000008;
 
     /** The maximum ICBM channel supported. */
     private final int maxChannel;
