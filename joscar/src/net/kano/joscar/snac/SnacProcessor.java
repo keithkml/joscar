@@ -718,6 +718,31 @@ public class SnacProcessor {
             throws NullPointerException {
         DefensiveTools.checkNull(request, "request");
 
+        SnacCommand command = request.getCommand();
+
+        logger.fine("Queueing Snac request #" + lastReqid + ": "
+                + command);
+
+        queueManager.queueSnac(this, request);
+
+        logger.finer("Finished queueing Snac request #" + lastReqid);
+    }
+
+    /**
+     * Sends the given SNAC request to the server, bypassing the SNAC request
+     * queue.
+     *
+     * @param request the request to send
+     * @throws NullPointerException if the given request is <code>null</code>
+     *
+     * @see #setSnacQueueManager
+     */
+    public synchronized final void sendSnacImmediately(SnacRequest request)
+            throws NullPointerException {
+        DefensiveTools.checkNull(request, "request");
+
+        logger.fine("Sending SNAC request " + request);
+
         // this is sent as an unsigned int, so it has to wrap like one. we
         // avoid request ID zero because that seems like a value the server
         // might use to denote a lack of a request ID.
@@ -733,40 +758,13 @@ public class SnacProcessor {
         RequestInfo reqInfo = new RequestInfo(request);
 
         requests.put(key, reqInfo);
-
-        SnacCommand command = request.getCommand();
-
-        logger.fine("Queueing Snac request #" + lastReqid + ": "
-                + command);
-
-        queueManager.queueSnac(this, request);
-
-        logger.finer("Finished queueing Snac request #" + lastReqid);
-    }
-
-    /**
-     * Sends the given SNAC request that was previously sent to the SNAC queue
-     * manager to the server.
-     *
-     * @param request the request to send
-     * @throws NullPointerException if the given request is <code>null</code> or
-     *         if
-     */
-    synchronized final void reallySendSnac(SnacRequest request)
-            throws NullPointerException, IllegalArgumentException {
-        logger.fine("Sending SNAC request " + request);
         
-        long reqid = request.getReqid();
-        Long key = new Long(reqid);
-        RequestInfo reqInfo = (RequestInfo) requests.get(key);
-
-        if (reqInfo == null) throw new NullPointerException();
         if (reqInfo.getSentTime() != -1) {
             throw new IllegalArgumentException("SNAC request " + request
                     + " was already sent");
         }
 
-        flapProcessor.send(new SnacFlapCmd(reqid, request.getCommand()));
+        flapProcessor.send(new SnacFlapCmd(lastReqid, request.getCommand()));
 
         long sentTime = System.currentTimeMillis();
         reqInfo.sent(sentTime);
