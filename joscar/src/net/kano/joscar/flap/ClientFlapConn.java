@@ -129,7 +129,10 @@ public class ClientFlapConn extends ClientConn {
      *
      * @return this connection's FLAP processor
      */
-    public final FlapProcessor getFlapProcessor() {
-        return flapProcessor;
+    public final FlapProcessor getFlapProcessor() { return flapProcessor; }
+
+    public String toString() {
+        return "ClientFlapConn: "
+                + "flapProcessor=" + flapProcessor;
     }
 }

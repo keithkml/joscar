@@ -35,33 +35,44 @@
 
 package net.kano.joscar.net;
 
+import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * A simple interface for an object that has the ability to be attached and/or
  * detached from a stream or socket.
  */
 public abstract class ConnProcessor {
+    private static final Logger logger
+            = Logger.getLogger("net.kano.joscar.net");
+
     /**
-     * Represents whether this FLAP processor is attached to any input or
+     * Represents whether this connection processor is attached to any input or
      * output streams.
      */
     private boolean attached = false;
     /**
-     * The input stream from which FLAP packets are currently being read, or
+     * The input stream from which packets are currently being read, or
      * <code>null</code> if there is currently no such stream.
      */
     private InputStream in = null;
     /**
-     * The output stream to which FLAP packets are currently being written,
+     * The output stream to which packets are currently being written,
      * or <code>null</code> if there is currently no such stream.
      */
     private OutputStream out = null;
+    /** A list of handlers for connection-related errors and exceptions. */
+    private final CopyOnWriteArrayList errorHandlers
+            = new CopyOnWriteArrayList();
 
     /**
      * Attaches this connection processor to the given socket's input and output
@@ -99,10 +110,10 @@ public abstract class ConnProcessor {
     }
 
     /**
-     * Attaches this FLAP processor to the given output stream. This stream is
-     * where packets sent via the <code>send</code> method will be written. Note
-     * that <code>out</code> cannot be <code>null</code>; to detach from a
-     * stream, use {@link #detach}.
+     * Attaches this connection processor to the given output stream. This
+     * stream is where packets sent via the <code>send</code> method will be
+     * written. Note that <code>out</code> cannot be <code>null</code>; to
+     * detach from a stream, use {@link #detach}.
      *
      * @param out the output stream to attach to
      */
@@ -147,4 +158,130 @@ public abstract class ConnProcessor {
         out = null;
         attached = false;
     }
+
+    /**
+     * Adds an exception handler for connection-related exceptions.
+     *
+     * @param handler the handler to add
+     */
+    public final void addExceptionHandler(
+            ConnProcessorExceptionHandler handler) {
+        DefensiveTools.checkNull(handler, "handler");
+
+        errorHandlers.addIfAbsent(handler);
+    }
+
+    /**
+     * Removes an exception handler from this processor.
+     *
+     * @param handler the handler to remove
+     */
+    public final void removeExceptionHandler(
+            ConnProcessorExceptionHandler handler) {
+        DefensiveTools.checkNull(handler, "handler");
+
+        errorHandlers.remove(handler);
+    }
+
+    /**
+     * Processes the given exception with the given error type. This exception
+     * will be passed to all registered exception handlers. Calling this method
+     * is equivalent to calling {@link
+     * #handleException(ConnProcessor.ErrorType, Throwable, Object) handleException(type,
+     * t, null)}.
+     *
+     * @param type an object representing the type or source of the given
+     *        exception
+     * @param t the exception that was thrown
+     *
+     * @see #addExceptionHandler
+     */
+    public final void handleException(ErrorType type, Throwable t) {
+        handleException(type, t, null);
+    }
+
+    /**
+     * Processes the given exception with the given error type and error detail
+     * info. This exception will be passed to all registered exception handlers.
+     *
+     * @param type an object representing the type or source of the given
+     *        exception
+     * @param t the exception that was thrown
+     * @param info an object containing extra information or details on this
+     *        exception and/or what caused it
+     */
+    public final void handleException(ErrorType type, Throwable t,
+            Object info) {
+        DefensiveTools.checkNull(type, "type");
+        DefensiveTools.checkNull(t, "t");
+
+        boolean logFine = logger.isLoggable(Level.FINE);
+        boolean logFiner = logger.isLoggable(Level.FINER);
+
+        if (logFine) {
+            logger.fine("Processing connection error (" + type + "): "
+                    + t.getMessage() + ": " + info);
+        }
+
+        if (type == ConnProcessorExceptionEvent.ERRTYPE_CONNECTION_ERROR
+                && !isAttached()) {
+            // if we're not attached to anything, the listeners don't want to
+            // be hearing about any connection errors.
+            if (logFiner) {
+                logger.fine("Ignoring " + type + " connection error because " +
+                        "processor is not attached");
+            }
+            return;
+        }
+
+        // get the iterator now, so we can use the same one later and be working
+        // with the same copy of the handler list (this method is not
+        // synchronized)
+        Iterator iterator = errorHandlers.iterator();
+        if (!iterator.hasNext()) {
+            if (logger.isLoggable(Level.WARNING)) {
+                logger.warning("CONNPROCESSOR HAS NO ERROR HANDLERS, DUMPING:");
+                logger.warning("ERROR TYPE: " + type);
+                logger.warning("ERROR INFO: " + info);
+                logger.warning("EXCEPTION: " + t.getMessage());
+                logger.warning(Arrays.asList(t.getStackTrace()).toString());
+            }
+
+            return;
+        }
+
+        ConnProcessorExceptionEvent event
+                = new ConnProcessorExceptionEvent(this, type, t, info);
+
+        while (iterator.hasNext()) {
+            ConnProcessorExceptionHandler handler
+                    = (ConnProcessorExceptionHandler) iterator.next();
+
+            if (logFiner) {
+                logger.finer("Running ConnProcessor error handler " + handler);
+            }
+
+            try {
+                handler.handleException(event);
+            } catch (Throwable t2) {
+                if (logger.isLoggable(Level.WARNING)) {
+                    logger.warning("Exception handler " + handler
+                            + "threw exception: " + t2);
+                }
+            }
+        }
+    }
+
+    public static final class ErrorType {
+        private final String name;
+
+        public ErrorType(String name) {
+            this.name = name;
+        }
+
+        public String toString() {
+            return name;
+        }
+    }
+
 }

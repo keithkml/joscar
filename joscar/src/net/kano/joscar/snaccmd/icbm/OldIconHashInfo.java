@@ -291,9 +291,7 @@ public final class OldIconHashInfo {
      * @return the length, in bytes, of the icon hash data block format used in
      *         advertising one's buddy icon in an IM
      */
-    public int getImTlvFormatLength() {
-        return 12;
-    }
+    public int getImTlvFormatLength() { return 12; }
 
     /**
      * Writes this icon hash block to the given stream in the format normally
@@ -318,9 +316,7 @@ public final class OldIconHashInfo {
      * @return the length, in bytes, of the icon hash data block format used in
      *         sending one's buddy icon in a rendezvous packet
      */
-    public int getRvDataFormatLength() {
-        return 12;
-    }
+    public int getRvDataFormatLength() { return 12; }
 
     public String toString() {
         return "OldIconHashData: size=" + size + " bytes, sum=" + sum

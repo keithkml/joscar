@@ -51,4 +51,8 @@ public class DefaultSnacCmdFactoryList extends SnacCmdFactoryList {
             registerAll(factories[i]);
         }
     }
+
+    public String toString() {
+        return "DefaultSnacCmdFactoryList";
+    }
 }

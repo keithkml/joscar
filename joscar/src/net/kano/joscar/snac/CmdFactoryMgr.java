@@ -143,4 +143,9 @@ public final class CmdFactoryMgr extends SnacCmdFactoryList {
         // it doesn't matter if it's null anymore, man. it just doesn't matter.
         return factory;
     }
+
+    public String toString() {
+        return "CmdFactoryMgr: "
+                + "defaultFactories=" + defaultFactories;
+    }
 }

@@ -108,26 +108,26 @@ public class FullUserInfo implements LiveWritable {
      * <code>null</code> if no valid user info block is present in the given
      * data block.
      *
-     * @param block the block from which to read user info
+     * @param origBlock the block from which to read user info
      * @return a user info object read from the given data block
      */
-    public static FullUserInfo readUserInfo(ByteBlock block) {
-        DefensiveTools.checkNull(block, "block");
+    public static FullUserInfo readUserInfo(ByteBlock origBlock) {
+        DefensiveTools.checkNull(origBlock, "block");
 
-        int start = block.getOffset();
+        int start = origBlock.getOffset();
 
-        StringBlock snInfo = OscarTools.readScreenname(block);
+        StringBlock snInfo = OscarTools.readScreenname(origBlock);
 
         if (snInfo == null) return null;
 
         String sn = snInfo.getString();
         int snLength = snInfo.getTotalSize();
 
-        if (block.getLength() < snLength + 2) {
+        if (origBlock.getLength() < snLength + 2) {
             return new FullUserInfo(sn, snLength);
         }
 
-        block = block.subBlock(snLength);
+        ByteBlock block = origBlock.subBlock(snLength);
 
         int warningLevel = BinaryTools.getUShort(block, 0);
 
@@ -523,14 +523,14 @@ public class FullUserInfo implements LiveWritable {
         DefensiveTools.checkRange(idleMins, "idleMins", -1);
         DefensiveTools.checkRange(totalSize, "totalSize", -1);
 
-        caps = (CapabilityBlock[])
-                DefensiveTools.getNonnullArray(caps, "caps");
+        CapabilityBlock[] safeCaps = (CapabilityBlock[])
+                        DefensiveTools.getSafeArrayCopy(caps, "caps");
 
-        extraInfos = (ExtraInfoBlock[])
-                DefensiveTools.getNonnullArray(extraInfos, "extraInfos");
+        ExtraInfoBlock[] safeExtraInfos = (ExtraInfoBlock[])
+                DefensiveTools.getSafeArrayCopy(extraInfos, "extraInfos");
 
-        shortCaps = (ShortCapabilityBlock[])
-                DefensiveTools.getNonnullArray(shortCaps, "shortCaps");
+        ShortCapabilityBlock[] safeShortCaps = (ShortCapabilityBlock[])
+                DefensiveTools.getSafeArrayCopy(shortCaps, "shortCaps");
 
         this.sn = sn;
         this.warningLevel = warningLevel;
@@ -541,11 +541,11 @@ public class FullUserInfo implements LiveWritable {
         this.sessionLengthAOL = sessAOL;
         this.onSince = onSince;
         this.idleMins = idleMins;
-        this.capabilityBlocks = caps;
+        this.capabilityBlocks = safeCaps;
         this.away = away;
-        this.extraInfos = extraInfos;
+        this.extraInfos = safeExtraInfos;
         this.certInfoHash = certHash;
-        this.shortCaps = shortCaps;
+        this.shortCaps = safeShortCaps;
         this.extraTlvs = extraTlvs;
         this.totalSize = totalSize;
     }

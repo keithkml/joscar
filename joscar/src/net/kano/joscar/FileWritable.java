@@ -94,4 +94,8 @@ public class FileWritable implements LiveWritable {
             in.close();
         }
     }
+
+    public String toString() {
+        return "FileWritable for file " + filename;
+    }
 }

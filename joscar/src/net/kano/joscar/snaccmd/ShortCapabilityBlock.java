@@ -85,7 +85,7 @@ public class ShortCapabilityBlock implements Writable {
         }
 
         return (ShortCapabilityBlock[])
-                caps.toArray(new ShortCapabilityBlock[0]);
+                caps.toArray(new ShortCapabilityBlock[caps.size()]);
     }
 
     /**
@@ -162,7 +162,8 @@ public class ShortCapabilityBlock implements Writable {
         if (data.getLength() != 2) {
             throw new IllegalArgumentException("short capability data block "
                     + "must contain only two bytes (it has "
-                    + data.getLength() + ")");
+                    + data.getLength() + ": " + BinaryTools.describeData(data)
+                    +  ")");
         }
 
         this.data = data;

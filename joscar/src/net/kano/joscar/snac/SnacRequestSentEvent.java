@@ -117,4 +117,12 @@ public class SnacRequestSentEvent {
      *         milliseconds since the unix epoch
      */
     public long getSentTime() { return sentTime; }
+
+    public String toString() {
+        return "SnacRequestSentEvent: "
+                + "flapProcessor=" + flapProcessor
+                + ", snacProcessor=" + snacProcessor
+                + ", request=" + request
+                + ", sentTime=" + sentTime;
+    }
 }

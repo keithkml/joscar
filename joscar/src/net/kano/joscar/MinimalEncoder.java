@@ -249,4 +249,8 @@ public final class MinimalEncoder {
             } catch (UnsupportedEncodingException impossibler) { return null; }
         }
     }
+
+    public String toString() {
+        return "MinimalEncoder: mincharset=" + this.charset;
+    }
 }

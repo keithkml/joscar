@@ -92,23 +92,24 @@ public class FlapPacketEvent {
      * @return the FLAP connection that received the packet that caused this
      *         event
      */
-    public final FlapProcessor getFlapProcessor() {
-        return flapProcessor;
-    }
+    public final FlapProcessor getFlapProcessor() { return flapProcessor; }
 
     /**
      * The FLAP packet that was received.
      * @return the received FLAP packet
      */
-    public final FlapPacket getFlapPacket() {
-        return flapPacket;
-    }
+    public final FlapPacket getFlapPacket() { return flapPacket; }
 
     /**
      * The FLAP command generated from the received FLAP packet.
      * @return the FLAP command associated with this event
      */
-    public final FlapCommand getFlapCommand() {
-        return flapCommand;
+    public final FlapCommand getFlapCommand() { return flapCommand; }
+
+    public String toString() {
+        return "FlapPacketEvent: "
+                + "flapProcessor=" + flapProcessor
+                + ", flapCommand=" + flapCommand
+                + ", flapPacket=" + flapPacket;
     }
 }

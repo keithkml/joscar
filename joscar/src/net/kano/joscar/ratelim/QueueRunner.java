@@ -233,11 +233,11 @@ class QueueRunner implements Runnable {
      * @param rateQueues the queues to add
      */
     public void addQueues(RateQueue[] rateQueues) {
-        DefensiveTools.checkNull(rateQueues, "rateQueues");
-        rateQueues = (RateQueue[]) DefensiveTools.getNonnullArray(
-                rateQueues, "rateQueues");
+        RateQueue[] safeRateQueues = (RateQueue[])
+                DefensiveTools.getSafeNonnullArrayCopy(
+                        rateQueues, "rateQueues");
 
-        queues.addAll(Arrays.asList(rateQueues));
+        queues.addAll(Arrays.asList(safeRateQueues));
     }
 
     /**
@@ -261,5 +261,10 @@ class QueueRunner implements Runnable {
         DefensiveTools.checkNull(rateQueues, "rateQueues");
 
         queues.removeAll(Arrays.asList(rateQueues));
+    }
+
+    public String toString() {
+        return "QueueRunner: "
+                + "queues=" + queues;
     }
 }

@@ -37,6 +37,7 @@ package net.kano.joscar.ratelim;
 
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.net.ConnProcessor;
 import net.kano.joscar.flap.FlapProcessor;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.snac.ClientSnacProcessor;
@@ -55,6 +56,7 @@ import net.kano.joscar.snaccmd.conn.RateInfoCmd;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Collection;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -145,7 +147,8 @@ public class RateMonitor {
      * rate listener method. The error info object for an error of this type
      * will be the listener that threw the exception.
      */
-    public static final Object ERRTYPE_RATE_LISTENER = "ERRTYPE_RATE_LISTENER";
+    public static final ConnProcessor.ErrorType ERRTYPE_RATE_LISTENER
+            = new ConnProcessor.ErrorType("ERRTYPE_RATE_LISTENER");
 
     /** A default rate average error margin. */
     public static final int ERRORMARGIN_DEFAULT = 100;
@@ -327,8 +330,8 @@ public class RateMonitor {
      * @param rateInfos the list of rate class information blocks to use
      */
     public final void setRateClasses(RateClassInfo[] rateInfos) {
-        DefensiveTools.checkNull(rateInfos, "rateInfos");
-        rateInfos = (RateClassInfo[]) DefensiveTools.getNonnullArray(
+        RateClassInfo[] safeRateInfos =
+                (RateClassInfo[]) DefensiveTools.getSafeNonnullArrayCopy(
                 rateInfos, "rateInfos");
 
         if (logger.isLoggable(Level.FINE)) {
@@ -338,8 +341,8 @@ public class RateMonitor {
         synchronized(this) {
             reset();
 
-            for (int i = 0; i < rateInfos.length; i++) {
-                RateClassInfo rateInfo = rateInfos[i];
+            for (int i = 0; i < safeRateInfos.length; i++) {
+                RateClassInfo rateInfo = safeRateInfos[i];
 
                 setRateClass(rateInfo);
             }
@@ -435,7 +438,7 @@ public class RateMonitor {
      *
      * @see FlapProcessor#handleException
      */
-    private void handleException(Object type, Throwable t, Object info) {
+    private void handleException(ConnProcessor.ErrorType type, Throwable t, Object info) {
         ClientSnacProcessor processor;
         synchronized(this) {
             processor = snacProcessor;
@@ -551,7 +554,17 @@ public class RateMonitor {
      * @return all of the rate class monitors in use in this rate monitor
      */
     public final synchronized RateClassMonitor[] getMonitors() {
+        Collection vals = classToMonitor.values();
         return (RateClassMonitor[])
-                classToMonitor.values().toArray(new RateClassMonitor[0]);
+                vals.toArray(new RateClassMonitor[vals.size()]);
     }
+
+    public String toString() {
+        return "RateMonitor: "
+                + "classes=" + classToMonitor.keySet()
+                + ", errorMargin=" + errorMargin
+                + ", snacProcessor=" + snacProcessor;
+    }
+
+
 }

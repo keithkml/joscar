@@ -38,7 +38,6 @@ package net.kano.joscar.snaccmd.chat;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.AbstractIcbm;
-import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
 import net.kano.joscar.tlv.TlvTools;
@@ -136,4 +135,9 @@ public abstract class AbstractChatMsgIcbm extends AbstractIcbm {
      * @throws IOException if an I/O error occurs
      */
     protected abstract void writeChatTlvs(OutputStream out) throws IOException;
+
+    public String toString() {
+        return "AbstractChatMsgIcbm: <" + super.toString() + ">, "
+                + "chatMsg=" + chatMsg;
+    }
 }

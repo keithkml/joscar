@@ -139,13 +139,6 @@ public final class DefensiveTools {
                     + " cannot be null");
         }
     }
-    public static final void checkNull(Object[] val, String name)
-            throws IllegalArgumentException {
-        if (val == null) {
-            throw new IllegalArgumentException("value of " + name
-                    + " cannot be null");
-        }
-    }
 
     /**
      * Ensures that no element of the given array is <code>null</code>.
@@ -206,14 +199,47 @@ public final class DefensiveTools {
      * @throws IllegalArgumentException if any elements of the given array are
      *         <code>null</code>
      */
-    public static Object[] getNonnullArray(Object[] array, String name) 
+    public static Object[] getSafeArrayCopy(Object[] array, String name)
             throws IllegalArgumentException {
         if (array == null) return null;
 
-        array = (Object[]) array.clone();
-        DefensiveTools.checkNullElements(array, name);
+        Object[] safeArray = (Object[]) array.clone();
+        DefensiveTools.checkNullElements(safeArray, name);
 
-        return array;
+        return safeArray;
     }
 
+    /**
+     * Returns a copy of the given non-null array, ensuring that no element of
+     * the returned array is <code>null</code>. If the given array is
+     * <code>null</code> or any elements in the array are <code>null</code>, an
+     * <code>IllegalArgumentException</code> is thrown.
+     *
+     * @param array the array to clone and check for <code>null</code> elements
+     * @param name the name of the array variable, for debugging purposes
+     * @return a copy of the given array without any <code>null</code> elements
+     *
+     * @throws IllegalArgumentException if any elements of the given array are
+     *         <code>null</code> or if the given array is <code>null</code>
+     */
+    public static Object[] getSafeNonnullArrayCopy(Object[] array, String name)
+            throws IllegalArgumentException {
+        DefensiveTools.checkNull(array, name);
+
+        Object[] safeArray = (Object[]) array.clone();
+        DefensiveTools.checkNullElements(safeArray, name);
+
+        return safeArray;
+    }
+
+    public static int[] getSafeNonnullArrayCopy(int[] results, String name, int min) {
+        checkNull(results, name);
+
+        int[] safeResults = (int[]) results.clone();
+
+        for (int i = 0; i < safeResults.length; i++) {
+            checkRange(safeResults[i], name, min);
+        }
+        return safeResults;
+    }
 }

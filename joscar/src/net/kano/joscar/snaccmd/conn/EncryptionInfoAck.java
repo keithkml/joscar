@@ -91,10 +91,8 @@ public class EncryptionInfoAck extends ConnCommand {
     public EncryptionInfoAck(ExtraInfoBlockHolder[] blocks) {
         super(CMD_ENCINFOACK);
 
-        DefensiveTools.checkNull(blocks, "blocks");
-
         this.blocks = (ExtraInfoBlockHolder[])
-                DefensiveTools.getNonnullArray(blocks, "blocks");
+                DefensiveTools.getSafeNonnullArrayCopy(blocks, "blocks");
     }
 
     /**

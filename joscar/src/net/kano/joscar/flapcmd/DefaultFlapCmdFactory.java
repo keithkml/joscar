@@ -64,4 +64,8 @@ public class DefaultFlapCmdFactory implements FlapCommandFactory {
             return null;
         }
     }
+
+    public String toString() {
+        return "DefaultFlapCmdFactory";
+    }
 }

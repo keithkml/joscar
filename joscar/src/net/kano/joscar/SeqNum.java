@@ -135,4 +135,8 @@ public class SeqNum {
 
         return last;
     }
+
+    public String toString() {
+        return "SeqNum: min=" + min + ", max=" + max + ", last(current)=" + last;
+    }
 }

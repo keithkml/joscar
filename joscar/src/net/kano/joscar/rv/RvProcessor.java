@@ -39,6 +39,7 @@ import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.OscarTools;
 import net.kano.joscar.SeqNum;
+import net.kano.joscar.net.ConnProcessor;
 import net.kano.joscar.flap.FlapProcessor;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.snac.ClientSnacProcessor;
@@ -130,28 +131,30 @@ import java.util.logging.Logger;
  */
 public class RvProcessor {
     /**
-     * A {@linkplain net.kano.joscar.flap.FlapExceptionHandler FLAP exception
+     * A {@linkplain net.kano.joscar.net.ConnProcessorExceptionHandler FLAP exception
      * handler} error type indicating that an exception was thrown when
      * generating a <code>RvCommand</code> with an attached
      * <code>RvCommandFactory</code>. See {@linkplain RvProcessor above} for
      * details.
       */
-    public static final Object ERRTYPE_RV_CMD_GEN = "ERRTYPE_RV_CMD_GEN";
+    public static final ConnProcessor.ErrorType ERRTYPE_RV_CMD_GEN
+            = new ConnProcessor.ErrorType("ERRTYPE_RV_CMD_GEN");
     /**
-     * A {@linkplain net.kano.joscar.flap.FlapExceptionHandler FLAP exception
+     * A {@linkplain net.kano.joscar.net.ConnProcessorExceptionHandler FLAP exception
      * handler} error type indicating that an exception was thrown when
      * calling a method of an attached <code>RvProcessorListener</code>. See
      * {@linkplain RvProcessor above} for details.
      */
-    public static final Object ERRTYPE_RV_LISTENER = "ERRTYPE_RV_LISTENER";
+    public static final ConnProcessor.ErrorType ERRTYPE_RV_LISTENER
+            = new ConnProcessor.ErrorType("ERRTYPE_RV_LISTENER");
     /**
-     * A {@linkplain net.kano.joscar.flap.FlapExceptionHandler FLAP exception
+     * A {@linkplain net.kano.joscar.net.ConnProcessorExceptionHandler FLAP exception
      * handler} error type indicating that an exception was thrown when
      * calling a method of an <code>RvSessionListener</code> attached to an
      * <code>RvSession</code>. See {@linkplain RvProcessor above} for details.
      */
-    public static final Object ERRTYPE_RV_SESSION_LISTENER
-            = "ERRTYPE_RV_SESSION_LISTENER";
+    public static final ConnProcessor.ErrorType ERRTYPE_RV_SESSION_LISTENER
+            = new ConnProcessor.ErrorType("ERRTYPE_RV_SESSION_LISTENER");
 
     /** A logger used to log RV-related events. */
     private static final Logger logger = Logger.getLogger("net.kano.joscar.rv");
@@ -490,9 +493,10 @@ public class RvProcessor {
      * @param t the exception that was thrown
      * @param info an object describing the given exception
      *
-     * @see FlapProcessor#handleException(Object, Throwable, Object)
+     * @see FlapProcessor#handleException(ConnProcessor.ErrorType, Throwable, Object)
      */
-    private void handleException(Object type, Throwable t, Object info) {
+    private void handleException(ConnProcessor.ErrorType type, Throwable t,
+            Object info) {
         DefensiveTools.checkNull(type, "type");
         DefensiveTools.checkNull(t, "t");
 
@@ -531,7 +535,7 @@ public class RvProcessor {
      *        NewRvSessionEvent#TYPE_OUTGOING}
      */
     private void fireNewSessionEvent(RvSessionImpl session,
-            Object type) {
+            NewRvSessionEvent.EventType type) {
         NewRvSessionEvent event = new NewRvSessionEvent(this, session, type);
 
         for (Iterator it = rvListeners.iterator(); it.hasNext();) {
@@ -689,6 +693,12 @@ public class RvProcessor {
         processor.sendSnac(req);
     }
 
+    public String toString() {
+        return "RvProcessor: "
+                + "lastSessionId=" + sessionId.getLast()
+                + ", sessions=" + sessions.keySet();
+    }
+
     /**
      * A simple class holding a session ID and screenname, for use as a map key
      * in {@link RvProcessor#sessions RvProcessor.sessions}.
@@ -721,6 +731,10 @@ public class RvProcessor {
             RvSessionMapKey key = (RvSessionMapKey) obj;
 
             return sessionId == key.sessionId && sn.equals(key.sn);
+        }
+
+        public String toString() {
+            return "(" + sn + ", " + sessionId + ")"; 
         }
     }
 

@@ -102,7 +102,8 @@ public class SearchResultsCmd extends SearchCommand {
                 block = block.subBlock(2 + dirInfo.getTotalSize());
             }
 
-            results = (DirInfo[]) resultList.toArray(new DirInfo[0]);
+            results = (DirInfo[])
+                    resultList.toArray(new DirInfo[resultList.size()]);
         } else {
             results = null;
         }

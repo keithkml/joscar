@@ -42,7 +42,6 @@ import net.kano.joscar.OscarTools;
 import net.kano.joscar.StringBlock;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.CapabilityBlock;
-import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.TlvChain;
 import net.kano.joscar.tlv.TlvTools;
 
@@ -136,5 +135,10 @@ public class SendRvIcbm extends AbstractRvIcbm {
         OscarTools.writeScreenname(out, sn);
         
         writeRvTlvs(out);
+    }
+
+    public String toString() {
+        return "SendRvIcbm to " + sn + ": <" + getCapability() + ">, status="
+                + getRvStatus() + ", sessid=" + getRvSessionId();
     }
 }

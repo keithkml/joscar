@@ -607,6 +607,12 @@ public class ClientConn {
         }
     }
 
+    public String toString() {
+        return "ClientConn: "
+                + "state=" + state
+                + ", socket=" + socket;
+    }
+
     /**
      * A thread to resolve a hostname (if necessary), initiate a TCP connection,
      * and pass the connection over to the data handler.
@@ -737,6 +743,10 @@ public class ClientConn {
                 }
             }
         }
+
+        public String toString() {
+            return "ClientConn.ConnectionThread for " + ClientConn.this;
+        }
     }
 
     /**
@@ -755,5 +765,6 @@ public class ClientConn {
 
         public String toString() { return name; }
     }
+
 
 }

@@ -78,7 +78,8 @@ public abstract class UsersCmd extends ChatCommand {
             block = block.subBlock(user.getTotalSize());
         }
 
-        users = (FullUserInfo[]) userList.toArray(new FullUserInfo[0]);
+        users = (FullUserInfo[])
+                userList.toArray(new FullUserInfo[userList.size()]);
     }
 
     /**

@@ -508,6 +508,10 @@ System.out.println("message text is "
          *         from which this object was created
          */
         public ByteBlock getData() { return data; }
+
+        public String toString() {
+            return "HttpHeaderInfo: headers=" + headers;
+        }
     }
 
     /**

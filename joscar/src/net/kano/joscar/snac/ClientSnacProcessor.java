@@ -39,6 +39,7 @@ import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.MiscTools;
 import net.kano.joscar.SeqNum;
+import net.kano.joscar.net.ConnProcessor;
 import net.kano.joscar.flap.FlapProcessor;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.flapcmd.SnacPacket;
@@ -79,6 +80,8 @@ import java.util.logging.Logger;
  * SnacRequest}) </li>
  * <li> Internal processing of the packet stops </li>
  * </ul>
+ * If an incoming SNAC packet is not a SNAC response, it is processed as
+ * described in {@link AbstractSnacProcessor}.
  *
  * And finally, a bit about SNAC requests. The OSCAR protocol and SNAC data
  * structure are defined such that each individual SNAC packet has its own
@@ -114,25 +117,25 @@ public class ClientSnacProcessor extends AbstractSnacProcessor {
      * response listener} to handle a response to a SNAC request or another
      * request-related event. In this case, the extra error information (the
      * value returned by {@link
-     * net.kano.joscar.flap.FlapExceptionEvent#getReason getReason()}) will be
+     * net.kano.joscar.net.ConnProcessorExceptionEvent#getReason getReason()}) will be
      * the <code>SnacRequest</code> whose listener threw the exception.
      */
-    public static final Object ERRTYPE_SNAC_REQUEST_LISTENER
-            = "ERRTYPE_SNAC_REQUEST_LISTENER";
+    public static final ConnProcessor.ErrorType ERRTYPE_SNAC_REQUEST_LISTENER
+            = new ConnProcessor.ErrorType("ERRTYPE_SNAC_REQUEST_LISTENER");
 
     /**
      * An error type indicating that an exception was thrown while calling a
      * {@linkplain #addGlobalResponseListener global SNAC response listener} to
      * handle a response to a SNAC request. In this case, the extra error
      * information (the value returned by {@link
-     * net.kano.joscar.flap.FlapExceptionEvent#getReason getReason()}) will be
+     * net.kano.joscar.net.ConnProcessorExceptionEvent#getReason getReason()}) will be
      * the <code>SnacResponseListener</code> that threw the exception.
      */
-    public static final Object ERRTYPE_SNAC_RESPONSE_LISTENER
-            = "ERRTYPE_SNAC_RESPONSE_LISTENER";
+    public static final ConnProcessor.ErrorType ERRTYPE_SNAC_RESPONSE_LISTENER
+            = new ConnProcessor.ErrorType("ERRTYPE_SNAC_RESPONSE_LISTENER");
 
     /**
-     * The default SNAC request "time to live," in seconds.
+     * The default SNAC request "time to live," in seconds ({@value} seconds).
      *
      * @see #setRequestTtl
      */
@@ -327,14 +330,16 @@ public class ClientSnacProcessor extends AbstractSnacProcessor {
 
         // we allow null for the manager argument, which means we use our own
         // immediate SNAC queue manager
-        if (mgr == null) mgr = new ImmediateSnacQueueManager();
+        SnacQueueManager realMgr;
+        if (mgr == null) realMgr = new ImmediateSnacQueueManager();
+        else realMgr = mgr;
 
-        queueManager = mgr;
+        queueManager = realMgr;
 
         queueManager.attached(this);
 
         // keep everything synchronized
-        if (paused) mgr.pause(this);
+        if (paused) realMgr.pause(this);
     }
 
     /**
@@ -719,6 +724,14 @@ public class ClientSnacProcessor extends AbstractSnacProcessor {
         }
 
         return false;
+    }
+
+    public String toString() {
+        return "ClientSnacProcessor: "
+                + "lastreqid=" + reqid.getLast()
+                + ", requests: " + requests.size()
+                + ", paused=" + paused
+                + ", queueManager=" + queueManager;
     }
 
     /**

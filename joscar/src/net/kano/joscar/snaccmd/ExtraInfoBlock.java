@@ -116,16 +116,17 @@ public final class ExtraInfoBlock implements Writable {
 
         List infos = new LinkedList();
 
+        ByteBlock nextBlock = block;
         for (;;) {
-            ExtraInfoBlock info = readExtraInfoBlock(block);
+            ExtraInfoBlock info = readExtraInfoBlock(nextBlock);
             if (info == null) break;
 
             infos.add(info);
 
-            block = block.subBlock(info.getTotalSize());
+            nextBlock = nextBlock.subBlock(info.getTotalSize());
         }
 
-        return (ExtraInfoBlock[]) infos.toArray(new ExtraInfoBlock[0]);
+        return (ExtraInfoBlock[]) infos.toArray(new ExtraInfoBlock[infos.size()]);
     }
 
     /**

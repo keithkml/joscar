@@ -117,4 +117,8 @@ public final class ImEncodedString {
      * @return this object's associated string
      */
     public final String getString() { return string; }
+
+    public String toString() {
+        return "ImEncodedString: encoding=<" + encoding + ">, string=" + string;
+    }
 }

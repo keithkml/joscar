@@ -258,10 +258,6 @@ public final class FileTransferHeader implements LiveWritable {
         if (firstNull != -1) ftFilename = ftFilename.substring(0, firstNull);
         SegmentedFilename segmented = SegmentedFilename.fromFTFilename(
                 ftFilename);
-        for (int i = 0; i < ftFilename.length(); i++) {
-            char ch = ftFilename.charAt(i);
-            System.out.println("char " + ch + " = " + (int) ch);
-        }
 
         fsh.setFilename(segmented);
 

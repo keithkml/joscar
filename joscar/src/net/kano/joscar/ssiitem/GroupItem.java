@@ -196,7 +196,7 @@ public class GroupItem extends AbstractItemObj {
      *        <code>null</code> to erase this group's child buddy list
      */
     public synchronized final void setBuddies(int[] buddies) {
-        this.buddies = buddies;
+        this.buddies = DefensiveTools.getSafeNonnullArrayCopy(buddies, "buddies", 0);
     }
 
     public synchronized SsiItem toSsiItem() {

@@ -314,12 +314,12 @@ public final class Tlv implements Writable {
 
                 if (!alternatevalue) buffer.append(" - hex: ");
                 else buffer.append(": ");
-                if (false && len > 30) {
-                    ByteBlock sub = data.subBlock(0, 30);
-                    buffer.append(BinaryTools.describeData(sub) + "...");
-                } else {
+//                if (false && len > 30) {
+//                    ByteBlock sub = data.subBlock(0, 30);
+//                    buffer.append(BinaryTools.describeData(sub) + "...");
+//                } else {
                     buffer.append(BinaryTools.describeData(data));
-                }
+//                }
             }
         }
 

@@ -89,27 +89,21 @@ public class ClientConnEvent {
      *
      * @return the connection whose state changed
      */
-    public final ClientConn getClientConn() {
-        return clientConn;
-    }
+    public final ClientConn getClientConn() { return clientConn; }
 
     /**
      * Returns the previous state of the connection that fired this event.
      *
      * @return the previous state of the connection that fired this event
      */
-    public final ClientConn.State getOldState() {
-        return oldState;
-    }
+    public final ClientConn.State getOldState() { return oldState; }
 
     /**
      * Returns the new state of the connection that fired this event.
      *
      * @return the new state of the connection that fired this event
      */
-    public final ClientConn.State getNewState() {
-        return newState;
-    }
+    public final ClientConn.State getNewState() { return newState; }
 
     /**
      * Returns an object representing a reason, description, or explanation
@@ -119,7 +113,15 @@ public class ClientConnEvent {
      * @return an object representing a reason, description, or explanation
      *         for why this state change occurred
      */
-    public final Object getReason() {
-        return reason;
+    public final Object getReason() { return reason; }
+
+    public String toString() {
+        return "ClientConnEvent: "
+                + "clientConn=" + clientConn
+                + ", oldState=" + oldState
+                + ", newState=" + newState
+                + ", reason=" + reason;
     }
+
+
 }

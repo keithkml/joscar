@@ -96,11 +96,8 @@ public class SetExtraInfoCmd extends ConnCommand {
     public SetExtraInfoCmd(ExtraInfoBlock[] blocks) {
         super(CMD_SETEXTRAINFO);
 
-        DefensiveTools.checkNull(blocks, "blocks");
-        blocks = (ExtraInfoBlock[]) DefensiveTools.getNonnullArray(
+        this.blocks = (ExtraInfoBlock[]) DefensiveTools.getSafeNonnullArrayCopy(
                 blocks, "blocks");
-
-        this.blocks = blocks;
     }
 
     /**

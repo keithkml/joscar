@@ -83,10 +83,8 @@ public abstract class AbstractExtraInfoCmd extends ConnCommand {
     protected AbstractExtraInfoCmd(int command, ExtraInfoBlock[] blocks) {
         super(command);
 
-        DefensiveTools.checkNull(blocks, "blocks");
-
         this.extraInfos = (ExtraInfoBlock[])
-                DefensiveTools.getNonnullArray(blocks, "blocks");
+                DefensiveTools.getSafeNonnullArrayCopy(blocks, "blocks");
     }
 
     /**

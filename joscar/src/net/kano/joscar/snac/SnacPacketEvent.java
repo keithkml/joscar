@@ -115,4 +115,12 @@ public class SnacPacketEvent extends FlapPacketEvent {
      * @return the SNAC command that was received
      */
     public final SnacCommand getSnacCommand() { return snacCommand; }
+
+    public String toString() {
+        return "SnacPacketEvent: "
+                + "snacProcessor=" + snacProcessor
+                + ", snacPacket=" + snacPacket
+                + ", snacCommand=" + snacCommand
+                + " - " + super.toString();
+    }
 }

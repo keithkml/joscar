@@ -100,7 +100,7 @@ public class InterestListCmd extends SearchCommand {
             }
 
             interests = (InterestInfo[]) interestList.toArray(
-                    new InterestInfo[0]);
+                    new InterestInfo[interestList.size()]);
         } else {
             interests = null;
         }

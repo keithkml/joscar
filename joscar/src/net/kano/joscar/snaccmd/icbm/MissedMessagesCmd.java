@@ -80,7 +80,7 @@ public class MissedMessagesCmd extends IcbmCommand {
         }
 
         missedMsgInfos = (MissedMsgInfo[])
-                messages.toArray(new MissedMsgInfo[0]);
+                messages.toArray(new MissedMsgInfo[messages.size()]);
     }
 
     /**

@@ -89,10 +89,8 @@ public class SendBuddyListRvCmd extends AbstractRequestRvCmd {
     public SendBuddyListRvCmd(SendBuddyListGroup[] groups) {
         super(CapabilityBlock.BLOCK_SENDBUDDYLIST);
 
-        DefensiveTools.checkNull(groups, "groups");
-
-        this.groups = (SendBuddyListGroup[]) DefensiveTools.getNonnullArray(
-                groups, "groups");
+        this.groups = (SendBuddyListGroup[])
+                DefensiveTools.getSafeNonnullArrayCopy(groups, "groups");
     }
 
     /**

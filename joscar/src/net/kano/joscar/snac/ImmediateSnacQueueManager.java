@@ -128,6 +128,11 @@ public class ImmediateSnacQueueManager implements SnacQueueManager {
         queues.remove(processor);
     }
 
+    public String toString() {
+        return "ImmediateSnacQueueManager: "
+                + "queues=" + queues;
+    }
+
     /**
      * A class representing a single SNAC queue for a single SNAC processor.
      */
@@ -138,5 +143,11 @@ public class ImmediateSnacQueueManager implements SnacQueueManager {
          * A list of enqueued requests. Only nonempty if this queue is paused.
          */
         private final LinkedList queue = new LinkedList();
+
+        public String toString() {
+            return "SnacQueue: "
+                    + "paused=" + paused
+                    + ", queue=" + queue;
+        }
     }
 }

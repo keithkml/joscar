@@ -102,8 +102,8 @@ public class GetFileList implements LiveWritable {
             i += entry.getTotalTlvCount();
         }
 
-        GetFileEntry[] entryArray
-                = (GetFileEntry[]) entries.toArray(new GetFileEntry[0]);
+        GetFileEntry[] entryArray = (GetFileEntry[])
+                entries.toArray(new GetFileEntry[entries.size()]);
         return new GetFileList(version, entryArray);
     }
 
@@ -131,9 +131,8 @@ public class GetFileList implements LiveWritable {
      */
     public GetFileList(String gfListVersion, GetFileEntry[] files) {
         DefensiveTools.checkNull(gfListVersion, "gfListVersion");
-        DefensiveTools.checkNull(files, "files");
 
-        this.files = (GetFileEntry[]) DefensiveTools.getNonnullArray(
+        this.files = (GetFileEntry[]) DefensiveTools.getSafeNonnullArrayCopy(
                 files, "files");
         this.gfListVersion = gfListVersion;
     }

@@ -235,4 +235,8 @@ public class DefaultRvCommandFactory implements RvCommandFactory {
             return null;
         }
     }
+
+    public String toString() {
+        return "DefaultRvCommandFactory";
+    }
 }

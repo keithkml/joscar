@@ -421,4 +421,13 @@ public class RateClassMonitor {
         // to get the number of commands that can be sent
         return count - 1;
     }
+
+    public String toString() {
+        return "RateClassMonitor: "
+                + "rateInfo=" + rateInfo
+                + ", last=" + last
+                + ", runningAvg=" + runningAvg
+                + ", limited=" + limited
+                + ", errorMargin=" + errorMargin;
+    }
 }

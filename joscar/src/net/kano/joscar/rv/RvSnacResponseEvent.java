@@ -92,4 +92,10 @@ public class RvSnacResponseEvent extends SnacPacketEvent {
      * @return the RV session on which the associated SNAC response was recieved
      */
     public final RvSession getRvSession() { return rvSession; }
+
+    public String toString() {
+        return "RvSnacResponseEvent: "
+                + "rvProcessor=" + rvProcessor
+                + ", rvSession=" + rvSession;
+    }
 }
