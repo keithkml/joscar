@@ -37,11 +37,12 @@ package net.kano.joscar.flapcmd;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flap.FlapPacket;
 import net.kano.joscar.flap.FlapCommand;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.AbstractTlvChain;
 import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.TlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -90,12 +91,14 @@ public class FlapLoginCmd extends FlapCommand {
     public FlapLoginCmd(FlapPacket packet) {
         super(CHANNEL_LOGIN);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock flapData = packet.getData();
 
         version = BinaryTools.getUInt(flapData, 0);
 
         ByteBlock tlvData = flapData.subBlock(4);
-        AbstractTlvChain chain = ImmutableTlvChain.readChain(tlvData);
+        TlvChain chain = ImmutableTlvChain.readChain(tlvData);
 
         Tlv cookieTlv = chain.getLastTlv(TYPE_COOKIE);
         if (cookieTlv != null) cookie = cookieTlv.getData();
@@ -144,6 +147,8 @@ public class FlapLoginCmd extends FlapCommand {
      */
     public FlapLoginCmd(long version, ByteBlock cookie) {
         super(CHANNEL_LOGIN);
+
+        DefensiveTools.checkRange(version, "version", 0);
 
         this.version = version;
         this.cookie = cookie;

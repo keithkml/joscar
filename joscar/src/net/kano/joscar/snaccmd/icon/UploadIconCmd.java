@@ -38,10 +38,11 @@ package net.kano.joscar.snaccmd.icon;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.Writable;
 import net.kano.joscar.LiveWritable;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.AbstractTlvChain;
 import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.TlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -71,9 +72,11 @@ public class UploadIconCmd extends IconCommand {
     protected UploadIconCmd(SnacPacket packet) {
         super(CMD_UPLOAD_ICON);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
 
-        AbstractTlvChain chain = ImmutableTlvChain.readChain(snacData);
+        TlvChain chain = ImmutableTlvChain.readChain(snacData);
 
         Tlv iconTlv = chain.getLastTlv(TYPE_ICON_DATA);
 

@@ -36,6 +36,7 @@
 package net.kano.joscar.snaccmd.rooms;
 
 import net.kano.joscar.flapcmd.SnacPacket;
+import net.kano.joscar.DefensiveTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -59,6 +60,8 @@ public class RoomRightsRequest extends RoomCommand {
      */
     protected RoomRightsRequest(SnacPacket packet) {
         super(CMD_RIGHTS_REQ);
+
+        DefensiveTools.checkNull(packet, "packet");
     }
 
     /**

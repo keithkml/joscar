@@ -38,6 +38,7 @@ package net.kano.joscar.snaccmd.conn;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.Writable;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snac.CmdType;
 
 import java.io.IOException;
@@ -190,6 +191,15 @@ public class RateClassInfo implements Writable {
     public RateClassInfo(int rateClass, long windowSize, long clearAvg,
             long warnAvg, long limitedAvg, long disconnectAvg, long currentAvg,
             long max) {
+        DefensiveTools.checkRange(rateClass, "rateClass", 0);
+        DefensiveTools.checkRange(windowSize, "windowSize", 0);
+        DefensiveTools.checkRange(clearAvg, "clearAvg", 0);
+        DefensiveTools.checkRange(warnAvg, "warnAvg", 0);
+        DefensiveTools.checkRange(limitedAvg, "limitedAvg", 0);
+        DefensiveTools.checkRange(disconnectAvg, "disconnectAvg", 0);
+        DefensiveTools.checkRange(currentAvg, "currentAvg", 0);
+        DefensiveTools.checkRange(max, "max", 0);
+
         this.rateClass = rateClass;
         this.windowSize = windowSize;
         this.clearAvg = clearAvg;
@@ -289,7 +299,7 @@ public class RateClassInfo implements Writable {
      * @return the SNAC command types included in this rate class
      */
     public final CmdType[] getCommands() {
-        return commands;
+        return (CmdType[]) (commands == null ? null : commands.clone());
     }
 
     public long getWritableLength() {

@@ -38,11 +38,12 @@ package net.kano.joscar.snaccmd.icbm;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.LiveWritable;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.AbstractIcbm;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.AbstractTlvChain;
+import net.kano.joscar.tlv.TlvChain;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -89,7 +90,9 @@ public abstract class AbstractRvIcbm extends AbstractIcbm {
      *
      * @param chain the chain from which to read.
      */
-    final void processRvTlvs(AbstractTlvChain chain) {
+    final void processRvTlvs(TlvChain chain) {
+        DefensiveTools.checkNull(chain, "chain");
+
         ByteBlock rvBlock = chain.getLastTlv(TYPE_RV_DATA).getData();
 
         status = BinaryTools.getUShort(rvBlock, 0);
@@ -116,6 +119,11 @@ public abstract class AbstractRvIcbm extends AbstractIcbm {
     AbstractRvIcbm(int command, long icbmCookie, int status,
             long rvCookie, CapabilityBlock cap, LiveWritable rvDataWriter) {
         super(IcbmCommand.FAMILY_ICBM, command, icbmCookie, CHANNEL_RV);
+
+        DefensiveTools.checkRange(status, "status", 0);
+        DefensiveTools.checkNull(cap, "cap");
+        DefensiveTools.checkNull(rvDataWriter, "rvDataWriter");
+
         this.status = status;
         this.rvCookie = rvCookie;
         this.cap = cap;

@@ -49,6 +49,7 @@ import net.kano.joscar.snaccmd.popup.PopupCommand;
 import net.kano.joscar.snaccmd.rooms.RoomCommand;
 import net.kano.joscar.snaccmd.search.SearchCommand;
 import net.kano.joscar.snaccmd.ssi.SsiCommand;
+import net.kano.joscar.DefensiveTools;
 
 import java.util.*;
 
@@ -145,6 +146,8 @@ void handleServerReadyCmd(ServerReadyCmd serverReadyCmd) {
      */
     public static SnacFamilyInfo[] getDefaultFamilyInfos(
             int[] supportedFamilies) {
+        DefensiveTools.checkNull(supportedFamilies, "supportedFamilies");
+
         List list = new LinkedList();
 
         for (int i = 0; i < supportedFamilies.length; i++) {

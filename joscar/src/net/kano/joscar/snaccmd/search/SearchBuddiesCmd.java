@@ -36,11 +36,12 @@
 package net.kano.joscar.snaccmd.search;
 
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.DirInfo;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.AbstractTlvChain;
 import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.TlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -89,9 +90,11 @@ public class SearchBuddiesCmd extends SearchCommand {
     protected SearchBuddiesCmd(SnacPacket packet) {
         super(CMD_SEARCH);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
 
-        AbstractTlvChain chain = ImmutableTlvChain.readChain(snacData);
+        TlvChain chain = ImmutableTlvChain.readChain(snacData);
 
         type = chain.getUShort(TYPE_SEARCH_TYPE);
         email = chain.getString(TYPE_EMAIL);
@@ -162,6 +165,9 @@ public class SearchBuddiesCmd extends SearchCommand {
     public SearchBuddiesCmd(int type, String email, String interest,
             DirInfo dirInfo) {
         super(CMD_SEARCH);
+
+        DefensiveTools.checkRange(type, "type", 0);
+
         this.type = type;
         this.email = email;
         this.interest = interest;

@@ -57,7 +57,7 @@ public final class ImmutableTlvChain extends AbstractTlvChain {
      * @return a TLV chain object containing TLV's read from the given block of
      *         data
      */
-    public static AbstractTlvChain readChain(ByteBlock block) {
+    public static TlvChain readChain(ByteBlock block) {
         return readChain(block, -1);
     }
 
@@ -74,7 +74,7 @@ public final class ImmutableTlvChain extends AbstractTlvChain {
      * @return an <i>immutable</i> TLV chain object containing TLV's read from
      *         the given block of data
      */
-    public static AbstractTlvChain readChain(ByteBlock block, int maxTlvs) {
+    public static TlvChain readChain(ByteBlock block, int maxTlvs) {
         return new ImmutableTlvChain(block, maxTlvs);
     }
 
@@ -98,7 +98,7 @@ public final class ImmutableTlvChain extends AbstractTlvChain {
      *        read all possible TLV's in the given block
      */
     ImmutableTlvChain(ByteBlock block, int maxTlvs) {
-        super(block, maxTlvs);
+        initFromBlock(block, maxTlvs);
     }
 
     /**
@@ -114,8 +114,8 @@ public final class ImmutableTlvChain extends AbstractTlvChain {
      *
      * @param other a TLV chain to copy
      */
-    public ImmutableTlvChain(AbstractTlvChain other) {
-        super(other);
+    public ImmutableTlvChain(TlvChain other) {
+        copy(other);
     }
 
     protected final List getTlvList() { return tlvList; }

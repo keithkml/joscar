@@ -37,34 +37,54 @@ package net.kano.joscar.ssiitem;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.ssi.SsiItem;
-import net.kano.joscar.tlv.MutableTlvChain;
-import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.AbstractTlvChain;
-import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-public class GroupItem extends AbstractItem {
-    private static final int BUDDYID_DEFAULT = 0x0000;
+/**
+ * An SSI item object representing a "buddy group," or a group of buddies. These
+ * are just your normal buddy list groups.
+ * <br>
+ * <br>
+ * Note that this class is only used to store data and that <b>changes to this
+ * object are not reflected on the server</b> without sending the changes to the
+ * server with a {@link net.kano.joscar.snaccmd.ssi.ModifyItemsCmd
+ * ModifyItemsCmd}.
+ */
+public class GroupItem extends AbstractItemObj {
+    /** The ID used for group items. */
+    private static final int ID_DEFAULT = 0x0000;
 
+    /** A TLV type containing the list of buddies in a group. */
     private static final int TYPE_BUDDIES = 0x00c8;
 
+    /** This group's name. */
     private final String name;
+    /** This group's group ID. */
     private final int id;
-    private final int[] buddies;
+    /** The ID's of the buddies in this group. */
+    private int[] buddies;
 
-    public static GroupItem readGroupItem(SsiItem item) {
-        String name = item.getName();
+    /**
+     * Creates a new buddy group item object from the data in the given SSI
+     * item.
+     *
+     * @param item the buddy group SSI item
+     */
+    public GroupItem(SsiItem item) {
+        DefensiveTools.checkNull(item, "item");
 
-        int id = item.getParentId();
+        name = item.getName();
 
-        AbstractTlvChain chain = ImmutableTlvChain.readChain(item.getData());
+        id = item.getParentId();
+
+        TlvChain chain = ImmutableTlvChain.readChain(item.getData());
 
         Tlv buddiesTlv = chain.getLastTlv(TYPE_BUDDIES);
 
-        int[] buddies = null;
         if (buddiesTlv != null) {
             ByteBlock buddyBlock = buddiesTlv.getData();
 
@@ -73,52 +93,116 @@ public class GroupItem extends AbstractItem {
             for (int i = 0; i < buddies.length; i++) {
                 buddies[i] = BinaryTools.getUShort(buddyBlock, i*2);
             }
+        } else {
+            buddies = null;
         }
 
-        MutableTlvChain extraTlvs = new MutableTlvChain(chain);
+        MutableTlvChain extraTlvs = new DefaultMutableTlvChain(chain);
 
         extraTlvs.removeTlvs(new int[] { TYPE_BUDDIES });
 
-        return new GroupItem(name, id, buddies, extraTlvs);
+        addExtraTlvs(extraTlvs);
     }
 
+    /**
+     * Creates a new buddy group item object with the same properties as the
+     * given object.
+     *
+     * @param other a buddy group item object to copy
+     */
     public GroupItem(GroupItem other) {
         this(other.name, other.id,
                 other.buddies == null ? null : (int[]) other.buddies.clone(),
                 other.copyExtraTlvs());
     }
 
+    /**
+     * Creates a new buddy group item object with the given group name and the
+     * given group ID. The group is created with no buddies.
+     *
+     * @param name the name of this group, like "Family"
+     * @param id a unique group ID for this group
+     */
     public GroupItem(String name, int id) {
         this(name, id, null, null);
     }
 
+    /**
+     * Creates a new buddy group item object with the given group name, group
+     * ID, and list of "child" buddy ID's.
+     *
+     * @param name the name of this group, like "Family"
+     * @param id a unique group ID for this group
+     * @param buddies a list of the ID's of buddies in this group
+     */
     public GroupItem(String name, int id, int[] buddies) {
         this(name, id, buddies, null);
     }
 
-    public GroupItem(String name, int id, int[] buddies, AbstractTlvChain extraTlvs) {
+    /**
+     * Creates a new buddy group item object with the given group name, group
+     * ID, and list of "child" buddy ID's.
+     *
+     * @param name the name of this group, like "Family"
+     * @param id a unique group ID for this group
+     * @param buddies a list of the ID's of buddies in this group
+     * @param extraTlvs a list of extra TLV's to store in this item
+     */
+    public GroupItem(String name, int id, int[] buddies, TlvChain extraTlvs) {
         super(extraTlvs);
+
+        DefensiveTools.checkNull(name, "name");
+        DefensiveTools.checkRange(id, "id", 0);
+
         this.name = name;
         this.id = id;
+        this.buddies = (int[]) (buddies == null ? null : buddies.clone());
+    }
+
+    /**
+     * Returns the name of this group, like "Family."
+     *
+     * @return this group's name
+     */
+    public final String getGroupName() { return name; }
+
+    /**
+     * Returns the group ID of this group. This ID is unique in the set of
+     * group ID's in this user's server-stored information block.
+     *
+     * @return this group's group ID
+     */
+    public final int getId() { return id; }
+
+    /**
+     * Returns a list of the ID's of the buddies in this group. Note that this
+     * will be <code>null</code> if this item has no child buddy field.
+     *
+     * @return a list of the ID's of the buddies in this group, or
+     *         <code>null</code> if this group item does not contain a child
+     *         buddy field
+     */
+    public synchronized final int[] getBuddies() {
+        return (int[]) (buddies == null ? null : buddies.clone());
+    }
+
+    /**
+     * Sets the buddies in this group. The given list should contain the
+     * {@linkplain BuddyItem#getId buddy ID's} of the buddies in this group.
+     * This can be <code>null</code> to not store a child buddy list in this
+     * item at all.
+     *
+     * @param buddies a list of the ID's of the buddies in this group, or
+     *        <code>null</code> to erase this group's child buddy list
+     */
+    public synchronized final void setBuddies(int[] buddies) {
         this.buddies = buddies;
     }
 
-    public final String getGroupName() {
-        return name;
-    }
+    public synchronized SsiItem generateSsiItem() {
+        MutableTlvChain chain = new DefaultMutableTlvChain();
 
-    public final int getId() {
-        return id;
-    }
-
-    public final int[] getBuddies() {
-        return buddies;
-    }
-
-    public SsiItem getSsiItem() {
-        MutableTlvChain chain = new MutableTlvChain();
-
-        if (buddies != null && buddies.length > 0) {
+        if (buddies != null) {
             ByteArrayOutputStream out
                     = new ByteArrayOutputStream(buddies.length * 2);
 
@@ -132,11 +216,11 @@ public class GroupItem extends AbstractItem {
             chain.addTlv(new Tlv(TYPE_BUDDIES, tlvData));
         }
 
-        return generateItem(name, id, BUDDYID_DEFAULT, SsiItem.TYPE_GROUP,
+        return generateItem(name, id, ID_DEFAULT, SsiItem.TYPE_GROUP,
                 chain);
     }
 
-    public String toString() {
+    public synchronized String toString() {
         String buddyStr;
         if (buddies != null) {
             StringBuffer buffer = new StringBuffer();

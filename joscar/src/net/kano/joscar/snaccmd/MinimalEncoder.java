@@ -231,13 +231,9 @@ public final class MinimalEncoder {
         if (lastCharset == charset && lastEncoder != null) {
             encoder = lastEncoder;
         } else {
-            if (charset == ENCODING_ASCII) {
-                encoder = ASCII7.newEncoder();
-            } else if (charset == ENCODING_ISO) {
-                encoder = ISO88591.newEncoder();
-            } else {
-                encoder = UTF16.newEncoder();
-            }
+            if (charset == ENCODING_ASCII) encoder = ASCII7.newEncoder();
+            else if (charset == ENCODING_ISO) encoder = ISO88591.newEncoder();
+            else encoder = UTF16.newEncoder();
 
             lastCharset = charset;
             lastEncoder = encoder;

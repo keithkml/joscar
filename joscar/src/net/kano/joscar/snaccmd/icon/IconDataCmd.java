@@ -37,6 +37,7 @@ package net.kano.joscar.snaccmd.icon;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.ExtraIconInfo;
 import net.kano.joscar.snaccmd.OscarTools;
@@ -76,6 +77,8 @@ public class IconDataCmd extends IconCommand {
     protected IconDataCmd(SnacPacket packet) {
         super(CMD_ICON_DATA);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
 
         ScreenNameBlock snInfo = OscarTools.readScreenname(snacData);
@@ -106,6 +109,8 @@ public class IconDataCmd extends IconCommand {
      */
     public IconDataCmd(String sn, ExtraIconInfo iconInfo, ByteBlock iconData) {
         super(CMD_ICON_DATA);
+
+        DefensiveTools.checkNull(sn, "sn");
 
         this.sn = sn;
         this.iconInfo = iconInfo;
@@ -142,10 +147,13 @@ public class IconDataCmd extends IconCommand {
 
     public void writeData(OutputStream out) throws IOException {
         OscarTools.writeScreenname(out, sn);
-        iconInfo.write(out);
-        if (iconData != null) {
-            BinaryTools.writeUShort(out, iconData.getLength());
-            iconData.write(out);
+        if (iconInfo != null) {
+            iconInfo.write(out);
+            
+            if (iconData != null) {
+                BinaryTools.writeUShort(out, iconData.getLength());
+                iconData.write(out);
+            }
         }
     }
 

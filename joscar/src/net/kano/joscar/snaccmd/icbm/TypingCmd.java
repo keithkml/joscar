@@ -38,6 +38,7 @@ package net.kano.joscar.snaccmd.icbm;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.MiscTools;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.OscarTools;
 import net.kano.joscar.snaccmd.ScreenNameBlock;
@@ -88,6 +89,8 @@ public abstract class TypingCmd extends IcbmCommand {
     TypingCmd(int command, SnacPacket packet) {
         super(command);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
 
         nulls = BinaryTools.getLong(snacData, 0);
@@ -133,6 +136,11 @@ public abstract class TypingCmd extends IcbmCommand {
     TypingCmd(int command, long nulls, int code, String sn,
             int typingState) {
         super(command);
+
+        DefensiveTools.checkRange(code, "code", 0);
+        DefensiveTools.checkNull(sn, "sn");
+        DefensiveTools.checkRange(typingState, "typingState", 0);
+
         this.nulls = nulls;
         this.code = code;
         this.sn = sn;

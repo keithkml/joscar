@@ -35,6 +35,8 @@
 
 package net.kano.joscar.snac;
 
+import net.kano.joscar.DefensiveTools;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -52,7 +54,7 @@ public abstract class SnacCmdFactoryList {
      */
     private Map factories = new HashMap();
 
-     /**
+    /**
       * Registers the given command factory for the given command type.
       * The factory will be added such that <code>getFactory(type) ==
       * factory</code>.
@@ -67,6 +69,8 @@ public abstract class SnacCmdFactoryList {
       */
     protected synchronized final void register(CmdType type,
             SnacCmdFactory factory) {
+        DefensiveTools.checkNull(type, "type");
+
         if (!Arrays.asList(factory.getSupportedTypes()).contains(type)) return;
 
         factories.put(type, factory);
@@ -80,6 +84,8 @@ public abstract class SnacCmdFactoryList {
      */
     protected synchronized final void registerSupported(
             SnacCmdFactory factory) {
+        DefensiveTools.checkNull(factory, "factory");
+
         CmdType[] types = factory.getSupportedTypes();
 
         for (int i = 0; i < types.length; i++) {
@@ -98,6 +104,8 @@ public abstract class SnacCmdFactoryList {
      */
     protected synchronized final void unregister(CmdType type,
             SnacCmdFactory factory) {
+        DefensiveTools.checkNull(type, "type");
+
         SnacCmdFactory other = (SnacCmdFactory) factories.get(type);
 
         if (other == factory) factories.remove(type);
@@ -110,6 +118,8 @@ public abstract class SnacCmdFactoryList {
      * @param factory the factory to completely unregister
      */
     protected synchronized final void unregisterAll(SnacCmdFactory factory) {
+        DefensiveTools.checkNull(factory, "factory");
+
         Collection c = factories.values();
 
         // remove each instance of this factory
@@ -133,12 +143,14 @@ public abstract class SnacCmdFactoryList {
      * <code>CmdType</code> specification}, <code>CmdType</code> <i>matches</i>
      * all possible command types.
      *
-     * @param cmd the command type whose associated command factory will be
+     * @param type the command type whose associated command factory will be
      *        returned
      * @return the command factory associated with the given command type, or
      *         <code>null</code> if none exists
      */
-    public synchronized final SnacCmdFactory getFactory(CmdType cmd) {
-        return (SnacCmdFactory) factories.get(cmd);
+    public synchronized final SnacCmdFactory getFactory(CmdType type) {
+        DefensiveTools.checkNull(type, "type");
+
+        return (SnacCmdFactory) factories.get(type);
     }
 }

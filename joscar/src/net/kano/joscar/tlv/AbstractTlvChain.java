@@ -36,6 +36,7 @@
 package net.kano.joscar.tlv;
 
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -52,29 +53,7 @@ import java.util.*;
  */
 public abstract class AbstractTlvChain implements TlvChain {
     /** The total size of this chain, as read from an incoming stream. */
-    protected final int totalSize;
-
-    /**
-     * Creates a TLV chain object from the given block, only reading the given
-     * number of TLV's (specified by <code>maxTlvs</code>).
-     *
-     * @param block a data block containing zero or more TLV's
-     * @param maxTlvs the maximum number of TLV's to read, or <code>-1</code> to
-     *        read all possible TLV's in the given block
-     */
-    protected AbstractTlvChain(ByteBlock block, int maxTlvs) {
-        int start = block.getOffset();
-        for (int i = 0; Tlv.isValidTLV(block)
-                && (maxTlvs == -1 || i < maxTlvs); i++) {
-            Tlv tlv = new Tlv(block);
-
-            addTlvImpl(tlv);
-
-            block = block.subBlock(tlv.getTotalSize());
-        }
-
-        totalSize = block.getOffset() - start;
-    }
+    protected int totalSize;
 
     /**
      * Creates a new TLV chain with a total size of <code>-1</code>.
@@ -92,23 +71,33 @@ public abstract class AbstractTlvChain implements TlvChain {
      *        data
      */
     protected AbstractTlvChain(int totalSize) {
+        DefensiveTools.checkRange(totalSize, "totalSize", -1);
+
         this.totalSize = totalSize;
     }
 
     /**
-     * Creates a TLV chain containing the same TLV's as the given chain, in the
-     * same order.
+     * Effectively makes this chain a copy of the given chain.
      *
      * @param chain a TLV chain to copy
      */
-    protected AbstractTlvChain(TlvChain chain) {
+    protected synchronized final void copy(TlvChain chain) {
+        DefensiveTools.checkNull(chain, "chain");
+
         totalSize = getTotalSize();
 
+        List tlvList = getTlvList();
+        Map tlvMap = getTlvMap();
+
+        tlvList.clear();
+        tlvMap.clear();
+        
         if (chain instanceof AbstractTlvChain) {
             // this is easy
             AbstractTlvChain atc = (AbstractTlvChain) chain;
-            getTlvList().addAll(atc.getTlvList());
-            getTlvMap().putAll(atc.getTlvMap());
+
+            tlvList.addAll(atc.getTlvList());
+            tlvMap.putAll(atc.getTlvMap());
         } else {
             // this is messier and a bit slower
             Tlv[] tlvs = chain.getTlvs();
@@ -119,11 +108,39 @@ public abstract class AbstractTlvChain implements TlvChain {
     }
 
     /**
+     * Copies the given number of TLV's from the given block of TLV's into this
+     * chain.
+     *
+     * @param block a data block containing zero or more TLV's
+     * @param maxTlvs the maximum number of TLV's to read, or <code>-1</code> to
+     *        read all possible TLV's in the given block
+     */
+    protected final synchronized void initFromBlock(ByteBlock block,
+            int maxTlvs) {
+        DefensiveTools.checkNull(block, "block");
+        DefensiveTools.checkRange(maxTlvs, "maxTlvs", -1);
+
+        int start = block.getOffset();
+        for (int i = 0; Tlv.isValidTLV(block)
+                && (maxTlvs == -1 || i < maxTlvs); i++) {
+            Tlv tlv = new Tlv(block);
+
+            addTlvImpl(tlv);
+
+            block = block.subBlock(tlv.getTotalSize());
+        }
+
+        totalSize = block.getOffset() - start;
+    }
+
+    /**
      * Adds a TLV to this chain. Presumably for use by mutable subclasses.
      *
      * @param tlv a TLV to add to this chain
      */
     protected void addTlvImpl(Tlv tlv) {
+        DefensiveTools.checkNull(tlv, "tlv");
+
         getTlvList().add(tlv);
 
         Integer type = new Integer(tlv.getType());
@@ -138,6 +155,8 @@ public abstract class AbstractTlvChain implements TlvChain {
     }
 
     public boolean hasTlv(int type) {
+        DefensiveTools.checkRange(type, "type", 0);
+
         return getTlvMap().containsKey(new Integer(type));
     }
 
@@ -150,6 +169,8 @@ public abstract class AbstractTlvChain implements TlvChain {
     }
 
     public Tlv getFirstTlv(int type) {
+        DefensiveTools.checkRange(type, "type", 0);
+
         Integer typeNum = new Integer(type);
 
         List list = (List) getTlvMap().get(typeNum);
@@ -157,6 +178,8 @@ public abstract class AbstractTlvChain implements TlvChain {
     }
 
     public Tlv getLastTlv(int type) {
+        DefensiveTools.checkRange(type, "type", 0);
+
         Integer typeNum = new Integer(type);
 
         List list = (List) getTlvMap().get(typeNum);
@@ -164,6 +187,8 @@ public abstract class AbstractTlvChain implements TlvChain {
     }
 
     public Tlv[] getTlvs(int type) {
+        DefensiveTools.checkRange(type, "type", 0);
+
         Integer typeNum = new Integer(type);
 
         List list = (List) getTlvMap().get(typeNum);
@@ -176,10 +201,15 @@ public abstract class AbstractTlvChain implements TlvChain {
     }
 
     public String getString(int type) {
+        DefensiveTools.checkRange(type, "type", 0);
+
         return hasTlv(type) ? getLastTlv(type).getDataAsString() : null;
     }
 
     public String getString(int type, String charset) {
+        DefensiveTools.checkRange(type, "type", 0);
+        DefensiveTools.checkNull(charset, "charset");
+
         if (!hasTlv(type)) return null;
 
         final byte[] stringArray = getLastTlv(type).getData().toByteArray();
@@ -192,6 +222,8 @@ public abstract class AbstractTlvChain implements TlvChain {
     }
 
     public int getUShort(int type) {
+        DefensiveTools.checkRange(type, "type", 0);
+
         return hasTlv(type) ? getLastTlv(type).getDataAsUShort() : -1;
     }
 

@@ -36,6 +36,7 @@
 package net.kano.joscar.snac;
 
 import net.kano.joscar.flap.FlapProcessor;
+import net.kano.joscar.DefensiveTools;
 
 /**
  * An event fired when an outgoing SNAC request is sent over a SNAC connection.
@@ -72,6 +73,10 @@ public class SnacRequestSentEvent {
      */
     protected SnacRequestSentEvent(FlapProcessor flapProcessor,
             SnacProcessor snacProcessor, SnacRequest request, long sentTime) {
+        DefensiveTools.checkNull(flapProcessor, "flapProcessor");
+        DefensiveTools.checkNull(snacProcessor, "snacProcessor");
+        DefensiveTools.checkNull(request, "request");
+        
         this.flapProcessor = flapProcessor;
         this.snacProcessor = snacProcessor;
         this.request = request;

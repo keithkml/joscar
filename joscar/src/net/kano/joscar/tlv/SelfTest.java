@@ -96,7 +96,7 @@ public class SelfTest extends TestCase {
             0, 6, 0, 2, 60, 62,
             0, 7, 0, 5, 5, 6, 7, 8,
         });
-        AbstractTlvChain big = ImmutableTlvChain.readChain(chainBlock);
+        TlvChain big = ImmutableTlvChain.readChain(chainBlock);
 
         assertEquals(14, big.getTotalSize());
         assertEquals(2, big.getTlvCount());
@@ -111,9 +111,15 @@ public class SelfTest extends TestCase {
 
         assertNull(big.getFirstTlv(100));
         assertNull(big.getLastTlv(100));
-        assertNull(big.getString(-1));
-        assertEquals(-1, big.getUShort(-1));
+        try {
+            assertNull(big.getString(-1));
+            fail("should not be able to access negative TLV types");
+        } catch (IllegalArgumentException e) { }
 
+        try {
+            assertEquals(-1, big.getUShort(-1));
+            fail("should not be able to access negative TLV types");
+        } catch (IllegalArgumentException e) { }
         Tlv[] tlvs = big.getTlvs();
         assertEquals(2, tlvs.length);
         assertEquals(big.getTlvCount(), tlvs.length);
@@ -125,19 +131,19 @@ public class SelfTest extends TestCase {
         assertEquals(2, type2[0].getType());
 
 
-        AbstractTlvChain firstOfBig = ImmutableTlvChain.readChain(chainBlock, 1);
+        TlvChain firstOfBig = ImmutableTlvChain.readChain(chainBlock, 1);
 
         assertEquals(1, firstOfBig.getTlvCount());
         assertEquals(2, firstOfBig.getTlvs()[0].getType());
         assertTrue(ByteBlock.wrap(new byte[] { 1, 2, 3, 4 })
                 .equals(firstOfBig.getFirstTlv(2).getData()));
 
-        AbstractTlvChain emptyBlockChain
+        TlvChain emptyBlockChain
                 = ImmutableTlvChain.readChain(ByteBlock.wrap(new byte[0]), 0);
 
         assertEquals(0, emptyBlockChain.getTlvCount());
 
-        AbstractTlvChain duplicates = ImmutableTlvChain.readChain(ByteBlock.wrap(new byte[] {
+        TlvChain duplicates = ImmutableTlvChain.readChain(ByteBlock.wrap(new byte[] {
             0, 1, 0, 2, 0, 100,
             0, 1, 0, 0,
             0, 1, 0, 5, 1, 2, 3, 4, 5,
@@ -155,19 +161,19 @@ public class SelfTest extends TestCase {
         assertEquals(0, matches[1].getData().getLength());
         assertEquals(5, matches[2].getData().getLength());
 
-        AbstractTlvChain tooMany = ImmutableTlvChain.readChain(ByteBlock.wrap(new byte[0]), 100);
+        TlvChain tooMany = ImmutableTlvChain.readChain(ByteBlock.wrap(new byte[0]), 100);
 
         assertEquals(0, tooMany.getTlvCount());
         assertEquals(0, tooMany.getTlvs(100).length);
 
-        AbstractTlvChain tooShort
+        TlvChain tooShort
                 = ImmutableTlvChain.readChain(ByteBlock.wrap(new byte[] { 1, 2 }));
 
         assertEquals(0, tooShort.getTlvCount());
     }
 
     public void testSimpleTlvChainCreate() {
-        MutableTlvChain chain = new MutableTlvChain();
+        MutableTlvChain chain = new DefaultMutableTlvChain();
 
         chain.addTlv(new Tlv(2, ByteBlock.wrap(new byte[] { 10, 11 })));
         chain.addTlv(new Tlv(2, ByteBlock.wrap(new byte[0])));
@@ -205,7 +211,7 @@ public class SelfTest extends TestCase {
         Tlv tlv2a = Tlv.getStringInstance(2, "2a");
         Tlv tlv3a = Tlv.getStringInstance(3, "3a");
 
-        MutableTlvChain chain = new MutableTlvChain();
+        MutableTlvChain chain = new DefaultMutableTlvChain();
 
         chain.addTlv(tlv1a);
         chain.addTlv(tlv2a);

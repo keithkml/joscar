@@ -37,6 +37,7 @@ package net.kano.joscar.snaccmd.search;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 
 import java.io.IOException;
@@ -77,6 +78,8 @@ public class InterestListCmd extends SearchCommand {
      */
     protected InterestListCmd(SnacPacket packet) {
         super(CMD_INTERESTS);
+
+        DefensiveTools.checkNull(packet, "packet");
 
         ByteBlock snacData = packet.getData();
 
@@ -135,8 +138,13 @@ public class InterestListCmd extends SearchCommand {
      */
     public InterestListCmd(int code, InterestInfo[] interests) {
         super(CMD_INTERESTS);
+
+        DefensiveTools.checkRange(code, "code", 0);
+
         this.code = code;
-        this.interests = interests;
+        this.interests = (InterestInfo[]) (interests == null
+                ? null
+                : interests.clone());
     }
 
     /**
@@ -154,7 +162,9 @@ public class InterestListCmd extends SearchCommand {
      *
      * @return the list of chat interests sent in this command
      */
-    public final InterestInfo[] getInterests() { return interests; }
+    public final InterestInfo[] getInterests() {
+        return (InterestInfo[]) (interests == null ? null : interests.clone());
+    }
 
     public void writeData(OutputStream out) throws IOException {
         BinaryTools.writeUShort(out, code);

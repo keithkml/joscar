@@ -37,6 +37,7 @@ package net.kano.joscar.snaccmd.acct;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 
 import java.io.IOException;
@@ -82,6 +83,8 @@ public class AcctInfoRequest extends AcctCommand {
     protected AcctInfoRequest(SnacPacket packet) {
         super(CMD_INFO_REQ);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
 
         type = BinaryTools.getUShort(snacData, 0);
@@ -108,6 +111,10 @@ public class AcctInfoRequest extends AcctCommand {
      */
     public AcctInfoRequest(int type, int subType) {
         super(CMD_INFO_REQ);
+
+        DefensiveTools.checkRange(type, "type", 0);
+        DefensiveTools.checkRange(subType, "subType", 0);
+
         this.type = type;
         this.subType = subType;
     }

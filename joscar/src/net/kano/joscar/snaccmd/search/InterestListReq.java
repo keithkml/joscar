@@ -36,6 +36,7 @@
 package net.kano.joscar.snaccmd.search;
 
 import net.kano.joscar.flapcmd.SnacPacket;
+import net.kano.joscar.DefensiveTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -58,6 +59,8 @@ public class InterestListReq extends SearchCommand {
      */
     protected InterestListReq(SnacPacket packet) {
         super(CMD_INTERESTS_REQ);
+
+        DefensiveTools.checkNull(packet, "packet");
     }
 
     /**

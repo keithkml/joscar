@@ -36,83 +36,207 @@
 package net.kano.joscar.ssiitem;
 
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.IconHashInfo;
 import net.kano.joscar.snaccmd.ssi.SsiItem;
-import net.kano.joscar.tlv.MutableTlvChain;
-import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.AbstractTlvChain;
-import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.*;
 
-public class IconItem extends AbstractItem {
+/**
+ * An SSI item object holding information about a buddy icon. Note that
+ * {@linkplain net.kano.joscar.snaccmd.ssi.ModifyItemsCmd modifying} (or
+ * {@linkplain net.kano.joscar.snaccmd.ssi.CreateItemsCmd creating}) an icon
+ * object sets that icon as the user's current icon (given that you {@linkplain
+ * net.kano.joscar.snaccmd.icon.UploadIconCmd upload} it when {@linkplain
+ * net.kano.joscar.snaccmd.conn.YourIconAck asked}).
+ * <br>
+ * <br>
+ * Note that this class is only used to store data and that <b>changes to this
+ * object are not reflected on the server</b> without sending the changes to the
+ * server with a {@link net.kano.joscar.snaccmd.ssi.ModifyItemsCmd
+ * ModifyItemsCmd}.
+ */
+public class IconItem extends AbstractItemObj {
+    /** A default name for a buddy icon item. */
     public static final String NAME_DEFAULT = "1";
+    /**
+     * A default "alias" for a buddy icon item. This is just an empty string, as
+     * that is what WinAIM uses.
+     */
     public static final String ALIAS_DEFAULT = "";
 
+    /** The ID of the group in which buddy icon items reside. */
     private static final int GROUPID_DEFAULT = 0x0000;
 
+    /** A TLV type containing an icon hash. */
     private static final int TYPE_ICON_HASH = 0x00d5;
+    /**
+     * A TLV type containing an alias or something. I'm not really sure what
+     * it's supposed to be, as it's always empty when WinAIM uses it.
+     */
     private static final int TYPE_ALIAS = 0x0131;
 
+    /**
+     * The name of this icon. Normally a number in the form of an ASCII string.
+     */
     private final String name;
+    /** The ID of this icon item. */
     private final int id;
-    private final IconHashInfo iconInfo;
-    private final String alias;
+    /** The icon hash stored in this item. */
+    private IconHashInfo iconInfo;
+    /**
+     * Some sort of alias for this icon, maybe. Currently always an empty string
+     * in WinAIM.
+     */
+    private String alias;
 
-    public static IconItem readIconItem(SsiItem item) {
-        String name = item.getName();
+    /**
+     * Creates a new buddy icon item object from the data in the given SSI item.
+     *
+     * @param item a buddy icon SSI item
+     */
+    public IconItem(SsiItem item) {
+        DefensiveTools.checkNull(item, "item");
 
-        AbstractTlvChain chain = ImmutableTlvChain.readChain(item.getData());
+        name = item.getName();
+        id = item.getId();
+
+        TlvChain chain = ImmutableTlvChain.readChain(item.getData());
 
         Tlv iconTlv = chain.getLastTlv(TYPE_ICON_HASH);
 
-        IconHashInfo iconInfo = null;
         if (iconTlv != null) {
             ByteBlock block = iconTlv.getData();
 
             iconInfo = IconHashInfo.readIconHashInfo(block);
+        } else {
+            iconInfo = null;
         }
 
-        String alias = chain.getString(TYPE_ALIAS);
+        alias = chain.getString(TYPE_ALIAS);
 
-        MutableTlvChain extraTlvs = new MutableTlvChain(chain);
+        MutableTlvChain extraTlvs = new DefaultMutableTlvChain(chain);
 
-        extraTlvs.removeTlvs(new int[] { TYPE_ICON_HASH });
+        extraTlvs.removeTlvs(new int[] { TYPE_ICON_HASH, TYPE_ALIAS });
 
-        return new IconItem(name, item.getSubId(), iconInfo, alias,
-                extraTlvs);
+        addExtraTlvs(extraTlvs);
     }
 
+    /**
+     * Creates a new buddy icon item object with the same properties as the
+     * given icon item object.
+     *
+     * @param other an icon item object to copy
+     */
     public IconItem(IconItem other) {
         this(other.name, other.id, other.iconInfo, other.alias,
                 other.copyExtraTlvs());
     }
 
-    public IconItem(String name, int id, IconHashInfo info) {
-        this(name, id, info, ALIAS_DEFAULT, null);
+    /**
+     * Creates a new buddy icon item object with the given icon name (try
+     * {@link #NAME_DEFAULT}), unique icon item ID number, and icon hash block.
+     * Note that the icon hash block can be <code>null</code> to not store a
+     * hash at all in this item. The item will be created with an "alias" of
+     * {@link #ALIAS_DEFAULT}, which is an empty string.
+     *
+     * @param name the "name" of this icon, normally a positive number in ASCII
+     *        text format (like <code>"2"</code> or {@link #NAME_DEFAULT})
+     * @param id an ID number for this item
+     * @param iconInfo a block of icon hash information, or <code>null</code> to not
+     *        store an icon hash block in this item
+     */
+    public IconItem(String name, int id, IconHashInfo iconInfo) {
+        this(name, id, iconInfo, ALIAS_DEFAULT, null);
     }
 
+    /**
+     * Creates a new buddy icon item object with the given icon name (try
+     * {@link #NAME_DEFAULT}), unique icon item ID number, and icon hash block.
+     * Note that the icon hash block can be <code>null</code> to not store a
+     * hash at all in this item.
+     *
+     * @param name the "name" of this icon, normally a positive number in ASCII
+     *        text format (like <code>"2"</code> or {@link #NAME_DEFAULT})
+     * @param id an ID number for this item
+     * @param iconInfo a block of icon hash information, or
+     *        <code>null</code> to not store an icon hash block in this item
+     * @param alias some sort of "alias" for this icon; WinAIM always uses
+     *        {@link #ALIAS_DEFAULT} (an empty string)
+     * @param extraTlvs a list of extra TLV's to store in this item
+     */
     public IconItem(String name, int id, IconHashInfo iconInfo, String alias,
-            AbstractTlvChain extraTlvs) {
+            TlvChain extraTlvs) {
         super(extraTlvs);
+
+        DefensiveTools.checkNull(name, "name");
+        DefensiveTools.checkRange(id, "id", 0);
+
         this.name = name;
         this.id = id;
         this.iconInfo = iconInfo;
         this.alias = alias;
     }
 
-    public final String getName() {
-        return name;
-    }
+    /**
+     * Returns this icon item's name. Normally a nonnegative number in ASCII
+     * text format (like <code>"0"</code>).
+     *
+     * @return this icon item's name
+     */
+    public final String getName() { return name; }
 
+    /**
+     * Returns this icon item's unique ID.
+     *
+     * @return this icon item's ID
+     */
     public final int getId() { return id; }
 
-    public final IconHashInfo getIconInfo() {
-        return iconInfo;
+    /**
+     * Returns the icon hash stored in this item, or <code>null</code> if none
+     * is stored.
+     *
+     * @return the icon hash block stored in this item, or <code>null</code> if
+     *         none is stored in this item
+     */
+    public synchronized final IconHashInfo getIconInfo() { return iconInfo; }
+
+    /**
+     * Returns this icon item's "alias." As of this writing WinAIM always sets
+     * this to an empty string, or {@link #ALIAS_DEFAULT}; thus, I am unsure
+     * of the value's significance. This field is called "alias" because it is
+     * stored in the same data type as a buddy's {@linkplain BuddyItem#getAlias
+     * alias}.
+     *
+     * @return this icon item's "alias"
+     */
+    public synchronized final String getAlias() { return alias; }
+
+    /**
+     * Sets the icon hash block stored in this icon item. <code>iconInfo</code>
+     * can be <code>null</code> to erase this icon item's icon hash.
+     *
+     * @param iconInfo a new icon hash block for this buddy icon item, or
+     *        <code>null</code> to erase this item's stored icon hash (if any)
+     */
+    public synchronized final void setIconInfo(IconHashInfo iconInfo) {
+        this.iconInfo = iconInfo;
     }
 
-    public final String getAlias() { return alias; }
+    /**
+     * Sets the "alias" for this icon item. As of this writing this is always
+     * set to an empty string ({@link #ALIAS_DEFAULT}) by WinAIM. It is called
+     * an alias because it is stored as the same data type as a buddy's
+     * {@linkplain BuddyItem#getAlias alias}.
+     *
+     * @param alias a new "alias" for this icon item
+     */
+    public synchronized final void setAlias(String alias) {
+        this.alias = alias;
+    }
 
-    public SsiItem getSsiItem() {
-        MutableTlvChain chain = new MutableTlvChain();
+    public synchronized SsiItem generateSsiItem() {
+        MutableTlvChain chain = new DefaultMutableTlvChain();
 
         if (iconInfo != null) {
             ByteBlock iconData = ByteBlock.createByteBlock(iconInfo);
@@ -127,7 +251,7 @@ public class IconItem extends AbstractItem {
                 chain);
     }
 
-    public String toString() {
+    public synchronized String toString() {
         return "IconItem: name=" + name + ", id=0x" + Integer.toHexString(id)
                 + ", alias='" + alias + "', iconinfo=" + iconInfo;
     }

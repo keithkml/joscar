@@ -35,9 +35,10 @@
 
 package net.kano.joscar.snaccmd.auth;
 
-import net.kano.joscar.tlv.AbstractTlvChain;
 import net.kano.joscar.tlv.Tlv;
+import net.kano.joscar.tlv.TlvChain;
 import net.kano.joscar.LiveWritable;
+import net.kano.joscar.DefensiveTools;
 
 import java.io.OutputStream;
 import java.io.IOException;
@@ -78,7 +79,9 @@ public final class ClientVersionInfo implements LiveWritable {
      * @return a client version information object read from the given TLV
      *         chain
      */
-    static ClientVersionInfo readClientVersionInfo(AbstractTlvChain chain) {
+    static ClientVersionInfo readClientVersionInfo(TlvChain chain) {
+        DefensiveTools.checkNull(chain, "chain");
+
         String verString = chain.getString(TYPE_VERSION_STRING);
         int major = chain.getUShort(TYPE_MAJOR);
         int minor = chain.getUShort(TYPE_MINOR);
@@ -101,6 +104,11 @@ public final class ClientVersionInfo implements LiveWritable {
      */
     public ClientVersionInfo(String versionString, int major, int minor,
             int point, int build) {
+        DefensiveTools.checkRange(major, "major", -1);
+        DefensiveTools.checkRange(minor, "minor", -1);
+        DefensiveTools.checkRange(point, "point", -1);
+        DefensiveTools.checkRange(point, "build", -1);
+
         this.versionString = versionString;
         this.major = major;
         this.minor = minor;

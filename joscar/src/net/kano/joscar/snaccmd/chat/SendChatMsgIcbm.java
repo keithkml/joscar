@@ -37,7 +37,7 @@ package net.kano.joscar.snaccmd.chat;
 
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.AbstractTlvChain;
+import net.kano.joscar.tlv.TlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -72,7 +72,7 @@ public class SendChatMsgIcbm extends AbstractChatMsgIcbm {
     protected SendChatMsgIcbm(SnacPacket packet) {
         super(ChatCommand.CMD_SEND_CHAT_MSG, packet);
 
-        AbstractTlvChain chain = getChatTlvs();
+        TlvChain chain = getChatTlvs();
 
         toBeReflected = chain.hasTlv(TYPE_REFLECT);
     }

@@ -39,7 +39,16 @@ import com.sun.tools.doclets.Taglet;
 import com.sun.javadoc.*;
 import java.util.Map;
 
+/**
+ * A javadoc taglet that provides a <code>@flap.chan</code> tag to indicate the
+ * channel on which a FLAP command resides.
+ */
 public class FlapChannelTaglet implements Taglet {
+    /**
+     * Registers this taglet with the given taglet map.
+     *
+     * @param tagletMap a taglet map with which to register this taglet
+     */
     public static void register(Map tagletMap) {
         FlapChannelTaglet instance = new FlapChannelTaglet();
         tagletMap.put(instance.getName(), instance);

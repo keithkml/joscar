@@ -271,8 +271,8 @@ public class JoscarTester implements CmdLineListener {
         });
         cmdMap.put("info", new CLCommand() {
             public void handle(String line, String cmd, String[] args) {
-                request(new GetInfoCmd(args[0], GetInfoCmd.TYPE_AWAYMSG));
-                request(new GetInfoCmd(args[0], GetInfoCmd.TYPE_INFO));
+                request(new GetInfoCmd(GetInfoCmd.TYPE_AWAYMSG, args[0]));
+                request(new GetInfoCmd(GetInfoCmd.TYPE_INFO, args[0]));
             }
         });
         cmdMap.put("dirinfo", new CLCommand() {
@@ -406,7 +406,7 @@ public class JoscarTester implements CmdLineListener {
                             Integer.parseInt(args[2]), "ALIASDUDE",
                             "COMMENTDUDE", BuddyItem.MASK_WHEN_ONLINE,
                             BuddyItem.MASK_ACTION_PLAY_SOUND,
-                            "newalert").getSsiItem() }));
+                            "newalert").generateSsiItem() }));
             }
         });
         // WORKS
@@ -414,7 +414,7 @@ public class JoscarTester implements CmdLineListener {
             public void handle(String line, String cmd, String[] args) {
                 request(new DeleteItemsCmd(new SsiItem[] {
                     new BuddyItem(args[0], Integer.parseInt(args[1]),
-                            Integer.parseInt(args[2])).getSsiItem() }));
+                            Integer.parseInt(args[2])).generateSsiItem() }));
             }
         });
         // WORKS
@@ -423,7 +423,7 @@ public class JoscarTester implements CmdLineListener {
                 request(new CreateItemsCmd(new SsiItem[] {
                     new GroupItem(args[0], Integer.parseInt(args[1]),
                             new int[] { Integer.parseInt(args[2]) })
-                        .getSsiItem() }));
+                        .generateSsiItem() }));
             }
         });
         // WORKS
@@ -431,7 +431,7 @@ public class JoscarTester implements CmdLineListener {
             public void handle(String line, String cmd, String[] args) {
                 request(new DeleteItemsCmd(new SsiItem[] {
                     new GroupItem(args[0], Integer.parseInt(args[1]))
-                        .getSsiItem() }));
+                        .generateSsiItem() }));
             }
         });
         // WORKS
@@ -440,11 +440,11 @@ public class JoscarTester implements CmdLineListener {
                 request(new ModifyItemsCmd(new SsiItem[] {
                     new PrivacyItem(Integer.parseInt(args[0]),
                             PrivacyItem.MODE_BLOCK_DENIES, 0xffffffffL, 0)
-                            .getSsiItem(),
+                            .generateSsiItem(),
                     new VisibilityItem(Integer.parseInt(args[1]),
                             VisibilityItem.MASK_SHOW_TYPING
                             | VisibilityItem.MASK_SHOW_IDLE_TIME)
-                            .getSsiItem()
+                            .generateSsiItem()
                 }));
             }
         });
@@ -453,7 +453,7 @@ public class JoscarTester implements CmdLineListener {
             public void handle(String line, String cmd, String[] args) {
                 request(new DeleteItemsCmd(new SsiItem[] {
                     new VisibilityItem(Integer.parseInt(args[0]), 0)
-                        .getSsiItem()
+                        .generateSsiItem()
                 }));
             }
         });
@@ -463,7 +463,7 @@ public class JoscarTester implements CmdLineListener {
                 request(new ModifyItemsCmd(new SsiItem[] {
                     new PrivacyItem(Integer.parseInt(args[0]),
                             Integer.parseInt(args[1]), 0xffffffffL, 0)
-                        .getSsiItem(),
+                        .generateSsiItem(),
                 }));
             }
         });
@@ -472,7 +472,7 @@ public class JoscarTester implements CmdLineListener {
             public void handle(String line, String cmd, String[] args) {
                 request(new CreateItemsCmd(new SsiItem[] {
                     new DenyItem(args[0], Integer.parseInt(args[1]))
-                        .getSsiItem()
+                        .generateSsiItem()
                 }));
             }
         });
@@ -481,7 +481,7 @@ public class JoscarTester implements CmdLineListener {
             public void handle(String line, String cmd, String[] args) {
                 request(new DeleteItemsCmd(new SsiItem[] {
                     new DenyItem(args[0], Integer.parseInt(args[1]))
-                        .getSsiItem()
+                        .generateSsiItem()
                 }));
             }
         });
@@ -490,7 +490,7 @@ public class JoscarTester implements CmdLineListener {
             public void handle(String line, String cmd, String[] args) {
                 request(new CreateItemsCmd(new SsiItem[] {
                     new PermitItem(args[0], Integer.parseInt(args[1]))
-                        .getSsiItem()
+                        .generateSsiItem()
                 }));
             }
         });
@@ -499,7 +499,7 @@ public class JoscarTester implements CmdLineListener {
             public void handle(String line, String cmd, String[] args) {
                 request(new DeleteItemsCmd(new SsiItem[] {
                     new PermitItem(args[0], Integer.parseInt(args[1]))
-                        .getSsiItem()
+                        .generateSsiItem()
                 }));
             }
         });
@@ -508,7 +508,7 @@ public class JoscarTester implements CmdLineListener {
             public void handle(String line, String cmd, String[] args) {
                 request(new CreateItemsCmd(new SsiItem[] {
                     new RootItem()
-                        .getSsiItem()
+                        .generateSsiItem()
                 }));
             }
         });
@@ -518,7 +518,7 @@ public class JoscarTester implements CmdLineListener {
                 request(new ModifyItemsCmd(new SsiItem[] {
                     new RootItem(new int[] { Integer.parseInt(args[0]),
                     Integer.parseInt(args[1]) })
-                        .getSsiItem()
+                        .generateSsiItem()
                 }));
             }
         });
@@ -530,7 +530,7 @@ public class JoscarTester implements CmdLineListener {
                                 new IconHashInfo(0, ByteBlock.wrap(
                                 hashIcon(args[2])
                         )))
-                            .getSsiItem()
+                            .generateSsiItem()
                     }));
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -550,7 +550,7 @@ public class JoscarTester implements CmdLineListener {
                                 new IconHashInfo(0, ByteBlock.wrap(
                                         hashIcon(args[2])
                                 )))
-                            .getSsiItem()
+                            .generateSsiItem()
                     }));
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -561,7 +561,7 @@ public class JoscarTester implements CmdLineListener {
             public void handle(String line, String cmd, String[] args) {
                 request(new DeleteItemsCmd(new SsiItem[] {
                     new IconItem(args[0], Integer.parseInt(args[1]), null)
-                        .getSsiItem()
+                        .generateSsiItem()
                 }));
             }
         });
@@ -576,7 +576,7 @@ public class JoscarTester implements CmdLineListener {
                 request(new ModifyItemsCmd(new SsiItem[] {
                     new IconItem(args[0], Integer.parseInt(args[1]),
                             new IconHashInfo(0, IconHashInfo.HASH_SPECIAL))
-                        .getSsiItem()
+                        .generateSsiItem()
                 }));
             }
         });
@@ -628,7 +628,7 @@ public class JoscarTester implements CmdLineListener {
         handler.setLevel(Level.FINE);
         Logger logger = Logger.getLogger("net.kano.joscar");
         logger.addHandler(handler);
-        logger.setLevel(Level.ALL);
+        logger.setLevel(Level.OFF);
 
         JoscarTester tester = new JoscarTester(args[0], args[1]);
         tester.connect();

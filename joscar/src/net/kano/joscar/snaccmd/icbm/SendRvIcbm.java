@@ -37,12 +37,13 @@ package net.kano.joscar.snaccmd.icbm;
 
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.LiveWritable;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.OscarTools;
 import net.kano.joscar.snaccmd.ScreenNameBlock;
-import net.kano.joscar.tlv.AbstractTlvChain;
 import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.TlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -68,13 +69,15 @@ public class SendRvIcbm extends AbstractRvIcbm {
     protected SendRvIcbm(SnacPacket packet) {
         super(IcbmCommand.CMD_SEND_ICBM, packet);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock channelData = getChannelData();
 
         ScreenNameBlock snInfo = OscarTools.readScreenname(channelData);
         sn = snInfo.getScreenname();
 
         ByteBlock tlvBlock = channelData.subBlock(snInfo.getTotalSize());
-        AbstractTlvChain chain = ImmutableTlvChain.readChain(tlvBlock);
+        TlvChain chain = ImmutableTlvChain.readChain(tlvBlock);
         processRvTlvs(chain);
     }
 
@@ -93,6 +96,8 @@ public class SendRvIcbm extends AbstractRvIcbm {
             CapabilityBlock cap, LiveWritable rvDataWriter) {
         super(IcbmCommand.CMD_SEND_ICBM, icbmCookie, status, rvCookie, cap,
                 rvDataWriter);
+
+        DefensiveTools.checkNull(sn, "sn");
 
         this.sn = sn;
     }

@@ -37,6 +37,7 @@ package net.kano.joscar.snaccmd.icbm;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.OscarTools;
 
@@ -71,6 +72,8 @@ public class WarnCmd extends IcbmCommand {
      */
     protected WarnCmd(SnacPacket packet) {
         super(CMD_WARN);
+
+        DefensiveTools.checkNull(packet, "packet");
 
         ByteBlock snacData = packet.getData();
 
@@ -113,6 +116,9 @@ public class WarnCmd extends IcbmCommand {
      */
     public WarnCmd(String warnee, int anonymityCode) {
         super(CMD_WARN);
+
+        DefensiveTools.checkNull(warnee, "warnee");
+
         this.anonymityCode = anonymityCode;
         this.warnee = warnee;
     }

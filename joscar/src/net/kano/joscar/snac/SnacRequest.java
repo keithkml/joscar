@@ -35,6 +35,8 @@
 
 package net.kano.joscar.snac;
 
+import net.kano.joscar.DefensiveTools;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -132,11 +134,11 @@ public class SnacRequest {
      *        request, or <code>null</code> to ignore responses
      */
     public SnacRequest(SnacCommand command, SnacRequestListener listener) {
+        DefensiveTools.checkNull(command, "command");
+
         this.command = command;
         if (listener != null) addListener(listener);
     }
-
-
 
     /**
      * Sets this request's request ID on its parent <code>SnacProcessor</code>.
@@ -236,7 +238,8 @@ public class SnacRequest {
      * @see #setStoringResponses
      */
     public synchronized final SnacResponseEvent[] getResponses() {
-        return (SnacResponseEvent[]) responses.toArray(new SnacResponseEvent[0]);
+        return (SnacResponseEvent[])
+                responses.toArray(new SnacResponseEvent[0]);
     }
 
     /**

@@ -38,6 +38,7 @@ package net.kano.joscar.snaccmd.search;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.LiveWritable;
+import net.kano.joscar.DefensiveTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -100,6 +101,8 @@ public class InterestInfo implements LiveWritable {
      *         data, or <code>null</code> if none could be read
      */
     protected static InterestInfo readInterestInfo(ByteBlock block) {
+        DefensiveTools.checkNull(block, "block");
+
         if (block.getLength() < 4) return null;
 
         int type = BinaryTools.getUByte(block, 0);
@@ -137,6 +140,11 @@ public class InterestInfo implements LiveWritable {
      *        binary data
      */
     protected InterestInfo(int type, int parent, String name, int totalSize) {
+        DefensiveTools.checkRange(type, "type", 0);
+        DefensiveTools.checkRange(parent, "parent", 0);
+        DefensiveTools.checkNull(name, "name");
+        DefensiveTools.checkRange(totalSize, "totalSize", -1);
+
         this.type = type;
         this.parent = parent;
         this.name = name;

@@ -37,6 +37,7 @@ package net.kano.joscar.snaccmd.auth;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 
 import java.io.IOException;
@@ -61,6 +62,8 @@ public class KeyResponse extends AuthCommand {
      */
     protected KeyResponse(SnacPacket packet) {
         super(AuthCommand.CMD_KEY_RESP);
+
+        DefensiveTools.checkNull(packet, "packet");
 
         ByteBlock data = packet.getData();
 
@@ -96,8 +99,9 @@ public class KeyResponse extends AuthCommand {
     }
 
     public void writeData(OutputStream out) throws IOException {
-        BinaryTools.writeUShort(out, (int) key.getWritableLength());
-        key.write(out);
+        int len = (key == null ? 0 : (int) key.getWritableLength());
+        BinaryTools.writeUShort(out, (int) len);
+        if (key != null) key.write(out);
     }
 
     public String toString() {

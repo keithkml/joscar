@@ -36,6 +36,7 @@
 package net.kano.joscar.snaccmd.ssi;
 
 import net.kano.joscar.flapcmd.SnacPacket;
+import net.kano.joscar.DefensiveTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -57,6 +58,8 @@ public class ActivateSsiCmd extends SsiCommand {
      */
     protected ActivateSsiCmd(SnacPacket packet) {
         super(CMD_ACTIVATE);
+
+        DefensiveTools.checkNull(packet, "packet");
     }
 
     /**

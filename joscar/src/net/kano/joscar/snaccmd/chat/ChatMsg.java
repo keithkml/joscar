@@ -37,12 +37,10 @@ package net.kano.joscar.snaccmd.chat;
 
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.LiveWritable;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.EncodedStringInfo;
 import net.kano.joscar.snaccmd.MinimalEncoder;
-import net.kano.joscar.tlv.MutableTlvChain;
-import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.AbstractTlvChain;
-import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.*;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -59,7 +57,9 @@ public class ChatMsg implements LiveWritable {
      * @return a chat message object read from the given data block
      */
     public static ChatMsg readChatMsg(ByteBlock msgBlock) {
-        AbstractTlvChain msgChain = ImmutableTlvChain.readChain(msgBlock);
+        DefensiveTools.checkNull(msgBlock, "msgBlock");
+
+        TlvChain msgChain = ImmutableTlvChain.readChain(msgBlock);
 
         String charset = msgChain.getString(TYPE_CHARSET);
         String message = msgChain.getString(TYPE_BODY, charset);
@@ -128,7 +128,7 @@ public class ChatMsg implements LiveWritable {
     }
 
     public void write(OutputStream out) throws IOException {
-        MutableTlvChain msgChain = new MutableTlvChain();
+        MutableTlvChain msgChain = new DefaultMutableTlvChain();
 
         if (message != null) {
             EncodedStringInfo encInfo = MinimalEncoder.encodeMinimally(message);

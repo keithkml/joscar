@@ -37,6 +37,7 @@ package net.kano.joscar.snaccmd.ssi;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 
 import java.io.IOException;
@@ -77,6 +78,8 @@ public class SsiDataCheck extends SsiCommand {
     protected SsiDataCheck(SnacPacket packet) {
         super(CMD_DATA_CHECK);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
 
         lastmod = BinaryTools.getUInt(snacData, 0);
@@ -116,6 +119,9 @@ send(new SsiDataCheck(secondsSinceUnixEpoch, itemCount));
      */
     public SsiDataCheck(long lastmod, int itemCount) {
         super(CMD_DATA_CHECK);
+
+        DefensiveTools.checkRange(lastmod, "lastmod", -1);
+        DefensiveTools.checkRange(itemCount, "itemCount", -1);
 
         this.lastmod = lastmod;
         this.itemCount = itemCount;

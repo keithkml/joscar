@@ -37,6 +37,7 @@ package net.kano.joscar.snaccmd.search;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.DirInfo;
 
@@ -75,6 +76,8 @@ public class SearchResultsCmd extends SearchCommand {
      */
     protected SearchResultsCmd(SnacPacket packet) {
         super(CMD_RESULTS);
+
+        DefensiveTools.checkNull(packet, "packet");
 
         ByteBlock snacData = packet.getData();
 
@@ -130,9 +133,12 @@ public class SearchResultsCmd extends SearchCommand {
     public SearchResultsCmd(int code, int subCode, DirInfo[] results) {
         super(CMD_RESULTS);
 
-        this.results = results;
+        DefensiveTools.checkRange(code, "code", 0);
+        DefensiveTools.checkRange(subCode, "subCode", 0);
+
         this.code = code;
         this.subCode = subCode;
+        this.results = (DirInfo[]) (results == null ? null : results.clone());
     }
 
     /**
@@ -162,7 +168,7 @@ public class SearchResultsCmd extends SearchCommand {
      * @return the search results
      */
     public DirInfo[] getResults() {
-        return results;
+        return (DirInfo[]) (results == null ? null : results.clone());
     }
 
     public void writeData(OutputStream out) throws IOException {

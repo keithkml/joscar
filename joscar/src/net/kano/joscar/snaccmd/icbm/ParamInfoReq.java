@@ -36,6 +36,7 @@
 package net.kano.joscar.snaccmd.icbm;
 
 import net.kano.joscar.flapcmd.SnacPacket;
+import net.kano.joscar.DefensiveTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -56,6 +57,8 @@ public class ParamInfoReq extends IcbmCommand {
      */
     protected ParamInfoReq(SnacPacket packet) {
         super(CMD_PARAM_INFO_REQ);
+
+        DefensiveTools.checkNull(packet, "packet");
     }
 
     /**

@@ -38,6 +38,7 @@ package net.kano.joscar.snaccmd;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.LiveWritable;
+import net.kano.joscar.DefensiveTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -115,6 +116,8 @@ public final class IconHashInfo implements LiveWritable {
      *         <code>null</code> if no valid block could be read
      */
     public static IconHashInfo readIconHashInfo(ByteBlock block) {
+        DefensiveTools.checkNull(block, "block");
+
         if (block.getLength() < 1) return null;
 
         int code = BinaryTools.getUByte(block, 0);
@@ -155,6 +158,9 @@ public final class IconHashInfo implements LiveWritable {
      *        binary data
      */
     private IconHashInfo(int code, ByteBlock hash, int totalSize) {
+        DefensiveTools.checkRange(code, "code", 0);
+        DefensiveTools.checkRange(totalSize, "totalSize", -1);
+
         this.code = code;
         this.hash = hash;
         this.totalSize = totalSize;

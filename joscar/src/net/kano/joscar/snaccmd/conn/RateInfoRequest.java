@@ -36,6 +36,7 @@
 package net.kano.joscar.snaccmd.conn;
 
 import net.kano.joscar.flapcmd.SnacPacket;
+import net.kano.joscar.DefensiveTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -58,6 +59,8 @@ public class RateInfoRequest extends ConnCommand {
      */
     protected RateInfoRequest(SnacPacket packet) {
         super(CMD_RATE_REQ);
+
+        DefensiveTools.checkNull(packet, "packet");
     }
 
     /**

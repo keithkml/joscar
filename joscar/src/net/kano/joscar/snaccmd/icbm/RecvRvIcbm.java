@@ -37,11 +37,12 @@ package net.kano.joscar.snaccmd.icbm;
 
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.LiveWritable;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.FullUserInfo;
-import net.kano.joscar.tlv.AbstractTlvChain;
 import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.TlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -67,11 +68,13 @@ public class RecvRvIcbm extends AbstractRvIcbm {
     protected RecvRvIcbm(SnacPacket packet) {
         super(IcbmCommand.CMD_ICBM, packet);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock channelData = getChannelData();
 
         sender = FullUserInfo.readUserInfo(channelData);
         ByteBlock tlvBlock = channelData.subBlock(sender.getTotalSize());
-        AbstractTlvChain chain = ImmutableTlvChain.readChain(tlvBlock);
+        TlvChain chain = ImmutableTlvChain.readChain(tlvBlock);
         processRvTlvs(chain);
     }
 
@@ -90,6 +93,8 @@ public class RecvRvIcbm extends AbstractRvIcbm {
             FullUserInfo sender) {
         super(IcbmCommand.CMD_ICBM, icbmCookie, status, rvCookie, cap,
                 rvDataWriter);
+
+        DefensiveTools.checkNull(sender, "sender");
 
         this.sender = sender;
     }

@@ -36,6 +36,7 @@
 package net.kano.joscar.snaccmd.conn;
 
 import net.kano.joscar.flapcmd.SnacPacket;
+import net.kano.joscar.DefensiveTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -58,6 +59,8 @@ public class PauseCmd extends ConnCommand {
      */
     protected PauseCmd(SnacPacket packet) {
         super(CMD_PAUSE);
+
+        DefensiveTools.checkNull(packet, "packet");
     }
 
     /**

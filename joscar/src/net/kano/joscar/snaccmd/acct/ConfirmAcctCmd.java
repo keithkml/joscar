@@ -36,6 +36,7 @@
 package net.kano.joscar.snaccmd.acct;
 
 import net.kano.joscar.flapcmd.SnacPacket;
+import net.kano.joscar.DefensiveTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -61,6 +62,8 @@ public class ConfirmAcctCmd extends AcctCommand {
      */
     protected ConfirmAcctCmd(SnacPacket packet) {
         super(CMD_CONFIRM);
+
+        DefensiveTools.checkNull(packet, "packet");
     }
 
     /**

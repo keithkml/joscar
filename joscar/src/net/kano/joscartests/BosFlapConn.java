@@ -53,9 +53,9 @@ import net.kano.joscar.snaccmd.loc.LocRightsRequest;
 import net.kano.joscar.snaccmd.loc.SetInfoCmd;
 import net.kano.joscar.snaccmd.loc.UserInfoCmd;
 import net.kano.joscar.snaccmd.ssi.*;
-import net.kano.joscar.ssiitem.AbstractItem;
 import net.kano.joscar.ssiitem.DefaultSsiItemObjFactory;
 import net.kano.joscar.ssiitem.SsiItemObjectFactory;
+import net.kano.joscar.ssiitem.SsiItemObj;
 
 import java.net.InetAddress;
 
@@ -155,7 +155,7 @@ public class BosFlapConn extends BasicConn {
 
             SsiItem[] items = sdc.getItems();
             for (int i = 0; i < items.length; i++) {
-                AbstractItem obj = itemFactory.getItemObj(items[i]);
+                SsiItemObj obj = itemFactory.getItemObj(items[i]);
                 System.out.println("- " + (obj == null ? (Object) items[i]
                         : (Object) obj));
             }

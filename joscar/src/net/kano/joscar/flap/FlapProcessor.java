@@ -36,6 +36,7 @@
 package net.kano.joscar.flap;
 
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.DefaultFlapCmdFactory;
 
 import java.io.IOException;
@@ -68,7 +69,7 @@ import java.util.logging.Logger;
  * Note that upon receipt of a FLAP packet, an event is passed to each of the
  * registered <i>vetoable</i> listeners first, halting immediately if a listener
  * says to halt processing. If a vetoable listener has not halted processing, an
- * event is next passed to each of the registered <i>non-vetoable</i> (i.e.,
+ * event is next passed to each of the registered <i>non-vetoable</i> (that is,
  * normal <code>FlapPacketListener</code>) listeners.
  *
  * @see ClientFlapConn
@@ -243,6 +244,8 @@ public class FlapProcessor {
      * @param packet the packet to process
      */
     private synchronized final void handlePacket(FlapPacket packet) {
+        DefensiveTools.checkNull(packet, "packet");
+
         logger.fine("FlapProcessor received packet: " + packet);
 
         FlapCommand cmd = null;
@@ -323,6 +326,9 @@ public class FlapProcessor {
      */
     public synchronized final void handleException(Object type, Throwable t,
             Object info) {
+        DefensiveTools.checkNull(type, "type");
+        DefensiveTools.checkNull(t, "t");
+
         logger.fine("Processing flap error (" + type + "): " + t.getMessage()
                 + ": " + info);
 
@@ -359,7 +365,7 @@ public class FlapProcessor {
      */
     public synchronized final void send(FlapCommand command)
             throws NullPointerException {
-        if (out == null) throw new NullPointerException();
+        DefensiveTools.checkNull(command, "command");
 
         logger.finer("Sending Flap command " + command);
         FlapPacket packet = new FlapPacket(seqnum, command);
@@ -448,6 +454,7 @@ public class FlapProcessor {
      */
     public synchronized final void attachToSocket(Socket socket)
             throws IOException {
+        DefensiveTools.checkNull(socket, "socket");
         logger.config("Attaching flap processor to " + socket);
 
         attachToInput(socket.getInputStream());
@@ -461,6 +468,7 @@ public class FlapProcessor {
      * @param in the input stream to attach to
      */
     public synchronized final void attachToInput(InputStream in) {
+        DefensiveTools.checkNull(in, "in");
         logger.config("Attaching flap processor to " + in);
 
         this.in = in;
@@ -475,6 +483,7 @@ public class FlapProcessor {
      * @param out the output stream to attach to
      */
     public synchronized final void attachToOutput(OutputStream out) {
+        DefensiveTools.checkNull(out, "out");
         logger.config("Attaching flap processor to " + out);
 
         this.out = out;

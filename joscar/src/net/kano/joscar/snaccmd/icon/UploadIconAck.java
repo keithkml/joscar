@@ -37,6 +37,7 @@ package net.kano.joscar.snaccmd.icon;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.ExtraIconInfo;
 
@@ -69,6 +70,8 @@ public class UploadIconAck extends IconCommand {
      */
     protected UploadIconAck(SnacPacket packet) {
         super(CMD_UPLOAD_ACK);
+
+        DefensiveTools.checkNull(packet, "packet");
 
         ByteBlock snacData = packet.getData();
 
@@ -103,6 +106,8 @@ public class UploadIconAck extends IconCommand {
      */
     public UploadIconAck(int code, ExtraIconInfo iconInfo) {
         super(CMD_UPLOAD_ACK);
+
+        DefensiveTools.checkRange(code, "code", 0);
 
         this.code = code;
         this.iconInfo = iconInfo;

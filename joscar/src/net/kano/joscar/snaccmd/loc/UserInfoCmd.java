@@ -36,6 +36,7 @@
 package net.kano.joscar.snaccmd.loc;
 
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.FullUserInfo;
 import net.kano.joscar.snaccmd.InfoData;
@@ -69,6 +70,8 @@ public class UserInfoCmd extends LocCommand {
      */
     protected UserInfoCmd(SnacPacket packet) {
         super(CMD_USER_INFO);
+
+        DefensiveTools.checkNull(packet, "packet");
 
         ByteBlock snacData = packet.getData();
 
@@ -115,8 +118,11 @@ public class UserInfoCmd extends LocCommand {
     }
 
     public void writeData(OutputStream out) throws IOException {
-        userInfo.write(out);
-        infoData.write(out);
+        if (userInfo != null) {
+            userInfo.write(out);
+            
+            if (infoData != null) infoData.write(out);
+        }
     }
 
     public String toString() {

@@ -36,6 +36,7 @@
 package net.kano.joscar.snaccmd.conn;
 
 import net.kano.joscar.flapcmd.SnacPacket;
+import net.kano.joscar.DefensiveTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -54,6 +55,8 @@ public class Noop extends ConnCommand {
      */
     protected Noop(SnacPacket packet) {
         super(CMD_NOOP);
+
+        DefensiveTools.checkNull(packet, "packet");
     }
 
     /**

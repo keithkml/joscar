@@ -38,6 +38,7 @@ package net.kano.joscar.snaccmd.icbm;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.LiveWritable;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.FullUserInfo;
 
 import java.io.IOException;
@@ -95,6 +96,8 @@ public class MissedMsgInfo implements LiveWritable {
      *         data
      */
     protected static MissedMsgInfo readMissedMsgInfo(ByteBlock block) {
+        DefensiveTools.checkNull(block, "block");
+
         if (block.getLength() < 7) return null;
 
         int channel = BinaryTools.getUShort(block, 0);
@@ -143,6 +146,11 @@ public class MissedMsgInfo implements LiveWritable {
      */
     private MissedMsgInfo(int channel, FullUserInfo userInfo, int number,
             int reason, int totalSize) {
+        DefensiveTools.checkRange(channel, "channel", 0);
+        DefensiveTools.checkRange(number, "number", 0);
+        DefensiveTools.checkRange(reason, "reason", 0);
+        DefensiveTools.checkRange(totalSize, "totalSize", -1);
+
         this.channel = channel;
         this.userInfo = userInfo;
         this.number = number;

@@ -41,6 +41,7 @@ import net.kano.joscar.flap.VetoableFlapPacketListener;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.flapcmd.SnacFlapCmd;
 import net.kano.joscar.flapcmd.MutableSnacPacket;
+import net.kano.joscar.DefensiveTools;
 
 import java.util.*;
 import java.util.logging.Logger;
@@ -95,8 +96,8 @@ import java.util.logging.Logger;
  * <li> Otherwise, an event is passed to each of the registered <i>vetoable</i>
  * packet listeners, halting immediately if a listener says to </li>
  * <li> If no vetoable listener has halted processing, an event is next passed
- * to all registered non-vetoable (i.e., normal <code>SnacPacketListener</code>)
- * packet listeners.</li>
+ * to all registered non-vetoable (that is, normal
+ * <code>SnacPacketListener</code>) packet listeners.</li>
  * </ol>
  *
  * <a name="factories"></a>The process of generating a <code>SnacCommand</code>
@@ -298,6 +299,8 @@ public class SnacProcessor {
      */
     public synchronized final void attachToFlapProcessor(
             FlapProcessor processor) {
+        DefensiveTools.checkNull(processor, "processor");
+
         detach();
 
         this.flapProcessor = processor;
@@ -410,6 +413,8 @@ public class SnacProcessor {
      * @param requestTtl the new "time to live" for SNAC requests, in seconds
      */
     public synchronized void setRequestTtl(int requestTtl) {
+        DefensiveTools.checkRange(requestTtl, "requestTtl", 0);
+
         this.requestTtl = requestTtl;
     }
 
@@ -610,7 +615,7 @@ public class SnacProcessor {
      */
     public synchronized final void sendSnac(SnacRequest request)
             throws NullPointerException {
-        if (flapProcessor == null) throw new NullPointerException();
+        DefensiveTools.checkNull(request, "request");
 
         // this is sent as an unsigned int, so it has to wrap like one. we
         // avoid request ID zero because that seems like a value the server
@@ -653,6 +658,7 @@ public class SnacProcessor {
     synchronized final void reallySendSnac(SnacRequest request)
             throws NullPointerException, IllegalArgumentException {
         logger.fine("Sending SNAC request " + request);
+        
         long reqid = request.getReqid();
         Long key = new Long(reqid);
         RequestInfo reqInfo = (RequestInfo) requests.get(key);

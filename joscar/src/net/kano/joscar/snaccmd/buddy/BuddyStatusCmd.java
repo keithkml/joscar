@@ -36,6 +36,7 @@
 package net.kano.joscar.snaccmd.buddy;
 
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.FullUserInfo;
 
@@ -62,6 +63,8 @@ public class BuddyStatusCmd extends BuddyCommand {
     protected BuddyStatusCmd(SnacPacket packet) {
         super(CMD_BUDDY_STATUS);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
 
         userInfo = FullUserInfo.readUserInfo(snacData);
@@ -75,6 +78,8 @@ public class BuddyStatusCmd extends BuddyCommand {
      */
     public BuddyStatusCmd(FullUserInfo userInfo) {
         super(CMD_BUDDY_STATUS);
+
+        DefensiveTools.checkNull(userInfo, "userInfo");
 
         this.userInfo = userInfo;
     }

@@ -37,30 +37,56 @@ package net.kano.joscar.ssiitem;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.ssi.SsiItem;
-import net.kano.joscar.tlv.MutableTlvChain;
-import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.AbstractTlvChain;
-import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-public class RootItem extends AbstractItem {
+/**
+ * An SSI item object representing the "root group," or a "meta-group" that
+ * contains all of the groups (and all other non-buddy items, implicitly). This
+ * group has a group ID of <code>0</code>. You may ask why a group containing
+ * all groups is necessary when one could just iterate through the SSI items
+ * of type {@link SsiItem#TYPE_GROUP} to get a list of groups. The answer is
+ * <i>ordering</i>: one can move a group up or down on his or her buddy list,
+ * but this does not change the group item itself; rather, its position in this
+ * root item's group list is changed.
+ * <br>
+ * <br>
+ * Note that this class is only used to store data and that <b>changes to this
+ * object are not reflected on the server</b> without sending the changes to the
+ * server with a {@link net.kano.joscar.snaccmd.ssi.ModifyItemsCmd
+ * ModifyItemsCmd}.
+ */
+public class RootItem extends AbstractItemObj {
+    /** The item name used for the root item. */
     private static final String NAME_DEFAULT = "";
-    private static final int GROUPID_DEFAULT = 0x0000;
-    private static final int BUDDYID_DEFAULT = 0x0000;
+    /** The parent ID used for the root item. */
+    private static final int PARENTID_DEFAULT = 0x0000;
+    /** The ID used for the root item. */
+    private static final int ID_DEFAULT = 0x0000;
 
+    /** A TLV type containing the list of groups. */
     private static final int TYPE_GROUPIDS = 0x00c8;
 
-    private final int[] groupids;
+    /** A list of the ID's of the groups in the buddy list. */
+    private int[] groupids;
 
-    public static RootItem readRootItem(SsiItem item) {
-        AbstractTlvChain chain = ImmutableTlvChain.readChain(item.getData());
+    /**
+     * Creates a new root group item object generated from the data in the given
+     * SSI item.
+     *
+     * @param item a root group SSI item
+     */
+    public RootItem(SsiItem item) {
+        DefensiveTools.checkNull(item, "item");
+
+        TlvChain chain = ImmutableTlvChain.readChain(item.getData());
 
         Tlv groupTlv = chain.getLastTlv(TYPE_GROUPIDS);
 
-        int[] groupids = null;
         if (groupTlv != null) {
             ByteBlock groupBlock = groupTlv.getData();
 
@@ -69,42 +95,84 @@ public class RootItem extends AbstractItem {
             for (int i = 0; i < groupids.length; i++) {
                 groupids[i] = BinaryTools.getUShort(groupBlock, i*2);
             }
+        } else {
+            groupids = null;
         }
 
-        MutableTlvChain extraTlvs = new MutableTlvChain(chain);
+        MutableTlvChain extraTlvs = new DefaultMutableTlvChain(chain);
 
         extraTlvs.removeTlvs(new int[] { TYPE_GROUPIDS });
 
-        return new RootItem(groupids, extraTlvs);
+        addExtraTlvs(extraTlvs);
     }
 
+    /**
+     * Creates a new root group item object with the same properties as the
+     * given item object.
+     *
+     * @param other a root group item object to copy
+     */
     public RootItem(RootItem other) {
         this(other.groupids == null ? null : (int[]) other.groupids.clone(),
                 other.copyExtraTlvs());
     }
 
+    /**
+     * Creates a new root group item object without any master group list.
+     */
     public RootItem() {
         this(null, null);
     }
 
+    /**
+     * Creates a new root group item object with the given list of ID's of
+     * groups on the buddy list.
+     *
+     * @param groupids a list of the group ID's of the groups on the buddy list
+     */
     public RootItem(int[] groupids) {
         this(groupids, null);
     }
 
-    public RootItem(int[] groupids, AbstractTlvChain extraTlvs) {
+    /**
+     * Creates a new root group item object with the given list of ID's of
+     * groups on the buddy list.
+     *
+     * @param groupids a list of the group ID's of the groups on the buddy list
+     * @param extraTlvs a list of extra TLV's to store in this item
+     */
+    public RootItem(int[] groupids, TlvChain extraTlvs) {
         super(extraTlvs);
 
+        this.groupids = (int[]) (groupids == null ? null : groupids.clone());
+    }
+
+    /**
+     * Returns a list of the group ID's of the groups on the buddy list, or
+     * <code>null</code> if this item does not contain a master group list
+     * field. The list of groups is in the order in which the groups should be
+     * displayed to the user.
+     *
+     * @return the list of groups stored in this root group item, or
+     *         <code>null</code> if this item contains no master group list
+     *         field
+     */
+    public synchronized final int[] getGroupids() { return groupids; }
+
+    /**
+     * Sets the list of groups on the buddy list.
+     *
+     * @param groupids a list of the group ID's of the groups on the buddy list,
+     *        in the order they should appear to the user
+     */
+    public synchronized final void setGroupids(int[] groupids) {
         this.groupids = groupids;
     }
 
-    public final int[] getGroupids() {
-        return groupids;
-    }
+    public synchronized SsiItem generateSsiItem() {
+        MutableTlvChain chain = new DefaultMutableTlvChain();
 
-    public SsiItem getSsiItem() {
-        MutableTlvChain chain = new MutableTlvChain();
-
-        if (groupids != null && groupids.length > 0) {
+        if (groupids != null) {
             ByteArrayOutputStream out
                 = new ByteArrayOutputStream(groupids.length * 2);
 
@@ -119,11 +187,11 @@ public class RootItem extends AbstractItem {
             chain.addTlv(new Tlv(TYPE_GROUPIDS, tlvData));
         }
 
-        return generateItem(NAME_DEFAULT, GROUPID_DEFAULT, BUDDYID_DEFAULT,
+        return generateItem(NAME_DEFAULT, PARENTID_DEFAULT, ID_DEFAULT,
                 SsiItem.TYPE_GROUP, chain);
     }
 
-    public String toString() {
+    public synchronized String toString() {
         StringBuffer buffer = new StringBuffer();
 
         for (int i = 0; i < groupids.length; i++) {

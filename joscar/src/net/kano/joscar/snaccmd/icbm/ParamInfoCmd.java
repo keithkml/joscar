@@ -36,6 +36,7 @@
 package net.kano.joscar.snaccmd.icbm;
 
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 
 import java.io.IOException;
@@ -62,6 +63,8 @@ public class ParamInfoCmd extends IcbmCommand {
      */
     protected ParamInfoCmd(SnacPacket packet) {
         super(CMD_PARAM_INFO);
+
+        DefensiveTools.checkNull(packet, "packet");
 
         ByteBlock snacData = packet.getData();
 
@@ -90,7 +93,7 @@ public class ParamInfoCmd extends IcbmCommand {
     }
 
     public void writeData(OutputStream out) throws IOException {
-        paramInfo.write(out);
+        if (paramInfo != null) paramInfo.write(out);
     }
 
     public String toString() {

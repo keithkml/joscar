@@ -213,7 +213,7 @@ public final class BinaryTools {
      * @param pos the index in <code>data</code> of the byte to read
      * @return the value of the single-byte integer stored at the given index
      *         of the given block, or <code>-1</code> if there is no byte at
-     *         that index (i.e., if <code>data.getLength() <= pos</code>)
+     *         that index (that is, if <code>data.getLength() <= pos</code>)
      *
      * @see #writeUByte
      * @see #getUByte(int)

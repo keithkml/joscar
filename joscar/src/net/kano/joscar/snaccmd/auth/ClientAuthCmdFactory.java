@@ -52,7 +52,7 @@ public class ClientAuthCmdFactory implements SnacCmdFactory {
     };
 
     public CmdType[] getSupportedTypes() {
-        return SUPPORTED_TYPES;
+        return (CmdType[]) SUPPORTED_TYPES.clone();
     }
 
     public SnacCommand genSnacCommand(SnacPacket packet) {

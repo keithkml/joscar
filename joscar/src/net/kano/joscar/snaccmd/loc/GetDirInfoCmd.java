@@ -36,6 +36,7 @@
 package net.kano.joscar.snaccmd.loc;
 
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.OscarTools;
 import net.kano.joscar.snaccmd.ScreenNameBlock;
@@ -68,6 +69,8 @@ public class GetDirInfoCmd extends LocCommand {
     protected GetDirInfoCmd(SnacPacket packet) {
         super(CMD_GET_DIR);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
 
         ScreenNameBlock snData = OscarTools.readScreenname(snacData);
@@ -98,7 +101,7 @@ public class GetDirInfoCmd extends LocCommand {
     }
 
     public void writeData(OutputStream out) throws IOException {
-        OscarTools.writeScreenname(out, sn);
+        if (sn != null) OscarTools.writeScreenname(out, sn);
     }
 
     public String toString() {

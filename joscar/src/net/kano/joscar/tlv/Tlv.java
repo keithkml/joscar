@@ -38,6 +38,7 @@ package net.kano.joscar.tlv;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.Writable;
+import net.kano.joscar.DefensiveTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -133,6 +134,9 @@ public final class Tlv implements Writable {
      * @param data this TLV's data block
      */
     public Tlv(int type, Writable data) {
+        DefensiveTools.checkRange(type, "type", 0);
+        DefensiveTools.checkNull(data, "data");
+
         this.type = type;
         this.writer = data;
         this.data = (data instanceof ByteBlock ? (ByteBlock) data : null);
@@ -149,6 +153,8 @@ public final class Tlv implements Writable {
      *         does not contain a valid TLV at the beginning
      */
     public Tlv(ByteBlock tlvBytes) throws IllegalArgumentException {
+        DefensiveTools.checkNull(tlvBytes, "tlvBytes");
+
         int blocklen = tlvBytes.getLength();
         if (blocklen < 4) {
             throw new IllegalArgumentException("data not long enough to be a " +

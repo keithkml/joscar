@@ -38,6 +38,7 @@ package net.kano.joscar.snaccmd;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.LiveWritable;
+import net.kano.joscar.DefensiveTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -64,6 +65,8 @@ public class MiniUserInfo implements LiveWritable {
      * @return a mini user info object read from the given byte block
      */
     public static MiniUserInfo readUserInfo(ByteBlock block) {
+        DefensiveTools.checkNull(block, "block");
+
         if (block.getLength() == 0) return null;
 
         int length = BinaryTools.getUByte(block, 0);
@@ -92,6 +95,10 @@ public class MiniUserInfo implements LiveWritable {
      *        of binary data
      */
     protected MiniUserInfo(String sn, int warningLevel, int totalSize) {
+        DefensiveTools.checkNull(sn, "sn");
+        DefensiveTools.checkRange(warningLevel, "warningLevel", 0);
+        DefensiveTools.checkRange(totalSize, "totalSize", -1);
+
         this.sn = sn;
         this.warningLevel = warningLevel;
         this.totalSize = totalSize;

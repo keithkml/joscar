@@ -37,12 +37,13 @@ package net.kano.joscar.snaccmd.rooms;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.ExchangeInfo;
 import net.kano.joscar.snaccmd.FullRoomInfo;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.AbstractTlvChain;
 import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.TlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -95,9 +96,11 @@ public class RoomResponse extends RoomCommand {
     protected RoomResponse(SnacPacket packet) {
         super(CMD_ROOM_RESPONSE);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
 
-        AbstractTlvChain chain = ImmutableTlvChain.readChain(snacData);
+        TlvChain chain = ImmutableTlvChain.readChain(snacData);
 
         Tlv maxRoomTlv = chain.getLastTlv(TYPE_MAX_ROOMS);
 
@@ -166,8 +169,12 @@ public class RoomResponse extends RoomCommand {
             FullRoomInfo roomInfo) {
         super(CMD_ROOM_RESPONSE);
 
+        DefensiveTools.checkRange(maxRooms, "maxRooms", -1);
+
         this.maxRooms = maxRooms;
-        this.exchangeInfos = exchangeInfos;
+        this.exchangeInfos = (ExchangeInfo[]) (exchangeInfos == null
+                ? null
+                : exchangeInfos.clone());
         this.roomInfo = roomInfo;
     }
 
@@ -191,7 +198,9 @@ public class RoomResponse extends RoomCommand {
      *         response
      */
     public final ExchangeInfo[] getExchangeInfos() {
-        return exchangeInfos;
+        return (ExchangeInfo[]) (exchangeInfos == null
+                ? null
+                : exchangeInfos.clone());
     }
 
     /**

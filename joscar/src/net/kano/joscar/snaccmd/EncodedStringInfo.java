@@ -35,6 +35,8 @@
 
 package net.kano.joscar.snaccmd;
 
+import net.kano.joscar.DefensiveTools;
+
 /**
  * A simple structure containing a block of data and the name of the charset
  * that was used to encode that block of data from a text string.
@@ -57,6 +59,9 @@ public final class EncodedStringInfo {
      * @param data the data encoded by the given character set
      */
     public EncodedStringInfo(String charset, byte[] data) {
+        DefensiveTools.checkNull(charset, "charset");
+        DefensiveTools.checkNull(data, "data");
+
         this.charset = charset;
         this.data = data;
     }

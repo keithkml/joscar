@@ -36,10 +36,11 @@
 package net.kano.joscar.snaccmd.acct;
 
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.AbstractTlvChain;
 import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.TlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -76,9 +77,11 @@ public class AcctModCmd extends AcctCommand {
     protected AcctModCmd(SnacPacket packet) {
         super(CMD_ACCT_MOD);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
 
-        AbstractTlvChain chain = ImmutableTlvChain.readChain(snacData);
+        TlvChain chain = ImmutableTlvChain.readChain(snacData);
 
         sn = chain.getString(TYPE_SN);
         email = chain.getString(TYPE_EMAIL);

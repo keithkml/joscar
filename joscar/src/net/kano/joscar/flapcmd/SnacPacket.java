@@ -38,6 +38,7 @@ package net.kano.joscar.flapcmd;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.LiveWritable;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snac.SnacCommand;
 
 import java.io.IOException;
@@ -114,6 +115,13 @@ public final class SnacPacket implements LiveWritable {
      */
     SnacPacket(int family, int command, long reqid, short flag1,
             short flag2, ByteBlock data) {
+        DefensiveTools.checkRange(family, "family", 0);
+        DefensiveTools.checkRange(command, "command", 0);
+        DefensiveTools.checkRange(reqid, "reqid", 0);
+        DefensiveTools.checkRange(flag1, "flag1", 0);
+        DefensiveTools.checkRange(flag2, "flag2", 0);
+        DefensiveTools.checkNull(data, "data");
+
         this.snacCommand = null;
         this.family = family;
         this.command = command;
@@ -132,6 +140,9 @@ public final class SnacPacket implements LiveWritable {
      * @param command the SNAC command upon which this packet is based
      */
     SnacPacket(long reqid, SnacCommand command) {
+        DefensiveTools.checkRange(reqid, "reqid", 0);
+        DefensiveTools.checkNull(command, "command");
+
         this.snacCommand = command;
         this.family = command.getFamily();
         this.command = command.getCommand();

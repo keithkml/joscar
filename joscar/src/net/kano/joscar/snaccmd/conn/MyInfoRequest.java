@@ -36,6 +36,7 @@
 package net.kano.joscar.snaccmd.conn;
 
 import net.kano.joscar.flapcmd.SnacPacket;
+import net.kano.joscar.DefensiveTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -55,6 +56,8 @@ public class MyInfoRequest extends ConnCommand {
      */
     protected MyInfoRequest(SnacPacket packet) {
         super(CMD_MY_INFO_REQ);
+
+        DefensiveTools.checkNull(packet, "packet");
     }
 
     /**

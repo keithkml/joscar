@@ -37,10 +37,11 @@ package net.kano.joscar.snaccmd.conn;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.AbstractTlvChain;
 import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.TlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -89,12 +90,14 @@ public class UpdateAdvisory extends ConnCommand {
     protected UpdateAdvisory(SnacPacket packet) {
         super(CMD_UPDATE);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
 
         type = BinaryTools.getUShort(snacData, 0);
 
         ByteBlock tlvBlock = snacData.subBlock(2);
-        AbstractTlvChain chain = ImmutableTlvChain.readChain(tlvBlock);
+        TlvChain chain = ImmutableTlvChain.readChain(tlvBlock);
 
         message = chain.getString(TYPE_MESSAGE);
     }
@@ -120,6 +123,8 @@ public class UpdateAdvisory extends ConnCommand {
      */
     public UpdateAdvisory(int type, String message) {
         super(CMD_UPDATE);
+
+        DefensiveTools.checkRange(type, "type", 0);
 
         this.type = type;
         this.message = message;

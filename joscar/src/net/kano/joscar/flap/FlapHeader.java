@@ -37,6 +37,7 @@ package net.kano.joscar.flap;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -83,6 +84,8 @@ final class FlapHeader {
      */
     public static FlapHeader readFLAPHeader(InputStream in)
             throws InvalidFlapHeaderException, IOException {
+        DefensiveTools.checkNull(in, "in");
+
         final byte[] header = new byte[6];
         int pos = 0;
         boolean paritied = false;
@@ -131,6 +134,8 @@ final class FlapHeader {
      *         six or if the block does not contain a valid FLAP header
      */
     public FlapHeader(ByteBlock bytes) throws IllegalArgumentException {
+        DefensiveTools.checkNull(bytes, "bytes");
+        
         if (bytes.getLength() != 6) {
             throw new IllegalArgumentException("FLAP header length ("
                     + bytes.getLength() + ") must be 6");

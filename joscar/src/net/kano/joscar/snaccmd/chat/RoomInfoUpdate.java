@@ -36,6 +36,7 @@
 package net.kano.joscar.snaccmd.chat;
 
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.FullRoomInfo;
 
@@ -61,6 +62,8 @@ public class RoomInfoUpdate extends ChatCommand {
     protected RoomInfoUpdate(SnacPacket packet) {
         super(CMD_ROOM_UPDATE);
 
+        DefensiveTools.checkNull(packet, "packet");
+
         ByteBlock snacData = packet.getData();
 
         roomInfo = FullRoomInfo.readRoomInfo(snacData);
@@ -74,6 +77,8 @@ public class RoomInfoUpdate extends ChatCommand {
      */
     public RoomInfoUpdate(FullRoomInfo roomInfo) {
         super(CMD_ROOM_UPDATE);
+
+        DefensiveTools.checkNull(roomInfo, "roomInfo");
 
         this.roomInfo = roomInfo;
     }

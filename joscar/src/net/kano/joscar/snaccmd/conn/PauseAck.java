@@ -36,6 +36,7 @@
 package net.kano.joscar.snaccmd.conn;
 
 import net.kano.joscar.flapcmd.SnacPacket;
+import net.kano.joscar.DefensiveTools;
 
 /**
  * A command sent to tell the server which SNAC families are "needed" on this
@@ -57,6 +58,8 @@ public class PauseAck extends SnacFamilyListCmd {
      */
     protected PauseAck(SnacPacket packet) {
         super(CMD_PAUSE_ACK, packet);
+
+        DefensiveTools.checkNull(packet, "packet");
     }
 
     /**

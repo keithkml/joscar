@@ -37,8 +37,9 @@ package net.kano.joscar.snaccmd.auth;
 
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.AbstractTlvChain;
 import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.DefensiveTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -66,7 +67,9 @@ public class KeyRequest extends AuthCommand {
     protected KeyRequest(SnacPacket packet) {
         super(CMD_KEY_REQ);
 
-        AbstractTlvChain chain = ImmutableTlvChain.readChain(packet.getData());
+        DefensiveTools.checkNull(packet, "packet");
+
+        TlvChain chain = ImmutableTlvChain.readChain(packet.getData());
 
         sn = chain.getString(TYPE_SN);
     }
@@ -92,7 +95,7 @@ public class KeyRequest extends AuthCommand {
     }
 
     public void writeData(OutputStream out) throws IOException {
-        Tlv.getStringInstance(TYPE_SN, sn).write(out);
+        if (sn != null) Tlv.getStringInstance(TYPE_SN, sn).write(out);
 
         // winaim sends these.
         new Tlv(0x004b).write(out);

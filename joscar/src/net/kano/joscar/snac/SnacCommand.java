@@ -35,6 +35,8 @@
 
 package net.kano.joscar.snac;
 
+import net.kano.joscar.DefensiveTools;
+
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -93,6 +95,11 @@ public abstract class SnacCommand {
      * @param flag2 the second flag byte of this command
      */
     protected SnacCommand(int family, int command, short flag1, short flag2) {
+        DefensiveTools.checkRange(family, "family", 0);
+        DefensiveTools.checkRange(command, "command", 0);
+        DefensiveTools.checkRange(flag1, "flag1", 0);
+        DefensiveTools.checkRange(flag2, "flag2", 0);
+
         this.family = family;
         this.command = command;
         this.flag1 = flag1;

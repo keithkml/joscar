@@ -36,6 +36,7 @@
 package net.kano.joscar.snaccmd.conn;
 
 import net.kano.joscar.flapcmd.SnacPacket;
+import net.kano.joscar.DefensiveTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -56,6 +57,8 @@ public class ResumeCmd extends ConnCommand {
      */
     protected ResumeCmd(SnacPacket packet) {
         super(CMD_RESUME);
+
+        DefensiveTools.checkNull(packet, "packet");
     }
 
     /**

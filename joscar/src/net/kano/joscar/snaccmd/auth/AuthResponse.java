@@ -36,10 +36,11 @@
 package net.kano.joscar.snaccmd.auth;
 
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.tlv.AbstractTlvChain;
 import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.TlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -121,7 +122,9 @@ public class AuthResponse extends AuthCommand {
     protected AuthResponse(SnacPacket packet) {
         super(CMD_AUTH_RESP);
 
-        AbstractTlvChain chain = ImmutableTlvChain.readChain(packet.getData());
+        DefensiveTools.checkNull(packet, "packet");
+
+        TlvChain chain = ImmutableTlvChain.readChain(packet.getData());
 
         sn = chain.getString(TYPE_SN);
 
@@ -205,6 +208,11 @@ public class AuthResponse extends AuthCommand {
     public AuthResponse(String sn, String server, int port, ByteBlock cookie,
             int regStatus, String email, int errorCode, String errorUrl) {
         super(CMD_AUTH_RESP);
+
+        DefensiveTools.checkRange(port, "port", -1);
+        DefensiveTools.checkRange(regStatus, "regStatus", -1);
+        DefensiveTools.checkRange(errorCode, "errorCode", -1);
+
         this.sn = sn;
         this.server = server;
         this.port = port;
@@ -304,8 +312,11 @@ public class AuthResponse extends AuthCommand {
         if (sn != null) {
             Tlv.getStringInstance(TYPE_SN, sn).write(out);
         }
-        if (server != null && port != -1) {
-            Tlv.getStringInstance(TYPE_SERVER, server + ":" + port).write(out);
+        if (server != null) {
+            String host = server;
+            if (port != -1) host = host + ":" + port;
+
+            Tlv.getStringInstance(TYPE_SERVER, host).write(out);
         }
         if (cookie != null) {
             new Tlv(TYPE_COOKIE, cookie).write(out);
