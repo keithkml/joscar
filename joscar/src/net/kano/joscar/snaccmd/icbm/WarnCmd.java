@@ -80,7 +80,7 @@ public class WarnCmd extends IcbmCommand {
         anonymityCode = BinaryTools.getUShort(snacData, 0);
 
         ByteBlock snBlock = snacData.subBlock(2);
-        warnee = OscarTools.readScreenname(snBlock).getScreenname();
+        warnee = OscarTools.readScreenname(snBlock).getString();
     }
 
     /**

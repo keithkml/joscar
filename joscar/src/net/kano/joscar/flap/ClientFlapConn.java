@@ -35,151 +35,27 @@
 
 package net.kano.joscar.flap;
 
-import javax.net.SocketFactory;
-import java.io.IOException;
+import net.kano.joscar.net.ClientConn;
+import net.kano.joscar.net.ClientConnListener;
+import net.kano.joscar.net.ClientConnEvent;
+import net.kano.joscar.net.ClientConnStreamHandler;
+
 import java.net.InetAddress;
 import java.net.Socket;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.io.IOException;
 
 /**
- * Provides a slightly more developer-friendly interface to a TCP-based outgoing
- * FLAP connection than <code>FlapProcessor</code>. Provides a concept of
- * connection state as well as a dedicated FLAP reading thread to continuously
- * process incoming commands (as opposed to having to call
- * <code>readNextFlap</code> manually).
+ * A simpler interface to using an outgoing clientside FLAP connection. This
+ * class essentially runs a {@link FlapProcessor} atop a {@link ClientConn}; you
+ * should read each's documentation thoroughly.
  * <br>
  * <br>
- * One shortcoming of this class is that it does not by default support a
- * proxy of any kind. While I'm not sure proxy support is in the scope of this
- * class and/or this package, it is obviously a popular feature, and will
- * probably be added in some form to the package at a later date.
- * <br>
- * <br>
- * Possible state transitions and meanings:
- * <dl>
- *
- * <dt><code>STATE_NOT_CONNECTED</code> -&gt; <code>STATE_INITING</code> -&gt;
- * <code>STATE_FAILED</code></dt>
- * <dd>Creating the connection / FLAP processing thread failed</dd>
- *
- * <dt><code>STATE_NOT_CONNECTED</code> -&gt; <code>STATE_INITING</code> -&gt;
- * <code>STATE_RESOLVING</code> -&gt; <code>STATE_FAILED</code></dt>
- * <dd>Looking up the specified hostname failed (maybe the host does not
- * exist)</dd>
- *
- * <dt><code>STATE_NOT_CONNECTED</code> -&gt; <code>STATE_INITING</code> -&gt;
- * <i>[<code>STATE_RESOLVING</code> (optional)]</i> -&gt;
- * <code>STATE_CONNECTING</code> -&gt; <code>STATE_FAILED</code></dt>
- * <dd>Making a TCP connection to the given server on the given port failed</dd>
- *
- * <dt><code>STATE_NOT_CONNECTED</code> -&gt; <code>STATE_INITING</code> -&gt;
- * <i>[<code>STATE_RESOLVING</code> (optional)]</i> -&gt;
- * <code>STATE_CONNECTING</code> -&gt; <code>STATE_CONNECTED</code> -&gt;
- * <code>STATE_NOT_CONNECTED</code></dt>
- * <dd>This is the normal progression of state, though I hope for your sake that
- * a good amount of time passes between the last two states :)</dd>
- * </dl>
- * Just to make things more confusing, if you call <code>disconnect</code>
- * during a connection, the state will revert to
- * <code>STATE_NOT_CONNECTED</code> no matter what state it's currently in.
- * <br>
- * <br>
- * Note that this class has various means of setting both a hostname and an
- * IP address to use for connecting. More importantly, note that
- * <code>connect</code> will <i>fail</i> if both of these are set and if neither
- * of these is set. So what does this mean? Yes, it means only one of these
- * values can be non-<code>null</code> when <code>connect</code> is called.
+ * Note that this class adds a connection listener and sets the stream handler
+ * of the its parent <code>ClientConn</code>.
  */
-public class ClientFlapConn extends FlapProcessor {
-    /**
-     * A state indicating that this FLAP client is not connected to a server.
-     */
-    public static final Object STATE_NOT_CONNECTED = "NOT_CONNECTED";
-
-    /**
-     * A state indicating that this FLAP client is preparing to connect. This
-     * state normally does not last for more than a few milliseconds.
-     */
-    public static final Object STATE_INITING = "INITING";
-
-    /**
-     * A state indicating that the given hostname is being resolved to an IP
-     * address before connecting.
-     */
-    public static final Object STATE_RESOLVING = "RESOLVING";
-
-    /**
-     * A state indicating that a TCP connection attempt is being made to the
-     * given server on the given port.
-     */
-    public static final Object STATE_CONNECTING = "CONNECTING";
-
-    /**
-     * A state indicating that a TCP connection has succeeded and is currently
-     * open.
-     */
-    public static final Object STATE_CONNECTED = "CONNECTED";
-
-    /**
-     * A state indicating that some stage of the connection failed. See
-     * {@link ClientFlapConn} documentation for details on state transitions
-     * and meanings.
-     */
-    public static final Object STATE_FAILED = "FAILED";
-
-    /**
-     * A reason indicating that the reason for a state change to
-     * <code>NOT_CONNECTED</code> was that <code>disconnect</code> was called.
-     */
-    public static final Object REASON_ON_PURPOSE = "ON_PURPOSE";
-
-    /**
-     * A reason indicating that the reason for a state change to
-     * <code>NOT_CONNECTED</code> was that the socket was closed for some
-     * reason. This normally means some sort of network failure.
-     */
-    public static final Object REASON_CONN_CLOSED = "CONN_CLOSED";
-
-    /**
-     * The current state of the connection.
-     */
-    private Object state = STATE_NOT_CONNECTED;
-
-    /**
-     * The TCP socket on which this FLAP connection is being held, if any.
-     */
-    private Socket socket = null;
-
-    /**
-     * The hostname we are supposed to connect to.
-     */
-    private String host = null;
-
-    /**
-     * The IP address we are supposed to connect to.
-     */
-    private InetAddress ip = null;
-
-    /**
-     * The port we are supposed to connect to.
-     */
-    private int port = -1;
-
-    /** A socket factory for generating outgoing sockets. */
-    private SocketFactory socketFactory = null;
-
-    /**
-     * A list of connection listeners (state change listeners).
-     */
-    private List connListeners = new ArrayList();
-
-    /**
-     * The current connection thread.
-     */
-    private ConnectionThread connThread = null;
+public class ClientFlapConn extends ClientConn {
+    /** The FLAP processor that this object uses. */
+    private FlapProcessor flapProcessor = new FlapProcessor();
 
     /**
      * Creates a client FLAP connection with the default FLAP command factory
@@ -197,8 +73,9 @@ public class ClientFlapConn extends FlapProcessor {
      * @param port the port to connect to when <code>connect</code> is called
      */
     public ClientFlapConn(String host, int port) {
-        this.host = host;
-        this.port = port;
+        super(host, port);
+
+        init();
     }
 
     /**
@@ -211,364 +88,48 @@ public class ClientFlapConn extends FlapProcessor {
      * @param port the port to connect to when <code>connect</code> is called
      */
     public ClientFlapConn(InetAddress ip, int port) {
-        this.ip = ip;
-        this.port = port;
+        super(ip, port);
+
+        init();
     }
 
     /**
-     * Adds a connection listener to this connection.
-     *
-     * @param l the listener to add
+     * Initializes the super <code>ClientConn</code> by adding a connection
+     * listener and setting the stream handler.
      */
-    public synchronized final void addConnListener(FlapConnListener l) {
-        if (!connListeners.contains(l)) connListeners.add(l);
-    }
+    private final void init() {
+        setStreamHandler(new ClientConnStreamHandler() {
+            public void handleStream(ClientConn conn, Socket socket)
+                    throws IOException {
+                flapProcessor.runFlapLoop();
+            }
+        });
 
-    /**
-     * Removes a connection listener from this connection.
-     *
-     * @param l the listener to remove
-     */
-    public synchronized final void removeConnListener(FlapConnListener l) {
-        connListeners.remove(l);
-    }
+        addConnListener(new ClientConnListener() {
+            public void stateChanged(ClientConnEvent e) {
+                Object newState = e.getNewState();
+                if (newState == ClientConn.STATE_CONNECTED) {
+                    try {
+                        flapProcessor.attachToSocket(getSocket());
+                    } catch (IOException e1) {
+                        processError(e1);
 
-    /**
-     * Returns the socket on which this connection resides, or <code>null</code>
-     * if this connection has no underlying socket yet.
-     *
-     * @return this connection's socket
-     */
-    public synchronized final Socket getSocket() { return socket; }
-
-    /**
-     * Returns the hostname associated with this connection.
-     *
-     * @return the hostname associated with this connection
-     */
-    public synchronized final String getHost() {
-        return host;
-    }
-
-    /**
-     * Sets the hostname associated with this connection.
-     *
-     * @param host the hostname to associate with this connection
-     */
-    public synchronized final void setHost(String host) {
-        this.host = host;
-    }
-
-    /**
-     * Returns the IP address associated with this connection.
-     *
-     * @return the IP address associated with this connection
-     */
-    public synchronized final InetAddress getIP() {
-        return ip;
-    }
-
-    /**
-     * Sets the IP address associated with this connection.
-     *
-     * @param ip the IP address associated with this connection
-     */
-    public synchronized final void setIP(InetAddress ip) {
-        this.ip = ip;
-    }
-
-    /**
-     * Returns the TCP port associated with this connection.
-     *
-     * @return the TCP port associated with this connection
-     */
-    public synchronized final int getPort() {
-        return port;
-    }
-
-    /**
-     * Sets the TCP port associated with this connection.
-     *
-     * @param port the TCP port associated with this connection
-     */
-    public synchronized final void setPort(int port) {
-        this.port = port;
-    }
-
-    /**
-     * Returns the current connection state. This will be one of {@link
-     * #STATE_NOT_CONNECTED}, {@link #STATE_INITING}, {@link #STATE_RESOLVING},
-     * {@link #STATE_CONNECTING}, {@link #STATE_CONNECTED}, or {@link
-     * #STATE_FAILED}; see each value's individual documentation for details.
-     *
-     * @return the current state of this connection
-     */
-    public synchronized final Object getState() {
-        return state;
-    }
-
-    /**
-     * Sets the state of the connection to the given value, providing the given
-     * reason to state listeners. Must be one of {@link
-     * #STATE_NOT_CONNECTED}, {@link #STATE_INITING}, {@link #STATE_RESOLVING},
-     * {@link #STATE_CONNECTING}, {@link #STATE_CONNECTED}, or {@link
-     * #STATE_FAILED}.
-     *
-     * @param state the new connection state
-     * @param reason a "reason" or description of this state change to provide
-     *        to state listeners
-     */
-    private synchronized final void setState(Object state, Object reason) {
-        if (this.state == state || (this.state == STATE_FAILED
-                && state == STATE_NOT_CONNECTED)) return;
-
-        Object oldState = this.state;
-        this.state = state;
-
-        FlapConnEvent event = new FlapConnEvent(this, oldState, this.state,
-                reason);
-
-        for (Iterator it = connListeners.iterator(); it.hasNext();) {
-            FlapConnListener listener = (FlapConnListener) it.next();
-
-            listener.stateChanged(event);
-        }
-    }
-
-    /**
-     * Sets the socket associated with this connection.
-     *
-     * @param socket the socket to associate with this connection
-     */
-    private synchronized final void setSocket(Socket socket) {
-        this.socket = socket;
-    }
-
-    /**
-     * Attempts to connect using the values of {@linkplain #setHost host} or
-     * {@linkplain #setIP IP address} and {@linkplain #setPort TCP port} which
-     * were, presumably, set before this method was called. Upon successful
-     * connection, a FLAP reading loop will be started and FLAP processing
-     * will begin.
-     *
-     * @throws IllegalStateException if a connection attempt is already being
-     *         made; both IP and hostname are both set; neither IP or hostname
-     *         is set and/or TCP port is not set
-     */
-    public synchronized final void connect() throws IllegalStateException {
-        if (state != STATE_NOT_CONNECTED && state != STATE_FAILED) {
-            throw new IllegalStateException("I am already " +
-                    "connected/connecting");
-        }
-        if (host == null && ip == null) {
-            throw new IllegalStateException("either host or ip must be " +
-                    "non-null");
-        }
-        if (host != null && ip != null) {
-            throw new IllegalStateException("host and ip may not both be " +
-                    "non-null");
-        }
-        if (port == -1) {
-            throw new IllegalStateException("port must not be -1");
-        }
-
-        setState(STATE_INITING, null);
-        try {
-            connThread = new ConnectionThread();
-            new Thread(connThread, "FLAP connection to "
-                    + (host == null ? (Object) ip : (Object) host) + ":"
-                    + port).start();
-        } catch (Throwable t) {
-            setState(STATE_FAILED, t);
-        }
-    }
-
-    /**
-     * If not already disconnected, this disconnects the TCP socket associated
-     * with this connection and sets the connection state to
-     * <code>STATE_NOT_CONNECTED</code>. Note that if the connection state is
-     * already <CODE>STATE_NOT_CONNECTED</code> or <code>STATE_FAILED</code>
-     * no state change will take place.
-     */
-    public synchronized void disconnect() {
-        if (state == STATE_NOT_CONNECTED || state == STATE_FAILED) return;
-
-        // I'm not sure which order is the best for these
-        connThread.cancel();
-        connThread = null;
-
-        if (!socket.isClosed()) {
-            try { socket.close(); } catch (IOException ignored) { }
-        }
-
-        detach();
-
-        setState(STATE_NOT_CONNECTED, REASON_ON_PURPOSE);
-
-    }
-
-    /**
-     * Sets the socket factory this FLAP connection should use to create an
-     * outgoing socket. If <code>socketFactory</code> is <code>null</code>, as
-     * is the default value, <code>new Socket(..)</code> is used in place of a
-     * using a socket factory.
-     *
-     * @param socketFactory a socket factory to use in creating the outgoing
-     *        OSCAR connection, or <code>null</code> to not use a factory
-     */
-    public synchronized final void setSocketFactory(
-            SocketFactory socketFactory) {
-        this.socketFactory = socketFactory;
-    }
-
-    /**
-     * Sets this FLAP connection's socket factory. This factory will be used
-     * to create the outgoing socket to the OSCAR server. Note that if this is
-     * <code>null</code> (the default value) then <code>new Socket(..)</code> is
-     * used in place of using a socket factory to create a socket.
-     *
-     * @return the socket factory associated with this FLAP connection
-     */
-    public synchronized final SocketFactory getSocketFactory() {
-        return socketFactory;
-    }
-
-    /**
-     * Creates a new outgoing socket to the given host on the given port using
-     * this FLAP connection's socket factory. If no socket factory is set,
-     * a new <code>java.net.Socket</code> is created.
-     *
-     * @param host the host to which to connect
-     * @param port the port on which to connect
-     * @return an outgoing socket to the given host and port
-     *
-     * @throws IOException if an I/O error occurs
-     */
-    private Socket createSocket(InetAddress host, int port)
-            throws IOException {
-        // this method can't be synchronized because there's no reason to freeze
-        // the state of the connection while waiting for a socket to open; all
-        // we need is to know what the current socket factory is, so we lock
-        // for that, then create the socket afterwards.
-        SocketFactory factory;
-        synchronized(this) {
-            factory = socketFactory;
-        }
-
-        if (factory != null) {
-            return factory.createSocket(host, port);
-        } else {
-            return new Socket(host, port);
-        }
-    }
-
-    /**
-     * A thread to resolve a hostname (if necessary), initiate a TCP connection,
-     * and run a FLAP reading loop on the connection indefinitely.
-     */
-    private class ConnectionThread implements Runnable {
-        /**
-         * Whether this connection attempt has been cancelled.
-         */
-        private boolean cancelled = false;
-
-        /**
-         * Cancels this connection attempt as immediately as possible.
-         */
-        public void cancel() {
-            cancelled = true;
-        }
-
-        /**
-         * Starts the connection / FLAP read thread.
-         */
-        public void run() {
-            ClientFlapConn conn = ClientFlapConn.this;
-
-            InetAddress ip = conn.ip;
-
-            if (ip == null) {
-                synchronized(conn) {
-                    if (cancelled) return;
-
-                    setState(STATE_RESOLVING, null);
-                }
-                try {
-                    ip = InetAddress.getByName(host);
-                } catch (UnknownHostException e) {
-                    synchronized(conn) {
-                        if (cancelled) return;
-
-                        setState(STATE_FAILED, e);
+                        return;
                     }
-                    return;
+                } else if (newState == ClientConn.STATE_NOT_CONNECTED
+                        || newState == ClientConn.STATE_FAILED) {
+                    flapProcessor.detach();
                 }
             }
+        });
+    }
 
-            synchronized(conn) {
-                if (cancelled) return;
-
-                setState(STATE_CONNECTING, null);
-            }
-
-            Socket socket;
-            try {
-                synchronized(conn) {
-                    if (cancelled) return;
-                    socket = createSocket(ip, port);
-                }
-
-                synchronized(conn) {
-                    if (cancelled) return;
-                    attachToSocket(socket);
-                }
-            } catch (IOException e) {
-                synchronized(conn) {
-                    if (cancelled) return;
-
-                    setState(STATE_FAILED, e);
-                }
-                return;
-            }
-
-            synchronized(conn) {
-                if (cancelled) return;
-                setSocket(socket);
-            }
-
-            synchronized(conn) {
-                if (cancelled) return;
-                setState(STATE_CONNECTED, null);
-            }
-
-            try {
-                for (;;) {
-                    synchronized(conn) {
-                        if (cancelled) break;
-                    }
-                    if (!readNextFlap()) break;
-                }
-            } catch (IOException e) {
-                synchronized(conn) {
-                    if (cancelled) return;
-
-                    setState(STATE_NOT_CONNECTED, e);
-
-                    if (!socket.isClosed()) {
-                        try { socket.close(); } catch (IOException ignored) { }
-                    }
-                }
-            } finally {
-                synchronized(conn) {
-                    if (cancelled) return;
-
-                    setState(STATE_NOT_CONNECTED, REASON_CONN_CLOSED);
-
-                    if (!socket.isClosed()) {
-                        try { socket.close(); } catch (IOException ignored) { }
-                    }
-                }
-            }
-        }
+    /**
+     * Returns the FLAP processor that is running on this connection.
+     *
+     * @return this connection's FLAP processor
+     */
+    public final FlapProcessor getFlapProcessor() {
+        return flapProcessor;
     }
 }

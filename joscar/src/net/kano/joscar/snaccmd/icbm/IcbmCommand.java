@@ -68,7 +68,7 @@ public abstract class IcbmCommand extends SnacCommand {
     /** A command type for informing the client of messages it missed. */
     public static final int CMD_MISSED = 0x000a;
     /** A command type indicating that a rendezvous failed .*/
-    public static final int CMD_RV_ERROR = 0x000b;
+    public static final int CMD_RV_RESPONSE = 0x000b;
     /** A command type for acknowledging an IM's sending. */
     public static final int CMD_MSG_ACK = 0x000c;
 

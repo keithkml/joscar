@@ -37,7 +37,7 @@ package net.kano.joscartests;
 
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.flap.ClientFlapConn;
-import net.kano.joscar.flap.FlapConnEvent;
+import net.kano.joscar.net.ClientConnEvent;
 import net.kano.joscar.flap.FlapPacketEvent;
 import net.kano.joscar.flapcmd.LoginFlapCmd;
 import net.kano.joscar.snac.SnacCommand;
@@ -62,13 +62,13 @@ public class LoginConn extends AbstractFlapConn {
         super(ip, port, tester);
     }
 
-    protected void handleStateChange(FlapConnEvent e) {
+    protected void handleStateChange(ClientConnEvent e) {
         System.out.println("login connection state is now " + e.getNewState()
                 + ": " + e.getReason());
 
         if (e.getNewState() == ClientFlapConn.STATE_CONNECTED) {
             System.out.println("sending flap version and key request");
-            send(new LoginFlapCmd());
+            getFlapProcessor().send(new LoginFlapCmd());
             request(new KeyRequest(tester.getScreenname()));
         } else if (e.getNewState() == ClientFlapConn.STATE_FAILED) {
             tester.loginFailed("connection failed: " + e.getReason());

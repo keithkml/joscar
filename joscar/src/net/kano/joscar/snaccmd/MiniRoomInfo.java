@@ -113,6 +113,20 @@ public final class MiniRoomInfo implements LiveWritable {
     }
 
     /**
+     * Creates a new miniature room information block with the exchange, cookie,
+     * and instance properties of the given full room information block.
+     *
+     * @param roomInfo a full room information block from which to derive this
+     *        miniature room information block's properties
+     */
+    public MiniRoomInfo(FullRoomInfo roomInfo) {
+        this.exchange = roomInfo.getExchange();
+        this.cookie = roomInfo.getCookie();
+        this.instance = roomInfo.getInstance();
+        this.totalSize = -1;
+    }
+
+    /**
      * Creates a new mini room info object with the given properties.
      *
      * @param exchange the number of the chat exchange on which the associated

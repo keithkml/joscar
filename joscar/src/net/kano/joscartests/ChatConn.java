@@ -37,7 +37,7 @@ package net.kano.joscartests;
 
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.flap.ClientFlapConn;
-import net.kano.joscar.flap.FlapConnEvent;
+import net.kano.joscar.net.ClientConnEvent;
 import net.kano.joscar.snac.SnacCommand;
 import net.kano.joscar.snac.SnacPacketEvent;
 import net.kano.joscar.snaccmd.FullRoomInfo;
@@ -88,7 +88,7 @@ public class ChatConn extends ServiceConn {
         return (FullUserInfo[]) members.toArray(new FullUserInfo[0]);
     }
 
-    protected void handleStateChange(FlapConnEvent e) {
+    protected void handleStateChange(ClientConnEvent e) {
         super.handleStateChange(e);
 
         Object state = e.getNewState();

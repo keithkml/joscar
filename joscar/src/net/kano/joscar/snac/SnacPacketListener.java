@@ -45,5 +45,5 @@ public interface SnacPacketListener {
      *
      * @param e an object describing the packet event
      */
-    void handlePacket(SnacPacketEvent e);
+    void handleSnacPacket(SnacPacketEvent e);
 }

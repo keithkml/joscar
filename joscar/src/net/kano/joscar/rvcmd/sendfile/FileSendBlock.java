@@ -35,14 +35,13 @@
 
 package net.kano.joscar.rvcmd.sendfile;
 
-import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.ByteBlock;
 import net.kano.joscar.BinaryTools;
+import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.LiveWritable;
 
-import java.io.UnsupportedEncodingException;
-import java.io.OutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 
 public class FileSendBlock implements LiveWritable {
     public static final int SENDTYPE_SINGLEFILE = 0x01;
@@ -68,10 +67,8 @@ public class FileSendBlock implements LiveWritable {
         }
 
         String name = null;
-        try {
-            name = ByteBlock.createString(filenameBlock.subBlock(0,
-                    firstNull), "US-ASCII");
-        } catch (UnsupportedEncodingException impossible) { }
+        name = BinaryTools.getAsciiString(filenameBlock.subBlock(0,
+                firstNull));
 
         return new FileSendBlock(type, name, count, size);
     }

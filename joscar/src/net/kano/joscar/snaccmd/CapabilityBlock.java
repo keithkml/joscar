@@ -1,7 +1,36 @@
 /*
- * Created by IntelliJ IDEA.
- * User: keith
- * Date: Oct 25, 2002 at 2:27:57 AM
+ *  Copyright (c) 2002, The Joust Project
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
+ *
+ *  - Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  - Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  - Neither the name of the Joust Project nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
+ *
+ *  File created by keith @ Mar 6, 2003
+ *
  */
 package net.kano.joscar.snaccmd;
 
@@ -137,6 +166,15 @@ public final class CapabilityBlock implements Writable {
                 (byte) 0x82, 0x22, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00});
 
     /**
+     * A capability block indicating that a client allows for using "add-ins"
+     * like MS Hearts, NetMeeting, and Quake II with other buddies.
+     */
+    public static final CapabilityBlock BLOCK_ADDINS =
+            new CapabilityBlock(new byte[] {
+                0x09, 0x46, 0x13, 0x47, 0x4c, 0x7f, 0x11, (byte) 0xd1,
+                (byte) 0x82,0x22, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00});
+
+    /**
      * Converts the given list of capabilities to a block of bytes, suitable for
      * sending in a {@link InfoData} structure.
      *
@@ -255,4 +293,7 @@ public final class CapabilityBlock implements Writable {
 
     public int hashCode() { return hashCode; }
 
+    public String toString() {
+        return "CapabilityBlock: " + BinaryTools.describeData(block);
+    }
 }

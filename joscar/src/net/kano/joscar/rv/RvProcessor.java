@@ -38,9 +38,11 @@ package net.kano.joscar.rv;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snac.*;
 import net.kano.joscar.snaccmd.CapabilityBlock;
+import net.kano.joscar.snaccmd.AbstractIcbm;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.snaccmd.icbm.RvCommand;
 import net.kano.joscar.snaccmd.icbm.SendRvIcbm;
+import net.kano.joscar.snaccmd.icbm.RvResponse;
 
 import java.util.*;
 
@@ -54,7 +56,7 @@ public class RvProcessor {
 
     private List rvListeners = new ArrayList();
 
-    private long lastRvCookie = 1;
+    private long lastSessionId = 1;
 
     private VetoableSnacPacketListener packetListener
             = new VetoableSnacPacketListener() {
@@ -63,6 +65,11 @@ public class RvProcessor {
 
             if (cmd instanceof RecvRvIcbm) {
                 processRv(event);
+
+                return STOP_PROCESSING_LISTENERS;
+
+            } else if (cmd instanceof RvResponse) {
+                processResponse(event);
 
                 return STOP_PROCESSING_LISTENERS;
             }
@@ -163,15 +170,14 @@ public class RvProcessor {
         return factory.genRvCommand(icbm);
     }
 
-    private synchronized RvSessionInfo getSession(long rvCookie, String sn) {
-        Long key = new Long(rvCookie);
-        RvSessionInfo info = (RvSessionInfo) sessions.get(key);
+    private synchronized RvSessionImpl getSession(long sessionId, String sn) {
+        Long key = new Long(sessionId);
+        RvSessionImpl session = (RvSessionImpl) sessions.get(key);
 
-        if (info == null) {
+        if (session == null) {
             // we get to create a new session!
-            RvSession session = new RvSession(this, rvCookie, sn);
-            info = new RvSessionInfo(session);
-            sessions.put(key, info);
+            session = new RvSessionImpl(sessionId, sn);
+            sessions.put(key, session);
 
             NewRvSessionEvent event = new NewRvSessionEvent(this, session);
 
@@ -182,7 +188,7 @@ public class RvProcessor {
             }
         }
 
-        return info;
+        return session;
     }
 
     private synchronized void processRv(SnacPacketEvent e) {
@@ -190,62 +196,113 @@ public class RvProcessor {
 
         RvCommand rvCommand = genRvCommand(icbm);
 
-        RvSessionInfo sessionInfo = getSession(icbm.getRvCookie(),
+        RvSessionImpl session = getSession(icbm.getRvSessionId(),
                 icbm.getSender().getScreenname());
 
-        RecvRvEvent event = new RecvRvEvent(e, this, sessionInfo.session,
-                rvCommand);
+        RecvRvEvent event = new RecvRvEvent(e, this, session, rvCommand);
 
-        sessionInfo.session.processRv(event);
+        session.processRv(event);
+    }
+
+    private synchronized void processResponse(SnacPacketEvent e) {
+        RvResponse cmd = (RvResponse) e.getSnacCommand();
+
+        RvSessionImpl session = getSession(cmd.getRvSessionId(),
+                cmd.getScreenname());
+
+        RecvRvEvent event = new RecvRvEvent(e, this, session,
+                cmd.getResultCode());
+
+        session.processRv(event);
     }
 
     public synchronized final RvSession createRvSession(String sn) {
-        lastRvCookie++;
+        lastSessionId++;
 
-        return getSession(lastRvCookie, sn).session;
+        return getSession(lastSessionId, sn);
     }
 
-    private synchronized final RvSessionInfo getSessionInfo(RvSession session) {
-        Long key = new Long(session.getSessionId());
-
-        return (RvSessionInfo) sessions.get(key);
+    private synchronized void sendSnac(SnacRequest req) {
+        snacProcessor.sendSnac(req);
     }
 
-    synchronized final void sendRv(RvSession rvSession, RvCommand command) {
-        SnacCommand cmd = new SendRvIcbm(rvSession.getScreenname(), 0,
-                rvSession.getSessionId(), command);
+    private class RvSessionImpl implements RvSession {
+        private final long rvSessionId;
+        private final String sn;
 
-        snacProcessor.sendSnac(new SnacRequest(cmd,
-                new RvResponseListener(getSessionInfo(rvSession), command)));
-    }
+        private List listeners = new ArrayList();
 
-    private static class RvSessionInfo {
-        public final RvSession session;
+        private SnacRequestListener reqListener = new SnacRequestAdapter() {
+            public void handleResponse(SnacResponseEvent e) {
+                RvSnacResponseEvent event = new RvSnacResponseEvent(e,
+                        RvProcessor.this, RvSessionImpl.this);
 
-        public RvSessionInfo(RvSession session) {
-            DefensiveTools.checkNull(session, "session");
+                processSnacResponse(event);
+            }
+        };
 
-            this.session = session;
-        }
-    }
-
-    private class RvResponseListener extends SnacRequestAdapter {
-        public final RvSessionInfo sessionInfo;
-        public final RvCommand rvCommand;
-
-        public RvResponseListener(RvSessionInfo sessionInfo,
-                RvCommand rvCommand) {
-            this.sessionInfo = sessionInfo;
-            this.rvCommand = rvCommand;
+        private RvSessionImpl(long rvSessionId, String sn) {
+            this.rvSessionId = rvSessionId;
+            this.sn = sn;
         }
 
-        public void handleResponse(SnacResponseEvent e) {
-            RvSession session = sessionInfo.session;
+        public RvProcessor getRvProcessor() { return RvProcessor.this; }
 
-            RvSnacResponseEvent event
-                    = new RvSnacResponseEvent(e, RvProcessor.this, session);
+        public long getRvSessionId() { return rvSessionId; }
 
-            session.processSnacResponse(event);
+        public String getScreenname() { return sn; }
+
+        public synchronized void addListener(RvSessionListener l) {
+            DefensiveTools.checkNull(l, "l");
+
+            if (!listeners.contains(l)) listeners.add(l);
+        }
+
+        public synchronized void removeListener(RvSessionListener l) {
+            DefensiveTools.checkNull(l, "l");
+
+            listeners.remove(l);
+        }
+
+        private synchronized void processRv(RecvRvEvent event) {
+            for (Iterator it = new LinkedList(listeners).iterator();
+                 it.hasNext();) {
+                RvSessionListener listener = (RvSessionListener) it.next();
+
+                listener.handleRv(event);
+            }
+        }
+
+        private synchronized void processSnacResponse(
+                RvSnacResponseEvent event) {
+            for (Iterator it = new LinkedList(listeners).iterator();
+                 it.hasNext();) {
+                RvSessionListener listener = (RvSessionListener) it.next();
+
+                listener.handleSnacResponse(event);
+            }
+        }
+
+        public void sendRv(RvCommand command) {
+            DefensiveTools.checkNull(command, "command");
+
+            System.out.println("sending RV to " + sn + ": " + command);
+
+            SnacCommand cmd = new SendRvIcbm(sn, rvSessionId, command);
+
+            sendSnac(new SnacRequest(cmd, reqListener));
+        }
+
+        public void sendResponse(int code) {
+            RvResponse cmd = new RvResponse(rvSessionId,
+                    AbstractIcbm.CHANNEL_RV, sn, code);
+
+            sendSnac(new SnacRequest(cmd, reqListener));
+        }
+
+        public String toString() {
+            return "RvSession with " + getScreenname() + " (sessionid=0x"
+                    + Long.toHexString(rvSessionId) + ")";
         }
     }
 }

@@ -53,8 +53,8 @@ import java.io.OutputStream;
  * rendezvous packet}, {@linkplain net.kano.joscar.snaccmd.chat.SendChatMsgIcbm
  * sending a chat room message}, and {@linkplain
  * net.kano.joscar.snaccmd.chat.RecvChatMsgIcbm receiving a chat room message}.
- * All ICBM's contain an ICBM cookie, ICBM channel, and a channel-specific data
- * block.
+ * All ICBM's contain an ICBM message ID, an ICBM channel, and a
+ * channel-specific data block.
  */
 public abstract class AbstractIcbm extends SnacCommand {
     /**
@@ -89,9 +89,9 @@ public abstract class AbstractIcbm extends SnacCommand {
     }
 
     /**
-     * The eight-byte ICBM cookie of this ICBM.
+     * The eight-byte ICBM message ID of this ICBM.
      */
-    private final long icbmCookie;
+    private final long messageId;
 
     /**
      * The ICBM channel on which this ICBM resides.
@@ -120,7 +120,7 @@ public abstract class AbstractIcbm extends SnacCommand {
 
         ByteBlock snacData = packet.getData();
 
-        icbmCookie = BinaryTools.getLong(snacData, 0);
+        messageId = BinaryTools.getLong(snacData, 0);
         channel = BinaryTools.getUShort(snacData, 8);
 
         channelData = snacData.subBlock(10);
@@ -128,33 +128,33 @@ public abstract class AbstractIcbm extends SnacCommand {
 
     /**
      * Creates an ICBM command with the given SNAC family and command subtype,
-     * the given ICBM cookie, and on the given ICBM channel.
+     * the given ICBM message ID, and on the given ICBM channel.
      *
      * @param family the SNAC family of this ICBM command
      * @param command the SNAC command subtype of this ICBM command
-     * @param icbmCookie the 8-byte ICBM cookie of this command
+     * @param messageId the 8-byte ICBM message ID of this command
      * @param channel the ICBM channel of this command (should be one of {@link
      *        #CHANNEL_IM}, {@link #CHANNEL_RV}, {@link #CHANNEL_CHAT})
      */
-    protected AbstractIcbm(int family, int command, long icbmCookie,
+    protected AbstractIcbm(int family, int command, long messageId,
             int channel) {
         super(family, command);
 
         DefensiveTools.checkRange(channel, "channel", 0);
 
-        this.icbmCookie = icbmCookie;
+        this.messageId = messageId;
         this.channel = channel;
         channelData = null;
     }
 
     /**
-     * Returns this ICBM command's ICBM "cookie." This cookie is used to
-     * uniquely identify ICBM responses.
+     * Returns this ICBM command's message ID. This value is used to uniquely
+     * identify ICBM responses.
      *
-     * @return this command's ICBM cookie
+     * @return this command's ICBM message ID
      */
-    public final long getIcbmCookie() {
-        return icbmCookie;
+    public final long getMessageId() {
+        return messageId;
     }
 
     /**
@@ -178,7 +178,7 @@ public abstract class AbstractIcbm extends SnacCommand {
     }
 
     public void writeData(OutputStream out) throws IOException {
-        BinaryTools.writeLong(out, icbmCookie);
+        BinaryTools.writeLong(out, messageId);
         BinaryTools.writeUShort(out, channel);
         writeChannelData(out);
     }
@@ -192,4 +192,9 @@ public abstract class AbstractIcbm extends SnacCommand {
      */
     protected abstract void writeChannelData(OutputStream out)
             throws IOException;
+
+    public String toString() {
+        return "AbstractIcbm: channel=" + this.channel + ", messageId="
+                + this.getMessageId();
+    }
 }

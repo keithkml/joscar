@@ -97,8 +97,7 @@ public final class DirInfo implements LiveWritable {
 
         if (chain.getTlvCount() == 0) return null;
 
-        String charset = OscarTools.getValidCharset(
-                chain.getString(TYPE_CHARSET));
+        String charset = chain.getString(TYPE_CHARSET);
 
         String sn = chain.getString(TYPE_SN, charset);
         String email = chain.getString(TYPE_EMAIL, charset);

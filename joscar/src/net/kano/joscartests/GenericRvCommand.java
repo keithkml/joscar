@@ -58,7 +58,7 @@ public class GenericRvCommand extends RvCommand {
     public String toString() {
         StringBuffer buffer = new StringBuffer();
         
-        buffer.append("RV command (status=" + getStatus() + "): \n");
+        buffer.append("RV command (status=" + getRvStatus() + "): \n");
         for (Iterator it = chain.iterator(); it.hasNext();) {
             buffer.append("- ");
             buffer.append(it.next());

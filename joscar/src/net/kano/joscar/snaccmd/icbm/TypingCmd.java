@@ -41,7 +41,7 @@ import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.MiscTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.OscarTools;
-import net.kano.joscar.snaccmd.ScreenNameBlock;
+import net.kano.joscar.snaccmd.StringBlock;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -97,8 +97,8 @@ public abstract class TypingCmd extends IcbmCommand {
         code = BinaryTools.getUShort(snacData, 8);
 
         ByteBlock snBlock = snacData.subBlock(10);
-        ScreenNameBlock snInfo = OscarTools.readScreenname(snBlock);
-        sn = snInfo.getScreenname();
+        StringBlock snInfo = OscarTools.readScreenname(snBlock);
+        sn = snInfo.getString();
 
         ByteBlock rest = snBlock.subBlock(snInfo.getTotalSize());
         typingState = BinaryTools.getUShort(rest, 0);

@@ -36,30 +36,32 @@
 package net.kano.joscartests;
 
 import net.kano.joscar.ByteBlock;
-import net.kano.joscar.rvcmd.sendfile.SendFileRvCmd;
-import net.kano.joscar.rvcmd.DefaultRvCommandFactory;
+import net.kano.joscar.FileWritable;
 import net.kano.joscar.flap.FlapCommand;
 import net.kano.joscar.flap.FlapPacketEvent;
 import net.kano.joscar.flapcmd.LoginFlapCmd;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.rv.*;
+import net.kano.joscar.rvcmd.DefaultRvCommandFactory;
+import net.kano.joscar.rvcmd.RvConnectionInfo;
+import net.kano.joscar.rvcmd.addins.AddinsReqRvCmd;
+import net.kano.joscar.rvcmd.getfile.GetFileReqRvCmd;
+import net.kano.joscar.rvcmd.sendbl.SendBuddyListRvCmd;
+import net.kano.joscar.rvcmd.icon.SendBuddyIconRvCmd;
+import net.kano.joscar.rvcmd.directim.DirectIMReqRvCmd;
+import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
+import net.kano.joscar.rvcmd.trillcrypt.TrillianCryptReqRvCmd;
 import net.kano.joscar.snac.*;
 import net.kano.joscar.snaccmd.*;
 import net.kano.joscar.snaccmd.buddy.BuddyOfflineCmd;
 import net.kano.joscar.snaccmd.buddy.BuddyStatusCmd;
 import net.kano.joscar.snaccmd.conn.*;
-import net.kano.joscar.snaccmd.icbm.OldIconHashData;
-import net.kano.joscar.snaccmd.icbm.RecvImIcbm;
-import net.kano.joscar.snaccmd.icbm.RvCommand;
-import net.kano.joscar.snaccmd.icon.IconRequest;
+import net.kano.joscar.snaccmd.icbm.*;
 
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.InetAddress;
 import java.text.DateFormat;
-import java.util.Arrays;
-import java.util.Date;
+import java.util.*;
 
 public abstract class BasicConn extends AbstractFlapConn {
     protected final ByteBlock cookie;
@@ -77,25 +79,67 @@ public abstract class BasicConn extends AbstractFlapConn {
             event.getNewSession().addListener(rvSessionListener);
         }
     };
+    protected Map trillianEncSessions = new HashMap();
+
     protected RvSessionListener rvSessionListener = new RvSessionListener() {
         public void handleRv(RecvRvEvent event) {
             RvCommand cmd = event.getRvCommand();
 
-            System.out.println("got rendezvous on session <"
-                    + event.getRvSession() + ">");
-            System.out.println("- command: "
-                    + cmd);
+            RvSession session = event.getRvSession();
+            System.out.println("got rendezvous on session <" + session + ">");
+            System.out.println("- command: " + cmd);
 
-            if (cmd instanceof SendFileRvCmd) {
-                SendFileRvCmd rv = (SendFileRvCmd) cmd;
+            if (cmd instanceof FileSendReqRvCmd) {
+                FileSendReqRvCmd rv = (FileSendReqRvCmd) cmd;
 
-                InetAddress ip = rv.getExternalIP();
-                int port = rv.getPort();
+                RvConnectionInfo connInfo = rv.getConnInfo();
+                InetAddress ip = connInfo.getExternalIP();
+                int port = connInfo.getPort();
 
                 if (ip != null && port != -1) {
                     System.out.println("starting ft thread..");
-                    new FileTransferThread(ip, port).start();
+                    RecvRvIcbm icbm = (RecvRvIcbm) event.getSnacCommand();
+                    long cookie = icbm.getMessageId();
+                    new RecvFileThread(ip, port, session, cookie).start();
                 }
+
+            } else if (cmd instanceof TrillianCryptReqRvCmd) {
+                TrillianEncSession encSession = new TrillianEncSession(session);
+                trillianEncSessions.put(OscarTools.normalize(
+                        session.getScreenname()), encSession);
+                session.removeListener(this);
+                encSession.handleRv(event);
+            } else if (cmd instanceof DirectIMReqRvCmd) {
+                DirectIMReqRvCmd rvCmd = (DirectIMReqRvCmd) cmd;
+
+                new DirectIMSession(tester.getScreenname(), session, rvCmd);
+            } else if (cmd instanceof SendBuddyIconRvCmd) {
+                SendBuddyIconRvCmd iconCmd = (SendBuddyIconRvCmd) cmd;
+                ByteBlock iconData = iconCmd.getIconData();
+                if (iconData != null) {
+                    try {
+                        File dir = new File("buddy-icons");
+                        if (!dir.isDirectory()) dir.mkdir();
+
+                        File file = new File(dir, session.getScreenname()
+                                + ".icon");
+                        System.out.println("writing icon to " + file + "!!");
+
+                        FileOutputStream out = new FileOutputStream(file);
+                        iconData.write(out);
+                        out.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            } else if (cmd instanceof SendBuddyListRvCmd) {
+                session.sendResponse(RvResponse.CODE_NOT_ACCEPTING);
+            } else if (cmd instanceof GetFileReqRvCmd) {
+                if (((GetFileReqRvCmd) cmd).getCode() != -1) {
+                    new HostGetFileThread(session, event).start();
+                }
+            } else if (cmd instanceof AddinsReqRvCmd) {
+                session.sendRv(cmd);
             }
         }
 
@@ -109,6 +153,7 @@ public abstract class BasicConn extends AbstractFlapConn {
     { // initialization
         snacProcessor.setSnacQueueManager(rateMgr);
         rvProcessor.registerRvCmdFactory(new DefaultRvCommandFactory());
+        rvProcessor.registerRvCmdFactory(new GenericRvCommandFactory());
         rvProcessor.addRvListener(rvListener);
     }
 
@@ -157,7 +202,7 @@ public abstract class BasicConn extends AbstractFlapConn {
         FlapCommand cmd = e.getFlapCommand();
 
         if (cmd instanceof LoginFlapCmd) {
-            send(new LoginFlapCmd(cookie));
+            getFlapProcessor().send(new LoginFlapCmd(cookie));
         } else {
             System.out.println("got FLAP command on channel 0x"
                     + Integer.toHexString(e.getFlapPacket().getChannel())
@@ -195,7 +240,7 @@ public abstract class BasicConn extends AbstractFlapConn {
             System.out.println("*" + sn + "* "
                     + OscarTools.stripHtml(icbm.getMessage()));
 
-            OldIconHashData iconInfo = icbm.getIconInfo();
+            OldIconHashInfo iconInfo = icbm.getIconInfo();
 
             if (iconInfo != null) {
                 System.out.println("(" + sn
@@ -210,6 +255,13 @@ public abstract class BasicConn extends AbstractFlapConn {
             if (frame != null) {
                 frame.echo("");
                 frame.echo(str);
+            }
+
+            if (icbm.senderWantsIcon()) {
+                System.out.println(sn + " wants our icon.. sending.");
+                RvSession sess = rvProcessor.createRvSession(sn);
+                sess.sendRv(new SendBuddyIconRvCmd(tester.oldIconInfo,
+                        new FileWritable(tester.iconFile)));
             }
 
         } else if (cmd instanceof WarningNotification) {
@@ -233,18 +285,45 @@ public abstract class BasicConn extends AbstractFlapConn {
 
             ExtraIconInfo[] iconInfos = info.getIconInfos();
 
-            if (iconInfos != null) {
+            if (false && iconInfos != null) {
                 for (int i = 0; i < iconInfos.length; i++) {
                     IconHashInfo hashInfo = iconInfos[i].getIconHashInfo();
 
                     if (hashInfo.getCode() == IconHashInfo.CODE_ICON_PRESENT) {
-                        System.out.println(sn +
-                                " has an icon! requesting it.. (excode="
-                                + iconInfos[i].getExtraCode() + ")");
+//                        System.out.println(sn +
+//                                " has an icon! requesting it.. (excode="
+//                                + iconInfos[i].getExtraCode() + ")");
 
-                        request(new IconRequest(sn, iconInfos[i]));
+//                        request(new IconRequest(sn, iconInfos[i]));
 
                         break;
+                    }
+                }
+            }
+
+            if (info.getCapabilityBlocks() != null) {
+                List known = Arrays.asList(new CapabilityBlock[] {
+                    CapabilityBlock.BLOCK_CHAT,
+                    CapabilityBlock.BLOCK_DIRECTIM,
+                    CapabilityBlock.BLOCK_FILE_GET,
+                    CapabilityBlock.BLOCK_FILE_SEND,
+                    CapabilityBlock.BLOCK_GAMES,
+                    CapabilityBlock.BLOCK_GAMES2,
+                    CapabilityBlock.BLOCK_ICON,
+                    CapabilityBlock.BLOCK_SENDBUDDYLIST,
+                    CapabilityBlock.BLOCK_TRILLIANCRYPT,
+                    CapabilityBlock.BLOCK_VOICE,
+                    CapabilityBlock.BLOCK_ADDINS,
+                });
+
+                List caps = new ArrayList(Arrays.asList(
+                        info.getCapabilityBlocks()));
+                caps.removeAll(known);
+                if (!caps.isEmpty()) {
+                    System.out.println(sn + " has " + caps.size()
+                            + " unknown caps:");
+                    for (Iterator it = caps.iterator(); it.hasNext();) {
+                        System.out.println("- " + it.next());
                     }
                 }
             }

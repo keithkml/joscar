@@ -38,9 +38,9 @@ package net.kano.joscar.flap;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.DefaultFlapCmdFactory;
+import net.kano.joscar.net.ConnProcessor;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -74,7 +74,7 @@ import java.util.logging.Logger;
  *
  * @see ClientFlapConn
  */
-public class FlapProcessor {
+public class FlapProcessor extends ConnProcessor {
     /**
      * A <code>Logger</code> to facilitate logging and debugging of FLAP-related
      * activities.
@@ -102,24 +102,6 @@ public class FlapProcessor {
      * listeners have the ability to halt the processing of a given packet.
      */
     private List vetoablePacketListeners = new ArrayList();
-
-    /**
-     * Represents whether this FLAP processor is attached to any input or
-     * output streams.
-     */
-    private boolean attached = false;
-
-    /**
-     * The input stream from which FLAP packets are currently being read, or
-     * <code>null</code> if there is currently no such stream.
-     */
-    private InputStream in = null;
-
-    /**
-     * The output stream to which FLAP packets are currently being written,
-     * or <code>null</code> if there is currently no such stream.
-     */
-    private OutputStream out = null;
 
     /** A lock for reading from the stream. */
     private final Object readLock = new Object();
@@ -256,7 +238,7 @@ public class FlapProcessor {
             try {
                 cmd = commandFactory.genFlapCommand(packet);
             } catch (Throwable t) {
-                handleException(FlapExceptionEvent.TYPE_CMD_GEN, t, packet);
+                handleException(FlapExceptionEvent.ERRTYPE_CMD_GEN, t, packet);
             }
             logger.fine("Flap command for " + packet + ": " + cmd);
         }
@@ -273,7 +255,7 @@ public class FlapProcessor {
             try {
                 result = listener.handlePacket(event);
             } catch (Throwable t) {
-                handleException(FlapExceptionEvent.TYPE_PACKET_LISTENER, t,
+                handleException(FlapExceptionEvent.ERRTYPE_PACKET_LISTENER, t,
                         listener);
                 continue;
             }
@@ -290,9 +272,9 @@ public class FlapProcessor {
             logger.finer("Running Flap packet listener " + listener);
 
             try {
-                listener.handlePacket(event);
+                listener.handleFlapPacket(event);
             } catch (Throwable t) {
-                handleException(FlapExceptionEvent.TYPE_PACKET_LISTENER, t,
+                handleException(FlapExceptionEvent.ERRTYPE_PACKET_LISTENER, t,
                         listener);
             }
         }
@@ -335,7 +317,8 @@ public class FlapProcessor {
         logger.fine("Processing flap error (" + type + "): " + t.getMessage()
                 + ": " + info);
 
-        if (type == FlapExceptionEvent.TYPE_CONNECTION_ERROR && !attached) {
+        if (type == FlapExceptionEvent.ERRTYPE_CONNECTION_ERROR
+                && !isAttached()) {
             // if we're not attached to anything, the listeners don't want to
             // be hearing about any connection errors.
             logger.finer("Ignoring " + type + " flap error because processor " +
@@ -370,6 +353,10 @@ public class FlapProcessor {
             throws NullPointerException {
         DefensiveTools.checkNull(command, "command");
 
+        OutputStream out = getOutputStream();
+
+        DefensiveTools.checkNull(out, "out");
+
         logger.finer("Sending Flap command " + command);
         FlapPacket packet = new FlapPacket(seqnum, command);
 
@@ -377,7 +364,7 @@ public class FlapProcessor {
         try {
             block = ByteBlock.createByteBlock(packet);
         } catch (Throwable t) {
-            handleException(FlapExceptionEvent.TYPE_CMD_WRITE, t, command);
+            handleException(FlapExceptionEvent.ERRTYPE_CMD_WRITE, t, command);
             return;
         }
 
@@ -389,7 +376,7 @@ public class FlapProcessor {
         try {
             block.write(out);
         } catch (IOException e) {
-            handleException(FlapExceptionEvent.TYPE_CONNECTION_ERROR, e);
+            handleException(FlapExceptionEvent.ERRTYPE_CONNECTION_ERROR, e);
             return;
         }
 
@@ -426,15 +413,15 @@ public class FlapProcessor {
      */
     public final boolean readNextFlap() throws IOException {
         synchronized(readLock) {
-            if (in == null) return false;
+            if (getInputStream() == null) return false;
 
-            FlapHeader header = FlapHeader.readFLAPHeader(in);
+            FlapHeader header = FlapHeader.readFLAPHeader(getInputStream());
 
             logger.finer("Read flap header " + header);
 
             if (header == null) return false;
 
-            FlapPacket packet = FlapPacket.readRestOfFlap(header, in);
+            FlapPacket packet = FlapPacket.readRestOfFlap(header, getInputStream());
 
             logger.finer("Read flap packet " + packet);
             if (packet == null) return false;
@@ -445,67 +432,4 @@ public class FlapProcessor {
         }
     }
 
-    /**
-     * Attaches this FLAP processor to the given socket's input and output
-     * streams. Behavior is undefined if the given socket is not connected (that
-     * just means an <code>IOException</code> will probably be thrown).
-     * <br>
-     * <br>
-     * Note that this does not begin any sort of loop or FLAP connection; you
-     * still need to do this yourself (see {@link #readNextFlap} and {@link
-     * #runFlapLoop}.
-     *
-     * @param socket the socket to attach to
-     * @throws IOException if an I/O error occurs
-     */
-    public synchronized final void attachToSocket(Socket socket)
-            throws IOException {
-        DefensiveTools.checkNull(socket, "socket");
-        logger.config("Attaching flap processor to " + socket);
-
-        attachToInput(socket.getInputStream());
-        attachToOutput(socket.getOutputStream());
-    }
-
-    /**
-     * Attaches this FLAP processor to the given input stream. This stream is
-     * from whence packets will be read upon calls to <code>readNextFlap</code>
-     *
-     * @param in the input stream to attach to
-     */
-    public synchronized final void attachToInput(InputStream in) {
-        DefensiveTools.checkNull(in, "in");
-        logger.config("Attaching flap processor to " + in);
-
-        this.in = in;
-
-        attached = true;
-    }
-
-    /**
-     * Attaches this FLAP processor to the given output stream. This stream is
-     * where packets sent via the <code>send</code> method will be written.
-     *
-     * @param out the output stream to attach to
-     */
-    public synchronized final void attachToOutput(OutputStream out) {
-        DefensiveTools.checkNull(out, "out");
-        logger.config("Attaching flap processor to " + out);
-
-        this.out = out;
-
-        attached = true;
-    }
-
-    /**
-     * Detaches this FLAP processor from any attached input and/or output
-     * stream.
-     */
-    public synchronized final void detach() {
-        logger.config("Detaching flap processor");
-
-        this.in = null;
-        this.out = null;
-        attached = false;
-    }
 }

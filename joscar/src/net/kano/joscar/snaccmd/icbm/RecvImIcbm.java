@@ -91,7 +91,7 @@ public class RecvImIcbm extends AbstractImIcbm {
      * Creates a new outgoing client-bound IM ICBM command with the given
      * properties.
      *
-     * @param icbmCookie the "ICBM cookie" to associate with this command
+     * @param messageId the ICBM message ID to associate with this message
      * @param userInfo a user information block for the sender of this IM
      * @param message the instant message
      * @param autoResponse whether this message is an auto-response
@@ -100,10 +100,10 @@ public class RecvImIcbm extends AbstractImIcbm {
      *        <code>null</code> if none was provided
      * @param canType whether or not the sender supports typing notification
      */
-    public RecvImIcbm(long icbmCookie, FullUserInfo userInfo, String message,
-            boolean autoResponse, boolean wantsIcon, OldIconHashData iconInfo,
+    public RecvImIcbm(long messageId, FullUserInfo userInfo, String message,
+            boolean autoResponse, boolean wantsIcon, OldIconHashInfo iconInfo,
             boolean canType) {
-        super(IcbmCommand.CMD_ICBM, icbmCookie, message, autoResponse,
+        super(IcbmCommand.CMD_ICBM, messageId, message, autoResponse,
                 wantsIcon, iconInfo);
 
         DefensiveTools.checkNull(userInfo, "userInfo");

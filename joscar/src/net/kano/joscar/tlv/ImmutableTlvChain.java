@@ -36,11 +36,9 @@
 package net.kano.joscar.tlv;
 
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * An immutable TLV chain, a TLV chain that cannot be modified after its
@@ -78,6 +76,32 @@ public final class ImmutableTlvChain extends AbstractTlvChain {
         return new ImmutableTlvChain(block, maxTlvs);
     }
 
+    /**
+     * Creates a new immutable TLV chain with the given number of TLV's starting
+     * from the given offset of the given TLV array. Note that no element of
+     * <code>tlvs</code> can be <code>null</code>.
+     *
+     * @param tlvs the list of (non-<code>null</code>) TLV's
+     * @param offset the index of the first TLV that this chain should contain
+     * @param len the number of TLV's to include in this chain
+     * @return a TLV chain containing the given number of TLV's starting at the
+     *         given index of the given array of TLV's
+     */
+    public static TlvChain createChain(Tlv[] tlvs, int offset, int len) {
+        DefensiveTools.checkNull(tlvs, "tlvs");
+
+        if (offset < 0 || len < 0 || offset + len > tlvs.length) {
+            throw new ArrayIndexOutOfBoundsException("offset=" + offset
+                    + ", len=" + len + ", tlvs.length=" + tlvs.length);
+        }
+
+        for (int i = offset; i < len; i++) {
+            DefensiveTools.checkNull(tlvs[i], "tlvs[] elements");
+        }
+
+        return new ImmutableTlvChain(tlvs, offset, len);
+    }
+
     /** A list of the TLV's in this chain, in order. */
     private final List tlvList = new LinkedList();
     /**
@@ -85,6 +109,21 @@ public final class ImmutableTlvChain extends AbstractTlvChain {
      * chain with that type.
      */
     private final Map tlvMap = new HashMap();
+
+    /**
+     * Creates a new immutable TLV chain with the given number of TLV's starting
+     * from the given offset of the given TLV array.
+     *
+     * @param tlvs the list of TLV's
+     * @param offset the index of the first TLV that this chain should contain
+     * @param len the number of TLV's to include in this chain
+     */
+    private ImmutableTlvChain(Tlv[] tlvs, int offset, int len) {
+        List list = Arrays.asList(tlvs).subList(offset, offset + len);
+        for (Iterator it = list.iterator(); it.hasNext();) {
+            addTlvImpl((Tlv) it.next());
+        }
+    }
 
     /**
      * Reads a TLV chain from the given block of TLV's, stopping after reading
@@ -97,7 +136,7 @@ public final class ImmutableTlvChain extends AbstractTlvChain {
      * @param maxTlvs the maximum number of TLV's to read, or <code>-1</code> to
      *        read all possible TLV's in the given block
      */
-    ImmutableTlvChain(ByteBlock block, int maxTlvs) {
+    private ImmutableTlvChain(ByteBlock block, int maxTlvs) {
         initFromBlock(block, maxTlvs);
     }
 

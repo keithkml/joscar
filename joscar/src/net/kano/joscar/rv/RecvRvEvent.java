@@ -39,32 +39,53 @@ import net.kano.joscar.snac.SnacPacketEvent;
 import net.kano.joscar.snaccmd.icbm.RvCommand;
 
 public class RecvRvEvent extends SnacPacketEvent {
+    public static final Object TYPE_RV = "TYPE_RV";
+    public static final Object TYPE_RESPONSE = "TYPE_RESPONSE";
+
+    private final Object type;
+
     private final RvProcessor rvProcessor;
     private final RvSession rvSession;
-    private final RvCommand rvCommand;
 
-    protected RecvRvEvent(SnacPacketEvent other, RvProcessor processor,
-            RvSession session, RvCommand command) {
+    private final RvCommand rvCommand;
+    private final int responseCode;
+
+    protected RecvRvEvent(SnacPacketEvent other,
+            RvProcessor processor, RvSession session, RvCommand command) {
+        this(TYPE_RV, other, processor, session, command, -1);
+    }
+
+    protected RecvRvEvent(SnacPacketEvent other,
+            RvProcessor processor, RvSession session, int resultCode) {
+        this(TYPE_RV, other, processor, session, null, resultCode);
+    }
+
+    private RecvRvEvent(Object type, SnacPacketEvent other,
+            RvProcessor rvProcessor, RvSession rvSession, RvCommand rvCommand,
+            int responseCode) {
         super(other);
 
-        this.rvProcessor = processor;
-        this.rvSession = session;
-        this.rvCommand = command;
+        this.type = type;
+        this.rvProcessor = rvProcessor;
+        this.rvSession = rvSession;
+        this.rvCommand = rvCommand;
+        this.responseCode = responseCode;
     }
 
-    public final RvProcessor getRvProcessor() {
-        return rvProcessor;
-    }
+    public final Object getType() { return type; }
 
-    public final RvSession getRvSession() {
-        return rvSession;
-    }
+    public final RvProcessor getRvProcessor() { return rvProcessor; }
 
-    public final RvCommand getRvCommand() {
-        return rvCommand;
-    }
+    public final RvSession getRvSession() { return rvSession; }
+
+    public final RvCommand getRvCommand() { return rvCommand; }
+
+    public final int getResponseCode() { return responseCode; }
 
     public String toString() {
-        return "RecvRvEvent: rvCommand=" + rvCommand;
+        return "RecvRvEvent: " +
+                (type == TYPE_RV
+                ? "rvCommand=" + rvCommand
+                : "responseCode=" + responseCode);
     }
 }

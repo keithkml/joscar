@@ -239,7 +239,7 @@ public final class FullRoomInfo
     }
 
     public void write(OutputStream out) throws IOException {
-        if (mini == null) mini = new MiniRoomInfo(exchange, cookie, instance);
+        if (mini == null) mini = new MiniRoomInfo(this);
         mini.write(out);
 
         BinaryTools.writeUByte(out, type);
@@ -254,7 +254,7 @@ public final class FullRoomInfo
     }
 
     public String toString() {
-        return "RoomInfo: " +
+        return "FullRoomInfo: " +
                 "exchange=" + exchange +
                 ", cookie=" + cookie +
                 ", instance=" + instance +

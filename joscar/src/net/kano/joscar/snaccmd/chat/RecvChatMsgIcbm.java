@@ -84,14 +84,14 @@ public class RecvChatMsgIcbm extends AbstractChatMsgIcbm {
     /**
      * Creates a new outgoing chat message command with the given properties.
      *
-     * @param cookie a ICBM cookie for this message
+     * @param messageId a message ID for this message
      * @param senderInfo a user info block for the user who sent this message,
      *        or <code>null</code> for none
      * @param chatMsg the chat message sent
      */
-    public RecvChatMsgIcbm(long cookie, FullUserInfo senderInfo,
+    public RecvChatMsgIcbm(long messageId, FullUserInfo senderInfo,
             ChatMsg chatMsg) {
-        super(ChatCommand.CMD_RECV_CHAT_MSG, cookie, chatMsg);
+        super(ChatCommand.CMD_RECV_CHAT_MSG, messageId, chatMsg);
 
         this.senderInfo = senderInfo;
     }

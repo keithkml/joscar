@@ -37,6 +37,7 @@ package net.kano.joscar.snaccmd.icbm;
 
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
+import net.kano.joscar.DefensiveTools;
 
 import java.io.OutputStream;
 import java.io.IOException;
@@ -51,21 +52,31 @@ public abstract class RvCommand {
      */
     public static final int STATUS_DENY = 0x0001;
 
-    private final int status;
+    private final long icbmMessageId;
+    private final int rvStatus;
     private final CapabilityBlock cap;
 
     protected RvCommand(RecvRvIcbm icbm) {
-        status = icbm.getRvStatus();
+        DefensiveTools.checkNull(icbm, "icbm");
+
+        icbmMessageId = icbm.getMessageId();
+        rvStatus = icbm.getRvStatus();
         cap = icbm.getCapability();
     }
 
-    protected RvCommand(int status, CapabilityBlock cap) {
-        this.status = status;
+    protected RvCommand(long icbmMessageId, int rvStatus, CapabilityBlock cap) {
+        DefensiveTools.checkRange(rvStatus, "rvStatus", 0);
+        DefensiveTools.checkNull(cap, "cap");
+
+        this.icbmMessageId = icbmMessageId;
+        this.rvStatus = rvStatus;
         this.cap = cap;
     }
 
-    public final int getStatus() {
-        return status;
+    public final long getIcbmMessageId() { return icbmMessageId; }
+
+    public final int getRvStatus() {
+        return rvStatus;
     }
 
     public final CapabilityBlock getCapabilityBlock() {

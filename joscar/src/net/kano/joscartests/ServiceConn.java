@@ -37,7 +37,7 @@ package net.kano.joscartests;
 
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.flap.ClientFlapConn;
-import net.kano.joscar.flap.FlapConnEvent;
+import net.kano.joscar.net.ClientConnEvent;
 import net.kano.joscar.flap.FlapPacketEvent;
 import net.kano.joscar.snac.*;
 import net.kano.joscar.snaccmd.DirInfo;
@@ -83,7 +83,7 @@ public class ServiceConn extends BasicConn {
         super.clientReady();
     }
 
-    protected void handleStateChange(FlapConnEvent e) {
+    protected void handleStateChange(ClientConnEvent e) {
         System.out.println("0x" + Integer.toHexString(serviceFamily)
                 + " service connection state changed to " + e.getNewState()
                 + ": " + e.getReason());
@@ -178,7 +178,7 @@ public class ServiceConn extends BasicConn {
             byte[] data = idc.getIconData().toByteArray();
             Image icon = Toolkit.getDefaultToolkit().createImage(data);
 
-            tester.getUserInfo(sn).setIcon(icon);
+//            tester.getUserInfo(sn).setIcon(icon);
 
         } else if (cmd instanceof RoomResponse) {
             RoomResponse rr = (RoomResponse) cmd;
@@ -188,8 +188,7 @@ public class ServiceConn extends BasicConn {
             System.out.println("requesting chat service for room "
                     + roomInfo.getName());
 
-            MiniRoomInfo miniInfo = new MiniRoomInfo(roomInfo.getExchange(),
-                    roomInfo.getCookie(), roomInfo.getInstance());
+            MiniRoomInfo miniInfo = new MiniRoomInfo(roomInfo);
 
             ServiceRequest request = new ServiceRequest(miniInfo);
             

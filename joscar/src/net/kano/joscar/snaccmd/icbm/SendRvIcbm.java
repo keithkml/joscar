@@ -41,7 +41,7 @@ import net.kano.joscar.LiveWritable;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.OscarTools;
-import net.kano.joscar.snaccmd.ScreenNameBlock;
+import net.kano.joscar.snaccmd.StringBlock;
 import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.TlvChain;
 
@@ -73,8 +73,8 @@ public class SendRvIcbm extends AbstractRvIcbm {
 
         ByteBlock channelData = getChannelData();
 
-        ScreenNameBlock snInfo = OscarTools.readScreenname(channelData);
-        sn = snInfo.getScreenname();
+        StringBlock snInfo = OscarTools.readScreenname(channelData);
+        sn = snInfo.getString();
 
         ByteBlock tlvBlock = channelData.subBlock(snInfo.getTotalSize());
         TlvChain chain = ImmutableTlvChain.readChain(tlvBlock);
@@ -85,26 +85,36 @@ public class SendRvIcbm extends AbstractRvIcbm {
      * Creates a new outgoing rendezvous command with the given properties.
      *
      * @param sn the screenname to whom to send this rendezvous
-     * @param icbmCookie an "ICBM cookie" to attach to this command
+     * @param icbmMessageId an ICBM message ID to attach to this command
      * @param status a status code, like {@link #STATUS_REQUEST}
-     * @param rvCookie a "rendezvous cookie" to attach to this rendezvous
+     * @param rvSessionId the ID of the rendezvous session on which this
+     *        rendezvous is being sent
      * @param cap the capability block associated with this rendezvous command
      * @param rvDataWriter an object used to write the rendezvous-specific
      *        data to the connection
      */
-    public SendRvIcbm(String sn, long icbmCookie, int status, long rvCookie,
-            CapabilityBlock cap, LiveWritable rvDataWriter) {
-        super(IcbmCommand.CMD_SEND_ICBM, icbmCookie, status, rvCookie, cap,
-                rvDataWriter);
+    public SendRvIcbm(String sn, long icbmMessageId, int status,
+            long rvSessionId, CapabilityBlock cap, LiveWritable rvDataWriter) {
+        super(IcbmCommand.CMD_SEND_ICBM, icbmMessageId, status, rvSessionId,
+                cap, rvDataWriter);
 
         DefensiveTools.checkNull(sn, "sn");
 
         this.sn = sn;
     }
 
-    public SendRvIcbm(String sn, long icbmCookie, long rvCookie,
-            RvCommand command) {
-        super(IcbmCommand.CMD_SEND_ICBM, icbmCookie, rvCookie, command);
+    /**
+     * Creates a new outgoing rendezvous to the given user with the properties
+     * given by the given <code>RvCommand</code>.
+     *
+     * @param sn the screenname to whom this rendezvous command is being sent
+     * @param rvSessionId a rendezvous session ID on which this rendezvous
+     *        exists
+     * @param command a rendezvous command that will be used to create this
+     *        rendezvous packet
+     */
+    public SendRvIcbm(String sn, long rvSessionId, RvCommand command) {
+        super(IcbmCommand.CMD_SEND_ICBM, rvSessionId, command);
 
         DefensiveTools.checkNull(sn, "sn");
 

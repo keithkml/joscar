@@ -121,11 +121,13 @@ public interface TlvChain extends Writable {
     /**
      * Returns the string contained in the <i>last</i> TLV in this chain
      * with the given type, decoded with the given charset, or <code>null</code>
-     * if no TLV with the given type is present in this chain or if the given
-     * charset is not supported in this JVM.
+     * if no TLV with the given type is present in this chain. Note that if the
+     * given charset is not found in this JVM, a valid charset will be derived
+     * (like converting "unicode-2.0" to "UTF-16BE") or "US-ASCII" will be used.
      *
      * @param type the type of TLV whose string value will be returned
-     * @param charset the charset with which the string will be decoded
+     * @param charset the charset with which the string will be decoded, or
+     *        <code>null</code> to decode as US-ASCII
      * @return the ASCII string stored in the value of the last TLV in this
      *         chain that has the given TLV type
      *
@@ -146,6 +148,20 @@ public interface TlvChain extends Writable {
      * @see Tlv#getDataAsUShort
      */
     int getUShort(int type);
+
+    /**
+     * Returns an unsigned four-byte integer read from the value of the
+     * <i>last</i> TLV of the given type in this chain, or <code>-1</code> if
+     * either no TLV of the given type is present in this chain or if the data
+     * block for the TLV contains fewer than two bytes.
+     *
+     * @param type the type of the TLV whose value will be returned
+     * @return the four-byte integer value stored in the last TLV of the given
+     *         type, or <code>-1</code> if none is present
+     * @see #getLastTlv
+     * @see Tlv#getDataAsUInt
+     */
+    long getUInt(int type);
 
     /**
      * Returns the total size, in bytes, of this chain, as read from an incoming

@@ -12,7 +12,7 @@
  *    notice, this list of conditions and the following disclaimer in 
  *    the documentation and/or other materials provided with the 
  *    distribution. 
- *  - Neither the name of the Joust Project nor the names of its 
+ *  - Neither the name of the Joust Project nor the names of its
  *    contributors may be used to endorse or promote products derived 
  *    from this software without specific prior written permission. 
  *
@@ -29,80 +29,26 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- *  File created by keith @ Apr 24, 2003
+ *  File created by Keith @ 3:52:28 PM
  *
  */
 
 package net.kano.joscar.rv;
 
-import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.icbm.RvCommand;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+public interface RvSession {
+    void addListener(RvSessionListener l);
 
-public final class RvSession {
-    private final RvProcessor rvProcessor;
-    private final long rvCookie;
-    private final String sn;
+    void removeListener(RvSessionListener l);
 
-    private List listeners = new ArrayList();
+    RvProcessor getRvProcessor();
 
-    RvSession(RvProcessor rvProcessor, long rvCookie, String sn) {
-        this.rvProcessor = rvProcessor;
-        this.rvCookie = rvCookie;
-        this.sn = sn;
-    }
+    long getRvSessionId();
 
-    public synchronized final void addListener(RvSessionListener l) {
-        DefensiveTools.checkNull(l, "l");
+    String getScreenname();
 
-        if (!listeners.contains(l)) listeners.add(l);
-    }
+    void sendRv(RvCommand command);
 
-    public synchronized final void removeListener(RvSessionListener l) {
-        DefensiveTools.checkNull(l, "l");
-
-        listeners.remove(l);
-    }
-
-    public final RvProcessor getRvProcessor() {
-        return rvProcessor;
-    }
-
-    public final long getSessionId() {
-        return rvCookie;
-    }
-
-    public final String getScreenname() {
-        return sn;
-    }
-
-    synchronized final void processRv(RecvRvEvent event) {
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            RvSessionListener listener = (RvSessionListener) it.next();
-
-            listener.handleRv(event);
-        }
-    }
-
-    synchronized final void processSnacResponse(RvSnacResponseEvent event) {
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            RvSessionListener listener = (RvSessionListener) it.next();
-
-            listener.handleSnacResponse(event);
-        }
-    }
-
-    public final void sendRv(RvCommand command) {
-        DefensiveTools.checkNull(command, "command");
-
-        rvProcessor.sendRv(this, command);
-    }
-
-    public String toString() {
-        return "RvSession with " + getScreenname() + " (sessionid=0x"
-                + Long.toHexString(rvCookie) + ")";
-    }
+    void sendResponse(int code);
 }

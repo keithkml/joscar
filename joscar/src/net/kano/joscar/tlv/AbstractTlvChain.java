@@ -35,13 +35,13 @@
 
 package net.kano.joscar.tlv;
 
+import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.BinaryTools;
+import net.kano.joscar.snaccmd.OscarTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.util.*;
 
 /**
@@ -234,19 +234,21 @@ public abstract class AbstractTlvChain implements TlvChain {
 
         if (!hasTlv(type)) return null;
 
-        final byte[] stringArray = getLastTlv(type).getData().toByteArray();
-        String value = null;
-        try {
-            value = new String(stringArray, charset);
-        } catch (UnsupportedEncodingException ignored) { }
-
-        return value;
+        ByteBlock stringBlock = getLastTlv(type).getData();
+        return OscarTools.getString(stringBlock, charset);
     }
 
     public int getUShort(int type) {
         DefensiveTools.checkRange(type, "type", 0);
 
         return hasTlv(type) ? getLastTlv(type).getDataAsUShort() : -1;
+    }
+
+    public long getUInt(int type) {
+        Tlv tlv = getFirstTlv(type);
+        
+        if (tlv != null) return tlv.getDataAsUInt();
+        else return -1;
     }
 
     public int getTotalSize() {

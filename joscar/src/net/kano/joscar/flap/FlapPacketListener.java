@@ -44,5 +44,5 @@ public interface FlapPacketListener {
      * Called when a FLAP packet is received on a <code>FlapProcessor</code>.
      * @param e an event object containing information on the packet's receipt
      */
-    void handlePacket(FlapPacketEvent e);
+    void handleFlapPacket(FlapPacketEvent e);
 }

@@ -84,19 +84,16 @@ public class SetInterestsCmd extends LocCommand {
 
         TlvChain chain = ImmutableTlvChain.readChain(snacData);
 
-        String charset = OscarTools.getValidCharset(
-                chain.getString(TYPE_CHARSET));
+        String charset = chain.getString(TYPE_CHARSET);
 
         Tlv[] interestTlvs = chain.getTlvs(TYPE_INTEREST);
 
         List interestList = new ArrayList();
 
         for (int i = 0; i < interestTlvs.length; i++) {
-            byte[] interestBytes = interestTlvs[i].getData().toByteArray();
-            try {
-                String interest = new String(interestBytes, charset);
-                interestList.add(interest);
-            } catch (UnsupportedEncodingException impossible) { }
+            ByteBlock interestBytes = interestTlvs[i].getData();
+            String interest = OscarTools.getString(interestBytes, charset);
+            interestList.add(interest);
         }
 
         interests = (String[]) interestList.toArray(new String[0]);

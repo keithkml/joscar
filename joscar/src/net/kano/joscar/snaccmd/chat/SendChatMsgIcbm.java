@@ -79,13 +79,13 @@ public class SendChatMsgIcbm extends AbstractChatMsgIcbm {
 
     /**
      * Creates a new outgoing chat message ICBM with default properties. The
-     * ICBM is created with an ICBM cookie of <code>0</code>, marked as an
+     * ICBM is created with an ICBM message ID of <code>0</code>, marked as an
      * outgoing chat message that should be reflected back to the client as chat
      * text and that is not an auto-response.
      * <br>
      * <br>
      * Calling this method is equivalent to calling {@link
-     * #SendChatMsgIcbm(long, boolean, ChatMsg) new SendChatMsgIcbm(0, true,
+     * #SendChatMsgIcbm(long, boolean, chatMsg) new SendChatMsgIcbm(0, true,
      * chatMsg)}.
      *
      * @param chatMsg the chat message to send to the chat room
@@ -97,14 +97,14 @@ public class SendChatMsgIcbm extends AbstractChatMsgIcbm {
     /**
      * Creates a new outgoing chat message ICBM with the given properties.
      *
-     * @param cookie a message cookie for this command
+     * @param messageId a message ID for this message
      * @param toBeReflected whether this message should be "reflected" back as
      *        normal chat text
      * @param chatMsg the chat message to send
      */
-    public SendChatMsgIcbm(long cookie, boolean toBeReflected,
+    public SendChatMsgIcbm(long messageId, boolean toBeReflected,
             ChatMsg chatMsg) {
-        super(ChatCommand.CMD_SEND_CHAT_MSG, cookie, chatMsg);
+        super(ChatCommand.CMD_SEND_CHAT_MSG, messageId, chatMsg);
 
         this.toBeReflected = toBeReflected;
     }

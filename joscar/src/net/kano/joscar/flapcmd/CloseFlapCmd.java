@@ -158,6 +158,7 @@ public class CloseFlapCmd extends FlapCommand {
     }
 
     public String toString() {
-        return "FlapCloseCmd";
+        return "CloseFlapCmd: code=0x" + Integer.toHexString(code)
+                + ", url=" + url;
     }
 }

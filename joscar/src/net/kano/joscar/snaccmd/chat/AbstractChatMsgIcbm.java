@@ -87,11 +87,12 @@ public abstract class AbstractChatMsgIcbm extends AbstractIcbm {
      * Creates a new outgoing chat ICBM with the given properties.
      *
      * @param command this ICBM's SNAC command subtype
-     * @param cookie an ICBM cookie
+     * @param messageId a (normally unique) ICBM message ID
      * @param chatMsg the message to send to the channel
      */
-    protected AbstractChatMsgIcbm(int command, long cookie, ChatMsg chatMsg) {
-        super(ChatCommand.FAMILY_CHAT, command, cookie, CHANNEL_CHAT);
+    protected AbstractChatMsgIcbm(int command, long messageId,
+            ChatMsg chatMsg) {
+        super(ChatCommand.FAMILY_CHAT, command, messageId, CHANNEL_CHAT);
 
         this.chatMsg = chatMsg;
         chatTlvs = null;

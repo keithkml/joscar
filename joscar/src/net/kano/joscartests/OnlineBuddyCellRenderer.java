@@ -87,7 +87,7 @@ public class OnlineBuddyCellRenderer implements TreeCellRenderer {
             StringBuffer text = new StringBuffer();
             text.append("<HTML>");
             text.append(info.getScreenname());
-            buddyLabel.setIcon(info.getImageIcon());
+//            buddyLabel.setIcon(info.getImageIcon());
             if (info.isAway() && info.getIdleSince() != null) {
                 text.append("<BR>Away, Idle "
                         + getIdleString(info.getIdleSince()));

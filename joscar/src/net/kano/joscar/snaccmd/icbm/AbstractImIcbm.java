@@ -40,14 +40,11 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.AbstractIcbm;
-import net.kano.joscar.snaccmd.EncodedStringInfo;
-import net.kano.joscar.snaccmd.MinimalEncoder;
 import net.kano.joscar.tlv.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 
 /**
  * A base class for the two IM-based ICBM commands in this family. These
@@ -68,15 +65,10 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
     /** A TLV type containing the message. */
     private static final int TYPE_MESSAGE_PARTS = 0x0101;
 
-    /** A charset code indicating US-ASCII encoding. */
-    private static final int CHARSET_ASCII = 0x0000;
-    /** A charset code indicating ISO-8859-1 encoding. */
-    private static final int CHARSET_ISO = 0x0003;
-    /** A charset code indicating UCS-2BE, or UTF-16BE. */
-    private static final int CHARSET_UTF16 = 0x0002;
-
-    /** A charset "subcode" that is sent by default. */
-    private static final int CHARSETSUBCODE_DEFAULT = 0x0000;
+    private static final ByteBlock FEATURES_DEFAULT
+            = ByteBlock.wrap(new byte[] {
+                0x01, 0x01, 0x01, 0x02, 0x01, 0x01
+            });
 
     /** The Instant Message. */
     private String message;
@@ -85,7 +77,7 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
     /** Whether the user wants our buddy icon. */
     private boolean wantsIcon;
     /** A set of icon data provided by the user who sent this IM. */
-    private OldIconHashData iconInfo;
+    private OldIconHashInfo iconInfo;
 
     /**
      * Generates an IM ICBM from the given incoming SNAC packet and with the
@@ -124,26 +116,20 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
             // read each part of the multipart data
             StringBuffer messageBuffer = new StringBuffer();
             Tlv[] parts = msgTLVs.getTlvs(TYPE_MESSAGE_PARTS);
+
             for (int i = 0; i < parts.length; i++) {
                 ByteBlock partBlock = parts[i].getData();
 
                 int charsetCode = BinaryTools.getUShort(partBlock, 0);
-                // skip the two-byte character subset. I guess it doesn't
-                // matter.
+                int charsetSubcode = BinaryTools.getUShort(partBlock, 2);
                 ByteBlock messageBlock = partBlock.subBlock(4);
 
-                String charset;
-                if (charsetCode == CHARSET_ASCII) charset = "US-ASCII";
-                else if (charsetCode == CHARSET_ISO) charset = "ISO-8859-1";
-                else if (charsetCode == CHARSET_UTF16) charset = "UTF-16BE";
-                else continue;
+                ImEncoding encoding
+                        = new ImEncoding(charsetCode, charsetSubcode);
+                String message = ImEncodedString.readImEncodedString(
+                        encoding, messageBlock);
 
-                String string;
-                try {
-                    string = ByteBlock.createString(messageBlock, charset);
-                } catch (UnsupportedEncodingException impossible) { continue; }
-
-                messageBuffer.append(string);
+                messageBuffer.append(message);
             }
 
             // and set the message to the sum of all the parts
@@ -153,7 +139,7 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
         }
         if (iconTlv != null) {
             ByteBlock iconData = iconTlv.getData();
-            iconInfo = OldIconHashData.readOldIconHashData(iconData);
+            iconInfo = OldIconHashInfo.readIconHashFromImTlvData(iconData);
         } else {
             iconInfo = null;
         }
@@ -163,15 +149,15 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
      * Creates a new outgoing IM ICBM with the given properties.
      *
      * @param command the SNAC command subtype of this command
-     * @param icbmCookie the eight-byte ICBM cookie to attach to this command
+     * @param messageId the eight-byte ICBM message ID to attach to this command
      * @param message the instant message
      * @param autoResponse whether this is an auto-response or not
      * @param wantsIcon whether to request the receiving user's buddy icon
      * @param iconInfo a set of our own buddy icon information
      */
-    AbstractImIcbm(int command, long icbmCookie, String message,
-            boolean autoResponse, boolean wantsIcon, OldIconHashData iconInfo) {
-        super(IcbmCommand.FAMILY_ICBM, command, icbmCookie, CHANNEL_IM);
+    AbstractImIcbm(int command, long messageId, String message,
+            boolean autoResponse, boolean wantsIcon, OldIconHashInfo iconInfo) {
+        super(IcbmCommand.FAMILY_ICBM, command, messageId, CHANNEL_IM);
 
         this.message = message;
         this.autoResponse = autoResponse;
@@ -213,7 +199,7 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
      *
      * @return the sender's buddy icon information
      */
-    public final OldIconHashData getIconInfo() {
+    public final OldIconHashInfo getIconInfo() {
         return iconInfo;
     }
 
@@ -228,29 +214,17 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
         if (message != null) {
             ByteArrayOutputStream msgout = new ByteArrayOutputStream();
 
-            EncodedStringInfo encInfo = MinimalEncoder.encodeMinimally(message);
+            ImEncodedString encInfo = ImEncodedString.encodeString(message);
 
-            String charset = encInfo.getCharset();
-            int charsetCode;
-            if (charset == MinimalEncoder.ENCODING_ASCII) {
-                charsetCode = CHARSET_ASCII;
-            } else if (charset == MinimalEncoder.ENCODING_ISO) {
-                charsetCode = CHARSET_ISO;
-            } else if (charset == MinimalEncoder.ENCODING_UTF16) {
-                charsetCode = CHARSET_UTF16;
-            } else {
-                // this shouldn't ever really happen, but it's nice to have
-                // something in case it does.
-                charsetCode = CHARSET_ASCII;
-            }
+            ImEncoding encoding = encInfo.getEncoding();
 
-            BinaryTools.writeUShort(msgout, charsetCode);
-            BinaryTools.writeUShort(msgout, CHARSETSUBCODE_DEFAULT);
-            msgout.write(encInfo.getData());
+            BinaryTools.writeUShort(msgout, encoding.getCharsetCode());
+            BinaryTools.writeUShort(msgout, encoding.getCharsetSubcode());
+            msgout.write(encInfo.getBytes());
 
             // create the two TLV's inside a TLV chain, and write it out.
             MutableTlvChain chain = new DefaultMutableTlvChain();
-            Tlv featuresTlv = new Tlv(TYPE_FEATURES);
+            Tlv featuresTlv = new Tlv(TYPE_FEATURES, FEATURES_DEFAULT);
             chain.addTlv(featuresTlv);
 
             ByteBlock msgPartBlock = ByteBlock.wrap(msgout.toByteArray());
@@ -261,11 +235,14 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
         }
 
         if (autoResponse) new Tlv(TYPE_AUTO).write(out);
-        if (wantsIcon) new Tlv(TYPE_ICON_REQ).write(out);
 
         if (iconInfo != null) {
-            ByteBlock iconInfoBlock = ByteBlock.createByteBlock(iconInfo);
+            ByteArrayOutputStream bout = new ByteArrayOutputStream(20);
+            iconInfo.writeToImTlv(bout);
+
+            ByteBlock iconInfoBlock = ByteBlock.wrap(bout.toByteArray());
             new Tlv(TYPE_ICONINFO, iconInfoBlock).write(out);
         }
+        if (wantsIcon) new Tlv(TYPE_ICON_REQ).write(out);
     }
 }
