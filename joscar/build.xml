@@ -69,7 +69,7 @@
   <property name="demoextras.lib" location="demo/extras/lib" />
 
 
-  <target name="version">
+  <target name="-version">
     <mkdir dir="${tasks.bin}" />
 
     <javac destdir="${tasks.bin}">
@@ -92,7 +92,7 @@
     <property name="distextras.dir" value="${fullpkg}" />
     <property name="distextras.home" location="${distextras.dir}" />
 
-    <echo message="joscar is at version ${joscar.ver}" />
+    <!-- <echo message="joscar is at version ${joscar.ver}" /> -->
   </target>
 
 
@@ -102,7 +102,7 @@
            destdir="${joscar.bin}" source="1.4" />
   </target>
 
-  <target name="jar" depends="joscar,version">
+  <target name="jar" depends="joscar,-version">
     <mkdir dir="${joscar.bin}" />
     <jar jarfile="${fullpkg}-bin.jar"
          basedir="${joscar.bin}"
@@ -143,14 +143,14 @@
     </java>
   </target>
 
-  <target name="build-taglets">
+  <target name="-build-taglets">
     <mkdir dir="${taglets.bin}" />
     <javac srcdir="${tools.src}"
            includes="net/kano/joscartools/taglets/"
            destdir="${taglets.bin}" />
   </target>
 
-  <target name="javadoc" depends="build-taglets">
+  <target name="javadoc" depends="-build-taglets">
     <mkdir dir="${apidocs.home}" />
     <javadoc sourcepath="${joscar.src}"
              packagenames="net.kano.joscar, net.kano.joscar.*"
@@ -201,7 +201,7 @@
   </target>
 
 
-  <target name="clean" depends="version">
+  <target name="clean" depends="-version">
     <delete dir="${joscar.bin}" />
     <delete dir="${demo.bin}" />
     <delete dir="${tests.bin}" />
@@ -213,13 +213,13 @@
   </target>
 
 
-  <target name="build-tests" depends="joscar">
+  <target name="-build-tests" depends="joscar">
     <mkdir dir="${tests.bin}" />
     <javac srcdir="${tests.src}" destdir="${tests.bin}"
            classpath="${joscar.bin}" />
   </target>
 
-  <target name="tests" depends="build-tests">
+  <target name="test" depends="-build-tests">
     <mkdir dir="${tests.reports}" />
     <junit printsummary="true">
       <classpath>
@@ -235,18 +235,18 @@
   </target>
 
 
-  <target name="dist-clean" depends="version">
+  <target name="dist-clean" depends="-version">
     <delete dir="${dist.home}" />
     <delete file="${dist.pkgname}.tar.gz" />
     <delete file="${dist.pkgname}.tar.bz2" />
     <delete file="${dist.pkgname}.zip" />
   </target>
 
-  <target name="dist-init" depends="version">
+  <target name="dist-init" depends="-version">
     <mkdir dir="${dist.home}" />
   </target>
 
-  <target name="dist-src" depends="dist-init">
+  <target name="dist-src" depends="-dist-init">
     <copy todir="${dist.home}">
       <fileset file="${ant.file}" />
       <fileset dir="${basedir}">
@@ -289,14 +289,14 @@
     <mkdir dir="${dist.home}/demo/extras/src" />
   </target>
 
-  <target name="dist-doc" depends="dist-init">
+  <target name="dist-doc" depends="-dist-init">
     <mkdir dir="${dist.home}/${docs.dir}" />
     <copy todir="${dist.home}/${docs.dir}" >
       <fileset dir="${docs.home}/" />
     </copy>
   </target>
 
-  <target name="dist-package" depends="version">
+  <target name="dist-package" depends="-version">
     <tar destfile="${dist.pkgname}.tar.gz" basedir="${basedir}"
          longfile="gnu" compression="gzip" includes="${fullpkg}/" />
     <tar destfile="${dist.pkgname}.tar.bz2" basedir="${basedir}"
@@ -305,7 +305,7 @@
          includes="${fullpkg}/"  />
   </target>
 
-  <target name="dist-extras-src" depends="version">
+  <target name="dist-extras-src" depends="-version">
     <mkdir dir="${distextras.home}/demo/extras/" />
 
     <copy todir="${distextras.home}/demo/extras">
@@ -322,7 +322,7 @@
          includes="${distextras.dir}/"  />
   </target>
 
-  <target name="dist-extras-clean" depends="version">
+  <target name="dist-extras-clean" depends="-version">
     <delete dir="${distextras.home}" />
     <delete file="${dist.extrasname}.tar.gz" />
     <delete file="${dist.extrasname}.tar.bz2" />

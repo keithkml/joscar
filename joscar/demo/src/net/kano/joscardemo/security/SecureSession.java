@@ -52,7 +52,7 @@ public abstract class SecureSession {
             return (SecureSession) cl.newInstance();
         } catch (Exception e) { }
 
-        System.out.println("[couldn't load security package; using null "
+        System.err.println("[couldn't load security package; using null "
                 + "security session class]");
         return new NullSecureSession();
     }

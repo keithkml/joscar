@@ -42,6 +42,7 @@ import net.kano.joscar.net.ClientConn;
 import net.kano.joscar.net.ClientConnEvent;
 import net.kano.joscar.net.ClientConnListener;
 import net.kano.joscar.net.ClientConnStreamHandler;
+import net.kano.joscar.net.ConnDescriptor;
 import net.kano.joscar.rv.RecvRvEvent;
 import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
@@ -138,7 +139,7 @@ public class DirectIMSession {
 
         System.out.println("connecting to " + ip + ":" + port);
 
-        normalConn = new ClientConn(ip, port);
+        normalConn = new ClientConn(new ConnDescriptor(ip, port));
 
         normalConn.addConnListener(new ClientConnListener() {
             public void stateChanged(ClientConnEvent e) {

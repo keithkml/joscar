@@ -39,6 +39,7 @@ import net.kano.joscar.net.ClientConn;
 import net.kano.joscar.net.ClientConnEvent;
 import net.kano.joscar.net.ClientConnListener;
 import net.kano.joscar.net.ClientConnStreamHandler;
+import net.kano.joscar.net.ConnDescriptor;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -58,40 +59,18 @@ public class ClientFlapConn extends ClientConn {
     private FlapProcessor flapProcessor = new FlapProcessor();
 
     /**
-     * Creates a client FLAP connection with the default FLAP command factory
-     * and no host, IP, or port to connect to yet.
-     */
-    public ClientFlapConn() { }
-
-    /**
-     * Creates a client FLAP connection with the default FLAP command factory
-     * and the given hostname and port. The given hostname and port will be be
-     * used to connect to when <code>connect</code> is called.
+     * Creates a client FLAP connection. The given host and port will be
+     * used to connect to when {@link #connect} is called.
      *
-     * @param host the hostname to connect to when <code>connect</code> is
-     *        called
-     * @param port the port to connect to when <code>connect</code> is called
+     * @param cd an object describing the destination host and port for this
+     *        connection
      */
-    public ClientFlapConn(String host, int port) {
-        super(host, port);
+    public ClientFlapConn(ConnDescriptor cd) {
+        super(cd);
 
         init();
     }
 
-    /**
-     * Creates a client FLAP connection with the default FLAP command factory
-     * and the given IP and port. The given IP and port will be used to connect
-     * to when <code>connect</code> is called.
-     *
-     * @param ip the IP address to connect to when <code>connect</code> is
-     *        called
-     * @param port the port to connect to when <code>connect</code> is called
-     */
-    public ClientFlapConn(InetAddress ip, int port) {
-        super(ip, port);
-
-        init();
-    }
 
     /**
      * Initializes the super <code>ClientConn</code> by adding a connection

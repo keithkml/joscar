@@ -35,11 +35,9 @@
 
 package net.kano.joscartools.ant;
 
+import net.kano.joscar.JoscarTools;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Task;
-
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 
 public class JoscarVersionTask extends Task {
     private String property;
@@ -47,30 +45,10 @@ public class JoscarVersionTask extends Task {
     public void setProperty(String property) { this.property = property; }
 
     public void execute() throws BuildException {
-        Class joscarToolsClass;
-        try {
-            joscarToolsClass = Class.forName("net.kano.joscar.JoscarTools");
-        } catch (ClassNotFoundException e) {
-            throw new BuildException(e);
-        }
-        Method versionStringMethod;
-        try {
-            versionStringMethod = joscarToolsClass.getMethod("getVersionString",
-                    new Class[0]);
-        } catch (NoSuchMethodException e) {
-            throw new BuildException(e);
-        } catch (SecurityException e) {
-            throw new BuildException(e);
-        }
-
         String version;
         try {
-            version = (String) versionStringMethod.invoke(null, new Object[0]);
-        } catch (IllegalAccessException e) {
-            throw new BuildException(e);
-        } catch (IllegalArgumentException e) {
-            throw new BuildException(e);
-        } catch (InvocationTargetException e) {
+            version = JoscarTools.getVersionString();
+        } catch (Exception e) {
             throw new BuildException(e);
         }
 

@@ -44,6 +44,7 @@ import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.net.ClientConnEvent;
 import net.kano.joscar.net.ClientConnListener;
 import net.kano.joscar.net.ConnProcessorExceptionEvent;
+import net.kano.joscar.net.ConnDescriptor;
 import net.kano.joscar.snac.ClientSnacProcessor;
 import net.kano.joscar.snac.FamilyVersionPreprocessor;
 import net.kano.joscar.snac.SnacPacketEvent;
@@ -81,7 +82,7 @@ public abstract class AbstractFlapConn extends ClientFlapConn {
         getFlapProcessor().addExceptionHandler(
                 new ConnProcessorExceptionHandler() {
                     public void handleException(ConnProcessorExceptionEvent event) {
-                        System.out.println(event.getType() + " FLAP ERROR: "
+                        System.err.println(event.getType() + " FLAP ERROR: "
                                 + event.getException().getMessage());
                         event.getException().printStackTrace();
                     }
@@ -100,17 +101,9 @@ public abstract class AbstractFlapConn extends ClientFlapConn {
                 }
             };
 
-    public AbstractFlapConn(JoscarTester tester) {
-        this.tester = tester;
-    }
+    protected AbstractFlapConn(ConnDescriptor cd, JoscarTester tester) {
+        super(cd);
 
-    public AbstractFlapConn(String host, int port, JoscarTester tester) {
-        super(host, port);
-        this.tester = tester;
-    }
-
-    public AbstractFlapConn(InetAddress ip, int port, JoscarTester tester) {
-        super(ip, port);
         this.tester = tester;
     }
 

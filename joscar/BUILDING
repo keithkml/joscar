@@ -14,7 +14,7 @@ The following targets are defined in build.xml:
 
    - jar:  Builds a jar file containing (only) joscar binaries.
 
-   - tests:  Builds and runs JUnit tests in tests/.
+   - test:  Builds and runs JUnit tests in tests/.
 
    - demo:  Builds JoscarTester binaries and places them in demo/.
 

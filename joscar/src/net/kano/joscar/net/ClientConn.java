@@ -246,38 +246,16 @@ public class ClientConn {
     private ClientConnStreamHandler streamHandler = null;
 
     /**
-     * Creates a <code>ClientConn</code> with no hostname/IP or port. (You can
-     * use {@link #setHost}, {@link #setIpAddress}, and {@link #setPort} to set
-     * them later.)
-     */
-    public ClientConn() { }
-
-    /**
-     * Creates a <code>ClientConn</code> for the given hostname and port number.
-     * The given hostname and port will be be used to connect to when
-     * <code>connect</code> is called.
+     * Creates a <code>ClientConn</code> for the given connection descriptor.
      *
-     * @param host the hostname to connect to when <code>connect</code> is
-     *        called
-     * @param port the port to connect to when <code>connect</code> is called
+     * @param cd an object describing the destination host and port for this
+     *        connection
      */
-    public ClientConn(String host, int port) {
-        this.host = host;
-        this.port = port;
-    }
+    public ClientConn(ConnDescriptor cd) {
+        DefensiveTools.checkNull(cd, "cd");
 
-    /**
-     * Creates a <code>ClientConn</code> for the given IP address and port
-     * number. The given IP address and port will be be used to connect to when
-     * <code>connect</code> is called.
-     *
-     * @param ip the hostname to connect to when <code>connect</code> is
-     *        called
-     * @param port the port to connect to when <code>connect</code> is called
-     */
-    public ClientConn(InetAddress ip, int port) {
-        this.ip = ip;
-        this.port = port;
+        this.host = cd.getHost();
+        this.port = cd.getPort();
     }
 
     /**
@@ -320,15 +298,6 @@ public class ClientConn {
     }
 
     /**
-     * Sets the hostname associated with this connection.
-     *
-     * @param host the hostname to associate with this connection
-     */
-    public synchronized final void setHost(String host) {
-        this.host = host;
-    }
-
-    /**
      * Returns the IP address associated with this connection.
      *
      * @return the IP address associated with this connection
@@ -338,30 +307,12 @@ public class ClientConn {
     }
 
     /**
-     * Sets the IP address associated with this connection.
-     *
-     * @param ip the IP address associated with this connection
-     */
-    public synchronized final void setIpAddress(InetAddress ip) {
-        this.ip = ip;
-    }
-
-    /**
      * Returns the TCP port associated with this connection.
      *
      * @return the TCP port associated with this connection
      */
     public synchronized final int getPort() {
         return port;
-    }
-
-    /**
-     * Sets the TCP port associated with this connection.
-     *
-     * @param port the TCP port associated with this connection
-     */
-    public synchronized final void setPort(int port) {
-        this.port = port;
     }
 
     /**
@@ -414,9 +365,8 @@ public class ClientConn {
     }
 
     /**
-     * Attempts to connect using the values of {@linkplain #setHost host} or
-     * {@linkplain #setIpAddress IP address} and {@linkplain #setPort TCP port}
-     * which were, presumably, set before this method was called. Upon
+     * Attempts to connect to the host and port described in the
+     * <code>ConnDescriptor</code> passed in this object's constructor. Upon
      * successful connection, a <code>Socket</code> will be passed to this
      * <code>ClientConn</code>'s {@link #setStreamHandler stream handler}.
      * <br>

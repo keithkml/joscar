@@ -125,6 +125,11 @@ public class SnacManager {
     }
 
     public void addRequest(SnacRequest request) {
+        int family = request.getCommand().getFamily();
+        if (!isPending(family)) {
+            throw new IllegalArgumentException("Family 0x"
+                    + Integer.toHexString(family) + " is not pending"); 
+        }
         pendingSnacs.add(request);
     }
 

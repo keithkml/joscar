@@ -38,6 +38,7 @@ package net.kano.joscardemo;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.OscarTools;
+import net.kano.joscar.net.ConnDescriptor;
 import net.kano.joscar.flap.FlapCommand;
 import net.kano.joscar.flap.FlapPacketEvent;
 import net.kano.joscar.flapcmd.LoginFlapCmd;
@@ -72,6 +73,7 @@ import net.kano.joscar.snaccmd.ExtraInfoData;
 import net.kano.joscar.snaccmd.FullUserInfo;
 import net.kano.joscar.snaccmd.MiniUserInfo;
 import net.kano.joscar.snaccmd.SnacFamilyInfoFactory;
+import net.kano.joscar.snaccmd.ShortCapabilityBlock;
 import net.kano.joscar.snaccmd.buddy.BuddyOfflineCmd;
 import net.kano.joscar.snaccmd.buddy.BuddyStatusCmd;
 import net.kano.joscar.snaccmd.conn.ClientReadyCmd;
@@ -230,20 +232,9 @@ public abstract class BasicConn extends AbstractFlapConn {
         rvProcessor.addListener(rvListener);
     }
 
-    public BasicConn(JoscarTester tester, ByteBlock cookie) {
-        super(tester);
-        this.cookie = cookie;
-    }
-
-    public BasicConn(String host, int port, JoscarTester tester,
+    protected BasicConn(ConnDescriptor cd, JoscarTester tester,
             ByteBlock cookie) {
-        super(host, port, tester);
-        this.cookie = cookie;
-    }
-
-    public BasicConn(InetAddress ip, int port, JoscarTester tester,
-            ByteBlock cookie) {
-        super(ip, port, tester);
+        super(cd, tester);
         this.cookie = cookie;
     }
 
