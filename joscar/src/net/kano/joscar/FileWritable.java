@@ -58,7 +58,8 @@ public class FileWritable implements LiveWritable {
     /**
      * Creates a new Writable that will write the contents of the given file
      * on command.
-     * @param file
+     *
+     * @param file the file whose contents should be written
      */
     public FileWritable(File file) {
         this.file = file;

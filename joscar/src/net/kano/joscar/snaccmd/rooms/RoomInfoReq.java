@@ -62,7 +62,7 @@ public class RoomInfoReq extends RoomCommand {
      * Generates a more-room-information command from the given incoming SNAC
      * packet.
      *
-     * @param packet the incoming room more info request packet
+     * @param packet an incoming room more info request packet
      */
     protected RoomInfoReq(SnacPacket packet) {
         super(CMD_MORE_ROOM_INFO);

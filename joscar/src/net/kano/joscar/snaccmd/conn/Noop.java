@@ -51,7 +51,8 @@ import java.io.OutputStream;
 public class Noop extends ConnCommand {
     /**
      * Creates a new no-op command from the given incoming SNAC packet.
-     * @param packet
+     * 
+     * @param packet an incoming no-op SNAC packet
      */
     protected Noop(SnacPacket packet) {
         super(CMD_NOOP);

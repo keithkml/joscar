@@ -1,17 +1,3 @@
-
-package net.kano.joscar.snaccmd.conn;
-
-import net.kano.joscar.flapcmd.SnacPacket;
-import net.kano.joscar.ByteBlock;
-import net.kano.joscar.BinaryTools;
-import net.kano.joscar.tlv.TlvChain;
-import net.kano.joscar.tlv.AbstractTlvChain;
-import net.kano.joscar.tlv.ImmutableTlvChain;
-import net.kano.joscar.tlv.Tlv;
-
-import java.io.OutputStream;
-import java.io.IOException;
-
 /*
  *  Copyright (c) 2003, The Joust Project
  *  All rights reserved.
@@ -47,15 +33,48 @@ import java.io.IOException;
  *
  */
 
-public class SetAvailabilityMsgCmd extends ConnCommand {
-    public static final int TYPE_DEFAULT = 0x0002;
-    public static final int FLAG_DEFAULT = 0x04;
+package net.kano.joscar.snaccmd.conn;
 
+import net.kano.joscar.ByteBlock;
+import net.kano.joscar.BinaryTools;
+import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.flapcmd.SnacPacket;
+import net.kano.joscar.snaccmd.ExtraInfoBlock;
+import net.kano.joscar.snaccmd.ExtraInfoData;
+import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.Tlv;
+import net.kano.joscar.tlv.TlvChain;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
+import java.io.ByteArrayOutputStream;
+
+/**
+ * A SNAC command used to set an "iChat availability message." An availability
+ * message for a buddy is shown under his or her screenname in Apple's iChat
+ * AIM client. After setting an availability message, it appears as an
+ * <code>ExtraInfoBlock</code> in one's {@link
+ * net.kano.joscar.snaccmd.FullUserInfo}.
+ *
+ * @snac.src client
+ * @snac.cmd 0x01 0x1e
+ */
+public class SetAvailabilityMsgCmd extends ConnCommand {
+    /** A TLV type for the availability message extra info block. */
     private static final int TYPE_DATA = 0x001d;
 
-    private final int type;
-    private final int flags;
+    /** The extra info block stored in this set-availability-message command. */
+    private final ExtraInfoBlock infoBlock;
+    /** The availability message stored in this command. */
+    private final String message;
 
+    /**
+     * Generates a new set-availability-message command from the given incoming
+     * SNAC packet.
+     *
+     * @param packet a set-availability-message SNAC command
+     */
     protected SetAvailabilityMsgCmd(SnacPacket packet) {
         super(CMD_SETAVAILABILITY);
 
@@ -68,21 +87,110 @@ public class SetAvailabilityMsgCmd extends ConnCommand {
         if (dataTlv != null) {
             ByteBlock availData = dataTlv.getData();
 
-            type = BinaryTools.getUShort(availData, 0);
-            flags = BinaryTools.getUByte(availData, 2);
-
-            int len = BinaryTools.getUByte(availData, 3);
-            ByteBlock messageData = availData.subBlock(4, len);
-
-            int msgLen = BinaryTools.getUShort(messageData, 0);
-            ByteBlock messageBlock = messageData.subBlock(2, msgLen);
+            infoBlock = ExtraInfoBlock.readExtraInfoBlock(availData);
+            ByteBlock msgData = infoBlock.getExtraData().getData();
+            String msg = null;
+            try {
+                msg = ByteBlock.createString(msgData, "UTF-8");
+            } catch (UnsupportedEncodingException impossible) { }
+            message = msg;
         } else {
-            type = -1;
-            flags = -1;
+            message = null;
+            infoBlock = null;
         }
     }
 
+    /**
+     * Creates a new set-availability-message command containing the given
+     * message. Note that to unset an availability message, one should send a
+     * set-availability-message command with an empty (zero-length) message.
+     * <br>
+     * <br>
+     * (This constructor does the work of creating an
+     * <code>ExtraInfoBlock</code> containing the message for you. For
+     * information on how to create your own block for use in the {@link
+     * #SetAvailabilityMsgCmd(ExtraInfoBlock)} constructor, see the {@link
+     * ExtraInfoData} documentation.)
+     *
+     * @param message the availability message to send
+     */
+    public SetAvailabilityMsgCmd(String message) {
+        super(CMD_SETAVAILABILITY);
+
+        DefensiveTools.checkNull(message, "message");
+
+        this.infoBlock = null;
+        this.message = message;
+    }
+
+    /**
+     * Creates a new set-availability-message command containing the given extra
+     * information block.
+     *
+     * @param infoBlock an extra information block presumably containing an
+     *        availability message
+     */
+    public SetAvailabilityMsgCmd(ExtraInfoBlock infoBlock) {
+        super(CMD_SETAVAILABILITY);
+
+        DefensiveTools.checkNull(infoBlock, "infoBlock");
+
+        this.infoBlock = infoBlock;
+        this.message = null;
+    }
+
+    /**
+     * Returns the extra info block stored in this command. Note that the
+     * returned value will be <code>null</code> if this object was created using
+     * the {@link #SetAvailabilityMsgCmd(String)} constructor. The type code of
+     * the returned extra info block will normally be {@link
+     * ExtraInfoBlock#TYPE_AVAILMSG} and the flags in the nested
+     * <code>ExtraInfoData</code> will normally be {@link
+     * ExtraInfoData#FLAG_AVAILMSG_PRESENT}. For details on extracting the
+     * availability message from this block, see the {@link ExtraInfoData}
+     * documentation.
+     *
+     * @return the extra info block stored in this command
+     */
+    public final ExtraInfoBlock getInfoBlock() { return infoBlock; }
+
+    /**
+     * Returns the message stored in this command. Note that the returned value
+     * will be <code>null</code> if this object was created using the {@link
+     * #SetAvailabilityMsgCmd(ExtraInfoBlock)} constructor.
+     *
+     * @return the availability message sent in this command
+     */
+    public final String getMessage() { return message; }
+
     public void writeData(OutputStream out) throws IOException {
-        
+        ExtraInfoBlock infoBlock = null;;
+        if (this.infoBlock != null) {
+            infoBlock = this.infoBlock;
+        } else if (message != null) {
+            byte[] messageBytes = message.getBytes("UTF-8");
+
+            ByteArrayOutputStream bout
+                    = new ByteArrayOutputStream(4 + messageBytes.length);
+            BinaryTools.writeUShort(bout, messageBytes.length);
+            bout.write(messageBytes);
+            BinaryTools.writeUShort(bout, 0);
+
+            ByteBlock block = ByteBlock.wrap(bout.toByteArray());
+
+            ExtraInfoData data = new ExtraInfoData(
+                    ExtraInfoData.FLAG_AVAILMSG_PRESENT, block);
+            infoBlock = new ExtraInfoBlock(
+                    ExtraInfoBlock.TYPE_AVAILMSG, data);
+        }
+
+        if (infoBlock != null) {
+            new Tlv(TYPE_DATA, ByteBlock.createByteBlock(infoBlock)).write(out);
+        }
+    }
+
+    public String toString() {
+        return "SetAvailabilityMsgCmd: message=" + message + ", block="
+                + infoBlock;
     }
 }

@@ -143,7 +143,7 @@ public class FullUserInfo implements LiveWritable {
         Tlv capTlv = chain.getLastTlv(TYPE_CAPS);
         Tlv sessionLengthAIM = chain.getLastTlv(TYPE_SESS_LEN_AIM);
         Tlv sessionLengthAOL = chain.getLastTlv(TYPE_SESS_LEN_AOL);
-        Tlv iconInfoTlv = chain.getLastTlv(TYPE_EXTRA_INFO);
+        Tlv extraInfoTlv = chain.getLastTlv(TYPE_EXTRA_INFO);
 
         MutableTlvChain extras = new DefaultMutableTlvChain(chain);
         extras.removeTlvs(new int[] {
@@ -207,10 +207,10 @@ public class FullUserInfo implements LiveWritable {
 
         }
 
-        ExtraInfoBlock[] iconInfos = null;
-        if (iconInfoTlv != null) {
-            ByteBlock iconData = iconInfoTlv.getData();
-            iconInfos = ExtraInfoBlock.readExtraInfos(iconData);
+        ExtraInfoBlock[] extraInfos = null;
+        if (extraInfoTlv != null) {
+            ByteBlock extraBlocks = extraInfoTlv.getData();
+            extraInfos = ExtraInfoBlock.readExtraInfos(extraBlocks);
         }
 
         block = block.subBlock(chain.getTotalSize());
@@ -220,7 +220,7 @@ public class FullUserInfo implements LiveWritable {
 
         return new FullUserInfo(sn, warningLevel, flags, accountCreated,
                 memberSince, sessLengthAIM, sessLengthAOL, onSince, idleMins,
-                capabilityBlocks, away, iconInfos, extras, totalSize);
+                capabilityBlocks, away, extraInfos, extras, totalSize);
     }
 
     /**
@@ -342,10 +342,10 @@ public class FullUserInfo implements LiveWritable {
     private final Boolean away;
 
     /**
-     * A set of extra icon information structures advertised by this user, or
+     * A set of extra information blocks advertised by this user, or
      * <code>null</code> if this field was not sent.
      */
-    private final ExtraInfoBlock[] iconInfos;
+    private final ExtraInfoBlock[] extraInfos;
 
     /**
      * A set of extra TLV's that were not explicitly parsed into fields.
@@ -394,15 +394,15 @@ public class FullUserInfo implements LiveWritable {
      * @param capabilityBlocks a list of capability blocks that this user is
      *        advertising
      * @param away whether this user is away
-     * @param iconInfos a list of extra icon information blocks that this user
-     *        is advertising
+     * @param extraInfos a list of extra information blocks that this user is
+     *        advertising
      */
     public FullUserInfo(String sn, int warningLevel, int flags,
             Date accountCreated, Date memberSince, long sessAIM, long sessAOL,
             Date onSince, int idleMins, CapabilityBlock[] capabilityBlocks,
-            Boolean away, ExtraInfoBlock[] iconInfos) {
+            Boolean away, ExtraInfoBlock[] extraInfos) {
         this(sn, warningLevel, flags, accountCreated, memberSince, sessAIM,
-                sessAOL, onSince, idleMins, capabilityBlocks, away, iconInfos,
+                sessAOL, onSince, idleMins, capabilityBlocks, away, extraInfos,
                 null);
     }
 
@@ -428,17 +428,17 @@ public class FullUserInfo implements LiveWritable {
      * @param capabilityBlocks a list of capability blocks that this user is
      *        advertising
      * @param away whether this user is away
-     * @param iconInfos a list of extra icon information blocks that this user
-     *        is advertising
+     * @param extraInfos a list of extra information blocks that this user is
+     *        advertising
      * @param extraTlvs a set of extra TLV's to be appended to this user info
      *        block
      */
     public FullUserInfo(String sn, int warningLevel, int flags,
             Date accountCreated, Date memberSince, long sessAIM, long sessAOL,
             Date onSince, int idleMins, CapabilityBlock[] capabilityBlocks,
-            Boolean away, ExtraInfoBlock[] iconInfos, TlvChain extraTlvs) {
+            Boolean away, ExtraInfoBlock[] extraInfos, TlvChain extraTlvs) {
         this(sn, warningLevel, flags, accountCreated, memberSince, sessAIM,
-                sessAOL, onSince, idleMins, capabilityBlocks, away, iconInfos,
+                sessAOL, onSince, idleMins, capabilityBlocks, away, extraInfos,
                 extraTlvs, -1);
     }
 
@@ -462,8 +462,8 @@ public class FullUserInfo implements LiveWritable {
      * @param capabilityBlocks a list of capability blocks that this user is
      *        advertising
      * @param away whether this user is away
-     * @param iconInfos a list of extra icon information blocks that this user
-     *        is advertising
+     * @param extraInfos a list of extra information blocks that this user is
+     *        advertising
      * @param extraTlvs a set of extra TLV's to be appended to this user info
      *        block
      * @param totalSize the total size of this object, as read from a block
@@ -472,7 +472,7 @@ public class FullUserInfo implements LiveWritable {
     private FullUserInfo(String sn, int warningLevel, int flags,
             Date accountCreated, Date memberSince, long sessAIM, long sessAOL,
             Date onSince, int idleMins, CapabilityBlock[] capabilityBlocks,
-            Boolean away, ExtraInfoBlock[] iconInfos, TlvChain extraTlvs,
+            Boolean away, ExtraInfoBlock[] extraInfos, TlvChain extraTlvs,
             int totalSize) {
         DefensiveTools.checkNull(sn, "sn");
         DefensiveTools.checkRange(warningLevel, "warningLevel", 0);
@@ -489,7 +489,7 @@ public class FullUserInfo implements LiveWritable {
         this.idleMins = idleMins;
         this.capabilityBlocks = capabilityBlocks;
         this.away = away;
-        this.iconInfos = iconInfos;
+        this.extraInfos = extraInfos;
         this.extraTlvs = extraTlvs;
         this.totalSize = totalSize;
     }
@@ -624,14 +624,14 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
     }
 
     /**
-     * Returns the list of icon information objects this user is advertising,
+     * Returns the list of extra information objects this user is advertising,
      * or <code>null</code> if this field was not sent. Note that this will
      * return a zero-length array if the field was sent but empty.
      *
-     * @return a list if advertised buddy icon hash information blocks
+     * @return a list of advertised extra information blocks
      */
-    public final ExtraInfoBlock[] getIconInfos() {
-        return (ExtraInfoBlock[]) (iconInfos == null ? null : iconInfos.clone());
+    public final ExtraInfoBlock[] getExtraInfoBlocks() {
+        return (ExtraInfoBlock[]) (extraInfos == null ? null : extraInfos.clone());
     }
 
     /**
@@ -714,9 +714,9 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
                     CapabilityBlock.convertToBytes(capabilityBlocks))));
         }
 
-        if (iconInfos != null) {
+        if (extraInfos != null) {
             chain.addTlv(new Tlv(TYPE_EXTRA_INFO,
-                    ByteBlock.createByteBlock(iconInfos)));
+                    ByteBlock.createByteBlock(extraInfos)));
         }
 
         if (extraTlvs != null) chain.addAll(extraTlvs);
@@ -738,8 +738,8 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
                 + (capabilityBlocks == null ? null : ""
                 + capabilityBlocks.length) +
                 ", away=" + away +
-                ", iconInfos="
-                + (iconInfos == null ? null :  Arrays.asList(iconInfos))
+                ", extraInfos="
+                + (extraInfos == null ? null :  Arrays.asList(extraInfos))
                 + ", extraTlvs="
                 + (extraTlvs == null ? null : "" + extraTlvs.getTlvCount());
     }

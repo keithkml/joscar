@@ -339,7 +339,7 @@ public class ClientSnacProcessor extends AbstractSnacProcessor {
      * given SNAC queue manager is not the current SNAC queue manager, no change
      * takes place.
      *
-     * @param mgr
+     * @param mgr the SNAC queue manager to unset, if set
      */
     public synchronized final void unsetSnacQueueManager(SnacQueueManager mgr) {
         if (queueManager == mgr) setSnacQueueManager(null);

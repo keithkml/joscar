@@ -146,11 +146,11 @@ public final class ExtraInfoBlock implements LiveWritable {
     /**
      * Creates an extra info block object with the given type code and data.
      *
-     * @param code the type of data being stored in this extra info block
+     * @param type the type of data being stored in this extra info block
      * @param extraData a block of extra info data
      */
-    public ExtraInfoBlock(int code, ExtraInfoData extraData) {
-        this(code, extraData, -1);
+    public ExtraInfoBlock(int type, ExtraInfoData extraData) {
+        this(type, extraData, -1);
     }
 
     /**

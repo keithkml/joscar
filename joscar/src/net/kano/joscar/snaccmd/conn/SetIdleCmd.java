@@ -81,7 +81,7 @@ public class SetIdleCmd extends ConnCommand {
      * is reset to zero and the user is marked "active" until another set idle
      * time command is sent with a nonzero value.
      *
-     * @param seconds
+     * @param seconds the number of seconds the user has been idle
      */
     public SetIdleCmd(long seconds) {
         super(CMD_SET_IDLE);
