@@ -528,6 +528,7 @@ header.setScreenname("");
         hout.writeTo(out);
     }
 
+    /** A regular expression pattern matching FLAG_* fields in this class. */
     private static final Pattern flagFieldRE = Pattern.compile("FLAG_.*");
 
     public synchronized String toString() {

@@ -37,23 +37,24 @@ package net.kano.joscar.net;
 
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.logging.Logger;
+import net.kano.joscar.logging.LoggingSystem;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.util.Arrays;
 import java.util.Iterator;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
 
 /**
  * A simple interface for an object that has the ability to be attached and/or
  * detached from a stream or socket.
  */
 public abstract class ConnProcessor {
+    /** A logger for logging connection processor related events. */
     private static final Logger logger
-            = Logger.getLogger("net.kano.joscar.net");
+            = LoggingSystem.getLogger("net.kano.joscar.net");
 
     /**
      * Represents whether this connection processor is attached to any input or
@@ -215,11 +216,11 @@ public abstract class ConnProcessor {
         DefensiveTools.checkNull(type, "type");
         DefensiveTools.checkNull(t, "t");
 
-        boolean logFine = logger.isLoggable(Level.FINE);
-        boolean logFiner = logger.isLoggable(Level.FINER);
+        boolean logFine = logger.logFineEnabled();
+        boolean logFiner = logger.logFinerEnabled();
 
         if (logFine) {
-            logger.fine("Processing connection error (" + type + "): "
+            logger.logFine("Processing connection error (" + type + "): "
                     + t.getMessage() + ": " + info);
         }
 
@@ -228,7 +229,7 @@ public abstract class ConnProcessor {
             // if we're not attached to anything, the listeners don't want to
             // be hearing about any connection errors.
             if (logFiner) {
-                logger.fine("Ignoring " + type + " connection error because " +
+                logger.logFine("Ignoring " + type + " connection error because " +
                         "processor is not attached");
             }
             return;
@@ -239,8 +240,8 @@ public abstract class ConnProcessor {
         // synchronized)
         Iterator iterator = errorHandlers.iterator();
         if (!iterator.hasNext()) {
-            if (logger.isLoggable(Level.WARNING)) {
-                logger.log(Level.WARNING,
+            if (logger.logWarningEnabled()) {
+                logger.logException(
                         "CONNPROCESSOR HAS NO ERROR HANDLERS, DUMPING:\n"
                         + "ERROR TYPE: " + type + "\n"
                         + "ERROR INFO: " + info,
@@ -258,24 +259,35 @@ public abstract class ConnProcessor {
                     = (ConnProcessorExceptionHandler) iterator.next();
 
             if (logFiner) {
-                logger.finer("Running ConnProcessor error handler " + handler);
+                logger.logFiner("Running ConnProcessor error handler " + handler);
             }
 
             try {
                 handler.handleException(event);
             } catch (Throwable t2) {
-                if (logger.isLoggable(Level.WARNING)) {
-                    logger.warning("Exception handler " + handler
+                if (logger.logWarningEnabled()) {
+                    logger.logWarning("Exception handler " + handler
                             + "threw exception: " + t2);
                 }
             }
         }
     }
 
+    /**
+     * An enumeration class for connection processor error types.
+     */
     public static final class ErrorType {
+        /** The name of this error type. */
         private final String name;
 
+        /**
+         * Creates a new error type object with the given name.
+         *
+         * @param name the name of this error type
+         */
         public ErrorType(String name) {
+            DefensiveTools.checkNull(name, "name");
+
             this.name = name;
         }
 

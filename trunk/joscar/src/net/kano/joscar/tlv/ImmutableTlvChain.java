@@ -37,7 +37,12 @@ package net.kano.joscar.tlv;
 
 import net.kano.joscar.ByteBlock;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * An immutable TLV chain, a TLV chain that cannot be modified after its

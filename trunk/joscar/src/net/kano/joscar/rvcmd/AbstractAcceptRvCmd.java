@@ -36,9 +36,9 @@
 package net.kano.joscar.rvcmd;
 
 import net.kano.joscar.MiscTools;
-import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
+import net.kano.joscar.tlv.Tlv;
 
 import java.io.IOException;
 import java.io.OutputStream;

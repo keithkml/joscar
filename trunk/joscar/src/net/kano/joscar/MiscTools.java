@@ -167,7 +167,34 @@ public final class MiscTools {
         return null;
     }
 
-    public static String[] findFlagFields(Class cl, long value, Pattern p) {
+    /**
+     * Returns a list of names of public static final fields in the given class
+     * whose values' "on" bits are a subset of the "on" bits in the given
+     * value's binary representation, and whose name matches the given regular
+     * expression pattern.
+     * <p>
+     * For example, given the class:
+     * <pre>
+class Something {
+     private static final int FLAG_A = 0x04;
+     private static final int FLAG_B = 0x02;
+     private static final int FLAG_C = 0x08;
+}
+</pre>
+     * The call <code>MiscTools.findFlagFields(Something.class, 0x02 | 0x08 |
+     * 0x01 | 0x40, Pattern.compile("FLAG_.*"))</code> would return an array
+     * containing <code>"FLAG_B"</code> and <code>"FLAG_C"</code>.
+     *
+     * @param cl the class containing the fields
+     * @param value the value to match
+     * @param pattern the regular expression pattern that matching fields must
+     *        match
+     * @return an array of field names matching the given criteria
+     *
+     * @see #getFlagFieldsString(Class, long, java.util.regex.Pattern)
+     */
+    public static String[] findFlagFields(Class cl, long value,
+            Pattern pattern) {
         Field[] fields = cl.getFields();
         SortedMap matches = new TreeMap(Collections.reverseOrder());
 
@@ -182,7 +209,9 @@ public final class MiscTools {
             }
 
             String fieldName = field.getName();
-            if (p != null && !p.matcher(fieldName).matches()) continue;
+            if (pattern != null && !pattern.matcher(fieldName).matches()) {
+                continue;
+            }
 
             long fieldValue;
             try {
@@ -199,8 +228,36 @@ public final class MiscTools {
         return (String[]) matches.values().toArray(new String[0]);
     }
 
-    public static String getFlagFieldsString(Class cl, long value, Pattern p) {
-        String[] fields = findFlagFields(cl, value, p);
+    /**
+     *
+     * Returns a textual list of names of public static final fields in the
+     * given class whose values' "on" bits are a subset of the "on" bits in the
+     * given value's binary representation, and whose name matches the given
+     * regular expression pattern. If any bits in the given value are not set in
+     * any of the matching fields, a number whose binary representation contains
+     * the remaining bits will be appended to the end of the string.
+     * <p>
+     * For example, given the class:
+     * <pre>
+class Something {
+    private static final int FLAG_A = 0x04;
+    private static final int FLAG_B = 0x02;
+    private static final int FLAG_C = 0x08;
+}
+     </pre>
+     * The call <code>MiscTools.findFlagFields(Something.class, 0x02 | 0x08 |
+     * 0x01 | 0x40, Pattern.compile("FLAG_.*"))</code> would return
+     * <code>"FLAG_B | FLAG_C | 0x41"</code>.
+     *
+     * @param cl the class containing the fields
+     * @param value the value to match
+     * @param pattern the regular expression pattern that matching fields must
+     *        match
+     * @return a string containing the names of the matching fields
+     */
+    public static String getFlagFieldsString(Class cl, long value,
+            Pattern pattern) {
+        String[] fields = findFlagFields(cl, value, pattern);
 
         StringBuffer b = new StringBuffer();
         long covered = 0;

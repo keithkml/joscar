@@ -36,14 +36,15 @@
 package net.kano.joscar.snac;
 
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.net.ConnProcessor;
 import net.kano.joscar.flapcmd.SnacCommand;
+import net.kano.joscar.logging.Logger;
+import net.kano.joscar.logging.LoggingSystem;
+import net.kano.joscar.net.ConnProcessor;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
 
 /**
  * Encapsulates a single outgoing SNAC request and its corresponding incoming
@@ -95,7 +96,7 @@ public class SnacRequest {
      * A logger to which to log request-related events.
      */
     private static final Logger logger
-            = Logger.getLogger("net.kano.joscar.snac");
+            = LoggingSystem.getLogger("net.kano.joscar.snac");
 
     /**
      * The initial outgoing SNAC command that this request represents.
@@ -267,9 +268,9 @@ public class SnacRequest {
      * @param event an object describing this event
      */
     final void sent(SnacRequestSentEvent event) {
-        boolean logFiner = logger.isLoggable(Level.FINER);
+        boolean logFiner = logger.logFinerEnabled();
 
-        if (logFiner) logger.finer("Snac request sent: " + this);
+        if (logFiner) logger.logFiner("Snac request sent: " + this);
 
         synchronized(this) {
             sentAt = event.getSentTime();
@@ -284,7 +285,7 @@ public class SnacRequest {
                             = (SnacRequestListener) it.next();
 
                     if (logFiner) {
-                        logger.finer("Running response listener " + listener);
+                        logger.logFiner("Running response listener " + listener);
                     }
 
                     try {
@@ -297,7 +298,7 @@ public class SnacRequest {
             }
         }
 
-        if (logFiner) logger.finer("Finished processing Snac request send");
+        if (logFiner) logger.logFiner("Finished processing Snac request send");
     }
 
     /**
@@ -322,10 +323,10 @@ public class SnacRequest {
      * @param event an object describing this event
      */
     final void gotResponse(SnacResponseEvent event) {
-        boolean logFiner = logger.isLoggable(Level.FINER);
+        boolean logFiner = logger.logFinerEnabled();
 
         if (logFiner) {
-            logger.finer("Processing response " + event.getSnacPacket()
+            logger.logFiner("Processing response " + event.getSnacPacket()
                     + " to Snac request " + this);
         }
 
@@ -345,7 +346,7 @@ public class SnacRequest {
                             = (SnacRequestListener) it.next();
 
                     if (logFiner) {
-                        logger.finer("Running response listener " + listener);
+                        logger.logFiner("Running response listener " + listener);
                     }
 
                     try {
@@ -358,7 +359,7 @@ public class SnacRequest {
             }
         }
 
-        if (logFiner) logger.finer("Finished handling response");
+        if (logFiner) logger.logFiner("Finished handling response");
     }
 
     /**
@@ -369,9 +370,9 @@ public class SnacRequest {
      * @param event an object describing this event
      */
     final void timedOut(SnacRequestTimeoutEvent event) {
-        boolean logFiner = logger.isLoggable(Level.FINER);
+        boolean logFiner = logger.logFinerEnabled();
 
-        if (logFiner) logger.finer("Snac request " + this + " timed out");
+        if (logFiner) logger.logFiner("Snac request " + this + " timed out");
 
         List listeners = getListenersCopy();
 
@@ -382,7 +383,7 @@ public class SnacRequest {
                             = (SnacRequestListener) it.next();
 
                     if (logFiner) {
-                        logger.finer("Running response listener " + listener
+                        logger.logFiner("Running response listener " + listener
                                 + " for request timeout");
                     }
 
@@ -396,7 +397,7 @@ public class SnacRequest {
             }
         }
 
-        if (logFiner) logger.finer("Finished handling Snac request timeout");
+        if (logFiner) logger.logFiner("Finished handling Snac request timeout");
     }
 
     public synchronized String toString() {

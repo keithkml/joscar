@@ -44,7 +44,10 @@ import net.kano.joscar.LiveWritable;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.AbstractIcbm;
 import net.kano.joscar.snaccmd.ExtraInfoBlock;
-import net.kano.joscar.tlv.*;
+import net.kano.joscar.tlv.MutableTlvChain;
+import net.kano.joscar.tlv.Tlv;
+import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.TlvTools;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -55,12 +58,16 @@ import java.io.OutputStream;
  * commands are {@link SendImIcbm} and {@link RecvImIcbm}.
  */
 public abstract class AbstractImIcbm extends AbstractIcbm {
+    /** A block of 4 null bytes for use in an encryption block. */
+    private static final ByteBlock ENCBLOCK_NULLS
+            = ByteBlock.wrap(new byte[] { 0, 0, 0, 0 });
+
     /** A TLV type containing the text of the Instant Message. */
     private static final int TYPE_MESSAGE = 0x0002;
     /** A TLV type containing buddy icon information. */
     private static final int TYPE_ICONINFO = 0x0008;
     /** A TLV type containing whether or not this is an autoresponse. */
-    private static final int TYPE_AUTO = 0x0004;
+    private static final int TYPE_AUTORESPONSE = 0x0004;
     /** A TLV type containing whether the user is requesting our icon. */
     private static final int TYPE_ICON_REQ = 0x0009;
     /** A TLV type containing information about the sender's AIM Expression. */
@@ -74,10 +81,12 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
     private static final int TYPE_ENCRYPTION_CODE = 0x0d01;
 
     /**
-     * A "features block" used by WinAIM 5.2. This is, then, the block we use.
+     * A "features block" used by some versions of AIM that seems to be most
+     * compatible with all AIM clients (including SMS cell phones).
      */
-    private static final ByteBlock FEATURES_DEFAULT
-            = ByteBlock.wrap(new byte[] { 0x01, 0x01, 0x02 });
+    public static final ByteBlock FEATURES_DEFAULT = ByteBlock.wrap(
+            new byte[] { 0x01, 0x01, 0x01, 0x02 /* FAILS , 0x01, 0x01 */}
+    );
 
     /** The Instant Message. */
     private InstantMessage message;
@@ -89,6 +98,8 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
     private OldIconHashInfo iconInfo;
     /** A list of AIM Expressions information blocks. */
     private ExtraInfoBlock[] expressionInfoBlocks;
+    /** This ICBM's IM "features" block. */
+    private ByteBlock featuresBlock;
 
     /**
      * Generates an IM ICBM from the given incoming SNAC packet and with the
@@ -107,7 +118,7 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
      *
      * @param chain the TLV chain from which to read
      */
-    final void processImTlvs(TlvChain chain) {
+    protected final void processImTlvs(TlvChain chain) {
         DefensiveTools.checkNull(chain, "chain");
         
         // get some TLV's
@@ -115,7 +126,7 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
         Tlv iconTlv = chain.getLastTlv(TYPE_ICONINFO);
 
         // these we just know based on whether the TLV is there
-        autoResponse = chain.hasTlv(TYPE_AUTO);
+        autoResponse = chain.hasTlv(TYPE_AUTORESPONSE);
         wantsIcon = chain.hasTlv(TYPE_ICON_REQ);
 
         // and go through the TLV's we actually need to parse
@@ -124,6 +135,12 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
             // them.
             TlvChain msgTLVs = TlvTools.readChain(messageTlv.getData());
 
+            Tlv featuresTlv = msgTLVs.getLastTlv(TYPE_FEATURES);
+            if (featuresTlv != null) {
+                featuresBlock = featuresTlv.getData();
+            } else {
+                featuresBlock = null;
+            }
 
             if (msgTLVs.hasTlv(TYPE_ENCRYPTION_CODE)) {
                 Tlv msgDataTlv = msgTLVs.getFirstTlv(TYPE_MESSAGE_PARTS);
@@ -154,8 +171,10 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
                 message = new InstantMessage(messageBuffer.toString());
             }
         } else {
+            featuresBlock = null;
             message = null;
         }
+
         if (iconTlv != null) {
             ByteBlock iconData = iconTlv.getData();
             iconInfo = OldIconHashInfo.readIconHashFromImTlvData(iconData);
@@ -180,10 +199,12 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
      * @param wantsIcon whether to request the receiving user's buddy icon
      * @param iconInfo a set of our own buddy icon information
      * @param expInfoBlocks a list of AIM Expression information blocks
+     * @param featuresBlock an AIM "features" block, like {@link #FEATURES_DEFAULT}
      */
     protected AbstractImIcbm(int command, long messageId,
             InstantMessage message, boolean autoResponse, boolean wantsIcon,
-            OldIconHashInfo iconInfo, ExtraInfoBlock[] expInfoBlocks) {
+            OldIconHashInfo iconInfo, ExtraInfoBlock[] expInfoBlocks,
+            ByteBlock featuresBlock) {
         super(IcbmCommand.FAMILY_ICBM, command, messageId, CHANNEL_IM);
 
         ExtraInfoBlock[] safeExpInfoBlocks
@@ -195,6 +216,7 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
         this.wantsIcon = wantsIcon;
         this.iconInfo = iconInfo;
         this.expressionInfoBlocks = safeExpInfoBlocks;
+        this.featuresBlock = featuresBlock;
     }
 
     /**
@@ -234,11 +256,19 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
      * @return the list of AIM Expression information blocks sent in this
      *         command, or <code>null</code> if none were sent
      */
-    public ExtraInfoBlock[] getAimExpressionInfo() {
+    public final ExtraInfoBlock[] getAimExpressionInfo() {
         return expressionInfoBlocks == null
                 ? null
                 : (ExtraInfoBlock[]) expressionInfoBlocks.clone();
     }
+
+    /**
+     * Returns this ICBM's "features" block, or <code>null</code> if none was
+     * sent.
+     *
+     * @return this ICBM's "features" block
+     */
+    public final ByteBlock getFeaturesBlock() { return featuresBlock; }
 
     /**
      * Writes the IM fields of this ICBM, such as message and icon data, to the
@@ -255,7 +285,7 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
             if (message.isEncrypted()) {
                 Tlv encCodeTlv = Tlv.getUShortInstance(TYPE_ENCRYPTION_CODE,
                                     message.getEncryptionCode());
-                ByteBlock encBlock = ByteBlock.wrap(new byte[] { 0, 0, 0, 0 });
+                ByteBlock encBlock = ENCBLOCK_NULLS;
                 ByteBlock encryptData = message.getEncryptedData();
                 messageData = ByteBlock.createByteBlock(
                         new LiveWritable[] { encBlock, encryptData });
@@ -277,15 +307,14 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
                 messageData = ByteBlock.wrap(msgout.toByteArray());
             }
 
-            Tlv featuresTlv = new Tlv(TYPE_FEATURES, FEATURES_DEFAULT);
-            Tlv msgPartTlv = new Tlv(TYPE_MESSAGE_PARTS, messageData);
-
-            chain.addTlv(featuresTlv);
-            chain.addTlv(msgPartTlv);
+            if (featuresBlock != null) {
+                chain.addTlv(new Tlv(TYPE_FEATURES, featuresBlock));
+            }
+            chain.addTlv(new Tlv(TYPE_MESSAGE_PARTS, messageData));
             new Tlv(TYPE_MESSAGE, ByteBlock.createByteBlock(chain)).write(out);
         }
 
-        if (autoResponse) new Tlv(TYPE_AUTO).write(out);
+        if (autoResponse) new Tlv(TYPE_AUTORESPONSE).write(out);
 
         if (iconInfo != null) {
             ByteArrayOutputStream bout = new ByteArrayOutputStream(20);

@@ -74,7 +74,9 @@ import java.util.Arrays;
  * <i>and</i> with the added security of being immutable (that is, read-only).
  */
 public final class ByteBlock implements Writable, Serializable {
+    /** An empty byte array. */
     private static final byte[] BYTES_EMPTY = new byte[0];
+
     /**
      * A <code>ByteBlock</code> with a length of 0.
      */

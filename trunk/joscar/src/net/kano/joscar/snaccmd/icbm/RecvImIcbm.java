@@ -99,15 +99,17 @@ public class RecvImIcbm extends AbstractImIcbm {
      * @param wantsIcon whether the sender wants the receiver's buddy icon
      * @param iconInfo a set of icon information provided by the sender, or
      *        <code>null</code> if none was provided
-     * @param canType whether or not the sender supports typing notification
      * @param expInfoBlocks a list of AIM Expression information blocks
+     * @param featuresBlock an IM "features" block, like {@link
+     *        #FEATURES_DEFAULT}
+     * @param canType whether or not the sender supports typing notification
      */
     public RecvImIcbm(long messageId, FullUserInfo userInfo,
             InstantMessage message, boolean autoResponse, boolean wantsIcon,
             OldIconHashInfo iconInfo, ExtraInfoBlock[] expInfoBlocks,
-            boolean canType) {
+            ByteBlock featuresBlock, boolean canType) {
         super(IcbmCommand.CMD_ICBM, messageId, message, autoResponse,
-                wantsIcon, iconInfo, expInfoBlocks);
+                wantsIcon, iconInfo, expInfoBlocks, featuresBlock);
 
         DefensiveTools.checkNull(userInfo, "userInfo");
 

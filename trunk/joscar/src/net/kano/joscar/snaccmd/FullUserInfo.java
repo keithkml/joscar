@@ -39,10 +39,14 @@ import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.LiveWritable;
+import net.kano.joscar.MiscTools;
 import net.kano.joscar.OscarTools;
 import net.kano.joscar.StringBlock;
-import net.kano.joscar.MiscTools;
-import net.kano.joscar.tlv.*;
+import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.MutableTlvChain;
+import net.kano.joscar.tlv.Tlv;
+import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.TlvTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -104,6 +108,38 @@ public class FullUserInfo implements LiveWritable {
     public static final long MASK_ALL = 0xffffffffL;
 
     /**
+     * An ICQ status flag indicating that the user is invisible.
+     */
+    public static final long ICQSTATUS_INVISIBLE = 0x00000100;
+
+    /**
+     * An ICQ status flag indicating that the user does not want to be
+     * disturbed.
+     */
+    public static final long ICQSTATUS_DND = 0x00000002;
+
+    /**
+     * An ICQ status flag indicating that the user is occupied.
+     */
+    public static final long ICQSTATUS_OCCUPIED = 0x00000010;
+
+    /**
+     * An ICQ status flag indicating that the user is not available.
+     */
+    public static final long ICQSTATUS_NA = 0x00000004;
+
+    /**
+     * An ICQ status flag indicating that the user is away.
+     */
+    public static final long ICQSTATUS_AWAY = 0x00000001;
+
+    /**
+     * An ICQ status flag indicating that the user is free for chat.
+     */
+    public static final long ICQSTATUS_FFC = 0x00000020;
+
+
+    /**
      * Reads a user info block from the given data block, or returns
      * <code>null</code> if no valid user info block is present in the given
      * data block.
@@ -153,12 +189,13 @@ public class FullUserInfo implements LiveWritable {
         Tlv extraInfoTlv = chain.getLastTlv(TYPE_EXTRA_INFO);
         Tlv certHashTlv = chain.getLastTlv(TYPE_CERT_HASH);
         Tlv shortCapTlv = chain.getLastTlv(TYPE_SHORT_CAPS);
+        Tlv statusTlv = chain.getLastTlv(TYPE_ICQSTATUS);
 
         MutableTlvChain extras = TlvTools.getMutableCopy(chain);
         extras.removeTlvs(new int[] {
             TYPE_USER_FLAG, TYPE_ACCT_CREATED, TYPE_ON_SINCE, TYPE_IDLE_MINS,
             TYPE_MEMBER_SINCE, TYPE_CAPS, TYPE_SESS_LEN_AIM, TYPE_SESS_LEN_AOL,
-            TYPE_EXTRA_INFO, TYPE_CERT_HASH, TYPE_SHORT_CAPS
+            TYPE_EXTRA_INFO, TYPE_CERT_HASH, TYPE_SHORT_CAPS, TYPE_ICQSTATUS,
         });
 
         Boolean away = null;
@@ -232,6 +269,11 @@ public class FullUserInfo implements LiveWritable {
             shortCaps = ShortCapabilityBlock.readShortCaps(shortCapData);
         }
 
+        long status = -1;
+        if (statusTlv != null) {
+            status = statusTlv.getDataAsUInt();
+        }
+
         block = block.subBlock(chain.getTotalSize());
 
         // and store this for use by fun things.
@@ -241,7 +283,7 @@ public class FullUserInfo implements LiveWritable {
 
         return new FullUserInfo(sn, warningLevel, flags, accountCreated,
                 memberSince, sessLengthAIM, sessLengthAOL, onSince, idleMins,
-                capabilityBlocks, away, extraInfos, certHash, shortCaps,
+                capabilityBlocks, away, extraInfos, certHash, shortCaps, status,
                 extrasImmutable, totalSize);
     }
 
@@ -301,6 +343,9 @@ public class FullUserInfo implements LiveWritable {
 
     /** A TLV type containing a list of "short capability blocks. */
     private static final int TYPE_SHORT_CAPS = 0x19;
+
+    /** A TLV type containg the status. */
+    private static final int TYPE_ICQSTATUS = 0x0006;
 
     /** The screenname of this user. */
     private final String sn;
@@ -381,6 +426,12 @@ public class FullUserInfo implements LiveWritable {
     /** A list of "short capability blocks." */
     private final ShortCapabilityBlock[] shortCaps;
 
+    /**
+     * The ICQ availability status advertised by this user (like
+     * <code>STATUSF_DND</code>).
+     */
+    private final long icqstatus;
+
     /** A set of extra TLV's that were not explicitly parsed into fields. */
     private final ImmutableTlvChain extraTlvs;
 
@@ -403,7 +454,7 @@ public class FullUserInfo implements LiveWritable {
      */
     private FullUserInfo(String sn, int warningLevel, int totalSize) {
         this(sn, warningLevel, -1, null, null, -1, -1, null, -1, null, null,
-                null, null, null, null, totalSize);
+                null, null, null, -1, null, totalSize);
     }
 
     /**
@@ -430,15 +481,16 @@ public class FullUserInfo implements LiveWritable {
      *        advertising
      * @param certHash an MD5 hash of the user's certificate information block
      * @param shortCaps a list of "short capability blocks"
+     * @param icqstatus an ICQ availability status code
      */
     public FullUserInfo(String sn, int warningLevel, int flags,
             Date accountCreated, Date memberSince, long sessAIM, long sessAOL,
             Date onSince, int idleMins, CapabilityBlock[] capabilityBlocks,
             Boolean away, ExtraInfoBlock[] extraInfos, ByteBlock certHash,
-            ShortCapabilityBlock[] shortCaps) {
+            ShortCapabilityBlock[] shortCaps, long icqstatus) {
         this(sn, warningLevel, flags, accountCreated, memberSince, sessAIM,
                 sessAOL, onSince, idleMins, capabilityBlocks, away, extraInfos,
-                certHash, shortCaps, null);
+                certHash, shortCaps, icqstatus, null);
     }
 
     /**
@@ -467,6 +519,7 @@ public class FullUserInfo implements LiveWritable {
      *        advertising
      * @param certHash an MD5 hash of the user's certificate information block
      * @param shortCaps a list of "short capability blocks"
+     * @param icqstatus an ICQ availability status
      * @param extraTlvs a set of extra TLV's to be appended to this user info
      *        block
      */
@@ -474,10 +527,11 @@ public class FullUserInfo implements LiveWritable {
             Date accountCreated, Date memberSince, long sessAIM, long sessAOL,
             Date onSince, int idleMins, CapabilityBlock[] capabilityBlocks,
             Boolean away, ExtraInfoBlock[] extraInfos, ByteBlock certHash,
-            ShortCapabilityBlock[] shortCaps, ImmutableTlvChain extraTlvs) {
+            ShortCapabilityBlock[] shortCaps, long icqstatus,
+            ImmutableTlvChain extraTlvs) {
         this(sn, warningLevel, flags, accountCreated, memberSince, sessAIM,
                 sessAOL, onSince, idleMins, capabilityBlocks, away, extraInfos,
-                certHash, shortCaps, extraTlvs, -1);
+                certHash, shortCaps, icqstatus, extraTlvs, -1);
     }
 
     /**
@@ -504,6 +558,7 @@ public class FullUserInfo implements LiveWritable {
      *        advertising
      * @param certHash an MD5 hash of the user's certificate information block
      * @param shortCaps a list of "short capability blocks"
+     * @param icqstatus an ICQ availability status code
      * @param extraTlvs a set of extra TLV's to be appended to this user info
      *        block
      * @param totalSize the total size of this object, as read from a block
@@ -513,9 +568,8 @@ public class FullUserInfo implements LiveWritable {
             Date accountCreated, Date memberSince, long sessAIM, long sessAOL,
             Date onSince, int idleMins, CapabilityBlock[] caps,
             Boolean away, ExtraInfoBlock[] extraInfos, ByteBlock certHash,
-            ShortCapabilityBlock[] shortCaps, ImmutableTlvChain extraTlvs,
-            int totalSize) {
-
+            ShortCapabilityBlock[] shortCaps, long icqstatus,
+            ImmutableTlvChain extraTlvs, int totalSize) {
         DefensiveTools.checkNull(sn, "sn");
         DefensiveTools.checkRange(warningLevel, "warningLevel", 0);
         DefensiveTools.checkRange(sessAIM, "sessAIM", -1);
@@ -546,6 +600,7 @@ public class FullUserInfo implements LiveWritable {
         this.extraInfos = safeExtraInfos;
         this.certInfoHash = certHash;
         this.shortCaps = safeShortCaps;
+        this.icqstatus = icqstatus;
         this.extraTlvs = extraTlvs;
         this.totalSize = totalSize;
     }
@@ -713,6 +768,17 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
     }
 
     /**
+     * Returns the user status flags. This will normally be a bitwise
+     * combination of {@link #ICQSTATUS_AWAY}, {@link #ICQSTATUS_DND}, {@link
+     * #ICQSTATUS_FFC}, {@link #ICQSTATUS_INVISIBLE}, {@link #ICQSTATUS_NA}
+     * and {@link #ICQSTATUS_OCCUPIED}. If no flags are set, the user is
+     * online.
+     *
+     * @return this user's ICQ status flags, or -1 if this field was not set
+     */
+    public long getIcqStatus() { return icqstatus; }
+
+    /**
      * Returns a TLV chain consisting of all TLV's not processed into fields
      * accessible by <code>get*</code> methods of this object. This is useful
      * to aid in processing additional fields AOL may add to the standard user
@@ -799,13 +865,22 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
             chain.addTlv(new Tlv(TYPE_CERT_HASH, certInfoHash));
         }
 
+        if (icqstatus != -1) {
+            chain.addTlv(Tlv.getUIntInstance(TYPE_ICQSTATUS, icqstatus));
+        }
+
         if (extraTlvs != null) chain.addAll(extraTlvs);
 
         // whew.
         chain.write(out);
     }
 
+    /** A regular expression pattern matching MASK_* fields in this class. */
     private static final Pattern flagFieldRE = Pattern.compile("MASK_.*");
+    /**
+     * A regular expression pattern matching ICQSTATUS_* fields in this class.
+     */
+    private static final Pattern icqFieldRE = Pattern.compile("ICQSTATUS_.*");
 
     public String toString() {
         return "UserInfo for " + sn + 
@@ -813,6 +888,10 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
                 ": flags=0x" + Integer.toHexString(flags) + " ("
                 + MiscTools.getFlagFieldsString(FullUserInfo.class, flags,
                         flagFieldRE) + ")" +
+
+                (icqstatus == -1 ? "" : ", ICQ status=" 
+                + MiscTools.getFlagFieldsString(FullUserInfo.class, icqstatus,
+                        icqFieldRE)) +
 
                 (accountCreated != null ? ", acctCrtd=" + accountCreated : "") +
 

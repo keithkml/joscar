@@ -423,6 +423,25 @@ public final class BinaryTools {
         return new byte[] { (byte) (number & 0xff) };
     }
 
+    /**
+     * Returns a block of data representing the given ISO-8859-1 string. There
+     * is no need to ensure the given string is actually pure ISO-8859-1, as
+     * the charset encoder will encode any string as ISO-8859-1, replacing
+     * non-ISO-8859-1 characters with '?'.
+     *
+     * @param string the string to be encoded in the returned array
+     * @return the given string converted to an array of ISO-8859-1-encoded
+     *         bytes
+     *
+     * @see #getAsciiBytes
+     * @see String#getBytes(String)
+     */
+    public static byte[] getLatinBytes(String string) {
+        try {
+            return string.getBytes("ISO-8859-1");
+        } catch (UnsupportedEncodingException impossible) { return null; }
+    }
+
 
     /**
      * Returns a block of data representing the given US-ASCII string. There
@@ -438,7 +457,7 @@ public final class BinaryTools {
      * stream.
      *
      * @param string the string to be encoded in the returned array
-     * @return the given string converted to US-ASCII
+     * @return the given string converted to an array of US-ASCII-encoded bytes
      *
      * @see #getAsciiString
      * @see String#getBytes(String)

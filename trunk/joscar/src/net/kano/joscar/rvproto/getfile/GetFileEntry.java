@@ -299,6 +299,7 @@ public class GetFileEntry implements LiveWritable {
         new Tlv(TYPE_SENTINEL).write(out);
     }
 
+    /** A regular expression pattern matching FLAG_* flags of this class. */
     private static final Pattern flagFieldRE = Pattern.compile("FLAG_.*");
 
     public String toString() {

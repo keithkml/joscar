@@ -226,6 +226,27 @@ public final class CapabilityBlock implements Writable {
      */
     private final int hashCode;
 
+    /**
+     * Creates a new capability block containing the given values as data. Each
+     * argument is cast to Java's <code>byte</code> type.
+     *
+     * @param a a byte
+     * @param b a byte
+     * @param c a byte
+     * @param d a byte
+     * @param e a byte
+     * @param f a byte
+     * @param g a byte
+     * @param h a byte
+     * @param i a byte
+     * @param j a byte
+     * @param k a byte
+     * @param l a byte
+     * @param m a byte
+     * @param n a byte
+     * @param o a byte
+     * @param p a byte
+     */
     public CapabilityBlock(int a, int b, int c, int d, int e, int f, int g,
             int h, int i, int j, int k, int l, int m, int n, int o, int p) {
         this(ByteBlock.wrap(new byte[] {
@@ -293,11 +314,13 @@ public final class CapabilityBlock implements Writable {
         if (this == other) return true;
 
         // return true only if the bytes are equal
-        return block.equals(((CapabilityBlock) other).block);
+        CapabilityBlock oc = (CapabilityBlock) other;
+        return block.equals(oc.block);
     }
 
     public int hashCode() { return hashCode; }
 
+    /** A regular expression pattern matching BLOCK_* fields in this class. */
     private static final Pattern blockFieldRE = Pattern.compile("BLOCK_.*");
 
     public String toString() {

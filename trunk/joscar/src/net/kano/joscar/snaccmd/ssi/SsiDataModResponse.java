@@ -91,6 +91,12 @@ public class SsiDataModResponse extends SsiCommand {
      * @see net.kano.joscar.snaccmd.CapabilityBlock#BLOCK_ICQCOMPATIBLE
      */
     public static final int RESULT_NO_ICQ = 0x000d;
+    /**
+     * A result code indicating that (ICQ) authorization is required before the
+     * user can be added to the list. This normally only happens while adding
+     * ICQ
+     */
+    public static final int RESULT_ICQ_AUTH_REQUIRED = 0x000e;
 
     /** The result codes. */
     private final int[] results;
@@ -125,7 +131,7 @@ public class SsiDataModResponse extends SsiCommand {
     public SsiDataModResponse(int[] results) {
         super(CMD_MOD_ACK);
 
-        int[] safeResults = DefensiveTools.getSafeNonnullArrayCopy(results,
+        int[] safeResults = DefensiveTools.getSafeMinArrayCopy(results,
                 "results", 0);
 
         this.results = safeResults;
@@ -138,7 +144,9 @@ public class SsiDataModResponse extends SsiCommand {
      *
      * @return the result codes sent in this SSI modification response
      */
-    public final int[] getResults() { return (int[]) results.clone(); }
+    public final int[] getResults() {
+        return (int[]) results.clone();
+    }
 
     public void writeData(OutputStream out) throws IOException {
         for (int i = 0; i < results.length; i++) {

@@ -36,11 +36,11 @@
 package net.kano.joscar.ratelim;
 
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.logging.Logger;
+import net.kano.joscar.logging.LoggingSystem;
 import net.kano.joscar.snaccmd.conn.RateChange;
 import net.kano.joscar.snaccmd.conn.RateClassInfo;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Monitors rate information for a single rate class.
@@ -48,7 +48,7 @@ import java.util.logging.Logger;
 public class RateClassMonitor {
     /** A logger for rate-related logging. */
     private static final Logger logger
-            = Logger.getLogger("net.kano.joscar.ratelim");
+            = LoggingSystem.getLogger("net.kano.joscar.ratelim");
 
     /** The rate monitor that acts as this monitor's parent. */
     private final RateMonitor rateMonitor;
@@ -96,8 +96,8 @@ public class RateClassMonitor {
                     "this rate class monitor");
         }
 
-        if (logger.isLoggable(Level.FINER)) {
-            logger.finer("Rate monitor for class " + rateInfo.getRateClass()
+        if (logger.logFinerEnabled()) {
+            logger.logFiner("Rate monitor for class " + rateInfo.getRateClass()
                     + " thinks rate average is " + runningAvg + "ms; server "
                     + "thinks it is " + rateInfo.getCurrentAvg() + "ms");
         }
@@ -114,15 +114,15 @@ public class RateClassMonitor {
         runningAvg = Math.min(rateInfo.getMax(), runningAvg);
 
         if (changeCode == RateChange.CODE_LIMITED) {
-            if (logger.isLoggable(Level.FINE)) {
-                logger.fine("Rate class " + this.rateInfo.getRateClass()
+            if (logger.logFineEnabled()) {
+                logger.logFine("Rate class " + this.rateInfo.getRateClass()
                         + ") is now rate-limited!");
             }
             setLimited(true);
 
         } else if (changeCode == RateChange.CODE_LIMIT_CLEARED) {
-            if (logger.isLoggable(Level.FINE)) {
-                logger.fine("Rate class " + this.rateInfo.getRateClass()
+            if (logger.logFineEnabled()) {
+                logger.logFine("Rate class " + this.rateInfo.getRateClass()
                         + ") is no longer rate-limited, according to server");
             }
             setLimited(false);
@@ -160,8 +160,8 @@ public class RateClassMonitor {
         if (limited) {
             long avg = computeCurrentAvg();
             if (avg > rateInfo.getClearAvg() + getErrorMargin()) {
-                if (logger.isLoggable(Level.FINE)) {
-                    logger.fine("We think that rate class "
+                if (logger.logFineEnabled()) {
+                    logger.logFine("We think that rate class "
                             + rateInfo.getRateClass() + " is not limited "
                             + "anymore (avg is " + avg + ")");
                 }
@@ -352,8 +352,8 @@ public class RateClassMonitor {
         long minLastDiff = (winSize * minAvg) - (runningAvg  * (winSize - 1));
         long toWait = minLastDiff - sinceLast + 1;
 
-        if (logger.isLoggable(Level.FINE)) {
-            logger.fine("Class " + rateInfo.getRateClass()
+        if (logger.logFineEnabled()) {
+            logger.logFine("Class " + rateInfo.getRateClass()
                     + " should be waiting " + toWait + "ms (avg is "
                     + computeCurrentAvg() + "ms)");
         }

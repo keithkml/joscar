@@ -39,18 +39,19 @@ import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.MiscTools;
 import net.kano.joscar.SeqNum;
-import net.kano.joscar.net.ConnProcessor;
 import net.kano.joscar.flap.FlapProcessor;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.flapcmd.SnacPacket;
+import net.kano.joscar.logging.Logger;
+import net.kano.joscar.logging.LoggingSystem;
+import net.kano.joscar.net.ConnProcessor;
 
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
 
 /**
  * A client-side SNAC processor. In addition to the functionality provided by
@@ -109,7 +110,7 @@ import java.util.logging.Logger;
 public class ClientSnacProcessor extends AbstractSnacProcessor {
     /** A logger for logging SNAC-related events. */
     private static final Logger logger
-            = Logger.getLogger("net.kano.joscar.snac");
+            = LoggingSystem.getLogger("net.kano.joscar.snac");
 
     /**
      * An error type indicating that an exception was thrown while calling a
@@ -413,8 +414,8 @@ public class ClientSnacProcessor extends AbstractSnacProcessor {
         SnacRequestTimeoutEvent event = new SnacRequestTimeoutEvent(
                 processor, this, request, ttl);
 
-        if (logger.isLoggable(Level.FINER)) {
-            logger.finer("Snac request timed out: " + request);
+        if (logger.logFinerEnabled()) {
+            logger.logFiner("Snac request timed out: " + request);
         }
 
         synchronized(requestEventLock) {
@@ -523,8 +524,8 @@ public class ClientSnacProcessor extends AbstractSnacProcessor {
 
         long reqid = reqInfo.getRequest().getReqid();
 
-        if (logger.isLoggable(Level.FINE)) {
-            logger.fine("Queueing Snac request #" + reqid + ": " + command);
+        if (logger.logFineEnabled()) {
+            logger.logFine("Queueing Snac request #" + reqid + ": " + command);
         }
 
         SnacQueueManager queueMgr;
@@ -533,8 +534,8 @@ public class ClientSnacProcessor extends AbstractSnacProcessor {
         }
         queueMgr.queueSnac(this, request);
 
-        if (logger.isLoggable(Level.FINER)) {
-            logger.finer("Finished queueing Snac request #" + reqid);
+        if (logger.logFinerEnabled()) {
+            logger.logFiner("Finished queueing Snac request #" + reqid);
         }
     }
 
@@ -551,8 +552,8 @@ public class ClientSnacProcessor extends AbstractSnacProcessor {
     public final void sendSnacImmediately(SnacRequest request) {
         DefensiveTools.checkNull(request, "request");
 
-        if (logger.isLoggable(Level.FINE)) {
-            logger.fine("Sending SNAC request " + request);
+        if (logger.logFineEnabled()) {
+            logger.logFine("Sending SNAC request " + request);
         }
 
         RequestInfo reqInfo = registerSnacRequest(request);
@@ -580,8 +581,8 @@ public class ClientSnacProcessor extends AbstractSnacProcessor {
             }
         }
 
-        if (logger.isLoggable(Level.FINER)) {
-            logger.finer("Finished sending SNAC request " + request);
+        if (logger.logFinerEnabled()) {
+            logger.logFiner("Finished sending SNAC request " + request);
         }
     }
 
@@ -681,7 +682,7 @@ public class ClientSnacProcessor extends AbstractSnacProcessor {
     }
 
     protected final boolean continueHandling(SnacPacketEvent event) {
-        boolean logFiner = logger.isLoggable(Level.FINER);
+        boolean logFiner = logger.logFinerEnabled();
 
         FlapProcessor processor = event.getFlapProcessor();
 
@@ -697,7 +698,7 @@ public class ClientSnacProcessor extends AbstractSnacProcessor {
 
         SnacRequest request = reqInfo.getRequest();
         if (logFiner) {
-            logger.finer("This Snac packet is a response to a request!");
+            logger.logFiner("This Snac packet is a response to a request!");
         }
 
         SnacResponseEvent sre = new SnacResponseEvent(event, request);

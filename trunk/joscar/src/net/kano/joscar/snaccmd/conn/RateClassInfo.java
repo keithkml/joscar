@@ -156,6 +156,7 @@ void computeNewAvg(long lastSent, long oldAvg,
  * however, all is back to normal, as if limiting had never taken place.
  */
 public class RateClassInfo implements Writable {
+    /** The size of a rate class information block. */
     private static final int RATECLASSINFO_SIZE = 35;
 
     /** The rate class ID of this rate class information block. */

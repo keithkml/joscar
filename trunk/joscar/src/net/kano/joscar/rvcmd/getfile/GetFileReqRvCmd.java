@@ -333,8 +333,11 @@ if ((getFileReq.getFlags() & GetFileReqRvCmd.FLAG_EXPAND_DYNAMIC) != 0) {
         }
     }
 
+    /** A regular expression matching CODE_* fields in this class. */
     private static final Pattern codeFieldRE = Pattern.compile("CODE_.*");
+    /** A regular expression matching PROTOVERSION_* fields in this class. */
     private static final Pattern protoFieldRE = Pattern.compile("PROTOVERSION_.*");
+    /** A regular expression matching FLAG_* fields in this class. */
     private static final Pattern flagFieldRE = Pattern.compile("FLAG_.*");
 
     public String toString() {
