@@ -224,14 +224,16 @@ public class GetFileEntry implements LiveWritable {
             long flags) {
         DefensiveTools.checkRange(lastmod, "lastmod", -1);
         DefensiveTools.checkRange(filesize, "filesize", -1);
-        DefensiveTools.checkRange(filesize, "flags", -1);
+        DefensiveTools.checkRange(flags, "flags", -1);
 
-        if (flags == -1) flags = 0;
+        long realFlags;
+        if (flags == -1) realFlags = 0;
+        else realFlags = flags;
 
         this.lastmod = lastmod;
         this.filesize = filesize;
         this.filename = filename;
-        this.flags = flags;
+        this.flags = realFlags;
         totalTlvCount = -1;
     }
 

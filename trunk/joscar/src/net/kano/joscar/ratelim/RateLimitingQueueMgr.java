@@ -129,8 +129,8 @@ public class RateLimitingQueueMgr implements SnacQueueManager {
      */
     public final ConnectionQueueMgr[] getQueueMgrs() {
         synchronized(connMgrs) {
-            return (ConnectionQueueMgr[])
-                    connMgrs.values().toArray(new ConnectionQueueMgr[0]);
+            return (ConnectionQueueMgr[]) connMgrs.values().toArray(
+                    new ConnectionQueueMgr[connMgrs.size()]);
         }
     }
 
@@ -185,5 +185,12 @@ public class RateLimitingQueueMgr implements SnacQueueManager {
     public void unpause(ClientSnacProcessor processor) {
         getQueueMgr(processor).unpause();
     }
+
+    public String toString() {
+        return "RateLimitingQueueMgr: "
+                + "connMgrs=" + connMgrs.keySet();
+    }
+
+
 }
 

@@ -79,7 +79,8 @@ public final class SegmentedFilename {
             parts.add(part);
         }
 
-        return new SegmentedFilename((String[]) parts.toArray(new String[0]));
+        return new SegmentedFilename((String[])
+                parts.toArray(new String[parts.size()]));
     }
 
     /**
@@ -174,9 +175,7 @@ public final class SegmentedFilename {
      *        segmented filename should consist
      */
     public SegmentedFilename(String[] parts) {
-        DefensiveTools.checkNull(parts, "parts");
-
-        this.parts = (String[]) DefensiveTools.getNonnullArray(parts, "parts");
+        this.parts = (String[]) DefensiveTools.getSafeNonnullArrayCopy(parts, "parts");
     }
 
     /**

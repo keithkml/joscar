@@ -115,6 +115,7 @@ public class DefaultMutableTlvChain
         Integer type = new Integer(typeCode);
         List tlvs = (List) getTlvMap().get(type);
 
+        // isn't this neat
         if (tlvs != null) while (tlvs.remove(tlv));
         while (getTlvList().remove(tlv));
     }
@@ -131,14 +132,14 @@ public class DefaultMutableTlvChain
     public synchronized final void removeTlvs(int[] types) {
         DefensiveTools.checkNull(types, "types");
 
-        types = (int[]) types.clone();
+        int[] safeTypes = (int[]) types.clone();
 
-        for (int i = 0; i < types.length; i++) {
-            DefensiveTools.checkRange(types[i], "types[] elements", 0);
+        for (int i = 0; i < safeTypes.length; i++) {
+            DefensiveTools.checkRange(safeTypes[i], "types[] elements", 0);
         }
 
-        for (int i = 0; i < types.length; i++) {
-            removeTlvs(types[i]);
+        for (int i = 0; i < safeTypes.length; i++) {
+            removeTlvs(safeTypes[i]);
         }
     }
 

@@ -40,6 +40,8 @@ import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.SeqNum;
 import net.kano.joscar.net.ConnProcessor;
+import net.kano.joscar.net.ConnProcessorExceptionEvent;
+import net.kano.joscar.net.ConnProcessorExceptionHandler;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -94,12 +96,6 @@ public class FlapProcessor extends ConnProcessor {
      * Represents the maximum value of a FLAP sequence number.
      */
     private static final int SEQNUM_MAX = 0xffff;
-
-    /**
-     * A list of handlers for FLAP-related errors and exceptions.
-     */
-    private final CopyOnWriteArrayList errorHandlers
-            = new CopyOnWriteArrayList();
 
     /**
      * A list of listeners for incoming FLAP packets.
@@ -206,28 +202,6 @@ public class FlapProcessor extends ConnProcessor {
     }
 
     /**
-     * Adds an exception handler for FLAP-related exceptions.
-     *
-     * @param handler the handler to add
-     */
-    public final void addExceptionHandler(FlapExceptionHandler handler) {
-        DefensiveTools.checkNull(handler, "handler");
-
-        errorHandlers.addIfAbsent(handler);
-    }
-
-    /**
-     * Removes an exception handler from this FLAP processor.
-     *
-     * @param handler the handler to remove
-     */
-    public final void removeExceptionHandler(FlapExceptionHandler handler) {
-        DefensiveTools.checkNull(handler, "handler");
-
-        errorHandlers.remove(handler);
-    }
-
-    /**
      * Sets the FLAP command factory to use for generating
      * <code>FlapCommand</code>s from FLAP packets. This can be
      * <code>null</code>, disabling the generation of <code>FlapCommand</code>s.
@@ -266,7 +240,8 @@ public class FlapProcessor extends ConnProcessor {
             try {
                 cmd = factory.genFlapCommand(packet);
             } catch (Throwable t) {
-                handleException(FlapExceptionEvent.ERRTYPE_CMD_GEN, t, packet);
+                handleException(ConnProcessorExceptionEvent.ERRTYPE_CMD_GEN, t,
+                        packet);
             }
         }
         if (logFine) logger.fine("Flap command for " + packet + ": " + cmd);
@@ -286,7 +261,8 @@ public class FlapProcessor extends ConnProcessor {
             try {
                 result = listener.handlePacket(event);
             } catch (Throwable t) {
-                handleException(FlapExceptionEvent.ERRTYPE_PACKET_LISTENER, t,
+                handleException(
+                        ConnProcessorExceptionEvent.ERRTYPE_PACKET_LISTENER, t,
                         listener);
                 continue;
             }
@@ -309,88 +285,13 @@ public class FlapProcessor extends ConnProcessor {
             try {
                 listener.handleFlapPacket(event);
             } catch (Throwable t) {
-                handleException(FlapExceptionEvent.ERRTYPE_PACKET_LISTENER, t,
+                handleException(
+                        ConnProcessorExceptionEvent.ERRTYPE_PACKET_LISTENER, t,
                         listener);
             }
         }
 
         if (logFiner) logger.finer("Finished handling Flap packet");
-    }
-
-    /**
-     * Processes the given exception with the given error type. This exception
-     * will be passed to all registered exception handlers. Calling this method
-     * is equivalent to calling {@link
-     * #handleException(Object, Throwable, Object) handleException(type,
-     * t, null)}.
-     *
-     * @param type an object representing the type or source of the given
-     *        exception
-     * @param t the exception that was thrown
-     *
-     * @see #addExceptionHandler
-     */
-    public final void handleException(Object type, Throwable t) {
-        handleException(type, t, null);
-    }
-
-    /**
-     * Processes the given exception with the given error type and error detail
-     * info. This exception will be passed to all registered exception handlers.
-     *
-     * @param type an object representing the type or source of the given
-     *        exception
-     * @param t the exception that was thrown
-     * @param info an object containing extra information or details on this
-     *        exception and/or what caused it
-     */
-    public final void handleException(Object type, Throwable t, Object info) {
-        DefensiveTools.checkNull(type, "type");
-        DefensiveTools.checkNull(t, "t");
-
-        boolean logFine = logger.isLoggable(Level.FINE);
-        boolean logFiner = logger.isLoggable(Level.FINER);
-
-        if (logFine) {
-            logger.fine("Processing flap error (" + type + "): "
-                    + t.getMessage() + ": " + info);
-        }
-
-        if (type == FlapExceptionEvent.ERRTYPE_CONNECTION_ERROR
-                && !isAttached()) {
-            // if we're not attached to anything, the listeners don't want to
-            // be hearing about any connection errors.
-            if (logFiner) {
-                logger.finer("Ignoring " + type + " flap error because " +
-                        "processor is not attached");
-            }
-            return;
-        }
-
-        if (errorHandlers.isEmpty()) {
-            logger.warning("FLAP PROCESSOR HAS NO ERROR HANDLERS, " +
-                    "DUMPING TO STDERR:");
-            logger.warning("ERROR TYPE: " + type);
-            logger.warning("ERROR INFO: " + info);
-            logger.warning("EXCEPTION: " + t.getMessage());
-            logger.warning(Arrays.asList(t.getStackTrace()).toString());
-
-            return;
-        }
-
-        FlapExceptionEvent event = new FlapExceptionEvent(type, this, t, info);
-
-        for (Iterator it = errorHandlers.iterator(); it.hasNext();) {
-            FlapExceptionHandler handler = (FlapExceptionHandler) it.next();
-
-            if (logFiner) logger.finer("Running flap error handler " + handler);
-
-            try {
-                handler.handleException(event);
-            } catch (Throwable t2) {
-                logger.warning("exception handler threw exception: " + t2);
-            }
-        }
     }
 
     /**
@@ -421,8 +322,8 @@ public class FlapProcessor extends ConnProcessor {
             try {
                 block = ByteBlock.createByteBlock(packet);
             } catch (Throwable t) {
-                handleException(FlapExceptionEvent.ERRTYPE_CMD_WRITE, t,
-                        command);
+                handleException(ConnProcessorExceptionEvent.ERRTYPE_CMD_WRITE,
+                        t, command);
                 return;
             }
 
@@ -436,7 +337,9 @@ public class FlapProcessor extends ConnProcessor {
             try {
                 block.write(out);
             } catch (IOException e) {
-                handleException(FlapExceptionEvent.ERRTYPE_CONNECTION_ERROR, e);
+                handleException(
+                        ConnProcessorExceptionEvent.ERRTYPE_CONNECTION_ERROR,
+                        e);
                 return;
             }
         }
@@ -490,5 +393,10 @@ public class FlapProcessor extends ConnProcessor {
 
             return true;
         }
+    }
+
+    public String toString() {
+        return "FlapProcessor: "
+                + "seqNum=" + seqNum;
     }
 }

@@ -119,8 +119,12 @@ public class RoomResponse extends RoomCommand {
             if (exchange != null) exchangeList.add(exchange);
         }
 
-        exchangeInfos = exchangeList.isEmpty() ? null
-                : (ExchangeInfo[]) exchangeList.toArray(new ExchangeInfo[0]);
+        if (exchangeList.isEmpty()) {
+            exchangeInfos = null;
+        } else {
+            exchangeInfos = (ExchangeInfo[]) exchangeList.toArray(
+                    new ExchangeInfo[exchangeList.size()]);
+        }
 
         Tlv roomInfoTlv = chain.getLastTlv(TYPE_ROOM_INFO);
 

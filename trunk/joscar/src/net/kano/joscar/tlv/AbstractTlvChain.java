@@ -52,6 +52,7 @@ import java.util.*;
  * See {@link #getTlvList} and {@link #getTlvMap} for details.
  */
 public abstract class AbstractTlvChain implements TlvChain {
+    private static final Tlv[] TLVARRAY_EMPTY = new Tlv[0];
 
     /** The total size of this chain, as read from an incoming stream. */
     private int totalSize;
@@ -121,17 +122,19 @@ public abstract class AbstractTlvChain implements TlvChain {
         DefensiveTools.checkNull(block, "block");
         DefensiveTools.checkRange(maxTlvs, "maxTlvs", -1);
 
-        int start = block.getOffset();
-        for (int i = 0; Tlv.isValidTLV(block)
-                && (maxTlvs == -1 || i < maxTlvs); i++) {
-            Tlv tlv = new Tlv(block);
+        ByteBlock next = block;
+        int start = next.getOffset();
+        for (int i = 0;
+             Tlv.isValidTLV(next) && (maxTlvs == -1 || i < maxTlvs);
+             i++) {
+            Tlv tlv = new Tlv(next);
 
             addTlvImpl(tlv);
 
-            block = block.subBlock(tlv.getTotalSize());
+            next = next.subBlock(tlv.getTotalSize());
         }
 
-        totalSize = block.getOffset() - start;
+        totalSize = next.getOffset() - start;
     }
 
     /**
@@ -162,7 +165,8 @@ public abstract class AbstractTlvChain implements TlvChain {
     }
 
     public Tlv[] getTlvs() {
-        return (Tlv[]) getTlvList().toArray(new Tlv[0]);
+        List list = getTlvList();
+        return (Tlv[]) list.toArray(new Tlv[list.size()]);
     }
 
     public Iterator iterator() {
@@ -198,10 +202,10 @@ public abstract class AbstractTlvChain implements TlvChain {
 
         List list = (List) getTlvMap().get(typeNum);
         if (list == null) {
-            return new Tlv[0];
+            return TLVARRAY_EMPTY;
         }
         else {
-            return (Tlv[]) list.toArray(new Tlv[0]);
+            return (Tlv[]) list.toArray(new Tlv[list.size()]);
         }
     }
 

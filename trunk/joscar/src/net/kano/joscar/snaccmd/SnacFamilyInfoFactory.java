@@ -191,7 +191,7 @@ void handleServerReadyCmd(ServerReadyCmd serverReadyCmd) {
             }
         }
 
-        return (SnacFamilyInfo[]) list.toArray(new SnacFamilyInfo[0]);
+        return (SnacFamilyInfo[]) list.toArray(new SnacFamilyInfo[list.size()]);
     }
 
     /**

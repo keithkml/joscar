@@ -36,6 +36,7 @@
 package net.kano.joscar.snac;
 
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.net.ConnProcessor;
 import net.kano.joscar.flapcmd.SnacCommand;
 
 import java.util.ArrayList;
@@ -84,11 +85,11 @@ public class SnacRequest {
      * An error type indicating that an exception was thrown during the
      * processing of a SNAC request listener. In this case, the "reason" (the
      * value returned by {@link
-     * net.kano.joscar.flap.FlapExceptionEvent#getReason getReason()}) will be
+     * net.kano.joscar.net.ConnProcessorExceptionEvent#getReason getReason()}) will be
      * the <code>SnacRequestListener</code> which threw the exception.
      */
-    public static final Object ERRTYPE_SNAC_RESPONSE_LISTENER
-            = "ERRTYPE_SNAC_RESPONSE_LISTENER";
+    public static final ConnProcessor.ErrorType ERRTYPE_SNAC_RESPONSE_LISTENER
+            = new ConnProcessor.ErrorType("ERRTYPE_SNAC_RESPONSE_LISTENER");
 
     /**
      * A logger to which to log request-related events.

@@ -159,4 +159,10 @@ public class RateQueue {
     synchronized void clear() {
         queue.clear();
     }
+
+    public String toString() {
+        return "RateQueue: "
+                + "rateMonitor=" + rateMonitor
+                + ", queued: " + queue.size();
+    }
 }

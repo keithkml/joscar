@@ -96,7 +96,8 @@ public class SetInterestsCmd extends LocCommand {
             interestList.add(interest);
         }
 
-        interests = (String[]) interestList.toArray(new String[0]);
+        interests = (String[])
+                interestList.toArray(new String[interestList.size()]);
     }
 
     /**

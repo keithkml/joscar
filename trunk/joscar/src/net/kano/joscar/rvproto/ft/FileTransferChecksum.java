@@ -95,4 +95,8 @@ public final class FileTransferChecksum implements Checksum {
     public void reset() {
         checksum = CHECKSUM_INIT;
     }
+
+    public String toString() {
+        return "FileTransferChecksum: " + checksum;
+    }
 }

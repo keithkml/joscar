@@ -64,4 +64,8 @@ public final class FamilyVersionPreprocessor implements SnacPreprocessor {
             packet.setData(rest);
         }
     }
+
+    public String toString() {
+        return "FamilyVersionPreprocessor";
+    }
 }

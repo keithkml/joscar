@@ -66,4 +66,8 @@ public class DefaultRvProxyCmdFactory implements RvProxyCmdFactory {
             return null;
         }
     }
+
+    public String toString() {
+        return "DefaultRvProxyCmdFactory";
+    }
 }

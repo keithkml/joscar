@@ -40,7 +40,6 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flap.FlapCommand;
 import net.kano.joscar.flap.FlapPacket;
-import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
 import net.kano.joscar.tlv.TlvTools;
@@ -173,5 +172,11 @@ public class LoginFlapCmd extends FlapCommand {
     public void writeData(OutputStream out) throws IOException {
         BinaryTools.writeUInt(out, version);
         if (cookie != null) new Tlv(TYPE_COOKIE, cookie).write(out);
+    }
+
+    public String toString() {
+        return "LoginFlapCmd: "
+                + "version=" + version
+                + ", cookie=" + cookie;
     }
 }

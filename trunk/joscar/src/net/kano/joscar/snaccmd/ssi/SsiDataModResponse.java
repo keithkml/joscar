@@ -125,17 +125,10 @@ public class SsiDataModResponse extends SsiCommand {
     public SsiDataModResponse(int[] results) {
         super(CMD_MOD_ACK);
 
-        DefensiveTools.checkNull(results, "results");
+        int[] safeResults = DefensiveTools.getSafeNonnullArrayCopy(results,
+                "results", 0);
 
-        results = (int[]) results.clone();
-
-        for (int i = 0; i < results.length; i++) {
-            int result = results[i];
-
-            DefensiveTools.checkRange(result, "results elements", 0);
-        }
-
-        this.results = results;
+        this.results = safeResults;
     }
 
     /**

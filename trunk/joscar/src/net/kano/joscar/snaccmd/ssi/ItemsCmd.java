@@ -85,7 +85,7 @@ public abstract class ItemsCmd extends SsiCommand {
             block = block.subBlock(item.getTotalSize());
         }
 
-        items = (SsiItem[]) itemList.toArray(new SsiItem[0]);
+        items = (SsiItem[]) itemList.toArray(new SsiItem[itemList.size()]);
     }
 
     /**
@@ -110,9 +110,8 @@ public abstract class ItemsCmd extends SsiCommand {
     protected ItemsCmd(int command, SsiItem[] items) {
         super(command);
 
-        DefensiveTools.checkNull(items, "items");
-
-        this.items = (SsiItem[]) DefensiveTools.getNonnullArray(items, "items");
+        this.items = (SsiItem[]) DefensiveTools.getSafeNonnullArrayCopy(
+                items, "items");
     }
 
     /**

@@ -41,7 +41,6 @@ import net.kano.joscar.OscarTools;
 import net.kano.joscar.StringBlock;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.ExtraInfoBlock;
-import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
 import net.kano.joscar.tlv.TlvTools;
@@ -189,5 +188,8 @@ public class SendImIcbm extends AbstractImIcbm {
         if (ackRequested) new Tlv(TYPE_ACK).write(out);
     }
 
-
+    public String toString() {
+        return "SendImIcbm to " + sn + " (id=" + getIcbmMessageId()
+                + ", ackreq=" + ackRequested + "): " + getMessage();
+    }
 }

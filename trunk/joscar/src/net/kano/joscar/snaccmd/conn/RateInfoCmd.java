@@ -73,8 +73,6 @@ public class RateInfoCmd extends ConnCommand {
 
         ByteBlock snacData = packet.getData();
 
-        System.out.println("len: " + snacData.getLength());
-
         int rates = BinaryTools.getUShort(snacData, 0);
         RateClassInfo[] infos = new RateClassInfo[rates];
 
@@ -84,22 +82,22 @@ public class RateInfoCmd extends ConnCommand {
             block = block.subBlock((int) infos[i].getWritableLength());
         }
 
-        for (int i = 0; i < rates; i++) {
+        for (int ri = 0; ri < rates; ri++) {
             int rclass = BinaryTools.getUShort(block, 0);
             int familyCount = BinaryTools.getUShort(block, 2);
             CmdType[] cmds = new CmdType[familyCount];
 
-            if (rclass != infos[i].getRateClass()) {
+            if (rclass != infos[ri].getRateClass()) {
                 // the server sent the classes in the wrong order....
                 continue;
             }
 
-            for (int f = 0; f < familyCount; f++) {
-                int family = BinaryTools.getUShort(block, 4+f*4);
-                int command = BinaryTools.getUShort(block, 4+f*4+2);
-                cmds[f] = new CmdType(family, command);
+            for (int fi = 0; fi < familyCount; fi++) {
+                int family = BinaryTools.getUShort(block, 4+fi*4);
+                int command = BinaryTools.getUShort(block, 4+fi*4+2);
+                cmds[fi] = new CmdType(family, command);
             }
-            infos[i].setCommands(cmds);
+            infos[ri].setCommands(cmds);
             block = block.subBlock(4 + familyCount * 4);
         }
 

@@ -78,6 +78,7 @@ public final class ByteBlock implements Writable, Serializable {
      * A <code>ByteBlock</code> with a length of 0.
      */
     public static final ByteBlock EMPTY_BLOCK = new ByteBlock();
+    private static final byte[] BYTES_EMPTY = new byte[0];
 
     /**
      * Returns a ByteBlock logically equivalent to the given byte array.
@@ -342,7 +343,7 @@ public final class ByteBlock implements Writable, Serializable {
      * Creates an empty <code>ByteBlock</code>.
      */
     private ByteBlock() {
-        bytes = new byte[0];
+        bytes = BYTES_EMPTY;
         offset = 0;
         len = 0;
     }
@@ -629,6 +630,8 @@ public final class ByteBlock implements Writable, Serializable {
             code ^= bytes[i];
         }
 
+        // make sure it's not 0, which is a special code meaning that the
+        // hashcode hasn't been computed yet
         if (code == 0) code = 1;
 
         hashCode = code;

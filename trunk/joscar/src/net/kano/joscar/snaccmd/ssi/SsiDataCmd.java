@@ -100,7 +100,7 @@ public class SsiDataCmd extends SsiCommand {
             block = block.subBlock(item.getTotalSize());
         }
 
-        items = (SsiItem[]) itemList.toArray(new SsiItem[0]);
+        items = (SsiItem[]) itemList.toArray(new SsiItem[itemList.size()]);
 
         lastmod = BinaryTools.getUInt(block, 0);
     }
@@ -132,11 +132,11 @@ public class SsiDataCmd extends SsiCommand {
 
         DefensiveTools.checkRange(version, "version", 0);
         DefensiveTools.checkRange(lastmod, "lastmod", 0);
-        DefensiveTools.checkNull(items, "items");
-        items = (SsiItem[]) DefensiveTools.getNonnullArray(items, "items");
+        SsiItem[] safeItems = (SsiItem[]) DefensiveTools.getSafeNonnullArrayCopy(
+                items, "items");
 
         this.version = version;
-        this.items = items;
+        this.items = safeItems;
         this.lastmod = lastmod;
     }
 

@@ -115,4 +115,9 @@ public final class EncodedStringInfo {
     public final byte[] getData() {
         return (byte[]) data.clone();
     }
+
+    public String toString() {
+        return "EncodedStringInfo: charset=" + this.charset + ", data="
+                + BinaryTools.describeData(ByteBlock.wrap(data));
+    }
 }

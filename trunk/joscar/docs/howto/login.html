@@ -201,7 +201,7 @@ Here's how the connection to the authorizer goes:
 
 <p>So. That's the login process for you. Note that many of the commands sent in setting up the BOS connection are unnecessary, but it's good to send them even if you don't quite know what you're doing; the server sort of expects them and might behave differently without them, thinking you are an older or somehow broken client.</p>
 
-<p>I said I would explain how to connect to other services, like chat rooms or the buddy icon server, but I've been writing this for two and a half hours now and I'd like to stop. :) Here's some sample code to go out on. (It might not compile as-is, but the ideas are there. Note that beginners will always want to include the two italicized lines.)
+<p>I said I would explain how to connect to other services, like chat rooms or the buddy icon server, but I've been writing this for two and a half hours now and I'd like to stop. :) Here's some sample code to go out on. (It might not compile as-is, but the ideas are there. Note that beginners will always want to include the three italicized lines.)
 
 <pre>
 Socket socket = new Socket("login.oscar.aol.com", 5190);
@@ -209,6 +209,7 @@ Socket socket = new Socket("login.oscar.aol.com", 5190);
 FlapProcessor fp = new FlapProcessor(socket);
 ClientSnacProcessor sp = new ClientSnacProcessor(fp);
 
+<i>fp.setFlapCmdFactory(new DefaultFlapCmdFactory());</i>
 <i>sp.addPreprocessor(new FamilyVersionPreprocessor());</i>
 <i>sp.setDefaultSnacCmdFactoryList(new DefaultClientFactoryList());</i>
 
@@ -230,10 +231,11 @@ sp.addPacketListener(new SnacPacketListener() {
         SnacCommand snacCmd = e.getSnacCommand();
 
         if (snacCmd instanceof KeyResponse) {
+            KeyResponse keyResponse = (KeyResponse) snacCmd;
             sp.sendSnac(new AuthRequest("myscreenname", "mypassword",
-                    new ClientVersionInfo("AOL Instant Messenger, 
-                    version 5.1.3036/WIN32", 5, 1, 0, 3036), 
-                    ((KeyResponse) snacCmd).getKey());
+                    new ClientVersionInfo("AOL Instant Messenger, "
+                    + "version 5.1.3036/WIN32", 5, 1, 0, 3036), 
+                    keyResponse.getKey());
         } else if (snacCmd instanceof AuthResponse) {
             // ...
         }

@@ -120,4 +120,14 @@ public class SnacRequestTimeoutEvent {
      * @return the "time to live" that this request exceeded, in seconds
      */
     public int getTtl() { return ttl; }
+
+    public String toString() {
+        return "SnacRequestTimeoutEvent: "
+                + "flapProcessor=" + flapProcessor
+                + ", snacProcessor=" + snacProcessor
+                + ", request=" + request
+                + ", ttl=" + ttl;
+    }
+
+
 }

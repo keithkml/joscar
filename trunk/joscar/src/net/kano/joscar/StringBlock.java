@@ -67,9 +67,7 @@ public final class StringBlock {
      *
      * @return this object's string value
      */
-    public final String getString() {
-        return string;
-    }
+    public final String getString() { return string; }
 
     /**
      * Returns the total size of this object, as read from a block of binary
@@ -79,7 +77,9 @@ public final class StringBlock {
      * @return the total size of this structure: how many bytes were read to
      *         read this string
      */
-    public final int getTotalSize() {
-        return totalSize;
+    public final int getTotalSize() { return totalSize; }
+
+    public String toString() {
+        return "StringBlock: size=" + totalSize + ", string=" + string;
     }
 }

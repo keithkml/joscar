@@ -69,18 +69,20 @@ public class SendBuddyListGroup implements LiveWritable {
     public static SendBuddyListGroup[] readBuddyListGroups(ByteBlock block) {
         DefensiveTools.checkNull(block, "block");
 
+        ByteBlock nextBlock = block;
         List groups = new LinkedList();
         for (;;) {
-            SendBuddyListGroup group = readBuddyListGroup(block);
+            SendBuddyListGroup group = readBuddyListGroup(nextBlock);
 
             if (group == null) break;
 
             groups.add(group);
 
-            block = block.subBlock(group.getTotalSize());
+            nextBlock = nextBlock.subBlock(group.getTotalSize());
         }
 
-        return (SendBuddyListGroup[]) groups.toArray(new SendBuddyListGroup[0]);
+        return (SendBuddyListGroup[])
+                groups.toArray(new SendBuddyListGroup[groups.size()]);
     }
 
     /**
@@ -191,12 +193,12 @@ public class SendBuddyListGroup implements LiveWritable {
     private SendBuddyListGroup(String groupName, String[] buddies,
             int totalSize) {
         DefensiveTools.checkNull(groupName, "groupName");
-        DefensiveTools.checkNull(buddies, "buddies");
-        buddies = (String[]) DefensiveTools.getNonnullArray(buddies, "buddies");
+        String[] safeBuddies = (String[])
+                DefensiveTools.getSafeNonnullArrayCopy(buddies, "buddies");
         DefensiveTools.checkRange(totalSize, "totalSize", -1);
 
         this.groupName = groupName;
-        this.buddies = buddies;
+        this.buddies = safeBuddies;
         this.totalSize = totalSize;
 
         DefensiveTools.checkNullElements(this.buddies, "buddies");

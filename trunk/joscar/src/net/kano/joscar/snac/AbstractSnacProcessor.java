@@ -37,6 +37,7 @@ package net.kano.joscar.snac;
 
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.net.ConnProcessor;
 import net.kano.joscar.flap.FlapPacketEvent;
 import net.kano.joscar.flap.FlapProcessor;
 import net.kano.joscar.flap.VetoableFlapPacketListener;
@@ -137,23 +138,23 @@ public abstract class AbstractSnacProcessor {
      * a {@linkplain #addPreprocessor registered SNAC preprocessor} to
      * process an incoming SNAC packet. In this case, the extra error
      * information (the value returned by {@link
-     * net.kano.joscar.flap.FlapExceptionEvent#getReason getReason()}) will be
+     * net.kano.joscar.net.ConnProcessorExceptionEvent#getReason getReason()}) will be
      * the <code>SnacPreprocessor</code> that threw the exception.
      */
-    public static final Object ERRTYPE_SNAC_PACKET_PREPROCESSOR
-            = "ERRTYPE_SNAC_PACKET_PREPROCESSOR";
+    public static final ConnProcessor.ErrorType ERRTYPE_SNAC_PACKET_PREPROCESSOR
+            = new ConnProcessor.ErrorType("ERRTYPE_SNAC_PACKET_PREPROCESSOR");
     /**
      * An error type indicating that an exception was thrown while calling
      * a {@linkplain #addPacketListener registered SNAC packet listener} or
      * {@linkplain #addVetoablePacketListener vetoable packet listener} to
      * handle an incoming SNAC packet. In this case, the extra error information
      * (the value returned by {@link
-     * net.kano.joscar.flap.FlapExceptionEvent#getReason getReason()}) will be
+     * net.kano.joscar.net.ConnProcessorExceptionEvent#getReason getReason()}) will be
      * the <code>VetoableFlapPacketListener</code> or
      * <code>FlapPacketListener</code> from whence the exception was thrown.
      */
-    public static final Object ERRTYPE_SNAC_PACKET_LISTENER
-            = "ERRTYPE_SNAC_PACKET_LISTENER";
+    public static final ConnProcessor.ErrorType ERRTYPE_SNAC_PACKET_LISTENER
+            = new ConnProcessor.ErrorType("ERRTYPE_SNAC_PACKET_LISTENER");
 
     /** A logger for logging SNAC-related events. */
     private static final Logger logger

@@ -38,7 +38,10 @@ package net.kano.joscar.snac;
 /**
  * Provides an interface for processing and intercepting SNAC packets received
  * on a SNAC processor, optionally halting further processing of any
- * given packet.
+ * given packet. It is important to note that vetoable SNAC listeners are never
+ * called for "SNAC responses." For details, see {@link AbstractSnacProcessor}.
+ *
+ * @see AbstractSnacProcessor
  */
 public interface VetoableSnacPacketListener {
     /**

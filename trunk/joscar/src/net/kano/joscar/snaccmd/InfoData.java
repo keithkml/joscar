@@ -190,7 +190,7 @@ public class InfoData implements LiveWritable {
         this.info = info;
         this.awayMessage = awayMessage;
         this.caps = (CapabilityBlock[])
-                DefensiveTools.getNonnullArray(caps, "caps");
+                DefensiveTools.getSafeArrayCopy(caps, "caps");
         this.certInfo = certInfo;
     }
 

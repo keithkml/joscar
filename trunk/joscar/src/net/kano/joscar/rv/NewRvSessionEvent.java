@@ -51,7 +51,7 @@ public class NewRvSessionEvent {
      * received. In practice, this means an initial rendezvous request was
      * received, such as a request inviting the user to a chat room.
      */
-    public static final Object TYPE_INCOMING = "TYPE_INCOMING";
+    public static final EventType TYPE_INCOMING = new EventType("TYPE_INCOMING");
     /**
      * An event type indicating that a rendezvous session was created locally
      * before sending an initial RV request on that session to another user.
@@ -59,7 +59,7 @@ public class NewRvSessionEvent {
      *
      * @see RvProcessor#createRvSession
      */
-    public static final Object TYPE_OUTGOING = "TYPE_OUTGOING";
+    public static final EventType TYPE_OUTGOING = new EventType("TYPE_OUTGOING");
 
     /** The RV processor on which the associated session was created. */
     private final RvProcessor rvProcessor;
@@ -77,7 +77,7 @@ public class NewRvSessionEvent {
      * @param sessionType the event type, like {@link #TYPE_INCOMING}
      */
     protected NewRvSessionEvent(RvProcessor rvProcessor, RvSession newSession,
-            Object sessionType) {
+            EventType sessionType) {
         DefensiveTools.checkNull(rvProcessor, "rvProcessor");
         DefensiveTools.checkNull(newSession, "newSession");
 
@@ -114,4 +114,23 @@ public class NewRvSessionEvent {
      * @return the new session's "session type"
      */
     public final Object getSessionType() { return sessionType; }
+
+    public String toString() {
+        return "NewRvSessionEvent: "
+                + "rvProcessor=" + rvProcessor
+                + ", newSession=" + newSession
+                + ", sessionType=" + sessionType;
+    }
+
+    public static class EventType {
+        private final String name;
+
+        private EventType(String name) {
+            this.name = name;
+        }
+
+        public String toString() {
+            return name;
+        }
+    }
 }

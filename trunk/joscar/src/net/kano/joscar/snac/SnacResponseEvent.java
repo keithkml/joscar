@@ -68,7 +68,10 @@ public class SnacResponseEvent extends SnacPacketEvent {
      *
      * @return the SNAC request to which the associated packet responds
      */
-    public final SnacRequest getRequest() {
-        return request;
+    public final SnacRequest getRequest() { return request; }
+
+    public String toString() {
+        return "SnacResponseEvent: "
+                + "request=" + request + " - " + super.toString();
     }
 }

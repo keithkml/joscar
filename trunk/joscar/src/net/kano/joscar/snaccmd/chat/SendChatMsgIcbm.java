@@ -124,4 +124,9 @@ public class SendChatMsgIcbm extends AbstractChatMsgIcbm {
     protected void writeChatTlvs(OutputStream out) throws IOException {
         if (toBeReflected) new Tlv(TYPE_REFLECT).write(out);
     }
+
+    public String toString() {
+        return "SendChatMsgIcbm: <" + super.toString() + ">, "
+                + "toBeReflected=" + toBeReflected;
+    }
 }

@@ -40,7 +40,7 @@ import net.kano.joscar.MiscTools;
 
 /**
  * An event that occurs when an exception is thrown somewhere in a
- * <code>ConnProcessor</code>.
+ * {@link ConnProcessor}.
  */
 public class ConnProcessorExceptionEvent {
     /**
@@ -49,8 +49,8 @@ public class ConnProcessorExceptionEvent {
      * value returned by {@link #getReason()}) in this case will be
      * <code>null</code>.
      */
-    public static final Object ERRTYPE_CONNECTION_ERROR
-            = "ERRTYPE_CONNECTION_ERROR";
+    public static final ConnProcessor.ErrorType ERRTYPE_CONNECTION_ERROR
+            = new ConnProcessor.ErrorType("ERRTYPE_CONNECTION_ERROR");
     /**
      * An exception type indicating that an exception was thrown while writing
      * a command to a stream. In this case, the
@@ -58,7 +58,8 @@ public class ConnProcessorExceptionEvent {
      * command object whose stream-writing method (like <code>write</code>)
      * threw an exception.
      */
-    public static final Object ERRTYPE_CMD_WRITE = "ERRTYPE_CMD_WRITE";
+    public static final ConnProcessor.ErrorType ERRTYPE_CMD_WRITE
+            = new ConnProcessor.ErrorType("ERRTYPE_CMD_WRITE");
     /**
      * An exception type indicating that an exception was thrown while
      * converting a raw packet to a command object in a
@@ -66,42 +67,55 @@ public class ConnProcessorExceptionEvent {
      * returned by {@link #getReason()} will be the raw packet
      * used in the command generation attempt which threw the exception).
      */
-    public static final Object ERRTYPE_CMD_GEN = "ERRTYPE_CMD_GEN";
+    public static final ConnProcessor.ErrorType ERRTYPE_CMD_GEN
+            = new ConnProcessor.ErrorType("ERRTYPE_CMD_GEN");
     /**
      * An exception type indicating that an exception was thrown while passing
      * a packet event to a packet listener.
      */
-    public static final Object ERRTYPE_PACKET_LISTENER
-            = "ERRTYPE_PACKET_LISTENER";
+    public static final ConnProcessor.ErrorType ERRTYPE_PACKET_LISTENER
+            = new ConnProcessor.ErrorType("ERRTYPE_PACKET_LISTENER");
+
     /**
-     * The type of this exception.
+     * The connection processor on which the associated exception was thrown.
      */
-    private final Object type;
-    /**
-     * The exception that was thrown.
-     */
+    private final ConnProcessor processor;
+    /** The type of this exception. */
+    private final ConnProcessor.ErrorType type;
+    /** The exception that was thrown. */
     private final Throwable exception;
-    /**
-     * A "reason" or description of why the exception was thrown.
-     */
+    /** A "reason" or description of why the exception was thrown. */
     private final Object reason;
 
     /**
      * Creates a new exception event with the given properties.
      *
+     * @param processor the processor on which the associated exception occurred
      * @param type the type of the event, like {@link #ERRTYPE_CMD_GEN}
-     * @param exception the exception that occurred, if any
+     * @param exception the exception that occurred
      * @param reason a "reason object" that describes why the given exception
      *        occurred, if any
      */
-    protected ConnProcessorExceptionEvent(Object type, Throwable exception,
-            Object reason) {
+    public ConnProcessorExceptionEvent(ConnProcessor processor,
+            ConnProcessor.ErrorType type, Throwable exception, Object reason) {
+        DefensiveTools.checkNull(processor, "processor");
         DefensiveTools.checkNull(type, "type");
+        DefensiveTools.checkNull(exception, "exception");
 
+        this.processor = processor;
         this.type = type;
         this.exception = exception;
         this.reason = reason;
     }
+
+    /**
+     * Returns the <code>ConnProcessor</code> on which the associated exception
+     * occurred.
+     *
+     * @return the connection processor on which the associated exception
+     *         occurred
+     */
+    public final ConnProcessor getProcessor() { return processor; }
 
     /**
      * Returns the type of this exception, possibly indicating when or why this
@@ -112,18 +126,14 @@ public class ConnProcessorExceptionEvent {
      *
      * @return the type of exception that was thrown
      */
-    public final Object getType() {
-        return type;
-    }
+    public final ConnProcessor.ErrorType getType() { return type; }
 
     /**
      * Returns the exception that was thrown.
      *
      * @return the thrown exception
      */
-    public final Throwable getException() {
-        return exception;
-    }
+    public final Throwable getException() { return exception; }
 
     /**
      * Returns an object describing or providing more detail regarding the
@@ -142,9 +152,7 @@ if (e.getReason() instanceof Throwable) {
      *
      * @return an object providing more information or detail on this exception
      */
-    public final Object getReason() {
-        return reason;
-    }
+    public final Object getReason() { return reason; }
 
     public String toString() {
         return MiscTools.getClassName(this) + " of type " + type + ": "

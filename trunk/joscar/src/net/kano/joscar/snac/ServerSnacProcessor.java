@@ -94,4 +94,9 @@ public class ServerSnacProcessor extends AbstractSnacProcessor {
 
         sendSnac(reqid, cmd);
     }
+
+    public String toString() {
+        return "ServerSnacProcessor: "
+                + "lastreqid=" + reqid.getLast();
+    }
 }

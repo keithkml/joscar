@@ -47,6 +47,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Collection;
 
 /**
  * Manages the SNAC queue for a single SNAC processor (or "connection").
@@ -302,8 +303,9 @@ connQueueMgr.getRateMonitor().addListener(myRateListener);
             queueSnac(req);
         }
 
+        Collection vals = queues.values();
         RateQueue[] rateQueues
-                = (RateQueue[]) queues.values().toArray(new RateQueue[0]);
+                = (RateQueue[]) vals.toArray(new RateQueue[vals.size()]);
         queueMgr.getRunner().addQueues(rateQueues);
         queueMgr.getRunner().update(this);
     }
@@ -314,8 +316,9 @@ connQueueMgr.getRateMonitor().addListener(myRateListener);
      * @return the rate queues formerly in the queue list
      */
     private synchronized RateQueue[] clearQueues() {
+        Collection vals = queues.values();
         RateQueue[] queueArray = (RateQueue[])
-                queues.values().toArray(new RateQueue[0]);
+                vals.toArray(new RateQueue[vals.size()]);
         queueMgr.getRunner().removeQueues(queueArray);
         queues.clear();
 
@@ -329,5 +332,11 @@ connQueueMgr.getRateMonitor().addListener(myRateListener);
         clearQueue();
         clearQueues();
         monitor.detach();
+    }
+
+    public String toString() {
+        return "ConnectionQueueMgr: "
+                + "paused=" + paused
+                + ", queues=" + (queues.keySet());
     }
 }

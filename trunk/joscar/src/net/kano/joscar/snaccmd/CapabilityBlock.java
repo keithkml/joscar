@@ -233,10 +233,11 @@ public final class CapabilityBlock implements Writable {
     public static CapabilityBlock[] getCapabilityBlocks(ByteBlock block) {
         CapabilityBlock[] blocks = new CapabilityBlock[block.getLength()/16];
 
+        ByteBlock nextBlock = block;
         for (int i = 0; i < blocks.length; i++) {
-            blocks[i] = new CapabilityBlock(block.subBlock(0, 16));
+            blocks[i] = new CapabilityBlock(nextBlock.subBlock(0, 16));
 
-            block = block.subBlock(16);
+            nextBlock= nextBlock.subBlock(16);
         }
 
         return blocks;

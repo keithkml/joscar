@@ -64,19 +64,19 @@ public class ExtraInfoBlockHolder implements Writable {
      * valid extra info block holder object can be read, this method will return
      * <code>null</code>.
      *
-     * @param block a block of data containing an extra info block holder object
+     * @param origBlock a block of data containing an extra info block holder object
      * @return an extra info block holder object read from the given block of
      *         binary data, or <code>null</code> if none could be read
      */
-    public static final ExtraInfoBlockHolder readBlockHolder(ByteBlock block) {
-        DefensiveTools.checkNull(block, "block");
+    public static final ExtraInfoBlockHolder readBlockHolder(ByteBlock origBlock) {
+        DefensiveTools.checkNull(origBlock, "block");
 
-        int origOffset = block.getOffset();
+        int origOffset = origBlock.getOffset();
 
-        ExtraInfoBlock first = ExtraInfoBlock.readExtraInfoBlock(block);
+        ExtraInfoBlock first = ExtraInfoBlock.readExtraInfoBlock(origBlock);
         if (first == null) return null;
 
-        block = block.subBlock(first.getTotalSize());
+        ByteBlock block = origBlock.subBlock(first.getTotalSize());
         if (block.getLength() < 1) return null;
         int code = BinaryTools.getUByte(block, 0);
 
@@ -104,15 +104,16 @@ public class ExtraInfoBlockHolder implements Writable {
     public static final ExtraInfoBlockHolder[] readBlockHolders(
             ByteBlock block) {
         List list = new LinkedList();
+        ByteBlock next = block;
         for (;;) {
-            ExtraInfoBlockHolder bh = readBlockHolder(block);
+            ExtraInfoBlockHolder bh = readBlockHolder(next);
             if (bh == null) break;
             list.add(bh);
-            block = block.subBlock(bh.getTotalSize());
+            next = next.subBlock(bh.getTotalSize());
         }
 
         return (ExtraInfoBlockHolder[])
-                list.toArray(new ExtraInfoBlockHolder[0]);
+                list.toArray(new ExtraInfoBlockHolder[list.size()]);
     }
 
     /** The first extra info block contained in this block holder. */
