@@ -83,13 +83,11 @@ public abstract class AbstractRejectRvCmd extends AbstractRvCmd {
     /**
      * Creates a new outgoing rejection RV command with the given properties.
      *
-     * @param icbmMessageId the ICBM message ID for the outgoing RV ICBM command
      * @param cap the capability block associated with this RV command
      * @param rejectionCode the rejection code to send in this RV command
      */
-    protected AbstractRejectRvCmd(long icbmMessageId, CapabilityBlock cap,
-            int rejectionCode) {
-        super(icbmMessageId, RVSTATUS_DENY, cap);
+    protected AbstractRejectRvCmd(CapabilityBlock cap, int rejectionCode) {
+        super(RVSTATUS_DENY, cap);
 
         DefensiveTools.checkRange(rejectionCode, "rejectionCode", -1);
 

@@ -39,12 +39,25 @@ import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.rvcmd.AbstractAcceptRvCmd;
 
+/**
+ * A rendezvous command used to indicate that a {@linkplain DirectIMReqRvCmd
+ * direct IM request} has been accepted and a connection attempt is being made.
+ */
 public class DirectIMAcceptRvCmd extends AbstractAcceptRvCmd {
+    /**
+     * Creates a new direct IM acceptance command from the given incoming direct
+     * IM acceptance RV ICBM.
+     *
+     * @param icbm an incoming direct IM acceptance RV ICBM command
+     */
     public DirectIMAcceptRvCmd(RecvRvIcbm icbm) {
         super(icbm);
     }
 
-    public DirectIMAcceptRvCmd(long icbmMessageId) {
-        super(icbmMessageId, CapabilityBlock.BLOCK_DIRECTIM);
+    /**
+     * Creates a new outgoing direct IM acceptance command.
+     */
+    public DirectIMAcceptRvCmd() {
+        super(CapabilityBlock.BLOCK_DIRECTIM);
     }
 }

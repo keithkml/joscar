@@ -67,9 +67,8 @@ public class TrillianCryptReqRvCmd extends AbstractTrillianCryptRvCmd {
         else g = null;
     }
 
-    public TrillianCryptReqRvCmd(long icbmMessageId, BigInteger p,
-            BigInteger g) {
-        super(icbmMessageId, ENCSTATUS_REQUEST);
+    public TrillianCryptReqRvCmd(BigInteger p, BigInteger g) {
+        super(ENCSTATUS_REQUEST);
 
         this.p = p;
         this.g = g;

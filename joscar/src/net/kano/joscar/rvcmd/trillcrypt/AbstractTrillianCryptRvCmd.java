@@ -102,14 +102,12 @@ public abstract class AbstractTrillianCryptRvCmd extends RvCommand {
         extraTlvs = extras;
     }
 
-    protected AbstractTrillianCryptRvCmd(long icbmMessageId,
-            int encStatus) {
-        this(icbmMessageId, VERSION_DEFAULT, encStatus);
+    protected AbstractTrillianCryptRvCmd(int encStatus) {
+        this(VERSION_DEFAULT, encStatus);
     }
 
-    protected AbstractTrillianCryptRvCmd(long icbmMessageId, int encVersion,
-            int encStatus) {
-        super(icbmMessageId, ENCSTATUS_REQUEST,
+    protected AbstractTrillianCryptRvCmd(int encVersion, int encStatus) {
+        super(ENCSTATUS_REQUEST,
                 CapabilityBlock.BLOCK_TRILLIANCRYPT);
 
         this.version = encVersion;

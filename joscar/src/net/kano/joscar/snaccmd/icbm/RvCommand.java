@@ -44,7 +44,7 @@ import java.io.IOException;
 
 /**
  * Represents a single "rendezvous command." Rendezvous commands can be used in
- * {@linkplain SendRvIcbm#SendRvIcbm(String, long, RvCommand) sending
+ * {@linkplain SendRvIcbm#SendRvIcbm(String, long, long, RvCommand) sending
  * <code>SendRvIcbm</code>s}, and with the help of {@link net.kano.joscar.rv}
  * can easily be generated from incoming {@link RecvRvIcbm}s.
  */
@@ -65,8 +65,6 @@ public abstract class RvCommand {
      */
     public static final int RVSTATUS_DENY = AbstractRvIcbm.RVSTATUS_DENY;
 
-    /** The ICBM message ID of this command. */
-    private final long icbmMessageId;
     /** The rendezvous status of this command. */
     private final int rvStatus;
     /** The capability block associated with this command. */
@@ -81,7 +79,6 @@ public abstract class RvCommand {
     protected RvCommand(RecvRvIcbm icbm) {
         DefensiveTools.checkNull(icbm, "icbm");
 
-        icbmMessageId = icbm.getMessageId();
         rvStatus = icbm.getRvStatus();
         cap = icbm.getCapability();
     }
@@ -89,26 +86,17 @@ public abstract class RvCommand {
     /**
      * Creates a new outgoing <code>RvCommand</code> with the given properties.
      *
-     * @param icbmMessageId an ICBM message ID
      * @param rvStatus a rendezvous status code, like {@link #RVSTATUS_ACCEPT}
      * @param cap a capability block ("rendezvous type") associated with this
      *        rendezvous command
      */
-    protected RvCommand(long icbmMessageId, int rvStatus, CapabilityBlock cap) {
+    protected RvCommand(int rvStatus, CapabilityBlock cap) {
         DefensiveTools.checkRange(rvStatus, "rvStatus", 0);
         DefensiveTools.checkNull(cap, "cap");
 
-        this.icbmMessageId = icbmMessageId;
         this.rvStatus = rvStatus;
         this.cap = cap;
     }
-
-    /**
-     * Returns this RV command's ICBM message ID.
-     *
-     * @return this RV command's ICBM command ID
-     */
-    public final long getIcbmMessageId() { return icbmMessageId; }
 
     /**
      * Returns the status code for this RV command. Normally one of {@link

@@ -44,7 +44,7 @@ public class VoiceRejectRvCmd extends AbstractRejectRvCmd {
         super(icbm);
     }
 
-    public VoiceRejectRvCmd(long icbmMessageId, int rejectionCode) {
-        super(icbmMessageId, CapabilityBlock.BLOCK_VOICE, rejectionCode);
+    public VoiceRejectRvCmd(int rejectionCode) {
+        super(CapabilityBlock.BLOCK_VOICE, rejectionCode);
     }
 }

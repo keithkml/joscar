@@ -45,6 +45,7 @@ import net.kano.joscar.rvproto.ft.FileSendChecksum;
 import net.kano.joscar.rvproto.ft.FileSendHeader;
 import net.kano.joscar.rvproto.getfile.GetFileEntry;
 import net.kano.joscar.rvproto.getfile.GetFileList;
+import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 
 import java.io.*;
 import java.net.Socket;
@@ -65,7 +66,7 @@ public class HostGetFileThread extends Thread {
 
     public void run() {
         try {
-            rvSession.sendRv(new GetFileAcceptRvCmd(0));
+            rvSession.sendRv(new GetFileAcceptRvCmd());
             RvConnectionInfo connInfo = req.getConnInfo();
             socket = new Socket(connInfo.getInternalIP(),
                             connInfo.getPort());
@@ -135,7 +136,8 @@ public class HostGetFileThread extends Thread {
         hdr.setListNameOffset(28);
         hdr.setListSizeOffset(17);
         hdr.setChecksum(cs.getValue());
-        hdr.setIcbmMessageId(req.getIcbmMessageId());
+        long msgid = ((RecvRvIcbm) origIcbm.getSnacCommand()).getIcbmMessageId();
+        hdr.setIcbmMessageId(msgid);
         hdr.setResForkChecksum(0xffff0000l);
         hdr.setResForkReceivedChecksum(0xffff0000l);
         hdr.setReceivedChecksum(0xffff0000l);

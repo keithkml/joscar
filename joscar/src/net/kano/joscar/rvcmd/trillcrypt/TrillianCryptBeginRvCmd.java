@@ -45,8 +45,8 @@ public class TrillianCryptBeginRvCmd extends AbstractTrillianCryptRvCmd {
         super(icbm);
     }
 
-    public TrillianCryptBeginRvCmd(long icbmMessageId) {
-        super(icbmMessageId, ENCSTATUS_BEGIN);
+    public TrillianCryptBeginRvCmd() {
+        super(ENCSTATUS_BEGIN);
     }
 
     protected void writeExtraTlvs(OutputStream out) throws IOException { }

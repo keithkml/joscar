@@ -741,11 +741,16 @@ public class RvProcessor {
         }
 
         public void sendRv(RvCommand command) {
+            sendRv(command, 0);
+        }
+
+        public void sendRv(RvCommand command, long icbmMessageId) {
             DefensiveTools.checkNull(command, "command");
 
             logger.fine("Sending RV to " + sn + ": " + command);
 
-            SnacCommand cmd = new SendRvIcbm(sn, rvSessionId, command);
+            SnacCommand cmd = new SendRvIcbm(sn, icbmMessageId, rvSessionId,
+                    command);
 
             sendSnac(new SnacRequest(cmd, reqListener));
         }

@@ -141,7 +141,7 @@ public class DefaultRvCommandFactory implements RvCommandFactory {
             }
 
         } else if (block.equals(CapabilityBlock.BLOCK_SENDBUDDYLIST)) {
-            if (rvStatus == AbstractRvCmd.RVSTATUS_REQUEST) {
+            if (rvStatus == RvCommand.RVSTATUS_REQUEST) {
                 return new SendBuddyListRvCmd(rvIcbm);
 
             } else {
@@ -149,10 +149,10 @@ public class DefaultRvCommandFactory implements RvCommandFactory {
             }
 
         } else if (block.equals(CapabilityBlock.BLOCK_CHAT)) {
-            if (rvStatus == AbstractRvCmd.RVSTATUS_REQUEST) {
+            if (rvStatus == RvCommand.RVSTATUS_REQUEST) {
                 return new ChatInvitationRvCmd(rvIcbm);
 
-            } else if (rvStatus == AbstractRvCmd.RVSTATUS_DENY) {
+            } else if (rvStatus == RvCommand.RVSTATUS_DENY) {
                 return new ChatInviteRejectRvCmd(rvIcbm);
 
             } else {
@@ -160,13 +160,13 @@ public class DefaultRvCommandFactory implements RvCommandFactory {
             }
 
         } else if (block.equals(CapabilityBlock.BLOCK_DIRECTIM)) {
-            if (rvStatus == AbstractRvCmd.RVSTATUS_REQUEST) {
+            if (rvStatus == RvCommand.RVSTATUS_REQUEST) {
                 return new DirectIMReqRvCmd(rvIcbm);
 
-            } else if (rvStatus == AbstractRvCmd.RVSTATUS_ACCEPT) {
+            } else if (rvStatus == RvCommand.RVSTATUS_ACCEPT) {
                 return new DirectIMAcceptRvCmd(rvIcbm);
 
-            } else if (rvStatus == AbstractRvCmd.RVSTATUS_DENY) {
+            } else if (rvStatus == RvCommand.RVSTATUS_DENY) {
                 return new DirectIMRejectRvCmd(rvIcbm);
 
             } else {
@@ -174,13 +174,13 @@ public class DefaultRvCommandFactory implements RvCommandFactory {
             }
 
         } else if (block.equals(CapabilityBlock.BLOCK_FILE_GET)) {
-            if (rvStatus == AbstractRvCmd.RVSTATUS_REQUEST) {
+            if (rvStatus == RvCommand.RVSTATUS_REQUEST) {
                 return new GetFileReqRvCmd(rvIcbm);
 
-            } else if (rvStatus == AbstractRvCmd.RVSTATUS_ACCEPT) {
+            } else if (rvStatus == RvCommand.RVSTATUS_ACCEPT) {
                 return new GetFileAcceptRvCmd(rvIcbm);
 
-            } else if (rvStatus == AbstractRvCmd.RVSTATUS_DENY) {
+            } else if (rvStatus == RvCommand.RVSTATUS_DENY) {
                 return new GetFileRejectRvCmd(rvIcbm);
 
             } else {
@@ -188,16 +188,21 @@ public class DefaultRvCommandFactory implements RvCommandFactory {
             }
 
         } else if (block.equals(CapabilityBlock.BLOCK_ICON)) {
-            return new SendBuddyIconRvCmd(rvIcbm);
+            if (rvStatus == RvCommand.RVSTATUS_REQUEST) {
+                return new SendBuddyIconRvCmd(rvIcbm);
+
+            } else {
+                return null;
+            }
 
         } else if (block.equals(CapabilityBlock.BLOCK_ADDINS)) {
-            if (rvStatus == AbstractRvCmd.RVSTATUS_REQUEST) {
+            if (rvStatus == RvCommand.RVSTATUS_REQUEST) {
                 return new AddinsReqRvCmd(rvIcbm);
 
-            } else if (rvStatus == AbstractRvCmd.RVSTATUS_ACCEPT) {
+            } else if (rvStatus == RvCommand.RVSTATUS_ACCEPT) {
                 return new AddinsAcceptRvCmd(rvIcbm);
 
-            } else if (rvStatus == AbstractRvCmd.RVSTATUS_DENY) {
+            } else if (rvStatus == RvCommand.RVSTATUS_DENY) {
                 return new AddinsRejectRvCmd(rvIcbm);
 
             } else {
@@ -205,13 +210,13 @@ public class DefaultRvCommandFactory implements RvCommandFactory {
             }
 
         } else if (block.equals(CapabilityBlock.BLOCK_VOICE)) {
-            if (rvStatus == AbstractRvCmd.RVSTATUS_REQUEST) {
+            if (rvStatus == RvCommand.RVSTATUS_REQUEST) {
                 return new VoiceReqRvCmd(rvIcbm);
 
-            } else if (rvStatus == AbstractRvCmd.RVSTATUS_ACCEPT) {
+            } else if (rvStatus == RvCommand.RVSTATUS_ACCEPT) {
                 return new VoiceAcceptRvCmd(rvIcbm);
 
-            } else if (rvStatus == AbstractRvCmd.RVSTATUS_DENY) {
+            } else if (rvStatus == RvCommand.RVSTATUS_DENY) {
                 return new VoiceRejectRvCmd(rvIcbm);
 
             } else {

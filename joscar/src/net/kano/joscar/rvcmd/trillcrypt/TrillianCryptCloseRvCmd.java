@@ -45,8 +45,8 @@ public class TrillianCryptCloseRvCmd extends AbstractTrillianCryptRvCmd {
         super(icbm);
     }
 
-    public TrillianCryptCloseRvCmd(long icbmMessageId) {
-        super(icbmMessageId, ENCSTATUS_CLOSE);
+    public TrillianCryptCloseRvCmd() {
+        super(ENCSTATUS_CLOSE);
     }
 
     protected void writeExtraTlvs(OutputStream out) throws IOException { }

@@ -39,12 +39,28 @@ import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.rvcmd.AbstractRejectRvCmd;
 
+/**
+ * A rendezvous command used to indicate that a Get File browsing request has
+ * been denied.
+ */
 public class GetFileRejectRvCmd extends AbstractRejectRvCmd {
+    /**
+     * Creates a new Get File session rejection command from the given incoming
+     * Get File session rejection RV ICBM.
+     *
+     * @param icbm an incoming Get File sessoin rejection RV ICBM command
+     */
     public GetFileRejectRvCmd(RecvRvIcbm icbm) {
         super(icbm);
     }
 
-    public GetFileRejectRvCmd(long icbmMessageId, int rejectionCode) {
-        super(icbmMessageId, CapabilityBlock.BLOCK_FILE_GET, rejectionCode);
+    /**
+     * Creates a new outgoing Get File session rejection command with the given
+     * rejection code.
+     *
+     * @param rejectionCode a rejection code, like {@link #REJECTCODE_CANCELLED}
+     */
+    public GetFileRejectRvCmd(int rejectionCode) {
+        super(CapabilityBlock.BLOCK_FILE_GET, rejectionCode);
     }
 }

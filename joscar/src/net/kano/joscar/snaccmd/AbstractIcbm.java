@@ -153,7 +153,7 @@ public abstract class AbstractIcbm extends SnacCommand {
      *
      * @return this command's ICBM message ID
      */
-    public final long getMessageId() {
+    public final long getIcbmMessageId() {
         return messageId;
     }
 
@@ -195,6 +195,6 @@ public abstract class AbstractIcbm extends SnacCommand {
 
     public String toString() {
         return "AbstractIcbm: channel=" + this.channel + ", messageId="
-                + this.getMessageId();
+                + this.getIcbmMessageId();
     }
 }

@@ -44,9 +44,23 @@ import net.kano.joscar.tlv.TlvChain;
 import java.io.OutputStream;
 import java.io.IOException;
 
+/**
+ * A rendezvous command used to request or redirect a Direct IM ("IM Image")
+ * session. Note that this command may be sent multiple times during a session
+ * to use multiple redirects (until one works).
+ *
+ * @see net.kano.joscar.rvproto.directim
+ */
 public class DirectIMReqRvCmd extends AbstractRequestRvCmd {
+    /** The connection information block sent in this request. */
     private final RvConnectionInfo connInfo;
 
+    /**
+     * Creates a new direct IM request RV command from the given incoming direct
+     * IM request RV ICBM.
+     *
+     * @param icbm an incoming direct IM request RV ICBM command
+     */
     public DirectIMReqRvCmd(RecvRvIcbm icbm) {
         super(icbm);
 
@@ -55,12 +69,38 @@ public class DirectIMReqRvCmd extends AbstractRequestRvCmd {
         connInfo = RvConnectionInfo.readConnectionInfo(chain);
     }
 
-    public DirectIMReqRvCmd(long icbmMessageId, RvConnectionInfo connInfo) {
-        super(icbmMessageId, CapabilityBlock.BLOCK_DIRECTIM);
+    /**
+     * Creates a new outgoing initial direct IM request. That is, an outgoing
+     * direct IM request RV command with a request type of {@link
+     * #REQTYPE_INITIAL_REQUEST}.
+     *
+     * @param connInfo a connection information block describing the connection
+     *        to be made
+     */
+    public DirectIMReqRvCmd(RvConnectionInfo connInfo) {
+        this(REQTYPE_INITIAL_REQUEST, connInfo);
+    }
+
+    /**
+     * Creates a new outgoing direct IM request / redirect (depending on the
+     * value of <code>requestType</code>) with the given connection information.
+     *
+     * @param requestType the "request type" for this command, like {@link
+     *        #REQTYPE_REDIRECT}
+     * @param connInfo a connection information block describing the connection
+     *        to be made
+     */
+    public DirectIMReqRvCmd(int requestType, RvConnectionInfo connInfo) {
+        super(CapabilityBlock.BLOCK_DIRECTIM, requestType);
 
         this.connInfo = connInfo;
     }
 
+    /**
+     * Returns the connection information sent in this request.
+     *
+     * @return this request's connection information block
+     */
     public final RvConnectionInfo getConnInfo() { return connInfo; }
 
     protected void writeRvTlvs(OutputStream out) throws IOException {
