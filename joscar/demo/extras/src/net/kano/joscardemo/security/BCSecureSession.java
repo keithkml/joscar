@@ -68,6 +68,7 @@ import org.bouncycastle.cms.CMSSignedDataGenerator;
 import org.bouncycastle.cms.KeyTransRecipientInformation;
 import org.bouncycastle.cms.SignerInformation;
 import org.bouncycastle.cms.SignerInformationStore;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -83,6 +84,7 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509KeyManager;
 import javax.net.ssl.X509TrustManager;
+import javax.net.ssl.SSLSocketFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -97,7 +99,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.Principal;
 import java.security.PrivateKey;
-import java.security.Provider;
 import java.security.SecureRandom;
 import java.security.Security;
 import java.security.UnrecoverableKeyException;
@@ -122,10 +123,8 @@ public class BCSecureSession extends SecureSession {
 
     {
         try {
-            Class bcp = Class.forName(
-                    "org.bouncycastle.jce.provider.BouncyCastleProvider");
-            Security.addProvider((Provider) bcp.newInstance());
-        } catch (Throwable e) {
+            Security.addProvider(new BouncyCastleProvider());
+        } catch (SecurityException e) {
             System.out.println("[couldn't load Bouncy Castle JCE provider]");
         }
 
@@ -215,7 +214,8 @@ public class BCSecureSession extends SecureSession {
         try {
             byte[] signedData;
             CMSSignedDataGenerator sgen = new CMSSignedDataGenerator();
-            sgen.addSigner(privateKey, pubCert, CMSSignedDataGenerator.DIGEST_MD5);
+            sgen.addSigner(privateKey, pubCert,
+                    CMSSignedDataGenerator.DIGEST_MD5);
             CMSSignedData csd = sgen.generate(
                     new CMSProcessableByteArray(dataToSign),
                     true, "BC");
@@ -285,7 +285,8 @@ public class BCSecureSession extends SecureSession {
             byte[] iv = ((ASN1OctetString) alg.getParameters()).getOctets();
 
             Cipher c = Cipher.getInstance(alg.getObjectId().getId(), "BC");
-            c.init(Cipher.DECRYPT_MODE, getChatKey(chat), new IvParameterSpec(iv));
+            c.init(Cipher.DECRYPT_MODE, getChatKey(chat),
+                    new IvParameterSpec(iv));
 
             ByteBlock result = ByteBlock.wrap(c.doFinal(encryptedData));
 
@@ -342,7 +343,8 @@ public class BCSecureSession extends SecureSession {
             ASN1Sequence root = (ASN1Sequence) ain.readObject();
             ASN1Sequence seq = (ASN1Sequence) root.getObjectAt(0);
             KeyTransRecipientInfo ktr = KeyTransRecipientInfo.getInstance(seq);
-            DERObjectIdentifier keyoid = (DERObjectIdentifier) root.getObjectAt(1);
+            DERObjectIdentifier keyoid
+                    = (DERObjectIdentifier) root.getObjectAt(1);
 
             String encoid = ktr.getKeyEncryptionAlgorithm().getObjectId().getId();
             Cipher cipher = Cipher.getInstance(encoid, "BC");
@@ -578,7 +580,8 @@ public class BCSecureSession extends SecureSession {
                     }},
                     new SecureRandom());
 
-            SSLSocket socket = (SSLSocket) context.getSocketFactory().createSocket(address, port);
+            SSLSocketFactory fact = context.getSocketFactory();
+            SSLSocket socket = (SSLSocket) fact.createSocket(address, port);
             socket.startHandshake();
             return socket;
         } catch (Exception e) {

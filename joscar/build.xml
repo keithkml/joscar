@@ -64,6 +64,10 @@
   <property name="demo.bin" location="demo/bin" />
   <property name="demo.src" location="demo/src" />
 
+  <property name="demoextras.bin" location="demo/extras/bin" />
+  <property name="demoextras.src" location="demo/extras/src" />
+  <property name="demoextras.lib" location="demo/extras/lib" />
+
 
   <target name="version">
     <mkdir dir="${tasks.bin}" />
@@ -83,7 +87,10 @@
     <joscar-version property="joscar.ver" />
     <property name="fullpkg" value="${project}-${joscar.ver}" />
     <property name="dist.pkgname" value="${fullpkg}-src" />
+    <property name="dist.extrasname" value="${fullpkg}-extras" />
     <property name="dist.home" location="${fullpkg}" />
+    <property name="distextras.dir" value="${fullpkg}" />
+    <property name="distextras.home" location="${distextras.dir}" />
 
     <echo message="joscar is at version ${joscar.ver}" />
   </target>
@@ -92,22 +99,29 @@
   <target name="joscar">
     <mkdir dir="${joscar.bin}" />
     <javac srcdir="${joscar.src}" includes="net/kano/joscar/"
-           excludes="net/kano/joscartools/" destdir="${joscar.bin}"
-           source="1.4" />
+           destdir="${joscar.bin}" source="1.4" />
   </target>
 
   <target name="jar" depends="joscar,version">
     <mkdir dir="${joscar.bin}" />
     <jar jarfile="${fullpkg}-bin.jar"
          basedir="${joscar.bin}"
-         includes="net/kano/joscar/**/*.class"
-         excludes="net/kano/joscartools/" />
+         includes="net/kano/joscar/**/*.class" />
   </target>
 
   <target name="demo" depends="joscar">
     <mkdir dir="${demo.bin}" />
-    <javac srcdir="${demo.src}" includes="net/kano/joscardemo/"
-           classpath="${joscar.bin}" destdir="${demo.bin}" />
+    <javac includes="net/kano/joscardemo/" 
+           srcdir="${demo.src}:${demoextras.src}"
+           destdir="${demo.bin}">
+      <classpath>
+        <pathelement location="${joscar.bin}" />
+        <pathelement location="${demo.bin}" />
+        <fileset dir="${demoextras.lib}">
+          <include name="*.jar" />
+        </fileset>
+      </classpath>
+    </javac>
   </target>
 
 
@@ -116,8 +130,14 @@
            addproperty="demo.sn" />
     <input message="Type password for ${demo.sn} and press Enter" 
            addproperty="demo.pass" />
-    <java classpath="${joscar.bin}:${demo.bin}" fork="true" 
-          classname="net.kano.joscardemo.JoscarTester">
+    <java fork="true" classname="net.kano.joscardemo.JoscarTester">
+      <classpath>
+        <pathelement location="${joscar.bin}" />
+        <pathelement location="${demo.bin}" />
+        <fileset dir="${demoextras.lib}">
+          <include name="*.jar" />
+        </fileset>
+      </classpath>
       <arg value="${demo.sn}" />
       <arg value="${demo.pass}" />
     </java>
@@ -215,7 +235,7 @@
   </target>
 
 
-  <target name="dist-clean" depends="version">
+  <target name="dist-clean" depends="version,dist-extras-clean">
     <delete dir="${dist.home}" />
     <delete file="${dist.pkgname}.tar.gz" />
     <delete file="${dist.pkgname}.tar.bz2" />
@@ -240,8 +260,8 @@
       </fileset>
     </copy>
 
-    <mkdir dir="${dist.home}/${src.dir}" />
-    <copy todir="${dist.home}/${src.dir}">
+    <mkdir dir="${dist.home}/src" />
+    <copy todir="${dist.home}/src">
       <fileset dir="${joscar.src}">
         <exclude name="**/*~" />
         <exclude name="**/#*#" />
@@ -249,10 +269,24 @@
       </fileset>
     </copy>
 
-    <mkdir dir="${dist.home}/${tests.dir}/${src.dir}" />
-    <copy todir="${dist.home}/${tests.dir}/${src.dir}">
-      <fileset dir="${tests.src}" includes="**/*.java" />
+    <mkdir dir="${dist.home}/tests/src" />
+    <copy todir="${dist.home}/tests/src">
+      <fileset dir="tests/src/" includes="**/*.java" />
     </copy>
+
+    <mkdir dir="${dist.home}/tools/src" />
+    <copy todir="${dist.home}/tools/src">
+      <fileset dir="tools/src/" />
+    </copy>
+
+    <mkdir dir="${dist.home}/demo/src" />
+    <copy todir="${dist.home}/demo/src">
+      <fileset dir="demo/src/" />
+    </copy>
+
+    <!-- this is stupid -->
+    <mkdir dir="${dist.home}/demo/extras/lib" />
+    <mkdir dir="${dist.home}/demo/extras/src" />
   </target>
 
   <target name="dist-doc" depends="dist-init">
@@ -270,6 +304,33 @@
     <zip destfile="${dist.pkgname}.zip" basedir="${basedir}"
          includes="${fullpkg}/"  />
   </target>
+
+  <target name="dist-extras-src" depends="version">
+    <mkdir dir="${distextras.home}/demo/extras/" />
+
+    <copy todir="${distextras.home}/demo/extras">
+      <fileset dir="demo/extras" includes="src/,lib/" />
+    </copy>
+  </target>
+
+  <target name="dist-extras-package" depends="dist-extras-src">
+    <tar destfile="${dist.extrasname}.tar.gz" basedir="${basedir}"
+         longfile="gnu" compression="gzip" includes="${distextras.dir}/" />
+    <tar destfile="${dist.extrasname}.tar.bz2" basedir="${basedir}"
+         longfile="gnu" compression="bzip2" includes="${distextras.dir}/" />
+    <zip destfile="${dist.extrasname}.zip" basedir="${basedir}"
+         includes="${distextras.dir}/"  />
+  </target>
+
+  <target name="dist-extras-clean" depends="version">
+    <delete dir="${distextras.home}" />
+    <delete file="${dist.extrasname}.tar.gz" />
+    <delete file="${dist.extrasname}.tar.bz2" />
+    <delete file="${dist.extrasname}.zip" />
+  </target>
+
+  <target name="dist-extras" 
+          depends="dist-extras-clean,dist-extras-src,dist-extras-package" />
 
   <target name="dist" depends="dist-clean,dist-src,dist-doc,dist-package" />
 

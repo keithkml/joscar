@@ -50,13 +50,7 @@ public abstract class SecureSession {
             Class cl = Class.forName(
                     "net.kano.joscardemo.security.BCSecureSession");
             return (SecureSession) cl.newInstance();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (InstantiationException e) {
-            e.printStackTrace();
-        }
+        } catch (Exception e) { }
 
         System.out.println("[couldn't load security package; using null "
                 + "security session class]");
