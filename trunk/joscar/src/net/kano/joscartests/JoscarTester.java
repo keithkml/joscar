@@ -813,8 +813,8 @@ public class JoscarTester implements CmdLineListener {
         System.out.println("connecting to AIM as " + args[0] + "...");
 
         ConsoleHandler handler = new ConsoleHandler();
-        handler.setLevel(Level.FINE);
-        Logger logger = Logger.getLogger("net.kalno.joscar");
+        handler.setLevel(Level.FINER);
+        Logger logger = Logger.getLogger("net.kano.joscar");
         logger.addHandler(handler);
         logger.setLevel(Level.ALL);
 

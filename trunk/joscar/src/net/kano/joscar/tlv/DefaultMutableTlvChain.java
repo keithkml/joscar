@@ -125,8 +125,12 @@ public class DefaultMutableTlvChain
     }
 
     public synchronized final void removeTlvs(int[] types) {
+        DefensiveTools.checkNull(types, "types");
+
+        types = (int[]) types.clone();
+
         for (int i = 0; i < types.length; i++) {
-            DefensiveTools.checkRange(types[i], "types[] element", 0);
+            DefensiveTools.checkRange(types[i], "types[] elements", 0);
         }
 
         for (int i = 0; i < types.length; i++) {

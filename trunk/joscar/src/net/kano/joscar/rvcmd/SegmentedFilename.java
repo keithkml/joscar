@@ -176,9 +176,7 @@ public final class SegmentedFilename {
 
         this.parts = (String[]) parts.clone();
 
-        for (int i = 0; i < this.parts.length; i++) {
-            DefensiveTools.checkNull(this.parts[i], "parts[] elements");
-        }
+        DefensiveTools.checkNullElements(this.parts, "parts");
     }
 
     /**

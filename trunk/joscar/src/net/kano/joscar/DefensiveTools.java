@@ -92,13 +92,35 @@ public final class DefensiveTools {
      * @param val the value to check
      * @param name the name of this variable, for debugging purposes
      *
-     * @throws IllegalArgumentException if the given value is <code>null</code>
+     * @throws NullPointerException if the given value is <code>null</code>
      */
     public static final void checkNull(Object val, String name)
-            throws IllegalArgumentException {
+            throws NullPointerException {
         if (val == null) {
             throw new NullPointerException("value of " + name
                     + " cannot be null");
+        }
+    }
+
+    /**
+     * Ensures that each element of the given array is not <code>null</code>.
+     *
+     * @param array an array of objects
+     * @param arrayName the name of this array, for debugging purposes
+     *
+     * @throws NullPointerException if an element of the given array is
+     *         <code>null</code>
+     */
+    public static void checkNullElements(Object[] array, String arrayName)
+            throws NullPointerException {
+        checkNull(array, arrayName);
+
+        for (int i = 0; i < array.length; i++) {
+            if (array[i] == null) {
+                throw new IllegalArgumentException(arrayName + " value must " +
+                        "not contain any null elements (" + arrayName + "[" + i
+                        + "] == null)");
+            }
         }
     }
 

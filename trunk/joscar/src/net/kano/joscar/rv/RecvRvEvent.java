@@ -127,20 +127,9 @@ public class RecvRvEvent extends SnacPacketEvent {
                     "one of TYPE_RV and TYPE_RESPONSE");
         }
 
-        if ((rvCommand == null && responseCode == -1)
-                || (rvCommand != null && responseCode != -1)) {
+        if (rvCommand != null && responseCode != -1) {
             throw new IllegalArgumentException("only one of rvCommand and " +
                     "responseCode can have a non-null or nonnegative value");
-        }
-
-        if (type == TYPE_RV && rvCommand == null) {
-            throw new IllegalArgumentException("type is TYPE_RV but " +
-                    "rvCommand is null");
-        }
-
-        if (type == TYPE_RESPONSE && responseCode == -1) {
-            throw new IllegalArgumentException("type is TYPE_RESPONSE but " +
-                    "responseCode is -1");
         }
 
         this.type = type;

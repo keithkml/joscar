@@ -45,9 +45,32 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
 
+/**
+ * A rendezvous command used in sending portions of one's buddy list to another
+ * user.
+ * <br>
+ * <br>
+ * <b>Important note for implementing Send Buddy List:</b><br>
+ * The official Windows AIM client (WinAIM, as I call it) <i>always</i> sends a
+ * {@link net.kano.joscar.snaccmd.icbm.RvResponse} with a code of {@link
+ * net.kano.joscar.snaccmd.icbm.RvResponse#CODE_NOT_ACCEPTING} in response to a
+ * Send Buddy List command (this class). If this <code>RvResponse</code> is not
+ * sent in response to an incoming <code>SendBuddyListRvCmd</code> and the
+ * sender is using WinAIM, he or she will not be able to send any more Send
+ * Buddy List commands to your client until he or she restarts AIM. I do not
+ * know why this happens, but this behavior should be duplicated for maximum
+ * compatibility with other users.
+ */
 public class SendBuddyListRvCmd extends AbstractRequestRvCmd {
+    /** The buddy groups being sent. */
     private final SendBuddyListGroup[] groups;
 
+    /**
+     * Creates a new Send Buddy List command from the given incoming Send Buddy
+     * List RV ICBM.
+     *
+     * @param icbm an incoming Send Buddy List RV ICBM
+     */
     public SendBuddyListRvCmd(RecvRvIcbm icbm) {
         super(icbm);
 
@@ -57,14 +80,31 @@ public class SendBuddyListRvCmd extends AbstractRequestRvCmd {
         else groups = SendBuddyListGroup.readBuddyListGroups(serviceData);
     }
 
+    /**
+     * Creates a new Send Buddy List command with the given list of buddy
+     * groups.
+     *
+     * @param groups the list of buddy groups
+     */
     public SendBuddyListRvCmd(SendBuddyListGroup[] groups) {
         super(CapabilityBlock.BLOCK_SENDBUDDYLIST);
 
         DefensiveTools.checkNull(groups, "groups");
 
-        this.groups = (SendBuddyListGroup[]) groups.clone();
+        groups = (SendBuddyListGroup[]) groups.clone();
+
+        DefensiveTools.checkNullElements(groups, "groups");
+
+        this.groups = groups;
     }
 
+    /**
+     * Returns a list of the buddy groups contained in this command. Note that
+     * this method will never return <code>null</code>; if no groups were sent,
+     * the returned array will simply be empty.
+     *
+     * @return a list of the buddy groups sent in this command
+     */
     public final SendBuddyListGroup[] getGroups() {
         return (SendBuddyListGroup[]) groups.clone();
     }
