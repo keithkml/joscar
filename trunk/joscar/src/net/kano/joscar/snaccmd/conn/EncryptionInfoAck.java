@@ -35,15 +35,49 @@
 
 package net.kano.joscar.snaccmd.conn;
 
+import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
-import net.kano.joscar.snaccmd.ExtraInfoBlock;
+import net.kano.joscar.snaccmd.ExtraInfoBlockHolder;
 
-public class EncryptionInfoAck extends AbstractExtraInfoCmd {
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.Arrays;
+
+public class EncryptionInfoAck extends ConnCommand {
+    private final ExtraInfoBlockHolder[] blocks;
+
     protected EncryptionInfoAck(SnacPacket packet) {
-        super(CMD_ENCINFOACK, packet);
+        super(CMD_ENCINFOACK);
+
+        DefensiveTools.checkNull(packet, "packet");
+
+        ByteBlock snacData = packet.getData();
+
+        this.blocks = ExtraInfoBlockHolder.readBlockHolders(snacData);
     }
 
-    public EncryptionInfoAck(ExtraInfoBlock[] blocks) {
-        super(CMD_ENCINFOACK, blocks);
+    public EncryptionInfoAck(ExtraInfoBlockHolder[] blocks) {
+        super(CMD_ENCINFOACK);
+
+        this.blocks = (ExtraInfoBlockHolder[])
+                DefensiveTools.getNonnullArray(blocks, "blocks");
+    }
+
+    public final ExtraInfoBlockHolder[] getExtraInfoBlocks() {
+        return (ExtraInfoBlockHolder[]) blocks.clone();
+    }
+
+    public void writeData(OutputStream out) throws IOException {
+        if (blocks != null) {
+            for (int i = 0; i < blocks.length; i++) {
+                blocks[i].write(out);
+            }
+        }
+    }
+
+    public String toString() {
+        return "EncryptionInfoAck: blocks="
+                + (blocks == null ? null : Arrays.asList(blocks));
     }
 }

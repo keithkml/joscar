@@ -46,14 +46,19 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * A SNAC command formerly used to request a specific type of information about
- * another user. Normally responded-to with a {@link UserInfoCmd}. Newer clients
- * use the {@linkplain GetInfoCmd new Get Info command}.
+ * A SNAC command used by older clients to request a specific type of
+ * information about another user. Normally responded-to with a {@link
+ * UserInfoCmd}. Newer clients use the {@linkplain GetInfoCmd new Get Info
+ * command}.
  *
  * @snac.src client
  * @snac.cmd 0x02 0x05
  *
+ * @see GetInfoCmd
  * @see UserInfoCmd
+ * @deprecated Use {@link GetInfoCmd} instead: it is normally not as heavily
+ *             rate limited and it allows one to request info and away message
+ *             (and other properties) in one single command.
  */
 public class OldGetInfoCmd extends LocCommand {
     /**

@@ -38,7 +38,7 @@ package net.kano.joscar.snaccmd;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.LiveWritable;
+import net.kano.joscar.Writable;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -51,7 +51,7 @@ import java.util.List;
  * in various SNAC commands related to buddy icons and iChat availabilty
  * messages.
  */
-public final class ExtraInfoBlock implements LiveWritable {
+public final class ExtraInfoBlock implements Writable {
     /**
      * An extra info block type indicating that it contains buddy icon
      * information.
@@ -64,9 +64,23 @@ public final class ExtraInfoBlock implements LiveWritable {
      */
     public static final int TYPE_AVAILMSG = 0x0002;
 
+    /**
+     * An extra info block type indicating that the block contains AIM
+     * Expression information.
+     */
     public static final int TYPE_AIMEXPINFO = 0x0080;
 
+    /**
+     * An extra info block type indicating that the block contains a
+     * security-related MD5 hash whose significance is unknown at the time of
+     * this writing.
+     */
     public static final int TYPE_CERTINFO_HASHA = 0x0402;
+    /**
+     * An extra info block type indicating that the block contains a
+     * security-related MD5 hash whose significance is unknown at the time of
+     * this writing.
+     */
     public static final int TYPE_CERTINFO_HASHB = 0x0403;
 
     /** The type of data contained in this extra info block. */
@@ -187,6 +201,10 @@ public final class ExtraInfoBlock implements LiveWritable {
      */
     public final int getTotalSize() {
         return totalSize;
+    }
+
+    public long getWritableLength() {
+        return 2 + (extraData == null ? 0 : extraData.getWritableLength());
     }
 
     public void write(OutputStream out) throws IOException {

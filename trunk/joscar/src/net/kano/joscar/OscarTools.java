@@ -35,6 +35,8 @@
 
 package net.kano.joscar;
 
+import net.kano.joscar.snaccmd.MiniRoomInfo;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
@@ -42,6 +44,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.IllegalCharsetNameException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Collections;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -355,13 +358,59 @@ public final class OscarTools {
         return htmlRE.matcher(str).replaceAll("");
     }
 
+    /**
+     * A regular expression matching complete lines containing a single HTTP
+     * header. A newline sequence (<code>\r\n|\r|\n</code>) at the end of the
+     * line is matched as well.
+     */
     private static final Pattern httpHeaderRE
             = Pattern.compile("((.*?)(?:: ?(.*))?)(\r\n|\r|\n)");
 
     /**
-     * Note that the header keys are all lowercase
+     * Extracts HTTP header information and the block of data being sent in the
+     * HTTP stream from a block of binary data. The header is presumed to be in
+     * US-ASCII encoding (that is, all characters are a single byte), but the
+     * data after the header can be in any format; it is not parsed, only
+     * returned. One should note that all three popular newline formats are
+     * supported in parsing the header: <code>\r</code>, <code>\n</code>,
+     * and <code>\r\n</code>.
+     * <br>
+     * <br>
+     * An example:<br>
+     * <dl>
+     * <dt>Input:</dt>
+     * <dd><pre style="background: #cccccc; color: black; border: 2px solid black">
+Content-Type: text/x-aolrtf
+Content-Encoding: binary
+
+&lt;HTML&gt;I am a banana&lt;/HTML&gt;
+</pre></dd>
+     * <dt>Sample code:</dt>
+     * <dd><pre style="background: #cccccc; color: black; border: 2px solid black">
+ByteBlock input = ...;
+OscarTools.HttpHeaderInfo hinfo
+        = OscarTools.parseHttpHeader(input);
+System.out.println("Content type of input is "
+        + hinfo.get("content-type"));
+     System.out.println("Content encoding of input is "
+     + hinfo.get("Content-Encoding"));
+System.out.println("message text is "
+        + ByteBlock.createString(hinfo.getData(),
+        "US-ASCII");
+     </pre></dd>
+     * </dl>
+     *
+     * Something important to note is that the header names in the returned
+     * structure are also present in lowercase form. (This is so mainly for
+     * convenience.)
+     *
+     * @param data the block of data containing an HTTP header followed by data
+     * @return a structure containing HTTP header information and the data
+     *         following the headers for the given input
      */ 
     public static HttpHeaderInfo parseHttpHeader(ByteBlock data) {
+        DefensiveTools.checkNull(data, "data");
+
         Map map = new HashMap();
 
         DynAsciiCharSequence seq = new DynAsciiCharSequence(data);
@@ -376,31 +425,96 @@ public final class OscarTools {
                 break;
             }
 
-            map.put(m.group(2).toLowerCase(), m.group(3));
+            String key = m.group(2);
+            String val = m.group(3);
+            map.put(key.toLowerCase(), val);
+            map.put(key, val);
         }
 
         return new HttpHeaderInfo(map,
                 dataStart == -1 ? null : data.subBlock(dataStart));
     }
 
+    /**
+     * A structure containing HTTP header information along with the binary data
+     * sent in the HTTP stream.
+     */
     public static final class HttpHeaderInfo {
+        /** The header information. */
         private final Map headers;
+        /** The data sent in the HTTP stream. */
         private final ByteBlock data;
 
-        protected HttpHeaderInfo(Map headers, ByteBlock data) {
+        /**
+         * Creates a new HTTP header information object with the given header
+         * information and data block.
+         *
+         * @param headers the HTTP header information
+         * @param data the block of data sent in the HTTP stream
+         */
+        private HttpHeaderInfo(Map headers, ByteBlock data) {
+            DefensiveTools.checkNull(headers, "headers");
+            DefensiveTools.checkNull(data, "data");
+
+            this.headers = Collections.unmodifiableMap(headers);
             this.data = data;
-            this.headers = headers;
         }
 
+        /**
+         * Returns the value of the header with the given name.
+         *
+         * @param headerName the name of the header to retrieve, like
+         *        "content-type"
+         * @return the value of the given header, or <code>null</code> if the
+         *         given header was not sent in the associated HTTP stream
+         */
+        public String get(String headerName) {
+            return (String) headers.get(headerName);
+        }
+
+        /**
+         * Returns an immutable <code>Map</code> that contains the HTTP header
+         * names as keys and the associated header values as values. See
+         * {@link OscarTools#parseHttpHeader(ByteBlock)} for details.
+         *
+         * @return a map from HTTP header names to their values
+         */
         public Map getHeaders() { return headers; }
 
+        /**
+         * Returns the block of data sent in the associated HTTP stream.
+         *
+         * @return the block of data sent after the headers in the HTTP stream
+         *         from which this object was created
+         */
         public ByteBlock getData() { return data; }
     }
 
+    /**
+     * A <code>CharSequence</code> that represents the contents of a block of
+     * binary data as a sequence of single-byte characters.
+     * <br>
+     * <br>
+     * One should note that each byte read is converted to a char via a simple
+     * cast, as in the following code: <code>(char) data[i]</code>. There are
+     * probably charset issues, but it should be safe to use when US-ASCII
+     * encoding is assumed for the data block.
+     */
     private static class DynAsciiCharSequence implements CharSequence {
+        /** The block of binary data that this character sequence represents. */
         private final ByteBlock data;
 
-        public DynAsciiCharSequence(ByteBlock data) { this.data = data; }
+        /**
+         * Creates a new character sequence representing the given block of
+         * binary data.
+         *
+         * @param data the data that this character sequence should represent
+         */
+        public DynAsciiCharSequence(ByteBlock data) {
+            DefensiveTools.checkNull(data, "data");
+
+            this.data = data;
+        }
 
         public char charAt(int index) { return (char) data.get(index); }
 
@@ -413,10 +527,21 @@ public final class OscarTools {
         public String toString() { return BinaryTools.getAsciiString(data); }
     }
 
-    // "!aol://2719:10-4-heydudewhatsup"
+    /**
+     * A regular expression that matches the "cookie" or "URL" of a chat room.
+     */
     private static final Pattern roomNameRE
             = Pattern.compile("!aol://\\d+:\\d+-\\d+-(.*)");
 
+    /**
+     * Returns the name of the chat room described by the given "cookie" or
+     * "chat room URL." See {@link MiniRoomInfo#getCookie()} for details.
+     * For example, with the input <code>"!aol://2719:11-4-room%20name"</code>,
+     * this method will return <code>"room name"</code>.
+     *
+     * @param cookie a chat room "cookie"
+     * @return the name of the chat room described by the cookie
+     */
     public static final String getRoomNameFromCookie(String cookie) {
         Matcher m = roomNameRE.matcher(cookie);
         if (!m.matches()) return null;

@@ -140,6 +140,7 @@ public class InfoData implements LiveWritable {
      */
     private static final int TYPE_CAPS = 0x0005;
 
+    /** A TLV type containing a certificate information block. */
     private static final int TYPE_CERTIFICATE_INFO = 0x0006;
 
     /**
@@ -157,6 +158,7 @@ public class InfoData implements LiveWritable {
      */
     private final CapabilityBlock[] caps;
 
+    /** A block of certificate information for the associated user. */
     private final CertificateInfo certInfo;
 
     /**
@@ -188,7 +190,7 @@ public class InfoData implements LiveWritable {
         this.info = info;
         this.awayMessage = awayMessage;
         this.caps = (CapabilityBlock[])
-                DefensiveTools.getImmutableArray(caps, "caps");
+                DefensiveTools.getNonnullArray(caps, "caps");
         this.certInfo = certInfo;
     }
 
@@ -224,6 +226,13 @@ public class InfoData implements LiveWritable {
         return (CapabilityBlock[]) (caps == null ? null : caps.clone());
     }
 
+    /**
+     * Returns the certificate information block contained in this info data
+     * object.
+     *
+     * @return the associated user's certificate information block, or
+     *         <code>null</code> if none was sent
+     */
     public final CertificateInfo getCertificateInfo() { return certInfo; }
 
     /**

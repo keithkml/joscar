@@ -873,13 +873,6 @@ public class JoscarTester implements CmdLineListener {
                 }
             }
         });
-        cmdMap.put("reqid", new CLCommand() {
-            public void handle(String line, String cmd, String[] args) {
-                bosConn.getFlapProcessor().sendFlap(new SnacFlapCmd(
-                        Long.parseLong(args[0]),
-                        new SendImIcbm("joustacular", "hi")));
-            }
-        });
         cmdMap.put("testrate", new CLCommand() {
             public void handle(String line, String cmd, String[] args) {
                 Timer timer = new Timer();
@@ -1010,31 +1003,6 @@ public class JoscarTester implements CmdLineListener {
                         new InvitationMessage("wut up d00d")));
             }
         });
-        /*
-            CMSSignedData csd = new CMSSignedData(ByteBlock.createInputStream(data));
-            CMSProcessableByteArray cpb
-            = (CMSProcessableByteArray) csd.getSignedContent();
-            ByteBlock signedContent = ByteBlock.wrap((byte[]) cpb.getContent());
-            MiniRoomInfo mri = MiniRoomInfo.readMiniRoomInfo(signedContent);
-
-            ByteBlock rest = signedContent.subBlock(mri.getTotalSize());
-            int kdlen = BinaryTools.getUShort(rest, 0);
-            ByteBlock keyData = rest.subBlock(2, kdlen);
-
-            InputStream kdin = ByteBlock.createInputStream(keyData);
-            ASN1InputStream ain = new ASN1InputStream(kdin);
-            ASN1Sequence root = (ASN1Sequence) ain.readObject();
-            ASN1Sequence seq = (ASN1Sequence) root.getObjectAt(0);
-            KeyTransRecipientInfo ktr = KeyTransRecipientInfo.getInstance(seq);
-            DERObjectIdentifier keyoid = (DERObjectIdentifier) root.getObjectAt(1);
-
-            String encoid = ktr.getKeyEncryptionAlgorithm().getObjectId().getId();
-            Cipher cipher = Cipher.getInstance(encoid, "BC");
-            cipher.init(Cipher.DECRYPT_MODE, tester.privateKey);
-
-            byte[] result = cipher.doFinal(ktr.getEncryptedKey().getOctets());
-            return new SecretKeySpec(result, keyoid.getId());
-        */
         cmdMap.put("encinvite", new CLCommand() {
 
             private ByteBlock genSecurityInfo(ChatConn conn, String sn)

@@ -48,9 +48,16 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * A rendezvous command used to invite a user to a chat room.
+ * A rendezvous command used to invite a user to a ("secure" or normal) chat
+ * room.
  */
 public class ChatInvitationRvCmd extends AbstractRequestRvCmd {
+    /**
+     * A TLV type present if the chat room to which the recipient is being
+     * invited is a "secure chat room."
+     */
+    private static final int TYPE_SECURE = 0x0011;
+    /** A TLV type containing a key for the secure chat room, if any. */
     private static final int TYPE_SECURITYINFO = 0x2713;
 
     /** The chat invitation message. */
@@ -58,6 +65,7 @@ public class ChatInvitationRvCmd extends AbstractRequestRvCmd {
     /** A room information block containing information about the chat room. */
     private final MiniRoomInfo roomInfo;
 
+    /** The block of "security info" sent in this invitation. */
     private final ByteBlock securityInfo;
 
     /**
@@ -110,6 +118,30 @@ public class ChatInvitationRvCmd extends AbstractRequestRvCmd {
         this(roomInfo, message, null);
     }
 
+    /**
+     * Creates a new outgoing chat room invitation command for the room
+     * described in the given block and with the given invitation message. Note
+     * that if <code>message</code> is <code>null</code>, no invitation message
+     * will be sent with this invitation.
+     * <br>
+     * <br>
+     * Note that the object passed as the <code>roomInfo</code> argument should
+     * be retrieved from the server's {@link
+     * net.kano.joscar.snaccmd.rooms.RoomResponse} command's room information
+     * block (although the same information is provided in other places as
+     * well). See {@link net.kano.joscar.snaccmd.rooms.RoomResponse#getRoomInfo}
+     * and {@link
+     * MiniRoomInfo#MiniRoomInfo(net.kano.joscar.snaccmd.FullRoomInfo)} for
+     * details.
+     *
+     * @param roomInfo a room information block describing the chat room to
+     *        which the recipient is being invited
+     * @param message an invitation message to send with this invitation, or
+     *        <code>null</code> for none
+     * @param securityInfo a block of secure chat room information
+     *
+     * @see net.kano.joscar.snaccmd.rooms.RoomResponse
+     */
     public ChatInvitationRvCmd(MiniRoomInfo roomInfo,
             InvitationMessage message, ByteBlock securityInfo) {
         super(CapabilityBlock.BLOCK_CHAT);
@@ -127,6 +159,13 @@ public class ChatInvitationRvCmd extends AbstractRequestRvCmd {
      */
     public final InvitationMessage getInvMessage() { return invMessage; }
 
+    /**
+     * Returns the block of security information sent in this chat room
+     * invitation, if any.
+     *
+     * @return the block of security information associated with the chat room
+     *         to which the recipient is being invited
+     */
     public final ByteBlock getSecurityInfo() { return securityInfo; }
 
     /**
@@ -149,6 +188,7 @@ public class ChatInvitationRvCmd extends AbstractRequestRvCmd {
             invMessage.write(out);
         }
         if (securityInfo != null) {
+            new Tlv(TYPE_SECURE).write(out);
             new Tlv(TYPE_SECURITYINFO, securityInfo).write(out);
         }
     }

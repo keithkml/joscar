@@ -55,12 +55,19 @@ public class DirectIMAcceptRvCmd extends AbstractAcceptRvCmd {
     }
 
     /**
-     * Creates a new outgoing direct IM acceptance command.
+     * Creates a new outgoing (unencrypted) direct IM acceptance command.
      */
     public DirectIMAcceptRvCmd() {
         this(false);
     }
 
+    /**
+     * Creates a new outgoing acceptance command for either an encrypted or a
+     * normal direct IM invitation.
+     *
+     * @param encrypted whether or not the direct IM connection being accepted
+     *        is a secure/encrypted connection
+     */ 
     public DirectIMAcceptRvCmd(boolean encrypted) {
         super(CapabilityBlock.BLOCK_DIRECTIM, encrypted);
     }

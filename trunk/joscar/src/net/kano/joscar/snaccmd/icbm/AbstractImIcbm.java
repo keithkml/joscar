@@ -183,7 +183,7 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
             OldIconHashInfo iconInfo, ExtraInfoBlock[] expInfoBlocks) {
         super(IcbmCommand.FAMILY_ICBM, command, messageId, CHANNEL_IM);
 
-        expInfoBlocks = (ExtraInfoBlock[]) DefensiveTools.getImmutableArray(
+        expInfoBlocks = (ExtraInfoBlock[]) DefensiveTools.getNonnullArray(
                 expInfoBlocks, "expInfoBlocks");
 
         this.message = message;

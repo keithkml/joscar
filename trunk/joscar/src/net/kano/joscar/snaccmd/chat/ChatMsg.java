@@ -91,15 +91,17 @@ public class ChatMsg implements LiveWritable {
     /** The locale (language code only) under which this message was written. */
     private final Locale language;
 
+    /** The content type of this message. */
     private final String contentType;
+    /** The content type of this message. */
     private final String contentEncoding;
+    /** The charset with which the message is encoded. */
     private String charset;
 
-
     /**
-     * Creates a new chat message in the JVM's current language. Calling this
-     * method is equivalent to calling {@link #ChatMsg(String, Locale) new
-     * ChatMessage(message, Locale.getDefault())}.
+     * Creates a new unencrypted chat message in the JVM's current language.
+     * Calling this method is equivalent to calling {@link #ChatMsg(String,
+     * Locale) new ChatMessage(message, Locale.getDefault())}.
      *
      * @param message the text of this chat message
      */
@@ -107,6 +109,13 @@ public class ChatMsg implements LiveWritable {
         this(message, Locale.getDefault());
     }
 
+    /**
+     * Creates a new unencrypted chat message in the given language.
+     *
+     * @param message the text of this chat message
+     * @param locale a locale object representing the language in which this
+     *        message is written
+     */
     public ChatMsg(String message, Locale locale) {
         EncodedStringInfo stringInfo = MinimalEncoder.encodeMinimally(message);
         this.contentType = CONTENTTYPE_DEFAULT;
@@ -116,6 +125,18 @@ public class ChatMsg implements LiveWritable {
         this.language = locale;
     }
 
+    /**
+     * Creates a new chat message with the given properties.
+     *
+     * @param contentType a content type string, like {@link
+     *        #CONTENTTYPE_DEFAULT}
+     * @param contentEncoding a content encoding string, like {@link
+     *        #CONTENTENCODING_DEFAULT}
+     * @param charset the charset in which the message is encoded
+     * @param messageData the message data, possibly encrypted
+     * @param language a <code>Locale</code> object representing the language
+     *        in which the message was written
+     */
     public ChatMsg(String contentType, String contentEncoding, String charset,
             ByteBlock messageData, Locale language) {
         this.contentType = contentType;
@@ -125,6 +146,15 @@ public class ChatMsg implements LiveWritable {
         this.language = language;
     }
 
+    /**
+     * Returns the binary message data block contained in this message. If this
+     * is an encrypted message, this will normally be the CMS signed data block;
+     * otherwise, this will normally simply be the binary form of the message
+     * text. See {@link #getMessage()} for details on extracting a message from
+     * an unencrypted message block.
+     *
+     * @return
+     */
     public final ByteBlock getMessageData() { return messageData; }
 
     public final String getContentType() { return contentType; }
