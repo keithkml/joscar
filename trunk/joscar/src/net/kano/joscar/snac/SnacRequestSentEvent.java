@@ -35,8 +35,8 @@
 
 package net.kano.joscar.snac;
 
-import net.kano.joscar.flap.FlapProcessor;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.flap.FlapProcessor;
 
 /**
  * An event fired when an outgoing SNAC request is sent over a SNAC connection.

@@ -42,18 +42,20 @@ import net.kano.joscar.flapcmd.LoginFlapCmd;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snac.*;
 import net.kano.joscar.snaccmd.*;
-import net.kano.joscar.snaccmd.icon.IconRequest;
-import net.kano.joscar.snaccmd.buddy.BuddyStatusCmd;
 import net.kano.joscar.snaccmd.buddy.BuddyOfflineCmd;
+import net.kano.joscar.snaccmd.buddy.BuddyStatusCmd;
 import net.kano.joscar.snaccmd.conn.*;
 import net.kano.joscar.snaccmd.icbm.OldIconHashData;
 import net.kano.joscar.snaccmd.icbm.RecvImIcbm;
+import net.kano.joscar.snaccmd.icon.IconRequest;
 
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.PrintWriter;
 import java.net.InetAddress;
+import java.text.DateFormat;
 import java.util.Arrays;
 import java.util.Date;
-import java.io.*;
-import java.text.DateFormat;
 
 public abstract class BasicConn extends AbstractFlapConn {
     protected final ByteBlock cookie;

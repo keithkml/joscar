@@ -35,8 +35,8 @@
 
 package net.kano.joscar.snaccmd.rooms;
 
-import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.flapcmd.SnacPacket;
 
 import java.io.IOException;
 import java.io.OutputStream;

@@ -35,8 +35,9 @@
 
 package net.kano.joscar.taglets;
 
+import com.sun.javadoc.Tag;
 import com.sun.tools.doclets.Taglet;
-import com.sun.javadoc.*;
+
 import java.util.Map;
 
 /**

@@ -40,8 +40,8 @@ import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.OscarTools;
 import net.kano.joscar.snaccmd.ScreenNameBlock;
-import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
 
 import java.io.IOException;

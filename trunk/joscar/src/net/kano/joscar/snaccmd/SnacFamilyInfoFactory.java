@@ -35,6 +35,7 @@
 
 package net.kano.joscar.snaccmd;
 
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.acct.AcctCommand;
 import net.kano.joscar.snaccmd.auth.AuthCommand;
 import net.kano.joscar.snaccmd.buddy.BuddyCommand;
@@ -49,7 +50,6 @@ import net.kano.joscar.snaccmd.popup.PopupCommand;
 import net.kano.joscar.snaccmd.rooms.RoomCommand;
 import net.kano.joscar.snaccmd.search.SearchCommand;
 import net.kano.joscar.snaccmd.ssi.SsiCommand;
-import net.kano.joscar.DefensiveTools;
 
 import java.util.*;
 

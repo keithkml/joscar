@@ -6,8 +6,6 @@
  */
 package net.kano.joscartests;
 
-import net.kano.joscartests.JoscarTester;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;

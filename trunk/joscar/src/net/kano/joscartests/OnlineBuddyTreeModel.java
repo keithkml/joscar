@@ -39,12 +39,12 @@ import net.kano.joscar.snaccmd.OscarTools;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.beans.PropertyChangeListener;
-import java.beans.PropertyChangeEvent;
 
 public class OnlineBuddyTreeModel extends DefaultTreeModel {
     private JoscarTester tester;

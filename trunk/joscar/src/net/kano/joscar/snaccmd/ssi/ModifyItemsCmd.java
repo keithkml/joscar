@@ -35,8 +35,8 @@
 
 package net.kano.joscar.snaccmd.ssi;
 
-import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.flapcmd.SnacPacket;
 
 /**
  * A SNAC command used to modify server-stored "items" that already exist on the

@@ -35,11 +35,11 @@
 
 package net.kano.joscar.ssiitem;
 
-import net.kano.joscar.MiscTools;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.MiscTools;
 import net.kano.joscar.snaccmd.ssi.SsiItem;
-import net.kano.joscar.tlv.TlvChain;
 import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.TlvChain;
 
 /**
  * A base class for the two item types that only contain a name and reside in

@@ -39,8 +39,8 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.FullUserInfo;
-import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
 
 import java.io.IOException;

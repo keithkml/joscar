@@ -38,15 +38,14 @@ package net.kano.joscartests;
 import net.kano.joscar.snac.*;
 import net.kano.joscar.snaccmd.conn.RateClassInfo;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Map;
 
-public class RateDataQueueMgr extends SnacQueueManager {
+public class RateDataQueueMgr extends ImmediateSnacQueueManager {
     private Map classToQueue = new HashMap();
     private Map typeToQueue = new HashMap(500);
-
-    public synchronized void clearQueue(SnacProcessor processor) {
-        // ok
-    }
 
     public synchronized void queueSnac(SnacProcessor processor,
             SnacRequest request) {
@@ -57,7 +56,7 @@ public class RateDataQueueMgr extends SnacQueueManager {
 
         if (queue != null) queue.enqueue(request);
 
-        sendSnac(processor, request);
+        super.queueSnac(processor, request);
     }
 
     public synchronized final void setRateClasses(RateClassInfo[] rateInfos) {

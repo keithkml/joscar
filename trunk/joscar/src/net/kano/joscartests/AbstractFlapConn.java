@@ -36,7 +36,6 @@
 package net.kano.joscartests;
 
 import net.kano.joscar.flap.*;
-import net.kano.joscar.snac.FamilyVersionPreprocessor;
 import net.kano.joscar.snac.*;
 import net.kano.joscar.snaccmd.DefaultClientFactoryList;
 

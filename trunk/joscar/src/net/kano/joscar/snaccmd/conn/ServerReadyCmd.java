@@ -35,8 +35,8 @@
 
 package net.kano.joscar.snaccmd.conn;
 
-import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.flapcmd.SnacPacket;
 
 /**
  * A command sent to indicate that the server is ready for the client to

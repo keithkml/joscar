@@ -41,8 +41,9 @@ import net.kano.joscar.flap.FlapPacketEvent;
 import net.kano.joscar.snac.SnacCommand;
 import net.kano.joscar.snac.SnacPacketEvent;
 import net.kano.joscar.snac.SnacResponseEvent;
-import net.kano.joscar.snaccmd.*;
-import net.kano.joscar.snaccmd.icon.IconRequest;
+import net.kano.joscar.snaccmd.CapabilityBlock;
+import net.kano.joscar.snaccmd.FullUserInfo;
+import net.kano.joscar.snaccmd.InfoData;
 import net.kano.joscar.snaccmd.conn.*;
 import net.kano.joscar.snaccmd.icbm.ParamInfo;
 import net.kano.joscar.snaccmd.icbm.ParamInfoCmd;
@@ -54,8 +55,8 @@ import net.kano.joscar.snaccmd.loc.SetInfoCmd;
 import net.kano.joscar.snaccmd.loc.UserInfoCmd;
 import net.kano.joscar.snaccmd.ssi.*;
 import net.kano.joscar.ssiitem.DefaultSsiItemObjFactory;
-import net.kano.joscar.ssiitem.SsiItemObjectFactory;
 import net.kano.joscar.ssiitem.SsiItemObj;
+import net.kano.joscar.ssiitem.SsiItemObjectFactory;
 
 import java.net.InetAddress;
 

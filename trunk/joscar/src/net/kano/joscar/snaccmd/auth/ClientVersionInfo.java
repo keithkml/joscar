@@ -35,13 +35,13 @@
 
 package net.kano.joscar.snaccmd.auth;
 
+import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.LiveWritable;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
-import net.kano.joscar.LiveWritable;
-import net.kano.joscar.DefensiveTools;
 
-import java.io.OutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 
 /**
  * A data structure used to transmit information about the client software used
