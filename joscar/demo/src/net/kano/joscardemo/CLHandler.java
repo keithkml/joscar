@@ -149,7 +149,7 @@ public class CLHandler {
         });
         cmdMap.put("im", new CLCommand() {
             public String getArgumentsUsage() {
-                return "<screenname> <single-word message>";
+                return "<screenname> <message>";
             }
 
             public String getDescription() {
@@ -157,7 +157,7 @@ public class CLHandler {
             }
 
             public String getExampleArgs() {
-                return "joustacular hey";
+                return "joustacular \"hey joustacular\"";
             }
 
             public void handle(JoscarTester tester, String line, String cmd, String[] args) {
@@ -174,9 +174,12 @@ public class CLHandler {
                 ByteBlock block = ByteBlock.wrap(data);
 
                 tester.request(new SendImIcbm(args[0], args[1],
-                        false, 0, false, tester.getOldIconInfo(), new ExtraInfoBlock[] {
-                            new ExtraInfoBlock(0x0080, new ExtraInfoData(0, block)),
-                            new ExtraInfoBlock(0x0082, new ExtraInfoData(0, block))
+                        false, 0, false, tester.getOldIconInfo(),
+                        new ExtraInfoBlock[] {
+                            new ExtraInfoBlock(ExtraInfoBlock.TYPE_AIMEXPINFO_A,
+                                    new ExtraInfoData(0, block)),
+                            new ExtraInfoBlock(ExtraInfoBlock.TYPE_AIMEXPINFO_B,
+                                    new ExtraInfoData(0, block))
                         }, true));
             }
         });
@@ -1585,7 +1588,7 @@ public class CLHandler {
                     if (args.indexOf("[") != -1) {
                         System.out.println("   * Arguments in [square brackets] are optional");
                     }
-                    System.out.println("   * All arguments must be single words with no spaces");
+//                    System.out.println("   * All arguments must be single words with no spaces");
                 }
                 String desc = clc.getDescription();
                 if (desc != null) {
