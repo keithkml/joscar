@@ -535,7 +535,7 @@ System.out.println("message text is "
          *
          * @param data the data that this character sequence should represent
          */
-        public DynAsciiCharSequence(ByteBlock data) {
+        private DynAsciiCharSequence(ByteBlock data) {
             DefensiveTools.checkNull(data, "data");
 
             this.data = data;

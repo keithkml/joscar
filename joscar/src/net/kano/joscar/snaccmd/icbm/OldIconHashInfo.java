@@ -201,7 +201,7 @@ public final class OldIconHashInfo {
      * @param blockSize the total size of this object, in bytes, as read from an
      *        incoming block of binary data
      */
-    protected OldIconHashInfo(long size, int sum, long timestamp,
+    private OldIconHashInfo(long size, int sum, long timestamp,
             int blockSize) {
         DefensiveTools.checkRange(size, "size", 0);
         DefensiveTools.checkRange(sum, "sum", 0);

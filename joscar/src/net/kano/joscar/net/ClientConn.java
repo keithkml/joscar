@@ -577,7 +577,7 @@ public class ClientConn {
          * @param name a name for this thread, to pass to {@link
          *        Thread(String)}
          */
-        public ConnectionThread(String name) {
+        private ConnectionThread(String name) {
             super(name);
         }
 

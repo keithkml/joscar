@@ -56,7 +56,7 @@ public final class DefensiveTools {
      * @throws IllegalArgumentException if the given value is less than the
      *         given minimum
      */
-    public static final void checkRange(int val, String name, int min)
+    public static void checkRange(int val, String name, int min)
             throws IllegalArgumentException {
         if (val < min) {
             throw new IllegalArgumentException(name + " (" + val + ") must " +
@@ -76,7 +76,7 @@ public final class DefensiveTools {
      * @throws IllegalArgumentException if the given value is less than the
      *         given minimum or greater than the given maximum
      */
-    public static final void checkRange(int val, String name,
+    public static void checkRange(int val, String name,
             int min, int max) throws IllegalArgumentException {
         if (val < min || val > max) {
             throw new IllegalArgumentException(name + " (" + val + ") must " +
@@ -132,7 +132,7 @@ public final class DefensiveTools {
      *
      * @throws IllegalArgumentException if the given value is <code>null</code>
      */
-    public static final void checkNull(Object val, String name)
+    public static void checkNull(Object val, String name)
             throws IllegalArgumentException {
         if (val == null) {
             throw new IllegalArgumentException("value of " + name

@@ -123,7 +123,7 @@ public final class FullRoomInfo
      *
      * @param block the block of data containing a room info object
      */
-    protected FullRoomInfo(ByteBlock block) {
+    private FullRoomInfo(ByteBlock block) {
         DefensiveTools.checkNull(block, "block");
 
         mini = MiniRoomInfo.readMiniRoomInfo(block);

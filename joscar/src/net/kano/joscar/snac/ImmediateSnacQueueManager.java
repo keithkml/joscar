@@ -105,7 +105,7 @@ public class ImmediateSnacQueueManager implements SnacQueueManager {
      * @param processor the SNAC processor on which to send
      * @param req the request to send
      */
-    protected static final void sendSnac(ClientSnacProcessor processor,
+    protected static void sendSnac(ClientSnacProcessor processor,
             SnacRequest req) {
         processor.sendSnacImmediately(req);
     }

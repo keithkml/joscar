@@ -106,11 +106,11 @@ public class SendImIcbm extends AbstractImIcbm {
     }
 
     /**
-     * TODO: uses FEATURES_DEFAULT
      * Creates a new unencrypted outgoing IM with the given message text to
      * the given screenname. No icon is requested, no icon hash data are
      * provided, and an {@link MessageAck acknowledgement packet} <i>is</i>
-     * requested. Also, the ICBM message ID is set to <code>0</code>.
+     * requested. Also, the ICBM message ID is set to <code>0</code>. The IM
+     * "features" block used is {@link #FEATURES_DEFAULT}.
      *
      * @param sn the screenname to whom to send the given message
      * @param message the message to send
@@ -122,8 +122,8 @@ public class SendImIcbm extends AbstractImIcbm {
     }
 
     /**
-     * TODO: uses FEATURES_DEFAULT
-     * Creates a new unencrypted outgoing IM with the given properties. Test
+     * Creates a new unencrypted outgoing IM with the given properties. The IM 
+     * "features" block used is {@link #FEATURES_DEFAULT}.
      *
      * @param sn the screenname to whom to send the given message
      * @param message the message to send

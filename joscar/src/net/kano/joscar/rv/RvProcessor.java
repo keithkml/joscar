@@ -727,7 +727,7 @@ public class RvProcessor {
          * @param sessionId a rendezvous session ID
          * @param sn a screenname
          */
-        public RvSessionMapKey(long sessionId, String sn) {
+        private RvSessionMapKey(long sessionId, String sn) {
             this.sessionId = sessionId;
             this.sn = OscarTools.normalize(sn);
         }
@@ -783,7 +783,7 @@ public class RvProcessor {
          * @param rvSessionId the RV session ID of this session
          * @param sn the screenname with whom this session exists
          */
-        public RvSessionImpl(long rvSessionId, String sn) {
+        private RvSessionImpl(long rvSessionId, String sn) {
             this.rvSessionId = rvSessionId;
             this.sn = sn;
         }

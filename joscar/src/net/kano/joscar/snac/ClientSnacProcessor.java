@@ -756,7 +756,7 @@ public class ClientSnacProcessor extends AbstractSnacProcessor {
          * @param request the request to associate with this
          *        <code>RequestInfo</code>
          */
-        public RequestInfo(SnacRequest request) {
+        private RequestInfo(SnacRequest request) {
             this.request = request;
         }
 

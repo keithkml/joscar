@@ -81,7 +81,7 @@ public abstract class AbstractIcbm extends SnacCommand {
      * @param packet the ICBM packet whose channel number will be returned
      * @return the ICBM channel on which the given packet was received
      */
-    public static final int getIcbmChannel(SnacPacket packet) {
+    public static int getIcbmChannel(SnacPacket packet) {
         DefensiveTools.checkNull(packet, "packet");
 
         ByteBlock block = packet.getData();

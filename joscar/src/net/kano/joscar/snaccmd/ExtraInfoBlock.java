@@ -161,7 +161,7 @@ public final class ExtraInfoBlock implements Writable {
      * @param totalSize the total size of this object, if read from a block
      *        of data
      */
-    protected ExtraInfoBlock(int code, ExtraInfoData data, int totalSize) {
+    private ExtraInfoBlock(int code, ExtraInfoData data, int totalSize) {
         DefensiveTools.checkRange(code, "code", 0);
         DefensiveTools.checkRange(totalSize, "totalSize", -1);
 

@@ -68,7 +68,7 @@ public class ExtraInfoBlockHolder implements Writable {
      * @return an extra info block holder object read from the given block of
      *         binary data, or <code>null</code> if none could be read
      */
-    public static final ExtraInfoBlockHolder readBlockHolder(ByteBlock origBlock) {
+    public static ExtraInfoBlockHolder readBlockHolder(ByteBlock origBlock) {
         DefensiveTools.checkNull(origBlock, "block");
 
         int origOffset = origBlock.getOffset();
@@ -101,8 +101,7 @@ public class ExtraInfoBlockHolder implements Writable {
      * @return a list of the <code>ExtraInfoBlock</code> objects read from the
      *         given block of binary data
      */
-    public static final ExtraInfoBlockHolder[] readBlockHolders(
-            ByteBlock block) {
+    public static ExtraInfoBlockHolder[] readBlockHolders(ByteBlock block) {
         List list = new LinkedList();
         ByteBlock next = block;
         for (;;) {
