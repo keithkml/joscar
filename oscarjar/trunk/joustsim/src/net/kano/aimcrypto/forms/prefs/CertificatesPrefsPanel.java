@@ -33,17 +33,18 @@
  *
  */
 
-package net.kano.aimcrypto.forms;
+package net.kano.aimcrypto.forms.prefs;
 
 import net.kano.aimcrypto.AppSession;
 import net.kano.aimcrypto.DistinguishedName;
 import net.kano.aimcrypto.GuiResources;
 import net.kano.aimcrypto.Screenname;
+import net.kano.aimcrypto.forms.SortedListModel;
 import net.kano.aimcrypto.config.CantBeAddedException;
 import net.kano.aimcrypto.config.CantSavePrefsException;
-import net.kano.aimcrypto.config.CertificateTrustManager;
 import net.kano.aimcrypto.config.TrustChangeListener;
 import net.kano.aimcrypto.config.TrustException;
+import net.kano.aimcrypto.config.CertificateTrustManager;
 import net.kano.joscar.DefensiveTools;
 
 import javax.swing.AbstractAction;
@@ -83,6 +84,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+//TODO: add Delete keybinding, context menu
 public class CertificatesPrefsPanel extends JPanel {
     private static final EmptyBorder EMPTY_BORDER = new EmptyBorder(2, 5, 2, 5);
 

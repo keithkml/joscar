@@ -33,27 +33,24 @@
  *
  */
 
-package net.kano.aimcrypto.forms;
+package net.kano.aimcrypto.forms.prefs;
 
 import net.kano.aimcrypto.AppSession;
 import net.kano.aimcrypto.DistinguishedName;
-import net.kano.aimcrypto.config.LoadingException;
-import net.kano.aimcrypto.config.PrivateKeysInfo;
-import net.kano.aimcrypto.config.LocalKeysManager;
-import net.kano.aimcrypto.Screenname;
 import net.kano.aimcrypto.GuiResources;
-import net.kano.aimcrypto.config.LocalKeysManager;
+import net.kano.aimcrypto.Screenname;
 import net.kano.aimcrypto.config.LoadingException;
+import net.kano.aimcrypto.config.LocalKeysManager;
+import net.kano.aimcrypto.config.PrivateKeysInfo;
+import net.kano.aimcrypto.forms.ListComboBoxModel;
 import net.kano.joscar.DefensiveTools;
 
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.Icon;
-import javax.swing.ImageIcon;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
-import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
@@ -69,6 +66,7 @@ import javax.swing.filechooser.FileFilter;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledEditorKit;
+import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Font;
 import java.awt.event.ComponentAdapter;
@@ -77,19 +75,16 @@ import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowFocusListener;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.URL;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 //TODO: this class modifies the model outside the event thread
-public class LocalCertificatesPrefsPane extends JFrame {
+public class LocalCertificatesPrefsPane extends JPanel implements PrefsPane {
     private static final Object VALUE_BROWSE = new Object();
     private static final Object VALUE_SEPARATOR = new Object();
     private static final Object VALUE_NONE = new Object();
@@ -138,7 +133,9 @@ public class LocalCertificatesPrefsPane extends JFrame {
     private CertReloaderThread reloader = null;
 
     {
-        getContentPane().add(mainPanel);
+        setLayout(new BorderLayout());
+        add(mainPanel);
+
         currentCertsPane.setFont(UIManager.getFont("Label.font"));
         certFileBox.setModel(certificateFileList);
         signWithBox.setModel(signingCertificateList);
@@ -239,13 +236,6 @@ public class LocalCertificatesPrefsPane extends JFrame {
         signWithBox.setRenderer(aliasRenderer);
         encryptWithBox.setRenderer(aliasRenderer);
 
-        addWindowFocusListener(new WindowFocusListener() {
-            public void windowGainedFocus(WindowEvent e) {
-                updateThings(false);
-            }
-
-            public void windowLostFocus(WindowEvent e) { }
-        });
         addComponentListener(new ComponentAdapter() {
             public void componentShown(ComponentEvent e) {
                 updateThings(true);
@@ -286,6 +276,44 @@ public class LocalCertificatesPrefsPane extends JFrame {
         this.appSession = appSession;
         this.sn = sn;
         this.securityInfo = appSession.getLocalPrefs(sn).getLocalKeysManager();
+    }
+
+    public String getPlainPrefsName() {
+        return "Personal Certificates";
+    }
+
+    public boolean isGlobalPrefs() {
+        return false;
+    }
+
+    public Icon getSmallPrefsIcon() {
+        return null;
+    }
+
+    public String getPrefsName() {
+        return getPlainPrefsName();
+    }
+
+    public String getPrefsDescription() {
+        return "Select your AIM security certificates";
+    }
+
+    public Component getPrefsComponent() {
+        return this;
+    }
+
+    public void prefsWindowFocused() {
+        updateThings(false);
+    }
+
+    public void prefsWindowFocusLost() {
+    }
+
+    public void prefsPaneShown() {
+        updateThings(false);
+    }
+
+    public void prefsPaneHidden() {
     }
 
     private boolean loadedYet = false;

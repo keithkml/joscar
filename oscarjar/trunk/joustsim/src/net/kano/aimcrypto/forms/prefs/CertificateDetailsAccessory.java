@@ -33,11 +33,12 @@
  *
  */
 
-package net.kano.aimcrypto.forms;
+package net.kano.aimcrypto.forms.prefs;
 
 import net.kano.aimcrypto.DistinguishedName;
 import net.kano.aimcrypto.GuiResources;
 import net.kano.aimcrypto.config.PermanentSignerTrustManager;
+import net.kano.aimcrypto.config.TrustTools;
 import net.kano.joscar.DefensiveTools;
 
 import javax.swing.JFileChooser;
@@ -215,7 +216,7 @@ public class CertificateDetailsAccessory extends JPanel {
         if (selectedCert != null) {
             Icon icon;
             String type;
-            if (PermanentSignerTrustManager.isValidSignerCertificate(
+            if (TrustTools.isCertificateAuthority(
                     selectedCert)) {
                 icon = signerIcon;
                 type = "Certificate Authority";
@@ -262,39 +263,47 @@ public class CertificateDetailsAccessory extends JPanel {
             }
         }
 
-        if (selectedCert == null) {
+        X509Certificate cert = selectedCert;
+        if (cert == null) {
             setNoPreview("An error prevented details from being loaded for "
                     + "the selected certificate file. The file may not be an "
                     + "X.509 certificate file, or it may be corrupt.");
             return;
         }
 
-        int version = selectedCert.getVersion();
+        int version = cert.getVersion();
 
         insert("X.509 v" + version + " Certificate\n", BOLD);
+        boolean ca = TrustTools.isCertificateAuthority(cert);
 
-        subjectDN = DistinguishedName.getSubjectInstance(selectedCert);
-        insert("Certifies:\n", ITALIC);
+        subjectDN = DistinguishedName.getSubjectInstance(cert);
+        if (ca) {
+            insert("Certificate Authority:\n", ITALIC);
+        } else {
+            insert("Certifies:\n", ITALIC);
+        }
         insert(getDisplayString(subjectDN) + "\n\n", BLOCKQUOTE);
 
-        DistinguishedName issdn = DistinguishedName.getIssuerInstance(selectedCert);
-        insert("Certified by:\n", ITALIC);
-        insert(getDisplayString(issdn) + "\n\n", BLOCKQUOTE);
+        if (!ca) {
+            DistinguishedName issdn = DistinguishedName.getIssuerInstance(cert);
+            insert("Certified by:\n", ITALIC);
+            insert(getDisplayString(issdn) + "\n\n", BLOCKQUOTE);
+        }
 
         Date now = new Date();
-        Date starts = selectedCert.getNotBefore();
+        Date starts = cert.getNotBefore();
         if (starts.after(now)) {
             insert("Only valid after:\n", ITALIC);
             insert(dateFormatter.format(starts) + "\n\n", BLOCKQUOTE);
         }
 
-        Date expires = selectedCert.getNotAfter();
+        Date expires = cert.getNotAfter();
         String s = expires.before(now) ? "d" : "s";
         insert("Expire" + s + ":\n", ITALIC);
         insert(dateFormatter.format(expires) + "\n\n", BLOCKQUOTE);
 
         insert("Algorithm:\n", ITALIC);
-        insert(selectedCert.getSigAlgName(), BLOCKQUOTE);
+        insert(cert.getSigAlgName(), BLOCKQUOTE);
     }
 
     private void clear() {
@@ -321,4 +330,5 @@ public class CertificateDetailsAccessory extends JPanel {
     private void setNoPreview(String text) {
         insert(text, null);
     }
+
 }

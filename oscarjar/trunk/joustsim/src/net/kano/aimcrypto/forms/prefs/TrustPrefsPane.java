@@ -33,10 +33,11 @@
  *
  */
 
-package net.kano.aimcrypto.forms;
+package net.kano.aimcrypto.forms.prefs;
 
 import net.kano.aimcrypto.AppSession;
 import net.kano.aimcrypto.Screenname;
+import net.kano.aimcrypto.forms.prefs.SignersPrefsPanel;
 import net.kano.aimcrypto.config.LocalPreferencesManager;
 import net.kano.aimcrypto.config.PermanentCertificateTrustManager;
 import net.kano.aimcrypto.config.PermanentSignerTrustManager;
@@ -44,12 +45,14 @@ import net.kano.joscar.DefensiveTools;
 
 import javax.swing.JPanel;
 import javax.swing.BoxLayout;
+import javax.swing.Icon;
 import javax.swing.border.LineBorder;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.Color;
+import java.awt.Component;
 
-public class TrustPrefsPanel extends JPanel {
+public class TrustPrefsPane extends JPanel implements PrefsPane {
     private JPanel trustedCertsHolder;
     private JPanel trustedSignersHolder;
 
@@ -68,7 +71,7 @@ public class TrustPrefsPanel extends JPanel {
         add(mainPanel);
     }
 
-    public TrustPrefsPanel(AppSession session, Screenname sn) {
+    public TrustPrefsPane(AppSession session, Screenname sn) {
         DefensiveTools.checkNull(session, "session");
         DefensiveTools.checkNull(sn, "sn");
 
@@ -95,4 +98,41 @@ public class TrustPrefsPanel extends JPanel {
         trustedSignersHolder.setLayout(new BorderLayout());
         trustedSignersHolder.add(signersPrefs);
     }
+
+    public String getPlainPrefsName() {
+        return "Trusted Buddies";
+    }
+
+    public boolean isGlobalPrefs() {
+        return false;
+    }
+
+    public Icon getSmallPrefsIcon() {
+        return null;
+    }
+
+    public String getPrefsName() {
+        return getPlainPrefsName();
+    }
+
+    public String getPrefsDescription() {
+        return "View and change your list of trusted buddies";
+    }
+
+    public Component getPrefsComponent() {
+        return this;
+    }
+
+    public void prefsWindowFocused() {
+    }
+
+    public void prefsWindowFocusLost() {
+    }
+
+    public void prefsPaneShown() {
+    }
+
+    public void prefsPaneHidden() {
+    }
+
 }

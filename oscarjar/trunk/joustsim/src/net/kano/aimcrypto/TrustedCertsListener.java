@@ -33,38 +33,7 @@
  *
  */
 
-package net.kano.aimcrypto.forms;
+package net.kano.aimcrypto;
 
-import net.kano.aimcrypto.AppSession;
-import net.kano.aimcrypto.GuiResources;
-import net.kano.aimcrypto.Screenname;
-import net.kano.aimcrypto.config.CantBeAddedException;
-import net.kano.aimcrypto.config.CertificateTrustManager;
-
-import javax.swing.ImageIcon;
-
-public class SignersPrefsPanel extends CertificatesPrefsPanel {
-    private final ImageIcon mediumSignerIcon = GuiResources.getMediumSignerIcon();
-    private final ImageIcon smallSignerIcon = GuiResources.getSmallSignerIcon();
-
-    public SignersPrefsPanel(AppSession appSession, Screenname sn,
-            CertificateTrustManager certTrustMgr) {
-        super(appSession, sn, certTrustMgr);
-    }
-
-    protected ImageIcon getMediumCertificateIcon() {
-        return mediumSignerIcon;
-    }
-
-    protected String getImportFailedDetails(Exception e, String tryAgainText) {
-        if (e instanceof CantBeAddedException) {
-            return "The file does not contain the certificate of "
-                    + "a Certificate Authority. Only Certificate Authorities' "
-                    + "certificates can authenticate buddies' personal "
-                    + "certificates. To import a buddy's certificate, "
-                    + "import it in the Trusted Personal Certificates section.";
-        } else {
-            return super.getImportFailedDetails(e, tryAgainText);
-        }
-    }
+public interface TrustedCertsListener {
 }
