@@ -35,7 +35,12 @@
 
 package net.kano.joscar.snaccmd;
 
-import net.kano.joscar.*;
+import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.EncodedStringInfo;
+import net.kano.joscar.LiveWritable;
+import net.kano.joscar.MinimalEncoder;
+import net.kano.joscar.OscarTools;
 import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;

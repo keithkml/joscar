@@ -35,9 +35,13 @@
 
 package net.kano.joscartests;
 
-import javax.swing.*;
+import javax.swing.JLabel;
+import javax.swing.JTree;
+import javax.swing.UIManager;
 import javax.swing.tree.TreeCellRenderer;
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Font;
 import java.util.Date;
 
 public class OnlineBuddyCellRenderer implements TreeCellRenderer {

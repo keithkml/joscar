@@ -41,7 +41,13 @@ import net.kano.joscar.OscarTools;
 import net.kano.joscar.SeqNum;
 import net.kano.joscar.flap.FlapProcessor;
 import net.kano.joscar.flapcmd.SnacCommand;
-import net.kano.joscar.snac.*;
+import net.kano.joscar.snac.ClientSnacProcessor;
+import net.kano.joscar.snac.SnacPacketEvent;
+import net.kano.joscar.snac.SnacRequest;
+import net.kano.joscar.snac.SnacRequestAdapter;
+import net.kano.joscar.snac.SnacRequestListener;
+import net.kano.joscar.snac.SnacResponseEvent;
+import net.kano.joscar.snac.VetoableSnacPacketListener;
 import net.kano.joscar.snaccmd.AbstractIcbm;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
@@ -49,7 +55,11 @@ import net.kano.joscar.snaccmd.icbm.RvCommand;
 import net.kano.joscar.snaccmd.icbm.RvResponse;
 import net.kano.joscar.snaccmd.icbm.SendRvIcbm;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 

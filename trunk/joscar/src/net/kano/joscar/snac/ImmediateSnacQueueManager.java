@@ -35,7 +35,12 @@
 
 package net.kano.joscar.snac;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.IdentityHashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A SNAC queue manager that sends all SNACs immediately, only queueing SNACs

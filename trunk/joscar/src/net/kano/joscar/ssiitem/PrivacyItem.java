@@ -40,7 +40,11 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.FullUserInfo;
 import net.kano.joscar.snaccmd.ssi.SsiItem;
-import net.kano.joscar.tlv.*;
+import net.kano.joscar.tlv.DefaultMutableTlvChain;
+import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.MutableTlvChain;
+import net.kano.joscar.tlv.Tlv;
+import net.kano.joscar.tlv.TlvChain;
 
 /**
  * An SSI item object containing various privacy-related settings.

@@ -35,7 +35,8 @@
 
 package net.kano.joscartests;
 
-import javax.swing.*;
+import javax.swing.JFrame;
+import javax.swing.JTree;
 import java.util.Timer;
 import java.util.TimerTask;
 

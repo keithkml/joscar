@@ -35,8 +35,17 @@
 
 package net.kano.joscar.snaccmd;
 
-import net.kano.joscar.*;
-import net.kano.joscar.tlv.*;
+import net.kano.joscar.BinaryTools;
+import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.LiveWritable;
+import net.kano.joscar.OscarTools;
+import net.kano.joscar.StringBlock;
+import net.kano.joscar.tlv.DefaultMutableTlvChain;
+import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.MutableTlvChain;
+import net.kano.joscar.tlv.Tlv;
+import net.kano.joscar.tlv.TlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
