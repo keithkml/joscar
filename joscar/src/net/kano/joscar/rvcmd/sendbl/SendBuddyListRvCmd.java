@@ -57,10 +57,6 @@ public class SendBuddyListRvCmd extends AbstractRequestRvCmd {
         else groups = SendBuddyListGroup.readBuddyListGroups(serviceData);
     }
 
-    public SendBuddyListRvCmd(SendBuddyListGroup[] groups) {
-        this(ICBMMSGID_DEFAULT, groups);
-    }
-
     public SendBuddyListRvCmd(long icbmMessageId, SendBuddyListGroup[] groups) {
         super(icbmMessageId, CapabilityBlock.BLOCK_SENDBUDDYLIST);
 

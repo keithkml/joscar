@@ -35,18 +35,16 @@
 
 package net.kano.joscar.rvproto.rvproxy.cmd;
 
-import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
-import net.kano.joscar.rvproto.rvproxy.cmd.AbstractRvProxyCmd;
-import net.kano.joscar.rvproto.rvproxy.cmd.RvProxyHeader;
+import net.kano.joscar.DefensiveTools;
 
-import java.io.OutputStream;
 import java.io.IOException;
-import java.net.InetAddress;
+import java.io.OutputStream;
+import java.net.Inet4Address;
 
 public class RvProxyAckCmd extends AbstractRvProxyCmd {
-    private final InetAddress ip;
+    private final Inet4Address ip;
     private final int port;
 
     protected RvProxyAckCmd(RvProxyHeader header) {
@@ -59,7 +57,7 @@ public class RvProxyAckCmd extends AbstractRvProxyCmd {
         ip = BinaryTools.getIPFromBytes(data, 2);
     }
 
-    public RvProxyAckCmd(InetAddress ip, int port) {
+    public RvProxyAckCmd(Inet4Address ip, int port) {
         super(RvProxyHeader.HEADERTYPE_ACK);
 
         DefensiveTools.checkNull(ip, "ip");
@@ -69,7 +67,7 @@ public class RvProxyAckCmd extends AbstractRvProxyCmd {
         this.port = port;
     }
 
-    public final InetAddress getProxyIp() { return ip; }
+    public final Inet4Address getProxyIp() { return ip; }
 
     public final int getProxyPort() { return port; }
 

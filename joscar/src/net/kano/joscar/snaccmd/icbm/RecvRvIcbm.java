@@ -83,7 +83,7 @@ public class RecvRvIcbm extends AbstractRvIcbm {
      * 
      * @param icbmMessageId an ICBM message ID to associate with this rendezvous
      *        command
-     * @param status a status code, like {@link #STATUS_REQUEST}
+     * @param status a status code, like {@link #RVSTATUS_REQUEST}
      * @param rvSessionId a rendezvous session ID on which this rendezvous
      *        exists
      * @param cap this rendezvous's associated capability block

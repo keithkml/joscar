@@ -86,7 +86,7 @@ public class SendRvIcbm extends AbstractRvIcbm {
      *
      * @param sn the screenname to whom to send this rendezvous
      * @param icbmMessageId an ICBM message ID to attach to this command
-     * @param status a status code, like {@link #STATUS_REQUEST}
+     * @param status a status code, like {@link #RVSTATUS_REQUEST}
      * @param rvSessionId the ID of the rendezvous session on which this
      *        rendezvous is being sent
      * @param cap the capability block associated with this rendezvous command

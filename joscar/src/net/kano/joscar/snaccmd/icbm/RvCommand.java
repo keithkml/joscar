@@ -49,15 +49,21 @@ import java.io.IOException;
  * can easily be generated from incoming {@link RecvRvIcbm}s.
  */
 public abstract class RvCommand {
-    /** A status code indicating that a rendezvous is a request. */
-    public static final int RVSTATUS_REQUEST = 0x0000;
-    /** A status code indicating that a rendezvous has been accepted. */
-    public static final int RVSTATUS_ACCEPT = 0x0002;
+    /**
+     * A status code indicating that a rendezvous is a request. Simply a
+     * shortcut for {@link AbstractRvIcbm#RVSTATUS_ACCEPT}.
+     */
+    public static final int RVSTATUS_REQUEST = AbstractRvIcbm.RVSTATUS_REQUEST;
+    /**
+     * A status code indicating that a rendezvous has been accepted. Simply a
+     * shortcut for {@link AbstractRvIcbm#RVSTATUS_ACCEPT}.
+     */
+    public static final int RVSTATUS_ACCEPT = AbstractRvIcbm.RVSTATUS_ACCEPT;
     /**
      * A status code indicating that a rendezvous has been rejected or
-     * cancelled.
+     * cancelled. Simply a shortcut for {@link AbstractRvIcbm#RVSTATUS_DENY}.
      */
-    public static final int RVSTATUS_DENY = 0x0001;
+    public static final int RVSTATUS_DENY = AbstractRvIcbm.RVSTATUS_DENY;
 
     /** The ICBM message ID of this command. */
     private final long icbmMessageId;

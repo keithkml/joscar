@@ -244,7 +244,7 @@ public final class BinaryTools {
      *         starting at the given index, or <code>null</code> if fewer than
      *         four bytes exist at the given index
      *
-     * @see java.net.InetAddress#getByAddress(byte[])
+     * @see java.net.Inet4Address#getByAddress(byte[])
      * @see Inet4Address#getAddress()
      */
     public static Inet4Address getIPFromBytes(final ByteBlock data,

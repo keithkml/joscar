@@ -35,24 +35,50 @@
 
 package net.kano.joscar.rvcmd;
 
+import net.kano.joscar.MiscTools;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
-import net.kano.joscar.MiscTools;
 
 import java.io.OutputStream;
 import java.io.IOException;
 
+/**
+ * A base class for "acceptance" rendezvous commands, or commands with no RV
+ * data and a status code of {@link #RVSTATUS_ACCEPT}.
+ */
 public abstract class AbstractAcceptRvCmd extends AbstractRvCmd {
-    public AbstractAcceptRvCmd(RecvRvIcbm icbm) {
+    /**
+     * Creates a new RV "accept" command from the given incoming acceptance RV
+     * ICBM.
+     *
+     * @param icbm an incoming "acceptance" RV ICBM
+     */
+    protected AbstractAcceptRvCmd(RecvRvIcbm icbm) {
         super(icbm);
     }
 
-    public AbstractAcceptRvCmd(long icbmMessageId, CapabilityBlock cap) {
+    /**
+     * Creates a new outgoing RV "accept" command with the given ICBM message ID
+     * and the given associated capability block.
+     *
+     * @param icbmMessageId the ICBM message ID for the outgoing RV ICBM
+     * @param cap the capability block associated with this RV command
+     */
+    protected AbstractAcceptRvCmd(long icbmMessageId, CapabilityBlock cap) {
         super(icbmMessageId, RVSTATUS_ACCEPT, cap);
     }
 
     protected final void writeHeaderRvTlvs(OutputStream out) { }
 
+    /**
+     * Provides a default implementation for writing this command's RV TLV's.
+     * This implementation does not write any TLV's to the given stream (as most
+     * acceptance RV commands contain no TLV's).
+     *
+     * @param out the stream to which to write
+     *
+     * @throws IOException if an I/O error occurs
+     */
     protected void writeRvTlvs(OutputStream out) throws IOException { }
 
     public String toString() {

@@ -95,7 +95,7 @@ public class RecvFileThread extends Thread {
 
                 System.out.println("header: " + header);
 
-                String[] parts = header.getFilename().getFilenameParts();
+                String[] parts = header.getFilename().getSegments();
                 String filename = "dl-" + parts[parts.length-1];
                 System.out.println("writing to file " + filename);
 

@@ -63,11 +63,6 @@ public class ChatInvitationRvCmd extends AbstractRequestRvCmd {
         else roomInfo = MiniRoomInfo.readMiniRoomInfo(serviceData);
     }
 
-    public ChatInvitationRvCmd(MiniRoomInfo roomInfo,
-            InvitationMessage message) {
-        this(ICBMMSGID_DEFAULT, roomInfo, message);
-    }
-
     public ChatInvitationRvCmd(long icbmMessageId, MiniRoomInfo roomInfo,
             InvitationMessage message) {
         super(icbmMessageId, CapabilityBlock.BLOCK_CHAT);

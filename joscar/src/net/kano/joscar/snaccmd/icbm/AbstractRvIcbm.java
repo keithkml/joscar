@@ -55,13 +55,13 @@ import java.io.OutputStream;
  */
 public abstract class AbstractRvIcbm extends AbstractIcbm {
     /** A status code indicating that this rendezvous ICBM is a request. */
-    public static final int STATUS_REQUEST = 0x0000;
+    public static final int RVSTATUS_REQUEST = 0x0000;
     /** A status code indicating that a rendezvous has been accepted. */
-    public static final int STATUS_ACCEPT = 0x0002;
+    public static final int RVSTATUS_ACCEPT = 0x0002;
     /**
      * A status code indicating that a rendezvous has been denied or cancelled.
      */
-    public static final int STATUS_DENY = 0x0001;
+    public static final int RVSTATUS_DENY = 0x0001;
 
     /** A TLV type containing the rendezvous-specific data. */
     private static final int TYPE_RV_DATA = 0x0005;
@@ -95,17 +95,31 @@ public abstract class AbstractRvIcbm extends AbstractIcbm {
     final void processRvTlvs(TlvChain chain) {
         DefensiveTools.checkNull(chain, "chain");
 
-        ByteBlock rvBlock = chain.getLastTlv(TYPE_RV_DATA).getData();
+        Tlv rvDataTlv = chain.getLastTlv(TYPE_RV_DATA);
+        if (rvDataTlv == null) {
+            status = -1;
+            rvSessionId = 0;
+            cap = null;
+            rvData = null;
+            rvDataWriter = null;
+        } else {
+            ByteBlock rvBlock = rvDataTlv.getData();
 
-        status = BinaryTools.getUShort(rvBlock, 0);
-        rvSessionId = BinaryTools.getLong(rvBlock, 2);
+            status = BinaryTools.getUShort(rvBlock, 0);
+            rvSessionId = BinaryTools.getLong(rvBlock, 2);
 
-        ByteBlock capBlock = rvBlock.subBlock(10, 16);
-        cap = new CapabilityBlock(capBlock);
+            if (rvBlock.getLength() >= 26) {
+                ByteBlock capBlock = rvBlock.subBlock(10, 16);
+                cap = new CapabilityBlock(capBlock);
 
-        rvData = rvBlock.subBlock(26);
+                rvData = rvBlock.subBlock(26);
+            } else {
+                cap = null;
+                rvData = null;
+            }
 
-        rvDataWriter = rvData;
+            rvDataWriter = rvData;
+        }
     }
 
     /**
@@ -113,7 +127,7 @@ public abstract class AbstractRvIcbm extends AbstractIcbm {
      *
      * @param command the SNAC command subtype of this command
      * @param icbmMessageId an ICBM message ID to attach to this command
-     * @param status a status code, like {@link #STATUS_REQUEST}
+     * @param status a status code, like {@link #RVSTATUS_REQUEST}
      * @param rvSessionId a rendezvous session ID to attach to this command
      * @param cap the capability block associated with this command
      * @param rvDataWriter an object to write rendezvous-command-specific data
@@ -153,7 +167,7 @@ public abstract class AbstractRvIcbm extends AbstractIcbm {
 
     /**
      * Returns the status code of this rendezvous. Will normally be one of
-     * {@link #STATUS_REQUEST}, {@link #STATUS_ACCEPT}, and {@link
+     * {@link #RVSTATUS_REQUEST}, {@link #RVSTATUS_ACCEPT}, and {@link
      * #RVSTATUS_DENY}.
      *
      * @return this rendezvous's status code

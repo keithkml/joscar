@@ -45,14 +45,30 @@ import net.kano.joscar.tlv.Tlv;
 import java.io.IOException;
 import java.io.OutputStream;
 
+/**
+ * A base class for RV "reject" commands, commands with a status code of
+ * {@link #RVSTATUS_DENY} and containing a rejection code.
+ */
 public abstract class AbstractRejectRvCmd extends AbstractRvCmd {
+    /**
+     * A rejection code indicating that the user cancelled or denied a
+     * rendezvous request.
+     */
     public static final int REJECTCODE_CANCELLED = 0x0001;
 
+    /** A TLV type containing a rejection code. */
     private static final int TYPE_REJECTCODE = 0x000b;
 
+    /** The rejection code. */
     private final int rejectCode;
 
-    public AbstractRejectRvCmd(RecvRvIcbm icbm) {
+    /**
+     * Creates a new rejection RV command from the given incoming rejection RV
+     * ICBM command.
+     *
+     * @param icbm an incoming rejection RV ICBM command
+     */
+    protected AbstractRejectRvCmd(RecvRvIcbm icbm) {
         super(icbm);
 
         MutableTlvChain chain = getMutableTlvs();
@@ -64,7 +80,14 @@ public abstract class AbstractRejectRvCmd extends AbstractRvCmd {
         });
     }
 
-    public AbstractRejectRvCmd(long icbmMessageId, CapabilityBlock cap,
+    /**
+     * Creates a new outgoing rejection RV command with the given properties.
+     *
+     * @param icbmMessageId the ICBM message ID for the outgoing RV ICBM command
+     * @param cap the capability block associated with this RV command
+     * @param rejectionCode the rejection code to send in this RV command
+     */
+    protected AbstractRejectRvCmd(long icbmMessageId, CapabilityBlock cap,
             int rejectionCode) {
         super(icbmMessageId, RVSTATUS_DENY, cap);
 
@@ -73,6 +96,11 @@ public abstract class AbstractRejectRvCmd extends AbstractRvCmd {
         this.rejectCode = rejectionCode;
     }
 
+    /**
+     * Returns the rejection code contained in this rejection RV command.
+     *
+     * @return this RV command's rejection code
+     */
     public final int getRejectCode() { return rejectCode; }
 
     protected final void writeHeaderRvTlvs(OutputStream out)
@@ -82,6 +110,16 @@ public abstract class AbstractRejectRvCmd extends AbstractRvCmd {
         }
     }
 
+    /**
+     * Provides a default implementation for writing this command's RV TLV's.
+     * This implementation does not write any RV TLV's to the given stream, as
+     * most rejection RV commands contain only one TLV, the associated
+     * rejection code.
+     *
+     * @param out the stream to which to write
+     *
+     * @throws IOException if an I/O error occurs
+     */
     protected void writeRvTlvs(OutputStream out) throws IOException { }
 
     public String toString() {
