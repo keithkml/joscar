@@ -1,6 +1,6 @@
 README - joscar 0.9.3
 AOL Instant Messenger protocol library for Java
-(C) 2002-2003 The Joust Project
+(C) 2002-2004 The Joust Project
 
 --------------------------------------------------------------------------------
 
@@ -15,9 +15,8 @@ While joscar was designed mainly to be a client library, much of the
 functionality necessary to implement an AIM server is there.  All commands and
 data structures can be both read in from and written out to a stream of bytes.
 
-joscar currently depends heavily on features only available in the Java 1.4
-class library, such as nio's Charset classes.  For further information, please
-see the RELNOTES file included with this distribution.
+joscar depends heavily on features only available in the Java 1.4 class
+libraries, such as nio's Charset classes and regular expressions.
 
 The joscar source code is released under a BSD-style license, which means you
 are free to do whatever you please with it as long as you don't hold the Joust

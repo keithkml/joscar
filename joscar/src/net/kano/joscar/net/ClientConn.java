@@ -407,6 +407,9 @@ public class ClientConn {
         try {
             connThread.start();
         } catch (Throwable t) {
+            // should this be in a finally block, and the catch block would
+            // assign the exception thrown to a variable declared outside the
+            // try? it probably doesn't matter so much.
             setState(STATE_FAILED, t);
         }
     }
