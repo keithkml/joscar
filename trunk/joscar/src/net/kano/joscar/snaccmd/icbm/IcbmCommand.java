@@ -47,7 +47,7 @@ public abstract class IcbmCommand extends SnacCommand {
 
     /** A set of SNAC family information for the ICBM family. */
     public static final SnacFamilyInfo FAMILY_INFO
-            = new SnacFamilyInfo(FAMILY_ICBM, 0x0001, 0x0110, 0x0629);
+            = new SnacFamilyInfo(FAMILY_ICBM, 0x0001, 0x0110, 0x739);
 
     /** A command type for requesting ICBM parameter information. */
     public static final int CMD_PARAM_INFO_REQ = 0x0004;

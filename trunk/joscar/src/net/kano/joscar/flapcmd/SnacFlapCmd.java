@@ -108,4 +108,8 @@ public class SnacFlapCmd extends FlapCommand {
     public void writeData(OutputStream out) throws IOException {
         packet.write(out);
     }
+
+    public String toString() {
+        return "SnacFlapCmd: packet=" + packet;
+    }
 }

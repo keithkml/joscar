@@ -81,6 +81,7 @@ public class InfoData implements LiveWritable {
         String infoType = chain.getString(TYPE_INFO_FMT);
         Tlv infoTlv = chain.getLastTlv(TYPE_INFO);
         Tlv capTlv = chain.getLastTlv(TYPE_CAPS);
+        Tlv certTlv = chain.getLastTlv(TYPE_CERTIFICATE_INFO);
 
         String awayMessage = null;
         if (awayTlv != null) {
@@ -97,7 +98,12 @@ public class InfoData implements LiveWritable {
             caps = CapabilityBlock.getCapabilityBlocks(capTlv.getData());
         }
 
-        return new InfoData(info, awayMessage, caps);
+        CertificateInfo certInfo = null;
+        if (certTlv != null) {
+            certInfo = CertificateInfo.readCertInfoBlock(certTlv.getData());
+        }
+
+        return new InfoData(info, awayMessage, caps, certInfo);
     }
     
     /**
@@ -127,6 +133,8 @@ public class InfoData implements LiveWritable {
      */
     private static final int TYPE_CAPS = 0x0005;
 
+    private static final int TYPE_CERTIFICATE_INFO = 0x0006;
+
     /**
      * The user info text in this structure.
      */
@@ -142,6 +150,20 @@ public class InfoData implements LiveWritable {
      */
     private final CapabilityBlock[] caps;
 
+    private final CertificateInfo certInfo;
+
+    /**
+     * Creates a new <code>InfoData</code> structure containing only an away
+     * message. Note that the <code>awayMessage</code> can be {@link #NOT_AWAY}
+     * (an empty string), indicating that the user is back from being away.
+     *
+     * @param awayMessage the away message, or {@link #NOT_AWAY} (an empty
+     *        string) to indicate that the user is back from being away
+     */
+    public InfoData(String awayMessage) {
+        this(null, awayMessage, null, null);
+    }
+
     /**
      * Creates a new info data object with the given properties. Any of these
      * can be <code>null</code> to indicate that that field shall not be sent.
@@ -152,11 +174,15 @@ public class InfoData implements LiveWritable {
      * @param info the user's user info text
      * @param awayMessage the user's away message
      * @param caps a list of supported capability blocks
+     * @param certInfo client certificate information (for Encrypted IM)
      */
-    public InfoData(String info, String awayMessage, CapabilityBlock[] caps) {
+    public InfoData(String info, String awayMessage, CapabilityBlock[] caps,
+            CertificateInfo certInfo) {
         this.info = info;
         this.awayMessage = awayMessage;
-        this.caps = (CapabilityBlock[]) (caps == null ? null : caps.clone());
+        this.caps = (CapabilityBlock[])
+                DefensiveTools.getImmutableArray(caps, "caps");
+        this.certInfo = certInfo;
     }
 
     /**
@@ -190,6 +216,8 @@ public class InfoData implements LiveWritable {
     public final CapabilityBlock[] getCaps() {
         return (CapabilityBlock[]) (caps == null ? null : caps.clone());
     }
+
+    public final CertificateInfo getCertificateInfo() { return certInfo; }
 
     /**
      * Returns an "info format string" in the form <code>text/aolrtf;
@@ -235,6 +263,10 @@ public class InfoData implements LiveWritable {
             byte[] capBlock = CapabilityBlock.convertToBytes(caps);
             new Tlv(TYPE_CAPS, ByteBlock.wrap(capBlock)).write(out);
         }
+        if (certInfo != null) {
+            ByteBlock certInfoBlock = ByteBlock.createByteBlock(certInfo);
+            new Tlv(TYPE_CERTIFICATE_INFO, certInfoBlock).write(out);
+        }
     }
 
     public String toString() {
@@ -257,10 +289,13 @@ public class InfoData implements LiveWritable {
 	    buffer.append(display);
 	}
 	if (caps != null && caps.length > 0) {
-	    buffer.append("  capabilities: (");
+	    buffer.append("  capabilities: ");
 	    buffer.append(caps.length);
-	    buffer.append(")");
 	}
+        if (certInfo != null) {
+            buffer.append("  certinfo: ");
+            buffer.append(certInfo);
+        }
 
 	return buffer.toString();
     }

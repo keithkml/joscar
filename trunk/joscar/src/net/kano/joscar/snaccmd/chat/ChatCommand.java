@@ -47,7 +47,7 @@ public abstract class ChatCommand extends SnacCommand {
 
     /** A set of SNAC family information for this family. */
     public static final SnacFamilyInfo FAMILY_INFO
-            = new SnacFamilyInfo(FAMILY_CHAT, 0x0001, 0x0010, 0x0629);
+            = new SnacFamilyInfo(FAMILY_CHAT, 0x0001, 0x0010, 0x739);
 
     /** A command subtype for sending a message to a chat room. */
     public static final int CMD_SEND_CHAT_MSG = 0x0005;

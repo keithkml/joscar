@@ -186,4 +186,19 @@ public final class DefensiveTools {
             }
         }
     }
+
+    /**
+     * Note that this method will simply return null if the given array is null
+     * and that if any of the elements of the array are null, an exception will
+     * be thrown.
+     */
+    public static Object[] getImmutableArray(Object[] array, String name) {
+        if (array != null) {
+            array = (Object[]) array.clone();
+            DefensiveTools.checkNullElements(array, name);
+        }
+
+        return array;
+    }
+
 }

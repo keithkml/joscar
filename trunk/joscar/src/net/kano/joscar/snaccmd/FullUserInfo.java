@@ -146,6 +146,7 @@ public class FullUserInfo implements LiveWritable {
         Tlv extraInfoTlv = chain.getLastTlv(TYPE_EXTRA_INFO);
         Tlv encryptedInfoTlv = chain.getLastTlv(TYPE_ENCRYPTION_INFO);
         Tlv shortCapTlv = chain.getLastTlv(TYPE_SHORT_CAPS);
+        Tlv securityTlv = chain.getLastTlv(TYPE_CERT_INFO_HASH);
 
         MutableTlvChain extras = new DefaultMutableTlvChain(chain);
         extras.removeTlvs(new int[] {
@@ -225,15 +226,23 @@ public class FullUserInfo implements LiveWritable {
             shortCaps = ShortCapabilityBlock.readShortCaps(shortCapData);
         }
 
+        ImmutableTlvChain securityChain = null;
+        if (securityTlv != null) {
+            ByteBlock securityData = securityTlv.getData();
+            securityChain = ImmutableTlvChain.readChain(securityData);
+        }
+
         block = block.subBlock(chain.getTotalSize());
 
         // and store this for use by fun things.
         int totalSize = block.getOffset() - start;
 
+        ImmutableTlvChain extrasImmutable = new ImmutableTlvChain(extras);
+
         return new FullUserInfo(sn, warningLevel, flags, accountCreated,
                 memberSince, sessLengthAIM, sessLengthAOL, onSince, idleMins,
-                capabilityBlocks, away, extraInfos, encInfo, shortCaps, extras,
-                totalSize);
+                capabilityBlocks, away, extraInfos, encInfo, shortCaps,
+                securityChain, extrasImmutable, totalSize);
     }
 
     /**
@@ -287,6 +296,8 @@ public class FullUserInfo implements LiveWritable {
     private static final int TYPE_ENCRYPTION_INFO = 0x001b;
 
     private static final int TYPE_SHORT_CAPS = 0x19;
+
+    private static final int TYPE_CERT_INFO_HASH = 0x0006;
 
     /** The screenname of this user. */
     private final String sn;
@@ -361,14 +372,14 @@ public class FullUserInfo implements LiveWritable {
      */
     private final ExtraInfoBlock[] extraInfos;
 
-    private final ByteBlock encryptionInfo;
+    private final ByteBlock certInfoHash;
 
     private final ShortCapabilityBlock[] shortCaps;
 
-    /**
-     * A set of extra TLV's that were not explicitly parsed into fields.
-     */
-    private final TlvChain extraTlvs;
+    private final ImmutableTlvChain securityTlvs;
+
+    /** A set of extra TLV's that were not explicitly parsed into fields. */
+    private final ImmutableTlvChain extraTlvs;
 
     /**
      * Creates a user info block containing only the given screenname.
@@ -389,7 +400,7 @@ public class FullUserInfo implements LiveWritable {
      */
     private FullUserInfo(String sn, int warningLevel, int totalSize) {
         this(sn, warningLevel, -1, null, null, -1, -1, null, -1, null, null,
-                null, null, null, null, totalSize);
+                null, null, null, null, null, totalSize);
     }
 
     /**
@@ -419,10 +430,10 @@ public class FullUserInfo implements LiveWritable {
             Date accountCreated, Date memberSince, long sessAIM, long sessAOL,
             Date onSince, int idleMins, CapabilityBlock[] capabilityBlocks,
             Boolean away, ExtraInfoBlock[] extraInfos, ByteBlock encInfo,
-            ShortCapabilityBlock[] shortCaps) {
+            ShortCapabilityBlock[] shortCaps, ImmutableTlvChain securityTlvs) {
         this(sn, warningLevel, flags, accountCreated, memberSince, sessAIM,
                 sessAOL, onSince, idleMins, capabilityBlocks, away, extraInfos,
-                encInfo, shortCaps, null);
+                encInfo, shortCaps, securityTlvs, null);
     }
 
     /**
@@ -456,10 +467,11 @@ public class FullUserInfo implements LiveWritable {
             Date accountCreated, Date memberSince, long sessAIM, long sessAOL,
             Date onSince, int idleMins, CapabilityBlock[] capabilityBlocks,
             Boolean away, ExtraInfoBlock[] extraInfos, ByteBlock encInfo,
-            ShortCapabilityBlock[] shortCaps, TlvChain extraTlvs) {
+            ShortCapabilityBlock[] shortCaps, ImmutableTlvChain securityTlvs,
+            ImmutableTlvChain extraTlvs) {
         this(sn, warningLevel, flags, accountCreated, memberSince, sessAIM,
                 sessAOL, onSince, idleMins, capabilityBlocks, away, extraInfos,
-                encInfo, shortCaps, extraTlvs, -1);
+                encInfo, shortCaps, securityTlvs, extraTlvs, -1);
     }
 
     /**
@@ -479,7 +491,7 @@ public class FullUserInfo implements LiveWritable {
      *        if this user is on AOL
      * @param onSince the date at which this user signed on
      * @param idleMins the number of minutes this user has been idle
-     * @param capabilityBlocks a list of capability blocks that this user is
+     * @param caps a list of capability blocks that this user is
      *        advertising
      * @param away whether this user is away
      * @param extraInfos a list of extra information blocks that this user is
@@ -491,29 +503,26 @@ public class FullUserInfo implements LiveWritable {
      */
     private FullUserInfo(String sn, int warningLevel, int flags,
             Date accountCreated, Date memberSince, long sessAIM, long sessAOL,
-            Date onSince, int idleMins, CapabilityBlock[] capabilityBlocks,
-            Boolean away, ExtraInfoBlock[] extraInfos, ByteBlock encInfo,
-            ShortCapabilityBlock[] shortCaps, TlvChain extraTlvs,
-            int totalSize) {
+            Date onSince, int idleMins, CapabilityBlock[] caps,
+            Boolean away, ExtraInfoBlock[] extraInfos, ByteBlock certInfoHash,
+            ShortCapabilityBlock[] shortCaps, ImmutableTlvChain securityTlvs,
+            ImmutableTlvChain extraTlvs, int totalSize) {
+
         DefensiveTools.checkNull(sn, "sn");
         DefensiveTools.checkRange(warningLevel, "warningLevel", 0);
         DefensiveTools.checkRange(sessAIM, "sessAIM", -1);
         DefensiveTools.checkRange(sessAOL, "sessAOL", -1);
         DefensiveTools.checkRange(idleMins, "idleMins", -1);
         DefensiveTools.checkRange(totalSize, "totalSize", -1);
-        if (capabilityBlocks != null) {
-            capabilityBlocks = (CapabilityBlock[]) capabilityBlocks.clone();
-            DefensiveTools.checkNullElements(capabilityBlocks,
-                    "capabilityBlocks");
-        }
-        if (extraInfos != null) {
-            extraInfos = (ExtraInfoBlock[]) extraInfos.clone();
-            DefensiveTools.checkNullElements(extraInfos, "extraInfos");
-        }
-        if (shortCaps != null) {
-            shortCaps = (ShortCapabilityBlock[]) shortCaps.clone();
-            DefensiveTools.checkNullElements(shortCaps, "shortCaps");
-        }
+
+        caps = (CapabilityBlock[])
+                DefensiveTools.getImmutableArray(caps, "capabilityBlocks");
+
+        extraInfos = (ExtraInfoBlock[])
+                DefensiveTools.getImmutableArray(extraInfos, "extraInfos");
+
+        shortCaps = (ShortCapabilityBlock[])
+                DefensiveTools.getImmutableArray(shortCaps, "shortCaps");
 
         this.sn = sn;
         this.warningLevel = warningLevel;
@@ -524,11 +533,12 @@ public class FullUserInfo implements LiveWritable {
         this.sessionLengthAOL = sessAOL;
         this.onSince = onSince;
         this.idleMins = idleMins;
-        this.capabilityBlocks = capabilityBlocks;
+        this.capabilityBlocks = caps;
         this.away = away;
         this.extraInfos = extraInfos;
-        this.encryptionInfo = encInfo;
+        this.certInfoHash = certInfoHash;
         this.shortCaps = shortCaps;
+        this.securityTlvs = securityTlvs;
         this.extraTlvs = extraTlvs;
         this.totalSize = totalSize;
     }
@@ -674,11 +684,13 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
         return (ExtraInfoBlock[]) (extraInfos == null ? null : extraInfos.clone());
     }
 
-    public final ByteBlock getEncryptionInfo() { return encryptionInfo; }
+    public final ByteBlock getCertInfoHash() { return certInfoHash; }
 
     public ShortCapabilityBlock[] getShortCapabilityBlocks() {
-        return shortCaps;
+        return (ShortCapabilityBlock[]) shortCaps.clone();
     }
+
+    public ImmutableTlvChain getSecurityTlvs() { return securityTlvs; }
 
     /**
      * Returns a TLV chain consisting of all TLV's not processed into fields
@@ -689,7 +701,7 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
      * @return a list of TLV's present in the received user info block that were
      *         not processed into fields of this object
      */
-    public final TlvChain getExtraTlvs() {
+    public final ImmutableTlvChain getExtraTlvs() {
         return extraTlvs;
     }
 
@@ -767,8 +779,13 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
                     ByteBlock.createByteBlock(extraInfos)));
         }
 
-        if (encryptionInfo != null) {
-            chain.addTlv(new Tlv(TYPE_ENCRYPTION_INFO, encryptionInfo));
+        if (certInfoHash != null) {
+            chain.addTlv(new Tlv(TYPE_ENCRYPTION_INFO, certInfoHash));
+        }
+
+        if (securityTlvs != null) {
+            ByteBlock tlvBlock = ByteBlock.createByteBlock(securityTlvs);
+            chain.addTlv(new Tlv(TYPE_CERT_INFO_HASH, tlvBlock));
         }
 
         if (extraTlvs != null) chain.addAll(extraTlvs);
@@ -801,9 +818,15 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
                 (extraInfos != null
                 ? ", extraInfos=" + Arrays.asList(extraInfos) : "") +
 
-                (encryptionInfo != null ? ", encInfo=" + encryptionInfo : "") +
+                (certInfoHash != null ? ", encInfo=" + certInfoHash : "") +
+
+                (securityTlvs != null
+                ? "securityTlvs: " + securityTlvs.getTlvCount() : "") +
 
                 (extraTlvs != null && extraTlvs.getTlvCount() > 0
-                ? ", extraTlvs=" + Arrays.asList(extraTlvs.getTlvs()) : "");
+                ? ", extraTlvs=" + Arrays.asList(extraTlvs.getTlvs()) : "")
+
+                + (shortCaps != null ? ", shortcaps: " + Arrays.asList(shortCaps) : "")
+                + (capabilityBlocks != null ? ", longcaps: " + Arrays.asList(capabilityBlocks) : "");
     }
 }

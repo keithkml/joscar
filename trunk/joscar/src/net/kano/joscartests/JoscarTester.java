@@ -35,6 +35,7 @@
 
 package net.kano.joscartests;
 
+import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.FileWritable;
 import net.kano.joscar.OscarTools;
@@ -63,16 +64,13 @@ import net.kano.joscar.snaccmd.acct.AcctModCmd;
 import net.kano.joscar.snaccmd.acct.ConfirmAcctCmd;
 import net.kano.joscar.snaccmd.chat.ChatMsg;
 import net.kano.joscar.snaccmd.conn.ServiceRequest;
-import net.kano.joscar.snaccmd.conn.SetEncryptionInfoCmd;
 import net.kano.joscar.snaccmd.conn.SetExtraInfoCmd;
+import net.kano.joscar.snaccmd.icbm.InstantMessage;
 import net.kano.joscar.snaccmd.icbm.OldIconHashInfo;
 import net.kano.joscar.snaccmd.icbm.SendImIcbm;
 import net.kano.joscar.snaccmd.icon.UploadIconCmd;
 import net.kano.joscar.snaccmd.invite.InviteFriendCmd;
-import net.kano.joscar.snaccmd.loc.GetDirInfoCmd;
-import net.kano.joscar.snaccmd.loc.GetInfoCmd;
-import net.kano.joscar.snaccmd.loc.SetDirInfoCmd;
-import net.kano.joscar.snaccmd.loc.SetInterestsCmd;
+import net.kano.joscar.snaccmd.loc.*;
 import net.kano.joscar.snaccmd.rooms.ExchangeInfoReq;
 import net.kano.joscar.snaccmd.rooms.JoinRoomCmd;
 import net.kano.joscar.snaccmd.rooms.RoomRightsRequest;
@@ -84,14 +82,13 @@ import net.kano.joscar.snaccmd.ssi.ModifyItemsCmd;
 import net.kano.joscar.snaccmd.ssi.SsiItem;
 import net.kano.joscar.ssiitem.*;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import javax.crypto.Cipher;
+import java.io.*;
 import java.math.BigInteger;
 import java.net.*;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.security.*;
+import java.security.interfaces.RSAPublicKey;
+import java.security.cert.Certificate;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.logging.ConsoleHandler;
@@ -303,11 +300,33 @@ public class JoscarTester implements CmdLineListener {
     }
     }
 
+    String aimexp = "the60s";
+
     {
+        cmdMap.put("setexp", new CLCommand() {
+            public void handle(String line, String cmd, String[] args) {
+                aimexp = args[0];
+            }
+        });
         cmdMap.put("im", new CLCommand() {
             public void handle(String line, String cmd, String[] args) {
-                request(new SendImIcbm(args[0], args[1], false, 0, true,
-                        oldIconInfo, true));
+                byte[] textBytes;
+                try {
+                    textBytes = aimexp.getBytes("US-ASCII");
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                    return;
+                }
+                byte[] data = new byte[textBytes.length + 1];
+                data[0] = 0x05;
+                System.arraycopy(textBytes, 0, data, 1, textBytes.length);
+                ByteBlock block = ByteBlock.wrap(data);
+
+                request(new SendImIcbm(args[0], new InstantMessage(args[1]),
+                        false, 0, true, oldIconInfo, new ExtraInfoBlock[] {
+                            new ExtraInfoBlock(0x0080, new ExtraInfoData(0, block)),
+                            new ExtraInfoBlock(0x0082, new ExtraInfoData(0, block))
+                        }, true));
             }
         });
         cmdMap.put("info", new CLCommand() {
@@ -428,22 +447,9 @@ public class JoscarTester implements CmdLineListener {
                 }));
             }
         });
-        cmdMap.put("setimenc", new CLCommand() {
+        cmdMap.put("getcertinfo", new CLCommand() {
             public void handle(String line, String cmd, String[] args) {
-                byte[] bytes = null;
-                try {
-                    MessageDigest digester = MessageDigest.getInstance("MD5");
-                    bytes = digester.digest();
-                } catch (NoSuchAlgorithmException e) {
-                    e.printStackTrace();
-                }
-                System.out.println("bytes=" + bytes);
-                request(new SetEncryptionInfoCmd(new ExtraInfoBlock[] {
-                    new ExtraInfoBlock(0x0402, new ExtraInfoData(1,
-                            ByteBlock.wrap(bytes))),
-                    new ExtraInfoBlock(0x0403, new ExtraInfoData(1,
-                            ByteBlock.wrap(bytes))),
-                }));
+                request(new GetCertificateInfoCmd(args[0]));
             }
         });
     }
@@ -643,7 +649,7 @@ public class JoscarTester implements CmdLineListener {
         cmdMap.put("uploadicon", new CLCommand() {
             public void handle(String line, String cmd, String[] args) {
                 request(new UploadIconCmd(ByteBlock.createByteBlock(
-                        new FileWritable(new File(args[0])))));
+                        new FileWritable(args[0]))));
             }
         });
         cmdMap.put("noicon", new CLCommand() {
@@ -844,6 +850,35 @@ public class JoscarTester implements CmdLineListener {
                 }
             }
         });
+        cmdMap.put("encim", new CLCommand() {
+            public void handle(String line, String cmd, String[] args) {
+                Certificate cert = getCert(args[0]);
+
+                if (cert == null) {
+                    System.out.println("no cert for " + args[0] + "!");
+                    return;
+                }
+
+                try {
+                    Cipher cipher = Cipher.getInstance(args[2], "BC");
+                    RSAPublicKey pubKey = (RSAPublicKey) cert.getPublicKey();
+                    System.out.println("keys: " + pubKey.getModulus() + ", " + pubKey.getPublicExponent());
+                    cipher.init(Cipher.ENCRYPT_MODE, pubKey);
+                    byte[] data = cipher.doFinal(args[1].getBytes("US-ASCII"));
+
+                    System.out.println("sending [" + data.length + "]: "
+                            + BinaryTools.describeData(
+                                    ByteBlock.wrap(data)));
+
+                    request(new SendImIcbm(args[0], new InstantMessage(
+                            ByteBlock.wrap(data)), false, 0, false, null, null,
+                            true));
+
+                } catch (Exception e) {
+                    e.printStackTrace(System.out);
+                }
+            }
+        });
     }
 
     private class MysteryFlapCmd extends FlapCommand {
@@ -920,6 +955,14 @@ public class JoscarTester implements CmdLineListener {
             }
         },
                 30*1000, 5*60*1000);
+
+        try {
+            Class bcp = Class.forName(
+                    "org.bouncycastle.jce.provider.BouncyCastleProvider");
+            Security.addProvider((Provider) bcp.newInstance());
+        } catch (Throwable e) {
+            System.out.println("[couldn't load Bouncy Castle JCE provider]");
+        }
     }
 
     public void sendIM(String nick, String text) {
@@ -973,6 +1016,16 @@ public class JoscarTester implements CmdLineListener {
     public OnlineUserInfo[] getOnlineUsers() {
         return (OnlineUserInfo[])
                 userInfos.values().toArray(new OnlineUserInfo[0]);
+    }
+
+    private Map certs = new HashMap();
+
+    public void setCert(String sn, Certificate cert) {
+        certs.put(OscarTools.normalize(sn), cert);
+    }
+
+    public Certificate getCert(String sn) {
+        return (Certificate) certs.get(OscarTools.normalize(sn));
     }
 
     private class TestRateTimerTask extends TimerTask {
