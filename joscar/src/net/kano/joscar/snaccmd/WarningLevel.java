@@ -39,7 +39,7 @@ import net.kano.joscar.DefensiveTools;
 
 public final class WarningLevel extends Number {
     public static WarningLevel getInstanceFromX10(int x10) {
-        DefensiveTools.checkRange(x10, "x10", 0);
+        if (x10 < 0) return null;
 
         if (x10 == 0) return LEVEL_ZERO;
         if (x10 == 999) return LEVEL_999;
@@ -48,13 +48,11 @@ public final class WarningLevel extends Number {
     }
 
     public static WarningLevel getInstanceFromPercent(int pc) {
-        DefensiveTools.checkRange(pc, "pc", 0);
-        
         return getInstanceFromX10(pc*10);
     }
 
-    private static final WarningLevel LEVEL_ZERO = getInstanceFromX10(0);
-    private static final WarningLevel LEVEL_999 = getInstanceFromX10(999);
+    private static final WarningLevel LEVEL_ZERO = new WarningLevel(0);
+    private static final WarningLevel LEVEL_999 = new WarningLevel(999);
 
 
     private final float fv;

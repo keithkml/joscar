@@ -59,6 +59,7 @@ import net.kano.joscar.snaccmd.acct.AcctInfoRequest;
 import net.kano.joscar.snaccmd.acct.AcctModCmd;
 import net.kano.joscar.snaccmd.acct.ConfirmAcctCmd;
 import net.kano.joscar.snaccmd.conn.SetExtraInfoCmd;
+import net.kano.joscar.snaccmd.conn.SetIdleCmd;
 import net.kano.joscar.snaccmd.icbm.InstantMessage;
 import net.kano.joscar.snaccmd.icbm.SendImIcbm;
 import net.kano.joscar.snaccmd.icon.UploadIconCmd;
@@ -587,7 +588,6 @@ public class CLHandler {
                 tester.request(new GetInfoCmd(GetInfoCmd.FLAG_CERT, args[0]));
             }
         });
-        // WORKS
         cmdMap.put("addbuddy", new CLCommand() {
             public String getArgumentsUsage() {
                 return "<screenname> <buddy group ID> <buddy item ID>";
@@ -617,7 +617,6 @@ public class CLHandler {
                     ).toSsiItem() }));
             }
         });
-        // WORKS
         cmdMap.put("delbuddy", new CLCommand() {
             public String getArgumentsUsage() {
                 return "<screenname> <buddy group ID> <buddy item ID>";
@@ -638,7 +637,6 @@ public class CLHandler {
                             Integer.parseInt(args[2])).toSsiItem() }));
             }
         });
-        // WORKS
         cmdMap.put("addgroup", new CLCommand() {
             public String getArgumentsUsage() {
                 return "<new group name> <new group ID>";
@@ -660,7 +658,6 @@ public class CLHandler {
                         .toSsiItem() }));
             }
         });
-        // WORKS
         cmdMap.put("delgroup", new CLCommand() {
             public String getArgumentsUsage() {
                 return "<group name> <group ID>";
@@ -1510,6 +1507,31 @@ public class CLHandler {
                         Integer.parseInt(args[0]), args[1], "us-ascii", "en",
                         "application/pkcs7-mime");
                 tester.request(new JoinRoomCmd(roomInfo));
+            }
+        });
+        cmdMap.put("setidle", new CLCommand() {
+            public String getExampleArgs() {
+                return "20";
+            }
+
+            public String getDescription() {
+                return "Sets your idle time to some number of seconds, or none "
+                        + "if no value is specified.";
+            }
+
+            public String getArgumentsUsage() {
+                return "[seconds idle]";
+            }
+
+            public void handle(JoscarTester tester, String line, String cmd,
+                    String[] args) {
+                int secs;
+                if (args.length == 0) {
+                    secs = 0;
+                } else {
+                    secs = Integer.parseInt(args[0]);
+                }
+                tester.request(new SetIdleCmd(secs));
             }
         });
         cmdMap.put("help", new CLCommand() {
