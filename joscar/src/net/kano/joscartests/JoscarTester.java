@@ -641,6 +641,7 @@ public class JoscarTester implements CmdLineListener {
                     new SendFileThread(session, socket).start();
                 } catch (IOException e) {
                     e.printStackTrace();
+                    return;
                 }
 
                 session.addListener(bosConn.rvSessionListener);

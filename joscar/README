@@ -129,10 +129,15 @@ repository on SourceForge.
 Thanks to Elias Ross for some neat performance enhancements and various other
 rather important bug reports.
 
-Thanks to David Walluck for help with implementing the rate-limiting algorithm.
+Thanks to David Walluck for help with implementing the rate-limiting algorithm
+as well as with figuring out Trillian's Secure IM protocol.
 
 Thanks to Doug Lea for the several classes from his concurrency package used in
 joscar.
+
+Thanks to Ludovic LANGE for his rather indirect, but still important help in
+figuring out Trillian's Secure IM protocol.
+
 
 If you have contributed to joscar and are not listed here, please forgive our
 oversight and send mail to <joscar@kano.net>.
