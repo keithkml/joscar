@@ -5,8 +5,9 @@
 <body>
 <h1>A quick joscar login tutorial</h1>
 
-<blockquote>
-<big>This "tutorial" was written by Keith as a Weblog entry once. It is by no means complete nor does it teach how to implement a robust login sequence. A full joscar tutorial will come in a future release. Check the <a href="http://joust.kano.net/" title="The Joust website">Joust website</a> for updates.</big>
+<blockquote style="font-size: large">
+<p>This "tutorial" was written by Keith as a Weblog entry once. It is by no means complete nor does it teach how to implement a robust login sequence. A full joscar tutorial will come in a future release. Check the <a href="http://joust.kano.net/" title="The Joust website">Joust website</a> for updates.</p>
+<p>The latest version of this tutorial is available at <a href="http://joust.kano.net/joscar/docs/howto/login.html" title="A quick joscar login tutorial">http://joust.kano.net/joscar/docs/howto/login.html</a>.</p>
 </blockquote>
 
 <p>I have to admit that JoscarTester (and almost all of net.kano.joscartests.*) is some really awful code. It's not part of joscar, so I didn't worry too much about it. It's just a "client" I use to test new stuff. So that developers (like Adam :) don't have to parse through that garbage, I shall attempt to describe here how a typical client would function.</p>
@@ -250,6 +251,18 @@ new Thread() {
 }.start();
 </pre>
 </p>
+
+<p>If you can't get something working, you should try using the Java Logging API to trace what's going on inside joscar:
+<pre>
+ConsoleHandler handler = new ConsoleHandler();
+handler.setLevel(Level.ALL);
+Logger logger = Logger.getLogger("net.kano.joscar");
+logger.addHandler(handler);
+logger.setLevel(Level.ALL);
+</pre>
+</p>
+
+<p>If you still can't figure it out, feel free to email me at <a href="keith@kano.net">keith@kano.net</a>.</p>
 
 <p>Enjoy.</p>
 
