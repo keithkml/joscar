@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="net.kano.aimcrypto.forms.SignonProgressWindow">
+  <grid id="1f681" binding="mainPanel" row-count="2" column-count="1" hgap="10" vgap="10">
+    <margin top="5" left="5" bottom="5" right="5"/>
+    <constraints>
+      <xy x="79" y="46" width="237" height="200"/>
+      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3"/>
+    </constraints>
+    <properties/>
+    <border type="none"/>
+    <children>
+      <component id="c92da" class="javax.swing.JLabel" binding="signingOnLabel">
+        <constraints>
+          <xy x="69" y="7" width="98" height="15"/>
+          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0"/>
+        </constraints>
+        <properties>
+          <text value="Signing on XXX..."/>
+        </properties>
+      </component>
+      <component id="22686" class="javax.swing.JList" binding="progressList">
+        <constraints>
+          <xy x="5" y="35" width="227" height="160"/>
+          <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="6" hsize-policy="2" anchor="0" fill="3">
+            <preferred-size width="150" height="50"/>
+          </grid>
+        </constraints>
+        <properties>
+          <enabled value="true"/>
+          <focusable value="false"/>
+          <opaque value="false"/>
+          <visibleRowCount value="6"/>
+        </properties>
+      </component>
+    </children>
+  </grid>
+</form>
