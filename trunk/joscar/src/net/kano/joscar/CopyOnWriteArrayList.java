@@ -508,7 +508,7 @@ public class CopyOnWriteArrayList implements List, Cloneable,
      * toIndex==fromIndex, this operation has no effect.)
      *
      * @param fromIndex index of first element to be removed.
-     * @param fromIndex index after last element to be removed.
+     * @param toIndex index after last element to be removed.
      * @exception IndexOutOfBoundsException fromIndex or toIndex out of
      *		  range (fromIndex &lt; 0 || fromIndex &gt;= size() || toIndex
      *		  &gt; size() || toIndex &lt; fromIndex).

@@ -264,9 +264,21 @@ public class RateClassMonitor {
         return limited;
     }
 
+/*
     //TODO: implement, document getCurrentAvg
     public final long getCurrentAvg() {
         return computeCurrentAvg();
+    }
+*/
+
+    /**
+     * Returns what the rate average was when the last command in the associated
+     * rate class was sent.
+     *
+     * @return the rate average at the time of the last command send
+     */
+    public final long getLastRateAvg() {
+        return runningAvg;
     }
 
     /**
