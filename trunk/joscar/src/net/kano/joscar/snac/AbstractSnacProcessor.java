@@ -497,7 +497,6 @@ public abstract class AbstractSnacProcessor {
     private SnacCommand generateSnacCommand(SnacPacket packet) {
         CmdType type = new CmdType(packet.getFamily(), packet.getCommand());
 
-        // we can access factories without a lock because it is final.
         SnacCmdFactory factory = factories.findFactory(type);
 
         if (factory == null) return null;

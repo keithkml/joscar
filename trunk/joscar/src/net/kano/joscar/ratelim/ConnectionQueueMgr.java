@@ -37,10 +37,7 @@ package net.kano.joscar.ratelim;
 
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.conn.RateClassInfo;
-import net.kano.joscar.snac.CmdType;
-import net.kano.joscar.snac.ClientSnacProcessor;
-import net.kano.joscar.snac.SnacRequest;
-import net.kano.joscar.snac.SnacQueueManager;
+import net.kano.joscar.snac.*;
 
 import java.util.*;
 
@@ -69,7 +66,8 @@ public final class ConnectionQueueMgr {
 
     /** A rate listener used to monitor rate events. */
     private RateListener rateListener = new RateListener() {
-        public void detached(RateMonitor rateMonitor, ClientSnacProcessor processor) {
+        public void detached(RateMonitor rateMonitor,
+                ClientSnacProcessor processor) {
             rateMonitor.removeListener(this);
         }
 
