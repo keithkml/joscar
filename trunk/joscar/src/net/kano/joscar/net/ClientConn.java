@@ -453,15 +453,10 @@ public class ClientConn {
         connThread = new ConnectionThread(MiscTools.getClassName(this)
                 + " to " + dest + ":" + port);
 
-        Throwable throwable = null;
         try {
             connThread.start();
         } catch (Throwable t) {
-            throwable = t;
-        } finally {
-            if (throwable != null) {
-                setState(STATE_FAILED, throwable);
-            }
+            setState(STATE_FAILED, t);
         }
     }
 

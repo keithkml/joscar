@@ -50,6 +50,7 @@ import java.util.regex.Pattern;
  * Provides a set of tools for performing OSCAR-specific functions.
  */
 public final class OscarTools {
+    /** A logger for errors caused in the methods this class. */
     private static final Logger logger = Logger.getLogger("net.kano.joscar");
 
     /**

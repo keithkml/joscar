@@ -145,12 +145,13 @@ public class FullUserInfo implements LiveWritable {
         Tlv sessionLengthAOL = chain.getLastTlv(TYPE_SESS_LEN_AOL);
         Tlv extraInfoTlv = chain.getLastTlv(TYPE_EXTRA_INFO);
         Tlv encryptedInfoTlv = chain.getLastTlv(TYPE_ENCRYPTION_INFO);
+        Tlv shortCapTlv = chain.getLastTlv(TYPE_SHORT_CAPS);
 
         MutableTlvChain extras = new DefaultMutableTlvChain(chain);
         extras.removeTlvs(new int[] {
             TYPE_USER_FLAG, TYPE_ACCT_CREATED, TYPE_ON_SINCE, TYPE_IDLE_MINS,
             TYPE_MEMBER_SINCE, TYPE_CAPS, TYPE_SESS_LEN_AIM, TYPE_SESS_LEN_AOL,
-            TYPE_EXTRA_INFO, TYPE_ENCRYPTION_INFO,
+            TYPE_EXTRA_INFO, TYPE_ENCRYPTION_INFO, TYPE_SHORT_CAPS
         });
 
         Boolean away = null;
@@ -218,6 +219,12 @@ public class FullUserInfo implements LiveWritable {
             encInfo = encryptedInfoTlv.getData();
         }
 
+        ShortCapabilityBlock[] shortCaps = null;
+        if (shortCapTlv != null) {
+            ByteBlock shortCapData = shortCapTlv.getData();
+            shortCaps = ShortCapabilityBlock.readShortCaps(shortCapData);
+        }
+
         block = block.subBlock(chain.getTotalSize());
 
         // and store this for use by fun things.
@@ -225,7 +232,8 @@ public class FullUserInfo implements LiveWritable {
 
         return new FullUserInfo(sn, warningLevel, flags, accountCreated,
                 memberSince, sessLengthAIM, sessLengthAOL, onSince, idleMins,
-                capabilityBlocks, away, extraInfos, encInfo, extras, totalSize);
+                capabilityBlocks, away, extraInfos, encInfo, shortCaps, extras,
+                totalSize);
     }
 
     /**
@@ -277,6 +285,8 @@ public class FullUserInfo implements LiveWritable {
     private static final int TYPE_EXTRA_INFO = 0x001d;
 
     private static final int TYPE_ENCRYPTION_INFO = 0x001b;
+
+    private static final int TYPE_SHORT_CAPS = 0x19;
 
     /** The screenname of this user. */
     private final String sn;
@@ -353,6 +363,8 @@ public class FullUserInfo implements LiveWritable {
 
     private final ByteBlock encryptionInfo;
 
+    private final ShortCapabilityBlock[] shortCaps;
+
     /**
      * A set of extra TLV's that were not explicitly parsed into fields.
      */
@@ -377,7 +389,7 @@ public class FullUserInfo implements LiveWritable {
      */
     private FullUserInfo(String sn, int warningLevel, int totalSize) {
         this(sn, warningLevel, -1, null, null, -1, -1, null, -1, null, null,
-                null, null, null, totalSize);
+                null, null, null, null, totalSize);
     }
 
     /**
@@ -406,10 +418,11 @@ public class FullUserInfo implements LiveWritable {
     public FullUserInfo(String sn, int warningLevel, int flags,
             Date accountCreated, Date memberSince, long sessAIM, long sessAOL,
             Date onSince, int idleMins, CapabilityBlock[] capabilityBlocks,
-            Boolean away, ExtraInfoBlock[] extraInfos, ByteBlock encInfo) {
+            Boolean away, ExtraInfoBlock[] extraInfos, ByteBlock encInfo,
+            ShortCapabilityBlock[] shortCaps) {
         this(sn, warningLevel, flags, accountCreated, memberSince, sessAIM,
                 sessAOL, onSince, idleMins, capabilityBlocks, away, extraInfos,
-                encInfo, null);
+                encInfo, shortCaps, null);
     }
 
     /**
@@ -443,10 +456,10 @@ public class FullUserInfo implements LiveWritable {
             Date accountCreated, Date memberSince, long sessAIM, long sessAOL,
             Date onSince, int idleMins, CapabilityBlock[] capabilityBlocks,
             Boolean away, ExtraInfoBlock[] extraInfos, ByteBlock encInfo,
-            TlvChain extraTlvs) {
+            ShortCapabilityBlock[] shortCaps, TlvChain extraTlvs) {
         this(sn, warningLevel, flags, accountCreated, memberSince, sessAIM,
                 sessAOL, onSince, idleMins, capabilityBlocks, away, extraInfos,
-                encInfo, extraTlvs, -1);
+                encInfo, shortCaps, extraTlvs, -1);
     }
 
     /**
@@ -480,10 +493,27 @@ public class FullUserInfo implements LiveWritable {
             Date accountCreated, Date memberSince, long sessAIM, long sessAOL,
             Date onSince, int idleMins, CapabilityBlock[] capabilityBlocks,
             Boolean away, ExtraInfoBlock[] extraInfos, ByteBlock encInfo,
-            TlvChain extraTlvs, int totalSize) {
+            ShortCapabilityBlock[] shortCaps, TlvChain extraTlvs,
+            int totalSize) {
         DefensiveTools.checkNull(sn, "sn");
         DefensiveTools.checkRange(warningLevel, "warningLevel", 0);
+        DefensiveTools.checkRange(sessAIM, "sessAIM", -1);
+        DefensiveTools.checkRange(sessAOL, "sessAOL", -1);
+        DefensiveTools.checkRange(idleMins, "idleMins", -1);
         DefensiveTools.checkRange(totalSize, "totalSize", -1);
+        if (capabilityBlocks != null) {
+            capabilityBlocks = (CapabilityBlock[]) capabilityBlocks.clone();
+            DefensiveTools.checkNullElements(capabilityBlocks,
+                    "capabilityBlocks");
+        }
+        if (extraInfos != null) {
+            extraInfos = (ExtraInfoBlock[]) extraInfos.clone();
+            DefensiveTools.checkNullElements(extraInfos, "extraInfos");
+        }
+        if (shortCaps != null) {
+            shortCaps = (ShortCapabilityBlock[]) shortCaps.clone();
+            DefensiveTools.checkNullElements(shortCaps, "shortCaps");
+        }
 
         this.sn = sn;
         this.warningLevel = warningLevel;
@@ -498,6 +528,7 @@ public class FullUserInfo implements LiveWritable {
         this.away = away;
         this.extraInfos = extraInfos;
         this.encryptionInfo = encInfo;
+        this.shortCaps = shortCaps;
         this.extraTlvs = extraTlvs;
         this.totalSize = totalSize;
     }
@@ -645,6 +676,10 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
 
     public final ByteBlock getEncryptionInfo() { return encryptionInfo; }
 
+    public ShortCapabilityBlock[] getShortCapabilityBlocks() {
+        return shortCaps;
+    }
+
     /**
      * Returns a TLV chain consisting of all TLV's not processed into fields
      * accessible by <code>get*</code> methods of this object. This is useful
@@ -682,8 +717,10 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
         if (flags != -1 || away != null) {
             int flags = this.flags;
             if (away != null) {
-                if (away.booleanValue()) flags &= MASK_AWAY;
-                else flags &= ~MASK_AWAY;
+                if (away.booleanValue()) {flags &= MASK_AWAY;} else {
+                    flags
+                            &= ~MASK_AWAY;
+                }
             }
             chain.addTlv(Tlv.getUShortInstance(TYPE_USER_FLAG, flags));
         }

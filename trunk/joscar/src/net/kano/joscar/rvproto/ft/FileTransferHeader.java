@@ -224,7 +224,7 @@ public final class FileTransferHeader implements LiveWritable {
             if (filenameBlock.get(firstNull) == 0) break;
         }
         filenameBlock = filenameBlock.subBlock(0, firstNull);
-        rest = rest.subBlock(92 + filenameBlock.getLength());
+//        rest = rest.subBlock(92 + filenameBlock.getLength());
 
         ImEncodingParams encoding = new ImEncodingParams(charset, charsubset);
         String ftFilename = ImEncodedString.readImEncodedString(

@@ -89,8 +89,6 @@ public class FileWritable implements LiveWritable {
             WritableByteChannel outch = Channels.newChannel(out);
 
             inch.transferTo(0, len, outch);
-
-            in.close();
         } finally {
             in.close();
         }
