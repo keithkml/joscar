@@ -67,8 +67,21 @@ public final class FileTransferHeader implements LiveWritable {
      */
     public static final int HEADERTYPE_RECEIVED = 0x0204;
 
+    /**
+     * A header type indicating that the header is requesting that a file be
+     * "resumed" from a point in the file up to which the receiver has already
+     * received data.
+     */
     public static final int HEADERTYPE_RESUME = 0x0205;
+    /**
+     * A header type indicating that the sender is about to send ("resume") the
+     * file being resumed.
+     */
     public static final int HEADERTYPE_RESUME_SENDHEADER = 0x0106;
+    /**
+     * A header type used to indicate that the sender can begin sending the
+     * resumed file.
+     */
     public static final int HEADERTYPE_RESUME_ACK = 0x0207;
 
     /**

@@ -52,6 +52,11 @@ import java.util.Date;
  * information}.
  */
 public abstract class AbstractChatInfo {
+    /** A default content type for "normal" (non-secure) chat rooms. */
+    public static final String CONTENTTYPE_DEFAULT = "text/x-aolrtf";
+    /** A default content type for secure chat rooms. */
+    public static final String CONTENTTYPE_SECURE = "application/pkcs7-mime";
+
     /**
      * A value indicating that this block is a "short" information block. At the
      * time of this writing I am not sure which fields a "short" chat
@@ -170,8 +175,12 @@ public abstract class AbstractChatInfo {
      */
     private static final int TYPE_LANG_2 = 0x00d9;
 
+    /**
+     * A TLV type containing a value whose significance is currently unknown.
+     */
     private static final int TYPE_SOMETHING = 0x00da;
 
+    /** A TLV type containing a content type string. */
     private static final int TYPE_CONTENT_TYPE = 0x00db;
     /**
      * This chat information object's "flags," such as
@@ -224,8 +233,10 @@ public abstract class AbstractChatInfo {
      */
     private String language2;
 
+    /** The content type string contained in this chat information block. */
     private String contentType;
 
+    /** A value whose signficance is unknown as of this writing. */
     private int something;
 
     /**
@@ -241,16 +252,26 @@ public abstract class AbstractChatInfo {
     protected AbstractChatInfo() { }
 
     /**
-     * Creates a chat information block with the given properties.
+     * Creates a chat information block with the given properties and a content
+     * type of {@link #CONTENTTYPE_DEFAULT}.
      *
      * @param name the name of the chat room
      * @param charset1 the room's associated charset
      * @param language1 the room's associatd language code
      */
     protected AbstractChatInfo(String name, String charset1, String language1) {
-        this(name, charset1, language1, null);
+        this(name, charset1, language1, CONTENTTYPE_DEFAULT);
     }
 
+    /**
+     * Creates a chat information block with the given properties.
+     *
+     * @param name the name of the chat room
+     * @param charset1 the room's associated charset
+     * @param language1 the room's associatd language code
+     * @param contentType a content type string, like {@link
+     *        #CONTENTTYPE_DEFAULT} or {@link #CONTENTTYPE_SECURE}
+     */
     protected AbstractChatInfo(String name, String charset1, String language1,
             String contentType) {
         this(-1, null, -1, -1, name, (short) -1, charset1, language1, null,
@@ -289,6 +310,8 @@ public abstract class AbstractChatInfo {
      *        <code>null</code> for none
      * @param language2 the language code (such as "en") to place in the second
      *        language block, or <code>null</code> for none
+     * @param contentType the "content type" of the chat room, like {@link
+     *        #CONTENTTYPE_DEFAULT} or {@link #CONTENTTYPE_SECURE}
      */
     protected AbstractChatInfo(int flags, Date creation, int maxMsgLen,
             int maxOccupancy, String name, short createPerms, String charset1,
@@ -538,8 +561,24 @@ public abstract class AbstractChatInfo {
         return language2;
     }
 
+    /**
+     * Returns the content type string contained in this chat information block.
+     * Note that this will normally be {@link #CONTENTTYPE_DEFAULT} for normal
+     * chat rooms and {@link #CONTENTTYPE_SECURE} for secure chat rooms. The
+     * returned value may also be <code>null</code> if no content type string
+     * was sent in this chat information block.
+     *
+     * @return the content type string contained in this chat information block
+     */
     public synchronized final String getContentType() { return contentType; }
 
+    /**
+     * Returns a code of some sort. As of this writing I am unsure of the
+     * significance of this value. Note that this value will be <code>-1</code>
+     * if no such value was included in this chat information block.
+     *
+     * @return some sort of code
+     */
     public synchronized final int getSomething() { return something; }
 
     public synchronized String toString() {

@@ -107,13 +107,18 @@ public class RvConnectionInfo implements LiveWritable {
      * connection via an AOL Proxy Server.
      */
     private static final int TYPE_PROXIED = 0x0010;
+    /**
+     * A TLV type present if the associated connection is to be encrypted over
+     * SSL.
+     */
     private static final int TYPE_ENCRYPTED = 0x0011;
 
+    /** Whether the associated connection is to be encrypted over SSL. */
     private final boolean encrypted;
     /**
      * Whether or not this connection information block describes a "proxied"
      * connection.
-      */
+     */
     private final boolean proxied;
     /** The IP address of an AOL Proxy Server. */
     private final InetAddress proxyIP;
@@ -162,6 +167,7 @@ public class RvConnectionInfo implements LiveWritable {
         boolean proxied = chain.hasTlv(TYPE_PROXIED);
 
         boolean encrypted = chain.hasTlv(TYPE_ENCRYPTED);
+
         return new RvConnectionInfo(internalIP, externalIP, proxyIP, port,
                 proxied, encrypted);
     }
@@ -181,6 +187,23 @@ public class RvConnectionInfo implements LiveWritable {
         DefensiveTools.checkNull(internalIP, "internalIP");
 
         return new RvConnectionInfo(internalIP, null, null, port, false, false);
+    }
+
+    /**
+     * Creates a new connection information block with the given "internal IP
+     * address" and port for a secure (SSL) connection to the given host.
+     *
+     * @param internalIP the client's IP address
+     * @param port a TCP port on which the recipient should connect, or
+     *        <code>-1</code> to not specify this field
+     * @return a <code>RvConnectionInfo</code> containing the given internal IP
+     *         address and TCP port
+     */
+    public static RvConnectionInfo createForOutgoingSecureRequest(
+            InetAddress internalIP, int port) {
+        DefensiveTools.checkNull(internalIP, "internalIP");
+
+        return new RvConnectionInfo(internalIP, null, null, port, false, true);
     }
 
     /**
@@ -214,18 +237,20 @@ public class RvConnectionInfo implements LiveWritable {
      * <code>null</code>). This value is normally inserted by the OSCAR server.
      * <br>
      * <br>
-     * Also note that there are two normal "formats" for a
+     * Also note that there are two normal "formats" for an outgoing
      * <code>RvConnectionInfo</code>, as described below. Note that in the table
      * below "set" means "non-<code>null</code>" for objects and "nonnegative"
      * for integers (the value of <code>port</code>).
      * <table>
      * <tr><th><code>internalIP</code></th><th><code>externalIP</code></th>
      * <th><code>proxyIP</code></th><th><code>port</code></th>
-     * <th><code>proxied</code></th></tr>
+     * <th><code>proxied</code></th><th><code>encrypted</code></th></tr>
      * <tr><td>set</td><td>not set</td><td>not set</td>
-     * <td>set</td><td><code>false</code></td></tr>
+     * <td>set</td><td><code>false</code></td><td><code>true</code> or
+     * <code>false</code></td></tr>
      * <tr><td>not set</td><td>not set</td><td>set</td>
-     * <td>set</td><td><code>true</code></td></tr>
+     * <td>set</td><td><code>true</code></td><td><code>true</code> or
+     * <code>false</code></td></tr>
      * </table>
      *
      * @param internalIP the client's "internal IP address," the local IP
@@ -237,6 +262,8 @@ public class RvConnectionInfo implements LiveWritable {
      * @param port a TCP port on which the recipient of this block should
      *        connect to the given IP address, or <code>-1</code> for none
      * @param proxied whether or not the described connection is "proxied"
+     * @param encrypted whether or not the described connection is to be made
+     *        via SSL
      *
      * @see #createForOutgoingRequest
      * @see #createForOutgoingProxiedRequest
@@ -306,6 +333,12 @@ public class RvConnectionInfo implements LiveWritable {
      */
     public final int getPort() { return port; }
 
+    /**
+     * Returns whether or not the associated connection is to be encrypted via
+     * SSL.
+     *
+     * @return whether the associated connection is to be encrypted over SSL
+     */
     public final boolean isEncrypted() { return encrypted; }
 
     /**

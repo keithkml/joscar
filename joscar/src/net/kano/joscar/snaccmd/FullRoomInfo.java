@@ -108,6 +108,7 @@ public final class FullRoomInfo
      */
     private static final int TYPE_ROOM_NAME = 0x006a;
 
+    /** A default value for the "code" sent in full room information blocks. */
     private static final int CODE_DEFAULT = 0x0000;
 
     /**
@@ -138,6 +139,7 @@ public final class FullRoomInfo
      */
     private final int type;
 
+    /** Some sort of code contained in this room information block. */
     private final int code;
 
     /**
@@ -216,6 +218,7 @@ public final class FullRoomInfo
      * @param charset1 the charset associated with the given room
      * @param language1 the language associated with the given room, normally
      *        a two-letter language code like "en" (for English)
+     * @param contentType a content type string, like {@link #CONTENTTYPE_DEFAULT}
      */
     public FullRoomInfo(int exchange, String name, String charset1,
             String language1, String contentType) {

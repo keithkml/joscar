@@ -134,14 +134,20 @@ implementing the rate-limiting algorithm as well as with figuring out
 Trillian's Secure IM protocol.
 
 Thanks to Doug Lea for the several classes from his concurrency package used in
-joscar.
+joscar and lots of miscellaneous Java help.
 
 Thanks to Ludovic LANGE for his rather indirect, but still important help in
 figuring out Trillian's Secure IM protocol.
 
-Thanks to David Hook of BouncyCastle (http://bouncycastle.org) for help in
-figuring out the format of AIM's encrypted IM data block and for promptly 
-fixing the problems the joscar demo was having with BouncyCastle.
+Thanks to David Hook of BouncyCastle (http://bouncycastle.org) for a great deal
+of help in figuring out the format of AIM's encrypted IM data block and for 
+promptly fixing the problems the joscar demo was having with BouncyCastle.
+
+Thanks to Stephen Flynn for help implementing functionality to join chat rooms
+to which one had been invited.
+
+Thanks to Tim Dierks for a great deal of help figuring out and understanding
+the encrypted IM/file transfer/direct IM/chat rooms.
 
 
 If you have contributed to joscar and are not listed here, please forgive our

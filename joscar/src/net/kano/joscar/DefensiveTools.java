@@ -188,15 +188,26 @@ public final class DefensiveTools {
     }
 
     /**
-     * Note that this method will simply return null if the given array is null
-     * and that if any of the elements of the array are null, an exception will
-     * be thrown.
+     * Returns a copy of the given array, ensuring that no element of the
+     * returned array is <code>null</code>. If any elements of the given array
+     * are <code>null</code>, an <code>IllegalArgumentException</code> is
+     * thrown. Note that if the given <code>array</code> is <code>null</code>,
+     * this method will simply return <code>null</code>
+     *
+     * @param array the array to clone and check for <code>null</code> elements
+     * @param name the name of the array variable, for debugging purposes
+     * @return a copy of the given array without any <code>null</code> elements,
+     *         or <code>null</code> if the given array is <code>null</code>
+     *
+     * @throws IllegalArgumentException if any elements of the given array are
+     *         <code>null</code>
      */
-    public static Object[] getImmutableArray(Object[] array, String name) {
-        if (array != null) {
-            array = (Object[]) array.clone();
-            DefensiveTools.checkNullElements(array, name);
-        }
+    public static Object[] getNonnullArray(Object[] array, String name) 
+            throws IllegalArgumentException {
+        if (array == null) return null;
+
+        array = (Object[]) array.clone();
+        DefensiveTools.checkNullElements(array, name);
 
         return array;
     }

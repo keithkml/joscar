@@ -739,9 +739,18 @@ public class ClientConn {
         }
     }
 
+    /**
+     * Represents a single connection state.
+     */
     public static final class State {
+        /** The name of this state, for debugging purposes. */
         private final String name;
 
+        /**
+         * Creates a new connection state object with the given name.
+         *
+         * @param name the name of this state, for debugging purposes
+         */
         private State(String name) { this.name = name; }
 
         public String toString() { return name; }

@@ -48,7 +48,10 @@ import java.io.OutputStream;
  * data and a status code of {@link #RVSTATUS_ACCEPT}.
  */
 public abstract class AbstractAcceptRvCmd extends AbstractRvCmd {
+    /** A TLV type present if the rendezvous being accepted is a secure RV. */
     private static final int TYPE_ENCRYPTED = 0x0011;
+
+    /** Whether the rendezvous being accepted is a secure rendezvous. */
     private final boolean encrypted;
 
     /**
@@ -64,8 +67,10 @@ public abstract class AbstractAcceptRvCmd extends AbstractRvCmd {
     }
 
     /**
-     * Creates a new outgoing RV "accept" command with the given associated
-     * capability block.
+     * Creates a new outgoing RV "accept" command for an unencrypted rendezvous
+     * with the given associated capability block. Using this constructor is
+     * equivalent to using {@link #AbstractAcceptRvCmd(CapabilityBlock, boolean)
+     * AbstractAcceptRvCmd(cap, false)}.
      *
      * @param cap the capability block associated with this RV command
      */
@@ -73,12 +78,27 @@ public abstract class AbstractAcceptRvCmd extends AbstractRvCmd {
         this(cap, false);
     }
 
+    /**
+     * Creates a new outgoing RV "accept" command with the given associated
+     * capability block. If <code>encrypted</code> is <code>true</code>, this
+     * acceptance RV command will indicate that a "secure" or "encrypted"
+     * rendezvous is being accepted (such as a secure file transfer).
+     *
+     * @param cap the capability block associated with this RV command
+     * @param encrypted whether the rendezvous being accepted is a secure
+     *        rendezvous
+     */
     protected AbstractAcceptRvCmd(CapabilityBlock cap, boolean encrypted) {
         super(RVSTATUS_ACCEPT, cap);
 
         this.encrypted = encrypted;
     }
 
+    /**
+     * Returns whether the rendezvous being accepted is encrypted ("secure").
+     *
+     * @return whether the rendezvous being accepted is a secure rendezvous
+     */
     public final boolean isEncrypted() { return encrypted; }
 
     protected final void writeHeaderRvTlvs(OutputStream out)

@@ -39,6 +39,7 @@ import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.LiveWritable;
+import net.kano.joscar.Writable;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -108,7 +109,7 @@ if ((extraInfoData.getFlags()
 }
  * </pre>
  */
-public final class ExtraInfoData implements LiveWritable {
+public final class ExtraInfoData implements Writable {
     /** A flagset with no flags on (<code>0x00</code>). */
     public static final int FLAG_DEFAULT = 0x00;
 
@@ -253,6 +254,10 @@ public final class ExtraInfoData implements LiveWritable {
      * @return the total size of this object, in bytes
      */
     public final int getTotalSize() { return totalSize; }
+
+    public long getWritableLength() {
+        return 2 + (data == null ? 0 : data.getWritableLength());
+    }
 
     public void write(OutputStream out) throws IOException {
         BinaryTools.writeUByte(out, flags);

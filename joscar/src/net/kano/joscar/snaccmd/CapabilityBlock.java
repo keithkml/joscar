@@ -176,16 +176,31 @@ public final class CapabilityBlock implements Writable {
                 0x09, 0x46, 0x13, 0x47, 0x4c, 0x7f, 0x11, (byte) 0xd1,
                 (byte) 0x82,0x22, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00});
 
+    /**
+     * A capability block whose purpose is unknown at the time of this writing.
+     */
     public static final CapabilityBlock BLOCK_SOMETHING =
             new CapabilityBlock(new byte[] {
                 0x09, 0x46, 0x01, (byte) 0xff, 0x4c, 0x7f, 0x11, (byte) 0xd1,
                 (byte) 0x82, 0x22, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00});
 
+    /**
+     * A capability block indicating that the client is capable of parsing
+     * "short capability blocks." See {@link ShortCapabilityBlock} as well as
+     * {@link FullUserInfo#getShortCapabilityBlocks()} for more information on
+     * short capability blocks.
+     */
     public static final CapabilityBlock BLOCK_SHORTCAPS =
             new CapabilityBlock(new byte[] {
                 0x09, 0x46, 0x00, 0x00, 0x4c, 0x7f, 0x11, (byte) 0xd1,
                 (byte) 0x82, 0x22, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00});
-    
+
+    /**
+     * A capability block indicating that the user is available for Secure IM
+     * and may be available for other secure communcations (secure chat rooms,
+     * file transfer, and so on). This capability block causes a padlock icon to
+     * be displayed next to one's screenname in the official AIM clients.
+     */
     public static final CapabilityBlock BLOCK_ENCRYPTION =
             new CapabilityBlock(new byte[] {
                 0x09, 0x46, 0x00, 0x01, 0x4c, 0x7f, 0x11, (byte) 0xd1,

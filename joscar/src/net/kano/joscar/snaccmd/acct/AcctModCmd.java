@@ -56,11 +56,20 @@ import java.io.OutputStream;
  * @see AcctModAck
  */
 public class AcctModCmd extends AcctCommand {
-    /* "Nothing about me" */
+    /**
+     * A registration status visibility code indicating that users who know
+     * one's email address can find out "Nothing about me."
+     */
     public static final int REGSTATUS_NONE = 0x0001;
-    /* "Only that I have an account" */
+    /**
+     * A registration status visibility code indicating that users who know
+     * one's email address can find out "Only that I have an account."
+     */
     public static final int REGSTATUS_PARTIAL = 0x0002;
-    /* "My screenname" */
+    /**
+     * A registration status visibility code indicating that users who know
+     * one's email address can find out "My screenname."
+     */
     public static final int REGSTATUS_FULL = 0x0003;
 
     /** A command type indicating that the screen name is being reformatted. */
@@ -70,12 +79,14 @@ public class AcctModCmd extends AcctCommand {
      * changed.
      */
     private static final int TYPE_EMAIL = 0x0011;
+    /** A TLV type containing a registration status visibility code. */
     private static final int TYPE_REGSTATUS = 0x0013;
 
     /** The new screenname. */
     private final String sn;
     /** The new email address. */
     private final String email;
+    /** A registration visibility status code. */
     private final int regstatus;
 
     /**
@@ -98,10 +109,26 @@ public class AcctModCmd extends AcctCommand {
         regstatus = chain.getUShort(TYPE_REGSTATUS);
     }
 
+    /**
+     * Creates an outgoing account modification command that sets the user's
+     * registration visibility status to the given value.
+     *
+     * @param regstatus the new registration visibility code, like {@link
+     *        #REGSTATUS_PARTIAL}
+     */
     public AcctModCmd(int regstatus) {
         this(null, null, regstatus);
     }
 
+    /**
+     * Creates an outgoing account modification command that sets the user's
+     * screenname format and/or email address to the given values. Note that
+     * either of the parameters can be <code>null</code>, indicating that that
+     * value should not be modified.
+     *
+     * @param sn the new screenname format
+     * @param email the new email address
+     */
     public AcctModCmd(String sn, String email) {
         this(sn, email, -1);
     }
@@ -116,7 +143,11 @@ public class AcctModCmd extends AcctCommand {
      * @param sn a newly formatted screenname, or <code>null</code> to indicate
      *        that this field should not be modified
      * @param email a new registered email address for this screenname, or
-     *        <code>null</code> to indicate that this field should not be modified
+     *        <code>null</code> to indicate that this field should not be
+     *        modified
+     * @param regstatus a new registration visibility status code, like {@link
+     *        #REGSTATUS_FULL}, or <code>-1</code> to indicate that this field
+              should not be modified
      */
     public AcctModCmd(String sn, String email, int regstatus) {
         super(CMD_ACCT_MOD);
@@ -134,9 +165,7 @@ public class AcctModCmd extends AcctCommand {
      *
      * @return this command's requested screen name format field
      */
-    public final String getScreenname() {
-        return sn;
-    }
+    public final String getScreenname() { return sn; }
 
     /**
      * Returns the new registered email address requested by this command, or
@@ -144,11 +173,16 @@ public class AcctModCmd extends AcctCommand {
      *
      * @return this command's requested new registered email address field
      */
-    public final String getEmail() {
-        return email;
-    }
+    public final String getEmail() { return email; }
 
-    public final int getRegistrationVisStatus() { return regstatus; }
+    /**
+     * Returns the registration visibility status code stored in this account
+     * modification command, or <code>-1</code> if this value is not to be
+     * modified.
+     *
+     * @return the registration visibility status code stored in this command
+     */
+    public final int getRegVisStatus() { return regstatus; }
 
     public void writeData(OutputStream out) throws IOException {
         if (sn != null) {

@@ -61,6 +61,13 @@ public class FileSendAcceptRvCmd extends AbstractAcceptRvCmd {
         this(false);
     }
 
+    /**
+     * Creates a new outgoing acceptance command for either an encrypted or a
+     * normal file transfer request.
+     *
+     * @param encrypted whether or not the file transfer connection being
+     *        accepted is a secure/encrypted connection
+     */
     public FileSendAcceptRvCmd(boolean encrypted) {
         super(CapabilityBlock.BLOCK_FILE_SEND, encrypted);
     }

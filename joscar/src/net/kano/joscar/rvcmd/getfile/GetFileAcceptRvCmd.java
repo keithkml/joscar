@@ -55,12 +55,19 @@ public class GetFileAcceptRvCmd extends AbstractAcceptRvCmd {
     }
 
     /**
-     * Creates a new outgoing Get File acceptance command.
+     * Creates a new outgoing (unencrypted) Get File acceptance command.
      */
     public GetFileAcceptRvCmd() {
         this(false);
     }
 
+    /**
+     * Creates a new outgoing RV acceptance command for either an encrypted or a
+     * normal Get File connection.
+     *
+     * @param encrypted whether or not the Get File connection being accepted is
+     *        to be encrypted
+     */
     public GetFileAcceptRvCmd(boolean encrypted) {
         super(CapabilityBlock.BLOCK_FILE_GET, encrypted);
     }

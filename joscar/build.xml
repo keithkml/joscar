@@ -99,7 +99,6 @@
          excludes="net/kano/joscar/build/" />
   </target>
 
-
   <target name="demo" depends="joscar">
     <mkdir dir="${demo.bin}" />
     <javac srcdir="${joscar.src}" includes="net/kano/joscartests/"
