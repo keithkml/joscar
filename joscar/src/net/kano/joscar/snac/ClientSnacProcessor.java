@@ -398,6 +398,23 @@ public class ClientSnacProcessor extends AbstractSnacProcessor {
     public synchronized int getRequestTtl() { return requestTtl; }
 
     /**
+     * Returns the last SNAC request object sent with {@link
+     * #sendSnac(SnacRequest) sendSnac} that had the given SNAC request ID. This
+     * method will return <code>null</code> if no request can be found. Requests
+     * that have {@linkplain #setRequestTtl(int) timed out} will not be returned
+     * by this method.
+     *
+     * @param reqid the request ID to look for
+     * @return a SNAC request with the given request ID, if one has been sent
+     */
+    public synchronized SnacRequest getRequest(long reqid) {
+        RequestInfo reqinfo = (RequestInfo) requests.get(new Long(reqid));
+        if (reqinfo == null) return null;
+
+        return reqinfo.getRequest();
+    }
+
+    /**
      * Removes the given request from the request list and passes a
      * <code>SnacRequestTimeoutEvent</code> to the request itself.
      *
