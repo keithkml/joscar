@@ -292,13 +292,14 @@ public abstract class BasicConn extends AbstractFlapConn {
 
             tester.setUserInfo(sn, info);
 
-            ExtraIconInfo[] iconInfos = info.getIconInfos();
+            ExtraInfoBlock[] iconInfos = info.getIconInfos();
 
             if (false && iconInfos != null) {
                 for (int i = 0; i < iconInfos.length; i++) {
-                    IconHashInfo hashInfo = iconInfos[i].getIconHashInfo();
+                    ExtraInfoData hashInfo = iconInfos[i].getExtraData();
 
-                    if (hashInfo.getCode() == IconHashInfo.CODE_ICON_PRESENT) {
+                    if ((hashInfo.getFlags() & ExtraInfoData.FLAG_ICON_PRESENT)
+                            != 0) {
 //                        System.out.println(sn +
 //                                " has an icon! requesting it.. (excode="
 //                                + iconInfos[i].getExtraCode() + ")");

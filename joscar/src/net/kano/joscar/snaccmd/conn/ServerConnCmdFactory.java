@@ -56,6 +56,7 @@ public class ServerConnCmdFactory implements SnacCmdFactory {
         new CmdType(ConnCommand.FAMILY_CONN, ConnCommand.CMD_SERVICE_REQ),
         new CmdType(ConnCommand.FAMILY_CONN, ConnCommand.CMD_PAUSE_ACK),
         new CmdType(ConnCommand.FAMILY_CONN, ConnCommand.CMD_SET_IDLE),
+        new CmdType(ConnCommand.FAMILY_CONN, ConnCommand.CMD_SETAVAILABILITY),
     };
 
     public CmdType[] getSupportedTypes() {
@@ -85,6 +86,8 @@ public class ServerConnCmdFactory implements SnacCmdFactory {
             return new PauseAck(packet);
         } else if (command == ConnCommand.CMD_SET_IDLE) {
             return new SetIdleCmd(packet);
+        } else if (command == ConnCommand.CMD_SETAVAILABILITY) {
+            return new SetAvailabilityMsgCmd(packet);
         } else {
             return null;
         }

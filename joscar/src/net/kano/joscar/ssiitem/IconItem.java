@@ -37,7 +37,7 @@ package net.kano.joscar.ssiitem;
 
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.snaccmd.IconHashInfo;
+import net.kano.joscar.snaccmd.ExtraInfoData;
 import net.kano.joscar.snaccmd.ssi.SsiItem;
 import net.kano.joscar.tlv.*;
 
@@ -82,7 +82,7 @@ public class IconItem extends AbstractItemObj {
     /** The ID of this icon item. */
     private final int id;
     /** The icon hash stored in this item. */
-    private IconHashInfo iconInfo;
+    private ExtraInfoData iconInfo;
     /**
      * Some sort of alias for this icon, maybe. Currently always an empty string
      * in WinAIM.
@@ -107,7 +107,7 @@ public class IconItem extends AbstractItemObj {
         if (iconTlv != null) {
             ByteBlock block = iconTlv.getData();
 
-            iconInfo = IconHashInfo.readIconHashInfo(block);
+            iconInfo = ExtraInfoData.readExtraInfoData(block);
         } else {
             iconInfo = null;
         }
@@ -145,7 +145,7 @@ public class IconItem extends AbstractItemObj {
      * @param iconInfo a block of icon hash information, or <code>null</code> to not
      *        store an icon hash block in this item
      */
-    public IconItem(String name, int id, IconHashInfo iconInfo) {
+    public IconItem(String name, int id, ExtraInfoData iconInfo) {
         this(name, id, iconInfo, ALIAS_DEFAULT, null);
     }
 
@@ -164,7 +164,7 @@ public class IconItem extends AbstractItemObj {
      *        {@link #ALIAS_DEFAULT} (an empty string)
      * @param extraTlvs a list of extra TLV's to store in this item
      */
-    public IconItem(String name, int id, IconHashInfo iconInfo, String alias,
+    public IconItem(String name, int id, ExtraInfoData iconInfo, String alias,
             TlvChain extraTlvs) {
         super(extraTlvs);
 
@@ -199,7 +199,7 @@ public class IconItem extends AbstractItemObj {
      * @return the icon hash block stored in this item, or <code>null</code> if
      *         none is stored in this item
      */
-    public synchronized final IconHashInfo getIconInfo() { return iconInfo; }
+    public synchronized final ExtraInfoData getIconInfo() { return iconInfo; }
 
     /**
      * Returns this icon item's "alias." As of this writing WinAIM always sets
@@ -219,7 +219,7 @@ public class IconItem extends AbstractItemObj {
      * @param iconInfo a new icon hash block for this buddy icon item, or
      *        <code>null</code> to erase this item's stored icon hash (if any)
      */
-    public synchronized final void setIconInfo(IconHashInfo iconInfo) {
+    public synchronized final void setIconInfo(ExtraInfoData iconInfo) {
         this.iconInfo = iconInfo;
     }
 

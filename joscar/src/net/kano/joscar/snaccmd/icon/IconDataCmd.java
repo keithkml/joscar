@@ -39,7 +39,7 @@ import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
-import net.kano.joscar.snaccmd.ExtraIconInfo;
+import net.kano.joscar.snaccmd.ExtraInfoBlock;
 import net.kano.joscar.OscarTools;
 import net.kano.joscar.StringBlock;
 
@@ -65,7 +65,7 @@ public class IconDataCmd extends IconCommand {
     /** The screenname whose icon this is. */
     private final String sn;
     /** A set of information about the included icon data. */
-    private final ExtraIconInfo iconInfo;
+    private final ExtraInfoBlock iconInfo;
     /** The icon data. */
     private final ByteBlock iconData;
 
@@ -87,7 +87,7 @@ public class IconDataCmd extends IconCommand {
 
         ByteBlock rest = snacData.subBlock(snInfo.getTotalSize());
 
-        iconInfo = ExtraIconInfo.readExtraIconInfo(rest);
+        iconInfo = ExtraInfoBlock.readExtraInfoBlock(rest);
 
         rest = rest.subBlock(iconInfo.getTotalSize());
 
@@ -105,7 +105,7 @@ public class IconDataCmd extends IconCommand {
      * @param iconInfo a block of information about the associated icon
      * @param iconData the raw icon data
      */
-    public IconDataCmd(String sn, ExtraIconInfo iconInfo, ByteBlock iconData) {
+    public IconDataCmd(String sn, ExtraInfoBlock iconInfo, ByteBlock iconData) {
         super(CMD_ICON_DATA);
 
         DefensiveTools.checkNull(sn, "sn");
@@ -130,7 +130,7 @@ public class IconDataCmd extends IconCommand {
      *
      * @return a block of icon information for this icon
      */
-    public final ExtraIconInfo getIconInfo() {
+    public final ExtraInfoBlock getIconInfo() {
         return iconInfo;
     }
 

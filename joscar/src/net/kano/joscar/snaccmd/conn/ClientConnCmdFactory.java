@@ -59,7 +59,7 @@ public class ClientConnCmdFactory implements SnacCmdFactory {
         new CmdType(ConnCommand.FAMILY_CONN, ConnCommand.CMD_PAUSE),
         new CmdType(ConnCommand.FAMILY_CONN, ConnCommand.CMD_RESUME),
         new CmdType(ConnCommand.FAMILY_CONN, ConnCommand.CMD_MIGRATE_PLS),
-        new CmdType(ConnCommand.FAMILY_CONN, ConnCommand.CMD_YOUR_ICON),
+        new CmdType(ConnCommand.FAMILY_CONN, ConnCommand.CMD_EXTRA_ACK),
     };
 
     public CmdType[] getSupportedTypes() {
@@ -95,8 +95,8 @@ public class ClientConnCmdFactory implements SnacCmdFactory {
             return new ResumeCmd(packet);
         } else if (command == ConnCommand.CMD_MIGRATE_PLS) {
             return new MigrationNotice(packet);
-        } else if (command == ConnCommand.CMD_YOUR_ICON) {
-            return new YourIconAck(packet);
+        } else if (command == ConnCommand.CMD_EXTRA_ACK) {
+            return new ExtraInfoAck(packet);
         } else {
             return null;
         }

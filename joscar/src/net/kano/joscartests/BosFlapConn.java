@@ -146,7 +146,7 @@ public class BosFlapConn extends BasicConn {
             UserInfoCmd uic = (UserInfoCmd) cmd;
 
             String sn = uic.getUserInfo().getScreenname();
-            System.out.println("got user info for " + sn + "! "
+            System.out.println("user info for " + sn + "! "
                     + uic.getInfoData());
 
         } else if (cmd instanceof ServiceRedirect) {

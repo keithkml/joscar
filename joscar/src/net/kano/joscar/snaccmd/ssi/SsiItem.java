@@ -92,7 +92,7 @@ public class SsiItem implements LiveWritable, Serializable {
      */
     public static final int TYPE_VISIBILITY = 0x0005;
     /**
-     * An SSI item type for a {@linkplain net.kano.joscar.snaccmd.IconHashInfo
+     * An SSI item type for a {@linkplain net.kano.joscar.snaccmd.ExtraInfoData
      * buddy icon hash}.
      *
      * @see net.kano.joscar.ssiitem.IconItem

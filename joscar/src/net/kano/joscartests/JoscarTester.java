@@ -566,7 +566,7 @@ public class JoscarTester implements CmdLineListener {
                 try {
                     request(new ModifyItemsCmd(new SsiItem[] {
                         new IconItem(args[0], Integer.parseInt(args[1]),
-                                new IconHashInfo(0, ByteBlock.wrap(
+                                new ExtraInfoData(0, ByteBlock.wrap(
                                 hashIcon(args[2])
                         )))
                             .toSsiItem()
@@ -586,7 +586,7 @@ public class JoscarTester implements CmdLineListener {
                 try {
                     request(new CreateItemsCmd(new SsiItem[] {
                         new IconItem(args[0], Integer.parseInt(args[1]),
-                                new IconHashInfo(0, ByteBlock.wrap(
+                                new ExtraInfoData(0, ByteBlock.wrap(
                                         hashIcon(args[2])
                                 )))
                             .toSsiItem()
@@ -614,7 +614,7 @@ public class JoscarTester implements CmdLineListener {
             public void handle(String line, String cmd, String[] args) {
                 request(new ModifyItemsCmd(new SsiItem[] {
                     new IconItem(args[0], Integer.parseInt(args[1]),
-                            new IconHashInfo(0, IconHashInfo.HASH_SPECIAL))
+                            new ExtraInfoData(0, ExtraInfoData.HASH_SPECIAL))
                         .toSsiItem()
                 }));
             }

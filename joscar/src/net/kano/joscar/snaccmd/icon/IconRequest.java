@@ -39,7 +39,7 @@ import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
-import net.kano.joscar.snaccmd.ExtraIconInfo;
+import net.kano.joscar.snaccmd.ExtraInfoBlock;
 import net.kano.joscar.OscarTools;
 import net.kano.joscar.StringBlock;
 
@@ -67,7 +67,7 @@ public class IconRequest extends IconCommand {
     /** Some sort of request code. */
     private final int code;
     /** The icon data whose corresponding icon is being requested. */
-    private final ExtraIconInfo iconInfo;
+    private final ExtraInfoBlock iconInfo;
 
     /**
      * Generates a new icon request command from the given incoming SNAC packet.
@@ -91,7 +91,7 @@ public class IconRequest extends IconCommand {
 
         ByteBlock iconBlock = rest.subBlock(1);
 
-        iconInfo = ExtraIconInfo.readExtraIconInfo(iconBlock);
+        iconInfo = ExtraInfoBlock.readExtraInfoBlock(iconBlock);
     }
 
     /**
@@ -103,7 +103,7 @@ public class IconRequest extends IconCommand {
      * @param iconInfo the icon information block whose corresponding icon is
      *        being requested
      */
-    public IconRequest(String sn, ExtraIconInfo iconInfo) {
+    public IconRequest(String sn, ExtraInfoBlock iconInfo) {
         this(sn, CODE_DEFAULT, iconInfo);
     }
 
@@ -116,7 +116,7 @@ public class IconRequest extends IconCommand {
      * @param iconInfo the icon information block whose corresponding icon is
      *        being requested
      */
-    public IconRequest(String sn, int code, ExtraIconInfo iconInfo) {
+    public IconRequest(String sn, int code, ExtraInfoBlock iconInfo) {
         super(CMD_ICON_REQ);
 
         DefensiveTools.checkNull(sn, "sn");
@@ -153,7 +153,7 @@ public class IconRequest extends IconCommand {
      *
      * @return an icon information block describing the icon being requested
      */
-    public final ExtraIconInfo getIconInfo() {
+    public final ExtraInfoBlock getIconInfo() {
         return iconInfo;
     }
 

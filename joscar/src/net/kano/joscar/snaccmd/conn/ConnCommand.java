@@ -65,6 +65,8 @@ public abstract class ConnCommand extends SnacCommand {
     public static final int CMD_PAUSE_ACK = 0x000c;
     /** A command subtype for setting one's idle time. */
     public static final int CMD_SET_IDLE = 0x0011;
+    /** A command subtype for setting one's iChat availability message. */
+    public static final int CMD_SETAVAILABILITY = 0x001e;
 
     /**
      * A command subtype for when the server is ready for the client to begin
@@ -108,7 +110,7 @@ public abstract class ConnCommand extends SnacCommand {
      */
     public static final int CMD_MIGRATE_PLS = 0x0012;
     /** A command subtype for telling the client what his buddy icon is. */
-    public static final int CMD_YOUR_ICON = 0x0021;
+    public static final int CMD_EXTRA_ACK = 0x0021;
 
     /**
      * Creates a new SNAC command in this family.
