@@ -37,6 +37,7 @@ package net.kano.aimcrypto;
 
 import net.kano.aimcrypto.config.GlobalPrefs;
 import net.kano.aimcrypto.config.LocalPreferencesManager;
+import net.kano.aimcrypto.config.PrefTools;
 import net.kano.aimcrypto.connection.oscar.service.info.BuddyCertificateManager;
 import net.kano.joscar.DefensiveTools;
 
@@ -46,6 +47,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Collection;
+import java.util.Arrays;
 
 public class AppSession {
     private final File baseDir;
@@ -143,16 +148,63 @@ public class AppSession {
     }
 
     public synchronized LocalPreferencesManager getLocalPrefs(Screenname sn) {
+        DefensiveTools.checkNull(sn, "sn");
+        File prefsDir = getLocalPrefsDir(sn);
+        if (prefsDir == null) return null;
+
         LocalPreferencesManager appPrefs = (LocalPreferencesManager) prefs.get(sn);
         if (appPrefs == null) {
-            appPrefs = new LocalPreferencesManager(sn, getLocalPrefsDir(sn));
+            appPrefs = new LocalPreferencesManager(sn, prefsDir);
             prefs.put(sn, appPrefs);
         }
         return appPrefs;
     }
 
+    public synchronized LocalPreferencesManager getLocalPrefsIfExist(Screenname sn) {
+        File prefsDir = getLocalPrefsDir(sn);
+        if (prefsDir == null) return null;
+        if (prefsDir.isDirectory()) return getLocalPrefs(sn);
+        else return null;
+    }
+
+    public synchronized boolean deleteLocalPrefs(Screenname sn) {
+        File prefsDir = getLocalPrefsDir(sn);
+        if (prefsDir == null) return false;
+
+        boolean deleted = PrefTools.deleteDir(prefsDir);
+        if (deleted) prefs.remove(sn);
+        return deleted;
+    }
+
+    public synchronized Screenname[] getKnownScreennames() {
+        globalPrefs.reloadIfNecessary();
+        String[] possible = globalPrefs.getKnownScreennames();
+        Collection loaded = prefs.values();
+        Set known = new HashSet(possible.length + loaded.size());
+
+        for (int i = 0; i < possible.length; i++) {
+            String sn = possible[i];
+            known.add(new Screenname(sn));
+        }
+
+        for (Iterator it = loaded.iterator(); it.hasNext();) {
+            LocalPreferencesManager prefs = (LocalPreferencesManager) it.next();
+            String fmt = prefs.getGeneralPrefs().getScreennameFormat();
+            Screenname sn;
+            if (fmt == null) {
+                sn = prefs.getScreenname();
+            } else {
+                sn = new Screenname(fmt);
+            }
+            known.add(sn);
+        }
+        return (Screenname[]) known.toArray(new Screenname[known.size()]);
+    }
+
     private File getLocalPrefsDir(Screenname sn) {
-        return new File(localPrefsDir, sn.getNormal());
+        String normal = sn.getNormal();
+        if (normal.length() == 0) return null;
+        return new File(localPrefsDir, normal);
     }
 
     public boolean hasLocalPrefs(Screenname sn) {

@@ -39,12 +39,8 @@ import net.kano.aimcrypto.Screenname;
 import net.kano.joscar.DefensiveTools;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.Properties;
 
 public class GeneralLocalPrefs implements Preferences {
@@ -57,13 +53,13 @@ public class GeneralLocalPrefs implements Preferences {
     private static final String PROP_PASSWORD = "password";
     private static final String PROP_SNFORMAT = "sn-format";
 
-    public GeneralLocalPrefs(Screenname screenname, File prefsDir) {
+    public GeneralLocalPrefs(Screenname screenname, File localPrefsDir) {
         DefensiveTools.checkNull(screenname, "screenname");
-        DefensiveTools.checkNull(prefsDir, "prefsDir");
+        DefensiveTools.checkNull(localPrefsDir, "prefsDir");
 
         this.screenname = screenname;
-        this.prefsDir = prefsDir;
-        this.prefsFile = new File(prefsDir, "general-prefs.properties");
+        this.prefsDir = localPrefsDir;
+        this.prefsFile = new File(localPrefsDir, "general-prefs.properties");
     }
 
     public void loadPrefs() throws IOException, FileNotFoundException {

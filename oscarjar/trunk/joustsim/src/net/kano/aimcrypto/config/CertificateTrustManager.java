@@ -169,6 +169,7 @@ public class CertificateTrustManager {
         } catch (Exception e) {
             throw new TrustException(e);
         }
+        checkCanBeAdded(cert);
         if (cert == null) {
             throw new TrustException("Certificate could not be loaded");
         }

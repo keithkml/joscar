@@ -147,6 +147,7 @@ public class PermanentCertificateTrustManager
         DefensiveTools.checkNull(cert, "cert");
 
         if (isTrusted(cert)) return false;
+        checkCanBeAdded(cert);
 
         File file;
         try {

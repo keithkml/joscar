@@ -37,7 +37,9 @@ package net.kano.aimcrypto.forms;
 
 import net.kano.aimcrypto.AppSession;
 import net.kano.aimcrypto.DistinguishedName;
+import net.kano.aimcrypto.GuiResources;
 import net.kano.aimcrypto.Screenname;
+import net.kano.aimcrypto.config.CantBeAddedException;
 import net.kano.aimcrypto.config.CantSavePrefsException;
 import net.kano.aimcrypto.config.CertificateTrustManager;
 import net.kano.aimcrypto.config.TrustChangeListener;
@@ -47,6 +49,7 @@ import net.kano.joscar.DefensiveTools;
 import javax.swing.AbstractAction;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.Icon;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
@@ -55,20 +58,16 @@ import javax.swing.JPanel;
 import javax.swing.JTextPane;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
-import javax.swing.ViewportLayout;
 import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
+import javax.swing.border.TitledBorder;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-import javax.swing.event.AncestorListener;
-import javax.swing.event.AncestorEvent;
 import javax.swing.filechooser.FileFilter;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
+import javax.swing.filechooser.FileView;
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
@@ -85,6 +84,8 @@ import java.util.List;
 import java.util.Map;
 
 public class CertificatesPrefsPanel extends JPanel {
+    private static final EmptyBorder EMPTY_BORDER = new EmptyBorder(2, 5, 2, 5);
+
     private JPanel mainPanel;
 
     private JList trustedCertsList;
@@ -100,13 +101,15 @@ public class CertificatesPrefsPanel extends JPanel {
     private final Screenname sn;
     private final CertificateTrustManager certTrustMgr;
 
-    private final Icon errorIcon = UIManager.getIcon("OptionPane.errorIcon");
+    private JFileChooser fileChooser = null;
 
     private RemoveCertAction removeCertAction = new RemoveCertAction();
     private ImportCertAction importCertAction = new ImportCertAction();
 
+    private final TitledBorder mainBorder = new TitledBorder((String) null);
 
-    private Comparator certComparator = new Comparator() {
+    private SortedListModel trustedCertsModel
+            = new SortedListModel(new Comparator() {
         public int compare(Object o1, Object o2) {
             X509Certificate c1 = (X509Certificate) o1;
             X509Certificate c2 = (X509Certificate) o2;
@@ -118,14 +121,10 @@ public class CertificatesPrefsPanel extends JPanel {
                     dn2.getOrganization());
             return companies;
         }
-    };
-    private SortedListModel trustedCertsModel
-            = new SortedListModel(certComparator);
+    });
 
-    private JFileChooser fileChooser = null;
-
-    private static final EmptyBorder EMPTY_BORDER = new EmptyBorder(2, 5, 2, 5);
-    private final TrustChangeListener trustChangeListener = new TrustChangeListener() {
+    private final TrustChangeListener trustChangeListener
+            = new TrustChangeListener() {
         public void trustAdded(CertificateTrustManager manager,
                 final X509Certificate cert) {
             SwingUtilities.invokeLater(new Runnable() {
@@ -145,9 +144,16 @@ public class CertificatesPrefsPanel extends JPanel {
         }
     };
 
+    private final Icon errorIcon = GuiResources.getErrorIcon();
+    private final ImageIcon mediumCertificateIcon = GuiResources.getMediumCertificateIcon();
+    private final ImageIcon smallCertificateIcon = GuiResources.getSmallCertificateIcon();
+
     {
         setLayout(new BorderLayout());
         add(mainPanel);
+
+        mainPanel.setBorder(mainBorder);
+
         importCertButton.setAction(importCertAction);
         removeCertButton.setAction(removeCertAction);
 
@@ -161,17 +167,18 @@ public class CertificatesPrefsPanel extends JPanel {
                     X509Certificate cert = (X509Certificate) value;
                     DistinguishedName dn
                             = DistinguishedName.getSubjectInstance(cert);
-                    mod = dn.getName() + ", " + dn.getOrganization();
+                    mod = "<HTML><B>" + dn.getName() + "</B><BR>"
+                            + dn.getOrganization() + "<BR>" + dn.getCity()
+                            + ", " + dn.getState() + ", " + dn.getCountry();
                 } else {
                     mod = value.toString();
                 }
                 super.getListCellRendererComponent(list, mod, index, isSelected,
                         cellHasFocus);
                 Border border = new CompoundBorder(getBorder(), EMPTY_BORDER);
-                int height = getPreferredSize().height;
-                Dimension dimension = new Dimension(175, height);
-                setMaximumSize(dimension);
-                setPreferredSize(dimension);
+//                int height = getPreferredSize().height;
+                setVerticalTextPosition(JLabel.TOP);
+                setIcon(getMediumCertificateIcon());
                 setBorder(border);
                 return this;
             }
@@ -187,29 +194,18 @@ public class CertificatesPrefsPanel extends JPanel {
         certErrorIconLabel.setText(null);
         addComponentListener(new ComponentAdapter() {
             public void componentShown(ComponentEvent e) {
-                System.out.println("starting sync");
                 clearCertErrorLabel();
                 startSync();
             }
 
             public void componentHidden(ComponentEvent e) {
-                System.out.println("stopping sync");
                 stopSync();
             }
         });
 
-        setInfoMessage(null);
+        setPanelDescription(null);
 
         updateCertButtons();
-    }
-
-    private void setInfoMessage(final String msg) {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                infoMessage.setText(msg);
-                infoMessage.setVisible(msg != null);
-            }
-        });
     }
 
     public CertificatesPrefsPanel(AppSession appSession, Screenname sn,
@@ -222,6 +218,23 @@ public class CertificatesPrefsPanel extends JPanel {
         this.sn = sn;
         this.certTrustMgr = certTrustMgr;
         startSync();
+    }
+
+    public void setPanelTitle(final String title) {
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                mainBorder.setTitle(title);
+            }
+        });
+    }
+
+    public void setPanelDescription(final String msg) {
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                infoMessage.setText(msg);
+                infoMessage.setVisible(msg != null);
+            }
+        });
     }
 
     private void startSync() {
@@ -237,7 +250,8 @@ public class CertificatesPrefsPanel extends JPanel {
 
     private void importCert() {
         initFileChooser();
-        fileChooser.showOpenDialog(this);
+        int selected = fileChooser.showDialog(this, null);
+        if (selected != JFileChooser.APPROVE_OPTION) return;
 
         File[] files = fileChooser.getSelectedFiles();
 
@@ -277,6 +291,7 @@ public class CertificatesPrefsPanel extends JPanel {
                     detailsBuffer.append(word + " of the files you selected "
                             + "could not be imported.");
                 }
+
                 Map errors = new HashMap();
                 for (Iterator it = failed.iterator(); it.hasNext();) {
                     ImportFailureInfo info = (ImportFailureInfo) it.next();
@@ -308,11 +323,12 @@ public class CertificatesPrefsPanel extends JPanel {
                 text = detailsBuffer.toString();
             }
             certErrorText.setText(text);
+            certErrorText.setCaretPosition(0);
             certErrorPanel.setVisible(true);
         }
     }
 
-    private String getImportFailedDetails(Exception e, String tryAgainText) {
+    protected String getImportFailedDetails(Exception e, String tryAgainText) {
         String details;
         String tryAgainMod = tryAgainText == null ? "" : tryAgainText;
         if (e instanceof IOException) {
@@ -322,8 +338,12 @@ public class CertificatesPrefsPanel extends JPanel {
         } else if (e instanceof TrustException) {
             Throwable cause = e.getCause();
             if (cause instanceof CantSavePrefsException) {
-                details = "Your list of trusted certificates could not be "
+                details = "A Your list of certificates could not be "
                         + "saved. " + tryAgainMod;
+
+            } else if (e instanceof CantBeAddedException) {
+                details = "The file is in an unsupported format.";
+
             } else {
                 details = "An error occurred while loading the file. "
                         + tryAgainMod;
@@ -380,23 +400,39 @@ public class CertificatesPrefsPanel extends JPanel {
             fileChooser = new JFileChooser();
             fileChooser.setAcceptAllFileFilterUsed(true);
             fileChooser.setAccessory(new CertificateDetailsAccessory(fileChooser));
-            fileChooser.setApproveButtonText("Import");
-            fileChooser.setDialogTitle("Import Certificate");
             fileChooser.setMultiSelectionEnabled(true);
+            fileChooser.setApproveButtonText("Import");
+            fileChooser.setApproveButtonToolTipText("Import selected certificate");
+            fileChooser.setDialogTitle("Import Certificate");
             fileChooser.addChoosableFileFilter(new FileFilter() {
                 public boolean accept(File f) {
                     if (f.isDirectory()) return true;
-                    String root = f.getName().toLowerCase();
-                    return root.endsWith(".cacert") || root.endsWith(".der")
-                            || root.endsWith(".crt") || root.endsWith(".cer")
-                            || root.endsWith(".pem");
+                    boolean valid = hasValidCertFilename(f);
+                    return valid;
                 }
 
                 public String getDescription() {
                     return "X.509 Certificate Files";
                 }
             });
+            fileChooser.setFileView(new FileView() {
+                public Icon getIcon(File f) {
+                    if (hasValidCertFilename(f)) {
+                        return getSmallCertificateIcon();
+                    } else {
+                        return null;
+                    }
+                }
+            });
         }
+    }
+
+    private boolean hasValidCertFilename(File f) {
+        if (f == null) return false;
+        String root = f.getName().toLowerCase();
+        return root.endsWith(".cacert") || root.endsWith(".der")
+                || root.endsWith(".crt") || root.endsWith(".cer")
+                || root.endsWith(".pem");
     }
 
     private void clearCertErrorLabel() {
@@ -406,6 +442,14 @@ public class CertificatesPrefsPanel extends JPanel {
     private void updateCertButtons() {
         removeCertAction.setEnabled(!trustedCertsList.getSelectionModel()
                 .isSelectionEmpty());
+    }
+
+    protected ImageIcon getMediumCertificateIcon() {
+        return mediumCertificateIcon;
+    }
+
+    protected ImageIcon getSmallCertificateIcon() {
+        return smallCertificateIcon;
     }
 
     private class ImportCertAction extends AbstractAction {

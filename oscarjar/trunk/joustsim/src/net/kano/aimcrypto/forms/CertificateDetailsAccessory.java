@@ -36,6 +36,8 @@
 package net.kano.aimcrypto.forms;
 
 import net.kano.aimcrypto.DistinguishedName;
+import net.kano.aimcrypto.GuiResources;
+import net.kano.aimcrypto.config.PermanentSignerTrustManager;
 import net.kano.joscar.DefensiveTools;
 
 import javax.swing.JFileChooser;
@@ -44,6 +46,8 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import javax.swing.JLabel;
+import javax.swing.Icon;
 import javax.swing.border.EmptyBorder;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
@@ -53,6 +57,9 @@ import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 import javax.swing.text.StyledEditorKit;
 import java.awt.Font;
+import java.awt.BorderLayout;
+import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
@@ -103,6 +110,8 @@ public class CertificateDetailsAccessory extends JPanel {
     private JPanel mainPanel;
     private JScrollPane textScrollPane;
     private JTextPane text;
+    private JLabel typeLabel;
+    private JScrollPane typeScrollPane;
 
     private final JFileChooser chooser;
     private final StyledDocument document;
@@ -110,11 +119,21 @@ public class CertificateDetailsAccessory extends JPanel {
     private DateFormat dateFormatter
             = DateFormat.getDateInstance(DateFormat.LONG);
 
+    private File[] selectedFiles = null;
+    private Exception loadingException = null;
+    private X509Certificate selectedCert = null;
+
+    private final Icon signerIcon = GuiResources.getMediumSignerIcon();
+    private final Icon certIcon = GuiResources.getMediumCertificateIcon();
+    private DistinguishedName subjectDN;
+
     {
+        setLayout(new BorderLayout());
         add(mainPanel);
         text.setEditorKit(new StyledEditorKit());
         document = (StyledDocument) text.getDocument();
         textScrollPane.setBorder(new EmptyBorder(0, 0, 0, 0));
+        typeScrollPane.setBorder(new EmptyBorder(0, 0, 0, 0));
     }
 
 
@@ -124,8 +143,11 @@ public class CertificateDetailsAccessory extends JPanel {
         this.chooser = chooser;
         chooser.addPropertyChangeListener(new PropertyChangeListener() {
             public void propertyChange(PropertyChangeEvent e) {
-                if (e.getPropertyName().equals(
-                        JFileChooser.SELECTED_FILE_CHANGED_PROPERTY)) {
+                String prop = e.getPropertyName();
+                if (prop.equals(
+                        JFileChooser.SELECTED_FILE_CHANGED_PROPERTY)
+                        || prop.equals(
+                                JFileChooser.SELECTED_FILES_CHANGED_PROPERTY)) {
                     setLoading();
                     SwingUtilities.invokeLater(new Runnable() {
                         public void run() {
@@ -162,83 +184,117 @@ public class CertificateDetailsAccessory extends JPanel {
         File[] files = chooser.getSelectedFiles();
         if (files.length == 0) {
             return;
-        } else if (files.length > 1) {
+        } else if (files.length == 1) {
+            setNoPreview("Loading details...");
+        } else {
             setNoPreview("No certificate details available");
             return;
-        } else {
-            setNoPreview("Loading details...");
         }
     }
 
     private void updatePreview() {
+        selectedFiles = chooser.getSelectedFiles();
+        selectedCert = null;
+        loadingException = null;
+
+        if (selectedFiles.length > 0) {
+            File file = selectedFiles[0];
+            try {
+                selectedCert = loadCert(file);
+            } catch (Exception e) {
+                loadingException = e;
+                selectedCert = null;
+            }
+        }
         updatePreviewText();
         text.setCaretPosition(0);
+        updateIcon();
+    }
+
+    private void updateIcon() {
+        if (selectedCert != null) {
+            Icon icon;
+            String type;
+            if (PermanentSignerTrustManager.isValidSignerCertificate(
+                    selectedCert)) {
+                icon = signerIcon;
+                type = "Certificate Authority";
+
+            } else {
+                icon = certIcon;
+                type = "Personal Certificate";
+            }
+            typeLabel.setIcon(icon);
+            typeLabel.setText("<HTML><B>" + type + "</B><BR>"
+                    + subjectDN.getName() + "<BR>"
+                    + subjectDN.getOrganization());
+            typeLabel.setVisible(true);
+        } else {
+            typeLabel.setVisible(false);
+        }
     }
 
     private void updatePreviewText() {
         clear();
 
-        File[] files = chooser.getSelectedFiles();
-        if (files.length == 0) {
+        if (selectedFiles.length == 0) {
             return;
-        } else if (files.length > 1) {
+        } else if (selectedFiles.length > 1) {
             setNoPreview("No certificate details available");
             return;
         }
 
-        File file = files[0];
-        X509Certificate cert;
-        try {
-            cert = loadCert(file);
-        } catch (NoSuchProviderException e) {
-            setNoPreview("Details for the selected certificate could not "
-                    + "be loaded because the certificates is in an "
-                    + "unsupported format.");
-            return;
-        } catch (CertificateException e) {
-            setNoPreview("An error prevented details from being loaded for "
-                    + "the selected certificate file.\n\nThe error was: "
-                    + e.getMessage());
-            return;
-        } catch (FileNotFoundException e) {
-            setNoPreview("The selected file could not be opened. You may not "
-                    + "have permission to open this file.");
-            return;
+        if (loadingException != null) {
+            if (loadingException instanceof NoSuchProviderException) {
+                setNoPreview("Details for the selected certificate could not "
+                        + "be loaded because the certificates is in an "
+                        + "unsupported format.");
+                return;
+            } else if (loadingException instanceof CertificateException) {
+                setNoPreview("An error prevented details from being loaded for "
+                        + "the selected certificate file.\n\nThe error was: "
+                        + loadingException.getMessage());
+                return;
+            } else if (loadingException instanceof FileNotFoundException) {
+                setNoPreview("The selected file could not be opened. You may not "
+                        + "have permission to open this file.");
+                return;
+            }
         }
 
-        if (cert == null) {
+        if (selectedCert == null) {
             setNoPreview("An error prevented details from being loaded for "
                     + "the selected certificate file. The file may not be an "
                     + "X.509 certificate file, or it may be corrupt.");
             return;
         }
 
-        int version = cert.getVersion();
+        int version = selectedCert.getVersion();
 
         insert("X.509 v" + version + " Certificate\n", BOLD);
 
-        DistinguishedName subdn = DistinguishedName.getSubjectInstance(cert);
+        subjectDN = DistinguishedName.getSubjectInstance(selectedCert);
         insert("Certifies:\n", ITALIC);
-        insert(getDisplayString(subdn) + "\n\n", BLOCKQUOTE);
+        insert(getDisplayString(subjectDN) + "\n\n", BLOCKQUOTE);
 
-        DistinguishedName issdn = DistinguishedName.getIssuerInstance(cert);
+        DistinguishedName issdn = DistinguishedName.getIssuerInstance(selectedCert);
         insert("Certified by:\n", ITALIC);
         insert(getDisplayString(issdn) + "\n\n", BLOCKQUOTE);
 
         Date now = new Date();
-        Date starts = cert.getNotBefore();
+        Date starts = selectedCert.getNotBefore();
         if (starts.after(now)) {
             insert("Only valid after:\n", ITALIC);
             insert(dateFormatter.format(starts) + "\n\n", BLOCKQUOTE);
         }
 
-        Date expires = cert.getNotAfter();
+        Date expires = selectedCert.getNotAfter();
         String s = expires.before(now) ? "d" : "s";
         insert("Expire" + s + ":\n", ITALIC);
         insert(dateFormatter.format(expires) + "\n\n", BLOCKQUOTE);
 
         insert("Algorithm:\n", ITALIC);
-        insert(cert.getSigAlgName(), BLOCKQUOTE);
+        insert(selectedCert.getSigAlgName(), BLOCKQUOTE);
     }
 
     private void clear() {

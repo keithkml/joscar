@@ -41,7 +41,7 @@ import java.awt.event.FocusEvent;
 import java.awt.Component;
 import java.security.cert.X509Certificate;
 
-class OnFocusSelector implements FocusListener {
+public class OnFocusSelector implements FocusListener {
     public void focusGained(FocusEvent e) {
         Component comp = e.getComponent();
         if (comp instanceof JTextComponent) {

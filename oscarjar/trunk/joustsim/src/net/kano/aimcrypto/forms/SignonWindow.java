@@ -35,8 +35,13 @@
 
 package net.kano.aimcrypto.forms;
 
+import net.kano.aimcrypto.AppSession;
+import net.kano.aimcrypto.GuiResources;
 import net.kano.aimcrypto.GuiSession;
 import net.kano.aimcrypto.Screenname;
+import net.kano.aimcrypto.config.GeneralLocalPrefs;
+import net.kano.aimcrypto.config.GlobalPrefs;
+import net.kano.aimcrypto.config.LocalPreferencesManager;
 import net.kano.aimcrypto.connection.ConnectionFailedStateInfo;
 import net.kano.aimcrypto.connection.LoginFailureStateInfo;
 import net.kano.aimcrypto.connection.StateInfo;
@@ -46,6 +51,7 @@ import javax.swing.AbstractAction;
 import javax.swing.ComboBoxEditor;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListCellRenderer;
+import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -53,29 +59,39 @@ import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
+import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
+import javax.swing.JTextPane;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.TitledBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
+import javax.swing.text.AttributeSet;
 import javax.swing.text.Document;
 import javax.swing.text.JTextComponent;
+import javax.swing.text.MutableAttributeSet;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.html.HTMLDocument;
 import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.net.URL;
 import java.util.Arrays;
 
 public class SignonWindow extends JFrame {
@@ -89,20 +105,18 @@ public class SignonWindow extends JFrame {
     private JPasswordField passwordBox;
     private JButton signonButton;
     private JButton prefsButton;
-    private JLabel signonFailedLabel;
     private JCheckBox rememberPassBox;
     private JButton closeButton;
-//    private JButton clearButton;
+    private JTextPane errorText;
+    private JLabel errorIconLabel;
+    private JPanel errorPanel;
+    private JScrollPane errorScrollPane;
+    private JPanel localPanel;
 
-    private final ImageIcon programIcon;
-    {
-        URL iconUrl = getClass().getClassLoader().getResource("icons/program-small.gif");
-        programIcon = iconUrl == null ? null : new ImageIcon(iconUrl);
-    }
+    private final ImageIcon programIcon = GuiResources.getSmallProgramIcon();
 
     private SignonAction signonAction = new SignonAction();
     private ShowPrefsAction showPrefsAction = new ShowPrefsAction();
-    private ClearAction clearAction = new ClearAction();
     private CloseAction closeAction = new CloseAction();
 
     private GuiSession guiSession;
@@ -115,8 +129,25 @@ public class SignonWindow extends JFrame {
 
     private Object previousSelectedItem = null;
     private final ComboBoxEditor screennameBoxEditor = screennameBox.getEditor();
+    private final AppSession appSession;
+    private int maxWidth = -1;
+    private final AttributeSet defaultErrorStyles;
+    private final Icon errorIcon = GuiResources.getErrorIcon();
+    private final Icon infoIcon = GuiResources.getInformationIcon();
+
+    private final TitledBorder errorPanelBorder = new TitledBorder((String) null);
+    private boolean loadedScreennames = false;
 
     {
+        MutableAttributeSet attrs = new SimpleAttributeSet();
+        Font font = UIManager.getFont("Label.font");
+        StyleConstants.setFontFamily(attrs, font.getName());
+        StyleConstants.setFontSize(attrs, font.getSize());
+        defaultErrorStyles = attrs.copyAttributes();
+    }
+
+    {
+        localPanel.setBorder(new TitledBorder((String) null));
         screennameBox.setModel(knownScreennamesModel);
         Component snEditor = screennameBoxEditor.getEditorComponent();
         if (snEditor instanceof JTextComponent) {
@@ -136,13 +167,6 @@ public class SignonWindow extends JFrame {
                 }
             });
         }
-        screennameBoxEditor.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                System.out.println("action");
-                updateButtons();
-                previousSelectedItem = screennameBox.getSelectedItem();
-            }
-        });
         screennameBox.addPopupMenuListener(new PopupMenuListener() {
             public void popupMenuCanceled(PopupMenuEvent e) {
             }
@@ -167,6 +191,19 @@ public class SignonWindow extends JFrame {
                                 deleteScreenname(previousSelectedItem);
                             }
                         });
+                    } else {
+                        clearErrorText();
+                        String current = getScreenname();
+                        Screenname sn = new Screenname(current);
+                        LocalPreferencesManager prefs
+                                = appSession.getLocalPrefsIfExist(sn);
+                        if (prefs != null) {
+                            GeneralLocalPrefs genPrefs = prefs.getGeneralPrefs();
+                            String format = genPrefs.getScreennameFormat();
+                            if (format != null && !format.equals(current)) {
+                                screennameBox.setSelectedItem(format);
+                            }
+                        }
                     }
                 }
             }
@@ -195,7 +232,18 @@ public class SignonWindow extends JFrame {
 
         passwordBox.addFocusListener(new OnFocusSelector());
 
-        updateButtons();
+        rememberPassBox.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                if (!rememberPassBox.isSelected()) {
+                    Screenname sn = new Screenname(getScreenname());
+                    LocalPreferencesManager prefs
+                            = appSession.getLocalPrefsIfExist(sn);
+                    if (prefs != null) {
+                        prefs.getGeneralPrefs().setSavedPassword(null);
+                    }
+                }
+            }
+        });
 
         setResizable(false);
 
@@ -204,35 +252,49 @@ public class SignonWindow extends JFrame {
                 setEnabled(true);
                 reloadScreennames();
                 updateButtons();
-                pack();
-                setSize(getPreferredSize());
+                updateSize();
             }
             public void windowClosing(WindowEvent e) {
                 guiSession.close();
             }
         });
-        addComponentListener(new ComponentAdapter() {
-            public void componentShown(ComponentEvent e) {
-            }
-        });
+
+        errorPanel.setBorder(errorPanelBorder);
+        errorIconLabel.setText(null);
+        errorScrollPane.setBorder(new EmptyBorder(0, 0, 0, 0));
+
         ImageIcon icon = programIcon;
         Image image = null;
         if (icon != null) {
             image = icon.getImage();
         }
         setIconImage(image);
+
+        updateButtons();
+    }
+
+    private void updateSize() {
+        Dimension pref = getPreferredSize();
+        if (maxWidth == -1) {
+            maxWidth = pref.width;
+            pack();
+            setSize(pref);
+        } else {
+            setSize(new Dimension(maxWidth, pref.height));
+        }
     }
 
     public SignonWindow(GuiSession session) {
         super("Sign On");
 
         this.guiSession = session;
+        appSession = guiSession.getAppSession();
     }
 
     private void updateButtons() {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
-                boolean snempty = getScreenname().length() == 0;
+                boolean snempty = OscarTools.normalize(getScreenname()).length() == 0;
                 boolean passempty = passwordBox.getDocument().getLength() == 0;
 
                 screennameLabel.setEnabled(!disabled);
@@ -242,7 +304,6 @@ public class SignonWindow extends JFrame {
                 rememberPassBox.setEnabled(!disabled && !snempty && !passempty);
 
                 signonAction.setEnabled(!disabled && !snempty && !passempty);
-                clearAction.setEnabled(!disabled && !snempty || !passempty);
                 showPrefsAction.setEnabled(!disabled && !snempty);
             }
         });
@@ -264,6 +325,9 @@ public class SignonWindow extends JFrame {
     }
 
     public void setFailureInfo(StateInfo sinfo) {
+        System.out.println("failure info: " + sinfo);
+
+        String errorText = null;
         if (sinfo != null) {
             final String msg;
             if (sinfo instanceof LoginFailureStateInfo) {
@@ -278,37 +342,87 @@ public class SignonWindow extends JFrame {
                         + cfsi.getPort();
 
             } else {
-                msg = sinfo.toString();
+//                msg = sinfo.toString();
+                System.err.println("unknown error: " + sinfo.getClass().getName());
+                return;
             }
-            SwingUtilities.invokeLater(new Runnable() {
-                public void run() {
-                    signonFailedLabel.setText("<HTML><b>Could not sign on:</b> "
-                            + msg);
-                    signonFailedLabel.setVisible(true);
-                }
-            });
-        } else {
-            SwingUtilities.invokeLater(new Runnable() {
-                public void run() {
-                    signonFailedLabel.setVisible(false);
-                }
-            });
+            errorText = "<b>Could not sign on:</b> " + msg;
         }
-//        pack();
-//        int width = getWidth();
-//        setSize(width, getPreferredSize().height);
+        if (errorText != null) {
+            setErrorText("Sign-on failed", errorText);
+        } else {
+            clearErrorText();
+        }
+    }
+
+    private void clearErrorText() {
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                errorPanel.setVisible(false);
+                updateSize();
+            }
+        });
+    }
+
+    private void setErrorText(String title, String text) {
+        final Icon icon = errorIcon;
+        setErrorText(icon, title, text);
+    }
+
+    private void setErrorText(final Icon icon, final String title, final String text) {
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                errorPanelBorder.setTitle(title);
+                errorIconLabel.setIcon(icon);
+                errorText.setText(text);
+                errorText.setCaretPosition(0);
+                HTMLDocument doc = (HTMLDocument) errorText.getDocument();
+                doc.setCharacterAttributes(0, doc.getLength(),
+                        defaultErrorStyles, false);
+                errorPanel.setVisible(true);
+                updateSize();
+            }
+        });
+    }
+
+    private void setInfoText(String title, String text) {
+        setErrorText(infoIcon, title, text);
     }
 
     private void updatePassword() {
-        passwordBox.setText("");
+        Screenname sn = new Screenname(getScreenname());
+        LocalPreferencesManager prefs = appSession.getLocalPrefsIfExist(sn);
+        String toSet = "";
+        boolean remember = false;
+        if (prefs != null) {
+            String pass = prefs.getGeneralPrefs().getSavedPassword();
+            toSet = pass == null ? "" : pass;
+            remember = (pass != null);
+        }
+
+        passwordBox.setText(toSet);
+        rememberPassBox.setSelected(remember);
     }
 
     private void reloadScreennames() {
-        final String[] sns = guiSession.getAppSession().getGlobalPrefs().getKnownScreennames();
-        Arrays.sort(sns);
+        GlobalPrefs globalPrefs = appSession.getGlobalPrefs();
+        boolean reloaded = globalPrefs.reloadIfNecessary();
+        if (!reloaded && loadedScreennames) return;
+        loadedScreennames = true;
+        final Screenname[] known = appSession.getKnownScreennames();
+        Arrays.sort(known);
+        final String[] sns = new String[known.length];
+        for (int i = 0; i < known.length; i++) {
+            sns[i] = known[i].getFormatted();
+        }
+
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
                 Object sel = knownScreennamesModel.getSelectedItem();
+                if (sel == null) {
+                    sel = "";
+                    knownScreennamesModel.setSelectedItem(sel);
+                }
                 knownScreennamesModel.removeAllElements();
                 for (int i = 0; i < sns.length; i++) {
                     knownScreennamesModel.addElement(sns[i]);
@@ -321,7 +435,50 @@ public class SignonWindow extends JFrame {
     }
 
     private void deleteScreenname(Object item) {
+        if (item == null) return;
 
+        String snText = item.toString().trim();
+        if (OscarTools.normalize(snText).length() == 0) return;
+
+        Screenname sn = new Screenname(snText);
+        LocalPreferencesManager prefs = appSession.getLocalPrefsIfExist(sn);
+        if (prefs == null) {
+            setErrorText("Could not delete preferences",
+                    "<B>Account preferences for " + snText.trim()
+                    + " could not be deleted.</b><br><br>No preferences are "
+                    + "stored for this screen name.");
+
+        } else {
+            String deleteOption = "Delete";
+            String cancelOption = "Cancel";
+            String[] options = new String[] { deleteOption, cancelOption };
+            int selected = JOptionPane.showOptionDialog(this,
+                    "<HTML><B>Delete all account preferences stored for<BR>"
+                    + snText + "?</B><BR><BR>This "
+                    + "will delete all preferences stored for this<BR>"
+                    + "screen name, as well as all Personal Certificates<BR>"
+                    + "and trusted certificates.",
+                    "Delete Account Preferences",
+                    JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE,
+                    null, options, cancelOption);
+
+            if (selected == JOptionPane.CLOSED_OPTION) return;
+
+            if (options[selected] == deleteOption) {
+                if (!appSession.deleteLocalPrefs(sn)) {
+                    setErrorText("Could not delete preferences",
+                            "<B>Some account preferences for " + snText
+                            + " could not be deleted.</b><br><br>Check that "
+                            + "you have permission to modify your "
+                            + "preferences folder and try again.");
+                } else {
+                    setInfoText("Deleted preferences",
+                            "Account preferences for " + snText
+                            + " were deleted successfully.");
+                    reloadScreennames();
+                }
+            }
+        }
     }
 
     private class SignonAction extends AbstractAction {
@@ -336,8 +493,17 @@ public class SignonWindow extends JFrame {
 
         public void actionPerformed(ActionEvent e) {
             setEnabled(false);
-            guiSession.signon(new Screenname(getScreenname()),
-                    new String(passwordBox.getPassword()));
+            Screenname sn = new Screenname(getScreenname());
+            LocalPreferencesManager prefs = appSession.getLocalPrefs(sn);
+            if (prefs == null) return;
+            String pass = new String(passwordBox.getPassword());
+            GeneralLocalPrefs generalPrefs = prefs.getGeneralPrefs();
+            if (rememberPassBox.isSelected()) {
+                generalPrefs.setSavedPassword(pass);
+            } else {
+                generalPrefs.setSavedPassword(null);
+            }
+            guiSession.signon(sn, pass);
         }
     }
 
@@ -351,22 +517,7 @@ public class SignonWindow extends JFrame {
         }
 
         public void actionPerformed(ActionEvent e) {
-            guiSession.showPrefsWindow();
-        }
-    }
-
-    private class ClearAction extends AbstractAction {
-        public ClearAction() {
-            super("Clear");
-
-            putValue(SHORT_DESCRIPTION,
-                    "Clear the screenname and password boxes");
-            putValue(MNEMONIC_KEY, new Integer(KeyEvent.VK_C));
-        }
-
-        public void actionPerformed(ActionEvent e) {
-            screennameBox.setSelectedItem("");
-            passwordBox.setText("");
+            guiSession.showPrefsWindow(new Screenname(getScreenname()));
         }
     }
 

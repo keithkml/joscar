@@ -61,24 +61,28 @@ public class LocalPreferencesManager {
     private boolean loadedCertManager = false;
     private boolean loadedSignerManager = false;
 
-    public LocalPreferencesManager(Screenname screenname, File baseDir) {
+    public LocalPreferencesManager(Screenname screenname, File localConfigDir) {
         DefensiveTools.checkNull(screenname, "screenname");
-        DefensiveTools.checkNull(baseDir, "baseDir");
+        DefensiveTools.checkNull(localConfigDir, "baseDir");
 
         this.screenname = screenname;
-        this.configDir = baseDir;
+        this.configDir = localConfigDir;
 
-        this.keysDir = new File(configDir, "local-keys");
-        this.trustDir = new File(configDir, "trust");
+        this.keysDir = new File(this.configDir, "local-keys");
+        this.trustDir = new File(this.configDir, "trust");
         this.trustedCertsDir = new File(trustDir, "trusted-certs");
         this.trustedSignersDir = new File(trustDir, "trusted-signers");
 
-        this.generalPrefs = new GeneralLocalPrefs(screenname, configDir);
+        this.generalPrefs = new GeneralLocalPrefs(screenname, this.configDir);
         this.localKeysManager = new LocalKeysManager(screenname, keysDir);
         this.certificateTrustManager = new PermanentCertificateTrustManager(
                 screenname, trustedCertsDir);
         this.signerTrustManager = new PermanentSignerTrustManager(
                 screenname, trustedSignersDir);
+    }
+
+    public Screenname getScreenname() {
+        return screenname;
     }
 
     public synchronized boolean saveAllPrefs() {
@@ -128,7 +132,7 @@ public class LocalPreferencesManager {
         return localKeysManager;
     }
 
-    public PermanentCertificateTrustManager getStoredCertificateTrustmanager() {
+    public PermanentCertificateTrustManager getStoredCertificateTrustManager() {
         synchronized(this) {
             if (!loadedCertManager) {
                 loadedCertManager = true;
@@ -143,7 +147,7 @@ public class LocalPreferencesManager {
         return certificateTrustManager;
     }
 
-    public PermanentSignerTrustManager getStoredSignerTrustmanager() {
+    public PermanentSignerTrustManager getStoredSignerTrustManager() {
         synchronized(this) {
             if (!loadedSignerManager) {
                 loadedSignerManager = true;

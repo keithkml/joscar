@@ -36,7 +36,6 @@
 package net.kano.aimcrypto;
 
 import net.kano.aimcrypto.config.LocalPreferencesManager;
-import net.kano.aimcrypto.config.CertificateTrustManager;
 import net.kano.aimcrypto.connection.AimConnection;
 import net.kano.aimcrypto.connection.AimConnectionProperties;
 import net.kano.aimcrypto.connection.State;
@@ -48,11 +47,11 @@ import net.kano.aimcrypto.connection.oscar.service.icbm.IcbmBuddyInfo;
 import net.kano.aimcrypto.connection.oscar.service.icbm.IcbmListener;
 import net.kano.aimcrypto.connection.oscar.service.icbm.IcbmService;
 import net.kano.aimcrypto.connection.oscar.service.icbm.ImConversation;
-import net.kano.aimcrypto.forms.CertificatesPrefsPanel;
 import net.kano.aimcrypto.forms.DummyOnlineWindow;
 import net.kano.aimcrypto.forms.ImBox;
 import net.kano.aimcrypto.forms.SignonProgressWindow;
 import net.kano.aimcrypto.forms.SignonWindow;
+import net.kano.aimcrypto.forms.TrustPrefsPanel;
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 
@@ -241,15 +240,19 @@ public class GuiSession {
         openImBox(conv.getBuddy()).handleConversation(conv);
     }
 
-    public void showPrefsWindow() {
-        Screenname sn =  new Screenname(signonWindow.getScreenname());
+    public void showPrefsWindow(Screenname sn) {
         JFrame frame = new JFrame();
         LocalPreferencesManager prefs = appSession.getLocalPrefs(sn);
-        CertificateTrustManager certMgr = prefs.getStoredCertificateTrustmanager();
-        frame.getContentPane().add(new CertificatesPrefsPanel(appSession, sn, certMgr));
+        TrustPrefsPanel panel = new TrustPrefsPanel(appSession, sn);
+        frame.getContentPane().add(panel);
         frame.pack();
         frame.setSize(frame.getPreferredSize());
         frame.setVisible(true);
+
+//        LocalCertificatesPrefsPane pane = new LocalCertificatesPrefsPane(appSession, sn);
+//        pane.pack();
+//        pane.setSize(pane.getPreferredSize());
+//        pane.setVisible(true);
     }
 
     public AppSession getAppSession() {

@@ -44,6 +44,11 @@ import java.security.cert.X509Certificate;
 
 public class PermanentSignerTrustManager
         extends PermanentCertificateTrustManager {
+    public static boolean isValidSignerCertificate(
+            X509Certificate certificate) {
+        return certificate.getBasicConstraints() != -1;
+    }
+
     public PermanentSignerTrustManager(Screenname buddy, File trustedCertsDir) {
         super(buddy, trustedCertsDir);
     }
@@ -51,7 +56,7 @@ public class PermanentSignerTrustManager
     protected boolean canBeAdded(X509Certificate certificate) {
         DefensiveTools.checkNull(certificate, "certificate");
 
-        return certificate.getBasicConstraints() != -1;
+        return isValidSignerCertificate(certificate);
     }
 
     public synchronized boolean isSignedByTrustedSigner(Certificate cert) {

@@ -41,6 +41,7 @@ import net.kano.aimcrypto.config.LoadingException;
 import net.kano.aimcrypto.config.PrivateKeysInfo;
 import net.kano.aimcrypto.config.LocalKeysManager;
 import net.kano.aimcrypto.Screenname;
+import net.kano.aimcrypto.GuiResources;
 import net.kano.aimcrypto.config.LocalKeysManager;
 import net.kano.aimcrypto.config.LoadingException;
 import net.kano.joscar.DefensiveTools;
@@ -127,16 +128,8 @@ public class LocalCertificatesPrefsPane extends JFrame {
 
     private LoadingException lastException = null;
 
-    private Icon warningIcon = UIManager.getIcon("OptionPane.warningIcon");
-    private Icon lockedIcon;
-    {
-        URL resource = getClass().getClassLoader().getResource("icons/lock-medium.png");
-        if (resource == null) {
-            lockedIcon = null;
-        } else {
-            lockedIcon = new ImageIcon(resource);
-        }
-    }
+    private final Icon warningIcon = GuiResources.getWarningIcon();
+    private final Icon lockedIcon = GuiResources.getMediumLockIcon();
 
     private final JComponent[] possiblyBold = new JComponent[] {
         myCertLabel, passwordLabel, signWithLabel, encryptWithLabel
@@ -558,28 +551,28 @@ public class LocalCertificatesPrefsPane extends JFrame {
 
     private boolean browseForCertificate() {
         initFileChooser();
-        fc.showDialog(this, null);
+        int result = fc.showDialog(this, null);
+        if (result != JFileChooser.APPROVE_OPTION) return false;
+
         File file = fc.getSelectedFile();
-        if (file == null) {
-            return false;
-        } else {
-            try {
-                securityInfo.importCertFile(file);
-                securityInfo.switchToCertificateFile(file.getName());
-                return true;
-            } catch (IOException e) {
-                String msg;
-                if (e instanceof FileNotFoundException) {
-                    msg = "The file does not exist.";
-                } else {
-                    msg = "An error occurred while reading the file. You may "
-                            + "want to try importing the file again.";
-                }
-                JOptionPane.showMessageDialog(this, "<HTML><B>The file you "
-                        + "selected could not be imported.</B><BR><BR>" + msg,
-                        "Could not import file", JOptionPane.ERROR_MESSAGE);
-                return false;
+        if (file == null) return false;
+
+        try {
+            securityInfo.importCertFile(file);
+            securityInfo.switchToCertificateFile(file.getName());
+            return true;
+        } catch (IOException e) {
+            String msg;
+            if (e instanceof FileNotFoundException) {
+                msg = "The file does not exist.";
+            } else {
+                msg = "An error occurred while reading the file. You may "
+                        + "want to try importing the file again.";
             }
+            JOptionPane.showMessageDialog(this, "<HTML><B>The file you "
+                    + "selected could not be imported.</B><BR><BR>" + msg,
+                    "Could not import file", JOptionPane.ERROR_MESSAGE);
+            return false;
         }
     }
 
@@ -589,6 +582,7 @@ public class LocalCertificatesPrefsPane extends JFrame {
         fc.setDialogTitle("Import Certificate File");
         fc.setAcceptAllFileFilterUsed(true);
         fc.setApproveButtonText("Import");
+        fc.setApproveButtonToolTipText("Import selected certificate file");
         fc.setMultiSelectionEnabled(false);
         fc.addChoosableFileFilter(new FileFilter() {
             public boolean accept(File f) {

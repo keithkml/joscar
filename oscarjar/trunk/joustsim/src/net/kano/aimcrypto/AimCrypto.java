@@ -61,6 +61,7 @@ public final class AimCrypto {
     private AimCrypto() { }
 
     public static void main(String[] args) {
+        System.out.println("starting");
         Logger logger = Logger.getLogger("net.kano.aimcrypto");
         logger.setLevel(Level.FINE);
         ConsoleHandler handler = new ConsoleHandler();
@@ -86,12 +87,16 @@ public final class AimCrypto {
         Security.addProvider(new BouncyCastleProvider());
 
         try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            if (UIManager.getLookAndFeel() instanceof MetalLookAndFeel) {
+            String laf = UIManager.getSystemLookAndFeelClassName();
+
+            if (laf.endsWith(".GTKLookAndFeel")
+                    || laf.endsWith(".MetalLookAndFeel")) {
                 Plastic3DLookAndFeel plastic = new Plastic3DLookAndFeel();
                 Plastic3DLookAndFeel.setMyCurrentTheme(new SkyBluer());
                 ClearLookManager.installDefaultMode();
                 UIManager.setLookAndFeel(plastic);
+            } else {
+                UIManager.setLookAndFeel(laf);
             }
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
@@ -102,10 +107,12 @@ public final class AimCrypto {
         } catch (UnsupportedLookAndFeelException e) {
             e.printStackTrace();
         }
+        System.out.println("set look and feel");
 
         String home = System.getProperty("user.home", "~");
         AppSession sess = new AppSession(new File(home, ".joustsim"));
         sess.setSavePrefsOnExit(true);
+        System.out.println("initialized app session");
 
         GuiSession guiSession = new GuiSession(sess);
         guiSession.addListener(new GuiSessionListener() {
@@ -117,5 +124,6 @@ public final class AimCrypto {
             }
         });
         guiSession.open();
+        System.out.println("initialized gui session");
     }
 }

@@ -390,6 +390,11 @@ public class AimConnection {
         public void allFamiliesReady(OscarConnection conn) {
             super.allFamiliesReady(conn);
 
+            // I don't know why this could happen
+            if (getState() == State.CONNECTING) {
+                setState(State.CONNECTING, State.SIGNINGON,
+                        new SigningOnStateInfo());
+            }
             setState(State.SIGNINGON, State.ONLINE, new OnlineStateInfo());
         }
 

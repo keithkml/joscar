@@ -44,7 +44,7 @@ import java.io.FileFilter;
 import java.util.List;
 import java.util.ArrayList;
 
-public class GlobalPrefs implements Preferences {
+public class GlobalPrefs implements Preferences, FileBasedResource {
     private static final FileFilter FILTER_VISIBLE_DIRS = new FileFilter() {
         public boolean accept(File pathname) {
             return pathname.isDirectory() && !pathname.isHidden();
@@ -57,6 +57,8 @@ public class GlobalPrefs implements Preferences {
     private final File globalPrefsDir;
     private final File globalPrefsFile;
 
+    private final KnownScreennamesLoader snLoader;
+
     private String[] knownScreennames = SNS_EMPTY;
 
     public GlobalPrefs(File configDir, File globalPrefsDir) {
@@ -68,27 +70,54 @@ public class GlobalPrefs implements Preferences {
         this.localPrefsDir = new File(configDir, "local");
         this.globalPrefsDir = globalPrefsDir;
         this.globalPrefsFile = new File(globalPrefsDir, "prefs.properties");
+        this.snLoader = new KnownScreennamesLoader();
     }
 
     public synchronized void loadPrefs() {
-        loadKnownScreennames();
-    }
-
-    private void loadKnownScreennames() {
-        File[] files = localPrefsDir.listFiles(FILTER_VISIBLE_DIRS);
-        if (files == null || files.length == 0) return;
-
-        List known = new ArrayList();
-        for (int i = 0; i < files.length; i++) {
-            known.add(files[i].getName());
-        }
-        knownScreennames = (String[]) known.toArray(new String[known.size()]);
+        reloadIfNecessary();
     }
 
     public void savePrefs() throws FileNotFoundException, IOException {
     }
 
-    public String[] getKnownScreennames() {
+    public boolean isUpToDate() {
+        return snLoader.isUpToDate();
+    }
+
+    public boolean reloadIfNecessary() {
+        return snLoader.reloadIfNecessary();
+    }
+
+    public void reload() {
+        snLoader.reload();
+    }
+
+    public synchronized String[] getKnownScreennames() {
         return (String[]) knownScreennames.clone();
+    }
+
+    private class KnownScreennamesLoader extends DefaultFileBasedResource {
+        public KnownScreennamesLoader() {
+            super(localPrefsDir);
+        }
+
+        public synchronized boolean reloadIfNecessary() {
+            try {
+                return super.reloadIfNecessary();
+            } catch (LoadingException e) {
+                return false;
+            }
+        }
+
+        public synchronized void reload() {
+            File[] files = localPrefsDir.listFiles(FILTER_VISIBLE_DIRS);
+            if (files == null || files.length == 0) return;
+
+            List known = new ArrayList();
+            for (int i = 0; i < files.length; i++) {
+                known.add(files[i].getName());
+            }
+            knownScreennames = (String[]) known.toArray(new String[known.size()]);
+        }
     }
 }

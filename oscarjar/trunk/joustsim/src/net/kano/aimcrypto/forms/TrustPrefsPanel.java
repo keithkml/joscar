@@ -35,15 +35,64 @@
 
 package net.kano.aimcrypto.forms;
 
+import net.kano.aimcrypto.AppSession;
+import net.kano.aimcrypto.Screenname;
+import net.kano.aimcrypto.config.LocalPreferencesManager;
+import net.kano.aimcrypto.config.PermanentCertificateTrustManager;
+import net.kano.aimcrypto.config.PermanentSignerTrustManager;
+import net.kano.joscar.DefensiveTools;
+
 import javax.swing.JPanel;
 import javax.swing.BoxLayout;
-import javax.swing.border.TitledBorder;
-import java.awt.FlowLayout;
+import javax.swing.border.LineBorder;
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.Color;
 
-//TODO: mnemonics for Import etc
 public class TrustPrefsPanel extends JPanel {
+    private JPanel trustedCertsHolder;
+    private JPanel trustedSignersHolder;
+
+    private final AppSession session;
+    private final Screenname sn;
+
+    private final PermanentCertificateTrustManager certTrustMgr;
+    private final PermanentSignerTrustManager signerTrustMgr;
+
+    private final CertificatesPrefsPanel certsPrefs;
+    private final SignersPrefsPanel signersPrefs;
+    private JPanel mainPanel;
+
     {
-        setBorder(new TitledBorder("Trust Preferences"));
-        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        setLayout(new BorderLayout());
+        add(mainPanel);
+    }
+
+    public TrustPrefsPanel(AppSession session, Screenname sn) {
+        DefensiveTools.checkNull(session, "session");
+        DefensiveTools.checkNull(sn, "sn");
+
+        this.session = session;
+        this.sn = sn;
+
+        LocalPreferencesManager localPrefs = session.getLocalPrefs(sn);
+        certTrustMgr = localPrefs.getStoredCertificateTrustManager();
+        certsPrefs = new CertificatesPrefsPanel(session, sn, certTrustMgr);
+        certsPrefs.setPanelTitle("Trusted Buddy Certificates");
+        certsPrefs.setPanelDescription("<HTML>Buddies who are using one of the "
+                + "certificates below will be trusted automatically.");
+
+        signerTrustMgr = localPrefs.getStoredSignerTrustManager();
+        signersPrefs = new SignersPrefsPanel(session, sn, signerTrustMgr);
+        signersPrefs.setPanelTitle("Trusted Certificate Authorities");
+        signersPrefs.setPanelDescription("<HTML>Buddies whose identity is verified "
+                + "by one of the Certificate Authorities below will be<BR>"
+                + "trusted automatically.");
+
+        trustedCertsHolder.setLayout(new BorderLayout());
+        trustedCertsHolder.add(certsPrefs);
+
+        trustedSignersHolder.setLayout(new BorderLayout());
+        trustedSignersHolder.add(signersPrefs);
     }
 }
