@@ -631,6 +631,18 @@ public class SnacProcessor {
     }
 
     /**
+     * Calls {@link #setSnacQueueManager setSnacQueueManager(null)} if and only
+     * if the given <code>mgr</code> is the current SNAC queue manager. If the
+     * given SNAC queue manager is not the current SNAC queue manager, no change
+     * takes place.
+     *
+     * @param mgr
+     */
+    public synchronized final void unsetSnacQueueManager(SnacQueueManager mgr) {
+        if (queueManager == mgr) setSnacQueueManager(null);
+    }
+
+    /**
      * Returns this SNAC processor's current SNAC queue manager. Note that
      * this value will <i>never</i> be <code>null</code>, even after an explicit
      * call to {@link #setSnacQueueManager setSnacQueueManager(null)}. See that

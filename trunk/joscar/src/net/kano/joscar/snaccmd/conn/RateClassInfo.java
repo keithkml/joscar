@@ -171,7 +171,7 @@ public class RateClassInfo implements Writable {
      *
      * @param commands the SNAC commands included in this rate class
      */
-    void setCommands(CmdType[] commands) {
+    synchronized void setCommands(CmdType[] commands) {
         this.commands = commands;
     }
 
@@ -298,7 +298,7 @@ public class RateClassInfo implements Writable {
      *
      * @return the SNAC command types included in this rate class
      */
-    public final CmdType[] getCommands() {
+    public synchronized final CmdType[] getCommands() {
         return (CmdType[]) (commands == null ? null : commands.clone());
     }
 
@@ -317,7 +317,7 @@ public class RateClassInfo implements Writable {
         BinaryTools.writeUInt(out, max);
     }
 
-    public String toString() {
+    public synchronized String toString() {
         return "RateClassInfo for class " + rateClass +
                 ", currentAvg=" + currentAvg +
                 ", windowSize=" + windowSize +

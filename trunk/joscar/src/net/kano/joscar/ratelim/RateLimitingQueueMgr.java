@@ -36,38 +36,86 @@
 package net.kano.joscar.ratelim;
 
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.flapcmd.SnacCommand;
-import net.kano.joscar.snac.*;
 import net.kano.joscar.snaccmd.conn.RateClassInfo;
-import net.kano.joscar.snaccmd.conn.RateInfoCmd;
-import net.kano.joscar.snaccmd.conn.RateChange;
+import net.kano.joscar.snac.SnacProcessor;
+import net.kano.joscar.snac.SnacRequest;
+import net.kano.joscar.snac.SnacQueueManager;
 
-import java.util.*;
+import java.util.IdentityHashMap;
+import java.util.Map;
 
 /**
  * A SNAC queue manager which utilizes the "official" rate limiting algorithm to
  * avoid ever becoming rate-limited.
  */
-public class RateLimitingQueueMgr extends AbstractSnacQueueMgr {
+public class RateLimitingQueueMgr implements SnacQueueManager {
     public static final int ERRORMARGIN_DEFAULT = 100;
-
-    private int errorMargin = ERRORMARGIN_DEFAULT;
-    private boolean defaultAvoidLimiting = true;
 
     private Map conns = new IdentityHashMap();
 
-    private QueueRunner runner = null;
+    private int errorMargin = ERRORMARGIN_DEFAULT;
+
+    private QueueRunner runner = new QueueRunner(this);
+
+    private RateListener rateListener = new RateListener() {
+        public void attached(RateMonitor monitor, SnacProcessor snacProcessor) {
+            attachToSnacProcessor(snacProcessor);
+        }
+
+        public void detached(RateMonitor monitor, SnacProcessor snacProcessor) {
+            detachFromSnacProcessor(snacProcessor);
+        }
+
+        public void gotRateClasses(RateMonitor monitor) {
+            resetRateClasses(monitor);
+        }
+
+        public void rateClassUpdated(RateMonitor monitor,
+                RateClassMonitor classMonitor, RateClassInfo rateInfo) {
+            runner.update();
+        }
+
+        public void rateClassLimited(RateMonitor rateMonitor,
+                RateClassMonitor rateClassMonitor, boolean limited) {
+            runner.update();
+        }
+    };
+
+    public final void attach(RateMonitor monitor) {
+        monitor.addListener(rateListener);
+        SnacProcessor processor = monitor.getSnacProcessor();
+
+        if (processor != null) {
+            attachToSnacProcessor(processor);
+        }
+    }
+
+    private synchronized void attachToSnacProcessor(SnacProcessor processor) {
+        processor.setSnacQueueManager(this);
+    }
+
+    private synchronized void detachFromSnacProcessor(SnacProcessor processor) {
+        conns.remove(processor);
+
+        processor.unsetSnacQueueManager(this);
+    }
+
+    private void resetRateClasses(RateMonitor monitor) {
+        
+    }
 
     public final ConnectionQueueMgr getQueueMgr(SnacProcessor processor) {
-        ConnectionQueueMgr rcs;
+        DefensiveTools.checkNull(processor, "processor");
+
+        ConnectionQueueMgr mgr;
         synchronized(conns) {
-            rcs = (ConnectionQueueMgr) conns.get(processor);
+            mgr = (ConnectionQueueMgr) conns.get(processor);
         }
-        if (rcs == null) {
+        if (mgr == null) {
             throw new IllegalArgumentException("this rate manager is not " +
                     "currently attached to processor " + processor);
         }
-        return rcs;
+        return mgr;
     }
 
     public synchronized final void setErrorMargin(int errorMargin) {
@@ -78,17 +126,12 @@ public class RateLimitingQueueMgr extends AbstractSnacQueueMgr {
 
     public final synchronized int getErrorMargin() { return errorMargin; }
 
-    public synchronized final boolean getDefaultAvoidLimiting() {
-        return defaultAvoidLimiting;
-    }
-
-    public synchronized final void setDefaultAvoidLimiting(
-            boolean defaultAvoidLimiting) {
-        this.defaultAvoidLimiting = defaultAvoidLimiting;
-    }
-
 
     final QueueRunner getRunner() { return runner; }
+
+    void sendSnac(SnacProcessor processor, SnacRequest request) {
+        processor.sendSnacImmediately(request);
+    }
 
 
     public void queueSnac(SnacProcessor processor, SnacRequest request) {
@@ -107,11 +150,6 @@ public class RateLimitingQueueMgr extends AbstractSnacQueueMgr {
 
     public void unpause(SnacProcessor processor) {
         getQueueMgr(processor).unpause();
-    }
-
-    protected void sendSnac(SnacProcessor processor, SnacRequest request) {
-        // sigh
-        super.sendSnac(processor, request);
     }
 }
 
