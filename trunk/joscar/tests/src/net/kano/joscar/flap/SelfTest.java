@@ -82,11 +82,11 @@ public class SelfTest extends TestCase {
         try {
             new FlapPacket(null, ByteBlock.wrap(new byte[] { 1, 2 }));
             fail("Should not accept null header");
-        } catch (NullPointerException e) { }
+        } catch (IllegalArgumentException e) { }
 
         try {
             new FlapPacket(header, null);
             fail("Should not accept null packet data");
-        } catch (NullPointerException e) { }
+        } catch (IllegalArgumentException e) { }
     }
 }
