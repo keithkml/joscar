@@ -46,7 +46,7 @@ import net.kano.joscar.snac.SnacCmdFactory;
  */
 public class ServerBuddyCmdFactory implements SnacCmdFactory {
     /** The (lack of) command types supported by this factory. */
-    private static final CmdType[] SUPPORTED_TYPES = new CmdType[0];
+    protected static final CmdType[] SUPPORTED_TYPES = new CmdType[0];
 
     public CmdType[] getSupportedTypes() {
         return (CmdType[]) SUPPORTED_TYPES.clone();

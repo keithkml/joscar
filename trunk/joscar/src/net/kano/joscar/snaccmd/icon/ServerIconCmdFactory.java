@@ -46,7 +46,7 @@ import net.kano.joscar.snac.SnacCmdFactory;
  */
 public class ServerIconCmdFactory implements SnacCmdFactory {
     /** The supported command types. */
-    private static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
+    protected static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
         new CmdType(IconCommand.FAMILY_ICON, IconCommand.CMD_ICON_REQ),
         new CmdType(IconCommand.FAMILY_ICON, IconCommand.CMD_UPLOAD_ICON),
     };

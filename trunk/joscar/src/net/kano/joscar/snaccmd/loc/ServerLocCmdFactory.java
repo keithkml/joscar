@@ -46,7 +46,7 @@ import net.kano.joscar.snac.SnacCmdFactory;
  */
 public class ServerLocCmdFactory implements SnacCmdFactory {
     /** The supported SNAC command types. */
-    private static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
+    protected static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
         new CmdType(LocCommand.FAMILY_LOC, LocCommand.CMD_RIGHTS_REQ),
         new CmdType(LocCommand.FAMILY_LOC, LocCommand.CMD_SET_INFO),
         new CmdType(LocCommand.FAMILY_LOC, LocCommand.CMD_OLD_GET_INFO),

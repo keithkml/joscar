@@ -49,7 +49,7 @@ import net.kano.joscar.snac.SnacCmdFactory;
  */
 public class ClientAcctCmdFactory implements SnacCmdFactory {
     /** The SNAC command types supported by this factory. */
-    private static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
+    protected static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
         new CmdType(AcctCommand.FAMILY_ACCT, AcctCommand.CMD_MOD_ACK),
         new CmdType(AcctCommand.FAMILY_ACCT, AcctCommand.CMD_CONFIRM_ACK),
         new CmdType(AcctCommand.FAMILY_ACCT, AcctCommand.CMD_INFO_RESP),

@@ -58,7 +58,7 @@ import net.kano.joscar.snaccmd.ssi.SsiCommand;
  */
 public abstract class SnacErrorFactory implements SnacCmdFactory {
     /** The supported SNAC error command types. */
-    private static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
+    protected static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
         new CmdType(AuthCommand.FAMILY_AUTH, SnacError.CMD_ERROR),
         new CmdType(ConnCommand.FAMILY_CONN, SnacError.CMD_ERROR),
         new CmdType(LocCommand.FAMILY_LOC, SnacError.CMD_ERROR),

@@ -46,7 +46,7 @@ import net.kano.joscar.snac.SnacCmdFactory;
  */
 public class ClientBuddyCmdFactory implements SnacCmdFactory {
     /** A list of command types supported by this factory. */
-    private static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
+    protected static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
         new CmdType(BuddyCommand.FAMILY_BUDDY, BuddyCommand.CMD_BUDDY_STATUS),
         new CmdType(BuddyCommand.FAMILY_BUDDY, BuddyCommand.CMD_BUDDY_OFFLINE),
     };

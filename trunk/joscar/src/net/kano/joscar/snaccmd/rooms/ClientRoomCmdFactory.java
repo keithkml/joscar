@@ -46,7 +46,7 @@ import net.kano.joscar.snac.SnacCmdFactory;
  */
 public class ClientRoomCmdFactory implements SnacCmdFactory {
     /** The supported SNAC command types. */
-    private static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
+    protected static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
         new CmdType(RoomCommand.FAMILY_ROOM, RoomCommand.CMD_ROOM_RESPONSE),
     };
 

@@ -46,7 +46,7 @@ import net.kano.joscar.snac.SnacCmdFactory;
  */
 public class ServerPopupCmdFactory implements SnacCmdFactory {
     /** All zero of the supported SNAC command types. */
-    private static final CmdType[] SUPPORTED_TYPES = new CmdType[] { };
+    protected static final CmdType[] SUPPORTED_TYPES = new CmdType[] { };
 
     public CmdType[] getSupportedTypes() {
         return (CmdType[]) SUPPORTED_TYPES.clone();
