@@ -123,11 +123,19 @@ public class JoscarTester implements CmdLineListener, ServiceListener {
     private String aimExp = "the60s";
 
     private String mb(long bytes) {
+        float divby;
+        String suffix;
+
         if (bytes > 1000000) {
-            return formatter.format(bytes / 1048576f) + "MB";
+            divby = 1048576.0f;
+            suffix = "MB";
+
         } else {
-            return formatter.format(bytes / 1024f) + "KB";
+            divby = 1024.0f;
+            suffix = "KB";
         }
+
+        return formatter.format(bytes / divby) + suffix;
     }
 
 
@@ -296,7 +304,7 @@ public class JoscarTester implements CmdLineListener, ServiceListener {
         if (arglist.isEmpty()) return;
 
         String cmd = (String) arglist.removeFirst();
-        String[] args = (String[]) arglist.toArray(new String[0]);
+        String[] args = (String[]) arglist.toArray(new String[arglist.size()]);
 
         CLCommand handler = clHandler.getCommand(cmd);
 
