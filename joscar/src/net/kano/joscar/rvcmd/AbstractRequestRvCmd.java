@@ -80,7 +80,7 @@ public abstract class AbstractRequestRvCmd extends AbstractRvCmd {
 
     protected AbstractRequestRvCmd(long icbmMessageId, CapabilityBlock cap,
             int reqType, boolean fPresent) {
-        super(icbmMessageId, STATUS_REQUEST, cap);
+        super(icbmMessageId, RVSTATUS_REQUEST, cap);
 
         DefensiveTools.checkRange(reqType, "reqType", -1);
 

@@ -41,7 +41,7 @@ import net.kano.joscar.LiveWritable;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.rvcmd.SegmentedFilename;
 import net.kano.joscar.snaccmd.icbm.ImEncodedString;
-import net.kano.joscar.snaccmd.icbm.ImEncoding;
+import net.kano.joscar.snaccmd.icbm.ImEncodingParams;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -131,13 +131,11 @@ public final class FileSendHeader implements LiveWritable {
         fsh.setCreated(BinaryTools.getUInt(block, 46));
         fsh.setResForkChecksum(BinaryTools.getUInt(block, 50));
 
-        fsh.setNumReceived(BinaryTools.getUInt(block, 54));
+        fsh.setBytesReceived(BinaryTools.getUInt(block, 54));
         fsh.setReceivedChecksum(BinaryTools.getUInt(block, 58));
 
         // the client ID block is stored as 32 bytes of ASCII text padded to the
-        // right with nulls. we read the 32 bytes and then search for a null,
-        // chopping the non-null portion off into a new block and creating a
-        // string out of it.
+        // right with nulls.
         ByteBlock clientidBlock = block.subBlock(62, 32);
         fsh.setClientid(BinaryTools.getNullPadded(clientidBlock).getString());
 
@@ -152,9 +150,9 @@ public final class FileSendHeader implements LiveWritable {
         int charset = BinaryTools.getUShort(rest, 88);
         int charsubset = BinaryTools.getUShort(rest, 90);
 
-        // okay, first things first, this is stored as a null-terminated string.
-        // we loop until we get to the null, then chop the non-null part into
-        // its own block.
+        // okay, first things first, this filename is stored as a
+        // null-terminated string. we loop until we get to the null, then chop
+        // the non-null part into its own block.
         ByteBlock filenameBlock = rest.subBlock(92);
         int firstNull;
         for (firstNull = 0; firstNull < filenameBlock.getLength();
@@ -164,9 +162,11 @@ public final class FileSendHeader implements LiveWritable {
         filenameBlock = filenameBlock.subBlock(0, firstNull);
         rest = rest.subBlock(92 + filenameBlock.getLength());
 
-        ImEncoding encoding = new ImEncoding(charset, charsubset);
+        ImEncodingParams encoding = new ImEncodingParams(charset, charsubset);
+        String ftFilename = ImEncodedString.readImEncodedString(
+                encoding, filenameBlock);
         SegmentedFilename segmented = SegmentedFilename.createFromFTFilename(
-                ImEncodedString.readImEncodedString(encoding, filenameBlock));
+                ftFilename);
 
         fsh.setFilename(segmented);
 
@@ -190,7 +190,7 @@ public final class FileSendHeader implements LiveWritable {
     private long resForkSize = -1;
     private long created = -1;
     private long resForkChecksum = -1;
-    private long numReceived = -1;
+    private long bytesReceived = -1;
     private long receivedChecksum = -1;
     private String clientid = null;
     private int flags = -1;
@@ -221,7 +221,7 @@ public final class FileSendHeader implements LiveWritable {
         resForkSize = other.resForkSize;
         created = other.created;
         resForkChecksum = other.resForkChecksum;
-        numReceived = other.numReceived;
+        bytesReceived = other.bytesReceived;
         receivedChecksum = other.receivedChecksum;
         clientid = other.clientid;
         flags = other.flags;
@@ -270,7 +270,7 @@ public final class FileSendHeader implements LiveWritable {
         return resForkChecksum;
     }
 
-    public synchronized long getNumReceived() { return numReceived; }
+    public synchronized long getBytesReceived() { return bytesReceived; }
 
     public synchronized long getReceivedChecksum() {
         return receivedChecksum;
@@ -363,8 +363,8 @@ public final class FileSendHeader implements LiveWritable {
         this.resForkChecksum = resForkChecksum;
     }
 
-    public synchronized void setNumReceived(long numReceived) {
-        this.numReceived = numReceived;
+    public synchronized void setBytesReceived(long bytesReceived) {
+        this.bytesReceived = bytesReceived;
     }
 
     public synchronized void setReceivedChecksum(long receivedChecksum) {
@@ -421,7 +421,7 @@ public final class FileSendHeader implements LiveWritable {
         this.listNameOffset = 0;
         this.listSizeOffset = 0;
         this.macFileInfo = MACFILEINFO_DEFAULT;
-        this.numReceived = 0;
+        this.bytesReceived = 0;
         this.fileCount = 0;
         this.fileSize = 0;
         this.filesLeft = 0;
@@ -449,7 +449,7 @@ public final class FileSendHeader implements LiveWritable {
         DefensiveTools.checkRange(resForkSize, "resForkSize", 0);
         DefensiveTools.checkRange(created, "created", 0);
         DefensiveTools.checkRange(resForkChecksum, "resForkChecksum", 0);
-        DefensiveTools.checkRange(numReceived, "numReceived", 0);
+        DefensiveTools.checkRange(bytesReceived, "bytesReceived", 0);
         DefensiveTools.checkRange(receivedChecksum, "receivedChecksum", 0);
         DefensiveTools.checkNull(clientid, "clientid");
         DefensiveTools.checkRange(flags, "flags", 0);
@@ -460,7 +460,8 @@ public final class FileSendHeader implements LiveWritable {
         // whew.
     }
 
-    public synchronized void write(OutputStream out) throws IOException {
+    public synchronized void write(OutputStream out)
+            throws IOException, IllegalArgumentException {
         checkValidity();
 
         // build the header block
@@ -485,7 +486,7 @@ public final class FileSendHeader implements LiveWritable {
         BinaryTools.writeUInt(header, created);
         BinaryTools.writeUInt(header, resForkChecksum);
 
-        BinaryTools.writeUInt(header, numReceived);
+        BinaryTools.writeUInt(header, bytesReceived);
         BinaryTools.writeUInt(header, receivedChecksum);
 
         // this needs to be 32 bytes...
@@ -509,7 +510,7 @@ public final class FileSendHeader implements LiveWritable {
         else filenameStr = filename.toFTFilename();
 
         ImEncodedString encInfo = ImEncodedString.encodeString(filenameStr);
-        ImEncoding encoding = encInfo.getEncoding();
+        ImEncodingParams encoding = encInfo.getEncoding();
 
         BinaryTools.writeUShort(header, encoding.getCharsetCode());
         BinaryTools.writeUShort(header, encoding.getCharsetSubcode());
@@ -554,7 +555,7 @@ public final class FileSendHeader implements LiveWritable {
                 "\n resForkSize=" + resForkSize +
                 "\n created=" + created +
                 "\n resForkChecksum=" + resForkChecksum +
-                "\n numReceived=" + numReceived +
+                "\n bytesReceived=" + bytesReceived +
                 "\n receivedChecksum=" + receivedChecksum +
                 "\n clientid='" + clientid + "'" +
                 "\n flags=0x" + Integer.toHexString(flags) +

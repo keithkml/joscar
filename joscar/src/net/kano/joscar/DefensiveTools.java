@@ -97,7 +97,8 @@ public final class DefensiveTools {
     public static final void checkNull(Object val, String name)
             throws IllegalArgumentException {
         if (val == null) {
-            throw new NullPointerException(name + " argument cannot be null");
+            throw new NullPointerException("value of " + name
+                    + " cannot be null");
         }
     }
 

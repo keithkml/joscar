@@ -51,65 +51,10 @@ import java.io.OutputStream;
 
 public class AddinsReqRvCmd extends AbstractRequestRvCmd {
     /*
-    aim:AddGame?name=MSHearts&go1st=true&multiplayer=true&
-    url=http://www.microsoft.com&cmd=%25m&servercmd=%20&
-    hint=Both%20machines%20must%20be%20running%20Win95%3CBR%3Eor%20Win98%20
-    and%20be%20on%20the%20same%20local%20network.%3CBR%3EWhen%20you%20send%20
-    invite,%20choose%20'I%20want%20to%20be%3CBR%3Edealer'%20and%20click%20on%20
-    OK%20*before*%20buddy%3CBR%3Eresponds%20(so%20act%20fast).%20*After*%20
-    buddy%3CBR%3Eresponds,%20press%20F2%20to%20start%20game.
-
     00 00 01 00 05 07 4c 7f 11 d1 82 22 44 45 53 54 00 00 00 09 00 09 4d 53 48
     65 61 72 74 73 00 4c 45 41 4b 2d 54 33 30 00 00 00 00 00
 
     "UUID" is 07050001-7F4C-D111-8222-444553540000
-    rv data is:
-    00 00
-    01 00 05 07
-    4c 7f
-    11 d1
-    82 22
-    44 45 53 54 00 00
-
-    00 09
-    00 09
-    "MSHearts[null]"
-    "LEAK-T30[null]"
-    00 00 00 00
-
-    aim:AddGame?
-    name=MSHearts
-    go1st=true
-    multiplayer=true
-    url=http://www.microsoft.com
-    cmd=%m
-    servercmd=      <-- single space
-    hint=Both machines must be running Win95<BR>
-         or Win98 and be on the same local network.<BR>
-         When you send invite, choose 'I want to be<BR>
-         dealer' and click on OK *before* buddy<BR>
-         responds (so act fast). *After* buddy<BR>
-         responds, press F2 to start game.
-
-
-
-
-
-
-
-    FOR NETMEETING:
-    00 00
-    02 00 0d 07
-    4c 7f
-    11 d1
-    82 22
-    44 45 53 54 00 00
-
-    00 0b
-    00 07
-    4e 65 74 4d 65 65 74 69 6e 67 00
-    53 45 43 52 45 54 00
-    00 00 00 00
     */
 
     public static final int CODE_DEFAULT = 0;

@@ -72,11 +72,11 @@ public abstract class BasicConn extends AbstractFlapConn {
     protected RateClassInfo[] rateClasses = null;
     protected RateDataQueueMgr rateMgr = new RateDataQueueMgr();
     protected RvProcessor rvProcessor = new RvProcessor(snacProcessor);
-    protected RvListener rvListener = new RvListener() {
-        public void handleNewIncomingSession(NewRvSessionEvent event) {
-            System.out.println("new RV session: " + event.getNewSession());
+    protected RvProcessorListener rvListener = new RvProcessorListener() {
+        public void handleNewSession(NewRvSessionEvent event) {
+            System.out.println("new RV session: " + event.getSession());
 
-            event.getNewSession().addListener(rvSessionListener);
+            event.getSession().addListener(rvSessionListener);
         }
     };
     protected Map trillianEncSessions = new HashMap();
@@ -154,7 +154,7 @@ public abstract class BasicConn extends AbstractFlapConn {
         snacProcessor.setSnacQueueManager(rateMgr);
         rvProcessor.registerRvCmdFactory(new DefaultRvCommandFactory());
         rvProcessor.registerRvCmdFactory(new GenericRvCommandFactory());
-        rvProcessor.addRvListener(rvListener);
+        rvProcessor.addListener(rvListener);
     }
 
     public BasicConn(JoscarTester tester, ByteBlock cookie) {

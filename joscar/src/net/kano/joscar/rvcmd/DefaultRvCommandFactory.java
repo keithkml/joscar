@@ -120,7 +120,7 @@ public class DefaultRvCommandFactory implements RvCommandFactory {
             }
 
         } else if (block.equals(CapabilityBlock.BLOCK_SENDBUDDYLIST)) {
-            if (rvStatus == AbstractRvCmd.STATUS_REQUEST) {
+            if (rvStatus == AbstractRvCmd.RVSTATUS_REQUEST) {
                 return new SendBuddyListRvCmd(rvIcbm);
 
             } else {
@@ -128,10 +128,10 @@ public class DefaultRvCommandFactory implements RvCommandFactory {
             }
 
         } else if (block.equals(CapabilityBlock.BLOCK_CHAT)) {
-            if (rvStatus == AbstractRvCmd.STATUS_REQUEST) {
+            if (rvStatus == AbstractRvCmd.RVSTATUS_REQUEST) {
                 return new ChatInvitationRvCmd(rvIcbm);
 
-            } else if (rvStatus == AbstractRvCmd.STATUS_DENY) {
+            } else if (rvStatus == AbstractRvCmd.RVSTATUS_DENY) {
                 return new ChatInviteRejectRvCmd(rvIcbm);
 
             } else {
@@ -139,13 +139,13 @@ public class DefaultRvCommandFactory implements RvCommandFactory {
             }
 
         } else if (block.equals(CapabilityBlock.BLOCK_DIRECTIM)) {
-            if (rvStatus == AbstractRvCmd.STATUS_REQUEST) {
+            if (rvStatus == AbstractRvCmd.RVSTATUS_REQUEST) {
                 return new DirectIMReqRvCmd(rvIcbm);
 
-            } else if (rvStatus == AbstractRvCmd.STATUS_ACCEPT) {
+            } else if (rvStatus == AbstractRvCmd.RVSTATUS_ACCEPT) {
                 return new DirectIMAcceptRvCmd(rvIcbm);
 
-            } else if (rvStatus == AbstractRvCmd.STATUS_DENY) {
+            } else if (rvStatus == AbstractRvCmd.RVSTATUS_DENY) {
                 return new DirectIMRejectRvCmd(rvIcbm);
 
             } else {
@@ -153,13 +153,13 @@ public class DefaultRvCommandFactory implements RvCommandFactory {
             }
 
         } else if (block.equals(CapabilityBlock.BLOCK_FILE_GET)) {
-            if (rvStatus == AbstractRvCmd.STATUS_REQUEST) {
+            if (rvStatus == AbstractRvCmd.RVSTATUS_REQUEST) {
                 return new GetFileReqRvCmd(rvIcbm);
 
-            } else if (rvStatus == AbstractRvCmd.STATUS_ACCEPT) {
+            } else if (rvStatus == AbstractRvCmd.RVSTATUS_ACCEPT) {
                 return new GetFileAcceptRvCmd(rvIcbm);
 
-            } else if (rvStatus == AbstractRvCmd.STATUS_DENY) {
+            } else if (rvStatus == AbstractRvCmd.RVSTATUS_DENY) {
                 return new GetFileRejectRvCmd(rvIcbm);
 
             } else {
@@ -170,13 +170,13 @@ public class DefaultRvCommandFactory implements RvCommandFactory {
             return new SendBuddyIconRvCmd(rvIcbm);
 
         } else if (block.equals(CapabilityBlock.BLOCK_ADDINS)) {
-            if (rvStatus == AbstractRvCmd.STATUS_REQUEST) {
+            if (rvStatus == AbstractRvCmd.RVSTATUS_REQUEST) {
                 return new AddinsReqRvCmd(rvIcbm);
 
-            } else if (rvStatus == AbstractRvCmd.STATUS_ACCEPT) {
+            } else if (rvStatus == AbstractRvCmd.RVSTATUS_ACCEPT) {
                 return new AddinsAcceptRvCmd(rvIcbm);
 
-            } else if (rvStatus == AbstractRvCmd.STATUS_DENY) {
+            } else if (rvStatus == AbstractRvCmd.RVSTATUS_DENY) {
                 return new AddinsRejectRvCmd(rvIcbm);
 
             } else {
@@ -184,13 +184,13 @@ public class DefaultRvCommandFactory implements RvCommandFactory {
             }
 
         } else if (block.equals(CapabilityBlock.BLOCK_VOICE)) {
-            if (rvStatus == AbstractRvCmd.STATUS_REQUEST) {
+            if (rvStatus == AbstractRvCmd.RVSTATUS_REQUEST) {
                 return new VoiceReqRvCmd(rvIcbm);
 
-            } else if (rvStatus == AbstractRvCmd.STATUS_ACCEPT) {
+            } else if (rvStatus == AbstractRvCmd.RVSTATUS_ACCEPT) {
                 return new VoiceAcceptRvCmd(rvIcbm);
 
-            } else if (rvStatus == AbstractRvCmd.STATUS_DENY) {
+            } else if (rvStatus == AbstractRvCmd.RVSTATUS_DENY) {
                 return new VoiceRejectRvCmd(rvIcbm);
 
             } else {

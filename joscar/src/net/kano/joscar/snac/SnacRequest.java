@@ -71,7 +71,7 @@ import java.util.logging.Logger;
  * <code>FlapProcessor</code> on which the events were received via its
  * <code>handleException</code> method, which will then pass it to any of your
  * registered exception handlers. The exception type will be {@link
- * #ERROR_SNAC_RESPONSE_LISTENER}; see its documentation for details.
+ * #ERRTYPE_SNAC_RESPONSE_LISTENER}; see its documentation for details.
  * <br>
  * <br>
  * <code>SnacRequest</code> logs to the Java Logging API namespace
@@ -86,8 +86,8 @@ public class SnacRequest {
      * net.kano.joscar.flap.FlapExceptionEvent#getReason getReason()}) will be
      * the <code>SnacRequestListener</code> which threw the exception.
      */
-    public static final Object ERROR_SNAC_RESPONSE_LISTENER
-            = "ERROR_SNAC_RESPONSE_LISTENER";
+    public static final Object ERRTYPE_SNAC_RESPONSE_LISTENER
+            = "ERRTYPE_SNAC_RESPONSE_LISTENER";
 
     /**
      * A logger to which to log request-related events.
@@ -262,7 +262,7 @@ public class SnacRequest {
                 listener.handleSent(event);
             } catch (Throwable t) {
                 event.getFlapProcessor().handleException(
-                        ERROR_SNAC_RESPONSE_LISTENER, t, listener);
+                        ERRTYPE_SNAC_RESPONSE_LISTENER, t, listener);
             }
         }
 
@@ -289,7 +289,7 @@ public class SnacRequest {
                 listener.handleResponse(event);
             } catch (Throwable t) {
                 event.getFlapProcessor().handleException(
-                        ERROR_SNAC_RESPONSE_LISTENER, t, listener);
+                        ERRTYPE_SNAC_RESPONSE_LISTENER, t, listener);
             }
         }
 
@@ -316,7 +316,7 @@ public class SnacRequest {
                 listener.handleTimeout(event);
             } catch (Throwable t) {
                 event.getFlapProcessor().handleException(
-                        ERROR_SNAC_RESPONSE_LISTENER, t, listener);
+                        ERRTYPE_SNAC_RESPONSE_LISTENER, t, listener);
             }
         }
 

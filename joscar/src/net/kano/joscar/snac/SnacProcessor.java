@@ -36,16 +36,14 @@
 package net.kano.joscar.snac;
 
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.BinaryTools;
 import net.kano.joscar.flap.FlapPacketEvent;
 import net.kano.joscar.flap.FlapProcessor;
 import net.kano.joscar.flap.VetoableFlapPacketListener;
 import net.kano.joscar.flapcmd.SnacFlapCmd;
 import net.kano.joscar.flapcmd.SnacPacket;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Logger;
 
 /**
@@ -70,8 +68,8 @@ import java.util.logging.Logger;
  * SNAC processing to its attached <code>FlapProcessor</code>'s error handlers
  * using <code>FlapProcessor</code>'s <code>handleException</code> method, which
  * in turn causes the exceptions to be passed to your own error handlers. The
- * error types used are {@link #ERROR_SNAC_PACKET_PREPROCESSOR}, {@link
- * #ERROR_SNAC_PACKET_LISTENER}, and {@link #ERROR_SNAC_REQUEST_LISTENER}. See
+ * error types used are {@link #ERRTYPE_SNAC_PACKET_PREPROCESSOR}, {@link
+ * #ERRTYPE_SNAC_PACKET_LISTENER}, and {@link #ERRTYPE_SNAC_REQUEST_LISTENER}. See
  * individual documentation for each for further detail.
  * <br>
  * <br>
@@ -155,8 +153,8 @@ public class SnacProcessor {
      * net.kano.joscar.flap.FlapExceptionEvent#getReason getReason()}) will be
      * the <code>SnacPreprocessor</code> that threw the exception.
      */
-    public static final Object ERROR_SNAC_PACKET_PREPROCESSOR
-            = "ERROR_SNAC_PACKET_PREPROCESSOR";
+    public static final Object ERRTYPE_SNAC_PACKET_PREPROCESSOR
+            = "ERRTYPE_SNAC_PACKET_PREPROCESSOR";
 
     /**
      * An error type indicating that an exception was thrown while calling
@@ -168,8 +166,8 @@ public class SnacProcessor {
      * the <code>VetoableFlapPacketListener</code> or
      * <code>FlapPacketListener</code> from whence the exception was thrown.
      */
-    public static final Object ERROR_SNAC_PACKET_LISTENER
-            = "ERROR_SNAC_PACKET_LISTENER";
+    public static final Object ERRTYPE_SNAC_PACKET_LISTENER
+            = "ERRTYPE_SNAC_PACKET_LISTENER";
 
     /**
      * An error type indicating that an exception was thrown while calling a
@@ -179,8 +177,8 @@ public class SnacProcessor {
      * net.kano.joscar.flap.FlapExceptionEvent#getReason getReason()}) will be
      * the <code>SnacRequest</code> whose listener threw the exception.
      */
-    public static final Object ERROR_SNAC_REQUEST_LISTENER
-            = "ERROR_SNAC_REQUEST_LISTENER";
+    public static final Object ERRTYPE_SNAC_REQUEST_LISTENER
+            = "ERRTYPE_SNAC_REQUEST_LISTENER";
 
     /**
      * The default SNAC request "time to live," in seconds.
@@ -198,12 +196,17 @@ public class SnacProcessor {
     /**
      * The maximum request ID value before it wraps to zero.
      */
-    private static final long REQID_MAX = 0xffffffffL - 1L;
+    private static final long REQID_MAX = BinaryTools.UINT_MAX;
 
-    /**
-     * The request ID of the last SNAC command sent.
-     */
-    private long lastReqid = 1;
+    /** The request ID of the last SNAC command sent. */
+    private long lastReqid;
+
+    {
+        // this algorithm seems to do what I want.
+        lastReqid = Math.min(Math.abs((new Random().nextLong()
+            / (Long.MAX_VALUE / BinaryTools.UINT_MAX))) + 1,
+            BinaryTools.UINT_MAX);
+    }
 
     /**
      * The FLAP processor to which this SNAC processor is attached.
@@ -559,7 +562,7 @@ public class SnacProcessor {
             } catch (Throwable t) {
                 logger.finer("Preprocessor " + preprocessor + " threw " +
                         "exception " + t);
-                flapProcessor.handleException(ERROR_SNAC_PACKET_PREPROCESSOR, t,
+                flapProcessor.handleException(ERRTYPE_SNAC_PACKET_PREPROCESSOR, t,
                         preprocessor);
                 continue;
             }
@@ -584,7 +587,7 @@ public class SnacProcessor {
             try {
                 processResponse(event, request);
             } catch (Throwable t) {
-                flapProcessor.handleException(ERROR_SNAC_REQUEST_LISTENER, t,
+                flapProcessor.handleException(ERRTYPE_SNAC_REQUEST_LISTENER, t,
                         request);
             }
             return;
@@ -600,7 +603,7 @@ public class SnacProcessor {
             try {
                 result = listener.handlePacket(event);
             } catch (Throwable t) {
-                flapProcessor.handleException(ERROR_SNAC_PACKET_LISTENER, t,
+                flapProcessor.handleException(ERRTYPE_SNAC_PACKET_LISTENER, t,
                         listener);
                 continue;
             }
@@ -617,7 +620,7 @@ public class SnacProcessor {
             try {
                 listener.handleSnacPacket(event);
             } catch (Throwable t) {
-                flapProcessor.handleException(ERROR_SNAC_PACKET_LISTENER, t,
+                flapProcessor.handleException(ERRTYPE_SNAC_PACKET_LISTENER, t,
                         listener);
             }
         }

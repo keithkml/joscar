@@ -36,7 +36,7 @@
 package net.kano.joscar.snaccmd;
 
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.snaccmd.icbm.ImEncoding;
+import net.kano.joscar.snaccmd.icbm.ImEncodingParams;
 
 /**
  * A simple structure containing a block of data and the name of the charset
@@ -86,25 +86,25 @@ public final class EncodedStringInfo {
      *
      * @see net.kano.joscar.snaccmd.icbm.ImEncodedString
      */
-    public final ImEncoding getImEncoding() {
+    public final ImEncodingParams getImEncoding() {
         int charsetCode;
         int charsetSubcode;
         if (charset == MinimalEncoder.ENCODING_ASCII) {
-            charsetCode = ImEncoding.CHARSET_ASCII;
+            charsetCode = ImEncodingParams.CHARSET_ASCII;
         } else if (charset == MinimalEncoder.ENCODING_ISO) {
-            charsetCode = ImEncoding.CHARSET_ISO;
+            charsetCode = ImEncodingParams.CHARSET_ISO;
         } else if (charset == MinimalEncoder.ENCODING_UTF16) {
-            charsetCode = ImEncoding.CHARSET_UTF16;
+            charsetCode = ImEncodingParams.CHARSET_UTF16;
         } else {
             // this shouldn't ever really happen, but it's nice to have
             // something in case it does.
-            charsetCode = ImEncoding.CHARSET_ASCII;
+            charsetCode = ImEncodingParams.CHARSET_ASCII;
         }
 
         // this is always the same value
-        charsetSubcode = ImEncoding.CHARSUBSET_DEFAULT;
+        charsetSubcode = ImEncodingParams.CHARSUBSET_DEFAULT;
 
-        return new ImEncoding(charsetCode, charsetSubcode);
+        return new ImEncodingParams(charsetCode, charsetSubcode);
     }
 
     /**

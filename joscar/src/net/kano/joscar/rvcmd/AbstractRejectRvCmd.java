@@ -66,7 +66,7 @@ public abstract class AbstractRejectRvCmd extends AbstractRvCmd {
 
     public AbstractRejectRvCmd(long icbmMessageId, CapabilityBlock cap,
             int rejectionCode) {
-        super(icbmMessageId, STATUS_DENY, cap);
+        super(icbmMessageId, RVSTATUS_DENY, cap);
 
         DefensiveTools.checkRange(rejectionCode, "rejectionCode", -1);
 
