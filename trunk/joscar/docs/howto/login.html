@@ -229,7 +229,8 @@ ClientSnacProcessor sp = new ClientSnacProcessor(fp);
 
 <i>fp.setFlapCmdFactory(new DefaultFlapCmdFactory());</i>
 <i>sp.addPreprocessor(new FamilyVersionPreprocessor());</i>
-<i>sp.setDefaultSnacCmdFactoryList(new DefaultClientFactoryList());</i>
+<i>snacProcessor.getCmdFactoryMgr().setDefaultFactoryList(
+        new DefaultClientFactoryList());</i>
 
 fp.addPacketListener(new FlapPacketListener() {
     public void handlePacket(FlapPacketEvent e) {
