@@ -35,16 +35,16 @@
 
 package net.kano.joscar.snaccmd;
 
+import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.LiveWritable;
-import net.kano.joscar.BinaryTools;
+import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
-import net.kano.joscar.tlv.ImmutableTlvChain;
 
-import java.io.OutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 

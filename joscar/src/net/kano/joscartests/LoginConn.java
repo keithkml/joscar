@@ -43,7 +43,11 @@ import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.net.ClientConnEvent;
 import net.kano.joscar.snac.SnacPacketEvent;
 import net.kano.joscar.snac.SnacResponseEvent;
-import net.kano.joscar.snaccmd.auth.*;
+import net.kano.joscar.snaccmd.auth.AuthRequest;
+import net.kano.joscar.snaccmd.auth.AuthResponse;
+import net.kano.joscar.snaccmd.auth.ClientVersionInfo;
+import net.kano.joscar.snaccmd.auth.KeyRequest;
+import net.kano.joscar.snaccmd.auth.KeyResponse;
 
 import java.net.InetAddress;
 

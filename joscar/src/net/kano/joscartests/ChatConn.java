@@ -42,10 +42,19 @@ import net.kano.joscar.net.ClientConnEvent;
 import net.kano.joscar.snac.SnacPacketEvent;
 import net.kano.joscar.snaccmd.FullRoomInfo;
 import net.kano.joscar.snaccmd.FullUserInfo;
-import net.kano.joscar.snaccmd.chat.*;
+import net.kano.joscar.snaccmd.chat.ChatMsg;
+import net.kano.joscar.snaccmd.chat.RecvChatMsgIcbm;
+import net.kano.joscar.snaccmd.chat.SendChatMsgIcbm;
+import net.kano.joscar.snaccmd.chat.UsersJoinedCmd;
+import net.kano.joscar.snaccmd.chat.UsersLeftCmd;
 
 import java.net.InetAddress;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 public class ChatConn extends ServiceConn {
     protected FullRoomInfo roomInfo;

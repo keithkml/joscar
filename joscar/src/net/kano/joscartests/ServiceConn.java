@@ -56,10 +56,14 @@ import net.kano.joscar.snaccmd.search.InterestInfo;
 import net.kano.joscar.snaccmd.search.InterestListCmd;
 import net.kano.joscar.snaccmd.search.SearchResultsCmd;
 
-import java.awt.*;
+import java.awt.Image;
+import java.awt.Toolkit;
 import java.net.InetAddress;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 public class ServiceConn extends BasicConn {
     protected int serviceFamily;

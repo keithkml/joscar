@@ -51,7 +51,12 @@ import net.kano.joscar.snaccmd.rooms.RoomCommand;
 import net.kano.joscar.snaccmd.search.SearchCommand;
 import net.kano.joscar.snaccmd.ssi.SsiCommand;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Provides a means of generating a list of <code>SnacFamilyInfo</code> values

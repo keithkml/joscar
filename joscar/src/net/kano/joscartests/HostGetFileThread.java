@@ -47,7 +47,11 @@ import net.kano.joscar.rvproto.getfile.GetFileEntry;
 import net.kano.joscar.rvproto.getfile.GetFileList;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.Socket;
 import java.util.LinkedList;
 import java.util.List;
