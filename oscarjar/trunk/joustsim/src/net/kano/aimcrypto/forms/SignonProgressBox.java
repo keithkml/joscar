@@ -48,6 +48,8 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -62,6 +64,13 @@ public class SignonProgressBox extends JPanel implements SignonWindowBox {
     private AimSession aimSession;
     private AimConnection conn;
     private ProgressListModel progressListModel;
+
+    private final Icon notStartedIcon = new ImageIcon(getClass().getClassLoader()
+            .getResource("icons/progress-item-not-started.png"));
+    private final Icon succeededIcon = new ImageIcon(getClass().getClassLoader()
+            .getResource("icons/progress-item-succeeded.png"));
+    private final Icon workingIcon = new ImageIcon(getClass().getClassLoader()
+            .getResource("icons/progress-item-working.png"));
 
     {
         setLayout(new BorderLayout());
@@ -188,7 +197,7 @@ public class SignonProgressBox extends JPanel implements SignonWindowBox {
         }
     }
 
-    private static class ProgressListRenderer extends DefaultListCellRenderer {
+    private class ProgressListRenderer extends DefaultListCellRenderer {
         private Font origFont = getFont().deriveFont(Font.PLAIN);
         private Font boldFont = origFont.deriveFont(Font.BOLD);
 
@@ -202,6 +211,9 @@ public class SignonProgressBox extends JPanel implements SignonWindowBox {
                 else setFont(origFont);
                 if (si.isDone() || si.isDoing()) setForeground(Color.BLACK);
                 else setForeground(Color.GRAY);
+                if (si.isDone()) setIcon(succeededIcon);
+                else if (si.isDoing()) setIcon(workingIcon);
+                else setIcon(notStartedIcon);
 
                 State state = si.getState();
                 String text;

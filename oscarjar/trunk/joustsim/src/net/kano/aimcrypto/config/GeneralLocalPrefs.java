@@ -79,7 +79,7 @@ public class GeneralLocalPrefs implements Preferences {
 
     public synchronized void savePrefs()
             throws FileNotFoundException, IOException {
-        prefsDir.mkdir();
+        prefsDir.mkdirs();
         prefsFile.createNewFile();
 
         if (!prefsFile.canWrite()) {

@@ -54,7 +54,7 @@ public final class GuiResources {
     private static final IconResourceHolder tinySignerIcon
             = new IconResourceHolder("icons/signer-tiny.png");
     private static final IconResourceHolder tinyProgramIcon
-            = new IconResourceHolder("icons/program-tiny.gif");
+            = new IconResourceHolder("icons/program-tiny.png");
 
     private static final LFIconHolder errorIcon
             = new LFIconHolder("OptionPane.errorIcon");

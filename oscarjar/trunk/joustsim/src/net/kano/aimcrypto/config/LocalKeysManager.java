@@ -149,7 +149,7 @@ public final class LocalKeysManager
     public void savePrefs() throws IOException {
         File prefsFile = this.prefsFile;
         // make sure it exists
-        keysDir.mkdir();
+        keysDir.mkdirs();
         prefsFile.createNewFile();
         if (!prefsFile.canWrite()) {
             throw new FileNotFoundException(prefsFile.getAbsolutePath());
@@ -234,8 +234,8 @@ public final class LocalKeysManager
             cd = certsDir;
         }
         if (!cd.isDirectory()) {
-            kd.mkdir();
-            cd.mkdir();
+            kd.mkdirs();
+            cd.mkdirs();
         }
         String newName = file.getName();
         File dest = new File(cd, newName);

@@ -24,5 +24,11 @@
 
 		<extension name="bouncycastle" href="bc.jnlp" />
     </resources>
+	<resources os="Windows">
+		<jar href="winlaf-0.4.1.jar" />
+	</resources>
+	<resources os="Windows" arch="x86">
+		<nativelib href="winlaf-native.jar" />
+	</resources>
     <application-desc main-class="net.kano.aimcrypto.AimCrypto" />
 </jnlp>

@@ -212,7 +212,7 @@ public class PermanentCertificateTrustManager
 
     private File createFileForCert(X509Certificate cert)
             throws CantSavePrefsException {
-        trustedCertsDir.mkdir();
+        trustedCertsDir.mkdirs();
         if (!trustedCertsDir.canWrite()) return null;
 
         String fixed = getPossibleFilenameRoot(cert);

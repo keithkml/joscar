@@ -65,6 +65,7 @@ import javax.swing.JSeparator;
 import javax.swing.JTextPane;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import javax.swing.ImageIcon;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.event.DocumentEvent;
@@ -362,7 +363,7 @@ public class SignonBox extends JPanel implements SignonWindowBox {
         }
     }
 
-    private void clearErrorText() {
+    public void clearErrorText() {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
                 errorPanel.setVisible(false);

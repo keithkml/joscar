@@ -37,6 +37,10 @@ package net.kano.aimcrypto.forms;
 
 import net.kano.aimcrypto.GuiSession;
 import net.kano.aimcrypto.Screenname;
+import net.kano.aimcrypto.temps.ConversationDocument;
+import net.kano.aimcrypto.temps.ConversationEditorKit;
+import net.kano.aimcrypto.temps.ConversationLine;
+import net.kano.aimcrypto.temps.IconID;
 import net.kano.aimcrypto.config.BuddyCertificateInfo;
 import net.kano.aimcrypto.connection.AimConnection;
 import net.kano.aimcrypto.connection.oscar.service.icbm.Conversation;
@@ -52,8 +56,6 @@ import net.kano.aimcrypto.connection.oscar.service.icbm.SimpleMessage;
 import net.kano.aimcrypto.connection.oscar.service.info.BuddyTrustAdapter;
 import net.kano.aimcrypto.connection.oscar.service.info.BuddyTrustEvent;
 import net.kano.aimcrypto.conv.AolRtfString;
-import net.kano.aimcrypto.conv.ConversationDocument;
-import net.kano.aimcrypto.conv.ConversationEditorKit;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.MiscTools;
 import net.kano.joscar.ByteBlock;
@@ -125,7 +127,7 @@ public class ImBox extends JFrame {
             updateButtons();
         }
 
-        public void gotMessage(Conversation c, MessageInfo minfo) {
+        public void gotMessage(Conversation c, final MessageInfo minfo) {
             if (minfo instanceof DecryptableAimMessageInfo) {
                 DecryptableAimMessageInfo dinfo = (DecryptableAimMessageInfo) minfo;
                 BuddyCertificateInfo certInfo = dinfo.getMessageCertificateInfo();
@@ -141,18 +143,22 @@ public class ImBox extends JFrame {
                 final AolRtfString parsed = AolRtfString.readLine(body);
                 SwingUtilities.invokeLater(new Runnable() {
                     public void run() {
-                        convDoc.addLine(parsed);
+                        convDoc.addConversationLine(new ConversationLine(
+                                minfo.getFrom(), parsed, false,
+                                minfo.getTimestamp(), (IconID) null));
                     }
                 });
             }
         }
 
-        public void sentMessage(Conversation c, MessageInfo minfo) {
+        public void sentMessage(final Conversation c, final MessageInfo minfo) {
             Message msg = minfo.getMessage();
             final AolRtfString parsed = AolRtfString.readLine(msg.getMessageBody());
             SwingUtilities.invokeLater(new Runnable() {
                 public void run() {
-                    convDoc.addLine(parsed);
+                    convDoc.addConversationLine(new ConversationLine(
+                            minfo.getFrom(), parsed, true, minfo.getTimestamp(),
+                            (IconID) null));
                 }
             });
         }

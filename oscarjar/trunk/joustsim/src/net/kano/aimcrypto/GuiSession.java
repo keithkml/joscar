@@ -255,6 +255,7 @@ public class GuiSession {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
                 initSignonBox();
+                signonBox.clearErrorText();
                 signonWin.setToSignonBox();
                 signonWin.setVisible(true);
             }

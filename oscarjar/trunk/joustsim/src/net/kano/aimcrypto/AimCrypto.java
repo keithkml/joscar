@@ -41,6 +41,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.JOptionPane;
 import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -54,6 +55,9 @@ import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 public final class AimCrypto {
+    private static final Logger logger
+            = Logger.getLogger(AimCrypto.class.getName());
+
     private AimCrypto() { }
 
     public static void main(String[] args) {
@@ -105,6 +109,13 @@ public final class AimCrypto {
             e.printStackTrace();
         } catch (UnsupportedLookAndFeelException e) {
             e.printStackTrace();
+        }
+        if (System.getProperty("os.name").toLowerCase().indexOf("windows") != -1) {
+            try {
+                net.java.plaf.LookAndFeelPatchManager.initialize();
+            } catch (Throwable t) {
+                logger.log(Level.WARNING, "Couldn't load WinLAF patches", t);
+            }
         }
         System.out.println("set look and feel");
 

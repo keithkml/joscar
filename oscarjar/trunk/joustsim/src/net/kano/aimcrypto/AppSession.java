@@ -78,7 +78,7 @@ public class AppSession {
                         + " is not a directory");
             }
         } else {
-            baseDir.mkdir();
+            baseDir.mkdirs();
             if (!baseDir.isDirectory()) {
                 throw new IllegalArgumentException(baseDir.getPath()
                         + " is not a directory and cannot be created");
