@@ -37,6 +37,7 @@ package net.kano.joscartests;
 
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.OscarTools;
+import net.kano.joscar.ratelim.RateLimitingQueueMgr;
 import net.kano.joscar.flap.FlapCommand;
 import net.kano.joscar.flap.FlapPacketEvent;
 import net.kano.joscar.flapcmd.LoginFlapCmd;
@@ -71,8 +72,7 @@ public abstract class BasicConn extends AbstractFlapConn {
 
     protected int[] snacFamilies = null;
     protected SnacFamilyInfo[] snacFamilyInfos;
-    protected RateClassInfo[] rateClasses = null;
-    protected DefaultSnacQueueMgr rateMgr = new DefaultSnacQueueMgr();
+    protected RateLimitingQueueMgr rateMgr = new RateLimitingQueueMgr();
     protected RvProcessor rvProcessor = new RvProcessor(snacProcessor);
     protected RvProcessorListener rvListener = new RvProcessorListener() {
         public void handleNewSession(NewRvSessionEvent event) {
@@ -156,8 +156,8 @@ public abstract class BasicConn extends AbstractFlapConn {
         }
     };
 
-    { // initialization
-        snacProcessor.setSnacQueueManager(rateMgr);
+    { // init
+        rateMgr.attach(snacProcessor);
         rvProcessor.registerRvCmdFactory(new DefaultRvCommandFactory());
         rvProcessor.registerRvCmdFactory(new GenericRvCommandFactory());
         rvProcessor.addListener(rvListener);
@@ -343,8 +343,6 @@ public abstract class BasicConn extends AbstractFlapConn {
 
             System.out.println("rate change: current avg is "
                     + rc.getRateInfo().getCurrentAvg());
-
-            rateMgr.setRateClass(getSnacProcessor(), rc.getRateInfo());
         }
     }
 
@@ -360,9 +358,7 @@ public abstract class BasicConn extends AbstractFlapConn {
         if (cmd instanceof RateInfoCmd) {
             RateInfoCmd ric = (RateInfoCmd) cmd;
 
-            rateClasses = ric.getRateClassInfos();
-
-            rateMgr.setRateClasses(getSnacProcessor(), rateClasses);
+            RateClassInfo[] rateClasses = ric.getRateClassInfos();
 
             int[] classes = new int[rateClasses.length];
             for (int i = 0; i < rateClasses.length; i++) {
@@ -374,10 +370,6 @@ public abstract class BasicConn extends AbstractFlapConn {
     }
 
     public int[] getSnacFamilies() { return snacFamilies; }
-
-    public RateClassInfo[] getRateClasses() {
-        return rateClasses;
-    }
 
     protected void setSnacFamilies(int[] families) {
         this.snacFamilies = (int[]) families.clone();
