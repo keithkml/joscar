@@ -35,8 +35,8 @@
 
 package net.kano.joscar.net;
 
-import net.kano.joscar.MiscTools;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.MiscTools;
 
 /**
  * An event that occurs when an exception is thrown somewhere in a

@@ -35,7 +35,7 @@
 
 package net.kano.joscar.net;
 
-import net.kano.joscar.net.ClientConnEvent;
+
 
 /**
  * Provides an interface for listening for events that occur during a

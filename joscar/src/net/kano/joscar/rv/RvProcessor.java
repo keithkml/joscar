@@ -38,13 +38,13 @@ package net.kano.joscar.rv;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flap.FlapProcessor;
 import net.kano.joscar.snac.*;
-import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.AbstractIcbm;
+import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.OscarTools;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.snaccmd.icbm.RvCommand;
-import net.kano.joscar.snaccmd.icbm.SendRvIcbm;
 import net.kano.joscar.snaccmd.icbm.RvResponse;
+import net.kano.joscar.snaccmd.icbm.SendRvIcbm;
 
 import java.util.*;
 import java.util.logging.Logger;

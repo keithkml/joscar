@@ -37,8 +37,8 @@ package net.kano.joscar.rvproto.ft;
 
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
-import net.kano.joscar.LiveWritable;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.LiveWritable;
 import net.kano.joscar.rvcmd.SegmentedFilename;
 import net.kano.joscar.snaccmd.icbm.ImEncodedString;
 import net.kano.joscar.snaccmd.icbm.ImEncodingParams;

@@ -35,8 +35,8 @@
 
 package net.kano.joscar.net;
 
-import net.kano.joscar.MiscTools;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.MiscTools;
 import net.kano.joscar.flap.ClientFlapConn;
 
 import javax.net.SocketFactory;

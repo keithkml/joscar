@@ -36,13 +36,13 @@
 package net.kano.joscar.flap;
 
 import net.kano.joscar.net.ClientConn;
-import net.kano.joscar.net.ClientConnListener;
 import net.kano.joscar.net.ClientConnEvent;
+import net.kano.joscar.net.ClientConnListener;
 import net.kano.joscar.net.ClientConnStreamHandler;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.io.IOException;
 
 /**
  * A simpler interface to using an outgoing clientside FLAP connection. This

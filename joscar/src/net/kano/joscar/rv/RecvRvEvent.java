@@ -35,9 +35,9 @@
 
 package net.kano.joscar.rv;
 
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snac.SnacPacketEvent;
 import net.kano.joscar.snaccmd.icbm.RvCommand;
-import net.kano.joscar.DefensiveTools;
 
 /**
  * An event that occurs when a new rendezvous {@linkplain RvCommand command} or
