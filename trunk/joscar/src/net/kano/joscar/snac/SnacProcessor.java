@@ -70,8 +70,9 @@ import java.util.logging.Logger;
  * using <code>FlapProcessor</code>'s <code>handleException</code> method, which
  * in turn causes the exceptions to be passed to your own error handlers. The
  * error types used are {@link #ERRTYPE_SNAC_PACKET_PREPROCESSOR}, {@link
- * #ERRTYPE_SNAC_PACKET_LISTENER}, and {@link #ERRTYPE_SNAC_REQUEST_LISTENER}. See
- * individual documentation for each for further detail.
+ * #ERRTYPE_SNAC_PACKET_LISTENER}, {@link #ERRTYPE_SNAC_REQUEST_LISTENER},
+ * and {@link #ERRTYPE_SNAC_RESPONSE_LISTENER}. See individual documentation for
+ * each for further detail.
  * <br>
  * <br>
  * It may also be of interest to note that <code>SnacProcessor</code> attaches
@@ -91,14 +92,23 @@ import java.util.logging.Logger;
  * <li> It is passed through all registered SNAC preprocessors </li>
  * <li> A <code>SnacCommand</code> is generated (see <a
  * href="#factories">below</a>) </li>
- * <li> If the request ID matches that of a previous outgoing request, an event
- * is passed to that request's listeners (see {@link SnacRequest}), and
- * processing within <code>SnacProcessor</code> stops </li>
- * <li> Otherwise, an event is passed to each of the registered <i>vetoable</i>
+ * <li> If the request ID matches that of a previous outgoing request,
+ * <ul>
+ * <li> An event is passed to each of the processor's {@linkplain
+ * #addGlobalResponseListener global response listeners} </li>
+ * <li> An event is passed to that request's listeners (see {@link
+ * SnacRequest}) </li>
+ * <li> Processing of the packet within <code>SnacProcessor</code> stops </li>
+ * </ul> </li>
+ * <li> Otherwise,
+ * <ul>
+ * <li> An event is passed to each of the registered <i>vetoable</i>
  * packet listeners, halting immediately if a listener says to </li>
  * <li> If no vetoable listener has halted processing, an event is next passed
  * to all registered non-vetoable (that is, normal
  * <code>SnacPacketListener</code>) packet listeners.</li>
+ * <li> Processing of the packet within <code>SnacProcessor</code> stops </li>
+ * </ul>
  * </ol>
  *
  * <a name="factories"></a>The process of generating a <code>SnacCommand</code>
@@ -173,13 +183,25 @@ public class SnacProcessor {
     /**
      * An error type indicating that an exception was thrown while calling a
      * {@linkplain SnacRequest SNAC request} {@linkplain SnacRequestListener
-     * response listener} to handling a response to a SNAC request. In this
-     * case, the extra error information (the value returned by {@link
+     * response listener} to handle a response to a SNAC request or another
+     * request-related event. In this case, the extra error information (the
+     * value returned by {@link
      * net.kano.joscar.flap.FlapExceptionEvent#getReason getReason()}) will be
      * the <code>SnacRequest</code> whose listener threw the exception.
      */
     public static final Object ERRTYPE_SNAC_REQUEST_LISTENER
             = "ERRTYPE_SNAC_REQUEST_LISTENER";
+
+    /**
+     * An error type indicating that an exception was thrown while calling a
+     * {@linkplain #addGlobalResponseListener global SNAC response listener} to
+     * handle a response to a SNAC request. In this case, the extra error
+     * information (the value returned by {@link
+     * net.kano.joscar.flap.FlapExceptionEvent#getReason getReason()}) will be
+     * the <code>SnacResponseListener</code> that threw the exception.
+     */
+    public static final Object ERRTYPE_SNAC_RESPONSE_LISTENER
+            = "ERRTYPE_SNAC_RESPONSE_LISTENER";
 
     /**
      * The default SNAC request "time to live," in seconds.
@@ -224,6 +246,11 @@ public class SnacProcessor {
      * The SNAC preprocessors registered on this SNAC connection.
      */
     private List preprocessors = new ArrayList();
+
+    /**
+     * The SNAC request response listeners registered on this SNAC connection.
+     */
+    private List responseListeners = new ArrayList();
 
     /**
      * The vetoable packet listeners registered on this SNAC connection.
@@ -444,6 +471,8 @@ public class SnacProcessor {
      * @param l the listener to add
      */
     public synchronized final void addPacketListener(SnacPacketListener l) {
+        DefensiveTools.checkNull(l, "l");
+
         if (!packetListeners.contains(l)) packetListeners.add(l);
     }
 
@@ -453,7 +482,37 @@ public class SnacProcessor {
      * @param l the listener to remove
      */
     public synchronized final void removePacketListener(SnacPacketListener l) {
+        DefensiveTools.checkNull(l, "l");
+
         packetListeners.remove(l);
+    }
+
+    /**
+     * Adds a "global response listener" to listen for incoming SNAC request
+     * responses. The given listener will be notified of any incoming responses
+     * to previously sent outgoing SNAC requests. See {@linkplain SnacProcessor
+     * above} for details on when global response listeners' event handling
+     * methods are called.
+     *
+     * @param l the listener to add
+     */
+    public synchronized final void addGlobalResponseListener(
+            SnacResponseListener l) {
+        DefensiveTools.checkNull(l, "l");
+
+        if (!responseListeners.contains(l)) responseListeners.add(l);
+    }
+
+    /**
+     * Removes a "global response listener" from the list of listeners.
+     *
+     * @param l the listener to remove
+     */
+    public synchronized final void removeGlobalResponseListener(
+            SnacResponseListener l) {
+        DefensiveTools.checkNull(l, "l");
+
+        responseListeners.remove(l);
     }
 
     /**
@@ -465,6 +524,8 @@ public class SnacProcessor {
      */
     public synchronized final void addVetoablePacketListener(
             VetoableSnacPacketListener l) {
+        DefensiveTools.checkNull(l, "l");
+
         if (!vetoableListeners.contains(l)) vetoableListeners.add(l);
     }
 
@@ -474,6 +535,8 @@ public class SnacProcessor {
      */
     public synchronized final void removeVetoablePacketListener(
             VetoableSnacPacketListener l) {
+        DefensiveTools.checkNull(l, "l");
+
         vetoableListeners.remove(l);
     }
 
@@ -485,6 +548,8 @@ public class SnacProcessor {
      * @param p the preprocessor to add
      */
     public synchronized final void addPreprocessor(SnacPreprocessor p) {
+        DefensiveTools.checkNull(p, "p");
+
         if (!preprocessors.contains(p)) preprocessors.add(p);
     }
 
@@ -493,6 +558,8 @@ public class SnacProcessor {
      * @param p the preprocessor to remove
      */
     public synchronized final void removePreprocessor(SnacPreprocessor p) {
+        DefensiveTools.checkNull(p, "p");
+
         preprocessors.remove(p);
     }
 
@@ -616,11 +683,25 @@ public class SnacProcessor {
         if (reqInfo != null) {
             SnacRequest request = reqInfo.getRequest();
             if (logFiner) {
-                logger.finer("This Snac packet is a response to a request; " +
-                        "processing");
+                logger.finer("This Snac packet is a response to a request!");
             }
+
+            SnacResponseEvent sre = new SnacResponseEvent(event, request);
+
+            for (Iterator it = responseListeners.iterator(); it.hasNext();) {
+                SnacResponseListener l = (SnacResponseListener) it.next();
+
+                try {
+                    l.handleResponse(sre);
+                } catch (Throwable t) {
+                    flapProcessor.handleException(
+                            ERRTYPE_SNAC_RESPONSE_LISTENER, t, l);
+                }
+            }
+
             try {
-                processResponse(event, request);
+                request.gotResponse(sre);
+
             } catch (Throwable t) {
                 flapProcessor.handleException(ERRTYPE_SNAC_REQUEST_LISTENER, t,
                         request);
@@ -684,21 +765,6 @@ public class SnacProcessor {
         if (factory == null) return null;
 
         return factory.genSnacCommand(packet);
-    }
-
-    /**
-     * Processes a response to a <code>SnacRequest</code> received on this
-     * SNAC connection.
-     *
-     * @param event the associated SNAC packet event
-     * @param request the SNAC request to which the given packet event is a
-     *        response
-     */
-    private synchronized final void processResponse(SnacPacketEvent event,
-            SnacRequest request) {
-        SnacResponseEvent sre = new SnacResponseEvent(event, request);
-
-        request.gotResponse(sre);
     }
 
     /**

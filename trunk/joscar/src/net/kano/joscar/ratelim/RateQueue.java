@@ -41,8 +41,13 @@ import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snac.SnacRequest;
 
 import java.util.LinkedList;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 public class RateQueue {
+    private static final Logger logger
+            = Logger.getLogger("net.kano.joscar.ratelim");
+
     private final RateClassSet parentSet;
 
     private RateClassInfo rateInfo;
@@ -83,17 +88,30 @@ public class RateQueue {
 
     private synchronized void updateLimitedStatus() {
         if (limited) {
-            if (computeCurrentAvg() > rateInfo.getClearAvg()) {
-                System.out.println("I guess we're not limited anymore");
+            long avg = computeCurrentAvg();
+            if (avg > rateInfo.getClearAvg() + getErrorMargin()) {
+                if (logger.isLoggable(Level.FINE)) {
+                    logger.fine("We think that rate class "
+                            + rateInfo.getRateClass() + " is not limited "
+                            + "anymore (avg is " + avg + ")");
+                }
                 limited = false;
             }
         }
     }
 
+    private synchronized int getErrorMargin() {
+        return parentSet.getQueueMgr().getErrorMargin();
+    }
+
+    public synchronized long getOptimalWaitTime() {
+        return getOptimalWaitTime(getErrorMargin());
+    }
+
     public synchronized long getOptimalWaitTime(int errorMargin) {
         long minAvg;
         if (isLimited()) minAvg = rateInfo.getClearAvg();
-        else minAvg = rateInfo.getDisconnectAvg();
+        else minAvg = rateInfo.getLimitedAvg();
 
         return getWaitTime(minAvg + errorMargin);
     }
@@ -107,7 +125,11 @@ public class RateQueue {
         long minLastDiff = (winSize * minAvg) - (runningAvg  * (winSize - 1));
         long toWait = minLastDiff - sinceLast;
 
-        System.out.println("should be waiting " + toWait + "ms...");
+        if (logger.isLoggable(Level.FINE)) {
+            logger.fine("Class " + rateInfo.getRateClass()
+                    + " should be waiting " + toWait + "ms (avg is "
+                    + computeCurrentAvg() + "ms)");
+        }
 
         return Math.max(toWait, 0);
     }
@@ -115,7 +137,10 @@ public class RateQueue {
     public synchronized void enqueue(SnacRequest req) {
         DefensiveTools.checkNull(req, "req");
 
-        System.out.println("enqueuing within ratequeue...");
+        if (logger.isLoggable(Level.FINE)) {
+            logger.fine("Enqueuing " + req.getCommand() + " within ratequeue " +
+                    "(class " + rateInfo.getRateClass() + ")...");
+        }
 
         queue.add(req);
     }
@@ -127,15 +152,21 @@ public class RateQueue {
     public synchronized SnacRequest dequeue() {
         if (queue.isEmpty()) return null;
 
-        System.out.println("dequeueing from ratequeue..");
-
         long cur = System.currentTimeMillis();
         if (last != -1) {
             runningAvg = computeCurrentAvg(cur);
         }
         last = cur;
 
-        return (SnacRequest) queue.removeFirst();
+        SnacRequest request = (SnacRequest) queue.removeFirst();
+
+        if (logger.isLoggable(Level.FINE)) {
+            logger.fine("Dequeueing " + request.getCommand()
+                    + " from ratequeue (class " + rateInfo.getRateClass()
+                    + ")...");
+        }
+
+        return request;
     }
 
     private synchronized long computeCurrentAvg(long currentTime) {
@@ -155,9 +186,16 @@ public class RateQueue {
 
     public synchronized void setChangeCode(int changeCode) {
         if (changeCode == RateChange.CODE_LIMITED) {
-            System.out.println("limited!");
+            if (logger.isLoggable(Level.FINE)) {
+                logger.fine("Rate class " + rateInfo.getRateClass()
+                        + ") is now rate-limited!");
+            }
             limited = true;
         } else if (changeCode == RateChange.CODE_LIMIT_CLEARED) {
+            if (logger.isLoggable(Level.FINE)) {
+                logger.fine("Rate class " + rateInfo.getRateClass()
+                        + ") is no longer rate-limited, according to server");
+            }
             limited = false;
         }
     }
