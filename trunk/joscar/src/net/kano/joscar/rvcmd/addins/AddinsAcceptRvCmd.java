@@ -39,12 +39,25 @@ import net.kano.joscar.rvcmd.AbstractAcceptRvCmd;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 
+/**
+ * A rendezvous command used to indicate that the user has accepted an
+ * {@linkplain AddinsReqRvCmd add-in invitation}.
+ */
 public class AddinsAcceptRvCmd extends AbstractAcceptRvCmd {
+    /**
+     * Creates a new addin invitation acceptance RV command from the given
+     * incoming addin invitation acceptance RV ICBM command.
+     *
+     * @param icbm an incoming add-in invitation acceptance RV ICBM command
+     */
     public AddinsAcceptRvCmd(RecvRvIcbm icbm) {
         super(icbm);
     }
 
-    public AddinsAcceptRvCmd(long icbmMessageId) {
-        super(icbmMessageId, CapabilityBlock.BLOCK_ADDINS);
+    /**
+     * Creates a new outgoing add-in invitation acceptance RV command.
+     */
+    public AddinsAcceptRvCmd() {
+        super(CapabilityBlock.BLOCK_ADDINS);
     }
 }

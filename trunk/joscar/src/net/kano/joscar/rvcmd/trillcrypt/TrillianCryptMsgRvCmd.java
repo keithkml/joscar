@@ -59,8 +59,8 @@ public class TrillianCryptMsgRvCmd extends AbstractTrillianCryptRvCmd {
         else encryptedMsg = encMsgTlv.getData();
     }
 
-    public TrillianCryptMsgRvCmd(long icbmMessageId, ByteBlock encryptedMsg) {
-        super(icbmMessageId, ENCSTATUS_MESSAGE);
+    public TrillianCryptMsgRvCmd(ByteBlock encryptedMsg) {
+        super(ENCSTATUS_MESSAGE);
 
         this.encryptedMsg = encryptedMsg;
     }

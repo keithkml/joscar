@@ -103,7 +103,10 @@ public interface RvSession {
     String getScreenname();
 
     /**
-     * Sends the given RV command to the user with whom this session exists.
+     * Sends the given RV command to the user with whom this session exists,
+     * with an ICBM message ID of <code>0</code>.
+     * <br>
+     * <br>
      * Note that calling this method will have <i>no effect</i> if the
      * underlying <code>RvProcessor</code> is not currently attached to a SNAC
      * connection. See {@link RvProcessor#attachToSnacProcessor} for details.
@@ -111,8 +114,25 @@ public interface RvSession {
      * @param command the RV command to send
      *
      * @see net.kano.joscar.snaccmd.icbm.SendRvIcbm
+     * @see #sendRv(RvCommand, long)
      */
     void sendRv(RvCommand command);
+
+    /**
+     * Sends the given RV command to the user with whom this session exists,
+     * giving the outgoing RV ICBM the given message ID.
+     * <br>
+     * <br>
+     * Note that calling this method will have <i>no effect</i> if the
+     * underlying <code>RvProcessor</code> is not currently attached to a SNAC
+     * connection. See {@link RvProcessor#attachToSnacProcessor} for details.
+     *
+     * @param command the RV command to send
+     *
+     * @see net.kano.joscar.snaccmd.icbm.SendRvIcbm
+     * @see #sendRv(RvCommand)
+     */
+    void sendRv(RvCommand command, long icbmMessageId);
 
     /**
      * Sends the given RV response code to the user with whom this session

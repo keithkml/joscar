@@ -58,14 +58,13 @@ public abstract class AbstractAcceptRvCmd extends AbstractRvCmd {
     }
 
     /**
-     * Creates a new outgoing RV "accept" command with the given ICBM message ID
-     * and the given associated capability block.
+     * Creates a new outgoing RV "accept" command with the given associated
+     * capability block.
      *
-     * @param icbmMessageId the ICBM message ID for the outgoing RV ICBM
      * @param cap the capability block associated with this RV command
      */
-    protected AbstractAcceptRvCmd(long icbmMessageId, CapabilityBlock cap) {
-        super(icbmMessageId, RVSTATUS_ACCEPT, cap);
+    protected AbstractAcceptRvCmd(CapabilityBlock cap) {
+        super(RVSTATUS_ACCEPT, cap);
     }
 
     protected final void writeHeaderRvTlvs(OutputStream out) { }

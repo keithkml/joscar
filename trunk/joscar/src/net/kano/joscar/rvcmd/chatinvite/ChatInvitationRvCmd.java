@@ -35,7 +35,6 @@
 
 package net.kano.joscar.rvcmd.chatinvite;
 
-import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.rvcmd.AbstractRequestRvCmd;
 import net.kano.joscar.rvcmd.InvitationMessage;
@@ -47,10 +46,21 @@ import net.kano.joscar.tlv.TlvChain;
 import java.io.IOException;
 import java.io.OutputStream;
 
+/**
+ * A rendezvous command used to invite a user to a chat room.
+ */
 public class ChatInvitationRvCmd extends AbstractRequestRvCmd {
+    /** The chat invitation message. */
     private final InvitationMessage invMessage;
+    /** A room information block containing information about the chat room. */
     private final MiniRoomInfo roomInfo;
 
+    /**
+     * Creates a new chat room invitation RV command from the given incoming
+     * chat room invitation RV ICBM command.
+     *
+     * @param icbm an incoming chat room invitation rendezvous ICBM command
+     */
     public ChatInvitationRvCmd(RecvRvIcbm icbm) {
         super(icbm);
 
@@ -63,20 +73,58 @@ public class ChatInvitationRvCmd extends AbstractRequestRvCmd {
         else roomInfo = MiniRoomInfo.readMiniRoomInfo(serviceData);
     }
 
-    public ChatInvitationRvCmd(long icbmMessageId, MiniRoomInfo roomInfo,
+    /**
+     * Creates a new outgoing chat room invitation command for the room
+     * described in the given block and with the given invitation message. Note
+     * that if <code>message</code> is <code>null</code>, no invitation message
+     * will be sent with this invitation.
+     * <br>
+     * <br>
+     * Note that the object passed as the <code>roomInfo</code> argument should
+     * be retrieved from the server's {@link
+     * net.kano.joscar.snaccmd.rooms.RoomResponse} command's room information
+     * block (although the same information is provided in other places as
+     * well). See {@link net.kano.joscar.snaccmd.rooms.RoomResponse#getRoomInfo}
+     * and {@link
+     * MiniRoomInfo#MiniRoomInfo(net.kano.joscar.snaccmd.FullRoomInfo)} for
+     * details.
+     *
+     * @param roomInfo a room information block describing the chat room to
+     *        which the recipient is being invited
+     * @param message an invitation message to send with this invitation, or
+     *        <code>null</code> for none
+     *
+     * @see net.kano.joscar.snaccmd.rooms.RoomResponse
+     */
+    public ChatInvitationRvCmd(MiniRoomInfo roomInfo,
             InvitationMessage message) {
-        super(icbmMessageId, CapabilityBlock.BLOCK_CHAT);
-
-        DefensiveTools.checkNull(roomInfo, "roomInfo");
+        super(CapabilityBlock.BLOCK_CHAT);
 
         this.roomInfo = roomInfo;
         this.invMessage = message;
     }
 
-    public final InvitationMessage getInvMessage() {
-        return invMessage;
-    }
+    /**
+     * Returns the invitation message, if any, included in this invitation.
+     *
+     * @return the invitation message sent in this invitation, or
+     *         <code>null</code> if none was included
+     */
+    public final InvitationMessage getInvMessage() { return invMessage; }
 
+    /**
+     * Returns the room information block describing the chat room to which
+     * the recipient is being invited. The returned room information block can
+     * be passed directly to a {@linkplain
+     * net.kano.joscar.snaccmd.conn.ServiceRequest#ServiceRequest(MiniRoomInfo)
+     * service request}. Note that this method will return <code>null</code> if,
+     * for some reason, no room information block was sent. (This is, however,
+     * not normal behavior.)
+     *
+     * @return a chat room information block describing the chat room to which
+     *         the recipient of this invitation is being invited (or
+     *         <code>null</code> if none was sent)
+     */
     public final MiniRoomInfo getRoomInfo() { return roomInfo; }
 
     protected void writeRvTlvs(OutputStream out) throws IOException {
@@ -84,6 +132,6 @@ public class ChatInvitationRvCmd extends AbstractRequestRvCmd {
     }
 
     protected void writeServiceData(OutputStream out) throws IOException {
-        roomInfo.write(out);
+        if (roomInfo != null) roomInfo.write(out);
     }
 }

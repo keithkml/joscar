@@ -41,6 +41,7 @@ import net.kano.joscar.net.ClientConnEvent;
 import net.kano.joscar.net.ClientConnListener;
 import net.kano.joscar.net.ClientConnStreamHandler;
 import net.kano.joscar.rv.RvSession;
+import net.kano.joscar.rv.RecvRvEvent;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joscar.rvcmd.directim.DirectIMReqRvCmd;
 import net.kano.joscar.rvproto.directim.*;
@@ -52,6 +53,7 @@ import net.kano.joscar.rvproto.rvproxy.cmd.RvProxyInitRecvCmd;
 import net.kano.joscar.rvproto.rvproxy.cmd.RvProxyReadyCmd;
 import net.kano.joscar.snaccmd.OscarTools;
 import net.kano.joscar.snaccmd.icbm.ImEncodedString;
+import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -61,6 +63,7 @@ import java.net.Socket;
 public class DirectIMSession {
     private final String mysn;
     private final RvSession rvSession;
+    private final RecvRvEvent rvEvent;
     private final DirectIMReqRvCmd rvCommand;
     private final RvConnectionInfo connInfo;
 
@@ -80,10 +83,11 @@ public class DirectIMSession {
             });
 
     public DirectIMSession(String mysn, RvSession session,
-            DirectIMReqRvCmd rvCommand) {
+            RecvRvEvent event) {
         this.mysn = mysn;
         this.rvSession = session;
-        this.rvCommand = rvCommand;
+        this.rvEvent = event;
+        this.rvCommand = (DirectIMReqRvCmd) event.getRvCommand();
         this.connInfo = rvCommand.getConnInfo();
 
         open();
@@ -126,7 +130,7 @@ public class DirectIMSession {
 
     private void initProxy() {
         System.out.println("initing proxy...");
-        long cookie = rvCommand.getIcbmMessageId();
+        long cookie = ((RecvRvIcbm) rvEvent.getSnacCommand()).getIcbmMessageId();
         int port = connInfo.getPort();
         RvProxyInitRecvCmd cmd = new RvProxyInitRecvCmd(mysn, cookie, port);
 

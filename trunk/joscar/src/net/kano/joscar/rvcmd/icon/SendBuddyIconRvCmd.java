@@ -88,12 +88,12 @@ public class SendBuddyIconRvCmd extends AbstractRequestRvCmd {
 
     public SendBuddyIconRvCmd(OldIconHashInfo hash,
             LiveWritable iconDataWriter) {
-        this(0, hash, iconDataWriter, ICONIDSTRING_DEFAULT);
+        this(hash, iconDataWriter, ICONIDSTRING_DEFAULT);
     }
 
-    public SendBuddyIconRvCmd(long icbmMessageId, OldIconHashInfo hash,
-            LiveWritable iconDataWriter, String iconIdString) {
-        super(icbmMessageId, CapabilityBlock.BLOCK_ICON);
+    public SendBuddyIconRvCmd(OldIconHashInfo hash, LiveWritable iconDataWriter,
+            String iconIdString) {
+        super(CapabilityBlock.BLOCK_ICON);
 
         DefensiveTools.checkNull(hash, "hash");
         DefensiveTools.checkNull(iconDataWriter, "iconDataWriter");

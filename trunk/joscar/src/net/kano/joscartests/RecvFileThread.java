@@ -76,7 +76,7 @@ public class RecvFileThread extends Thread {
         } else {
             InetSocketAddress socketAddr = new InetSocketAddress(address, port);
             SocketChannel socketChannel = SocketChannel.open(socketAddr);
-            session.sendRv(new FileSendAcceptRvCmd(0));
+            session.sendRv(new FileSendAcceptRvCmd());
             System.out.println("socket opened..");
             return socketChannel;
         }

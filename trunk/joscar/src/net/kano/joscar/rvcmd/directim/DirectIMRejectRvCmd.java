@@ -39,12 +39,28 @@ import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.rvcmd.AbstractRejectRvCmd;
 
+/**
+ * A rendezvous command used to indicate that a {@linkplain DirectIMReqRvCmd
+ * direct IM request} has been denied.
+ */
 public class DirectIMRejectRvCmd extends AbstractRejectRvCmd {
+    /**
+     * Creates a new direct IM rejection command from the given incoming direct
+     * IM rejection RV ICBM.
+     *
+     * @param icbm an incoming direct IM rejection RV ICBM
+     */
     public DirectIMRejectRvCmd(RecvRvIcbm icbm) {
         super(icbm);
     }
 
-    public DirectIMRejectRvCmd(long icbmMessageId, int rejectionCode) {
-        super(icbmMessageId, CapabilityBlock.BLOCK_DIRECTIM, rejectionCode);
+    /**
+     * Creates a new outgoing direct IM rejection command with the given
+     * rejection code.
+     *
+     * @param rejectionCode a rejection code, like {@link #REJECTCODE_CANCELLED}
+     */
+    public DirectIMRejectRvCmd(int rejectionCode) {
+        super(CapabilityBlock.BLOCK_DIRECTIM, rejectionCode);
     }
 }

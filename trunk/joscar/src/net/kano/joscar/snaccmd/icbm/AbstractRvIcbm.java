@@ -155,8 +155,9 @@ public abstract class AbstractRvIcbm extends AbstractIcbm {
      * @param rvSessionId
      * @param rvCommand
      */
-    AbstractRvIcbm(int command, long rvSessionId, final RvCommand rvCommand) {
-        this(command, rvCommand.getIcbmMessageId(), rvCommand.getRvStatus(),
+    AbstractRvIcbm(int command, long icbmMessageId, long rvSessionId,
+            final RvCommand rvCommand) {
+        this(command, icbmMessageId, rvCommand.getRvStatus(),
                 rvSessionId, rvCommand.getCapabilityBlock(),
                 new LiveWritable() {
                     public void write(OutputStream out) throws IOException {

@@ -62,6 +62,8 @@ public class DefaultMutableTlvChain
      * Creates a TLV chain containing the same TLV's as the given chain.
      *
      * @param other a TLV chain to copy
+     *
+     * @see #addAll
      */
     public DefaultMutableTlvChain(TlvChain other) {
         copy(other);

@@ -68,13 +68,12 @@ public class VoiceReqRvCmd extends AbstractRequestRvCmd {
         }
     }
 
-    public VoiceReqRvCmd(long icbmMessageId, RvConnectionInfo connInfo) {
-        this(icbmMessageId, VERSION_DEFAULT, connInfo);
+    public VoiceReqRvCmd(RvConnectionInfo connInfo) {
+        this(VERSION_DEFAULT, connInfo);
     }
 
-    public VoiceReqRvCmd(long icbmMessageId, long version,
-            RvConnectionInfo connInfo) {
-        super(icbmMessageId, CapabilityBlock.BLOCK_VOICE);
+    public VoiceReqRvCmd(long version, RvConnectionInfo connInfo) {
+        super(CapabilityBlock.BLOCK_VOICE);
 
         DefensiveTools.checkRange(version, "version", -1);
 

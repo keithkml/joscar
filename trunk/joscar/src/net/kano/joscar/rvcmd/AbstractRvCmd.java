@@ -94,21 +94,18 @@ public abstract class AbstractRvCmd extends RvCommand {
             rvTlvs = extras;
         } else {
             serviceData = null;
-            rvTlvs = null;
+            rvTlvs = new DefaultMutableTlvChain();
         }
     }
 
     /**
      * Creates a new outgoing RV command with the given properties.
      *
-     * @param icbmMessageId the ICBM message ID for the outgoing rendezvous
-     *        ICBM in which this command is to be sent
      * @param rvStatus the rendezvous status code for this command
      * @param cap the capability block ("rendezvous type") of this RV command
      */
-    protected AbstractRvCmd(long icbmMessageId, int rvStatus,
-            CapabilityBlock cap) {
-        super(icbmMessageId, rvStatus, cap);
+    protected AbstractRvCmd(int rvStatus,  CapabilityBlock cap) {
+        super(rvStatus, cap);
 
         serviceData = null;
         rvTlvs = null;
@@ -130,12 +127,12 @@ public abstract class AbstractRvCmd extends RvCommand {
      * Returns the TLV's contained in this rendezvous command's RV data block.
      * This value will be <code>null</code> if this rendezvous command was not
      * read from an incoming <code>RecvRvIcbm</code> but was instead created
-     * manually. This method may also return <code>null</code> if no RV data
-     * block was sent (although this is very rare). Note that The returned TLV
-     * chain may not contain all of the original TLV's that were received in the
-     * incoming RV ICBM; for example, the returned chain will not contain TLV's
-     * of type <code>0x2711</code> as that value is extracted and can be
-     * retrieved with a call to {@link #getServiceData}.
+     * manually. This command will not otherwise return <code>null</code> for
+     * reasons of ease of use. Note that The returned TLV chain may not contain
+     * all of the original TLV's that were received in the incoming RV ICBM; for
+     * example, the returned chain will not contain TLV's of type
+     * <code>0x2711</code> as that value is extracted and can be retrieved with
+     * a call to {@link #getServiceData}.
      *
      * @return this RV command's RV TLV chain, if any
      */

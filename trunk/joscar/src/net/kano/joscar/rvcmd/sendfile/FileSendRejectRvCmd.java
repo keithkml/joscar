@@ -47,7 +47,7 @@ public class FileSendRejectRvCmd extends AbstractRejectRvCmd {
         super(icbm);
     }
 
-    public FileSendRejectRvCmd(long icbmMessageId, int rejectionCode) {
-        super(icbmMessageId, CapabilityBlock.BLOCK_FILE_SEND, rejectionCode);
+    public FileSendRejectRvCmd(int rejectionCode) {
+        super(CapabilityBlock.BLOCK_FILE_SEND, rejectionCode);
     }
 }

@@ -645,7 +645,7 @@ public class JoscarTester implements CmdLineListener {
                 int port = socket.getLocalPort();
                 session.sendRv(new FileSendReqRvCmd(
                         new InvitationMessage("take this file lol"),
-                        new RvConnectionInfo(localHost,  port),
+                        RvConnectionInfo.createForOutgoingRequest(localHost, port),
                         new FileSendBlock("wut up.gif", 2000000)));
             }
         });
@@ -670,7 +670,7 @@ public class JoscarTester implements CmdLineListener {
                             = (DHPublicKeySpec) factory.getKeySpec(key,
                             DHPublicKeySpec.class);
 
-                    session.sendRv(new TrillianCryptReqRvCmd(0,
+                    session.sendRv(new TrillianCryptReqRvCmd(
                             pubSpec.getP(), pubSpec.getG()));
                 } catch (NoSuchAlgorithmException e) {
                     e.printStackTrace();
@@ -716,7 +716,7 @@ public class JoscarTester implements CmdLineListener {
 
                 try {
                     session.sendRv(new DirectIMReqRvCmd(
-                            new RvConnectionInfo(
+                            RvConnectionInfo.createForOutgoingRequest(
                             InetAddress.getLocalHost(),
                             3453)));
                 } catch (UnknownHostException e) {
@@ -744,8 +744,9 @@ public class JoscarTester implements CmdLineListener {
 
                 bosConn.getFlapProcessor().send(new MysteryFlapCmd());
                 try {
-                    session.sendRv(new GetFileReqRvCmd(0,
-                            new RvConnectionInfo(InetAddress.getLocalHost(),
+                    session.sendRv(new GetFileReqRvCmd(
+                            RvConnectionInfo.createForOutgoingRequest(
+                                    InetAddress.getLocalHost(),
                                     socket.getLocalPort())));
                 } catch (UnknownHostException e) {
                     e.printStackTrace();
@@ -761,7 +762,9 @@ public class JoscarTester implements CmdLineListener {
 
                 try {
                     session.sendRv(new VoiceReqRvCmd(0,
-                            new RvConnectionInfo(InetAddress.getLocalHost())));
+                            RvConnectionInfo.createForOutgoingRequest(
+                                    InetAddress.getLocalHost(),
+                                    -1)));
                 } catch (UnknownHostException e) {
                     e.printStackTrace();
                 }

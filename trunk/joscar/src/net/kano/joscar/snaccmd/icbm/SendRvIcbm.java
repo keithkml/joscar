@@ -113,8 +113,9 @@ public class SendRvIcbm extends AbstractRvIcbm {
      * @param command a rendezvous command that will be used to create this
      *        rendezvous packet
      */
-    public SendRvIcbm(String sn, long rvSessionId, RvCommand command) {
-        super(IcbmCommand.CMD_SEND_ICBM, rvSessionId, command);
+    public SendRvIcbm(String sn, long icbmMessageId, long rvSessionId,
+            RvCommand command) {
+        super(IcbmCommand.CMD_SEND_ICBM, icbmMessageId, rvSessionId, command);
 
         DefensiveTools.checkNull(sn, "sn");
 

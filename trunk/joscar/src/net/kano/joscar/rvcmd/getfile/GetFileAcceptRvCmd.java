@@ -39,12 +39,25 @@ import net.kano.joscar.rvcmd.AbstractAcceptRvCmd;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 
+/**
+ * A rendezvous command used to indicate that a "Get File" browsing request was
+ * accepted and a connection attempt is being made.
+ */
 public class GetFileAcceptRvCmd extends AbstractAcceptRvCmd {
+    /**
+     * Creates a new Get File session acceptance command from the given incoming
+     * Get File session acceptance RV ICBM.
+     *
+     * @param icbm an incoming Get File session acceptance RV ICBM command
+     */
     public GetFileAcceptRvCmd(RecvRvIcbm icbm) {
         super(icbm);
     }
 
-    public GetFileAcceptRvCmd(long icbmMessageId) {
-        super(icbmMessageId, CapabilityBlock.BLOCK_FILE_GET);
+    /**
+     * Creates a new outgoing Get File acceptance command.
+     */
+    public GetFileAcceptRvCmd() {
+        super(CapabilityBlock.BLOCK_FILE_GET);
     }
 }

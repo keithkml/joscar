@@ -99,7 +99,7 @@ public abstract class BasicConn extends AbstractFlapConn {
                 if (ip != null && port != -1) {
                     System.out.println("starting ft thread..");
                     RecvRvIcbm icbm = (RecvRvIcbm) event.getSnacCommand();
-                    long cookie = icbm.getMessageId();
+                    long cookie = icbm.getIcbmMessageId();
                     new RecvFileThread(ip, port, session, cookie).start();
                 }
 
@@ -110,9 +110,7 @@ public abstract class BasicConn extends AbstractFlapConn {
                 session.removeListener(this);
                 encSession.handleRv(event);
             } else if (cmd instanceof DirectIMReqRvCmd) {
-                DirectIMReqRvCmd rvCmd = (DirectIMReqRvCmd) cmd;
-
-                new DirectIMSession(tester.getScreenname(), session, rvCmd);
+                new DirectIMSession(tester.getScreenname(), session, event);
             } else if (cmd instanceof SendBuddyIconRvCmd) {
                 SendBuddyIconRvCmd iconCmd = (SendBuddyIconRvCmd) cmd;
                 ByteBlock iconData = iconCmd.getIconData();

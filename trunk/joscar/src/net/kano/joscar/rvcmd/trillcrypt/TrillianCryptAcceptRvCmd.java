@@ -76,12 +76,12 @@ public class TrillianCryptAcceptRvCmd
         code = codeValue;
     }
 
-    public TrillianCryptAcceptRvCmd(long icbmMessageId) {
-        this(icbmMessageId, CODE_DEFAULT);
+    public TrillianCryptAcceptRvCmd() {
+        this(CODE_DEFAULT);
     }
 
-    public TrillianCryptAcceptRvCmd(long icbmMessageId, int code) {
-        super(icbmMessageId, ENCSTATUS_ACCEPT);
+    public TrillianCryptAcceptRvCmd(int code) {
+        super(ENCSTATUS_ACCEPT);
 
         DefensiveTools.checkRange(code, "code", -1);
 

@@ -44,7 +44,7 @@ public class VoiceAcceptRvCmd extends AbstractAcceptRvCmd {
         super(icbm);
     }
 
-    public VoiceAcceptRvCmd(long icbmMessageId) {
-        super(icbmMessageId, CapabilityBlock.BLOCK_VOICE);
+    public VoiceAcceptRvCmd() {
+        super(CapabilityBlock.BLOCK_VOICE);
     }
 }

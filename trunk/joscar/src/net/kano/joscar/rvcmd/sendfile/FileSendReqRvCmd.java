@@ -66,19 +66,18 @@ public class FileSendReqRvCmd extends AbstractRequestRvCmd {
         connInfo = RvConnectionInfo.readConnectionInfo(chain);
     }
 
-    public FileSendReqRvCmd(InvitationMessage message, RvConnectionInfo connInfo,
-            FileSendBlock file) {
-        this(0, REQTYPE_INITIAL_REQUEST, message, connInfo, file);
+    public FileSendReqRvCmd(InvitationMessage message,
+            RvConnectionInfo connInfo, FileSendBlock file) {
+        this(REQTYPE_INITIAL_REQUEST, message, connInfo, file);
     }
 
     public FileSendReqRvCmd(RvConnectionInfo connInfo) {
-        this(0, REQTYPE_REDIRECT, null, connInfo, null);
+        this(REQTYPE_REDIRECT, null, connInfo, null);
     }
 
-    public FileSendReqRvCmd(long icbmMessageId, int requestType,
-            InvitationMessage message, RvConnectionInfo connInfo,
-            FileSendBlock fileSendBlock) {
-        super(icbmMessageId, CapabilityBlock.BLOCK_FILE_SEND, requestType);
+    public FileSendReqRvCmd(int requestType, InvitationMessage message,
+            RvConnectionInfo connInfo, FileSendBlock fileSendBlock) {
+        super(CapabilityBlock.BLOCK_FILE_SEND, requestType);
 
         this.connInfo = connInfo;
         this.fileSendBlock = fileSendBlock;

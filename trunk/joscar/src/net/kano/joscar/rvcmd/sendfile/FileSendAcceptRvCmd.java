@@ -35,19 +35,16 @@
 
 package net.kano.joscar.rvcmd.sendfile;
 
-import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
-import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.rvcmd.AbstractAcceptRvCmd;
-
-import java.io.OutputStream;
-import java.io.IOException;
+import net.kano.joscar.snaccmd.CapabilityBlock;
+import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 
 public class FileSendAcceptRvCmd extends AbstractAcceptRvCmd {
     public FileSendAcceptRvCmd(RecvRvIcbm icbm) {
         super(icbm);
     }
 
-    public FileSendAcceptRvCmd(long icbmMessageId) {
-        super(icbmMessageId, CapabilityBlock.BLOCK_FILE_SEND);
+    public FileSendAcceptRvCmd() {
+        super(CapabilityBlock.BLOCK_FILE_SEND);
     }
 }

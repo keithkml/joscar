@@ -45,6 +45,7 @@ import net.kano.joscar.tlv.TlvChain;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Inet4Address;
+import java.net.InetAddress;
 
 /**
  * A data structure containing information about a destination address for a
@@ -113,14 +114,14 @@ public class RvConnectionInfo implements LiveWritable {
       */
     private final boolean proxied;
     /** The IP address of an AOL Proxy Server. */
-    private final Inet4Address proxyIP;
+    private final InetAddress proxyIP;
     /** The user's "internal" IP address. */
-    private final Inet4Address internalIP;
+    private final InetAddress internalIP;
     /**
      * The user's "external" IP address, normally determined by the OSCAR
      * server.
      */
-    private final Inet4Address externalIP;
+    private final InetAddress externalIP;
     /** A port on which to connect to the specified addresses. */
     private final int port;
 
@@ -167,12 +168,13 @@ public class RvConnectionInfo implements LiveWritable {
      * address" and port.
      *
      * @param internalIP the client's IP address
-     * @param port a TCP port on which the recipient should connect
+     * @param port a TCP port on which the recipient should connect, or
+     *        <code>-1</code> to not specify this field
      * @return a <code>RvConnectionInfo</code> containing the given internal IP
      *         address and TCP port
      */
     public static RvConnectionInfo createForOutgoingRequest(
-            Inet4Address internalIP, int port) {
+            InetAddress internalIP, int port) {
         DefensiveTools.checkNull(internalIP, "internalIP");
 
         return new RvConnectionInfo(internalIP, null, null, port, false);
@@ -236,7 +238,7 @@ public class RvConnectionInfo implements LiveWritable {
      * @see #createForOutgoingRequest
      * @see #createForOutgoingProxiedRequest
      */
-    public RvConnectionInfo(Inet4Address internalIP, Inet4Address externalIP,
+    public RvConnectionInfo(InetAddress internalIP, Inet4Address externalIP,
             Inet4Address proxyIP, int port, boolean proxied) {
 
         DefensiveTools.checkRange(port, "port", -1);
@@ -255,7 +257,7 @@ public class RvConnectionInfo implements LiveWritable {
      * @return this connection information block's internal IP address value,
      *         or <code>null</code> if none is present
      */
-    public final Inet4Address getInternalIP() { return internalIP; }
+    public final InetAddress getInternalIP() { return internalIP; }
 
     /**
      * Returns the "external IP address" contained in this connection
@@ -264,7 +266,7 @@ public class RvConnectionInfo implements LiveWritable {
      * @return this connection information block's external IP address value
      *         or <code>null</code> if none is present
      */
-    public final Inet4Address getExternalIP() { return externalIP; }
+    public final InetAddress getExternalIP() { return externalIP; }
 
     /**
      * Returns whether this connection block describes a connection over an AOL
@@ -286,7 +288,7 @@ public class RvConnectionInfo implements LiveWritable {
      * @return the AOL Proxy Server IP address specified in this connection
      *         information block, or <code>null</code> if none was sent
      */
-    public final Inet4Address getProxyIP() { return proxyIP; }
+    public final InetAddress getProxyIP() { return proxyIP; }
 
     /**
      * Returns the TCP port specified in this connection information block. Note
@@ -311,7 +313,7 @@ public class RvConnectionInfo implements LiveWritable {
      * @throws IOException if an I/O error occurs
      */
     private static final void writeIP(OutputStream out, int type,
-            Inet4Address addr) throws IOException {
+            InetAddress addr) throws IOException {
         ByteBlock addrBlock = ByteBlock.wrap(addr.getAddress());
         new Tlv(type, addrBlock).write(out);
     }
