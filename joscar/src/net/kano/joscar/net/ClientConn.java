@@ -35,6 +35,7 @@
 
 package net.kano.joscar.net;
 
+import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.MiscTools;
 import net.kano.joscar.flap.ClientFlapConn;
@@ -44,9 +45,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 
 /**
  *
@@ -230,7 +229,7 @@ public class ClientConn {
     /**
      * A list of connection listeners (state change listeners).
      */
-    private List connListeners = new ArrayList();
+    private CopyOnWriteArrayList connListeners = new CopyOnWriteArrayList();
 
     /** A socket factory for generating outgoing sockets. */
     private SocketFactory socketFactory = null;
@@ -286,8 +285,10 @@ public class ClientConn {
      *
      * @param l the listener to add
      */
-    public synchronized final void addConnListener(ClientConnListener l) {
-        if (!connListeners.contains(l)) connListeners.add(l);
+    public final void addConnListener(ClientConnListener l) {
+        DefensiveTools.checkNull(l, "l");
+
+        connListeners.addIfAbsent(l);
     }
 
     /**
@@ -295,7 +296,9 @@ public class ClientConn {
      *
      * @param l the listener to remove
      */
-    public synchronized final void removeConnListener(ClientConnListener l) {
+    public final void removeConnListener(ClientConnListener l) {
+        DefensiveTools.checkNull(l, "l");
+
         connListeners.remove(l);
     }
 

@@ -36,6 +36,7 @@
 package net.kano.joscar.snac;
 
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.flap.FlapPacketEvent;
 import net.kano.joscar.flap.FlapProcessor;
 import net.kano.joscar.flap.VetoableFlapPacketListener;
@@ -137,8 +138,8 @@ import java.util.logging.Logger;
  * to your packet listeners, in order to, for example, process an extra field
  * in a certain command that has been added to the protocol since this library's
  * release. This can be done by registering your own SNAC command factories
- * with the appropriate command types (see {@link #registerSnacFactory(CmdType,
- * SnacCmdFactory) registerSnacFactory}).
+ * with the appropriate command types (see {@link CmdFactoryMgr} and {@link
+ * #getCmdFactoryMgr getCmdFactoryMgr}).
  * <br>
  * <br>
  * And finally, a bit about SNAC requests. The OSCAR protocol and SNAC data
@@ -236,47 +237,62 @@ public class SnacProcessor {
      */
     private FlapProcessor flapProcessor = null;
 
+    /** A lock for processing a read SNAC packet. */
+    private final Object readLock = new Object();
+
     /**
      * This SNAC processor's command factory manager, used for finding an
      * appropriate SNAC factory upon the receipt of a SNAC packet.
      */
-    private CmdFactoryMgr factories = new CmdFactoryMgr();
+    private final CmdFactoryMgr factories = new CmdFactoryMgr();
+
+    /** A lock for processing a request event (timeout, sent, etc.). */
+    private final Object requestEventLock = new Object();
 
     /**
      * The SNAC preprocessors registered on this SNAC connection.
      */
-    private List preprocessors = new ArrayList();
+    private final CopyOnWriteArrayList preprocessors
+            = new CopyOnWriteArrayList();
 
     /**
      * The outgoing SNAC request listeners registered on this SNAC connection.
      */
-    private List requestListeners = new ArrayList();
+    private final CopyOnWriteArrayList requestListeners
+            = new CopyOnWriteArrayList();
 
     /**
      * The SNAC request response listeners registered on this SNAC connection.
      */
-    private List responseListeners = new ArrayList();
+    private final CopyOnWriteArrayList responseListeners
+            = new CopyOnWriteArrayList();
 
     /**
      * The vetoable packet listeners registered on this SNAC connection.
      */
-    private List vetoableListeners = new ArrayList();
+    private final CopyOnWriteArrayList vetoableListeners
+            = new CopyOnWriteArrayList();
 
     /**
      * The SNAC packet listeners registered on this SNAC connection.
      */
-    private List packetListeners = new ArrayList();
+    private final CopyOnWriteArrayList packetListeners
+            = new CopyOnWriteArrayList();
 
     /**
      * The "time to live" of SNAC requests.
      */
     private int requestTtl = REQUEST_TTL_DEFAULT;
 
+    /** A lock for accessing the request map. */
+    private final Object reqLock = new Object();
+
     /**
      * A map from request ID's (<code>Integer</code>s) to
      *  <code>RequestInfo</code>s, which contain <code>SnacRequest</code>s.
      */
-    private Map requests = new HashMap();
+    private final Map requests = new HashMap();
+    /** A list of requests that have been sent (not just queued). */
     private final List requestQueue = new LinkedList();
 
     /** Whether or not this SNAC connection is currently paused. */
@@ -463,11 +479,11 @@ public class SnacProcessor {
      * SNAC requests.
      */
     private synchronized final void detachMinimally() {
-        this.flapProcessor.removeVetoablePacketListener(flapPacketListener);
+        flapProcessor.removeVetoablePacketListener(flapPacketListener);
 
         clearAllRequests();
 
-        this.flapProcessor = null;
+        flapProcessor = null;
     }
 
     /**
@@ -475,10 +491,10 @@ public class SnacProcessor {
      *
      * @param l the listener to add
      */
-    public synchronized final void addPacketListener(SnacPacketListener l) {
+    public final void addPacketListener(SnacPacketListener l) {
         DefensiveTools.checkNull(l, "l");
 
-        if (!packetListeners.contains(l)) packetListeners.add(l);
+        packetListeners.addIfAbsent(l);
     }
 
     /**
@@ -486,7 +502,7 @@ public class SnacProcessor {
      *
      * @param l the listener to remove
      */
-    public synchronized final void removePacketListener(SnacPacketListener l) {
+    public final void removePacketListener(SnacPacketListener l) {
         DefensiveTools.checkNull(l, "l");
 
         packetListeners.remove(l);
@@ -499,11 +515,10 @@ public class SnacProcessor {
      *
      * @param l the listener to add
      */
-    public synchronized final void addGlobalRequestListener(
-            OutgoingSnacRequestListener l) {
+    public final void addGlobalRequestListener(OutgoingSnacRequestListener l) {
         DefensiveTools.checkNull(l, "l");
 
-        if (!requestListeners.contains(l)) requestListeners.add(l);
+        requestListeners.addIfAbsent(l);
     }
 
     /**
@@ -511,7 +526,7 @@ public class SnacProcessor {
      *
      * @param l the listener to remove
      */
-    public synchronized final void removeGlobalRequestListener(
+    public final void removeGlobalRequestListener(
             OutgoingSnacRequestListener l) {
         DefensiveTools.checkNull(l, "l");
 
@@ -527,11 +542,10 @@ public class SnacProcessor {
      *
      * @param l the listener to add
      */
-    public synchronized final void addGlobalResponseListener(
-            SnacResponseListener l) {
+    public final void addGlobalResponseListener(SnacResponseListener l) {
         DefensiveTools.checkNull(l, "l");
 
-        if (!responseListeners.contains(l)) responseListeners.add(l);
+        responseListeners.addIfAbsent(l);
     }
 
     /**
@@ -539,8 +553,7 @@ public class SnacProcessor {
      *
      * @param l the listener to remove
      */
-    public synchronized final void removeGlobalResponseListener(
-            SnacResponseListener l) {
+    public final void removeGlobalResponseListener(SnacResponseListener l) {
         DefensiveTools.checkNull(l, "l");
 
         responseListeners.remove(l);
@@ -553,18 +566,17 @@ public class SnacProcessor {
      *
      * @param l the listener to add.
      */
-    public synchronized final void addVetoablePacketListener(
-            VetoableSnacPacketListener l) {
+    public final void addVetoablePacketListener(VetoableSnacPacketListener l) {
         DefensiveTools.checkNull(l, "l");
 
-        if (!vetoableListeners.contains(l)) vetoableListeners.add(l);
+        vetoableListeners.addIfAbsent(l);
     }
 
     /**
      * Removes a vetoable packet listener from the list of listeners.
      * @param l the listener to remove
      */
-    public synchronized final void removeVetoablePacketListener(
+    public final void removeVetoablePacketListener(
             VetoableSnacPacketListener l) {
         DefensiveTools.checkNull(l, "l");
 
@@ -578,17 +590,17 @@ public class SnacProcessor {
      *
      * @param p the preprocessor to add
      */
-    public synchronized final void addPreprocessor(SnacPreprocessor p) {
+    public final void addPreprocessor(SnacPreprocessor p) {
         DefensiveTools.checkNull(p, "p");
 
-        if (!preprocessors.contains(p)) preprocessors.add(p);
+        preprocessors.addIfAbsent(p);
     }
 
     /**
      * Removes a SNAC preprocessor from the list of SNAC preprocessors.
      * @param p the preprocessor to remove
      */
-    public synchronized final void removePreprocessor(SnacPreprocessor p) {
+    public final void removePreprocessor(SnacPreprocessor p) {
         DefensiveTools.checkNull(p, "p");
 
         preprocessors.remove(p);
@@ -659,127 +671,144 @@ public class SnacProcessor {
     public synchronized int getRequestTtl() { return requestTtl; }
 
     /**
+     * Returns this SNAC processor's SNAC command factory manager.
+     *
+     * @return this SNAC processor's SNAC command factory manager
+     */
+    public CmdFactoryMgr getCmdFactoryMgr() { return factories; }
+
+    /**
      * Processes an incoming FLAP packet. The packet is processed through
      * the list of preprocessors, a SnacCommand is generated, vetoable listeners
      * are called, and, finally, packet listeners are called.
      *
      * @param e the FLAP packet event to process
      */
-    private synchronized void processPacket(FlapPacketEvent e) {
+    private void processPacket(FlapPacketEvent e) {
         boolean logFine = logger.isLoggable(Level.FINE);
         boolean logFiner = logger.isLoggable(Level.FINER);
+
+        FlapProcessor processor;
+        synchronized(this) {
+            processor = flapProcessor;
+        }
 
         SnacFlapCmd flapCmd = ((SnacFlapCmd) e.getFlapCommand());
         SnacPacket snacPacket = flapCmd.getSnacPacket();
 
-        MutableSnacPacket mutablePacket = null;
-        for (Iterator it = preprocessors.iterator(); it.hasNext();) {
-            SnacPreprocessor preprocessor = (SnacPreprocessor) it.next();
+        synchronized(readLock) {
+            MutableSnacPacket mutablePacket = null;
+            for (Iterator it = preprocessors.iterator(); it.hasNext();) {
+                SnacPreprocessor preprocessor = (SnacPreprocessor) it.next();
 
-            if (mutablePacket == null) {
-                mutablePacket = new MutableSnacPacket(snacPacket);
-            }
-
-            if (logFiner) {
-                logger.finer("Running snac preprocessor " + preprocessor);
-            }
-
-            try {
-                preprocessor.process(mutablePacket);
-
-            } catch (Throwable t) {
-                if (logFiner) {
-                    logger.finer("Preprocessor " + preprocessor + " threw " +
-                            "exception " + t);
+                if (mutablePacket == null) {
+                    mutablePacket = new MutableSnacPacket(snacPacket);
                 }
-                flapProcessor.handleException(ERRTYPE_SNAC_PACKET_PREPROCESSOR,
-                        t, preprocessor);
-                continue;
-            }
-        }
 
-        if (mutablePacket != null && mutablePacket.isChanged()) {
-            snacPacket = mutablePacket.toSnacPacket();
-        }
-
-        SnacCommand cmd = generateSnacCommand(snacPacket);
-
-        if (logFine) {
-            logger.fine("Converted Snac packet " + snacPacket + " to " + cmd);
-        }
-
-        Long key = new Long(snacPacket.getReqid());
-        RequestInfo reqInfo = (RequestInfo) requests.get(key);
-
-        SnacPacketEvent event = new SnacPacketEvent(e, this, snacPacket, cmd);
-
-        if (reqInfo != null) {
-            SnacRequest request = reqInfo.getRequest();
-            if (logFiner) {
-                logger.finer("This Snac packet is a response to a request!");
-            }
-
-            SnacResponseEvent sre = new SnacResponseEvent(event, request);
-
-            for (Iterator it = responseListeners.iterator(); it.hasNext();) {
-                SnacResponseListener l = (SnacResponseListener) it.next();
+                if (logFiner) {
+                    logger.finer("Running snac preprocessor " + preprocessor);
+                }
 
                 try {
-                    l.handleResponse(sre);
+                    preprocessor.process(mutablePacket);
+
                 } catch (Throwable t) {
-                    flapProcessor.handleException(
-                            ERRTYPE_SNAC_RESPONSE_LISTENER, t, l);
+                    if (logFiner) {
+                        logger.finer("Preprocessor " + preprocessor + " threw " +
+                                "exception " + t);
+                    }
+                    processor.handleException(ERRTYPE_SNAC_PACKET_PREPROCESSOR,
+                            t, preprocessor);
+                    continue;
                 }
             }
 
-            try {
-                request.gotResponse(sre);
-
-            } catch (Throwable t) {
-                flapProcessor.handleException(ERRTYPE_SNAC_REQUEST_LISTENER, t,
-                        request);
-            }
-            return;
-        }
-
-        for (Iterator it = vetoableListeners.iterator(); it.hasNext();) {
-            VetoableSnacPacketListener listener
-                    = (VetoableSnacPacketListener) it.next();
-
-            if (logFiner) {
-                logger.finer("Running vetoable Snac packet listener "
-                        + listener);
+            if (mutablePacket != null && mutablePacket.isChanged()) {
+                snacPacket = mutablePacket.toSnacPacket();
             }
 
-            Object result;
-            try {
-                result = listener.handlePacket(event);
-            } catch (Throwable t) {
-                flapProcessor.handleException(ERRTYPE_SNAC_PACKET_LISTENER, t,
-                        listener);
-                continue;
+            SnacCommand cmd = generateSnacCommand(snacPacket);
+
+            if (logFine) {
+                logger.fine("Converted Snac packet " + snacPacket + " to " + cmd);
             }
-            if (result != VetoableSnacPacketListener.CONTINUE_PROCESSING) {
+
+            Long key = new Long(snacPacket.getReqid());
+            RequestInfo reqInfo;
+            synchronized(reqLock) {
+                reqInfo = (RequestInfo) requests.get(key);
+            }
+
+            SnacPacketEvent event = new SnacPacketEvent(e, this, snacPacket, cmd);
+
+            if (reqInfo != null) {
+                SnacRequest request = reqInfo.getRequest();
+                if (logFiner) {
+                    logger.finer("This Snac packet is a response to a request!");
+                }
+
+                SnacResponseEvent sre = new SnacResponseEvent(event, request);
+
+                for (Iterator it = responseListeners.iterator(); it.hasNext();) {
+                    SnacResponseListener l = (SnacResponseListener) it.next();
+
+                    try {
+                        l.handleResponse(sre);
+                    } catch (Throwable t) {
+                        processor.handleException(
+                                ERRTYPE_SNAC_RESPONSE_LISTENER, t, l);
+                    }
+                }
+
+                try {
+                    request.gotResponse(sre);
+
+                } catch (Throwable t) {
+                    processor.handleException(ERRTYPE_SNAC_REQUEST_LISTENER, t,
+                            request);
+                }
                 return;
             }
-        }
 
-        for (Iterator it = packetListeners.iterator(); it.hasNext();) {
-            SnacPacketListener listener = (SnacPacketListener) it.next();
+            for (Iterator it = vetoableListeners.iterator(); it.hasNext();) {
+                VetoableSnacPacketListener listener
+                        = (VetoableSnacPacketListener) it.next();
 
-            if (logFiner) {
-                logger.finer("Running Snac packet listener " + listener);
+                if (logFiner) {
+                    logger.finer("Running vetoable Snac packet listener "
+                            + listener);
+                }
+
+                Object result;
+                try {
+                    result = listener.handlePacket(event);
+                } catch (Throwable t) {
+                    processor.handleException(ERRTYPE_SNAC_PACKET_LISTENER, t,
+                            listener);
+                    continue;
+                }
+                if (result != VetoableSnacPacketListener.CONTINUE_PROCESSING) {
+                    return;
+                }
             }
 
-            try {
-                listener.handleSnacPacket(event);
-            } catch (Throwable t) {
-                flapProcessor.handleException(ERRTYPE_SNAC_PACKET_LISTENER, t,
-                        listener);
-            }
-        }
+            for (Iterator it = packetListeners.iterator(); it.hasNext();) {
+                SnacPacketListener listener = (SnacPacketListener) it.next();
 
-        if (logFiner) logger.finer("Finished processing Snac");
+                if (logFiner) {
+                    logger.finer("Running Snac packet listener " + listener);
+                }
+
+                try {
+                    listener.handleSnacPacket(event);
+                } catch (Throwable t) {
+                    processor.handleException(ERRTYPE_SNAC_PACKET_LISTENER, t,
+                            listener);
+                }
+            }
+
+            if (logFiner) logger.finer("Finished processing Snac");
+        }
     }
 
     /**
@@ -790,9 +819,10 @@ public class SnacProcessor {
      *        be generated
      * @return an appropriate <code>SnacCommand</code> for the given packet
      */
-    private synchronized SnacCommand generateSnacCommand(SnacPacket packet) {
+    private SnacCommand generateSnacCommand(SnacPacket packet) {
         CmdType type = new CmdType(packet.getFamily(), packet.getCommand());
 
+        // we can access factories without a lock because it is final.
         SnacCmdFactory factory = factories.findFactory(type);
 
         if (factory == null) return null;
@@ -806,80 +836,105 @@ public class SnacProcessor {
      *
      * @param reqInfo the request to timeout
      */
-    private synchronized final void timeoutRequest(RequestInfo reqInfo) {
+    private final void timeoutRequest(RequestInfo reqInfo) {
+        FlapProcessor processor;
+        int ttl;
+        synchronized(this) {
+            processor = flapProcessor;
+            ttl = requestTtl;
+        }
         SnacRequest request = reqInfo.getRequest();
         SnacRequestTimeoutEvent event = new SnacRequestTimeoutEvent(
-                flapProcessor, this, request, requestTtl);
+                processor, this, request, ttl);
 
         if (logger.isLoggable(Level.FINER)) {
             logger.finer("Snac request timed out: " + request);
         }
 
-        // tell the global listeners
-        for (Iterator it = requestListeners.iterator(); it.hasNext();) {
-            OutgoingSnacRequestListener l
-                    = (OutgoingSnacRequestListener) it.next();
+        synchronized(requestEventLock) {
+            // tell the global listeners
+            for (Iterator it = requestListeners.iterator(); it.hasNext();) {
+                OutgoingSnacRequestListener l
+                        = (OutgoingSnacRequestListener) it.next();
 
-            try {
-                l.handleTimeout(event);
-            } catch (Throwable t) {
-                flapProcessor.handleException(ERRTYPE_SNAC_REQUEST_LISTENER,
-                        t, l);
+                try {
+                    l.handleTimeout(event);
+                } catch (Throwable t) {
+                    processor.handleException(ERRTYPE_SNAC_REQUEST_LISTENER,
+                            t, l);
+                }
             }
-        }
 
-        // tell the request itself
-        request.timedOut(event);
+            // tell the request itself
+            request.timedOut(event);
+        }
     }
 
     /**
      * "Times out" all requests on the request list.
      */
-    private synchronized final void clearAllRequests() {
-        for (Iterator it = requests.values().iterator(); it.hasNext();) {
-            RequestInfo reqInfo = (RequestInfo) it.next();
+    private final void clearAllRequests() {
+        synchronized(reqLock) {
+            for (Iterator it = requests.values().iterator(); it.hasNext();) {
+                RequestInfo reqInfo = (RequestInfo) it.next();
 
-            timeoutRequest(reqInfo);
+                timeoutRequest(reqInfo);
+            }
+
+            requests.clear();
+            requestQueue.clear();
         }
-
-        requests.clear();
-        requestQueue.clear();
     }
 
     /**
      * Removes any SNAC requests who were sent long enough ago such that their
      * lifetime has passed the {@link #requestTtl}.
      */
-    private synchronized final void cleanRequests() {
-        if (requestQueue.isEmpty()) return;
-
-        if (requestTtl == 0) {
-            clearAllRequests();
-            return;
+    private final void cleanRequests() {
+        int ttl;
+        synchronized(this) {
+            ttl = requestTtl;
         }
 
-        long time = System.currentTimeMillis();
+        List timedout = new LinkedList();
+        synchronized(reqLock) {
+            if (requestQueue.isEmpty()) return;
 
-        long ttlms = requestTtl * 1000;
+            if (ttl == 0) {
+                clearAllRequests();
+                return;
+            }
 
-        for (Iterator it = requestQueue.iterator(); it.hasNext();) {
+            long time = System.currentTimeMillis();
+
+            long ttlms = ttl * 1000;
+
+            for (Iterator it = requestQueue.iterator(); it.hasNext();) {
+                RequestInfo reqInfo = (RequestInfo) it.next();
+
+                long sentTime = reqInfo.getSentTime();
+                if (sentTime == -1) continue;
+
+                long diff = time - sentTime;
+
+                // these are in order, so this is okay. it may not be in the
+                // future, with rate limiting and such.
+                if (diff < ttlms) break;
+
+                // queue this request up to be timed out
+                timedout.add(reqInfo);
+
+                // and remove the request from the queue and the reqid map
+                it.remove();
+                requests.remove(new Long(reqInfo.getRequest().getReqid()));
+            }
+        }
+
+        // we time out the requests outside of the lock
+        for (Iterator it = timedout.iterator(); it.hasNext();) {
             RequestInfo reqInfo = (RequestInfo) it.next();
 
-            long sentTime = reqInfo.getSentTime();
-            if (sentTime == -1) continue;
-
-            long diff = time - sentTime;
-
-            // these are in order, so this is okay. it may not be in the future,
-            // with rate limiting and such.
-            if (diff < ttlms) break;
-
-            // tell the request it's timed out
             timeoutRequest(reqInfo);
-
-            // and remove the request from the queue and the reqid map
-            it.remove();
-            requests.remove(new Long(reqInfo.getRequest().getReqid()));
         }
     }
 
@@ -890,22 +945,28 @@ public class SnacProcessor {
      *
      * @param request the SNAC request to send
      */
-    public synchronized final void sendSnac(SnacRequest request) {
+    public final void sendSnac(SnacRequest request) {
         DefensiveTools.checkNull(request, "request");
 
         SnacCommand command = request.getCommand();
 
-        registerSnacRequest(request);
+        RequestInfo reqInfo = registerSnacRequest(request);
+
+        long reqid = reqInfo.getRequest().getReqid();
 
         if (logger.isLoggable(Level.FINE)) {
-            logger.fine("Queueing Snac request #" + lastReqid + ": "
+            logger.fine("Queueing Snac request #" + reqid + ": "
                     + command);
         }
 
-        queueManager.queueSnac(this, request);
+        SnacQueueManager queueMgr;
+        synchronized(this) {
+            queueMgr = queueManager;
+        }
+        queueMgr.queueSnac(this, request);
 
         if (logger.isLoggable(Level.FINER)) {
-            logger.finer("Finished queueing Snac request #" + lastReqid);
+            logger.finer("Finished queueing Snac request #" + reqid);
         }
     }
 
@@ -919,7 +980,7 @@ public class SnacProcessor {
      *
      * @see #setSnacQueueManager
      */
-    public synchronized final void sendSnacImmediately(SnacRequest request) {
+    public final void sendSnacImmediately(SnacRequest request) {
         DefensiveTools.checkNull(request, "request");
 
         if (logger.isLoggable(Level.FINE)) {
@@ -933,15 +994,24 @@ public class SnacProcessor {
                     + " was already sent");
         }
 
+        FlapProcessor processor;
+        int ttl;
+        synchronized(this) {
+            processor = flapProcessor;
+            ttl = requestTtl;
+        }
+
         long reqid = reqInfo.getRequest().getReqid();
-        flapProcessor.sendFlap(new SnacFlapCmd(reqid, request.getCommand()));
+        processor.sendFlap(new SnacFlapCmd(reqid, request.getCommand()));
 
         fireSentEvent(reqInfo);
 
-        if (requestTtl != 0) {
-            requestQueue.add(reqInfo);
-        } else {
-            requests.remove(new Long(reqid));
+        synchronized(reqLock) {
+            if (ttl != 0) {
+                requestQueue.add(reqInfo);
+            } else {
+                requests.remove(new Long(reqid));
+            }
         }
 
         if (logger.isLoggable(Level.FINER)) {
@@ -964,24 +1034,31 @@ public class SnacProcessor {
         reqInfo.sent(now);
 
         // create the event object
-        SnacRequestSentEvent event = new SnacRequestSentEvent(flapProcessor,
-                this, request, now);
-
-        // tell the global request listeners first
-        for (Iterator it = requestListeners.iterator(); it.hasNext();) {
-            OutgoingSnacRequestListener l
-                    = (OutgoingSnacRequestListener) it.next();
-
-            try {
-                l.handleSent(event);
-            } catch (Throwable t) {
-                flapProcessor.handleException(ERRTYPE_SNAC_REQUEST_LISTENER,
-                        t, l);
-            }
+        FlapProcessor processor;
+        synchronized(this) {
+            processor = flapProcessor;
         }
 
-        // then tell the request itself about it
-        request.sent(event);
+        SnacRequestSentEvent event = new SnacRequestSentEvent(processor,
+                this, request, now);
+
+        synchronized(requestEventLock) {
+            // tell the global request listeners first
+            for (Iterator it = requestListeners.iterator(); it.hasNext();) {
+                OutgoingSnacRequestListener l
+                        = (OutgoingSnacRequestListener) it.next();
+
+                try {
+                    l.handleSent(event);
+                } catch (Throwable t) {
+                    processor.handleException(ERRTYPE_SNAC_REQUEST_LISTENER,
+                            t, l);
+                }
+            }
+
+            // then tell the request itself about it
+            request.sent(event);
+        }
     }
 
     /**
@@ -993,100 +1070,30 @@ public class SnacProcessor {
      * @param request the request to register
      * @return a <code>RequestInfo</code> corresponding to the given request
      */
-    private synchronized RequestInfo registerSnacRequest(SnacRequest request) {
-        if (request.getReqid() != -1) {
-            return (RequestInfo) requests.get(new Long(request.getReqid()));
+    private RequestInfo registerSnacRequest(SnacRequest request) {
+        synchronized(reqLock) {
+            if (request.getReqid() != -1) {
+                return (RequestInfo) requests.get(new Long(request.getReqid()));
+            }
+
+            // this is sent as an unsigned int, so it has to wrap like one. we
+            // avoid request ID zero because that seems like a value the server
+            // might use to denote a lack of a request ID.
+            if (lastReqid == REQID_MAX) lastReqid = REQID_MIN;
+            else lastReqid++;
+
+            request.setReqid(lastReqid);
+
+            Long key = new Long(lastReqid);
+
+            cleanRequests();
+
+            RequestInfo reqInfo = new RequestInfo(request);
+
+            requests.put(key, reqInfo);
+
+            return reqInfo;
         }
-
-        // this is sent as an unsigned int, so it has to wrap like one. we
-        // avoid request ID zero because that seems like a value the server
-        // might use to denote a lack of a request ID.
-        if (lastReqid == REQID_MAX) lastReqid = REQID_MIN;
-        else lastReqid++;
-
-        request.setReqid(lastReqid);
-
-        Long key = new Long(lastReqid);
-
-        cleanRequests();
-
-        RequestInfo reqInfo = new RequestInfo(request);
-
-        requests.put(key, reqInfo);
-        return reqInfo;
-    }
-
-    /**
-     * Sets the default SNAC command factory list. See {@linkplain SnacProcessor
-     * above} for details on what exactly this means.
-     *
-     * @param list the new default SNAC command factory list, or
-     *        <code>null</code>
-     */
-    public synchronized final void setDefaultSnacCmdFactoryList(
-            SnacCmdFactoryList list) {
-        factories.setDefaultFactoryList(list);
-    }
-
-    /**
-     * Returns the current default SNAC command factory list. See {@linkplain
-     * SnacProcessor above} for details on what this is.
-     *
-     * @return the current default SNAC command factory list
-     */
-    public synchronized final SnacCmdFactoryList
-            getDefaultSnacCmdFactoryList() {
-        return factories.getDefaultFactoryList();
-    }
-
-    /**
-     * Registers the given SNAC command factory for all command types specified
-     * by the result of invoking its <code>getSupportedTypes</code> method.
-     *
-     * @param factory the SNAC command factory to fully register
-     */
-    public synchronized final void registerSnacFactory(SnacCmdFactory factory) {
-        factories.registerSupported(factory);
-    }
-
-    /**
-     * Registers the given SNAC command factory for the given command type.
-     * If the given factory does not {@linkplain
-     * SnacCmdFactory#getSupportedTypes support} the given type, no action is
-     * taken.
-     *
-     * @param cmdType the command type for which the given factory should be
-     *        registered
-     * @param factory the factory to register for the given command type
-     */
-    public synchronized final void registerSnacFactory(CmdType cmdType,
-            SnacCmdFactory factory) {
-        factories.register(cmdType, factory);
-    }
-
-    /**
-     * Unregisters the given SNAC command factory from the given command type,
-     * if it is currently registered for that type.
-     *
-     * @param type the command type from which the given factory should be
-     *        unregistered
-     * @param factory the SNAC command factory to unregister from the given
-     *        command type
-     */
-    public synchronized final void unregisterSnacFactory(CmdType type,
-            SnacCmdFactory factory) {
-        factories.unregister(type, factory);
-    }
-
-    /**
-     * Unregisters the given SNAC command factory from all command types for
-     * which it is registered.
-     *
-     * @param factory the SNAC command factory to completely unregister
-     */
-    public synchronized final void unregisterSnacFactory(
-            SnacCmdFactory factory) {
-        factories.unregisterAll(factory);
     }
 
     /**

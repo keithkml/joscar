@@ -82,7 +82,7 @@ public abstract class SnacCmdFactoryList {
      *
      * @param factory the factory to register
      */
-    protected synchronized final void registerSupported(
+    protected synchronized final void registerAll(
             SnacCmdFactory factory) {
         DefensiveTools.checkNull(factory, "factory");
 

@@ -36,17 +36,17 @@
 package net.kano.joscar.flap;
 
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.net.ConnProcessor;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
-import java.util.logging.Logger;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Represents a FLAP connection that manages an outgoing FLAP queue as well
@@ -96,18 +96,27 @@ public class FlapProcessor extends ConnProcessor {
     /**
      * A list of handlers for FLAP-related errors and exceptions.
      */
-    private List errorHandlers = new ArrayList();
+    private final CopyOnWriteArrayList errorHandlers
+            = new CopyOnWriteArrayList();
 
     /**
      * A list of listeners for incoming FLAP packets.
      */
-    private List packetListeners = new ArrayList();
+    private final CopyOnWriteArrayList packetListeners
+            = new CopyOnWriteArrayList();
 
     /**
      * A list of "vetoable listeners" for incoming FLAP packets. Vetoable
      * listeners have the ability to halt the processing of a given packet.
      */
-    private List vetoablePacketListeners = new ArrayList();
+    private final CopyOnWriteArrayList vetoablePacketListeners
+            = new CopyOnWriteArrayList();
+
+    /** A lock for modifying and reading the sequence number. */
+    private final Object seqLock = new Object();
+
+    /** A lock for writing to the stream. */
+    private final Object writeLock = new Object();
 
     /** A lock for reading from the stream. */
     private final Object readLock = new Object();
@@ -156,11 +165,11 @@ public class FlapProcessor extends ConnProcessor {
      *
      * @param listener the listener to add
      */
-    public synchronized final void addVetoablePacketListener(
+    public final void addVetoablePacketListener(
             VetoableFlapPacketListener listener) {
-        if (!vetoablePacketListeners.contains(listener)) {
-            vetoablePacketListeners.add(listener);
-        }
+        DefensiveTools.checkNull(listener, "listener");
+
+        vetoablePacketListeners.addIfAbsent(listener);
     }
 
     /**
@@ -169,8 +178,10 @@ public class FlapProcessor extends ConnProcessor {
      *
      * @param listener the listener to remove
      */
-    public synchronized final void removeVetoablePacketListener(
+    public final void removeVetoablePacketListener(
             VetoableFlapPacketListener listener) {
+        DefensiveTools.checkNull(listener, "listener");
+
         vetoablePacketListeners.remove(listener);
     }
 
@@ -179,9 +190,10 @@ public class FlapProcessor extends ConnProcessor {
      *
      * @param listener the listener to add
      */
-    public synchronized final void addPacketListener(
-            FlapPacketListener listener) {
-        if (!packetListeners.contains(listener)) packetListeners.add(listener);
+    public final void addPacketListener(FlapPacketListener listener) {
+        DefensiveTools.checkNull(listener, "listener");
+
+        packetListeners.addIfAbsent(listener);
     }
 
     /**
@@ -189,8 +201,9 @@ public class FlapProcessor extends ConnProcessor {
      *
      * @param listener the listener to remove
      */
-    public synchronized final void removePacketListener(
-            FlapPacketListener listener) {
+    public final void removePacketListener(FlapPacketListener listener) {
+        DefensiveTools.checkNull(listener, "listener");
+
         packetListeners.remove(listener);
     }
 
@@ -199,9 +212,10 @@ public class FlapProcessor extends ConnProcessor {
      *
      * @param handler the handler to add
      */
-    public synchronized final void addExceptionHandler(
-            FlapExceptionHandler handler) {
-        if (!errorHandlers.contains(handler)) errorHandlers.add(handler);
+    public final void addExceptionHandler(FlapExceptionHandler handler) {
+        DefensiveTools.checkNull(handler, "handler");
+
+        errorHandlers.addIfAbsent(handler);
     }
 
     /**
@@ -209,8 +223,9 @@ public class FlapProcessor extends ConnProcessor {
      *
      * @param handler the handler to remove
      */
-    public synchronized final void removeExceptionHandler(
-            FlapExceptionHandler handler) {
+    public final void removeExceptionHandler(FlapExceptionHandler handler) {
+        DefensiveTools.checkNull(handler, "handler");
+
         errorHandlers.remove(handler);
     }
 
@@ -230,11 +245,12 @@ public class FlapProcessor extends ConnProcessor {
     /**
      * Processes the given packet by generating a <code>FlapCommand</code>,
      * running it through vetoable listeners, then running it through regular
-     * listeners.
+     * listeners. <b>This method must be called while holding a lock on {@link
+     * #readLock}.</b>
      *
      * @param packet the packet to process
      */
-    private synchronized final void handlePacket(FlapPacket packet) {
+    private final void handlePacket(FlapPacket packet) {
         DefensiveTools.checkNull(packet, "packet");
 
         boolean logFine = logger.isLoggable(Level.FINE);
@@ -242,15 +258,20 @@ public class FlapProcessor extends ConnProcessor {
 
         if (logFine) logger.fine("FlapProcessor received packet: " + packet);
 
+        FlapCommandFactory factory;
+        synchronized(this) {
+            factory = commandFactory;
+        }
+
         FlapCommand cmd = null;
-        if (commandFactory != null) {
+        if (factory != null) {
             try {
-                cmd = commandFactory.genFlapCommand(packet);
+                cmd = factory.genFlapCommand(packet);
             } catch (Throwable t) {
                 handleException(FlapExceptionEvent.ERRTYPE_CMD_GEN, t, packet);
             }
-            if (logFine) logger.fine("Flap command for " + packet + ": " + cmd);
         }
+        if (logFine) logger.fine("Flap command for " + packet + ": " + cmd);
 
         FlapPacketEvent event = new FlapPacketEvent(this, packet, cmd);
 
@@ -311,7 +332,7 @@ public class FlapProcessor extends ConnProcessor {
      *
      * @see #addExceptionHandler
      */
-    public synchronized final void handleException(Object type, Throwable t) {
+    public final void handleException(Object type, Throwable t) {
         handleException(type, t, null);
     }
 
@@ -325,8 +346,7 @@ public class FlapProcessor extends ConnProcessor {
      * @param info an object containing extra information or details on this
      *        exception and/or what caused it
      */
-    public synchronized final void handleException(Object type, Throwable t,
-            Object info) {
+    public final void handleException(Object type, Throwable t, Object info) {
         DefensiveTools.checkNull(type, "type");
         DefensiveTools.checkNull(t, "t");
 
@@ -351,6 +371,8 @@ public class FlapProcessor extends ConnProcessor {
 
         FlapExceptionEvent event = new FlapExceptionEvent(type, this, t, info);
 
+        // errorHandlers can be iterated over without locking because it is a
+        // copy-on-write list.
         for (Iterator it = errorHandlers.iterator(); it.hasNext();) {
             FlapExceptionHandler handler = (FlapExceptionHandler) it.next();
 
@@ -371,7 +393,7 @@ public class FlapProcessor extends ConnProcessor {
      *
      * @param command the command to send
      */
-    public synchronized final void sendFlap(FlapCommand command) {
+    public final void sendFlap(FlapCommand command) {
         DefensiveTools.checkNull(command, "command");
 
         boolean logFine = logger.isLoggable(Level.FINE);
@@ -382,7 +404,18 @@ public class FlapProcessor extends ConnProcessor {
         if (out == null) return;
 
         if (logFiner) logger.finer("Sending Flap command " + command);
-        FlapPacket packet = new FlapPacket(seqnum, command);
+
+        int seq;
+        synchronized(seqLock) {
+            // this is sent as an unsigned short, so it needs to wrap like an
+            // unsigned short.
+            if (seqnum == SEQNUM_MAX) seqnum = 0;
+            else seqnum++;
+
+            seq = seqnum;
+        }
+
+        FlapPacket packet = new FlapPacket(seq, command);
 
         ByteBlock block;
         try {
@@ -400,16 +433,13 @@ public class FlapProcessor extends ConnProcessor {
         // we trust ByteBlock.write so much that we don't even check for
         // Throwable!
         try {
-            block.write(out);
+            synchronized(writeLock) {
+                block.write(out);
+            }
         } catch (IOException e) {
             handleException(FlapExceptionEvent.ERRTYPE_CONNECTION_ERROR, e);
             return;
         }
-
-        // this is sent as an unsigned short, so it needs to wrap like an
-        // unsigned short.
-        if (seqnum == SEQNUM_MAX) seqnum = 0;
-        else seqnum++;
 
         if (logFiner) logger.finer("Finished sending Flap command");
     }
@@ -440,16 +470,17 @@ public class FlapProcessor extends ConnProcessor {
     public final boolean readNextFlap() throws IOException {
         boolean logFiner = logger.isLoggable(Level.FINER);
 
-        synchronized(readLock) {
-            if (getInputStream() == null) return false;
+        InputStream inputStream = getInputStream();
+        if (inputStream == null) return false;
 
-            FlapHeader header = FlapHeader.readFLAPHeader(getInputStream());
+        synchronized(readLock) {
+            FlapHeader header = FlapHeader.readFLAPHeader(inputStream);
 
             if (logFiner) logger.finer("Read flap header " + header);
 
             if (header == null) return false;
 
-            FlapPacket packet = FlapPacket.readRestOfFlap(header, getInputStream());
+            FlapPacket packet = FlapPacket.readRestOfFlap(header, inputStream);
 
             if (logFiner) logger.finer("Read flap packet " + packet);
 

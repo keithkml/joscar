@@ -517,7 +517,7 @@ public abstract class AbstractChatInfo {
         return language2;
     }
 
-    public String toString() {
+    public synchronized String toString() {
         return MiscTools.getClassName(this) + ": " +
                 "flags=" + flags +
                 ", creation=" + creation +

@@ -62,17 +62,21 @@ package net.kano.joscar.snac;
  * <li> Otherwise, a similar three-step process occurs using the <i>default
  * factory list</i> specified by <code>setDefaultFactoryList</code> </li>
  * </ol>
+ * For more details on how this class is used, see {@link SnacProcessor}.
  */
-final class CmdFactoryMgr extends SnacCmdFactoryList {
+public final class CmdFactoryMgr extends SnacCmdFactoryList {
     /**
      * The "default factory list," or a list of factories used when no
      * user-registered factories match a given command type.
      */
     private SnacCmdFactoryList defaultFactories;
 
+    CmdFactoryMgr() { }
+
     /**
      * Sets the default factory list for this factory manager. See {@linkplain
      * CmdFactoryMgr above} for details.
+     *
      * @param list the new default factory list
      */
     public synchronized final void setDefaultFactoryList(
@@ -81,7 +85,8 @@ final class CmdFactoryMgr extends SnacCmdFactoryList {
     }
 
     /**
-     * Returns the default factory list for this factory manager.
+     * Returns this command factory manager's the default SNAC command factory
+     * list.
      *
      * @return this object's default factory list
      */
@@ -97,7 +102,7 @@ final class CmdFactoryMgr extends SnacCmdFactoryList {
      * @param type the command type for which a factory must be found
      * @return an appropriate command factory for the given type
      */
-    public synchronized final SnacCmdFactory findFactory(CmdType type) {
+    synchronized final SnacCmdFactory findFactory(CmdType type) {
         // see if there's a usert r factory for this command
         SnacCmdFactory factory = getFactory(type);
 

@@ -35,6 +35,7 @@
 
 package net.kano.joscar.ratelim;
 
+import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.snac.*;
@@ -43,11 +44,14 @@ import net.kano.joscar.snaccmd.conn.RateClassInfo;
 import net.kano.joscar.snaccmd.conn.RateInfoCmd;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
-import java.util.logging.Logger;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class RateMonitor {
+    public static final Object ERRTYPE_RATE_LISTENER = "ERRTYPE_RATE_LISTENER";
+
     public static final int ERRORMARGIN_DEFAULT = 100;
 
     private int errorMargin = ERRORMARGIN_DEFAULT;
@@ -57,7 +61,7 @@ public class RateMonitor {
 
     private SnacProcessor snacProcessor = null;
 
-    private boolean gotRateClasses = false;
+    private final CopyOnWriteArrayList listeners = new CopyOnWriteArrayList();
 
     private Map classToQueue = new HashMap();
     private Map typeToQueue = new HashMap(500);
@@ -118,31 +122,58 @@ public class RateMonitor {
         snacProcessor = null;
     }
 
+    /**
+     * Note that this method clears all rate information
+     */
     public void setRateClasses(RateClassInfo[] rateInfos) {
         DefensiveTools.checkNull(rateInfos, "rateInfos");
 
-        synchronized(this) {
-            if (gotRateClasses) {
-                if (logger.isLoggable(Level.FINE)) {
-                    logger.fine("Already got rate classes for monitor " + this
-                            + "; ignoring new list of classes");
-                }
-                return;
-            }
-            gotRateClasses = true;
+        if (logger.isLoggable(Level.FINE)) {
+            logger.fine("Got rate classes for monitor " + this);
         }
 
         rateInfos = (RateClassInfo[]) rateInfos.clone();
 
         DefensiveTools.checkNullElements(rateInfos, "rateInfos");
 
-        for (int i = 0; i < rateInfos.length; i++) {
-            RateClassInfo rateInfo = rateInfos[i];
+        // I guess this is a new connection now
+        synchronized(this) {
+            typeToQueue.clear();
+            classToQueue.clear();
+            defaultQueue = null;
 
-            setRateClass(rateInfo);
+            for (int i = 0; i < rateInfos.length; i++) {
+                RateClassInfo rateInfo = rateInfos[i];
+
+                setRateClass(rateInfo);
+            }
         }
 
-        //TODO: update listeners to tell them we got rate infoz
+        for (Iterator it = listeners.iterator(); it.hasNext();) {
+            RateListener listener = (RateListener) it.next();
+
+            try {
+                listener.gotRateClasses(this);
+            } catch (Throwable t) {
+                handleException(ERRTYPE_RATE_LISTENER, t, listener);
+            }
+        }
+    }
+
+    private void handleException(Object type, Throwable t, Object info) {
+        SnacProcessor processor;
+        synchronized(this) {
+            processor = snacProcessor;
+        }
+
+        if (processor != null) {
+            processor.getFlapProcessor().handleException(type, t, info);
+        } else {
+            System.err.println("Rate monitor couldn't process error because "
+                    + "not attached to SNAC processor: " + t.getMessage()
+                    + " (reason obj: " + info + ")");
+            t.printStackTrace();
+        }
     }
 
     private synchronized void setRateClass(RateClassInfo rateInfo) {
@@ -171,9 +202,19 @@ public class RateMonitor {
         DefensiveTools.checkRange(changeCode, "changeCode", 0);
         DefensiveTools.checkNull(rateInfo, "rateInfo");
 
-        RateClassMonitor queue = getRateMonitor(rateInfo);
+        RateClassMonitor monitor = getRateMonitor(rateInfo);
 
-        queue.updateRateInfo(changeCode, rateInfo);
+        monitor.updateRateInfo(changeCode, rateInfo);
+
+        for (Iterator it = listeners.iterator(); it.hasNext();) {
+            RateListener listener = (RateListener) it.next();
+
+            try {
+                listener.rateClassUpdated(this, monitor, rateInfo);
+            } catch (Throwable t) {
+                handleException(ERRTYPE_RATE_LISTENER, t, listener);
+            }
+        }
     }
 
     private void updateRate(SnacRequestSentEvent e) {
@@ -186,6 +227,18 @@ public class RateMonitor {
         monitor.updateRate(e.getSentTime());
     }
 
+    void fireLimitedEvent(RateClassMonitor monitor, boolean limited) {
+        for (Iterator it = listeners.iterator(); it.hasNext();) {
+            RateListener listener = (RateListener) it.next();
+
+            try {
+                listener.rateClassLimited(this, monitor, limited);
+            } catch (Throwable t) {
+                handleException(ERRTYPE_RATE_LISTENER, t, listener);
+            }
+        }
+    }
+
 
     public synchronized final void setErrorMargin(int errorMargin) {
         DefensiveTools.checkRange(errorMargin, "errorMargin", 0);
@@ -195,7 +248,12 @@ public class RateMonitor {
 
     public final synchronized int getErrorMargin() { return errorMargin; }
 
-    private synchronized RateClassMonitor getMonitor(CmdType type) {
+    public final synchronized RateClassMonitor[] getMonitors() {
+        return (RateClassMonitor[])
+                classToQueue.values().toArray(new RateClassMonitor[0]);
+    }
+
+    public final synchronized RateClassMonitor getMonitor(CmdType type) {
         DefensiveTools.checkNull(type, "type");
 
         RateClassMonitor queue = (RateClassMonitor) typeToQueue.get(type);

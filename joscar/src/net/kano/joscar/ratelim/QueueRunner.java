@@ -161,7 +161,7 @@ class QueueRunner implements Runnable {
     }
 
     private long getWaitTime(RateQueue queue) {
-        return queue.getOptimalWaitTime();
+        return queue.getRateMonitor().getOptimalWaitTime();
     }
 
     private boolean isReady(RateQueue queue) {

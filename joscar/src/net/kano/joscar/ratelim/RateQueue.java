@@ -35,29 +35,33 @@
 
 package net.kano.joscar.ratelim;
 
-import net.kano.joscar.snaccmd.conn.RateClassInfo;
-import net.kano.joscar.snaccmd.conn.RateChange;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snac.SnacRequest;
+import net.kano.joscar.snaccmd.conn.RateClassInfo;
 
 import java.util.LinkedList;
-import java.util.logging.Logger;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
-class RateQueue {
+public class RateQueue {
     private static final Logger logger
             = Logger.getLogger("net.kano.joscar.ratelim");
 
     private final ConnectionQueueMgr parentMgr;
 
-    private LinkedList queue = new LinkedList();
+    private final LinkedList queue = new LinkedList();
 
-    public RateQueue(ConnectionQueueMgr parentMgr, RateClassInfo rateInfo) {
+    private final RateClassMonitor rateMonitor;
+
+    RateQueue(ConnectionQueueMgr parentMgr, RateClassMonitor monitor) {
         DefensiveTools.checkNull(parentMgr, "parentMgr");
-        DefensiveTools.checkNull(rateInfo, "rateInfo");
+        DefensiveTools.checkNull(monitor, "monitor");
 
         this.parentMgr = parentMgr;
+        this.rateMonitor = monitor;
     }
+
+    public RateClassMonitor getRateMonitor() { return rateMonitor; }
 
     public ConnectionQueueMgr getParentMgr() { return parentMgr; }
 
@@ -68,7 +72,8 @@ class RateQueue {
 
         if (logger.isLoggable(Level.FINE)) {
             logger.fine("Enqueuing " + req.getCommand() + " within ratequeue " +
-                    "(class " + rateInfo.getRateClass() + ")...");
+                    "(class " + rateMonitor.getRateInfo().getRateClass()
+                    + ")...");
         }
 
         queue.add(req);
@@ -85,8 +90,8 @@ class RateQueue {
 
         if (logger.isLoggable(Level.FINE)) {
             logger.fine("Dequeueing " + request.getCommand()
-                    + " from ratequeue (class " + rateInfo.getRateClass()
-                    + ")...");
+                    + " from ratequeue (class "
+                    + rateMonitor.getRateInfo().getRateClass() + ")...");
         }
 
         return request;
