@@ -42,10 +42,38 @@ import net.kano.joscar.flapcmd.SnacPacket;
 import java.io.IOException;
 import java.io.OutputStream;
 
+/**
+ * A SNAC command sent to request the user's server-stored data if and only if
+ * it was modified past a certain date. Normally responded-to with either a
+ * {@link SsiDataCmd} or a {@link SsiUnchangedCmd}. The purpose of this command
+ * in addition to {@link SsiDataRequest} is to avoid downloading the same
+ * buddy list at the start of every connection, which both wastes bandwidth and
+ * increases the net time it takes to sign on, especially for those with large
+ * buddy lists. This command should only be used if the client saves the SSI
+ * data to disk or some other non-temporary medium; otherwise one should use
+ * {@link SsiDataRequest}.
+ *
+ * @snac.src client
+ * @snac.cmd 0x13 0x05
+ *
+ * @see SsiDataCmd
+ * @see SsiUnchangedCmd
+ */
 public class SsiDataCheck extends SsiCommand {
+    /**
+     * The last modification date of the client's version of the SSI data, in
+     * seconds since the unix epoch.
+     */
     private final long lastmod;
+    /** The number of SSI items in the client's version of the SSI data. */
     private final int itemCount;
 
+    /**
+     * Generates a new SSI data check command from the given incoming SNAC
+     * packet.
+     *
+     * @param packet an incoming SSI data check packet
+     */
     protected SsiDataCheck(SnacPacket packet) {
         super(CMD_DATA_CHECK);
 
@@ -55,6 +83,37 @@ public class SsiDataCheck extends SsiCommand {
         itemCount = BinaryTools.getUShort(snacData, 4);
     }
 
+    /**
+     * Creates a new outgoing SSI data check command with the given last
+     * modification date of the client's version of the SSI data and the given
+     * number of SSI items currently present in the client's SSI data.
+     * <br>
+     * <br>
+     * For those unfamiliar with unixtime, a fine way to use this command,
+     * if the SSI data were stored locally (which is totally optional in itself)
+     * in a file called "ssi.dat" (which is a filename I personally wouldn't
+     * use outside of this example :):
+<pre>
+// create a File object for the SSI data file
+File ssiDataFile = new File("ssi.dat");
+
+// lastModifed returns milliseconds since unix epoch, so we can just divide by
+// 1000 to get seconds
+long secondsSinceUnixEpoch = ssiDataFile.lastModified() / 1000;
+
+// count the items. I assume you'll have your own system for determining this
+// sort of thing.
+int itemCount = someCommandYouMadeToCountTheItems(ssiDataFile);
+
+// now send the command with some send command you made
+send(new SsiDataCheck(secondsSinceUnixEpoch, itemCount));
+</pre>
+     *
+     * @param lastmod the last modification date of the client's version of the
+     *        SSI data, in seconds since the unix epoch
+     * @param itemCount the number of SSI "items" in the local version of the
+     *        SSI data
+     */
     public SsiDataCheck(long lastmod, int itemCount) {
         super(CMD_DATA_CHECK);
 
@@ -62,10 +121,24 @@ public class SsiDataCheck extends SsiCommand {
         this.itemCount = itemCount;
     }
 
-    public final long getLastmod() {
+    /**
+     * Returns the last-modification date of the client's version of the SSI
+     * data, in seconds since the unix epoch.
+     *
+     * @return the last-modification date of the client's version of the SSI
+     *         data
+     */
+    public final long getLastmodDate() {
         return lastmod;
     }
 
+    /**
+     * Returns the number of SSI "items" contained in the client's version of
+     * the SSI data.
+     *
+     * @return the number of SSI "items" contained in the client's copy of the
+     *         SSI data
+     */
     public final int getItemCount() {
         return itemCount;
     }

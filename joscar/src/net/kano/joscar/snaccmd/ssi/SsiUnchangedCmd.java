@@ -40,11 +40,30 @@ import net.kano.joscar.flapcmd.SnacPacket;
 import java.io.IOException;
 import java.io.OutputStream;
 
+/**
+ * A SNAC command sent to indicate to the client that the user's server-stored
+ * data have not changed since the date specified in a previously sent {@link
+ * SsiDataCheck}.
+ *
+ * @snac.src server
+ * @snac.cmd 0x13 0x0f
+ *
+ * @see SsiDataCheck
+ */
 public class SsiUnchangedCmd extends SsiCommand {
+    /**
+     * Generates a new SSI unchanged notification command from the given
+     * incoming SNAC packet.
+     *
+     * @param packet an incoming SSI-is-unchanged notification packet
+     */
     protected SsiUnchangedCmd(SnacPacket packet) {
         super(CMD_UNCHANGED);
     }
 
+    /**
+     * Creates a new outgoing SSI-is-unchanged notification.
+     */
     public SsiUnchangedCmd() {
         super(CMD_UNCHANGED);
     }

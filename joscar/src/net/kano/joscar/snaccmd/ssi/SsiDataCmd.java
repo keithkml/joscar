@@ -45,13 +45,36 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * A SNAC command containing the user's server-stored information. Normally
+ * sent in respose to either of {@link SsiDataCheck} and {@link SsiDataRequest}.
+ * Note that this command is sent <i>multiple times</i>, spreading out the
+ * user's SSI items over multiple commands. To check for this, check to see
+ * whether {@link #getLastModDate} is <code>0</code>: if it is, there are more
+ * <code>SsiDataCmd</code>s to come.
+ *
+ * @snac.src server
+ * @snac.cmd 0x13 0x06
+ *
+ * @see SsiDataCheck
+ * @see SsiDataRequest
+ */
 public class SsiDataCmd extends SsiCommand {
+    /** A default SSI data version; the version number used by WinAIM. */
     public static final int VERSION_DEFAULT = 0x00;
 
+    /** The SSI version being used. */
     private final int version;
+    /** The list of items. */
     private final SsiItem[] items;
+    /** The last modification date of the SSI data. */
     private final long lastmod;
 
+    /**
+     * Generates a new SSI data command from the given incoming SNAC packet.
+     *
+     * @param packet an incoming SSI data packet
+     */
     protected SsiDataCmd(SnacPacket packet) {
         super(CMD_SSI_DATA);
 
@@ -79,6 +102,28 @@ public class SsiDataCmd extends SsiCommand {
         lastmod = BinaryTools.getUInt(block, 0);
     }
 
+    /**
+     * Creates a new outgoing SSI data command with the given properties and
+     * an SSI version of {@link #VERSION_DEFAULT}.
+     *
+     * @param items a list of the user's SSI items
+     * @param lastmod the last modification date of the user's SSI data, in
+     *        seconds since the unix epoch
+     */
+    public SsiDataCmd(SsiItem[] items, long lastmod) {
+        this(VERSION_DEFAULT, items, lastmod);
+    }
+
+    /**
+     * Creates a new outgoing SSI data command with the given properties.
+     *
+     * @param version the SSI version being used, normally {@link
+     *        #VERSION_DEFAULT}
+     * @param items a list of the user's SSI items
+     * @param lastmod the last modification date of the user's SSI data, in
+     *        seconds since the unix epoch, or <code>0</code> to indicate that
+     *        this is <i>not</i> the last of a series of SSI data packets
+     */
     public SsiDataCmd(int version, SsiItem[] items, long lastmod) {
         super(CMD_SSI_DATA);
 
@@ -87,14 +132,36 @@ public class SsiDataCmd extends SsiCommand {
         this.lastmod = lastmod;
     }
 
+    /**
+     * Returns the SSI version being used. This is normally {@link
+     * #VERSION_DEFAULT}.
+     *
+     * @return the SSI version being used
+     */
     public final int getSsiVersion() {
         return version;
     }
 
+    /**
+     * Returns the user's SSI items, as sent in this command. Note that this
+     * may not be <i>all</i> of the user's SSI items, as this command is
+     * sometimes sent multiple times, spreading the user's SSI items over
+     * multiple packets. If there are more SSI data commands to follow this
+     * one, {@link #getLastModDate} will return <code>0</code>.
+     *
+     * @return the items in this user's server-stored information
+     */
     public final SsiItem[] getItems() {
         return items;
     }
 
+    /**
+     * Returns the last modification date of the user's SSI data, or
+     * <code>0</code> if more SSI data packets are to follow this one.
+     *
+     * @return the last modification date of the user's SSI data, in seconds
+     *         since the unix epoch
+     */
     public final long getLastModDate() {
         return lastmod;
     }

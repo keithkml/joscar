@@ -43,7 +43,7 @@ public class DefaultSsiItemObjFactory implements SsiItemObjectFactory {
         if (type == SsiItem.TYPE_BUDDY) {
             return BuddyItem.readBuddyItem(item);
         } else if (type == SsiItem.TYPE_GROUP) {
-            if (item.getGroupId() == 0) return RootItem.readRootItem(item);
+            if (item.getParentId() == 0) return RootItem.readRootItem(item);
             else return GroupItem.readGroupItem(item);
         } else if (type == SsiItem.TYPE_PRIVACY) {
             return PrivacyItem.readPrivacyItem(item);

@@ -40,7 +40,12 @@ import net.kano.joscar.snac.CmdType;
 import net.kano.joscar.snac.SnacCmdFactory;
 import net.kano.joscar.snac.SnacCommand;
 
+/**
+ * A SNAC command factory for the client-bound commands provided in this
+ * package, appropriate for use by an AIM client.
+ */
 public class ClientSsiCmdFactory implements SnacCmdFactory {
+    /** The SNAC command types supported by this factory. */
     private static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
         new CmdType(SsiCommand.FAMILY_SSI, SsiCommand.CMD_RIGHTS),
         new CmdType(SsiCommand.FAMILY_SSI, SsiCommand.CMD_SSI_DATA),
@@ -64,7 +69,7 @@ public class ClientSsiCmdFactory implements SnacCmdFactory {
         } else if (command == SsiCommand.CMD_UNCHANGED) {
             return new SsiUnchangedCmd(packet);
         } else if (command == SsiCommand.CMD_MOD_ACK) {
-            return new SsiDataModAck(packet);
+            return new SsiDataModResponse(packet);
         } else {
             return null;
         }

@@ -45,10 +45,26 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
-abstract class ItemsCmd extends SsiCommand {
+/**
+ * A base class for the three item-based commands in this package. These
+ * commands are {@link CreateItemsCmd}, {@link ModifyItemsCmd}, {@link
+ * DeleteItemsCmd}.
+ *
+ * @see CreateItemsCmd
+ * @see ModifyItemsCmd
+ * @see DeleteItemsCmd
+ */
+public abstract class ItemsCmd extends SsiCommand {
+    /** The items sent in this command. */
     private final SsiItem[] items;
 
-    protected ItemsCmd(int command, SnacPacket packet) {
+    /**
+     * Generates a new item-based command from the given incoming SNAC packet.
+     *
+     * @param command the SNAC command subtype for this command
+     * @param packet an incoming item-based command packet
+     */
+    ItemsCmd(int command, SnacPacket packet) {
         super(command);
 
         ByteBlock block = packet.getData();
@@ -67,12 +83,23 @@ abstract class ItemsCmd extends SsiCommand {
         items = (SsiItem[]) itemList.toArray(new SsiItem[0]);
     }
 
-    public ItemsCmd(int command, SsiItem[] items) {
+    /**
+     * Creates a new outgoing item-based command with the given list of items.
+     *
+     * @param command the SNAC command subtype for this command
+     * @param items the list of items to send in this commnad
+     */
+    ItemsCmd(int command, SsiItem[] items) {
         super(command);
 
         this.items = items;
     }
 
+    /**
+     * Returns the list of server-stored "items" contained in this command.
+     *
+     * @return the list of "items" sent in this command
+     */
     public final SsiItem[] getItems() {
         return items;
     }

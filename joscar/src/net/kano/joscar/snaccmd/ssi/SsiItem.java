@@ -43,22 +43,82 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
 
+/**
+ * A data structure used to store various types of "items" on the server. These
+ * items can be buddies (with comments and buddy alert data), groups, blocked
+ * buddies, and other settings. See the {@linkplain net.kano.joscar.ssiitem the
+ * <code>ssiitem</code> package} for more logical implementations of specific
+ * SSI item types.
+ *
+ * @see net.kano.joscar.ssiitem
+ */
 public class SsiItem implements LiveWritable, Serializable {
+    /**
+     * An SSI item type for a buddy.
+     *
+     * @see net.kano.joscar.ssiitem.BuddyItem
+     */
     public static final int TYPE_BUDDY = 0x0000;
+    /**
+     * An SSI item type for a buddy group.
+     *
+     * @see net.kano.joscar.ssiitem.RootItem
+     * @see net.kano.joscar.ssiitem.GroupItem
+     */
     public static final int TYPE_GROUP = 0x0001;
+    /**
+     * An SSI item type for an "allowed" user, or "permit."
+     *
+     * @see net.kano.joscar.ssiitem.PermitItem
+     */
     public static final int TYPE_PERMIT = 0x0002;
+    /**
+     * An SSI item type for a "blocked" user, or "deny."
+     *
+     * @see net.kano.joscar.ssiitem.DenyItem
+     */
     public static final int TYPE_DENY = 0x0003;
+    /**
+     * An SSI item type for various privacy-related settings.
+     *
+     * @see net.kano.joscar.ssiitem.PrivacyItem
+     */
     public static final int TYPE_PRIVACY = 0x0004;
+    /**
+     * An SSI item type for various "visiblity-related" settings.
+     *
+     * @see net.kano.joscar.ssiitem.VisibilityItem
+     */
     public static final int TYPE_VISIBILITY = 0x0005;
+    /**
+     * An SSI item type for a {@linkplain net.kano.joscar.snaccmd.IconHashInfo
+     * buddy icon hash}.
+     *
+     * @see net.kano.joscar.ssiitem.IconItem
+      */
     public static final int TYPE_ICON_INFO = 0x0014;
 
+    /** The item name. */
     private final String name;
-    private final int groupid;
-    private final int buddyid;
+    /** The parent ID of the item. */
+    private final int parentid;
+    /** The subID"" of the item. */
+    private final int subid;
+    /** The item type. */
     private final int type;
+    /** The item data block. */
     private final ByteBlock data;
+    /** The total size of this object, as read from an incoming data block. */
     private transient final int totalSize;
 
+    /**
+     * Generates a new SSI item from the given block of binary data, or
+     * <code>null</code> if no valid item could be read.
+     *
+     * @param block a block of data containing an SSI item
+     * @return a new SSI item object read from the given block of data, or
+     *         <code>null</code> if none could be read
+     */
     protected static SsiItem readSsiItem(ByteBlock block) {
         if (block.getLength() < 10) return null;
 
@@ -85,41 +145,109 @@ public class SsiItem implements LiveWritable, Serializable {
         return new SsiItem(name, groupid, buddyid, type, data, size);
     }
 
-    protected SsiItem(String name, int groupid, int buddyid, int type,
+    /**
+     * Creates a new SSI item with the given properties.
+     *
+     * @param name the name of this item
+     * @param parentid the "parent ID" of this item
+     * @param subid the "sub ID" of this item in its parent
+     * @param type the type of the item, like {@link #TYPE_ICON_INFO}
+     * @param data a type-specific data block for this item
+     * @param totalSize the total size of this item, as read from an incoming
+     *        block of binary data
+     */
+    private SsiItem(String name, int parentid, int subid, int type,
             ByteBlock data, int totalSize) {
         this.name = name;
-        this.groupid = groupid;
-        this.buddyid = buddyid;
+        this.parentid = parentid;
+        this.subid = subid;
         this.type = type;
         this.data = data;
         this.totalSize = totalSize;
     }
 
-    public SsiItem(String name, int groupid, int buddyid, int type,
-            ByteBlock data) {
-        this(name, groupid, buddyid, type, data, -1);
+    /**
+     * Creates a new SSI item with no name or type-specific data and with the
+     * given parent ID, sub ID, and item type.
+     *
+     * @param parentid the "parent ID" of this item
+     * @param subid the "sub ID" of this item in its parent
+     * @param type the type of this item, like {@link #TYPE_BUDDY}
+     */
+    public SsiItem(int parentid, int subid, int type) {
+        this("", parentid, subid, type, null);
     }
 
+    /**
+     * Creates a new SSI item with the given properties.
+     *
+     * @param name the name of this item
+     * @param parentid the "parent ID" of this item
+     * @param subid the "sub ID" of this item in its parent
+     * @param type the type of this item, like {@link #TYPE_GROUP}
+     * @param data a block of type-specific data, or <code>null</code> (or an
+     *        empty block) for none
+     */
+    public SsiItem(String name, int parentid, int subid, int type,
+            ByteBlock data) {
+        this(name, parentid, subid, type, data, -1);
+    }
+
+    /**
+     * Returns the name of this item.
+     *
+     * @return the name of this item
+     */
     public final String getName() {
         return name;
     }
 
-    public final int getGroupId() {
-        return groupid;
+    /**
+     * Returns the "parent ID" of this item.
+     *
+     * @return this item's "parent ID"
+     */
+    public final int getParentId() {
+        return parentid;
     }
 
-    public final int getBuddyId() {
-        return buddyid;
+    /**
+     * Returns the "sub ID" of this item. This value is only unique within its
+     * {@linkplain #getParentId parent}.
+     *
+     * @return this item's "sub ID" in its parent
+     */
+    public final int getSubId() {
+        return subid;
     }
 
+    /**
+     * Returns this item's type. Normally one of the {@linkplain #TYPE_BUDDY
+     * <code>TYPE_<i>*</i></code> constants} defined in this class.
+     *
+     * @return this item's SSI item type
+     */
     public final int getItemType() {
         return type;
     }
 
+    /**
+     * Returns the type-specific data stored in this item.
+     *
+     * @return this item's type-specific data block
+     */
     public final ByteBlock getData() {
         return data;
     }
 
+    /**
+     * Returns the total size, in bytes, of this object, if read from an
+     * incoming block of binary data. Note that this will be <code>-1</code> if
+     * this item was not read from an incoming data block.
+     *
+     * @return the total size, in bytes, of this object, as read from an
+     *         incoming block of data
+     */
     public int getTotalSize() {
         return totalSize;
     }
@@ -129,17 +257,19 @@ public class SsiItem implements LiveWritable, Serializable {
         BinaryTools.writeUShort(out, namebytes.length);
         out.write(namebytes);
 
-        BinaryTools.writeUShort(out, groupid);
-        BinaryTools.writeUShort(out, buddyid);
+        BinaryTools.writeUShort(out, parentid);
+        BinaryTools.writeUShort(out, subid);
         BinaryTools.writeUShort(out, type);
 
-        BinaryTools.writeUShort(out, data.getLength());
-        data.write(out);
+        // here we are nice and let data be null
+        int len = data == null ? 0 : data.getLength();
+        BinaryTools.writeUShort(out, len);
+        if (data != null) data.write(out);
     }
 
     public String toString() {
         return "SsiItem '" + name + "', type=0x" + Integer.toHexString(type)
-                + ", group 0x" + Integer.toHexString(groupid) + ", buddy 0x"
-                + Integer.toHexString(buddyid);
+                + ", group 0x" + Integer.toHexString(parentid) + ", buddy 0x"
+                + Integer.toHexString(subid);
     }
 }

@@ -40,11 +40,30 @@ import net.kano.joscar.flapcmd.SnacPacket;
 import java.io.IOException;
 import java.io.OutputStream;
 
+/**
+ * A SNAC command sent to request a list of "rights" associated with
+ * server-stored information. Generally responded-to with a
+ * {@link SsiRightsCmd}.
+ *
+ * @snac.src client
+ * @snac.cmd 0x13 0x02
+ *
+ * @see SsiRightsCmd
+ */
 public class SsiRightsRequest extends SsiCommand {
+    /**
+     * Generates a new SSI rights request command from the given incoming SNAC
+     * packet.
+     *
+     * @param packet an incoming SSI rights request packet
+     */
     protected SsiRightsRequest(SnacPacket packet) {
         super(CMD_RIGHTS_REQ);
     }
 
+    /**
+     * Creates a new outgoing SSI rights request.
+     */
     public SsiRightsRequest() {
         super(CMD_RIGHTS_REQ);
     }

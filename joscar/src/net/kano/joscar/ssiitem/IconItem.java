@@ -76,7 +76,7 @@ public class IconItem extends AbstractItem {
 
         extraTlvs.removeTlvs(new int[] { TYPE_ICON_HASH });
 
-        return new IconItem(name, item.getBuddyId(), iconInfo, alias,
+        return new IconItem(name, item.getSubId(), iconInfo, alias,
                 extraTlvs);
     }
 

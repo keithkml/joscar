@@ -55,7 +55,7 @@ public class VisibilityItem extends AbstractItem {
     private final long flags;
 
     public static VisibilityItem readVisiblityItem(SsiItem item) {
-        int id = item.getBuddyId();
+        int id = item.getSubId();
 
         TlvChain chain = TlvChain.readChain(item.getData());
 

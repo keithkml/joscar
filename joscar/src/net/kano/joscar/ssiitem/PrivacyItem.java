@@ -90,7 +90,7 @@ public class PrivacyItem extends AbstractItem {
             TYPE_PRIVACY_MODE, TYPE_CLASS_MASK, TYPE_VISIBILE_MASK
         });
 
-        return new PrivacyItem(item.getBuddyId(), type, classMask, visibleMask,
+        return new PrivacyItem(item.getSubId(), type, classMask, visibleMask,
                 extraTlvs);
     }
 

@@ -45,7 +45,7 @@ public class DenyItem extends SimpleNamedItem {
 
         MutableTlvChain mutey = new MutableTlvChain(chain);
 
-        return new DenyItem(item.getName(), item.getBuddyId(), mutey);
+        return new DenyItem(item.getName(), item.getSubId(), mutey);
     }
 
     public DenyItem(DenyItem other) {

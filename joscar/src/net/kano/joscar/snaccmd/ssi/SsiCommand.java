@@ -38,26 +38,59 @@ package net.kano.joscar.snaccmd.ssi;
 import net.kano.joscar.snac.SnacCommand;
 import net.kano.joscar.snaccmd.conn.SnacFamilyInfo;
 
+/**
+ * A base class for commands in the server-stored information <code>0x13</code>
+ * SNAC family.
+ */
 public abstract class SsiCommand extends SnacCommand {
+    /** The SNAC family code for the SSI family. */
     public static final int FAMILY_SSI = 0x0013;
 
+    /** A set of SNAC family information for this family. */
     public static final SnacFamilyInfo FAMILY_INFO
             = new SnacFamilyInfo(FAMILY_SSI, 0x0003, 0x0110, 0x0629);
 
+    /** A command subtype for requesting SSI-related "rights." */
     public static final int CMD_RIGHTS_REQ = 0x0002;
-    public static final int CMD_RIGHTS = 0x0003;
+    /** A command subtype for requesting the user's SSI data. */
     public static final int CMD_DATA_REQ = 0x0004;
+    /**
+     * A command subtype for requesting the user's SSI data if it has
+     * changed.
+     */
     public static final int CMD_DATA_CHECK = 0x0005;
-    public static final int CMD_SSI_DATA = 0x0006;
+    /** A command subtype for "activating" the SSI data. */
     public static final int CMD_ACTIVATE = 0x0007;
-    public static final int CMD_UNCHANGED = 0x000f;
+    /** A command subtype for creating new server-stored "items." */
     public static final int CMD_CREATE_ITEMS = 0x0008;
+    /** A command subtype for modifying existing server-stored "items." */
     public static final int CMD_MODIFY_ITEMS = 0x0009;
+    /** A command subtype for deleting server-stored "items." */
     public static final int CMD_DELETE_ITEMS = 0x000a;
-    public static final int CMD_MOD_ACK = 0x000e;
+    /** A command subtype sometimes sent before changing SSI data. */
     public static final int CMD_PRE_MOD = 0x0011;
+    /** A command subtype sometimes sent after changing SSI data. */
     public static final int CMD_POST_MOD = 0x0012;
 
+    /**
+     * A command subtype for sending the client a list of SSI-related "rights."
+     */
+    public static final int CMD_RIGHTS = 0x0003;
+    /** A command subtype for sending SSI data to the client. */
+    public static final int CMD_SSI_DATA = 0x0006;
+    /**
+     * A command subtype for telling the user that the SSI data have not changed
+     *  since the last time the client saw them.
+     */
+    public static final int CMD_UNCHANGED = 0x000f;
+    /** A command subtype for acknowledging a change to SSI data. */
+    public static final int CMD_MOD_ACK = 0x000e;
+
+    /**
+     * Creates a new SNAC command in the SSI family.
+     *
+     * @param command the SNAC command subtype
+     */
     protected SsiCommand(int command) {
         super(FAMILY_SSI, command);
     }

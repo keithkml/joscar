@@ -40,11 +40,30 @@ import net.kano.joscar.flapcmd.SnacPacket;
 import java.io.IOException;
 import java.io.OutputStream;
 
+/**
+ * A SNAC command that WinAIM sends sometimes after modifying the buddy list
+ * after sending a {@link PreModCmd}. That is all that is currently known about
+ * this command. It looks like whether you send it or not you will be fine.
+ *
+ * @snac.src client
+ * @snac.cmd 0x13 0x12
+ *
+ * @see PreModCmd
+ */
 public class PostModCmd extends SsiCommand {
+    /**
+     * Generates a post-SSI-modification command from the given incoming SNAC
+     * packet.
+     *
+     * @param packet an incoming post-SSI-modification packet
+     */
     protected PostModCmd(SnacPacket packet) {
         super(CMD_POST_MOD);
     }
 
+    /**
+     * Creates a new outgoing post-SSI-modification command.
+     */
     public PostModCmd() {
         super(CMD_POST_MOD);
     }
