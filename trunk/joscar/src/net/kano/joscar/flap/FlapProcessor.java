@@ -38,6 +38,7 @@ package net.kano.joscar.flap;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.SeqNum;
 import net.kano.joscar.net.ConnProcessor;
 
 import java.io.IOException;
@@ -91,7 +92,7 @@ public class FlapProcessor extends ConnProcessor {
     /**
      * Represents the maximum value of a FLAP sequence number.
      */
-    private static final int SEQNUM_MAX = 0xff - 1;
+    private static final int SEQNUM_MAX = 0xffff;
 
     /**
      * A list of handlers for FLAP-related errors and exceptions.
@@ -112,9 +113,6 @@ public class FlapProcessor extends ConnProcessor {
     private final CopyOnWriteArrayList vetoablePacketListeners
             = new CopyOnWriteArrayList();
 
-    /** A lock for modifying and reading the sequence number. */
-    private final Object seqLock = new Object();
-
     /** A lock for writing to the stream. */
     private final Object writeLock = new Object();
 
@@ -125,7 +123,7 @@ public class FlapProcessor extends ConnProcessor {
      * The sequence number of the next FLAP packet; increased on each packet
      * send.
      */
-    private int seqnum = 1;
+    private SeqNum seqNum = new SeqNum(0, SEQNUM_MAX);
 
     /**
      * A FLAP command factory to generate <code>FlapCommand</code>s from
@@ -405,40 +403,33 @@ public class FlapProcessor extends ConnProcessor {
 
         if (logFiner) logger.finer("Sending Flap command " + command);
 
-        int seq;
-        synchronized(seqLock) {
-            // this is sent as an unsigned short, so it needs to wrap like an
-            // unsigned short.
-            if (seqnum == SEQNUM_MAX) seqnum = 0;
-            else seqnum++;
+        synchronized(writeLock) {
+            int seq = (int) seqNum.next();
 
-            seq = seqnum;
-        }
+            FlapPacket packet = new FlapPacket(seq, command);
 
-        FlapPacket packet = new FlapPacket(seq, command);
-
-        ByteBlock block;
-        try {
-            block = ByteBlock.createByteBlock(packet);
-        } catch (Throwable t) {
-            handleException(FlapExceptionEvent.ERRTYPE_CMD_WRITE, t, command);
-            return;
-        }
-
-        if (logFine) {
-            logger.fine("Sending Flap packet " + packet + ": "
-                    + block.getLength() + " total bytes");
-        }
-
-        // we trust ByteBlock.write so much that we don't even check for
-        // Throwable!
-        try {
-            synchronized(writeLock) {
-                block.write(out);
+            ByteBlock block;
+            try {
+                block = ByteBlock.createByteBlock(packet);
+            } catch (Throwable t) {
+                handleException(FlapExceptionEvent.ERRTYPE_CMD_WRITE, t,
+                        command);
+                return;
             }
-        } catch (IOException e) {
-            handleException(FlapExceptionEvent.ERRTYPE_CONNECTION_ERROR, e);
-            return;
+
+            if (logFine) {
+                logger.fine("Sending Flap packet " + packet + ": "
+                        + block.getLength() + " total bytes");
+            }
+
+            // we trust ByteBlock.write so much that we don't even check for
+            // Throwable!
+            try {
+                block.write(out);
+            } catch (IOException e) {
+                handleException(FlapExceptionEvent.ERRTYPE_CONNECTION_ERROR, e);
+                return;
+            }
         }
 
         if (logFiner) logger.finer("Finished sending Flap command");

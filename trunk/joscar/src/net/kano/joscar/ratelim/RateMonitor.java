@@ -37,8 +37,8 @@ package net.kano.joscar.ratelim;
 
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.snac.*;
+import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.snaccmd.conn.RateChange;
 import net.kano.joscar.snaccmd.conn.RateClassInfo;
 import net.kano.joscar.snaccmd.conn.RateInfoCmd;
@@ -54,12 +54,10 @@ public class RateMonitor {
 
     public static final int ERRORMARGIN_DEFAULT = 100;
 
-    private int errorMargin = ERRORMARGIN_DEFAULT;
-
     private static final Logger logger
             = Logger.getLogger("net.kano.joscar.ratelim");
 
-    private SnacProcessor snacProcessor = null;
+    private SnacProcessor snacProcessor;
 
     private final CopyOnWriteArrayList listeners = new CopyOnWriteArrayList();
 
@@ -68,6 +66,8 @@ public class RateMonitor {
     private Map classToQueue = new HashMap();
     private Map typeToQueue = new HashMap(500);
     private RateClassMonitor defaultMonitor = null;
+
+    private int errorMargin = ERRORMARGIN_DEFAULT;
 
     private OutgoingSnacRequestListener requestListener
             = new OutgoingSnacRequestListener() {
@@ -105,65 +105,27 @@ public class RateMonitor {
         }
     };
 
-    public RateMonitor() { }
-
-    public RateMonitor(SnacProcessor snacProcessor) {
-        attach(snacProcessor);
-    }
-
-    public final void attach(SnacProcessor processor) {
+    public RateMonitor(SnacProcessor processor) {
         DefensiveTools.checkNull(processor, "processor");
 
-        synchronized(this) {
-            detach();
+        this.snacProcessor = processor;
 
-            this.snacProcessor = processor;
-
-            processor.addGlobalRequestListener(requestListener);
-            processor.addPacketListener(packetListener);
-            processor.addGlobalResponseListener(responseListener);
-        }
-
-        synchronized(listenerEventLock) {
-            for (Iterator it = listeners.iterator(); it.hasNext();) {
-                RateListener l = (RateListener) it.next();
-
-                try {
-                    l.attached(this, processor);
-                } catch (Throwable t) {
-                    handleException(ERRTYPE_RATE_LISTENER, t, l);
-                }
-            }
-        }
+        processor.addGlobalRequestListener(requestListener);
+        processor.addPacketListener(packetListener);
+        processor.addGlobalResponseListener(responseListener);
     }
 
-    public final void detach() {
-        SnacProcessor processor;
-        synchronized(this) {
-            if (snacProcessor == null) return;
+    public synchronized final void detach() {
+        if (snacProcessor == null) return;
 
-            snacProcessor.removeGlobalRequestListener(requestListener);
-            snacProcessor.removePacketListener(packetListener);
-            snacProcessor.removeGlobalResponseListener(responseListener);
+        snacProcessor.removeGlobalRequestListener(requestListener);
+        snacProcessor.removePacketListener(packetListener);
+        snacProcessor.removeGlobalResponseListener(responseListener);
 
-            processor = snacProcessor;
-            snacProcessor = null;
-        }
-
-        synchronized(listenerEventLock) {
-            for (Iterator it = listeners.iterator(); it.hasNext();) {
-                RateListener l = (RateListener) it.next();
-
-                try {
-                    l.detached(this, processor);
-                } catch (Throwable t) {
-                    handleException(ERRTYPE_RATE_LISTENER, t, l);
-                }
-            }
-        }
+        snacProcessor = null;
     }
 
-    public synchronized final SnacProcessor getSnacProcessor() {
+    public final SnacProcessor getSnacProcessor() {
         return snacProcessor;
     }
 

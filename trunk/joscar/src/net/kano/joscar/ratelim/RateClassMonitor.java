@@ -38,6 +38,7 @@ package net.kano.joscar.ratelim;
 import net.kano.joscar.snaccmd.conn.RateClassInfo;
 import net.kano.joscar.snaccmd.conn.RateChange;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.ratelim.RateMonitor;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;

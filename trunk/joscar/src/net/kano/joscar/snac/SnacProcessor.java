@@ -37,6 +37,7 @@ package net.kano.joscar.snac;
 
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.CopyOnWriteArrayList;
+import net.kano.joscar.SeqNum;
 import net.kano.joscar.flap.FlapPacketEvent;
 import net.kano.joscar.flap.FlapProcessor;
 import net.kano.joscar.flap.VetoableFlapPacketListener;
@@ -230,7 +231,7 @@ public class SnacProcessor {
     private static final long REQID_MAX = REQID_MAX_CLIENT;
 
     /** The request ID of the last SNAC command sent. */
-    private long lastReqid = REQID_MIN;
+    private SeqNum reqid = new SeqNum(REQID_MIN, REQID_MAX);
 
     /**
      * The FLAP processor to which this SNAC processor is attached.
@@ -292,6 +293,7 @@ public class SnacProcessor {
      *  <code>RequestInfo</code>s, which contain <code>SnacRequest</code>s.
      */
     private final Map requests = new HashMap();
+    
     /** A list of requests that have been sent (not just queued). */
     private final List requestQueue = new LinkedList();
 
@@ -1088,15 +1090,11 @@ public class SnacProcessor {
                 return (RequestInfo) requests.get(new Long(request.getReqid()));
             }
 
-            // this is sent as an unsigned int, so it has to wrap like one. we
-            // avoid request ID zero because that seems like a value the server
-            // might use to denote a lack of a request ID.
-            if (lastReqid == REQID_MAX) lastReqid = REQID_MIN;
-            else lastReqid++;
+            long id = reqid.next();
 
-            request.setReqid(lastReqid);
+            request.setReqid(id);
 
-            Long key = new Long(lastReqid);
+            Long key = new Long(id);
 
             cleanRequests();
 
