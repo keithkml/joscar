@@ -138,6 +138,9 @@ joscar.
 Thanks to Ludovic LANGE for his rather indirect, but still important help in
 figuring out Trillian's Secure IM protocol.
 
+Thanks to David Hook for help in figuring out the format of AIM's encrypted
+IM data block.
+
 
 If you have contributed to joscar and are not listed here, please forgive our
 oversight and send mail to <joscar@kano.net>.

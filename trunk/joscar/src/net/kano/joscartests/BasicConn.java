@@ -297,12 +297,6 @@ public abstract class BasicConn extends AbstractFlapConn {
                 System.out.println("got [" + encData.getLength() + "]: "
                         + BinaryTools.describeData(encData));
 
-                byte len1 = encData.get(70);
-                ByteBlock block1 = encData.subBlock(71, len1);
-
-                byte len2 = encData.get(71+len1+27);
-                ByteBlock block2 = encData.subBlock(71+len1+28, len2);
-
                 Certificate cert = tester.getCert(sn);
                 if (cert != null) {
                     try {
