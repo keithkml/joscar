@@ -124,6 +124,7 @@ import java.security.Signature;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -143,6 +144,10 @@ import java.util.TreeMap;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import org.bouncycastle.cms.CMSEnvelopedDataGenerator;
+import org.bouncycastle.cms.CMSProcessableByteArray;
+import org.bouncycastle.cms.CMSEnvelopedData;
 
 public class JoscarTester implements CmdLineListener {
     protected static final int DEFAULT_SERVICE_PORT = 5190;
@@ -909,29 +914,15 @@ public class JoscarTester implements CmdLineListener {
                 }
 
                 try {
-                    System.out.println("privateKey=" + privateKey.getClass()
-                            + ": " + privateKey);
-                    Signature signer = Signature.getInstance("MD5withRSA");
-                    signer.initSign(privateKey);
-
-                    Cipher cipher = Cipher.getInstance("RSA", "BC");
-                    RSAPublicKey pubKey = (RSAPublicKey) cert.getPublicKey();
-                    System.out.println("keys: " + pubKey.getModulus() + ", "
-                            + pubKey.getPublicExponent());
-                    cipher.init(Cipher.ENCRYPT_MODE, pubKey);
-                    System.out.println("blocksize: " + cipher.getBlockSize());
-                    byte[] data = cipher.doFinal(args[1].getBytes("US-ASCII"));
-
-                    signer.update(data);
-                    data = signer.sign();
-
-                    System.out.println("sending [" + data.length + "]: "
-                            + BinaryTools.describeData(
-                                    ByteBlock.wrap(data)));
+                    CMSEnvelopedDataGenerator gen = new CMSEnvelopedDataGenerator();
+                    gen.addKeyTransRecipient((X509Certificate) cert);
+                    CMSEnvelopedData envData = gen.generate(
+                            new CMSProcessableByteArray(args[1].getBytes()),
+                            "aes", "BC");
 
                     request(new SendImIcbm(args[0], new InstantMessage(
-                            ByteBlock.wrap(data)), false, 0, false, null, null,
-                            true));
+                            ByteBlock.wrap(envData.getEncoded())), false, 0,
+                            false, null, null, true));
 
                 } catch (Exception e) {
                     e.printStackTrace(System.out);
@@ -941,15 +932,18 @@ public class JoscarTester implements CmdLineListener {
     }
 
     PrivateKey privateKey;
+    Certificate pubCert;
 
     private void loadPrivateKey() throws KeyStoreException,
             NoSuchProviderException, IOException, NoSuchAlgorithmException,
             CertificateException, UnrecoverableKeyException {
         KeyStore ks = KeyStore.getInstance("PKCS12", "BC");
-        ks.load(new FileInputStream("/home/keith/in/mycert.p12"),
-                "password".toCharArray());
-        privateKey = (PrivateKey) ks.getKey("My AIM",
-                "password".toCharArray());
+        ks.load(new FileInputStream("yoyocert.p12"),
+                "pass".toCharArray());
+        String alias = (String) ks.aliases().nextElement();
+        pubCert = ks.getCertificate(alias);
+        privateKey = (PrivateKey) ks.getKey(alias,
+                "pass".toCharArray());
     }
 
     private class MysteryFlapCmd extends FlapCommand {
@@ -999,6 +993,20 @@ public class JoscarTester implements CmdLineListener {
         logger.setLevel(Level.ALL);
 
         JoscarTester tester = new JoscarTester(args[0], args[1]);
+
+        try {
+            Class bcp = Class.forName(
+                    "org.bouncycastle.jce.provider.BouncyCastleProvider");
+            Security.addProvider((Provider) bcp.newInstance());
+        } catch (Throwable e) {
+            System.out.println("[couldn't load Bouncy Castle JCE provider]");
+        }
+
+        try {
+            tester.loadPrivateKey();
+        } catch (Exception e) {
+            System.out.println("couldn't load private key: " + e.getMessage());
+        }
         tester.connect();
 
         new Timer(true).scheduleAtFixedRate(new TimerTask() {
@@ -1026,20 +1034,6 @@ public class JoscarTester implements CmdLineListener {
             }
         },
                 30*1000, 5*60*1000);
-
-        try {
-            Class bcp = Class.forName(
-                    "org.bouncycastle.jce.provider.BouncyCastleProvider");
-            Security.addProvider((Provider) bcp.newInstance());
-        } catch (Throwable e) {
-            System.out.println("[couldn't load Bouncy Castle JCE provider]");
-        }
-
-        try {
-            tester.loadPrivateKey();
-        } catch (Exception e) {
-            System.out.println("couldn't load private key: " + e.getMessage());
-        }
     }
 
     public void sendIM(String nick, String text) {

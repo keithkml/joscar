@@ -73,10 +73,7 @@ import net.kano.joscar.ssiitem.SsiItemObjectFactory;
 import java.io.ByteArrayInputStream;
 import java.net.InetAddress;
 import java.security.NoSuchProviderException;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
+import java.security.cert.*;
 
 public class BosFlapConn extends BasicConn {
     protected SsiItemObjectFactory itemFactory = new DefaultSsiItemObjFactory();
@@ -127,25 +124,32 @@ public class BosFlapConn extends BasicConn {
         SnacCommand cmd = e.getSnacCommand();
 
         if (cmd instanceof LocRightsCmd) {
-            request(new SetInfoCmd(new InfoData("this is my infoz lol",
-                    null, new CapabilityBlock[] {
-                        CapabilityBlock.BLOCK_CHAT,
-                        CapabilityBlock.BLOCK_DIRECTIM,
-                        CapabilityBlock.BLOCK_FILE_GET,
-                        CapabilityBlock.BLOCK_FILE_SEND,
-                        CapabilityBlock.BLOCK_GAMES,
-                        CapabilityBlock.BLOCK_GAMES2,
-                        CapabilityBlock.BLOCK_ICON,
-                        CapabilityBlock.BLOCK_SENDBUDDYLIST,
-                        CapabilityBlock.BLOCK_TRILLIANCRYPT,
-                        CapabilityBlock.BLOCK_VOICE,
-                        CapabilityBlock.BLOCK_ADDINS,
-                        CapabilityBlock.BLOCK_ICQCOMPATIBLE,
-                        CapabilityBlock.BLOCK_SHORTCAPS,
-                        CapabilityBlock.BLOCK_ENCRYPTION,
+            try {
+                Certificate cert = tester.pubCert;
+                byte[] encoded = cert.getEncoded();
+                CertificateInfo certInfo = new CertificateInfo(
+                        ByteBlock.wrap(encoded));
+                request(new SetInfoCmd(new InfoData("yo",
+                        null, new CapabilityBlock[] {
+                            CapabilityBlock.BLOCK_CHAT,
+                            CapabilityBlock.BLOCK_DIRECTIM,
+                            CapabilityBlock.BLOCK_FILE_GET,
+                            CapabilityBlock.BLOCK_FILE_SEND,
+                            CapabilityBlock.BLOCK_GAMES,
+                            CapabilityBlock.BLOCK_GAMES2,
+                            CapabilityBlock.BLOCK_ICON,
+                            CapabilityBlock.BLOCK_SENDBUDDYLIST,
+                            CapabilityBlock.BLOCK_TRILLIANCRYPT,
+                            CapabilityBlock.BLOCK_VOICE,
+                            CapabilityBlock.BLOCK_ADDINS,
+                            CapabilityBlock.BLOCK_ICQCOMPATIBLE,
+                            CapabilityBlock.BLOCK_SHORTCAPS,
+                            CapabilityBlock.BLOCK_ENCRYPTION,
 //                        CapabilityBlock.BLOCK_SOMETHING,
-                    }, new CertificateInfo(ByteBlock.createByteBlock(
-                            new FileWritable("/home/keith/in/cert.bin"))))));
+                        }, certInfo)));
+            } catch (CertificateEncodingException e1) {
+                e1.printStackTrace();
+            }
             request(new SetEncryptionInfoCmd(new ExtraInfoBlock[] {
                 new ExtraInfoBlock(0x0402, new ExtraInfoData(
                         ExtraInfoData.FLAG_HASH_PRESENT,
