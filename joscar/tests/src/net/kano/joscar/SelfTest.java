@@ -39,7 +39,7 @@ import junit.framework.TestCase;
 
 import java.io.*;
 import java.net.Inet4Address;
-import java.util.Arrays;
+import java.util.*;
 
 public class SelfTest extends TestCase {
     public void testByteBlock() {
@@ -211,4 +211,21 @@ public class SelfTest extends TestCase {
 
         assertTrue(Arrays.equals(ipBytes, ip.getAddress()));
     }
+
+//    public void testMultiCollection() {
+//        List a = Arrays.asList(new String[] { "1", "2", "3", "4", "5" });
+//        Set b = new LinkedHashSet(Arrays.asList(new String[] { "6", "7", "8" }));
+//        List c = new LinkedList();
+//        Stack d = new Stack();
+//        d.push("9");
+//        d.push("10");
+//
+//        Collection mc = new MultiCollection(new Collection[] { a, b, c, d });
+//
+//        assertEquals(10, mc.size());
+//
+//        List result = new ArrayList(mc);
+//        assertEquals(Arrays.asList(new String[] {
+//            "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" }), result);
+//    }
 }
