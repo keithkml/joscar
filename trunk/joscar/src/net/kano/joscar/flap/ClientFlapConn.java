@@ -234,6 +234,14 @@ public class ClientFlapConn extends FlapProcessor {
     }
 
     /**
+     * Returns the socket on which this connection resides, or <code>null</code>
+     * if this connection has no underlying socket yet.
+     *
+     * @return this connection's socket
+     */
+    public synchronized final Socket getSocket() { return socket; }
+
+    /**
      * Returns the hostname associated with this connection.
      *
      * @return the hostname associated with this connection

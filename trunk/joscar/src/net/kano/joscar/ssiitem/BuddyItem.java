@@ -403,7 +403,7 @@ if ((buddyItem.getAlertWhenMask() & BuddyItem.MASK_WHEN_ONLINE) != 0) {
     }
 
 
-    public synchronized SsiItem generateSsiItem() {
+    public synchronized SsiItem toSsiItem() {
         MutableTlvChain chain = new DefaultMutableTlvChain();
 
         if (alias != null) {

@@ -98,7 +98,7 @@ final class CmdFactoryMgr extends SnacCmdFactoryList {
      * @return an appropriate command factory for the given type
      */
     public synchronized final SnacCmdFactory findFactory(CmdType type) {
-        // see if there's a user factory for this command
+        // see if there's a usert r factory for this command
         SnacCmdFactory factory = getFactory(type);
 
         if (factory != null) return factory;

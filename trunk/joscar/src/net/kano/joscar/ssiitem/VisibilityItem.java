@@ -181,7 +181,7 @@ if ((visItem.getVisFlags() & VisibilityItem.MASK_SHOW_TYPING) {
         this.flags = flags;
     }
 
-    public synchronized SsiItem generateSsiItem() {
+    public synchronized SsiItem toSsiItem() {
         MutableTlvChain chain = new DefaultMutableTlvChain();
 
         if (flags != 0) {

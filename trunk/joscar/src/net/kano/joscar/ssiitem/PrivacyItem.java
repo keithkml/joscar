@@ -327,7 +327,7 @@ if ((privacyItem.getVisibleMask() & PrivacyItem.VISMASK_HIDE_WIRELESS) != 0) {
         this.visibleMask = visibleMask;
     }
 
-    public synchronized SsiItem generateSsiItem() {
+    public synchronized SsiItem toSsiItem() {
         MutableTlvChain chain = new DefaultMutableTlvChain();
 
         if (privacyMode != -1) {

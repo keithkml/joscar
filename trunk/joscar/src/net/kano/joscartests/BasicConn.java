@@ -36,10 +36,13 @@
 package net.kano.joscartests;
 
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.rvcmd.sendfile.SendFileRvCmd;
+import net.kano.joscar.rvcmd.DefaultRvCommandFactory;
 import net.kano.joscar.flap.FlapCommand;
 import net.kano.joscar.flap.FlapPacketEvent;
 import net.kano.joscar.flapcmd.LoginFlapCmd;
 import net.kano.joscar.flapcmd.SnacPacket;
+import net.kano.joscar.rv.*;
 import net.kano.joscar.snac.*;
 import net.kano.joscar.snaccmd.*;
 import net.kano.joscar.snaccmd.buddy.BuddyOfflineCmd;
@@ -47,6 +50,7 @@ import net.kano.joscar.snaccmd.buddy.BuddyStatusCmd;
 import net.kano.joscar.snaccmd.conn.*;
 import net.kano.joscar.snaccmd.icbm.OldIconHashData;
 import net.kano.joscar.snaccmd.icbm.RecvImIcbm;
+import net.kano.joscar.snaccmd.icbm.RvCommand;
 import net.kano.joscar.snaccmd.icon.IconRequest;
 
 import java.io.FileNotFoundException;
@@ -65,9 +69,47 @@ public abstract class BasicConn extends AbstractFlapConn {
     protected SnacFamilyInfo[] snacFamilyInfos;
     protected RateClassInfo[] rateClasses = null;
     protected RateDataQueueMgr rateMgr = new RateDataQueueMgr();
+    protected RvProcessor rvProcessor = new RvProcessor(snacProcessor);
+    protected RvListener rvListener = new RvListener() {
+        public void handleNewIncomingSession(NewRvSessionEvent event) {
+            System.out.println("new RV session: " + event.getNewSession());
 
-    {
+            event.getNewSession().addListener(rvSessionListener);
+        }
+    };
+    protected RvSessionListener rvSessionListener = new RvSessionListener() {
+        public void handleRv(RecvRvEvent event) {
+            RvCommand cmd = event.getRvCommand();
+
+            System.out.println("got rendezvous on session <"
+                    + event.getRvSession() + ">");
+            System.out.println("- command: "
+                    + cmd);
+
+            if (cmd instanceof SendFileRvCmd) {
+                SendFileRvCmd rv = (SendFileRvCmd) cmd;
+
+                InetAddress ip = rv.getExternalIP();
+                int port = rv.getPort();
+
+                if (ip != null && port != -1) {
+                    System.out.println("starting ft thread..");
+                    new FileTransferThread(ip, port).start();
+                }
+            }
+        }
+
+        public void handleSnacResponse(RvSnacResponseEvent event) {
+            System.out.println("got SNAC response for <"
+                    + event.getRvSession() + ">: "
+                    + event.getSnacCommand());
+        }
+    };
+
+    { // initialization
         snacProcessor.setSnacQueueManager(rateMgr);
+        rvProcessor.registerRvCmdFactory(new DefaultRvCommandFactory());
+        rvProcessor.addRvListener(rvListener);
     }
 
     public BasicConn(JoscarTester tester, ByteBlock cookie) {
@@ -305,4 +347,5 @@ public abstract class BasicConn extends AbstractFlapConn {
             tester.handleRequest(request);
         }
     }
+
 }

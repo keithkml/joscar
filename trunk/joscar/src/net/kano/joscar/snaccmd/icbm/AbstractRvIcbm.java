@@ -58,7 +58,9 @@ public abstract class AbstractRvIcbm extends AbstractIcbm {
     public static final int STATUS_REQUEST = 0x0000;
     /** A status code indicating that a rendezvous has been accepted. */
     public static final int STATUS_ACCEPT = 0x0002;
-    /** A status code indicating that a rendezvous has been denied. */
+    /**
+     * A status code indicating that a rendezvous has been denied or cancelled.
+     */
     public static final int STATUS_DENY = 0x0001;
 
     /** A TLV type containing the rendezvous-specific data. */
@@ -131,6 +133,13 @@ public abstract class AbstractRvIcbm extends AbstractIcbm {
         this.rvDataWriter = rvDataWriter;
     }
 
+    AbstractRvIcbm(int command, long icbmCookie, long rvCookie,
+            RvCommand rvCommand) {
+        this(command, icbmCookie, rvCommand.getStatus(), rvCookie,
+                rvCommand.getCapabilityBlock(),
+                new RvCommandDataWriter(rvCommand));
+    }
+
     /**
      * Returns the status code of this rendezvous. Will normally be one of
      * {@link #STATUS_REQUEST}, {@link #STATUS_ACCEPT}, and {@link
@@ -183,8 +192,26 @@ public abstract class AbstractRvIcbm extends AbstractIcbm {
         BinaryTools.writeUShort(rvout, status);
         BinaryTools.writeLong(rvout, rvCookie);
         cap.write(rvout);
-        rvDataWriter.write(out);
+        rvDataWriter.write(rvout);
 
         new Tlv(TYPE_RV_DATA, ByteBlock.wrap(rvout.toByteArray())).write(out);
+    }
+
+    private static class RvCommandDataWriter implements LiveWritable {
+        private final RvCommand command;
+
+        public RvCommandDataWriter(RvCommand rvCommand) {
+            DefensiveTools.checkNull(rvCommand, "rvCommand");
+
+            this.command = rvCommand;
+        }
+
+        public final RvCommand getRvCommand() {
+            return command;
+        }
+
+        public void write(OutputStream out) throws IOException {
+            command.writeRvData(out);
+        }
     }
 }

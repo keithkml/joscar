@@ -242,6 +242,9 @@ public class SnacProcessor {
      */
     private LinkedHashMap requests = new LinkedHashMap();
 
+    /** Whether or not this SNAC connection is currently "paused." */
+    private boolean paused = false;
+
     /** A SNAC queue manager for this processor. */
     private SnacQueueManager queueManager = new ImmediateSnacQueueManager();
 
@@ -328,9 +331,6 @@ public class SnacProcessor {
         this.flapProcessor.addVetoablePacketListener(flapPacketListener);
     }
 
-    /** Whether or not this SNAC connection is currently "paused." */
-    private boolean paused = false;
-
     /**
      * Pauses this SNAC processor. A paused SNAC processor does not send any
      * SNAC commands to the server until a call to {@link #unpause()}. Note that
@@ -383,7 +383,9 @@ public class SnacProcessor {
     /**
      * Attaches to the given FLAP processor without clearing any SNAC queues.
      * Effectively "moves" this SNAC connection transparently to the given
-     * processor.
+     * processor. Note that if this processor is {@linkplain #pause paused},
+     * a call to <code>migrate</code> will <i>not</i> unpause it. Unpausing must
+     * be done explicitly with a call to {@link #unpause}.
      *
      * @param processor a new FLAP processor to use for this SNAC connection
      *
@@ -402,13 +404,16 @@ public class SnacProcessor {
      * effectively <b>resets this SNAC processor</b>, causing any information
      * about the current connection such as queued SNAC commands or SNAC request
      * ID's to be <b>discarded</b>. This method is thus <b>not</b> useful for
-     * {@linkplain net.kano.joscar.snaccmd.conn.MigrationNotice migrating}.
+     * {@linkplain net.kano.joscar.snaccmd.conn.MigrationNotice migrating}. Note
+     * that this processor will be unpaused if it is currently paused.
      *
      * @see #migrate
      */
     public synchronized final void detach() {
         if (this.flapProcessor != null) {
             detachMinimally();
+
+            paused = false;
 
             queueManager.clearQueue(this);
         }
@@ -730,7 +735,7 @@ public class SnacProcessor {
 
     /**
      * Sends the given SNAC request to the server, bypassing the SNAC request
-     * queue.
+     * queue and any {@linkplain #pause pausing} status that may be present.
      *
      * @param request the request to send
      * @throws NullPointerException if the given request is <code>null</code>

@@ -128,7 +128,7 @@ public abstract class SimpleNamedItem extends AbstractItemObj {
      */
     protected abstract int getItemType();
 
-    public SsiItem generateSsiItem() {
+    public SsiItem toSsiItem() {
         return generateItem(sn, PARENTID_DEFAULT, id, getItemType(), null);
     }
 

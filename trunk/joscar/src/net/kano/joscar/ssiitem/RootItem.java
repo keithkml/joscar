@@ -169,7 +169,7 @@ public class RootItem extends AbstractItemObj {
         this.groupids = groupids;
     }
 
-    public synchronized SsiItem generateSsiItem() {
+    public synchronized SsiItem toSsiItem() {
         MutableTlvChain chain = new DefaultMutableTlvChain();
 
         if (groupids != null) {

@@ -29,35 +29,42 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- *  File created by keith @ Apr 22, 2003
+ *  File created by keith @ Apr 24, 2003
  *
  */
 
-package net.kano.joscar.ssiitem;
+package net.kano.joscar.rv;
 
-import net.kano.joscar.snaccmd.ssi.SsiItem;
-import net.kano.joscar.tlv.MutableTlvChain;
+import net.kano.joscar.snac.SnacPacketEvent;
+import net.kano.joscar.snaccmd.icbm.RvCommand;
 
-/**
- * An "item object" that represents a single {@linkplain SsiItem item} stored
- * in a user's "server-stored information."
- */
-public interface SsiItemObj {
-    /**
-     * Returns the "extra TLV list" for this item. This list contains the TLV's
-     * present in this item's type-specific data block that were not processed
-     * into fields; in practice, this likely means fields inserted by another
-     * client like WinAIM that joscar does not yet recognize. Note that this
-     * value will never be <code>null</code>.
-     *
-     * @return this item's "extra TLV's"
-     */
-    MutableTlvChain getExtraTlvs();
+public class RecvRvEvent extends SnacPacketEvent {
+    private final RvProcessor rvProcessor;
+    private final RvSession rvSession;
+    private final RvCommand rvCommand;
 
-    /**
-     * Returns an <code>SsiItem</code> that represents this item object.
-     *
-     * @return an <code>SsiItem</code> that represents this item object
-     */
-    SsiItem toSsiItem();
+    protected RecvRvEvent(SnacPacketEvent other, RvProcessor processor,
+            RvSession session, RvCommand command) {
+        super(other);
+
+        this.rvProcessor = processor;
+        this.rvSession = session;
+        this.rvCommand = command;
+    }
+
+    public final RvProcessor getRvProcessor() {
+        return rvProcessor;
+    }
+
+    public final RvSession getRvSession() {
+        return rvSession;
+    }
+
+    public final RvCommand getRvCommand() {
+        return rvCommand;
+    }
+
+    public String toString() {
+        return "RecvRvEvent: rvCommand=" + rvCommand;
+    }
 }

@@ -49,6 +49,12 @@ public interface SnacCmdFactory {
      * this method; rather, this just provides a means of filtering out types
      * that can definitely not be handled (by not including them in the returned
      * list).
+     * <br>
+     * <br>
+     * Also note that <b>the command types contained in the list returned must
+     * be consistent between calls to this method</b>; that is, an
+     * implementation cannot change the supported command type list after this
+     * factory has been created.
      *
      * @return a list of command types that can be passed to
      *         <code>genSnacCommand</code>

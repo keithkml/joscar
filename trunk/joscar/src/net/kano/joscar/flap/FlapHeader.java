@@ -91,13 +91,10 @@ final class FlapHeader {
         boolean paritied = false;
 
         while (pos < header.length) {
-            System.out.println("reading " + (header.length - pos)
-                    + " bytes into flap header");
             final int count = in.read(header, pos, header.length - pos);
 
             if (count == -1) {
                 // the connection died, or we got an EOF or something.
-                System.out.println("connection died; returning null");
                 return null;
             }
 

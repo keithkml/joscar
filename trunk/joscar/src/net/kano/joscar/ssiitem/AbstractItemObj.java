@@ -55,14 +55,14 @@ public abstract class AbstractItemObj implements SsiItemObj {
      * @return a list of <code>SsiItem</code>s generated from the given list of
      *         item objects
      *
-     * @see #generateSsiItem
+     * @see #toSsiItem
      */
     public static SsiItem[] generateSsiItems(SsiItemObj[] itemObjs) {
         DefensiveTools.checkNull(itemObjs, "itemObjs");
 
         SsiItem[] items = new SsiItem[itemObjs.length];
         for (int i = 0; i < itemObjs.length; i++) {
-            items[i] = itemObjs[i].generateSsiItem();
+            items[i] = itemObjs[i].toSsiItem();
         }
 
         return items;

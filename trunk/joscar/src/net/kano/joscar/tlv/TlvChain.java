@@ -37,6 +37,8 @@ package net.kano.joscar.tlv;
 
 import net.kano.joscar.Writable;
 
+import java.util.Iterator;
+
 /**
  * Represents a "chain," or block, or sequence, of {@link Tlv}s.
  */
@@ -57,6 +59,13 @@ public interface TlvChain extends Writable {
      * @return all of this chain's TLV's
      */
     Tlv[] getTlvs();
+
+    /**
+     * Returns an iterator over the TLV's in this TLV chain.
+     *
+     * @return an iterator traversing over the TLV's in this chain
+     */
+    Iterator iterator();
 
     /**
      * Returns the number of TLV's in this chain.

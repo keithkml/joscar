@@ -235,7 +235,7 @@ public class IconItem extends AbstractItemObj {
         this.alias = alias;
     }
 
-    public synchronized SsiItem generateSsiItem() {
+    public synchronized SsiItem toSsiItem() {
         MutableTlvChain chain = new DefaultMutableTlvChain();
 
         if (iconInfo != null) {
