@@ -35,12 +35,12 @@
 
 package net.kano.aimcrypto.config;
 
-import net.kano.aimcrypto.AimCertificateHolder;
+import net.kano.aimcrypto.CertificatePairHolder;
 import net.kano.aimcrypto.KeyPair;
 
 import java.security.cert.X509Certificate;
 
-public final class PrivateKeysInfo implements AimCertificateHolder {
+public final class PrivateKeysInfo implements CertificatePairHolder {
     private final KeyPair signingKeys;
     private final KeyPair encryptingKeys;
 

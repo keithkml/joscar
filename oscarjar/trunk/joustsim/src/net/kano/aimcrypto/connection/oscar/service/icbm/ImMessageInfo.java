@@ -55,6 +55,11 @@ public class ImMessageInfo extends MessageInfo {
         return new ImMessageInfo(from, to, im, date);
     }
 
+    static ImMessageInfo getInstance(Screenname from, Screenname to,
+            Message msg, Date date) {
+        return new ImMessageInfo(from, to, msg, date);
+    }
+
     private ImMessageInfo(Screenname from, Screenname to, Message msg,
             Date date) {
         super(from, to, msg, date);

@@ -62,6 +62,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Date;
 
 public class SecureAimConversation extends Conversation {
     private final AimConnection conn;
@@ -224,7 +225,7 @@ public class SecureAimConversation extends Conversation {
         return canSend;
     }
 
-    public synchronized void sendMessage(Message msg)
+    public void sendMessage(Message msg)
             throws ConversationException {
         IcbmService icbmService = conn.getIcbmService();
         if (icbmService == null) {
@@ -233,10 +234,17 @@ public class SecureAimConversation extends Conversation {
         }
 
         byte[] encrypted;
+        PrivateKeysInfo privates;
+        BuddyCertificateInfo buddyCertInfo;
         try {
-            encoder.setLocalKeys(privates);
-            encoder.setBuddyCerts(buddyCertInfo);
-            encrypted = encoder.encryptMsg(msg.getMessageBody());
+            synchronized(this) {
+                privates = this.privates;
+                buddyCertInfo = this.buddyCertInfo;
+
+                encoder.setLocalKeys(privates);
+                encoder.setBuddyCerts(buddyCertInfo);
+                encrypted = encoder.encryptMsg(msg.getMessageBody());
+            }
 
         } catch (NoBuddyKeysException e) {
             throw new NotTrustedException(e, this);
@@ -247,6 +255,10 @@ public class SecureAimConversation extends Conversation {
 
         InstantMessage im = new InstantMessage(ByteBlock.wrap(encrypted));
         icbmService.sendIM(getBuddy(), im, msg.isAutoResponse());
+        OutgoingSecureAimMessageInfo msginfo;
+        msginfo = OutgoingSecureAimMessageInfo.getInstance(conn.getScreenname(),
+                getBuddy(), msg, new Date(), privates, buddyCertInfo, im);
+        fireOutgoingEvent(msginfo);
     }
 
     protected void handleIncomingMessage(MessageInfo minfo) {

@@ -39,6 +39,7 @@ import net.kano.aimcrypto.Screenname;
 import net.kano.aimcrypto.connection.AimConnection;
 
 import java.util.Iterator;
+import java.util.Date;
 
 public class ImConversation extends Conversation {
     private final AimConnection conn;
@@ -56,7 +57,8 @@ public class ImConversation extends Conversation {
             throw new ConversationException("no ICBM service to send to", this);
         }
         service.sendIM(getBuddy(), msg.getMessageBody(), msg.isAutoResponse());
-
+        fireOutgoingEvent(ImMessageInfo.getInstance(conn.getScreenname(),
+                getBuddy(), msg, new Date()));
     }
 
     public void handleMissedMsg(MissedImInfo info) {

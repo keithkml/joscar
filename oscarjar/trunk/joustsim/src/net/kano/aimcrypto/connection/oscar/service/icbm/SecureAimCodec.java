@@ -35,24 +35,24 @@
 
 package net.kano.aimcrypto.connection.oscar.service.icbm;
 
-import net.kano.aimcrypto.AimCertificateHolder;
+import net.kano.aimcrypto.CertificatePairHolder;
 import net.kano.aimcrypto.config.PrivateKeysInfo;
 
 public abstract class SecureAimCodec {
     private PrivateKeysInfo localKeys = null;
-    private AimCertificateHolder buddyCerts = null;
+    private CertificatePairHolder buddyCerts = null;
 
     public synchronized void setLocalKeys(PrivateKeysInfo localKeys) {
         this.localKeys = localKeys;
     }
 
-    public synchronized void setBuddyCerts(AimCertificateHolder buddyCerts) {
+    public synchronized void setBuddyCerts(CertificatePairHolder buddyCerts) {
         this.buddyCerts = buddyCerts;
     }
 
     protected synchronized PrivateKeysInfo getLocalKeys() { return localKeys; }
 
-    protected synchronized AimCertificateHolder getBuddyCerts() {
+    protected synchronized CertificatePairHolder getBuddyCerts() {
         return buddyCerts;
     }
 }

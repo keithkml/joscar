@@ -35,7 +35,7 @@
 
 package net.kano.aimcrypto.connection.oscar.service.icbm;
 
-import net.kano.aimcrypto.AimCertificateHolder;
+import net.kano.aimcrypto.CertificatePairHolder;
 import net.kano.aimcrypto.KeyPair;
 import net.kano.aimcrypto.config.PrivateKeysInfo;
 import net.kano.joscar.ByteBlock;
@@ -65,7 +65,7 @@ public class SecureAimDecoder extends SecureAimCodec {
             NoSuchAlgorithmException, InvalidSignatureException,
             NoBuddyKeysException, NoLocalKeysException, EmptyMessageException {
 
-        AimCertificateHolder buddyCerts = getBuddyCerts();
+        CertificatePairHolder buddyCerts = getBuddyCerts();
         if (buddyCerts == null) throw new NoBuddyKeysException();
         X509Certificate signingCert = buddyCerts.getSigningCertificate();
         if (signingCert == null) throw new NoBuddyKeysException();

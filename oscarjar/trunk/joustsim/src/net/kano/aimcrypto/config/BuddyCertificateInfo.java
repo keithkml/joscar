@@ -35,14 +35,14 @@
 
 package net.kano.aimcrypto.config;
 
-import net.kano.aimcrypto.AimCertificateHolder;
+import net.kano.aimcrypto.CertificatePairHolder;
 import net.kano.aimcrypto.Screenname;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 
 import java.security.cert.X509Certificate;
 
-public final class BuddyCertificateInfo implements AimCertificateHolder {
+public final class BuddyCertificateInfo implements CertificatePairHolder {
     private final Screenname buddy;
     private final ByteBlock hash;
     private final X509Certificate encryptionCert;

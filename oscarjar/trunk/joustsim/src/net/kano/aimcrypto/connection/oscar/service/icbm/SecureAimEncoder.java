@@ -35,7 +35,7 @@
 
 package net.kano.aimcrypto.connection.oscar.service.icbm;
 
-import net.kano.aimcrypto.AimCertificateHolder;
+import net.kano.aimcrypto.CertificatePairHolder;
 import net.kano.joscar.EncodedStringInfo;
 import net.kano.joscar.MinimalEncoder;
 import org.bouncycastle.cms.CMSEnvelopedData;
@@ -59,7 +59,7 @@ public class SecureAimEncoder extends SecureAimCodec {
             NoLocalKeysException {
 
         if (getLocalKeys() == null) throw new NoLocalKeysException();
-        AimCertificateHolder buddyCerts = getBuddyCerts();
+        CertificatePairHolder buddyCerts = getBuddyCerts();
         if (buddyCerts == null) throw new NoBuddyKeysException();
 
         X509Certificate recip = buddyCerts.getSigningCertificate();

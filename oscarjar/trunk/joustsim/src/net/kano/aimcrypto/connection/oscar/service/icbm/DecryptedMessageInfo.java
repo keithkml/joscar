@@ -35,15 +35,15 @@
 
 package net.kano.aimcrypto.connection.oscar.service.icbm;
 
-import net.kano.aimcrypto.AimCertificateHolder;
+import net.kano.aimcrypto.CertificatePairHolder;
 import net.kano.joscar.DefensiveTools;
 
 public final class DecryptedMessageInfo {
     private final String str;
-    private final AimCertificateHolder buddyCertInfo;
+    private final CertificatePairHolder buddyCertInfo;
 
     DecryptedMessageInfo(String str,
-            AimCertificateHolder certInfo) {
+            CertificatePairHolder certInfo) {
         DefensiveTools.checkNull(str, "str");
         DefensiveTools.checkNull(certInfo, "certInfo");
 
@@ -53,5 +53,5 @@ public final class DecryptedMessageInfo {
 
     public String getMessage() { return str; }
 
-    public AimCertificateHolder getCertificateInfo() { return buddyCertInfo; }
+    public CertificatePairHolder getCertificateInfo() { return buddyCertInfo; }
 }

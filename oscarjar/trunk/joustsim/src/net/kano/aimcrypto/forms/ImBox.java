@@ -37,10 +37,6 @@ package net.kano.aimcrypto.forms;
 
 import net.kano.aimcrypto.GuiSession;
 import net.kano.aimcrypto.Screenname;
-import net.kano.aimcrypto.temps.ConversationDocument;
-import net.kano.aimcrypto.temps.ConversationEditorKit;
-import net.kano.aimcrypto.temps.ConversationLine;
-import net.kano.aimcrypto.temps.IconID;
 import net.kano.aimcrypto.config.BuddyCertificateInfo;
 import net.kano.aimcrypto.connection.AimConnection;
 import net.kano.aimcrypto.connection.oscar.service.icbm.Conversation;
@@ -55,10 +51,16 @@ import net.kano.aimcrypto.connection.oscar.service.icbm.SecureAimConversation;
 import net.kano.aimcrypto.connection.oscar.service.icbm.SimpleMessage;
 import net.kano.aimcrypto.connection.oscar.service.info.BuddyTrustAdapter;
 import net.kano.aimcrypto.connection.oscar.service.info.BuddyTrustEvent;
-import net.kano.aimcrypto.conv.AolRtfString;
+import net.kano.aimcrypto.text.AolRtfString;
+import net.kano.aimcrypto.text.aolrtfbox.AolRtfEditorKit;
+import net.kano.aimcrypto.text.convbox.ConversationBox;
+import net.kano.aimcrypto.text.convbox.ConversationDocument;
+import net.kano.aimcrypto.text.convbox.ConversationLine;
+import net.kano.aimcrypto.text.convbox.IconID;
+import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.MiscTools;
-import net.kano.joscar.ByteBlock;
+import net.kano.joscar.BinaryTools;
 
 import javax.swing.AbstractAction;
 import javax.swing.DefaultComboBoxModel;
@@ -74,14 +76,27 @@ import javax.swing.JSplitPane;
 import javax.swing.JTextPane;
 import javax.swing.JToolBar;
 import javax.swing.SwingUtilities;
+import javax.swing.KeyStroke;
+import javax.swing.Action;
+import javax.swing.Icon;
+import javax.swing.TransferHandler;
+import javax.swing.JComponent;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.MutableAttributeSet;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
+import javax.swing.text.Keymap;
+import javax.swing.text.DefaultEditorKit;
+import javax.swing.text.StyledEditorKit;
+import javax.swing.text.html.HTMLDocument;
+import javax.swing.text.html.HTMLEditorKit;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.Cursor;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
+import java.awt.datatransfer.UnsupportedFlavorException;
+import java.awt.dnd.DropTarget;
 import java.awt.event.ActionEvent;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
@@ -89,26 +104,31 @@ import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.event.KeyEvent;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
+import java.io.IOException;
 
 public class ImBox extends JFrame {
     private JSplitPane splitPane;
-    private JScrollPane textScrollPane;
     private JScrollPane inputScrollPane;
     private JTextPane inputBox;
-    private JTextPane convBox;
-    private JComboBox typeBox;
+    private JComboBox convTypeBox;
     private JButton sendButton;
     private JPanel inputSidePanel;
     private JToolBar formatToolbar;
     private JPanel miniDialogStackHolder;
+    private JPanel convBoxHolder;
 
-    private final ConversationEditorKit inputKit = new ConversationEditorKit();
-    private final ConversationEditorKit convKit = new ConversationEditorKit();
-    private final ConversationDocument inputDoc;
-    private final ConversationDocument convDoc;
+    private final ImageIcon boldIcon = new ImageIcon(getClass().getClassLoader()
+            .getResource("icons/temp/bold.gif"));
+    private final ImageIcon italicIcon = new ImageIcon(getClass().getClassLoader()
+            .getResource("icons/temp/italic.gif"));
+    private final ImageIcon underlineIcon = new ImageIcon(getClass().getClassLoader()
+            .getResource("icons/temp/underline.gif"));
+
+    private ConversationBox convBox = new ConversationBox();
 
     private DefaultComboBoxModel typesModel = new DefaultComboBoxModel();
 
@@ -131,20 +151,17 @@ public class ImBox extends JFrame {
             if (minfo instanceof DecryptableAimMessageInfo) {
                 DecryptableAimMessageInfo dinfo = (DecryptableAimMessageInfo) minfo;
                 BuddyCertificateInfo certInfo = dinfo.getMessageCertificateInfo();
-                System.out.println("info=" + certInfo);
 
                 askAboutCertificates(certInfo);
             }
             Message message = minfo.getMessage();
             String body = message.getMessageBody();
-            System.out.println("got message: " + MiscTools.getClassName(minfo)
-                    + " - " + body);
             if (body != null) {
                 final AolRtfString parsed = AolRtfString.readLine(body);
                 SwingUtilities.invokeLater(new Runnable() {
                     public void run() {
                         convDoc.addConversationLine(new ConversationLine(
-                                minfo.getFrom(), parsed, false,
+                                minfo.getFrom(), parsed,
                                 minfo.getTimestamp(), (IconID) null));
                     }
                 });
@@ -157,7 +174,7 @@ public class ImBox extends JFrame {
             SwingUtilities.invokeLater(new Runnable() {
                 public void run() {
                     convDoc.addConversationLine(new ConversationLine(
-                            minfo.getFrom(), parsed, true, minfo.getTimestamp(),
+                            minfo.getFrom(), parsed, minfo.getTimestamp(),
                             (IconID) null));
                 }
             });
@@ -174,10 +191,18 @@ public class ImBox extends JFrame {
     private final MiniDialogStack miniDialogStack = new MiniDialogStack();
 
     private Conversation currentConversation = null;
+    private ConversationDocument convDoc = convBox.getDocument();
+
+    private final Action boldAction = new BoldAction();
+    private final Action italicAction = new ItalicAction();
+    private final Action underlineAction = new UnderlineAction();
 
     {
         getContentPane().add(splitPane);
         splitPane.setResizeWeight(1.0);
+
+        convBoxHolder.setLayout(new BorderLayout());
+        convBoxHolder.add(convBox);
 
         miniDialogStackHolder.setLayout(new BorderLayout());
         miniDialogStackHolder.add(miniDialogStack);
@@ -199,29 +224,31 @@ public class ImBox extends JFrame {
             }
         });
 
-        textScrollPane.setBorder(null);
-
-        inputBox.setEditorKit(inputKit);
-        inputDoc = (ConversationDocument) inputBox.getDocument();
-        inputKit.setDefaultCursor(Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR));
-        convBox.setEditorKit(convKit);
-        convDoc = (ConversationDocument) convBox.getDocument();
 
         sendButton.setAction(sendAction);
         splitPane.setBorder(null);
 
-        typeBox.setModel(typesModel);
-        typeBox.setRenderer(new TypesBoxRenderer());
+        convTypeBox.setModel(typesModel);
+        convTypeBox.setRenderer(new TypesBoxRenderer());
 
         formatToolbar.setBorderPainted(false);
-        JButton boldButton = formatToolbar.add(new BoldAction());
-        boldButton.setBorder(null);
-        boldButton.setBorderPainted(false);
-        boldButton.setMargin(null);
-//        formatToolbar.add(new ItalicAction());
-//        formatToolbar.add(new UnderlineAction());
+        addToolbarAction(boldAction);
+        addToolbarAction(italicAction);
+        addToolbarAction(underlineAction);
 
-        typeBox.addItemListener(new ItemListener() {
+        inputBox.setEditorKit(new AolRtfEditorKit());
+
+        Keymap inputmap = inputBox.getKeymap();
+        inputmap.addActionForKeyStroke(KeyStroke.getKeyStroke(KeyEvent.VK_B,
+                KeyEvent.CTRL_MASK), boldAction);
+        inputmap.addActionForKeyStroke(KeyStroke.getKeyStroke(KeyEvent.VK_I,
+                KeyEvent.CTRL_MASK), italicAction);
+        inputmap.addActionForKeyStroke(KeyStroke.getKeyStroke(KeyEvent.VK_U,
+                KeyEvent.CTRL_MASK), underlineAction);
+        inputmap.addActionForKeyStroke(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER,
+                0), sendAction);
+
+        convTypeBox.addItemListener(new ItemListener() {
             public void itemStateChanged(ItemEvent e) {
                 Object selectedObj = typesModel.getSelectedItem();
                 if (!(selectedObj instanceof ConversationInfo)) return;
@@ -263,6 +290,10 @@ public class ImBox extends JFrame {
                 askAboutCertificates(event.getCertInfo());
             }
         });
+
+        ConversationDocument convDoc = convBox.getDocument();
+        convDoc.registerScreenname(conn.getScreenname(), true);
+        convDoc.registerScreenname(this.buddy, false);
     }
 
     public void handleConversation(Conversation conversation) {
@@ -278,6 +309,13 @@ public class ImBox extends JFrame {
                 updateButtons();
             }
         });
+    }
+
+    private void addToolbarAction(Action action) {
+        JButton boldButton = formatToolbar.add(action);
+        boldButton.setBorder(null);
+        boldButton.setBorderPainted(false);
+        boldButton.setMargin(null);
     }
 
     private synchronized void closeAllConversations() {
@@ -354,18 +392,69 @@ public class ImBox extends JFrame {
         }
     }
 
-    private class BoldAction extends AbstractAction {
-        public BoldAction() {
-            putValue(SMALL_ICON, new ImageIcon(getClass().getClassLoader()
-                    .getResource("icons/temp/bold.gif")));
+    public abstract class ToggleAction extends AbstractAction {
+        protected ToggleAction() {
+        }
+
+        protected ToggleAction(String name) {
+            super(name);
+        }
+
+        protected ToggleAction(String name, Icon icon) {
+            super(name, icon);
         }
 
         public void actionPerformed(ActionEvent e) {
             AttributeSet old = inputBox.getCharacterAttributes();
-            boolean bold = !StyleConstants.isBold(old);
+            boolean newon = !isOn(old);
             MutableAttributeSet attr = new SimpleAttributeSet();
-            StyleConstants.setBold(attr, bold);
+            setOn(attr, newon);
             inputBox.setCharacterAttributes(attr, false);
+            inputBox.requestFocusInWindow();
+        }
+
+        protected abstract void setOn(MutableAttributeSet attr, boolean bold);
+
+        protected abstract boolean isOn(AttributeSet old);
+    }
+
+    private class BoldAction extends ToggleAction {
+        public BoldAction() {
+            super("Bold", boldIcon);
+        }
+
+        protected void setOn(MutableAttributeSet attr, boolean bold) {
+            StyleConstants.setBold(attr, bold);
+        }
+
+        protected boolean isOn(AttributeSet old) {
+            return StyleConstants.isBold(old);
+        }
+    }
+    private class ItalicAction extends ToggleAction {
+        public ItalicAction() {
+            super("Italic", italicIcon);
+        }
+
+        protected void setOn(MutableAttributeSet attr, boolean bold) {
+            StyleConstants.setItalic(attr, bold);
+        }
+
+        protected boolean isOn(AttributeSet old) {
+            return StyleConstants.isItalic(old);
+        }
+    }
+    private class UnderlineAction extends ToggleAction {
+        public UnderlineAction() {
+            super("Underline", underlineIcon);
+        }
+
+        protected void setOn(MutableAttributeSet attr, boolean bold) {
+            StyleConstants.setUnderline(attr, bold);
+        }
+
+        protected boolean isOn(AttributeSet old) {
+            return StyleConstants.isUnderline(old);
         }
     }
 
@@ -379,7 +468,7 @@ public class ImBox extends JFrame {
             try {
                 conversation.sendMessage(new SimpleMessage(inputBox.getText()));
                 inputBox.setText("");
-                //TODO: return focus to whomever had it
+                inputBox.requestFocusInWindow();
 
             } catch (ConversationException ex) {
                 //TODO: print error message when message can't be sent

@@ -45,7 +45,7 @@
                   <text value="Send"/>
                 </properties>
               </component>
-              <component id="a6d77" class="javax.swing.JComboBox" binding="typeBox">
+              <component id="a6d77" class="javax.swing.JComboBox" binding="convTypeBox">
                 <constraints>
                   <xy x="30" y="35" width="32" height="24"/>
                   <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="2" anchor="4" fill="0"/>
@@ -86,8 +86,16 @@
                   <component id="6ec62" class="javax.swing.JTextPane" binding="inputBox">
                     <constraints/>
                     <properties>
-                      <contentType value="text/plain"/>
-                      <text value=""/>
+                      <contentType value="text/html"/>
+                      <dragEnabled value="true"/>
+                      <text value="&lt;html&gt;
+  &lt;head&gt;
+
+  &lt;/head&gt;
+  &lt;body&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+"/>
                     </properties>
                   </component>
                 </children>
@@ -117,27 +125,6 @@
         <properties/>
         <border type="none"/>
         <children>
-          <scrollpane id="f8087" binding="textScrollPane">
-            <constraints>
-              <xy x="0" y="20" width="307" height="167"/>
-              <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="3"/>
-            </constraints>
-            <properties>
-              <horizontalScrollBarPolicy value="31"/>
-              <verticalScrollBarPolicy value="22"/>
-            </properties>
-            <border type="none"/>
-            <children>
-              <component id="29fa3" class="javax.swing.JTextPane" binding="convBox">
-                <constraints/>
-                <properties>
-                  <contentType value="text/plain"/>
-                  <editable value="false"/>
-                  <text value=""/>
-                </properties>
-              </component>
-            </children>
-          </scrollpane>
           <xy id="95186" binding="miniDialogStackHolder" hgap="-1" vgap="-1">
             <margin top="0" left="0" bottom="0" right="0"/>
             <constraints>
@@ -148,6 +135,16 @@
               <focusable value="false"/>
               <visible value="false"/>
             </properties>
+            <border type="none"/>
+            <children/>
+          </xy>
+          <xy id="7bcb9" binding="convBoxHolder" hgap="-1" vgap="-1">
+            <margin top="0" left="0" bottom="0" right="0"/>
+            <constraints>
+              <xy x="0" y="20" width="307" height="167"/>
+              <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3"/>
+            </constraints>
+            <properties/>
             <border type="none"/>
             <children/>
           </xy>
