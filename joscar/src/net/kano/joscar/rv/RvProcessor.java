@@ -582,27 +582,38 @@ public class RvProcessor {
     private void processRv(SnacPacketEvent e) {
         RecvRvIcbm cmd = (RecvRvIcbm) e.getSnacCommand();
 
+        if (logger.isLoggable(Level.FINE)) {
+            logger.fine("Generating RV for <" + cmd.getCapability() + "> from "
+                    + cmd.getSender().getScreenname());
+        }
+
         // find or create a session object for the received RV
         RvSessionImpl session = getOrCreateIncomingSession(cmd.getRvSessionId(),
                 cmd.getSender().getScreenname());
 
         // generate an RV command object
-        RvCommand rvCommand = null;
+        RvCommand rvCommand;
         try {
             rvCommand = genRvCommand(cmd);
         } catch (Throwable t) {
             handleException(ERRTYPE_RV_CMD_GEN, t, cmd);
+            return;
         }
 
-        if (logger.isLoggable(Level.FINE)) {
-            logger.fine("Generated RV command: " + rvCommand);
+        boolean logFiner = logger.isLoggable(Level.FINER);
+        if (logFiner) {
+            if (rvCommand == null) {
+                logger.finer("Couldn't generate RV command, data was:" + cmd.getRvData());
+            } else {
+                logger.finer("Generated RV command: " + rvCommand);
+            }
         }
 
-        // notify the session object retrieved/crated above
+        // notify the session object that we retrieved/created above
         RecvRvEvent event = new RecvRvEvent(e, this, session, rvCommand);
         session.processRv(event);
 
-        if (logger.isLoggable(Level.FINER)) {
+        if (logFiner) {
             logger.finer("Done processing RV");
         }
     }

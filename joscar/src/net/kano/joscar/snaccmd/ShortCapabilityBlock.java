@@ -64,6 +64,14 @@ import java.util.regex.Pattern;
  * form are normally still stored as plain old {@link CapabilityBlock}s.
  */
 public class ShortCapabilityBlock implements Writable {
+
+    public static CapabilityBlock getCapFromShortBytes(int byte1, int byte2) {
+        byte[] bytes = CAP_TEMPLATE.toByteArray();
+        bytes[2] = (byte) byte1;
+        bytes[3] = (byte) byte2;
+        return new CapabilityBlock(ByteBlock.wrap(bytes));
+    }
+
     /**
      * Reads a sequence of short capability blocks from the given block of
      * binary data. Note that this method will never return <code>null</code>;
@@ -101,8 +109,8 @@ public class ShortCapabilityBlock implements Writable {
         DefensiveTools.checkNull(cap, "cap");
 
         ByteBlock block = cap.getBlock();
-        return block.subBlock(0, 2).equals(BYTEBLOCK_DEFAULT.subBlock(0, 2))
-                && block.subBlock(4).equals(BYTEBLOCK_DEFAULT.subBlock(4));
+        return block.subBlock(0, 2).equals(CAP_TEMPLATE.subBlock(0, 2))
+                && block.subBlock(4).equals(CAP_TEMPLATE.subBlock(4));
     }
 
     /**
@@ -132,15 +140,16 @@ public class ShortCapabilityBlock implements Writable {
      * The "template" for converting short capability blocks to long capability
      * blocks.
      */
-    private static final byte[] BLOCK_DEFAULT = new byte[] {
+    private static final byte[] CAP_TEMPLATE_BYTES = new byte[] {
             0x09, 0x46, 0x00, 0x00, 0x4c, 0x7f, 0x11, (byte) 0xd1,
             (byte) 0x82, 0x22, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00};
     /**
      * The "template" for converting short capability blocks to long capability
-     * blocks, in <code>ByteBlock</code> form.
+     * blocks. The third and fourth bytes are replaced with the two "shortcap
+     * bytes" to form a capability block.
      */
-    private static final ByteBlock BYTEBLOCK_DEFAULT
-            = ByteBlock.wrap(BLOCK_DEFAULT);
+    public static final ByteBlock CAP_TEMPLATE
+            = ByteBlock.wrap(CAP_TEMPLATE_BYTES);
 
     /** The two bytes of short capability block data. */
     private final ByteBlock data;
@@ -184,7 +193,7 @@ public class ShortCapabilityBlock implements Writable {
      *         capability block
      */
     public final CapabilityBlock toCapabilityBlock() {
-        byte[] block = (byte[]) BLOCK_DEFAULT.clone();
+        byte[] block = (byte[]) CAP_TEMPLATE_BYTES.clone();
         System.arraycopy(data.toByteArray(), 0, block, 2, 2);
 
         return new CapabilityBlock(ByteBlock.wrap(block));
@@ -223,6 +232,7 @@ public class ShortCapabilityBlock implements Writable {
     public String toString() {
         String name = MiscTools.findEqualField(CapabilityBlock.class, toCapabilityBlock(),
                 blockFieldRE);
-        return "ShortCapabilityBlock: " + BinaryTools.describeData(data) + " (" + name + ")";
+        return "ShortCapabilityBlock: " + BinaryTools.describeData(data) + " ("
+                + (name == null ? "unknown" : name) + ")";
     }
 }

@@ -57,9 +57,9 @@ import net.kano.joscar.snaccmd.conn.YourInfoCmd;
 import net.kano.joscar.snaccmd.icbm.ParamInfo;
 import net.kano.joscar.snaccmd.icbm.ParamInfoCmd;
 import net.kano.joscar.snaccmd.icbm.ParamInfoRequest;
-import net.kano.joscar.snaccmd.icbm.SetParamInfoCmd;
 import net.kano.joscar.snaccmd.icbm.RecvTypingNotification;
 import net.kano.joscar.snaccmd.icbm.SendTypingNotification;
+import net.kano.joscar.snaccmd.icbm.SetParamInfoCmd;
 import net.kano.joscar.snaccmd.loc.LocRightsCmd;
 import net.kano.joscar.snaccmd.loc.LocRightsRequest;
 import net.kano.joscar.snaccmd.loc.SetInfoCmd;
@@ -69,13 +69,11 @@ import net.kano.joscar.snaccmd.ssi.SsiDataCmd;
 import net.kano.joscar.snaccmd.ssi.SsiDataRequest;
 import net.kano.joscar.snaccmd.ssi.SsiItem;
 import net.kano.joscar.snaccmd.ssi.SsiRightsRequest;
-import net.kano.joscar.snaccmd.ssi.SsiRightsCmd;
 import net.kano.joscar.ssiitem.DefaultSsiItemObjFactory;
 import net.kano.joscar.ssiitem.SsiItemObj;
 import net.kano.joscar.ssiitem.SsiItemObjectFactory;
 
 import java.io.ByteArrayInputStream;
-import java.net.InetAddress;
 import java.security.NoSuchProviderException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
@@ -84,7 +82,50 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 
 public class BosFlapConn extends BasicConn {
-    protected SsiItemObjectFactory itemFactory = new DefaultSsiItemObjFactory();
+    private SsiItemObjectFactory itemFactory = new DefaultSsiItemObjFactory();
+
+    private static final CapabilityBlock[] MY_CAPS = new CapabilityBlock[] {
+        CapabilityBlock.BLOCK_CHAT,
+        CapabilityBlock.BLOCK_DIRECTIM,
+        CapabilityBlock.BLOCK_FILE_GET,
+        CapabilityBlock.BLOCK_FILE_SEND,
+        CapabilityBlock.BLOCK_GAMES,
+        CapabilityBlock.BLOCK_GAMES2,
+        CapabilityBlock.BLOCK_ICON,
+        CapabilityBlock.BLOCK_SENDBUDDYLIST,
+        CapabilityBlock.BLOCK_TRILLIANCRYPT,
+        CapabilityBlock.BLOCK_VOICE,
+        CapabilityBlock.BLOCK_ADDINS,
+        CapabilityBlock.BLOCK_ICQCOMPATIBLE,
+        CapabilityBlock.BLOCK_SHORTCAPS,
+        CapabilityBlock.BLOCK_ENCRYPTION,
+
+        // ShortCapabilityBlock: f0 04 (unknown),
+        // ShortCapabilityBlock: f0 05 (unknown),
+        // ShortCapabilityBlock: 01 02 (unknown),
+        // ShortCapabilityBlock: 01 03 (unknown),
+        // ShortCapabilityBlock: f0 02 (unknown),
+        // ShortCapabilityBlock: f0 03 (unknown),
+        // 09 46 01 05 4c 7f 11 d1 82 22 44 45 45 53 54 00
+
+        // Camera (no icon?)
+        ShortCapabilityBlock.getCapFromShortBytes(0x01, 0x02),
+        ShortCapabilityBlock.getCapFromShortBytes(0xf0, 0x02),
+
+        // Microphone (dim icon)
+        ShortCapabilityBlock.getCapFromShortBytes(0x01, 0x03),
+        ShortCapabilityBlock.getCapFromShortBytes(0xf0, 0x03),
+        // Conferencing (no icon)
+        ShortCapabilityBlock.getCapFromShortBytes(0xf0, 0x04),
+
+        // Conferencing available (makes icon not dim)
+        ShortCapabilityBlock.getCapFromShortBytes(0xf0, 0x05),
+        new CapabilityBlock(
+                0x09, 0x46, 0x01, 0x05, 0x4c, 0x7f, 0x11, 0xd1,
+                0x82, 0x22, 0x44, 0x45, 0x45, 0x53, 0x54, 0x00),
+
+//        CapabilityBlock.BLOCK_SOMETHING,
+    };
 
     public BosFlapConn(ConnDescriptor cd, JoscarTester tester,
             ByteBlock cookie) {
@@ -113,10 +154,12 @@ public class BosFlapConn extends BasicConn {
             request(new LocRightsRequest());
             request(new SsiRightsRequest());
             request(new SsiDataRequest());
+
         } else if (cmd instanceof RecvTypingNotification) {
             RecvTypingNotification rtn = (RecvTypingNotification) cmd;
 
-            request(new SendTypingNotification(rtn.getScreenname(), rtn.getTypingState()));
+            request(new SendTypingNotification(rtn.getScreenname(),
+                    rtn.getTypingState()));
         }
     }
 
@@ -126,40 +169,17 @@ public class BosFlapConn extends BasicConn {
         SnacCommand cmd = e.getSnacCommand();
 
         if (cmd instanceof LocRightsCmd) {
-            try {
-                Certificate cert = tester.getSecureSession().getMyCertificate();
-                CertificateInfo certInfo;
-                if (cert == null) {
-                    certInfo = null;
-                } else {
+            CertificateInfo certInfo = null;
+            Certificate cert = tester.getSecureSession().getMyCertificate();
+            if (cert != null) {
+                try {
                     byte[] encoded = cert.getEncoded();
-                    certInfo = new CertificateInfo(
-                            ByteBlock.wrap(encoded));
+                    certInfo = new CertificateInfo(ByteBlock.wrap(encoded));
+                } catch (CertificateEncodingException e1) {
+                    e1.printStackTrace();
                 }
-                request(new SetInfoCmd(new InfoData("yo",
-                        null, new CapabilityBlock[] {
-                            CapabilityBlock.BLOCK_CHAT,
-                            CapabilityBlock.BLOCK_DIRECTIM,
-                            CapabilityBlock.BLOCK_FILE_GET,
-                            CapabilityBlock.BLOCK_FILE_SEND,
-                            CapabilityBlock.BLOCK_GAMES,
-                            CapabilityBlock.BLOCK_GAMES2,
-                            CapabilityBlock.BLOCK_ICON,
-                            CapabilityBlock.BLOCK_SENDBUDDYLIST,
-                            CapabilityBlock.BLOCK_TRILLIANCRYPT,
-                            CapabilityBlock.BLOCK_VOICE,
-                            CapabilityBlock.BLOCK_ADDINS,
-                            CapabilityBlock.BLOCK_ICQCOMPATIBLE,
-                            CapabilityBlock.BLOCK_SHORTCAPS,
-                            CapabilityBlock.BLOCK_ENCRYPTION,
-                            // f0 03 is a transparent phone icon
-                            new ShortCapabilityBlock(ByteBlock.wrap(new byte[] { (byte) 0xf0, 0x03 })).toCapabilityBlock(),
-
-//                        CapabilityBlock.BLOCK_SOMETHING,
-                        }, certInfo)));
-            } catch (CertificateEncodingException e1) {
-                e1.printStackTrace();
             }
+            request(new SetInfoCmd(new InfoData("yo", null, MY_CAPS, certInfo)));
             request(new SetEncryptionInfoCmd(new ExtraInfoBlock[] {
                 new ExtraInfoBlock(0x0402, new ExtraInfoData(
                         ExtraInfoData.FLAG_HASH_PRESENT,
@@ -195,30 +215,7 @@ public class BosFlapConn extends BasicConn {
                     + uic.getInfoData());
 
             CertificateInfo certInfo = uic.getInfoData().getCertificateInfo();
-            if (certInfo != null) {
-                ByteBlock certData = certInfo.getCommonCertData();
-
-                try {
-                    CertificateFactory factory
-                            = CertificateFactory.getInstance("X.509", "BC");
-                    ByteArrayInputStream stream
-                            = new ByteArrayInputStream(certData.toByteArray());
-                    X509Certificate cert = (X509Certificate)
-                            factory.generateCertificate(stream);
-
-                    tester.getSecureSession().setCert(sn, cert);
-
-                    X509Certificate x = cert;
-                    System.out.println("got certificate for " + sn + ": "
-                            + x.getSubjectX500Principal().getName());
-
-
-                } catch (CertificateException e1) {
-                    e1.printStackTrace();
-                } catch (NoSuchProviderException e1) {
-                    e1.printStackTrace();
-                }
-            }
+            storeCert(sn, certInfo);
 
         } else if (cmd instanceof ServiceRedirect) {
             ServiceRedirect sr = (ServiceRedirect) cmd;
@@ -250,9 +247,9 @@ public class BosFlapConn extends BasicConn {
                 request(new ActivateSsiCmd());
                 clientReady();
             }
-        } else if (cmd instanceof SsiRightsCmd) {
-            SsiRightsCmd src = (SsiRightsCmd) cmd;
-
+//        } else if (cmd instanceof SsiRightsCmd) {
+//            SsiRightsCmd src = (SsiRightsCmd) cmd;
+//
 //            System.out.println("SSI maxima:");
 //            int[] maxima = src.getMaxima();
 //            for (int i = 0; i < maxima.length; i++) {
@@ -260,6 +257,33 @@ public class BosFlapConn extends BasicConn {
 //
 //                System.out.println("- 0x" + Integer.toHexString(i) + ": " + max);
 //            }
+        }
+    }
+
+    private void storeCert(String sn, CertificateInfo certInfo) {
+        if (certInfo == null) return;
+
+        ByteBlock certData = certInfo.getCommonCertData();
+
+        try {
+            CertificateFactory factory
+                    = CertificateFactory.getInstance("X.509", "BC");
+            ByteArrayInputStream stream
+                    = new ByteArrayInputStream(certData.toByteArray());
+            X509Certificate cert = (X509Certificate)
+                    factory.generateCertificate(stream);
+
+            tester.getSecureSession().setCert(sn, cert);
+
+            X509Certificate x = cert;
+            System.out.println("got certificate for " + sn + ": "
+                    + x.getSubjectX500Principal().getName());
+
+
+        } catch (CertificateException e1) {
+            e1.printStackTrace();
+        } catch (NoSuchProviderException e1) {
+            e1.printStackTrace();
         }
     }
 }
