@@ -205,20 +205,16 @@ public class SelfTest extends TestCase {
         assertTrue(Arrays.equals(ipBytes, ip.getAddress()));
     }
 
-//    public void testMultiCollection() {
-//        List a = Arrays.asList(new String[] { "1", "2", "3", "4", "5" });
-//        Set b = new LinkedHashSet(Arrays.asList(new String[] { "6", "7", "8" }));
-//        List c = new LinkedList();
-//        Stack d = new Stack();
-//        d.push("9");
-//        d.push("10");
-//
-//        Collection mc = new MultiCollection(new Collection[] { a, b, c, d });
-//
-//        assertEquals(10, mc.size());
-//
-//        List result = new ArrayList(mc);
-//        assertEquals(Arrays.asList(new String[] {
-//            "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" }), result);
-//    }
+    public void testNormalize() {
+        String[] sns = new String[] {
+            "somename", "SOMENAME", "SoMeNaMe", "some name", " so m e   nam e",
+            "SoMe nA   me",
+        };
+        for (int i = 0; i < sns.length; i++) {
+            assertEquals("somename", OscarTools.normalize(sns[i]));
+        }
+        assertEquals("snargle99", OscarTools.normalize("Snargle 9 9"));
+        assertEquals("", OscarTools.normalize("    "));
+        assertEquals("9999999", OscarTools.normalize("99 9  99 99 "));
+    }
 }
