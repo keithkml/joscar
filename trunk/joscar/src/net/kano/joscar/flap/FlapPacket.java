@@ -117,7 +117,18 @@ public final class FlapPacket implements LiveWritable {
         int pos = 0;
 
         while (pos < data.length) {
-            pos += in.read(data, pos, data.length - pos);
+            System.out.println("trying to read " + (data.length - pos)
+                    + " bytes of flap data");
+            int count = in.read(data, pos, data.length - pos);
+
+            if (count == -1) {
+                // the connection died!
+                System.out.println("connection died while reading flap " +
+                        "packet data!");
+                return null;
+            }
+
+            pos += count;
         }
 
         return new FlapPacket(header, ByteBlock.wrap(data));

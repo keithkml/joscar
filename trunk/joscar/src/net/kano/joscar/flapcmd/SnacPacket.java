@@ -113,7 +113,7 @@ public final class SnacPacket implements LiveWritable {
      * @param flag2 the packet's second SNAC flag byte
      * @param data the SNAC data block
      */
-    SnacPacket(int family, int command, long reqid, short flag1,
+    public SnacPacket(int family, int command, long reqid, short flag1,
             short flag2, ByteBlock data) {
         DefensiveTools.checkRange(family, "family", 0);
         DefensiveTools.checkRange(command, "command", 0);

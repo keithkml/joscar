@@ -36,7 +36,7 @@
 package net.kano.joscartests;
 
 import net.kano.joscar.ByteBlock;
-import net.kano.joscar.flapcmd.FlapLoginCmd;
+import net.kano.joscar.flapcmd.LoginFlapCmd;
 import net.kano.joscar.flap.ClientFlapConn;
 import net.kano.joscar.flap.FlapConnEvent;
 import net.kano.joscar.flap.FlapPacketEvent;
@@ -68,7 +68,7 @@ public class LoginConn extends AbstractFlapConn {
 
         if (e.getNewState() == ClientFlapConn.STATE_CONNECTED) {
             System.out.println("sending flap version and key request");
-            send(new FlapLoginCmd());
+            send(new LoginFlapCmd());
             request(new KeyRequest(tester.getScreenname()));
         } else if (e.getNewState() == ClientFlapConn.STATE_FAILED) {
             tester.loginFailed("connection failed: " + e.getReason());

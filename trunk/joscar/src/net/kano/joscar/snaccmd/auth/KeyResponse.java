@@ -100,7 +100,7 @@ public class KeyResponse extends AuthCommand {
 
     public void writeData(OutputStream out) throws IOException {
         int len = (key == null ? 0 : (int) key.getWritableLength());
-        BinaryTools.writeUShort(out, (int) len);
+        BinaryTools.writeUShort(out, len);
         if (key != null) key.write(out);
     }
 

@@ -428,15 +428,12 @@ if ((buddyItem.getAlertWhenMask() & BuddyItem.MASK_WHEN_ONLINE) != 0) {
     }
 
     public synchronized String toString() {
-        boolean popupAlert = false, alertOnSignon = false,
-                alertOnUnidle = false, alertOnBack = false, playSound = false;
+        boolean popupAlert = (alertActionMask & MASK_ACTION_POPUP) != 0;
+        boolean playSound = (alertActionMask & MASK_ACTION_PLAY_SOUND) != 0;
 
-        popupAlert = (alertActionMask & MASK_ACTION_POPUP) != 0;
-        playSound = (alertActionMask & MASK_ACTION_PLAY_SOUND) != 0;
-
-        alertOnSignon = (alertWhenMask & MASK_WHEN_ONLINE) != 0;
-        alertOnUnidle = (alertWhenMask & MASK_WHEN_UNIDLE) != 0;
-        alertOnBack = (alertWhenMask & MASK_WHEN_UNAWAY) != 0;
+        boolean alertOnSignon = (alertWhenMask & MASK_WHEN_ONLINE) != 0;
+        boolean alertOnUnidle = (alertWhenMask & MASK_WHEN_UNIDLE) != 0;
+        boolean alertOnBack = (alertWhenMask & MASK_WHEN_UNAWAY) != 0;
 
         return "BuddyItem for " + sn + " (buddy 0x" + Integer.toHexString(id)
                 + " in group 0x" + Integer.toHexString(groupid) + "): alias="

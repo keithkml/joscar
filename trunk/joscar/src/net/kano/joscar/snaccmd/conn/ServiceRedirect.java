@@ -176,7 +176,7 @@ public class ServiceRedirect extends ConnCommand {
 
     /**
      * Returns the login cookie that should be {@linkplain
-     * net.kano.joscar.flapcmd.FlapLoginCmd FLAP provided} upon connecting to
+     * net.kano.joscar.flapcmd.LoginFlapCmd FLAP provided} upon connecting to
      * the specified host.
      *
      * @return a FLAP login cookie for the given host

@@ -67,7 +67,7 @@ public abstract class SnacQueueManager {
      * @param processor the SNAC processor for which pending SNACs should be
      *        erased
      */
-    public abstract void clearQueue(SnacProcessor processor);
+    public abstract void  clearQueue(SnacProcessor processor);
 
     /**
      * Sends the given SNAC request over the given SNAC connection. The given
