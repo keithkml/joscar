@@ -119,43 +119,36 @@ public class SelfTest extends TestCase {
         ByteBlock.wrap(new byte[0]).subBlock(0).subBlock(0, 0);
     }
 
-    public void testByteBlockSerialization() {
+    public void testByteBlockSerialization() throws IOException, ClassNotFoundException {
         ByteBlock block = ByteBlock.wrap(new byte[] {
             1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16
         });
         ByteBlock subblock = block.subBlock(5, 5);
 
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
-        ObjectOutputStream oout = null;
-        try {
-            oout = new ObjectOutputStream(bout);
+        ObjectOutputStream oout = new ObjectOutputStream(bout);
 
-            oout.writeObject(block);
-            oout.writeObject(subblock);
+        oout.writeObject(block);
+        oout.writeObject(subblock);
 
-            ByteArrayInputStream bin = new ByteArrayInputStream(
-                    bout.toByteArray());
+        ByteArrayInputStream bin = new ByteArrayInputStream(
+                bout.toByteArray());
 
-            ObjectInputStream oin = new ObjectInputStream(bin);
+        ObjectInputStream oin = new ObjectInputStream(bin);
 
-            ByteBlock big = (ByteBlock) oin.readObject();
-            ByteBlock small = (ByteBlock) oin.readObject();
+        ByteBlock big = (ByteBlock) oin.readObject();
+        ByteBlock small = (ByteBlock) oin.readObject();
 
-            assertEquals(big.get(0), 1);
-            assertEquals(big.get(15), 16);
-            assertEquals(big.getLength(), 16);
-            assertEquals(big, block);
+        assertEquals(big.get(0), 1);
+        assertEquals(big.get(15), 16);
+        assertEquals(big.getLength(), 16);
+        assertEquals(big, block);
 
-            assertEquals(small.get(0), 6);
-            assertEquals(small.get(4), 10);
-            assertEquals(small.getLength(), 5);
-            assertEquals(small, subblock);
+        assertEquals(small.get(0), 6);
+        assertEquals(small.get(4), 10);
+        assertEquals(small.getLength(), 5);
+        assertEquals(small, subblock);
 
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
     }
 
     public void testBinaryTools() {

@@ -40,6 +40,7 @@ import java.lang.reflect.Modifier;
 import java.util.Collections;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.Collection;
 import java.util.regex.Pattern;
 
 /**
@@ -225,7 +226,8 @@ class Something {
             }
         }
 
-        return (String[]) matches.values().toArray(new String[0]);
+        Collection values = matches.values();
+        return (String[]) values.toArray(new String[values.size()]);
     }
 
     /**

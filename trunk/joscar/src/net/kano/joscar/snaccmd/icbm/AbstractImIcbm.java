@@ -278,6 +278,7 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
      * @throws IOException if an I/O error occurs
      */
     final void writeImTlvs(OutputStream out) throws IOException {
+        InstantMessage message = this.message;
         if (message != null) {
             MutableTlvChain chain = TlvTools.createMutableChain();
             ByteBlock messageData;

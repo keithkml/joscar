@@ -118,6 +118,7 @@ public final class CmdFactoryMgr extends SnacCmdFactoryList {
 
         if (factory != null) return factory;
 
+        SnacCmdFactoryList defaultFactories = this.defaultFactories;
         if (defaultFactories != null) {
             // see if there's a default factory for this command
             factory = defaultFactories.getFactory(type);

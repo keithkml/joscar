@@ -85,7 +85,7 @@ import java.net.UnknownHostException;
  * clear enough.
  *
  * @see MiscTools
- * @see net.kano.joscar.OscarTools
+ * @see OscarTools
  */
 public final class BinaryTools {
     /**

@@ -63,6 +63,7 @@ class QueueRunner implements Runnable {
     private final Set queues = new CopyOnWriteArraySet();
 
     public void run() {
+        //TODO: should QueueRunner be able to be stopped?
         long minWait = 0;
         for (;;) {
             synchronized(lock) {

@@ -811,9 +811,10 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
         if (flags != -1 || away != null) {
             int flags = this.flags;
             if (away != null) {
-                if (away.booleanValue()) {flags &= MASK_AWAY;} else {
-                    flags
-                            &= ~MASK_AWAY;
+                if (away.booleanValue()) {
+                    flags &= MASK_AWAY;
+                } else {
+                    flags &= ~MASK_AWAY;
                 }
             }
             chain.addTlv(Tlv.getUShortInstance(TYPE_USER_FLAG, flags));

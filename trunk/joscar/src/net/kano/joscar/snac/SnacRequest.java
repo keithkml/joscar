@@ -255,6 +255,7 @@ public class SnacRequest {
      */
     public synchronized final SnacResponseEvent[] getResponses() {
         // this is for performance.
+        List responses = this.responses;
         if (responses == null || responses.isEmpty()) return NO_SNAC_RESPONSES;
 
         return (SnacResponseEvent[])
