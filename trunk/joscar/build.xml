@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="us-ascii"?>
+
+<!--
+    Copyright (c) 2002-2003 The Joust Project
+    All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions
+    are met:
+
+    - Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+    - Redistributions in binary form must reproduce the above copyright
+      notice, this list of conditions and the following disclaimer in
+      the documentation and/or other materials provided with the
+      distribution.
+    - Neither the name of the Joust Project nor the names of its
+      contributors may be used to endorse or promote products derived
+      from this software without specific prior written permission.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+    FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+    COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+    INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+    BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+    LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+    CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+    LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+    ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<project name="joscar" default="joscar" basedir=".">
+
+  <description> joscar build file </description>
+
+  <property name="project" value="${ant.project.name}" />
+
+
+  <property name="src.dir" value="src" />
+  <property name="bin.dir" value="bin" />
+  <property name="docs.dir" value="docs" />
+  <property name="apidocs.dir" value="${docs.dir}/api" />
+  <property name="tests.dir" value="tests" />
+
+
+  <property name="joscar.src" location="${src.dir}" />
+  <property name="joscar.bin" location="${bin.dir}" />
+
+  <property name="docs.home" location="${docs.dir}" />
+  <property name="apidocs.home" location="${apidocs.dir}" />
+
+  <property name="tests.home" location="${tests.dir}" />
+  <property name="tests.src" location="${tests.home}/${src.dir}" />
+  <property name="tests.bin" location="${tests.home}/${bin.dir}" />
+  <property name="tests.reports" location="${tests.home}/reports" />
+
+  <property name="share" location="share" />
+  <property name="taglets.bin" location="${share}/build" />
+  <property name="tasks.bin" location="${share}/build" />
+
+  <property name="demo.bin" location="demo" />
+
+
+  <target name="version">
+    <mkdir dir="${tasks.bin}" />
+
+    <javac srcdir="${joscar.src}" destdir="${tasks.bin}">
+      <include name="net/kano/joscar/JoscarTools.java" />
+      <include name="net/kano/joscar/build/ant/JoscarVersionTask.java" />
+    </javac>
+
+    <taskdef name="joscar-version" classpath="${tasks.bin}"
+             classname="net.kano.joscar.build.ant.JoscarVersionTask" />
+
+    <joscar-version property="joscar.ver" />
+    <property name="fullpkg" value="${project}-${joscar.ver}" />
+    <property name="dist.pkgname" value="${fullpkg}-src" />
+    <property name="dist.home" location="${fullpkg}" />
+
+    <echo message="joscar is at version ${joscar.ver}" />
+  </target>
+
+
+  <target name="joscar">
+    <mkdir dir="${joscar.bin}" />
+    <javac srcdir="${joscar.src}" includes="net/kano/joscar/"
+           excludes="net/kano/joscar/build/" destdir="${joscar.bin}"
+           source="1.4" />
+  </target>
+
+  <target name="jar" depends="joscar,version">
+    <mkdir dir="${joscar.bin}" />
+    <jar jarfile="${fullpkg}-bin.jar"
+         basedir="${joscar.bin}"
+         includes="net/kano/joscar/**/*.class"
+         excludes="net/kano/joscar/build/" />
+  </target>
+
+
+  <target name="demo" depends="joscar">
+    <mkdir dir="${demo.bin}" />
+    <javac srcdir="${joscar.src}" includes="net/kano/joscartests/"
+           classpath="${joscar.bin}" destdir="${demo.bin}" />
+  </target>
+
+
+  <target name="build-taglets">
+    <mkdir dir="${taglets.bin}" />
+    <javac srcdir="${joscar.src}"
+           includes="net/kano/joscar/build/taglets/"
+           destdir="${taglets.bin}" />
+  </target>
+
+  <target name="javadoc" depends="build-taglets">
+    <mkdir dir="${apidocs.home}" />
+    <javadoc sourcepath="${joscar.src}"
+             packagenames="net.kano.joscar, net.kano.joscar.*"
+             excludepackagenames="net.kano.joscar.build,
+                                  net.kano.joscar.build.*"
+             destdir="${apidocs.home}"
+             windowtitle="joscar API Documentation"
+             source="1.4"
+             author="true"
+             version="true"
+             splitindex="true"
+             additionalparam="-breakiterator -noqualifier net.kano.joscar.*">
+      <group title="Core Protocol">
+        <package name="net.kano.joscar" />
+        <package name="net.kano.joscar.flap" />
+        <package name="net.kano.joscar.net" />
+        <package name="net.kano.joscar.snac" />
+        <package name="net.kano.joscar.tlv" />
+      </group>
+
+      <group title="Flap Commands">
+        <package name="net.kano.joscar.flapcmd" />
+        <package name="net.kano.joscar.flapcmd.*" />
+      </group>
+
+      <group title="Snac Families">
+        <package name="net.kano.joscar.snaccmd" />
+        <package name="net.kano.joscar.snaccmd.*" />
+        <package name="net.kano.joscar.ssiitem" />
+        <package name="net.kano.joscar.ratelim" />
+      </group>
+
+      <group title="Rendezvous">
+        <package name="net.kano.joscar.rv" />
+        <package name="net.kano.joscar.rvcmd" />
+        <package name="net.kano.joscar.rvcmd.*" />
+        <package name="net.kano.joscar.rvproto" />
+        <package name="net.kano.joscar.rvproto.*" />
+      </group>
+
+      <taglet name="net.kano.joscar.build.taglets.FlapChannelTaglet"
+              path="${taglets.bin}" />
+      <taglet name="net.kano.joscar.build.taglets.SnacSourceTaglet"
+              path="${taglets.bin}" />
+      <taglet name="net.kano.joscar.build.taglets.SnacCommandTaglet"
+              path="${taglets.bin}" />
+      <taglet name="net.kano.joscar.build.taglets.RvProxySourceTaglet"
+              path="${taglets.bin}" />
+    </javadoc>
+  </target>
+
+
+  <target name="clean" depends="version">
+    <delete dir="${joscar.bin}" />
+    <delete dir="${demo.bin}" />
+    <delete dir="${tests.bin}" />
+    <delete dir="${tests.reports}" />
+    <delete dir="${apidocs.home}" />
+    <delete dir="${taglets.bin}" />
+    <delete dir="${tasks.bin}" />
+    <delete file="${fullpkg}-bin.jar" />
+  </target>
+
+
+  <target name="build-tests" depends="joscar">
+    <mkdir dir="${tests.bin}" />
+    <javac srcdir="${tests.src}" destdir="${tests.bin}"
+           classpath="${joscar.bin}" />
+  </target>
+
+  <target name="tests" depends="build-tests">
+    <mkdir dir="${tests.reports}" />
+    <junit printsummary="true">
+      <classpath>
+        <pathelement location="${tests.bin}" />
+        <pathelement location="${joscar.bin}" />
+      </classpath>
+      <batchtest>
+        <fileset dir="${tests.bin}">
+          <include name="**/SelfTest.*" />
+        </fileset>
+      </batchtest>
+    </junit>
+  </target>
+
+
+  <target name="dist-clean" depends="version">
+    <delete dir="${dist.home}" />
+    <delete file="${dist.pkgname}.tar.gz" />
+    <delete file="${dist.pkgname}.tar.bz2" />
+    <delete file="${dist.pkgname}.zip" />
+  </target>
+
+  <target name="dist-init" depends="version">
+    <mkdir dir="${dist.home}" />
+  </target>
+
+  <target name="dist-src" depends="dist-init">
+    <copy todir="${dist.home}">
+      <fileset file="${ant.file}" />
+      <fileset dir="${basedir}">
+        <include name="README" />
+        <include name="RELNOTES" />
+        <include name="LICENSE" />
+        <include name="UPDATING" />
+        <include name="BUILDING" />
+        <include name="USING" />
+        <include name="CHANGELOG" />
+      </fileset>
+    </copy>
+
+    <mkdir dir="${dist.home}/${src.dir}" />
+    <copy todir="${dist.home}/${src.dir}">
+      <fileset dir="${joscar.src}">
+        <exclude name="**/*~" />
+        <exclude name="**/#*#" />
+        <exclude name="**/CVS" />
+      </fileset>
+    </copy>
+
+    <mkdir dir="${dist.home}/${tests.dir}/${src.dir}" />
+    <copy todir="${dist.home}/${tests.dir}/${src.dir}">
+      <fileset dir="${tests.src}" includes="**/*.java" />
+    </copy>
+  </target>
+
+  <target name="dist-doc" depends="dist-init">
+    <mkdir dir="${dist.home}/${docs.dir}" />
+    <copy todir="${dist.home}/${docs.dir}" >
+      <fileset dir="${docs.home}/" />
+    </copy>
+  </target>
+
+  <target name="dist-package" depends="version">
+    <tar destfile="${dist.pkgname}.tar.gz" basedir="${basedir}"
+         longfile="gnu" compression="gzip" includes="${fullpkg}/" />
+    <tar destfile="${dist.pkgname}.tar.bz2" basedir="${basedir}"
+         longfile="gnu" compression="bzip2" includes="${fullpkg}/" />
+    <zip destfile="${dist.pkgname}.zip" basedir="${basedir}"
+         includes="${fullpkg}/"  />
+  </target>
+
+  <target name="dist" depends="dist-clean,dist-src,dist-doc,dist-package" />
+
+</project>

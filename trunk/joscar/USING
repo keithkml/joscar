@@ -1,0 +1,40 @@
+USING - joscar 0.9.2
+AOL Instant Messenger protocol library for Java
+(C) 2002-2003 The Joust Project
+
+--------------------------------------------------------------------------------
+
+THE JOSCAR LIBRARY
+
+The joscar library is heavily documented.  Every single class, method, and
+field is fully documented, and developers working with the library are urged to
+read through and understand the documentation of any and all classes he is
+using.  You can find the documentation in the docs/api/ directory of this 
+distribution, or on the Joust Project web site 
+(http://joust.kano.net/joscar/docs/api/).
+
+--------------------------------------------------------------------------------
+
+JOSCARTESTER
+
+joscar is a rather complicated library, and may be intimidating to users new
+to either the library, the protocol, or even the Java language itself.
+Luckily, a "demo" called JoscarTester is included with this library.  While
+JoscarTester is by no means a well-designed, high-quality implementation of a
+joscar-based application, it can be a starting point for implementing your
+own applications using joscar.  JoscarTester (and its numerous related classes)
+is located in the source directory; the classes exist in their entirety in the
+net.kano.joscartests package.  To run JoscarTester, simply run 'java
+net.kano.joscartests.JoscarTester <screenname> <password>' and it will attempt
+to log into AOL Instant Messenger with the given screenname.  It has a simple
+command-line interface that may be explained here later; scroll to near the
+bottom of JoscarTester.java for the two lists of commands.  (NOTE that the
+joscartests package is not included in the given .jar file.  It must be
+compiled from source!)
+
+Note that some somewhat messy classpath hacking will probably be necessary to
+run JoscarTester. Try something like this in your home joscar direcory:
+
+    java -cp bin:demo net.kano.joscartests.JoscarTester <username> <password>
+
+--------------------------------------------------------------------------------

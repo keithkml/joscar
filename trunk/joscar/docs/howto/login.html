@@ -1,0 +1,255 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<title>A quick joscar login tutorial</title>
+<body>
+<h1>A quick joscar login tutorial</h1>
+
+<blockquote>
+<big>This "tutorial" was written by Keith as a Weblog entry once. It is by no means complete nor does it teach how to implement a robust login sequence. A full joscar tutorial will come in a future release. Check the <a href="http://joust.kano.net/" title="The Joust website">Joust website</a> for updates.</big>
+</blockquote>
+
+<p>I have to admit that JoscarTester (and almost all of net.kano.joscartests.*) is some really awful code. It's not part of joscar, so I didn't worry too much about it. It's just a "client" I use to test new stuff. So that developers (like Adam :) don't have to parse through that garbage, I shall attempt to describe here how a typical client would function.</p>
+
+<p>First a bit of background on how OSCAR works over TCP. A typical OSCAR "session" consists of at least two but up to six (or so) TCP connections. The first is to the "authorizer" server, login.oscar.aol.com, where you log in with your screenname and password and which redirects you to a "basic online service" (BOS) server. You disconnect from the authorizer and connect to the BOS server. From there you can do most things (IM, info, buddy list, and so on), but other "services" require connections to new servers. We'll get to this in a moment.</p>
+
+<p>To connect to the authorizer, you could create your own TCP <code>Socket</code> or simply use my pre-prepared <code>ClientConn</code> class (I personally prefer asynchronous sockets, probably from my Tcl days :). In fact, there's a ClientConn subclass designed specifically for OSCAR connections! It's called <code>ClientFlapConn</code> and not only does it connect and whatnot, it also runs a FLAP event loop!</p>
+
+<a name="more"></a>
+<p>What is a FLAP, you may ask? Well it looks like you need to do some more research on the protocol! Briefly, however, FLAP is the protocol over which all client-server (and <i>no</i> client-client) OSCAR communication takes place. It's very simple, allowing for "login cookies," disconnection messages ("you have been disconnected because your screenname was signed onto from another computer"), and separate "channels" of data. It is over the FLAP protocol that OSCAR's ever-popular SNAC commands are sent (on the SNAC data channel).</p>
+
+<p><i>So</i>, to utilize this whole FLAP thing, first we need to set up a FLAP event handler (for incoming FLAP data packets) <i>and</i> a SNAC command handler (for incoming SNAC commands on the SNAC flap channel) for each connection you make to an OSCAR server. Setting up a FLAP connection is done like so:
+
+<pre>
+Socket socket = createNewTcpConnectionHoweverYouWant();
+FlapProcessor flapProcessor = new FlapProcessor(socket);
+</pre>
+</p>
+
+<p>And then you can begin sending FLAP packets through the FLAP "processor." In addition, you might want to set up a loop to read incoming commands (note that I suggest something cleaner than this):
+
+<pre>
+Runnable looper = new Runnable() {
+    public void run() {
+        while (true) {
+            if (!flapProcessor.readNextFlap()) break;
+        }
+    }
+};
+new Thread(looper).start();
+</pre>
+</p>
+
+<p>So now you've got the FLAP commands being read in from the socket. But where are they going?? If you want to be notified when a new FLAP packet comes in, you need to add a <i>packet listener</i> to the FLAP processor:
+
+<pre>
+FlapPacketListener listener = new FlapPacketListener() {
+    public void handlePacket(FlapPacketEvent e) {
+        System.out.println("Got FLAP packet!!!");
+    }
+};
+flapProcessor.addPacketListener(listener);
+</pre>
+</p>
+
+<p>You should probably add an exception handler as well, but we won't get into that here. So now we're reading in FLAP packets. Yay. The problem is that we aren't that interested in FLAP-level data most of the time. We like SNACs; the majority of the interesting parts of the OSCAR protocol are SNAC-based. So let's add a SNAC processor too!
+
+
+<pre>
+SnacProcessor snacProcessor = new SnacProcessor(flapProcessor);
+</pre>
+</p>
+
+<p>Now packets on the SNAC channel of the FLAP connection we made will be converted into <code>SnacCommand</code>s, <i>and</i> we can easily utilize SNACs' request-response system without any extra code on our part. Yay!</p>
+
+<p>You'd notice, however, if you tried to run the above code, that the <code>"Got FLAP packet!!!"</code> message would not appear when SNAC commands were received. So where are <i>they</i> going? Well, we need to add a listener to the SNAC processor just like we did for the FLAP processor:
+
+
+<pre>
+SnacPacketListener snacListener = new SnacPacketListener() {
+    public void handlePacket(SnacPacketEvent e) {
+        System.out.println("Got SNAC packet!");
+    }
+}
+snacProcessor.addPacketListener(snacListener);
+</pre>
+</p>
+
+<p>(Note that we don't need to add an exception handler to the SNAC processor; it just uses the FLAP processor's exception handlers.)</p>
+
+<p></p>
+
+<p>Alright! Now we're processing FLAPs and SNACs and whatnot. Now, however, comes the hard part: the actual protocol.</p>
+
+<p>
+Here's how the connection to the authorizer goes:
+
+<ul>
+<li> First, the connection is initialized.
+
+<ul>
+<li> <b>Server:</b> <code>LoginFlapCmd</code> </li>
+<li> <b>Client:</b> <code>LoginFlapCmd</code> </li>
+</ul>
+</li>
+
+<li> The client then requests an "authorization key." This is used in a typical MD5 challenge-response authorization process. If you don't know what that is (I didn't), don't worry. You don't need to implement it.
+
+<ul>
+<li> <b>Client:</b> <code>KeyRequest</code> </li>
+<li> <b>Server:</b> <code>KeyResponse</code> </li>
+</ul>
+</li>
+
+<li> The client requests authorization using the challenge "key" given above; the server responds with either an error code or a BOS server to connect to.
+
+<ul>
+<li> <b>Client:</b> <code>AuthRequest</code> </li>
+<li> <b>Server:</b> <code>AuthResponse</code> </li>
+</ul>
+</li>
+
+<li> The connection is then dropped, as the client is now authorized.
+
+</ul>
+</p>
+
+<p>See the <a href="http://joust.kano.net/joscar/docs/api/" title="Joscar API documentation">javadoc</a> for details on what each command should contain. The <code>AuthResponse</code>, if the login was successful, contains a host and maybe a port (use 5190 otherwise) for the BOS server. Here's how the connection to the BOS server goes:
+
+<ul>
+
+<li> First, the connection is initialized:
+<ul>
+<li> <b>Server:</b> <code>LoginFlapCmd</code> </li>
+
+<li> <b>Client:</b> <code>LoginFlapCmd</code> <i>(with login cookie provided in <code>AuthResponse</code> above)</i> </li>
+</ul> 
+</li>
+
+<li> Next, hopefully, the server indicates that the connection can be started.
+<ul>
+
+<li> <b>Server:</b> <code>ServerReadyCmd</code> </li>
+</ul>
+</li>
+
+<li> The client and server then exchange SNAC "command family" versions supported.
+<ul>
+<li> <b>Client:</b> <code>ClientVersionsCmd</code> </li>
+
+<li> <b>Server:</b> <code>ServerVersionsCmd</code> </li>
+</ul>
+</li>
+
+<li> The client then requests rate limiting information; the server returns it and the client acknowledges that it accepts the given limits (I don't know what happens if you don't accept them; I'd bet you are simply limited using some old (and more restrictive) rate limiting protocol).
+<ul>
+<li> <b>Client:</b> <code>RateInfoRequest</code> </li>
+
+<li><b>Server:</b> <code>RateInfoCmd</code> </li>
+<li> <b>Client:</b> <code>RateAck</code> </li>
+</ul>
+</li>
+
+<li> Next the client requests the set of "ICBM parameters" currently set for him (a default set are applied each time a user logs in; these include such things as whether typing notification is supported); if the client is dissatisfied with the parameters the server sends back, he changes them.
+<ul>
+
+<li> <b>Client:</b> <code>ParamInfoReq</code> </li>
+<li> <b>Server:</b> <code>ParamInfoCmd</code> </li>
+<li> <b>Client:</b> <code>SetParamInfoCmd</code> <i>(if necessary)</i> </li>
+
+</ul>
+</li>
+
+<li> Next, the client requests "location rights" (where "location" consists of directory information, a user's profile, away messages, and so on - I'm sorry, location is sort of a bad name). When the client receives these "rights," such as the maximum profile length (normally 1024 bytes), he can safely set the user's profile, or ask the user to trim it to that limit, if necessary. The client then requests his own user information, and receives it. This information includes many, many details about the user, including warning level and signon time.
+<ul>
+<li> <b>Client:</b> <code>LocRightsRequest</code> </li>
+<li> <b>Server:</b> <code>LocRightsCmd</code> </li>
+
+<li> <b>Client:</b> <code>SetInfoCmd</code> </li>
+<li> <b>Client:</b> <code>MyInfoRequest</code> </li>
+<li> <b>Server:</b> <code>YourInfoCmd</code> </li>
+
+</ul>
+</li>
+
+<li> Next the client requests "rights" related to the user's server-stored information (SSI) (like the buddy list). The rights are returned; these include the maximum number of buddies and groups.
+<ul>
+<li> <b>Client:</b> <code>SsiRightsRequest</code> </li>
+<li> <b>Server:</b> <code>SsiRightsCmd</code> </li>
+
+</ul>
+</li>
+
+<li> Next, the client requests the user's server-stored data. If you send a last-modified timestamp (with <code>SsiDataCheck</code>), the SSI data is only sent back if it's changed since then; otherwise, the SSI is simply sent back. This SSI (server-stored information) contains such things as the buddy list and privacy settings (for example, whether typing notification is enabled). When a response is received (after any changes to the SSI have been made), the client "activates" the SSI, causing the stored privacy settings to take effect, triggering buddy status updates, and so on.
+<ul>
+<li> <b>Client:</b> <code>SsiDataRequest</code> or (preferably) <code>SsiDataCheck</code> </li>
+
+<li> <b>Server:</b> <code>SsiDataCmd</code> or <code>SsiUnchangedCmd</code> </li>
+<li> <i>The client should make any pre-signon changes to the SSI (like blocking a certain user or fixing a corrupt buddy list) here</i> </li>
+<li> <b>Client:</b> <code>ActivateSsiCmd</code> </li>
+
+</ul>
+</li>
+
+<li> And finally, the client states it has finished setting up connection and is ready to go online. When this command is sent, you appear online to other buddies and receive a barrage of buddy status updates for all of the buddies on your list who are online. It's rather fun.
+<ul>
+<li> <b>Client:</b> <code>ClientReadyCmd</code> </li>
+</ul>
+</li>
+</ul>
+</p>
+
+<p>So. That's the login process for you. Note that many of the commands sent in setting up the BOS connection are unnecessary, but it's good to send them even if you don't quite know what you're doing; the server sort of expects them and might behave differently without them, thinking you are an older or somehow broken client.</p>
+
+<p>I said I would explain how to connect to other services, like chat rooms or the buddy icon server, but I've been writing this for two and a half hours now and I'd like to stop. :) Here's some sample code to go out on. (It might not compile as-is, but the ideas are there. Note that beginners will always want to include the two italicized lines.)
+
+<pre>
+Socket socket = new Socket("login.oscar.aol.com", 5190);
+
+FlapProcessor fp = new FlapProcessor(socket);
+SnacProcessor sp = new SnacProcessor(fp);
+
+<i>sp.addPreprocessor(new FamilyVersionPreprocessor());</i>
+<i>sp.setDefaultSnacCmdFactoryList(new DefaultClientFactoryList());</i>
+
+fp.addPacketListener(new FlapPacketListener() {
+    public void handlePacket(FlapPacketEvent e) {
+        FlapCommand flapCmd = e.getFlapCommand();
+
+        if (flapCmd instanceof LoginFlapCmd) {
+            fp.sendFlap(new LoginFlapCmd(LoginFlapCmd.VERSION_DEFAULT));
+            sp.sendSnac(new KeyRequest("myscreenname"));
+        } else {
+            System.out.println("got unknown FLAP command: " + flapCmd);
+        }
+    }
+});
+
+sp.addPacketListener(new SnacPacketListener() {
+    public void handlePacket(SnacPacketEvent e) {
+        SnacCommand snacCmd = e.getSnacCommand();
+
+        if (snacCmd instanceof KeyResponse) {
+            sp.sendSnac(new AuthRequest("myscreenname", "mypassword",
+                    new ClientVersionInfo("AOL Instant Messenger, 
+                    version 5.1.3036/WIN32", 5, 1, 0, 3036), 
+                    ((KeyResponse) snacCmd).getKey());
+        } else if (snacCmd instanceof AuthResponse) {
+            // ...
+        }
+    }
+});
+
+// this is so messy :)
+new Thread() {
+    public void run() {
+        fp.runFlapLoop();
+    }
+}.start();
+</pre>
+</p>
+
+<p>Enjoy.</p>
+
+</body>
+</html>
