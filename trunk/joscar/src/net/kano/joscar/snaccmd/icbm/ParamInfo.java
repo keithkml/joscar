@@ -39,9 +39,11 @@ import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.Writable;
+import net.kano.joscar.MiscTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.regex.Pattern;
 
 /**
  * A data structure containing various settings related to instant messaging.
@@ -274,10 +276,14 @@ if ((paramInfo.getFlags() & ParamInfo.FLAG_TYPING_NOTIFICATION) != 0) {
         BinaryTools.writeUInt(out, minMsgInterval);
     }
 
+    private static final Pattern flagFieldRE = Pattern.compile("FLAG_.*");
+
     public String toString() {
         return "ParamInfo: " +
                 "maxChannel=" + maxChannel +
-                ", flags=0x" + Long.toHexString(flags) +
+                ", flags=0x" + Long.toHexString(flags)
+                + " (" + MiscTools.getFlagFieldsString(ParamInfo.class, flags,
+                        flagFieldRE) + ")" +
                 ", maxMsgLen=" + maxMsgLen +
                 ", maxSenderWarning=" + maxSenderWarning +
                 ", maxReceiverWarning=" + maxReceiverWarning +

@@ -41,12 +41,14 @@ import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.ImEncodedString;
 import net.kano.joscar.ImEncodingParams;
 import net.kano.joscar.LiveWritable;
+import net.kano.joscar.MiscTools;
 import net.kano.joscar.rvcmd.SegmentedFilename;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.regex.Pattern;
 
 /**
  * A data structure used to transfer information over a file transfer
@@ -1077,10 +1079,15 @@ header.setTotalFileSize(0);
         fullBuffer.writeTo(out);
     }
 
+    private static final Pattern headerFieldRE = Pattern.compile("HEADERTYPE_.*");
+    private static final Pattern flagFieldRE = Pattern.compile("FLAG_.*");
+
     public synchronized String toString() {
         return "FileTransferHeader:" +
                 "\n ftVersion='" + ftVersion + "'" +
-                "\n headerType=0x" + Integer.toHexString(headerType) +
+                "\n headerType=0x" + Integer.toHexString(headerType)
+                + " (" + MiscTools.findIntField(FileTransferHeader.class,
+                        headerType, headerFieldRE) + ")" +
                 "\n icbmMessageId=" + icbmMessageId +
                 "\n encryption=" + encryption +
                 "\n compression=" + compression +
@@ -1099,7 +1106,9 @@ header.setTotalFileSize(0);
                 "\n bytesReceived=" + bytesReceived +
                 "\n receivedChecksum=" + receivedChecksum +
                 "\n clientid='" + clientid + "'" +
-                "\n flags=0x" + Integer.toHexString(flags) +
+                "\n flags=0x" + Integer.toHexString(flags)
+                + " (" + MiscTools.getFlagFieldsString(FileTransferHeader.class,
+                        flags, flagFieldRE) + ")" +
                 "\n listNameOffset=" + listNameOffset +
                 "\n listSizeOffset=" + listSizeOffset +
                 "\n macFileInfo=" + BinaryTools.describeData(macFileInfo) +

@@ -133,10 +133,9 @@ public class GetFileList implements LiveWritable {
         DefensiveTools.checkNull(gfListVersion, "gfListVersion");
         DefensiveTools.checkNull(files, "files");
 
+        this.files = (GetFileEntry[]) DefensiveTools.getNonnullArray(
+                files, "files");
         this.gfListVersion = gfListVersion;
-        this.files = (GetFileEntry[]) files.clone();
-
-        DefensiveTools.checkNullElements(this.files, "files");
     }
 
     /**

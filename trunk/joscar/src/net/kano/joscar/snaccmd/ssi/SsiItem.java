@@ -282,7 +282,7 @@ public class SsiItem implements LiveWritable, Serializable {
 
     public String toString() {
         return "SsiItem '" + name + "', type=0x" + Integer.toHexString(type)
-                + "(" + MiscTools.findIntField(SsiItem.class, type,
+                + " (" + MiscTools.findIntField(SsiItem.class, type,
                         typeFieldRE) + "), parentid=0x"
                 + Integer.toHexString(parentid) + ", id=0x"
                 + Integer.toHexString(id);

@@ -115,8 +115,7 @@ public final class BinaryTools {
     /**
      * Returns the <i>signed</i> <code>long</code> stored in the given data
      * block. The returned <code>long</code> represents the first eight bytes
-     * after index <code>pos</code> of <code>data</code>; that is, the byte at
-     * index <code>pos</code> will be the first byte read, and index
+     * after index <code>pos</code> of <code>data</code>; that is, the byte at index <code>pos</code> will be the first byte read, and index
      * <code>pos+7</code> the last.
      *
      * @param data the block of data to read from
@@ -124,7 +123,7 @@ public final class BinaryTools {
      * @return a signed <code>long</code> representing the value stored in the
      *         first eight bytes of the given data block after the given
      *         position
-     * @throws ArrayIndexOutOfBoundsException if there are fewer than eight
+     * @exception ArrayIndexOutOfBoundsException if there are fewer than eight
      *         bytes in <code>data</code>
      *
      * @see #writeLong

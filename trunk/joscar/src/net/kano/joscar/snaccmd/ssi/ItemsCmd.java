@@ -112,7 +112,7 @@ public abstract class ItemsCmd extends SsiCommand {
 
         DefensiveTools.checkNull(items, "items");
 
-        this.items = (SsiItem[]) items.clone();
+        this.items = (SsiItem[]) DefensiveTools.getNonnullArray(items, "items");
     }
 
     /**

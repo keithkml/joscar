@@ -39,9 +39,11 @@ import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.Writable;
+import net.kano.joscar.MiscTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.regex.Pattern;
 
 /**
  * A data structure used to hold data in {@link ExtraInfoBlock}s, containing
@@ -266,8 +268,12 @@ public final class ExtraInfoData implements Writable {
         }
     }
 
+    private static final Pattern flagFieldRE = Pattern.compile("FLAG_.*");
+
     public String toString() {
-        return "ExtraInfoData: flags=0x" + Integer.toHexString(flags)
+        return "ExtraInfoData: flags=0x" + Integer.toHexString(flags) + " ("
+                + MiscTools.getFlagFieldsString(ExtraInfoData.class, flags,
+                        flagFieldRE)+ ")"
                 + ", data=" + BinaryTools.describeData(data);
     }
 }

@@ -139,6 +139,13 @@ public final class DefensiveTools {
                     + " cannot be null");
         }
     }
+    public static final void checkNull(Object[] val, String name)
+            throws IllegalArgumentException {
+        if (val == null) {
+            throw new IllegalArgumentException("value of " + name
+                    + " cannot be null");
+        }
+    }
 
     /**
      * Ensures that no element of the given array is <code>null</code>.

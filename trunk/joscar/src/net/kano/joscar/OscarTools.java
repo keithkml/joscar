@@ -332,16 +332,36 @@ public final class OscarTools {
      * @param str the string to normalize
      * @return a normalized version of the given string
      */
-    public static String normalize(final String str) {
-        final StringBuffer buffer = new StringBuffer(str.length());
+    public static String normalize(String str) {
+        DefensiveTools.checkNull(str, "str");
+
+        StringBuffer buffer = new StringBuffer(str.length());
 
         for (int i = 0; i < str.length(); i++) {
-            final char c = str.charAt(i);
+            char c = str.charAt(i);
 
             if (c != ' ') buffer.append(Character.toLowerCase(c));
         }
 
         return buffer.toString();
+    }
+
+    /**
+     * Returns whether the given strings are equal when compared as screennames.
+     * For details, see {@link #normalize}.
+     * <br><br>
+     * For example, <code>equalScreennames("Joustacular", "j o ust
+     * acular")</code> will return <code>true</code>.
+     *
+     * @param a a screenname
+     * @param b a screenname
+     * @return whether the two screennames are equal
+     */
+    public static boolean equalScreennames(String a, String b) {
+        DefensiveTools.checkNull(a, "a");
+        DefensiveTools.checkNull(b, "b");
+
+        return normalize(a).equals(normalize(b));
     }
 
     /** A poor regular expression to match an HTML tag. */
@@ -542,7 +562,7 @@ System.out.println("message text is "
      * @param cookie a chat room "cookie"
      * @return the name of the chat room described by the cookie
      */
-    public static final String getRoomNameFromCookie(String cookie) {
+    public static String getRoomNameFromCookie(String cookie) {
         Matcher m = roomNameRE.matcher(cookie);
         if (!m.matches()) return null;
 

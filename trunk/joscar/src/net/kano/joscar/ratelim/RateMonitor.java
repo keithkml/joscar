@@ -328,8 +328,8 @@ public class RateMonitor {
      */
     public final void setRateClasses(RateClassInfo[] rateInfos) {
         DefensiveTools.checkNull(rateInfos, "rateInfos");
-        rateInfos = (RateClassInfo[]) rateInfos.clone();
-        DefensiveTools.checkNullElements(rateInfos, "rateInfos");
+        rateInfos = (RateClassInfo[]) DefensiveTools.getNonnullArray(
+                rateInfos, "rateInfos");
 
         if (logger.isLoggable(Level.FINE)) {
             logger.fine("Got rate classes for monitor " + this);

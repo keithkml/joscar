@@ -40,10 +40,12 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.OscarTools;
 import net.kano.joscar.StringBlock;
+import net.kano.joscar.MiscTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.regex.Pattern;
 
 /**
  * A SNAC command used by newer clients to request information about a buddy.
@@ -166,7 +168,12 @@ if ((getInfoCmd.getFlags()
         }
     }
 
+    private static final Pattern flagFieldRE = Pattern.compile("FLAG_.*");
+
     public String toString() {
-        return "GetInfoCmd: flags=" + flags + ", sn=" + sn;
+        return "GetInfoCmd: flags=" + flags + " ("
+                + MiscTools.getFlagFieldsString(GetInfoCmd.class, flags,
+                        flagFieldRE) + ")"
+                + ", sn=" + sn;
     }
 }

@@ -131,11 +131,12 @@ public class SsiDataCmd extends SsiCommand {
         super(CMD_SSI_DATA);
 
         DefensiveTools.checkRange(version, "version", 0);
-        DefensiveTools.checkNull(items, "items");
         DefensiveTools.checkRange(lastmod, "lastmod", 0);
+        DefensiveTools.checkNull(items, "items");
+        items = (SsiItem[]) DefensiveTools.getNonnullArray(items, "items");
 
         this.version = version;
-        this.items = (SsiItem[]) items.clone();
+        this.items = items;
         this.lastmod = lastmod;
     }
 
@@ -145,9 +146,7 @@ public class SsiDataCmd extends SsiCommand {
      *
      * @return the SSI version being used
      */
-    public final int getSsiVersion() {
-        return version;
-    }
+    public final int getSsiVersion() { return version; }
 
     /**
      * Returns the user's SSI items, as sent in this command. Note that this
@@ -155,6 +154,9 @@ public class SsiDataCmd extends SsiCommand {
      * sometimes sent multiple times, spreading the user's SSI items over
      * multiple packets. If there are more SSI data commands to follow this
      * one, {@link #getLastModDate} will return <code>0</code>.
+     * <br><br>
+     * This method will never return <code>null</code>. If no items were sent,
+     * the returned array will be empty.
      *
      * @return the items in this user's server-stored information
      */
@@ -169,9 +171,7 @@ public class SsiDataCmd extends SsiCommand {
      * @return the last modification date of the user's SSI data, in seconds
      *         since the unix epoch
      */
-    public final long getLastModDate() {
-        return lastmod;
-    }
+    public final long getLastModDate() { return lastmod; }
 
     public void writeData(OutputStream out) throws IOException {
         BinaryTools.writeUByte(out, version);

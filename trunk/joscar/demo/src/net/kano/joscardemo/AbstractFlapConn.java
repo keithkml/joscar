@@ -78,13 +78,14 @@ public abstract class AbstractFlapConn extends ClientFlapConn {
                 AbstractFlapConn.this.handleFlapPacket(e);
             }
         });
-        getFlapProcessor().addExceptionHandler(new FlapExceptionHandler() {
-            public void handleException(FlapExceptionEvent event) {
-                System.out.println(event.getType() + " FLAP ERROR: "
-                        + event.getException().getMessage());
-                event.getException().printStackTrace();
-            }
-        });
+        getFlapProcessor().addExceptionHandler(
+                new FlapExceptionHandler() {
+                    public void handleException(FlapExceptionEvent event) {
+                        System.out.println(event.getType() + " FLAP ERROR: "
+                                + event.getException().getMessage());
+                        event.getException().printStackTrace();
+                    }
+                });
         snacProcessor.addPacketListener(new SnacPacketListener() {
             public void handleSnacPacket(SnacPacketEvent e) {
                 AbstractFlapConn.this.handleSnacPacket(e);
@@ -94,10 +95,10 @@ public abstract class AbstractFlapConn extends ClientFlapConn {
 
     protected SnacRequestListener genericReqListener
             = new SnacRequestAdapter() {
-        public void handleResponse(SnacResponseEvent e) {
-            handleSnacResponse(e);
-        }
-    };
+                public void handleResponse(SnacResponseEvent e) {
+                    handleSnacResponse(e);
+                }
+            };
 
     public AbstractFlapConn(JoscarTester tester) {
         this.tester = tester;
@@ -127,7 +128,7 @@ public abstract class AbstractFlapConn extends ClientFlapConn {
         if (!req.hasListeners()) req.addListener(genericReqListener);
         snacProcessor.sendSnac(req);
     }
-
+    
     SnacRequest request(SnacCommand cmd) {
         return request(cmd, null);
     }
@@ -139,7 +140,10 @@ public abstract class AbstractFlapConn extends ClientFlapConn {
     }
 
     protected abstract void handleStateChange(ClientConnEvent e);
+
     protected abstract void handleFlapPacket(FlapPacketEvent e);
+
     protected abstract void handleSnacPacket(SnacPacketEvent e);
+
     protected abstract void handleSnacResponse(SnacResponseEvent e);
 }

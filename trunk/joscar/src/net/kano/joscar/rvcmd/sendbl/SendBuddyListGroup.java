@@ -192,10 +192,11 @@ public class SendBuddyListGroup implements LiveWritable {
             int totalSize) {
         DefensiveTools.checkNull(groupName, "groupName");
         DefensiveTools.checkNull(buddies, "buddies");
+        buddies = (String[]) DefensiveTools.getNonnullArray(buddies, "buddies");
         DefensiveTools.checkRange(totalSize, "totalSize", -1);
 
         this.groupName = groupName;
-        this.buddies = (String[]) buddies.clone();
+        this.buddies = buddies;
         this.totalSize = totalSize;
 
         DefensiveTools.checkNullElements(this.buddies, "buddies");

@@ -37,13 +37,11 @@ package net.kano.joscar.snaccmd;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.Writable;
 import net.kano.joscar.MiscTools;
+import net.kano.joscar.Writable;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.util.regex.Pattern;
 
 /**
