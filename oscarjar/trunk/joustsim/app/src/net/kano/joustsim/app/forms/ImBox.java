@@ -35,9 +35,11 @@
 
 package net.kano.joustsim.app.forms;
 
+import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
+import net.kano.joustsim.Screenname;
 import net.kano.joustsim.app.GuiResources;
 import net.kano.joustsim.app.GuiSession;
-import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.oscar.BuddyInfoManager;
 import net.kano.joustsim.oscar.oscar.service.icbm.Conversation;
@@ -66,22 +68,22 @@ import net.kano.joustsim.text.convbox.ConversationDocument;
 import net.kano.joustsim.text.convbox.ConversationLine;
 import net.kano.joustsim.text.convbox.IconID;
 import net.kano.joustsim.trust.BuddyCertificateInfo;
-import net.kano.joscar.ByteBlock;
-import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.MiscTools;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
+import javax.swing.ActionMap;
+import javax.swing.BoundedRangeModel;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
+import javax.swing.InputMap;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JList;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
+import javax.swing.JScrollBar;
 import javax.swing.JSplitPane;
 import javax.swing.JTextPane;
 import javax.swing.JToggleButton;
@@ -92,7 +94,6 @@ import javax.swing.UIManager;
 import javax.swing.event.CaretEvent;
 import javax.swing.event.CaretListener;
 import javax.swing.text.AttributeSet;
-import javax.swing.text.Keymap;
 import javax.swing.text.MutableAttributeSet;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
@@ -120,11 +121,9 @@ import java.util.Set;
 
 public class ImBox extends JFrame {
     private JSplitPane splitPane;
-    private JScrollPane inputScrollPane;
     private JTextPane inputBox;
     private JComboBox convTypeBox;
     private JButton sendButton;
-    private JPanel inputSidePanel;
     private JToolBar formatToolbar;
     private JPanel miniDialogStackHolder;
     private JPanel convBoxHolder;
@@ -142,7 +141,7 @@ public class ImBox extends JFrame {
 
     private final GuiSession guiSession;
     private final AimConnection conn;
-    private final net.kano.joustsim.Screenname buddy;
+    private final Screenname buddy;
 
     private Set convs = new HashSet();
     private SendAction sendAction = new SendAction();
@@ -215,53 +214,6 @@ public class ImBox extends JFrame {
     private IconID insecureIconID = new IconID();
     private boolean validBox = true;
 
-    private IconID[] getIconIdsForOutgoingMessage(MessageInfo minfo) {
-        List ids = new ArrayList(5);
-        if (minfo instanceof OutgoingSecureAimMessageInfo) {
-            ids.add(outgoingSecureIconID);
-            markInsecureMessages();
-        } else {
-            ids.add(insecureIconID);
-        }
-        return (IconID[]) ids.toArray(new IconID[ids.size()]);
-    }
-
-    private IconID[] getIconIdsForMessage(MessageInfo minfo) {
-        List ids = new ArrayList(5);
-        if (minfo instanceof DecryptableAimMessageInfo
-                || minfo instanceof DecryptedAimMessageInfo) {
-            MessageWithCertificateInfo info = (MessageWithCertificateInfo) minfo;
-
-            BuddyCertificateInfo certInfo = info.getMessageCertificateInfo();
-            updateIcons(certInfo);
-            IconID icon = getIconIdForCertInfo(certInfo);
-            if (icon != null) {
-                ids.add(icon);
-                markInsecureMessages();
-            }
-        } else {
-            ids.add(insecureIconID);
-        }
-        return (IconID[]) ids.toArray(new IconID[ids.size()]);
-    }
-
-    private void markInsecureMessages() {
-        //TODO: mark partially secure icon id's too
-        convDoc.setIconsForID(insecureIconID, insecureMessageIcons);
-    }
-
-    private synchronized IconID getIconIdForCertInfo(BuddyCertificateInfo certInfo) {
-        if (certInfo == null) return null;
-
-        ByteBlock hash = certInfo.getCertificateInfoHash();
-        IconID id = (IconID) certInfoIds.get(hash);
-        if (id == null) {
-            id = new IconID();
-            certInfoIds.put(hash, id);
-        }
-        return id;
-    }
-
     private final MiniDialogStack miniDialogStack = new MiniDialogStack();
 
     private Conversation currentConversation = null;
@@ -272,6 +224,8 @@ public class ImBox extends JFrame {
     private final Action underlineAction = new UnderlineAction();
     private final Action undoAction = new UndoAction();
     private final Action redoAction = new RedoAction();
+    private final Action pageDownAction = new PageDownAction();
+    private final Action pageUpAction = new PageUpAction();
 
     private final JToggleButton boldButton;
     private final JToggleButton italicButton;
@@ -322,19 +276,32 @@ public class ImBox extends JFrame {
         inputBox.setEditorKit(new AolRtfEditorKit());
         inputDocument = (AolRtfDocument) inputBox.getDocument();
 
-        Keymap inputmap = inputBox.getKeymap();
-        inputmap.addActionForKeyStroke(KeyStroke.getKeyStroke(KeyEvent.VK_B,
-                KeyEvent.CTRL_MASK), boldAction);
-        inputmap.addActionForKeyStroke(KeyStroke.getKeyStroke(KeyEvent.VK_I,
-                KeyEvent.CTRL_MASK), italicAction);
-        inputmap.addActionForKeyStroke(KeyStroke.getKeyStroke(KeyEvent.VK_U,
-                KeyEvent.CTRL_MASK), underlineAction);
-        inputmap.addActionForKeyStroke(KeyStroke.getKeyStroke(KeyEvent.VK_Z,
-                KeyEvent.CTRL_MASK), undoAction);
-        inputmap.addActionForKeyStroke(KeyStroke.getKeyStroke(KeyEvent.VK_Z,
-                KeyEvent.CTRL_MASK | KeyEvent.SHIFT_MASK), redoAction);
-        inputmap.addActionForKeyStroke(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER,
-                0), sendAction);
+        InputMap inputmap = inputBox.getInputMap();
+        inputmap.put(KeyStroke.getKeyStroke(KeyEvent.VK_B,
+                KeyEvent.CTRL_MASK), "bold");
+        inputmap.put(KeyStroke.getKeyStroke(KeyEvent.VK_I,
+                KeyEvent.CTRL_MASK), "italic");
+        inputmap.put(KeyStroke.getKeyStroke(KeyEvent.VK_U,
+                KeyEvent.CTRL_MASK), "underline");
+        inputmap.put(KeyStroke.getKeyStroke(KeyEvent.VK_Z,
+                KeyEvent.CTRL_MASK), "undo");
+        inputmap.put(KeyStroke.getKeyStroke(KeyEvent.VK_Z,
+                KeyEvent.CTRL_MASK | KeyEvent.SHIFT_MASK), "redo");
+        inputmap.put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER,
+                0), "send");
+        inputmap.put(KeyStroke.getKeyStroke(KeyEvent.VK_PAGE_UP,
+                0), "pageUp");
+        inputmap.put(KeyStroke.getKeyStroke(KeyEvent.VK_PAGE_DOWN,
+                0), "pageDown");
+        ActionMap actionMap = inputBox.getActionMap();
+        actionMap.put("bold", boldAction);
+        actionMap.put("italic", italicAction);
+        actionMap.put("underline", underlineAction);
+        actionMap.put("undo", undoAction);
+        actionMap.put("redo", redoAction);
+        actionMap.put("send", sendAction);
+        actionMap.put("pageUp", pageUpAction);
+        actionMap.put("pageDown", pageDownAction);
 
         inputDocument.addUndoableEditListener(inputUndoManager);
 
@@ -361,20 +328,22 @@ public class ImBox extends JFrame {
         });
 
         addWindowListener(new WindowAdapter() {
+            public void windowOpened(WindowEvent e) {
+                inputBox.requestFocusInWindow();
+            }
+
             public void windowClosed(WindowEvent e) {
                 closeAllConversations();
             }
         });
 
-        convDoc.setIconsForID(outgoingSecureIconID, new Icon[] {
-            GuiResources.getTinyGrayLockIcon()
-        });
+        convDoc.setIconsForID(outgoingSecureIconID, secureMessageIcons);
 
         setIconImage(new ImageIcon(getClass().getClassLoader().getResource(
                 "icons/im-window-tiny.png")).getImage());
     }
 
-    public ImBox(GuiSession guiSession, AimConnection conn, net.kano.joustsim.Screenname buddy) {
+    public ImBox(GuiSession guiSession, AimConnection conn, Screenname buddy) {
         DefensiveTools.checkNull(guiSession, "guiSession");
         DefensiveTools.checkNull(conn, "conn");
         DefensiveTools.checkNull(buddy, "buddy");
@@ -415,24 +384,7 @@ public class ImBox extends JFrame {
         ConversationDocument convDoc = convBox.getDocument();
         convDoc.registerScreenname(conn.getScreenname(), true);
         convDoc.registerScreenname(this.buddy, false);
-    }
-
-    private void updateIcons(BuddyCertificateInfo certInfo) {
-        System.out.println("- updating icons for " + certInfo.getBuddy()
-                + " (" + certInfo.isUpToDate() + ")");
-        IconID id = getIconIdForCertInfo(certInfo);
-        if (id != null) {
-            Icon[] icons;
-            if (certInfoTrustManager.isTrusted(certInfo)) {
-                System.out.println("- info is trusted");
-                icons = secureMessageIcons;
-            } else {
-                System.out.println("- info is not trusted");
-                icons = null;
-            }
-            //TODO: the document should not be updated outside the Swing event thread
-            convDoc.setIconsForID(id, icons);
-        }
+        convBox.requestFocusInWindow();
     }
 
     public void handleConversation(Conversation conversation) {
@@ -448,6 +400,97 @@ public class ImBox extends JFrame {
                 updateButtons();
             }
         });
+    }
+
+    public synchronized void setInvalidBox() {
+        if (!validBox) return;
+
+        validBox = false;
+        //TODO: "this window is no longer valid" won't be true with directim
+        convDoc.addInfoMessage(AolRtfString.readLine("This window is no longer "
+                + "active because your connection to AIM was closed."));
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                Color gray = UIManager.getColor("Panel.background");
+                convBox.getTextPane().setBackground(gray);
+                inputBox.setBackground(gray);
+                convTypeBox.setEnabled(false);
+                inputBox.setEnabled(false);
+                formatToolbar.setEnabled(false);
+                Component[] buttons = formatToolbar.getComponents();
+                for (int i = 0; i < buttons.length; i++) {
+                    Component button = buttons[i];
+                    button.setEnabled(false);
+                }
+            }
+        });
+        updateButtons();
+    }
+
+    private IconID[] getIconIdsForMessage(MessageInfo minfo) {
+        List ids = new ArrayList(5);
+        if (minfo instanceof DecryptableAimMessageInfo
+                || minfo instanceof DecryptedAimMessageInfo) {
+            MessageWithCertificateInfo info = (MessageWithCertificateInfo) minfo;
+
+            BuddyCertificateInfo certInfo = info.getMessageCertificateInfo();
+            updateIcons(certInfo);
+            IconID icon = getIconIdForCertInfo(certInfo);
+            if (icon != null) {
+                ids.add(icon);
+                markInsecureMessages();
+            }
+        } else {
+            ids.add(insecureIconID);
+        }
+        return (IconID[]) ids.toArray(new IconID[ids.size()]);
+    }
+
+    public synchronized boolean isValidBox() { return validBox; }
+
+    private IconID[] getIconIdsForOutgoingMessage(MessageInfo minfo) {
+        List ids = new ArrayList(5);
+        if (minfo instanceof OutgoingSecureAimMessageInfo) {
+            ids.add(outgoingSecureIconID);
+            markInsecureMessages();
+        } else {
+            ids.add(insecureIconID);
+        }
+        return (IconID[]) ids.toArray(new IconID[ids.size()]);
+    }
+
+    private void markInsecureMessages() {
+        //TODO: mark partially secure icon id's too
+        convDoc.setIconsForID(insecureIconID, insecureMessageIcons);
+    }
+
+    private synchronized IconID getIconIdForCertInfo(BuddyCertificateInfo certInfo) {
+        if (certInfo == null) return null;
+
+        ByteBlock hash = certInfo.getCertificateInfoHash();
+        IconID id = (IconID) certInfoIds.get(hash);
+        if (id == null) {
+            id = new IconID();
+            certInfoIds.put(hash, id);
+        }
+        return id;
+    }
+
+    private void updateIcons(BuddyCertificateInfo certInfo) {
+        System.out.println("- updating icons for " + certInfo.getBuddy()
+                + " (" + certInfo.isUpToDate() + ")");
+        IconID id = getIconIdForCertInfo(certInfo);
+        if (id != null) {
+            Icon[] icons;
+            if (certInfoTrustManager.isTrusted(certInfo)) {
+                System.out.println("- info is trusted");
+                icons = secureMessageIcons;
+            } else {
+                System.out.println("- info is not trusted");
+                icons = null;
+            }
+            convDoc.setIconsForID(id, icons);
+        }
     }
 
     private JToggleButton addToolbarAction(Action action) {
@@ -473,16 +516,11 @@ public class ImBox extends JFrame {
 
         if (certInfoTrustManager.isTrusted(certInfo)) return;
 
-        System.out.println("asking for certificates for " + buddy + ": " + certInfo);
         miniDialogStack.popup(new BuddyTrustMiniDialog(conn, buddy, certInfo));
     }
 
     private void updateButtons() {
         Conversation conversation = getCurrentConversation();
-        System.out.println("updating buttons for " + MiscTools.getClassName(conversation));
-        System.out.println((conversation != null) + "-"
-                + (conversation != null && conversation.isOpen()) + "-"
-                + (conversation != null && conversation.canSendMessage()));
         final boolean enabled = validBox && conversation != null
                 && conversation.isOpen() && conversation.canSendMessage();
         SwingUtilities.invokeLater(new Runnable() {
@@ -500,34 +538,6 @@ public class ImBox extends JFrame {
         this.currentConversation = conv;
         updateButtons();
     }
-
-    public synchronized void setInvalidBox() {
-        if (!validBox) return;
-
-        validBox = false;
-        //TODO: disable things in the box
-        closeAllConversations();
-        convDoc.addInfoMessage(AolRtfString.readLine("This window is no longer "
-                + "active because your connection to AIM was closed."));
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                Color gray = UIManager.getColor("Panel.background");
-                convBox.getTextPane().setBackground(gray);
-                inputBox.setBackground(gray);
-                convTypeBox.setEnabled(false);
-                inputBox.setEnabled(false);
-                formatToolbar.setEnabled(false);
-                Component[] buttons = formatToolbar.getComponents();
-                for (int i = 0; i < buttons.length; i++) {
-                    Component button = buttons[i];
-                    button.setEnabled(false);
-                }
-            }
-        });
-        updateButtons();
-    }
-
-    public synchronized boolean isValidBox() { return validBox; }
 
     private void updateToolbarButtons() {
         MutableAttributeSet attr = inputBox.getInputAttributes();
@@ -573,7 +583,7 @@ public class ImBox extends JFrame {
         }
     }
 
-    public class UndoAction extends AbstractAction {
+    private class UndoAction extends AbstractAction {
         public UndoAction() {
             super("Undo");
         }
@@ -586,7 +596,7 @@ public class ImBox extends JFrame {
             }
         }
     }
-    public class RedoAction extends AbstractAction {
+    private class RedoAction extends AbstractAction {
         public RedoAction() {
             super("Redo");
         }
@@ -599,6 +609,40 @@ public class ImBox extends JFrame {
             }
         }
     }
+
+    public abstract class PageAction extends AbstractAction {
+        public PageAction(String name) {
+            super(name);
+        }
+
+        public void actionPerformed(ActionEvent e) {
+            JScrollBar bar = convBox.getScrollPane().getVerticalScrollBar();
+            BoundedRangeModel model = bar.getModel();
+            int old = model.getValue();
+            int dir = getDirection();
+            int newval = dir * bar.getBlockIncrement(dir);
+            model.setValue(old + newval);
+        }
+
+        protected abstract int getDirection();
+    }
+
+    public class PageUpAction extends PageAction {
+        public PageUpAction() {
+            super("Page Up");
+        }
+
+        protected int getDirection() { return -1; }
+    }
+
+    public class PageDownAction extends PageAction {
+        public PageDownAction() {
+            super("Page Down");
+        }
+
+        protected int getDirection() { return 1; }
+    }
+
     public abstract class ToggleAction extends AbstractAction {
         protected ToggleAction() {
         }
@@ -625,7 +669,7 @@ public class ImBox extends JFrame {
         protected abstract boolean isOn(AttributeSet old);
     }
 
-    private class BoldAction extends ToggleAction {
+    public class BoldAction extends ToggleAction {
         public BoldAction() {
             super("Bold", boldIcon);
         }
@@ -638,7 +682,7 @@ public class ImBox extends JFrame {
             return StyleConstants.isBold(old);
         }
     }
-    private class ItalicAction extends ToggleAction {
+    public class ItalicAction extends ToggleAction {
         public ItalicAction() {
             super("Italic", italicIcon);
         }
@@ -651,7 +695,7 @@ public class ImBox extends JFrame {
             return StyleConstants.isItalic(old);
         }
     }
-    private class UnderlineAction extends ToggleAction {
+    public class UnderlineAction extends ToggleAction {
         public UnderlineAction() {
             super("Underline", underlineIcon);
         }
@@ -665,7 +709,7 @@ public class ImBox extends JFrame {
         }
     }
 
-    private class SendAction extends AbstractAction {
+    public class SendAction extends AbstractAction {
         private SendAction() {
             super("Send");
         }

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="net.kano.aimcrypto.app.forms.prefs.TrustPrefsPane">
+<form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="net.kano.joustsim.app.forms.prefs.TrustPrefsPane">
   <grid id="1c8ed" binding="mainPanel" row-count="3" column-count="2" hgap="-1" vgap="10">
     <margin top="0" left="0" bottom="0" right="0"/>
     <constraints>

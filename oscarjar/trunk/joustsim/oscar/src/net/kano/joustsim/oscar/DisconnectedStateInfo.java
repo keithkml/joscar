@@ -36,7 +36,13 @@
 package net.kano.joustsim.oscar;
 
 public class DisconnectedStateInfo extends StateInfo {
-    public DisconnectedStateInfo() {
+    private final boolean onPurpose;
+
+    public DisconnectedStateInfo(boolean onPurpose) {
         super(State.DISCONNECTED);
+
+        this.onPurpose = onPurpose;
     }
+
+    public final boolean isOnPurpose() { return onPurpose; }
 }

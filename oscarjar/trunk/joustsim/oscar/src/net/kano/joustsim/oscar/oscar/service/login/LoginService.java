@@ -163,7 +163,7 @@ public class LoginService extends Service {
 
     public void disconnected() {
         if (!getNotified()) {
-            loginFailed(new DisconnectedFailureInfo());
+            loginFailed(new DisconnectedFailureInfo(getAimConnection().wantedDisconnect()));
         }
     }
 

@@ -56,7 +56,7 @@ public class SecurityEnabledHandler implements CapabilityHandler {
 
     private final AimConnection conn;
     private boolean boundInfoService = false;
-    private final net.kano.joustsim.trust.PrivateKeysPreferences keysMgr;
+    private final PrivateKeysPreferences keysMgr;
 
     public SecurityEnabledHandler(AimConnection conn) {
         DefensiveTools.checkNull(conn, "conn");

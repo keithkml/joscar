@@ -97,6 +97,7 @@ public class AimConnection {
     private boolean triedConnecting = false;
     private State state = State.NOTCONNECTED;
     private StateInfo stateInfo = NotConnectedStateInfo.getInstance();
+    private boolean wantedDisconnect = false;
 
     private CopyOnWriteArrayList stateListeners = new CopyOnWriteArrayList();
     private CopyOnWriteArrayList serviceListeners = new CopyOnWriteArrayList();
@@ -219,6 +220,11 @@ public class AimConnection {
     }
 
     public void disconnect() {
+        disconnect(true);
+    }
+
+    public void disconnect(boolean onPurpose) {
+        wantedDisconnect = onPurpose;
         closeConnections();
     }
 
@@ -312,7 +318,7 @@ public class AimConnection {
     }
 
     private void internalDisconnected() {
-        setState(null, State.DISCONNECTED, new DisconnectedStateInfo());
+        setState(null, State.DISCONNECTED, new DisconnectedStateInfo(wantedDisconnect));
         closeConnections();
     }
 
@@ -384,6 +390,8 @@ public class AimConnection {
     public BuddyInfoTracker getBuddyInfoTracker() {
         return buddyInfoTracker;
     }
+
+    public boolean wantedDisconnect() { return wantedDisconnect; }
 
     private class LoginServiceFactory implements ServiceFactory {
         public Service getService(OscarConnection conn, int family) {

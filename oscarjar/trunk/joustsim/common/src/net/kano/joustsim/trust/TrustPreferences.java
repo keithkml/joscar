@@ -38,7 +38,7 @@ package net.kano.joustsim.trust;
 import net.kano.joustsim.Screenname;
 
 public interface TrustPreferences {
-    net.kano.joustsim.Screenname getScreenname();
+    Screenname getScreenname();
     PrivateKeysPreferences getPrivateKeysPreferences();
     CertificateTrustManager getCertificateTrustManager();
     SignerTrustManager getSignerTrustManager();

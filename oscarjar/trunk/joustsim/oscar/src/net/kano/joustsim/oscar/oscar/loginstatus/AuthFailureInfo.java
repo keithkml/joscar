@@ -38,17 +38,6 @@ package net.kano.joustsim.oscar.oscar.loginstatus;
 import net.kano.joscar.snaccmd.auth.AuthResponse;
 
 public final class AuthFailureInfo extends LoginFailureInfo {
-    public static final Reason REASON_ACCOUNT_SUSPENDED = new Reason(
-                "ACCOUNT_SUSPENDED", AuthResponse.ERROR_ACCOUNT_SUSPENDED);
-    public static final Reason REASON_CLIENT_TOO_OLD = new Reason(
-                "CLIENT_TOO_OLD", AuthResponse.ERROR_CLIENT_TOO_OLD);
-    public static final Reason REASON_CONNECTING_TOO_MUCH = new Reason(
-                "CONNECTING_TOO_MUCH", AuthResponse.ERROR_CONNECTING_TOO_MUCH);
-    public static final Reason REASON_INVALID_SN_OR_PASS = new Reason(
-                "INVALID_SN_OR_PASS", AuthResponse.ERROR_INVALID_SN_OR_PASS);
-    public static final Reason REASON_TEMP_UNAVAILABLE = new Reason(
-                "TEMP_UNAVAILABLE", AuthResponse.ERROR_TEMP_UNAVAILABLE);
-
     private final int errorCode;
     private final String errorUrl;
 
@@ -67,19 +56,5 @@ public final class AuthFailureInfo extends LoginFailureInfo {
 
     public String getErrorUrl() {
         return errorUrl;
-    }
-
-    public static class Reason {
-        private final String name;
-        private final int code;
-
-        private Reason(String name, int code) {
-            this.name = name;
-            this.code = code;
-        }
-
-        public String getName() { return name; }
-
-        public int getErrorCode() { return code; }
     }
 }

@@ -46,12 +46,12 @@ import net.kano.joscar.DefensiveTools;
 
 public class JoustsimAimSession implements AimSession {
     private final JoustsimSession appSession;
-    private final net.kano.joustsim.Screenname screenname;
+    private final Screenname screenname;
     private AimConnection connection = null;
 
     private final LocalPreferencesManager localPrefs;
 
-    public JoustsimAimSession(JoustsimSession appSession, net.kano.joustsim.Screenname screenname) {
+    public JoustsimAimSession(JoustsimSession appSession, Screenname screenname) {
         DefensiveTools.checkNull(appSession, "appSession");
         DefensiveTools.checkNull(screenname, "screenname");
 
@@ -69,7 +69,7 @@ public class JoustsimAimSession implements AimSession {
 
     public final AppSession getAppSession() { return appSession; }
 
-    public final net.kano.joustsim.Screenname getScreenname() { return screenname; }
+    public final Screenname getScreenname() { return screenname; }
 
     public AimConnection openConnection(AimConnectionProperties props) {
         closeConnection();

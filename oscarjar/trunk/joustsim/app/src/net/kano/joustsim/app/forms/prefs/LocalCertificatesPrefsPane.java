@@ -113,7 +113,7 @@ public class LocalCertificatesPrefsPane extends JPanel implements PrefsPane {
     private JFileChooser fc = null;
 
     private final AppSession appSession;
-    private final net.kano.joustsim.Screenname sn;
+    private final Screenname sn;
     private final PrivateKeysManager keysMgr;
 
     private ListComboBoxModel certificateFileList = new ListComboBoxModel();
@@ -273,7 +273,7 @@ public class LocalCertificatesPrefsPane extends JPanel implements PrefsPane {
         certInfoIconLabel.setVisible(false);
     }
 
-    public LocalCertificatesPrefsPane(JoustsimSession appSession, net.kano.joustsim.Screenname sn) {
+    public LocalCertificatesPrefsPane(JoustsimSession appSession, Screenname sn) {
         DefensiveTools.checkNull(appSession, "appSession");
         DefensiveTools.checkNull(sn, "sn");
 

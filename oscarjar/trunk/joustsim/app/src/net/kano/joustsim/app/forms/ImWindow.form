@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="net.kano.aimcrypto.app.forms.ImWindow">
+<form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="net.kano.joustsim.app.forms.ImWindow">
   <tabbedpane id="3e21e" binding="tabs">
     <constraints>
       <xy x="103" y="91" width="200" height="200"/>

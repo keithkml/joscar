@@ -35,19 +35,25 @@
 
 package net.kano.joustsim.app.forms;
 
-import net.kano.joustsim.app.JoustsimSession;
-import net.kano.joustsim.app.GuiResources;
-import net.kano.joustsim.app.GuiSession;
+import net.kano.joscar.OscarTools;
+import net.kano.joscar.snaccmd.auth.AuthResponse;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.app.GuiResources;
 import net.kano.joustsim.app.GuiSession;
+import net.kano.joustsim.app.JoustsimSession;
 import net.kano.joustsim.app.config.GeneralLocalPrefs;
 import net.kano.joustsim.app.config.GlobalPrefs;
 import net.kano.joustsim.app.config.LocalPreferencesManager;
 import net.kano.joustsim.oscar.ConnectionFailedStateInfo;
+import net.kano.joustsim.oscar.DisconnectedStateInfo;
 import net.kano.joustsim.oscar.LoginFailureStateInfo;
 import net.kano.joustsim.oscar.StateInfo;
-import net.kano.joscar.OscarTools;
+import net.kano.joustsim.oscar.oscar.loginstatus.AuthFailureInfo;
+import net.kano.joustsim.oscar.oscar.loginstatus.DisconnectedFailureInfo;
+import net.kano.joustsim.oscar.oscar.loginstatus.FlapErrorFailureInfo;
+import net.kano.joustsim.oscar.oscar.loginstatus.LoginFailureInfo;
+import net.kano.joustsim.oscar.oscar.loginstatus.SnacErrorFailureInfo;
+import net.kano.joustsim.oscar.oscar.loginstatus.TimeoutFailureInfo;
 
 import javax.swing.AbstractAction;
 import javax.swing.ComboBoxEditor;
@@ -71,8 +77,6 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.event.PopupMenuEvent;
-import javax.swing.event.PopupMenuListener;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.Document;
 import javax.swing.text.JTextComponent;
@@ -119,10 +123,9 @@ public class SignonBox extends JPanel implements SignonWindowBox {
     private boolean disabled = false;
 
     private JTextComponent snTextEditor = null;
-    private final DefaultComboBoxModel knownScreennamesModel
-            = new DefaultComboBoxModel();
+    private final WellBehavedComboBoxModel knownScreennamesModel
+            = new WellBehavedComboBoxModel();
 
-    private Object previousSelectedItem = null;
     private final ComboBoxEditor screennameBoxEditor = screennameBox.getEditor();
     private final JoustsimSession appSession;
     private int maxWidth = -1;
@@ -133,6 +136,7 @@ public class SignonBox extends JPanel implements SignonWindowBox {
     private final TitledBorder errorPanelBorder
             = new TitledBorder((String) null);
     private boolean loadedScreennames = false;
+    private SignonWindow signonWindow = null;
 
     {
         MutableAttributeSet attrs = new SimpleAttributeSet();
@@ -155,55 +159,41 @@ public class SignonBox extends JPanel implements SignonWindowBox {
             Document doc = snTextEditor.getDocument();
             doc.addDocumentListener(new InputFieldChangeListener());
             doc.addDocumentListener(new InputFieldChangeListener() {
-                private String lastNormal = null;
+                private String lastNormal = "";
+                private String realLastNormal = "";
 
                 protected void changed() {
                     String newnormal = OscarTools.normalize(getScreenname());
-                    if (!newnormal.equals(lastNormal)) {
+
+                    if (!newnormal.equals(realLastNormal)) {
+                        if (!newnormal.equals(lastNormal)
+                                && newnormal.length() > 0
+                                && lastNormal.length() > 0) {
+                            clearErrorText();
+                        }
                         updatePassword();
-                        lastNormal = newnormal;
+                        realLastNormal = newnormal;
+                        if (newnormal.length() > 0) lastNormal = newnormal;
                     }
                 }
             });
         }
-        screennameBox.addPopupMenuListener(new PopupMenuListener() {
-            public void popupMenuCanceled(PopupMenuEvent e) {
-            }
-
-            public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
-            }
-
-            public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
-                previousSelectedItem = screennameBoxEditor.getItem();
-            }
-        });
         screennameBox.addItemListener(new ItemListener() {
             public void itemStateChanged(ItemEvent e) {
-                if (e.getStateChange() == ItemEvent.SELECTED) {
-                    Object item = e.getItem();
-                    if (item == ITEM_SEPARATOR) {
-                        screennameBox.setSelectedItem(previousSelectedItem);
-                    } else if (item == ITEM_DELETE) {
-                        screennameBox.setSelectedItem(previousSelectedItem);
-                        SwingUtilities.invokeLater(new Runnable() {
-                            public void run() {
-                                deleteScreenname(previousSelectedItem);
-                            }
-                        });
-                    } else {
-                        clearErrorText();
-                        String current = getScreenname();
-                        net.kano.joustsim.Screenname sn = new net.kano.joustsim.Screenname(current);
-                        LocalPreferencesManager prefs
-                                = appSession.getLocalPrefsIfExist(sn);
-                        if (prefs != null) {
-                            GeneralLocalPrefs genPrefs = prefs.getGeneralPrefs();
-                            String format = genPrefs.getScreennameFormat();
-                            if (format != null && !format.equals(current)) {
-                                screennameBox.setSelectedItem(format);
-                            }
+                int change = e.getStateChange();
+                if (change == ItemEvent.SELECTED) {
+                    String current = getScreenname();
+                    Screenname sn = new Screenname(current);
+                    LocalPreferencesManager prefs;
+                    prefs = appSession.getLocalPrefsIfExist(sn);
+                    if (prefs != null) {
+                        GeneralLocalPrefs genPrefs = prefs.getGeneralPrefs();
+                        String format = genPrefs.getScreennameFormat();
+                        if (format != null && !format.equals(current)) {
+                            screennameBox.setSelectedItem(format);
                         }
                     }
+                    updatePassword();
                 }
             }
         });
@@ -236,14 +226,14 @@ public class SignonBox extends JPanel implements SignonWindowBox {
 
         rememberPassBox.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                net.kano.joustsim.Screenname sn = new net.kano.joustsim.Screenname(getScreenname());
+                Screenname sn = new Screenname(getScreenname());
                 LocalPreferencesManager prefs
                         = appSession.getLocalPrefsIfExist(sn);
                 if (prefs != null) {
                     String pass;
                     if (!rememberPassBox.isSelected()) pass = null;
                     else pass = new String(passwordBox.getPassword());
-                    
+
                     prefs.getGeneralPrefs().setSavedPassword(pass);
                 }
             }
@@ -256,11 +246,9 @@ public class SignonBox extends JPanel implements SignonWindowBox {
         updateButtons();
     }
 
-    public Component getSignonWindowBoxComponent() {
-        return this;
-    }
+    public void signonWindowBoxShown(SignonWindow window) {
+        this.signonWindow = window;
 
-    public void signonWindowBoxShown() {
         setDisabled(false);
         getRootPane().setDefaultButton(signonButton);
         reloadScreennames();
@@ -268,14 +256,39 @@ public class SignonBox extends JPanel implements SignonWindowBox {
         updateSize();
     }
 
+    public Component getSignonWindowBoxComponent() {
+        return this;
+    }
+
+    public void signonWindowBoxShown() {
+    }
+
     private void updateSize() {
-        Dimension pref = getPreferredSize();
+        validate();
+        final Dimension pref = super.getPreferredSize();
+        Dimension npref;
         if (maxWidth == -1) {
             maxWidth = pref.width;
-            setSize(pref);
+            npref = pref;
         } else {
-            setSize(new Dimension(maxWidth, pref.height));
+            int origHeight = pref.height;
+            npref = new Dimension(maxWidth, origHeight);
         }
+        setPreferredSize(npref);
+        if (!getSize().equals(npref)) {
+            signonWindow.updateSize(this);
+        }
+    }
+
+    private Dimension preferredSize = null;
+
+    public Dimension getPreferredSize() {
+        if (preferredSize == null) return super.getPreferredSize();
+        else return preferredSize;
+    }
+
+    public void setPreferredSize(Dimension preferredSize) {
+        this.preferredSize = preferredSize;
     }
 
     public SignonBox(GuiSession session) {
@@ -332,31 +345,126 @@ public class SignonBox extends JPanel implements SignonWindowBox {
     }
 
     public void setFailureInfo(StateInfo sinfo) {
-        System.out.println("failure info: " + sinfo);
-
+        String title= null;
         String errorText = null;
         if (sinfo != null) {
             final String msg;
             if (sinfo instanceof LoginFailureStateInfo) {
                 LoginFailureStateInfo lfsi
                         = (LoginFailureStateInfo) sinfo;
-                msg = lfsi.getLoginFailureInfo().toString();
+                LoginFailureInfo lfi = lfsi.getLoginFailureInfo();
+                if (lfi instanceof TimeoutFailureInfo) {
+                    msg = "The AOL server is not responding. Try again in a "
+                            + "few minutes.";
+
+                } else if (lfi instanceof FlapErrorFailureInfo
+                        || lfi instanceof SnacErrorFailureInfo) {
+                    String errcode;
+                    if (lfi instanceof FlapErrorFailureInfo) {
+                        FlapErrorFailureInfo fi = (FlapErrorFailureInfo) lfi;
+                        errcode = "Red-" + fi.getFlapError();
+                    } else {
+                        SnacErrorFailureInfo si = (SnacErrorFailureInfo) lfi;
+                        errcode = "Green-" + si;
+                    }
+                    msg = "An unknown error occurred while signing in. The "
+                            + "error was " + errcode + ".";
+
+                } else if (lfi instanceof AuthFailureInfo) {
+                    AuthFailureInfo afi = (AuthFailureInfo) lfi;
+                    int ec = afi.getErrorCode();
+
+                    if (ec == AuthResponse.ERROR_ACCOUNT_DELETED) {
+                        msg = "Your account has been deleted.";
+                    } else if (ec == AuthResponse.ERROR_BAD_INPUT) {
+                        msg = "The connection was corrupted while signing on. "
+                                + "Try signing on again.";
+                    } else if (ec == AuthResponse.ERROR_BAD_PASSWORD) {
+                        msg = "The password you entered is not correct.";
+                    } else if (ec == AuthResponse.ERROR_CLIENT_TOO_OLD) {
+                        msg = "AOL said that this version of "
+                                + GuiResources.getFullProgramName() + " is too "
+                                + "old to connect. Try visiting the "
+                                + GuiResources.getProjectName() + " website at "
+                                + GuiResources.getProgramWebsiteUrl() + ", or "
+                                + "try to sign on again later.";
+                    } else if (ec == AuthResponse.ERROR_CONNECTING_TOO_MUCH_A
+                            || ec == AuthResponse.ERROR_CONNECTING_TOO_MUCH_B) {
+                        msg = "You are connecting too frequently. Wait 5 or 10 "
+                                + "minutes and try again.";
+                    } else if (ec == AuthResponse.ERROR_INVALID_SECURID) {
+                        msg = "The SecurID you entered is wrong. If you did "
+                                + "not enter a SecurID, some other error "
+                                + "occurred. Try signing on again.";
+                    } else if (ec == AuthResponse.ERROR_INVALID_SN_OR_PASS_A
+                            || ec == AuthResponse.ERROR_INVALID_SN_OR_PASS_B) {
+                        msg = "The screenname or password you entered is not "
+                                + "correct. Try retyping your password and "
+                                + "signing on again.";
+                    } else if (ec == AuthResponse.ERROR_SIGNON_BLOCKED) {
+                        msg = "Your account has been temporarily blocked.";
+                    } else if (ec == AuthResponse.ERROR_TEMP_UNAVAILABLE_A
+                            || ec == AuthResponse.ERROR_TEMP_UNAVAILABLE_B
+                            || ec == AuthResponse.ERROR_TEMP_UNAVAILABLE_C
+                            || ec == AuthResponse.ERROR_TEMP_UNAVAILABLE_D
+                            || ec == AuthResponse.ERROR_TEMP_UNAVAILABLE_E
+                            || ec == AuthResponse.ERROR_TEMP_UNAVAILABLE_F
+                            || ec == AuthResponse.ERROR_TEMP_UNAVAILABLE_G) {
+                        msg = "AIM is temporarily unavailable. Try signing on "
+                                + "again, and if this error continues to "
+                                + "occur, you can try again later.";
+                    } else if (ec == AuthResponse.ERROR_UNDER_13) {
+                        msg = "Your account is marked as being owned by "
+                                + "someone under the age of 13. You must be "
+                                + "13 years of age to use the AIM service. If "
+                                + "this is not correct, visit the AIM website.";
+                    } else {
+                        msg = "An unknown error occurred while signing in. The "
+                                + "error was Blue-" + ec + ".";
+                    }
+                } else if (lfi instanceof DisconnectedFailureInfo) {
+                    DisconnectedFailureInfo di = (DisconnectedFailureInfo) lfi;
+                    if (!di.isOnPurpose()) {
+                        msg = "The connection to the AIM service was lost while "
+                                + "signing in.";
+                    } else {
+                        // the user did it on purpose, it looks like, so we
+                        // don't need to tell him that he did it
+                        msg = null;
+                    }
+                } else {
+                    msg = "An unknown error occurred while signing in.";
+                }
 
             } else if (sinfo instanceof ConnectionFailedStateInfo) {
                 ConnectionFailedStateInfo cfsi
                         = (ConnectionFailedStateInfo) sinfo;
-                msg = "couldn't connect to " + cfsi.getHost() + ":"
-                        + cfsi.getPort();
+                msg = "A connection could not be made to the AIM service.<br>"
+                        + "(Connection to " + cfsi.getHost() + ":"
+                        + cfsi.getPort() + " failed.)";
 
+            } else if (sinfo instanceof DisconnectedStateInfo) {
+                DisconnectedStateInfo di = (DisconnectedStateInfo) sinfo;
+                if (!di.isOnPurpose()) {
+                    title = "Disconnected";
+                    msg = null;
+                    errorText = "<b>Disconnected.</b><br>"
+                            + "The connection to the AIM service was lost.";
+                } else {
+                    // the user wanted it, so we don't need to tell him
+                    msg = null;
+                }
             } else {
-                System.err.println("unknown error: "
-                        + sinfo.getClass().getName());
-                return;
+                // nothing interesting happened
+                msg = null;
             }
-            if (msg != null) errorText = "<b>Could not sign on:</b> " + msg;
+            if (msg != null) {
+                title = "Sign-on failed";
+                errorText = "<b>Could not sign on to AIM.</b><br> " + msg;
+            }
         }
         if (errorText != null) {
-            setErrorText("Sign-on failed", errorText);
+            setErrorText(title, errorText);
         } else {
             clearErrorText();
         }
@@ -365,9 +473,10 @@ public class SignonBox extends JPanel implements SignonWindowBox {
     public void clearErrorText() {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
-                System.out.println("setting invisible");
-                errorPanel.setVisible(false);
-                updateSize();
+                if (errorPanel.isVisible()) {
+                    errorPanel.setVisible(false);
+                    updateSize();
+                }
             }
         });
     }
@@ -388,7 +497,6 @@ public class SignonBox extends JPanel implements SignonWindowBox {
                 HTMLDocument doc = (HTMLDocument) errorText.getDocument();
                 doc.setCharacterAttributes(0, doc.getLength(),
                         defaultErrorStyles, false);
-                System.out.println("setting visible");
                 errorPanel.setVisible(true);
                 updateSize();
             }
@@ -400,7 +508,7 @@ public class SignonBox extends JPanel implements SignonWindowBox {
     }
 
     private void updatePassword() {
-        net.kano.joustsim.Screenname sn = new net.kano.joustsim.Screenname(getScreenname());
+        Screenname sn = new Screenname(getScreenname());
         LocalPreferencesManager prefs = appSession.getLocalPrefsIfExist(sn);
         String toSet = "";
         boolean remember = false;
@@ -419,7 +527,7 @@ public class SignonBox extends JPanel implements SignonWindowBox {
         boolean reloaded = globalPrefs.reloadIfNecessary();
         if (!reloaded && loadedScreennames) return;
         loadedScreennames = true;
-        final net.kano.joustsim.Screenname[] known = appSession.getKnownScreennames();
+        final Screenname[] known = appSession.getKnownScreennames();
         Arrays.sort(known);
         final String[] sns = new String[known.length];
         for (int i = 0; i < known.length; i++) {
@@ -439,7 +547,6 @@ public class SignonBox extends JPanel implements SignonWindowBox {
                 }
                 knownScreennamesModel.addElement(ITEM_SEPARATOR);
                 knownScreennamesModel.addElement(ITEM_DELETE);
-                knownScreennamesModel.setSelectedItem(sel);
             }
         });
     }
@@ -450,7 +557,7 @@ public class SignonBox extends JPanel implements SignonWindowBox {
         String snText = item.toString().trim();
         if (OscarTools.normalize(snText).length() == 0) return;
 
-        net.kano.joustsim.Screenname sn = new net.kano.joustsim.Screenname(snText);
+        Screenname sn = new Screenname(snText);
         LocalPreferencesManager prefs = appSession.getLocalPrefsIfExist(sn);
         if (prefs == null) {
             setErrorText("Could not delete preferences",
@@ -461,7 +568,7 @@ public class SignonBox extends JPanel implements SignonWindowBox {
         } else {
             String deleteOption = "Delete";
             String cancelOption = "Cancel";
-            String[] options = new String[] { deleteOption, cancelOption };
+            String[] options = new String[] { cancelOption, deleteOption };
             int selected = JOptionPane.showOptionDialog(this,
                     "<HTML><B>Delete all account preferences stored for<BR>"
                     + snText + "?</B><BR><BR>This "
@@ -482,10 +589,10 @@ public class SignonBox extends JPanel implements SignonWindowBox {
                             + "you have permission to modify your "
                             + "preferences folder and try again.");
                 } else {
+                    reloadScreennames();
                     setInfoText("Deleted preferences",
                             "Account preferences for " + snText
                             + " were deleted successfully.");
-                    reloadScreennames();
                 }
             }
         }
@@ -505,8 +612,7 @@ public class SignonBox extends JPanel implements SignonWindowBox {
         }
 
         public void actionPerformed(ActionEvent e) {
-            final long start = System.currentTimeMillis();
-            final net.kano.joustsim.Screenname sn = new net.kano.joustsim.Screenname(getScreenname());
+            final Screenname sn = new Screenname(getScreenname());
             final LocalPreferencesManager prefs = appSession.getLocalPrefs(sn);
             if (prefs == null) return;
 
@@ -514,7 +620,6 @@ public class SignonBox extends JPanel implements SignonWindowBox {
             repaint();
             SwingUtilities.invokeLater(new Runnable() {
                 public void run() {
-                    long start2 = System.currentTimeMillis();
                     String pass = new String(passwordBox.getPassword());
                     GeneralLocalPrefs generalPrefs = prefs.getGeneralPrefs();
                     if (rememberPassBox.isSelected()) {
@@ -538,7 +643,7 @@ public class SignonBox extends JPanel implements SignonWindowBox {
         }
 
         public void actionPerformed(ActionEvent e) {
-            guiSession.openPrefsWindow(new net.kano.joustsim.Screenname(getScreenname()));
+            guiSession.openPrefsWindow(new Screenname(getScreenname()));
         }
     }
 
@@ -570,6 +675,80 @@ public class SignonBox extends JPanel implements SignonWindowBox {
 
         protected void changed() {
             updateButtons();
+        }
+    }
+
+    private class WellBehavedComboBoxModel extends DefaultComboBoxModel {
+        private Object selected = null;
+        private int ignore = 0;
+
+        public void setSelectedItem(Object anObject) {
+            if (ignore > 0) return;
+
+            if (anObject == ITEM_DELETE) {
+                final Object item = getSelectedItem();
+                SwingUtilities.invokeLater(new Runnable() {
+                    public void run() {
+                        deleteScreenname(item);
+                    }
+                });
+            } else if (anObject == ITEM_SEPARATOR) {
+                // do nothing
+            } else {
+                selected = anObject;
+                super.setSelectedItem(anObject);
+            }
+        }
+
+        public Object getSelectedItem() { return selected; }
+
+        public void removeAllElements() {
+            try {
+                ignore++;
+                super.removeAllElements();
+            } finally {
+                ignore--;
+            }
+        }
+
+        // implements javax.swing.MutableComboBoxModel
+        public void removeElementAt(int index) {
+            try {
+                ignore++;
+                super.removeElementAt(index);
+            } finally {
+                ignore--;
+            }
+        }
+
+        // implements javax.swing.MutableComboBoxModel
+        public void addElement(Object anObject) {
+            try {
+                ignore++;
+                super.addElement(anObject);
+            } finally {
+                ignore--;
+            }
+        }
+
+        // implements javax.swing.MutableComboBoxModel
+        public void removeElement(Object anObject) {
+            try {
+                ignore++;
+                super.removeElement(anObject);
+            } finally {
+                ignore--;
+            }
+        }
+
+        // implements javax.swing.MutableComboBoxModel
+        public void insertElementAt(Object anObject, int index) {
+            try {
+                ignore++;
+                super.insertElementAt(anObject, index);
+            } finally {
+                ignore--;
+            }
         }
     }
 }

@@ -41,7 +41,7 @@ import java.io.File;
 import java.security.cert.X509Certificate;
 
 public interface CertificateTrustManager {
-    net.kano.joustsim.Screenname getBuddy();
+    Screenname getBuddy();
 
     void addTrustListener(CertificateTrustListener l);
 

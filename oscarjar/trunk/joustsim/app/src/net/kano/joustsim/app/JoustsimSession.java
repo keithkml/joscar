@@ -130,7 +130,7 @@ public class JoustsimSession implements AppSession {
     }
 
 
-    public AimSession openAimSession(net.kano.joustsim.Screenname sn) {
+    public AimSession openAimSession(Screenname sn) {
         AimSession sess = new JoustsimAimSession(this, sn);
 
         synchronized(this) {
@@ -153,7 +153,7 @@ public class JoustsimSession implements AppSession {
         return globalPrefs;
     }
 
-    public synchronized LocalPreferencesManager getLocalPrefs(net.kano.joustsim.Screenname sn) {
+    public synchronized LocalPreferencesManager getLocalPrefs(Screenname sn) {
         DefensiveTools.checkNull(sn, "sn");
         File prefsDir = getLocalPrefsDir(sn);
         if (prefsDir == null) return null;
@@ -166,14 +166,14 @@ public class JoustsimSession implements AppSession {
         return appPrefs;
     }
 
-    public synchronized LocalPreferencesManager getLocalPrefsIfExist(net.kano.joustsim.Screenname sn) {
+    public synchronized LocalPreferencesManager getLocalPrefsIfExist(Screenname sn) {
         File prefsDir = getLocalPrefsDir(sn);
         if (prefsDir == null) return null;
         if (prefsDir.isDirectory()) return getLocalPrefs(sn);
         else return null;
     }
 
-    public synchronized boolean deleteLocalPrefs(net.kano.joustsim.Screenname sn) {
+    public synchronized boolean deleteLocalPrefs(Screenname sn) {
         File prefsDir = getLocalPrefsDir(sn);
         if (prefsDir == null) return false;
 
@@ -182,7 +182,7 @@ public class JoustsimSession implements AppSession {
         return deleted;
     }
 
-    public synchronized net.kano.joustsim.Screenname[] getKnownScreennames() {
+    public synchronized Screenname[] getKnownScreennames() {
         globalPrefs.reloadIfNecessary();
         String[] possible = globalPrefs.getKnownScreennames();
         Collection loaded = prefs.values();
@@ -190,28 +190,28 @@ public class JoustsimSession implements AppSession {
 
         for (int i = 0; i < possible.length; i++) {
             String sn = possible[i];
-            known.add(new net.kano.joustsim.Screenname(sn));
+            known.add(new Screenname(sn));
         }
 
         for (Iterator it = loaded.iterator(); it.hasNext();) {
             LocalPreferencesManager prefs = (LocalPreferencesManager) it.next();
             String fmt = prefs.getGeneralPrefs().getScreennameFormat();
-            net.kano.joustsim.Screenname sn;
+            Screenname sn;
             if (fmt == null) {
                 sn = prefs.getScreenname();
             } else {
-                sn = new net.kano.joustsim.Screenname(fmt);
+                sn = new Screenname(fmt);
             }
             known.add(sn);
         }
-        return (net.kano.joustsim.Screenname[]) known.toArray(new net.kano.joustsim.Screenname[known.size()]);
+        return (Screenname[]) known.toArray(new Screenname[known.size()]);
     }
 
-    private File getLocalPrefsDir(net.kano.joustsim.Screenname sn) {
+    private File getLocalPrefsDir(Screenname sn) {
         return PrefTools.getLocalPrefsDirForScreenname(this.localPrefsDir, sn);
     }
 
-    public boolean hasLocalPrefs(net.kano.joustsim.Screenname sn) {
+    public boolean hasLocalPrefs(Screenname sn) {
         return getLocalPrefsDir(sn).isDirectory();
     }
 }

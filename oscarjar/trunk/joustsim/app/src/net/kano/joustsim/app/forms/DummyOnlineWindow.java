@@ -35,11 +35,10 @@
 
 package net.kano.joustsim.app.forms;
 
-import net.kano.joustsim.app.GuiSession;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.app.GuiSession;
 import net.kano.joustsim.oscar.AimConnection;
-import net.kano.joscar.DefensiveTools;
 
 import javax.swing.AbstractAction;
 import javax.swing.ImageIcon;
@@ -47,13 +46,18 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JProgressBar;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
+import javax.swing.Timer;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.text.NumberFormat;
 
 public class DummyOnlineWindow extends JFrame {
     private JPanel mainPanel;
@@ -62,12 +66,19 @@ public class DummyOnlineWindow extends JFrame {
     private JButton openButton;
     private JLabel onlineLabel;
     private JButton prefsButton;
+    private JProgressBar memoryUseBar;
 
     private final GuiSession guiSession;
     private AimConnection conn = null;
 
     private OpenImAction openImAction = new OpenImAction();
     private DisconnectAction disconnectAction = new DisconnectAction();
+
+    private Timer memoryUseTimer = new Timer(5000, new ActionListener() {
+        public void actionPerformed(ActionEvent e) {
+            updateMemoryUse();
+        }
+    });
 
     {
         getContentPane().add(mainPanel);
@@ -90,9 +101,15 @@ public class DummyOnlineWindow extends JFrame {
                 updateButtons();
             }
         });
+        memoryUseTimer.setInitialDelay(0);
         addWindowListener(new WindowAdapter() {
+            public void windowOpened(WindowEvent e) {
+                memoryUseTimer.start();
+            }
+
             public void windowClosing(WindowEvent e) {
                 conn.disconnect();
+                memoryUseTimer.stop();
             }
         });
 
@@ -102,24 +119,45 @@ public class DummyOnlineWindow extends JFrame {
                 .getResource("icons/buddy-list-tiny.png")).getImage());
     }
 
+    private void updateMemoryUse() {
+        assert SwingUtilities.isEventDispatchThread();
+
+        Runtime runtime = Runtime.getRuntime();
+        int totalkb = (int) (runtime.totalMemory()/1024);
+        int usedkb = (int) ((runtime.totalMemory() - runtime.freeMemory())/1024);
+        memoryUseBar.setMaximum(totalkb);
+        memoryUseBar.setValue(usedkb);
+        NumberFormat formatter = NumberFormat.getNumberInstance();
+        formatter.setMaximumFractionDigits(1);
+        memoryUseBar.setString(formatter.format(usedkb/1024.0) + " MB of "
+                + formatter.format(totalkb/1024.0) + " MB");
+    }
+
     public DummyOnlineWindow(GuiSession session) {
         DefensiveTools.checkNull(session, "session");
 
         this.guiSession = session;
-        updateSession();
     }
 
     public void updateSession() {
-        this.conn = guiSession.getAimConnection();
+        synchronized(this) {
+            this.conn = guiSession.getAimConnection();
+        }
 
-        String sn = conn.getScreenname().getFormatted();
-        setTitle(sn);
-        onlineLabel.setText("You are online as " + sn);
-        snBox.setText("");
-        updateButtons();
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                String sn = conn.getScreenname().getFormatted();
+                setTitle(sn);
+                onlineLabel.setText("You are online as " + sn);
+                snBox.setText("");
+                updateButtons();
+            }
+        });
     }
 
     private void updateButtons() {
+        assert SwingUtilities.isEventDispatchThread();
+
         openImAction.setEnabled(snBox.getDocument().getLength() != 0);
     }
 
@@ -131,7 +169,7 @@ public class DummyOnlineWindow extends JFrame {
         }
 
         public void actionPerformed(ActionEvent e) {
-            net.kano.joustsim.Screenname sn = new net.kano.joustsim.Screenname(snBox.getText());
+            Screenname sn = new Screenname(snBox.getText());
             snBox.setText("");
             guiSession.openImBox(sn);
         }

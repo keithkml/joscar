@@ -50,19 +50,23 @@ import java.security.cert.X509Certificate;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.logging.Logger;
 
 public class DefaultCertificateTrustManager implements CertificateTrustManager {
-    private final net.kano.joustsim.Screenname buddy;
+    private static final Logger logger
+            = Logger.getLogger(DefaultCertificateTrustManager.class.getName());
+
+    private final Screenname buddy;
 
     private final Set trusted = new HashSet();
 
     private final CopyOnWriteArrayList listeners = new CopyOnWriteArrayList();
 
-    public DefaultCertificateTrustManager(net.kano.joustsim.Screenname buddy) {
+    public DefaultCertificateTrustManager(Screenname buddy) {
         this.buddy = buddy;
     }
 
-    public final net.kano.joustsim.Screenname getBuddy() { return buddy; }
+    public final Screenname getBuddy() { return buddy; }
 
     public void addTrustListener(CertificateTrustListener l) {
         listeners.addIfAbsent(l);
@@ -81,7 +85,10 @@ public class DefaultCertificateTrustManager implements CertificateTrustManager {
 
     protected void checkCanBeAdded(X509Certificate cert)
             throws CantBeAddedException {
-        if (!canBeAdded(cert)) throw new CantBeAddedException();
+        if (!canBeAdded(cert)) {
+            logger.warning("Can't add certificate to " + this + ": ");
+            throw new CantBeAddedException();
+        }
     }
 
     public synchronized boolean isTrusted(X509Certificate cert) {

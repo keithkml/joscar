@@ -42,7 +42,7 @@ import java.beans.PropertyChangeListener;
 public interface PrivateKeysPreferences {
     String PROP_KEYS_INFO = "keysInfo";
 
-    net.kano.joustsim.Screenname getScreenname();
+    Screenname getScreenname();
 
     void addPropertyChangeListener(PropertyChangeListener l);
 

@@ -175,7 +175,7 @@ public final class PrefTools {
     }
 
     public static File getLocalPrefsDirForScreenname(File localPrefsDir,
-            net.kano.joustsim.Screenname sn) {
+            Screenname sn) {
         String normal = sn.getNormal();
         if (normal.length() == 0) return null;
         return new File(localPrefsDir, normal);

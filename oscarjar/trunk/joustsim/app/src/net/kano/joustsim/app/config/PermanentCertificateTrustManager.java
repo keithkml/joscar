@@ -130,7 +130,7 @@ public class PermanentCertificateTrustManager
 
     private final CertificateLoader certLoader;
 
-    public PermanentCertificateTrustManager(net.kano.joustsim.Screenname buddy,
+    public PermanentCertificateTrustManager(Screenname buddy,
             File trustedCertsDir) {
         super(buddy);
 

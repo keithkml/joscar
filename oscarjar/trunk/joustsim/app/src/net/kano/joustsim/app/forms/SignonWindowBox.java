@@ -38,6 +38,6 @@ package net.kano.joustsim.app.forms;
 import java.awt.Component;
 
 public interface SignonWindowBox {
-    void signonWindowBoxShown();
+    void signonWindowBoxShown(SignonWindow window);
     Component getSignonWindowBoxComponent();
 }

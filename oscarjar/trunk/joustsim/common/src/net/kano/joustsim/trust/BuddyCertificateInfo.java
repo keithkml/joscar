@@ -42,22 +42,22 @@ import net.kano.joscar.DefensiveTools;
 import java.security.cert.X509Certificate;
 
 public final class BuddyCertificateInfo implements CertificatePairHolder {
-    private final net.kano.joustsim.Screenname buddy;
+    private final Screenname buddy;
     private final ByteBlock hash;
     private final X509Certificate encryptionCert;
     private final X509Certificate signingCert;
     private final boolean upToDate;
 
-    public BuddyCertificateInfo(net.kano.joustsim.Screenname buddy, ByteBlock hash) {
+    public BuddyCertificateInfo(Screenname buddy, ByteBlock hash) {
         this(buddy, hash, null, null, false);
     }
 
-    public BuddyCertificateInfo(net.kano.joustsim.Screenname buddy, ByteBlock hash,
+    public BuddyCertificateInfo(Screenname buddy, ByteBlock hash,
             X509Certificate encCert, X509Certificate signingCert) {
         this(buddy, hash, encCert,  signingCert, true);
     }
 
-    public BuddyCertificateInfo(net.kano.joustsim.Screenname buddy, ByteBlock hash,
+    public BuddyCertificateInfo(Screenname buddy, ByteBlock hash,
             X509Certificate encCert, X509Certificate signingCert,
             boolean upToDate) {
         this.upToDate = upToDate;
@@ -70,7 +70,7 @@ public final class BuddyCertificateInfo implements CertificatePairHolder {
         this.signingCert = signingCert;
     }
 
-    public final net.kano.joustsim.Screenname getBuddy() { return buddy; }
+    public final Screenname getBuddy() { return buddy; }
 
     public ByteBlock getCertificateInfoHash() { return hash; }
 

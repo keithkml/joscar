@@ -76,8 +76,8 @@ public class ConversationTester {
         final JTextPane textpane = new JTextPane();
         textpane.setEditorKit(ek);
         final ConversationDocument doc = (ConversationDocument) textpane.getDocument();
-        final net.kano.joustsim.Screenname out = new net.kano.joustsim.Screenname("Out Go Ing");
-        final net.kano.joustsim.Screenname in = new net.kano.joustsim.Screenname("In Com Ing");
+        final Screenname out = new Screenname("Out Go Ing");
+        final Screenname in = new Screenname("In Com Ing");
         final StyleSheet sheet = doc.getStyleSheet();
 
         sheet.addRule(".lightmsg { color: gray }");
@@ -90,8 +90,8 @@ public class ConversationTester {
         sheet.addRule(".screenname-type-incoming { color: blue }");
         sheet.addRule(".screenname-for-incoming { text-decoration: underline }");
 
-        doc.registerScreenname(new net.kano.joustsim.Screenname("incoming"), false);
-        doc.registerScreenname(new net.kano.joustsim.Screenname("outgoing"), true);
+        doc.registerScreenname(new Screenname("incoming"), false);
+        doc.registerScreenname(new Screenname("outgoing"), true);
 //        printStyleTree(doc, "screenname-for-incoming");
 
         final JFrame frame = new JFrame();
@@ -212,8 +212,8 @@ public class ConversationTester {
         }
     }
 
-    private void printThings(ConversationDocument doc, net.kano.joustsim.Screenname out,
-            net.kano.joustsim.Screenname in, int n) {
+    private void printThings(ConversationDocument doc, Screenname out,
+            Screenname in, int n) {
         long start = System.currentTimeMillis();
         printFreeMemory();
         for (int i = 0; i < n; i++) {
@@ -232,8 +232,8 @@ public class ConversationTester {
                 + (total/1048576.) + "MB");
     }
 
-    private void insertRandom(ConversationDocument doc, net.kano.joustsim.Screenname out,
-            net.kano.joustsim.Screenname in) {
+    private void insertRandom(ConversationDocument doc, Screenname out,
+            Screenname in) {
         StyleSheet sheet = doc.getStyleSheet();
         int rand = random.nextInt(7)+1;
         System.out.println("inserting random: " + rand);

@@ -47,7 +47,7 @@ public class SignersPrefsPanel extends CertificatesPrefsPanel {
     private final ImageIcon mediumSignerIcon = GuiResources.getMediumSignerIcon();
     private final ImageIcon smallSignerIcon = GuiResources.getTinySignerIcon();
 
-    public SignersPrefsPanel(AppSession appSession, net.kano.joustsim.Screenname sn,
+    public SignersPrefsPanel(AppSession appSession, Screenname sn,
             CertificateTrustManager certTrustMgr) {
         super(appSession, sn, certTrustMgr);
     }

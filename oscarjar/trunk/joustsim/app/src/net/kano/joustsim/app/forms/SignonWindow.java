@@ -45,16 +45,25 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
 public class SignonWindow extends JFrame {
+    private static final Object STATE_SIGNON_BOX = "SIGNON_BOX";
+    private static final Object STATE_SIGNON_PROGRESS_BOX = "SIGNON_PROGRESS_BOX";
+
     private final GuiSession guiSession;
 
     private final ImageIcon programIcon = GuiResources.getTinyProgramIcon();
+    private SignonWindowBox current = null;
+    private Object currentState = null;
 
     {
-//        setResizable(false);
+        setResizable(false);
         addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent e) {
-                //TODO: only disconnect if the user closes while signing on
-                guiSession.close();
+                if (currentState == STATE_SIGNON_BOX) {
+                    //TODO: only disconnect if the user closes while signing on
+                    guiSession.close();
+                } else if (currentState == STATE_SIGNON_PROGRESS_BOX) {
+                    guiSession.getAimSession().closeConnection();
+                }
             }
         });
         if (programIcon != null) {
@@ -70,19 +79,28 @@ public class SignonWindow extends JFrame {
 
     public void setToSignonBox() {
         setTitle("Sign On");
+        currentState = STATE_SIGNON_BOX;
         setTo(guiSession.getSignonBox());
     }
 
     public void setToSignonProgressBox() {
         setTitle("Signing On...");
+        currentState = STATE_SIGNON_PROGRESS_BOX;
         setTo(guiSession.getSignonProgressBox());
     }
 
     private void setTo(SignonWindowBox component) {
         getContentPane().removeAll();
+        this.current = null;
         if (component != null) {
             getContentPane().add(component.getSignonWindowBoxComponent());
-            component.signonWindowBoxShown();
+            component.signonWindowBoxShown(this);
+            pack();
         }
+        this.current = component;
+    }
+
+    public void updateSize(SignonWindowBox box) {
+        if (box == current) pack();
     }
 }

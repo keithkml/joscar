@@ -54,7 +54,7 @@ public class TrustPrefsPane extends JPanel implements PrefsPane {
     private JPanel trustedSignersHolder;
 
     private final AppSession session;
-    private final net.kano.joustsim.Screenname sn;
+    private final Screenname sn;
 
     private final PermanentCertificateTrustManager certTrustMgr;
     private final PermanentSignerTrustManager signerTrustMgr;
@@ -68,7 +68,7 @@ public class TrustPrefsPane extends JPanel implements PrefsPane {
         add(mainPanel);
     }
 
-    public TrustPrefsPane(JoustsimSession session, net.kano.joustsim.Screenname sn) {
+    public TrustPrefsPane(JoustsimSession session, Screenname sn) {
         DefensiveTools.checkNull(session, "session");
         DefensiveTools.checkNull(sn, "sn");
 

@@ -3,24 +3,41 @@
 <project name="Joust Secure IM Lite" default="compile">
     <description> Joust Secure IM Lite build file </description>
 
-    <property name="dir.src" value="src" />
-    <property name="dir.bin" value="bin" />
-    <property name="dir.res" value="res" />
+    <property name="oscar.bin" value="oscar/bin" />
+    <property name="aolrtf.bin" value="aolrtf/bin" />
+    <property name="app.bin" value="app/bin" />
+    <property name="common.bin" value="common/bin" />
+
+    <property name="res.src" value="res" />
 
     <property name="file.jar" value="jsim.jar" />
-
-    <target name="compile">
-        <mkdir dir="${dir.bin}" />
-        <javac srcdir="${dir.src}" destdir="${dir.bin}" classpath="lib/*.jar" />
-    </target>
+    <property name="file.bigjar" value="jsim-full.jar" />
+    <property name="dir.lib" value="lib" />
 
     <target name="jar">
         <delete file="${file.jar}" />
         <jar file="${file.jar}" manifest="etc/main-manifest.mf">
-            <fileset dir="${dir.bin}" includes="**/*.class" />
-            <fileset dir="${dir.res}" includes="**" />
+            <fileset dir="${aolrtf.bin}" includes="**/*.class" />
+            <fileset dir="${app.bin}" includes="**/*.class" />
+            <fileset dir="${oscar.bin}" includes="**/*.class" />
+            <fileset dir="${common.bin}" includes="**/*.class" />
+            <fileset dir="${res.src}" includes="**" />
         </jar>
         <signjar jar="${file.jar}" keystore="keystore" storepass="aimcrypto"
+            alias="signer" keypass="aimcrypto" />
+    </target>
+
+    <target name="bigjar">
+        <delete file="${file.bigjar}" />
+        <jar file="${file.bigjar}" manifest="etc/main-manifest.mf">
+            <fileset dir="${aolrtf.bin}" includes="**/*.class" />
+            <fileset dir="${app.bin}" includes="**/*.class" />
+            <fileset dir="${oscar.bin}" includes="**/*.class" />
+            <fileset dir="${common.bin}" includes="**/*.class" />
+            <fileset dir="${res.src}" includes="**" />
+            <fileset dir="." includes="lib/*.jar" />
+        </jar>
+        <signjar jar="${file.bigjar}" keystore="keystore" storepass="aimcrypto"
             alias="signer" keypass="aimcrypto" />
     </target>
 </project>

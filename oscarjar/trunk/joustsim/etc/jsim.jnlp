@@ -5,10 +5,10 @@
     href="jsim.jnlp">
     <information>
         <title>Joust Secure IM Lite</title>
-        <vendor>Keith Lea</vendor>
+        <vendor>The Joust Project</vendor>
         <homepage href="http://joust.kano.net/jsim/" />
-        <description> Secure instant messaging over AOL Instant Messenger. </description>
-        <icon href="images/icon-large" />
+        <description>Secure instant messaging over AOL Instant Messenger.</description>
+        <icon href="images/icon-large.gif" />
         <offline-allowed/>
     </information>
     <security>
@@ -30,5 +30,5 @@
 	<resources os="Windows" arch="x86">
 		<nativelib href="winlaf-native.jar" />
 	</resources>
-    <application-desc main-class="net.kano.aimcrypto.AimCrypto" />
+    <application-desc main-class="net.kano.joustsim.app.JoustSIM" />
 </jnlp>

@@ -51,7 +51,7 @@ public class LocalPreferencesManager implements TrustPreferences {
     private static final Logger logger
             = Logger.getLogger(LocalPreferencesManager.class.getName());
 
-    private final net.kano.joustsim.Screenname screenname;
+    private final Screenname screenname;
     private final File configDir;
     private final File keysDir;
     private final File trustDir;
@@ -66,7 +66,7 @@ public class LocalPreferencesManager implements TrustPreferences {
     private boolean loadedGeneralPrefs = false;
     private boolean loadedLocalKeys = false;
 
-    public LocalPreferencesManager(net.kano.joustsim.Screenname screenname, File localConfigDir) {
+    public LocalPreferencesManager(Screenname screenname, File localConfigDir) {
         DefensiveTools.checkNull(screenname, "screenname");
         DefensiveTools.checkNull(localConfigDir, "baseDir");
 
@@ -87,7 +87,7 @@ public class LocalPreferencesManager implements TrustPreferences {
                 screenname, trustedSignersDir);
     }
 
-    public net.kano.joustsim.Screenname getScreenname() { return screenname; }
+    public Screenname getScreenname() { return screenname; }
 
     public boolean saveAllPrefs() {
         boolean perfect = true;

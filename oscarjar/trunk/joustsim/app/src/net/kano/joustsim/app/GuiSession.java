@@ -35,18 +35,9 @@
 
 package net.kano.joustsim.app;
 
+import net.kano.joscar.CopyOnWriteArrayList;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joustsim.Screenname;
-import net.kano.joustsim.oscar.AimConnection;
-import net.kano.joustsim.oscar.AimConnectionProperties;
-import net.kano.joustsim.oscar.State;
-import net.kano.joustsim.oscar.StateEvent;
-import net.kano.joustsim.oscar.StateInfo;
-import net.kano.joustsim.oscar.StateListener;
-import net.kano.joustsim.oscar.AimSession;
-import net.kano.joustsim.oscar.oscar.service.icbm.Conversation;
-import net.kano.joustsim.oscar.oscar.service.icbm.IcbmBuddyInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.IcbmListener;
-import net.kano.joustsim.oscar.oscar.service.icbm.IcbmService;
 import net.kano.joustsim.app.forms.DummyOnlineWindow;
 import net.kano.joustsim.app.forms.ImBox;
 import net.kano.joustsim.app.forms.SignonBox;
@@ -55,16 +46,20 @@ import net.kano.joustsim.app.forms.SignonWindow;
 import net.kano.joustsim.app.forms.prefs.AccountPrefsWindow;
 import net.kano.joustsim.app.forms.prefs.LocalCertificatesPrefsPane;
 import net.kano.joustsim.app.forms.prefs.TrustPrefsPane;
-import net.kano.joscar.CopyOnWriteArrayList;
-import net.kano.joscar.DefensiveTools;
+import net.kano.joustsim.oscar.AimConnection;
+import net.kano.joustsim.oscar.AimConnectionProperties;
+import net.kano.joustsim.oscar.AimSession;
+import net.kano.joustsim.oscar.State;
+import net.kano.joustsim.oscar.StateEvent;
+import net.kano.joustsim.oscar.StateInfo;
+import net.kano.joustsim.oscar.StateListener;
+import net.kano.joustsim.oscar.oscar.service.icbm.Conversation;
+import net.kano.joustsim.oscar.oscar.service.icbm.IcbmBuddyInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.IcbmListener;
+import net.kano.joustsim.oscar.oscar.service.icbm.IcbmService;
 
-import javax.swing.DefaultListCellRenderer;
-import javax.swing.DefaultListModel;
 import javax.swing.JFrame;
-import javax.swing.JList;
 import javax.swing.SwingUtilities;
-import java.awt.Color;
-import java.awt.Component;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -148,6 +143,8 @@ public class GuiSession {
         }
         signoff();
 
+        // we want to kill these things outside the lock so we're not in the
+        // lock for too long
         if (aimSession != null) aimSession.closeConnection();
         if (signonWin != null) signonWin.dispose();
 
@@ -157,7 +154,7 @@ public class GuiSession {
         }
     }
 
-    public void signon(net.kano.joustsim.Screenname screenname, String pass) {
+    public void signon(Screenname screenname, String pass) {
         signon(new AimConnectionProperties(screenname, pass));
     }
 
@@ -166,7 +163,7 @@ public class GuiSession {
         if (conn != null) conn.disconnect();
     }
 
-    public synchronized ImBox openImBox(net.kano.joustsim.Screenname sn) {
+    public synchronized ImBox openImBox(Screenname sn) {
         ImBox box = (ImBox) imBoxes.get(sn);
         if (box == null) {
             IcbmService service = conn.getIcbmService();
@@ -186,7 +183,7 @@ public class GuiSession {
         return box;
     }
 
-    public synchronized AccountPrefsWindow openPrefsWindow(net.kano.joustsim.Screenname sn) {
+    public synchronized AccountPrefsWindow openPrefsWindow(Screenname sn) {
         AccountPrefsWindow frame = (AccountPrefsWindow) prefsWindows.get(sn);
         if (frame == null) {
             frame = new AccountPrefsWindow(appSession, sn);
@@ -199,6 +196,7 @@ public class GuiSession {
         final AccountPrefsWindow fframe = frame;
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
+                fframe.setState(JFrame.NORMAL);
                 fframe.setVisible(true);
                 fframe.requestFocus();
             }
@@ -209,7 +207,7 @@ public class GuiSession {
     private void signon(AimConnectionProperties props) {
         if (closed) return;
 
-        net.kano.joustsim.Screenname sn = new net.kano.joustsim.Screenname(signonBox.getScreenname());
+        Screenname sn = new Screenname(signonBox.getScreenname());
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
                 System.out.println("setting visible because of signon() call");
@@ -221,11 +219,11 @@ public class GuiSession {
             }
         });
         aimSession = appSession.openAimSession(sn);
+        //TODO: dispose of other buddies' prefs windows
 
         conn = aimSession.openConnection(props);
         conn.addStateListener(connStateListener);
         conn.connect();
-
     }
 
     private synchronized void initDummyOnlineWindow() {
@@ -237,7 +235,7 @@ public class GuiSession {
         dummyOnlineWindow.updateSession();
     }
 
-    private synchronized void initSignonWin() {
+    private synchronized void initSignonWindow() {
         if (closed) return;
         if (signonWin == null) {
             signonWin = new SignonWindow(this);
@@ -246,7 +244,7 @@ public class GuiSession {
 
     private synchronized void initSignonBox() {
         if (closed) return;
-        initSignonWin();
+        initSignonWindow();
         if (signonBox == null) {
             signonBox = new SignonBox(this);
         }
@@ -254,7 +252,7 @@ public class GuiSession {
 
     private synchronized void initSignonProgressWindow() {
         if (closed) return;
-        initSignonWin();
+        initSignonWindow();
         if (signonProgressBox == null) {
             signonProgressBox = new SignonProgressBox(this);
         }
@@ -263,23 +261,6 @@ public class GuiSession {
     private void openSignonWindow() {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
-                JFrame frame = new JFrame();
-                JList list = new JList();
-                list.setForeground(Color.RED);
-                DefaultListModel model = new DefaultListModel();
-                list.setModel(model);
-                list.setCellRenderer(new DefaultListCellRenderer() {
-                    public Component getListCellRendererComponent(JList list, Object value,
-                            int index, boolean isSelected, boolean cellHasFocus) {
-                        return super.getListCellRendererComponent(list, value, index,
-                                isSelected, cellHasFocus);
-                    }
-                });
-                model.addElement("<HTML><B>test<br>test2<br>");
-                model.addElement("test test");
-                frame.getContentPane().add(list);
-                frame.setSize(300, 300);
-                frame.setVisible(true);
                 initSignonBox();
                 signonWin.setToSignonBox();
                 System.out.println("setting visible because of openSignonWindow call");
@@ -288,7 +269,7 @@ public class GuiSession {
         });
     }
 
-    private synchronized ImBox createBox(net.kano.joustsim.Screenname sn) {
+    private synchronized ImBox createBox(Screenname sn) {
         DefensiveTools.checkNull(sn, "sn");
         if (imBoxes.containsKey(sn)) {
             throw new IllegalArgumentException("IM box for " + sn
@@ -305,7 +286,7 @@ public class GuiSession {
         box.handleConversation(conv);
     }
 
-    private synchronized void resetStuff() {
+    private synchronized void resetForDisconnection() {
         for (Iterator it = imBoxes.values().iterator(); it.hasNext();) {
             ImBox box = (ImBox) it.next();
             box.setInvalidBox();
@@ -331,7 +312,7 @@ public class GuiSession {
                         handleNewConversation(conv);
                     }
 
-                    public void buddyInfoUpdated(IcbmService service, net.kano.joustsim.Screenname buddy,
+                    public void buddyInfoUpdated(IcbmService service, Screenname buddy,
                             IcbmBuddyInfo info) {
                     }
                 });
@@ -360,7 +341,7 @@ public class GuiSession {
                         openSignonWindow();
                     }
                 });
-                resetStuff();
+                resetForDisconnection();
             }
         }
     }

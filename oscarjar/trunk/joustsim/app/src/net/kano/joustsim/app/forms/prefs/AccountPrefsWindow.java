@@ -75,7 +75,7 @@ public class AccountPrefsWindow extends JFrame {
     private JButton closeButton;
 
     private final AppSession session;
-    private final net.kano.joustsim.Screenname sn;
+    private final Screenname sn;
 
     private PrefsPane currentPane = null;
 
@@ -133,7 +133,7 @@ public class AccountPrefsWindow extends JFrame {
         closeButton.setAction(new CloseAction());
     }
 
-    public AccountPrefsWindow(AppSession session, net.kano.joustsim.Screenname sn) {
+    public AccountPrefsWindow(AppSession session, Screenname sn) {
         DefensiveTools.checkNull(session, "session");
         DefensiveTools.checkNull(sn, "sn");
 

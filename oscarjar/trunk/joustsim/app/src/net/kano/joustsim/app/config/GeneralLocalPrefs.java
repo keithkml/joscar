@@ -44,7 +44,7 @@ import java.io.IOException;
 import java.util.Properties;
 
 public class GeneralLocalPrefs implements Preferences {
-    private final net.kano.joustsim.Screenname screenname;
+    private final Screenname screenname;
     private final File prefsDir;
     private final File prefsFile;
 
@@ -53,7 +53,7 @@ public class GeneralLocalPrefs implements Preferences {
     private static final String PROP_PASSWORD = "password";
     private static final String PROP_SNFORMAT = "sn-format";
 
-    public GeneralLocalPrefs(net.kano.joustsim.Screenname screenname, File localPrefsDir) {
+    public GeneralLocalPrefs(Screenname screenname, File localPrefsDir) {
         DefensiveTools.checkNull(screenname, "screenname");
         DefensiveTools.checkNull(localPrefsDir, "prefsDir");
 

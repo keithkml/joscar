@@ -158,7 +158,7 @@ public class ConversationDocument extends HTMLDocument {
     public void addConversationLine(ConversationLine line) {
         StyleSheet sheet = getStyleSheet();
 
-        net.kano.joustsim.Screenname sn = line.getSender();
+        Screenname sn = line.getSender();
         AolRtfString str = line.getMessage();
 
         String snclass = getClassForScreenname(sn);
@@ -213,7 +213,7 @@ public class ConversationDocument extends HTMLDocument {
     private Map snids = new HashMap();
     private int nextsnid = 1;
 
-    private synchronized int getScreennameID(net.kano.joustsim.Screenname sn) {
+    private synchronized int getScreennameID(Screenname sn) {
         Integer val = (Integer) snids.get(sn);
         if (val == null) {
             int id = nextsnid;
@@ -224,7 +224,7 @@ public class ConversationDocument extends HTMLDocument {
         return val.intValue();
     }
 
-    private String getClassForScreenname(net.kano.joustsim.Screenname sn) {
+    private String getClassForScreenname(Screenname sn) {
         return "screenname-for-" + sn.getNormal();
     }
 
@@ -239,7 +239,7 @@ public class ConversationDocument extends HTMLDocument {
         return classname;
     }
 
-    public void registerScreenname(net.kano.joustsim.Screenname sn, boolean outgoing) {
+    public void registerScreenname(Screenname sn, boolean outgoing) {
         String snclass = getClassForScreenname(sn);
         Style style = getStyleForClass(snclass);
         int id = getScreennameID(sn);
@@ -329,7 +329,7 @@ public class ConversationDocument extends HTMLDocument {
 
         AttributeSet colcol = sheet.getEmptySet();
         if (boxstyle != null) colcol = addCssClass(colcol, boxstyle);
-        colcol = sheet.addAttribute(colcol, HTML.Attribute.COLSPAN, "3");
+        colcol = sheet.addAttribute(colcol, HTML.Attribute.COLSPAN, "4");
         colcol = sheet.addAttribute(colcol, HTML.Attribute.ALIGN, "center");
 
         AttributeSet pattr = sheet.getEmptySet();

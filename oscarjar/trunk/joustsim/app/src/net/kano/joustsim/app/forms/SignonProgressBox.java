@@ -42,6 +42,7 @@ import net.kano.joustsim.oscar.State;
 import net.kano.joustsim.oscar.StateEvent;
 import net.kano.joustsim.oscar.StateListener;
 import net.kano.joustsim.oscar.AimSession;
+import net.kano.joscar.DefensiveTools;
 
 import javax.swing.AbstractListModel;
 import javax.swing.DefaultListCellRenderer;
@@ -72,16 +73,19 @@ public class SignonProgressBox extends JPanel implements SignonWindowBox {
             .getResource("icons/progress-item-succeeded.png"));
     private final Icon workingIcon = new ImageIcon(getClass().getClassLoader()
             .getResource("icons/progress-item-working.png"));
+    private SignonWindow signonWindow = null;
 
     {
         setLayout(new BorderLayout());
         add(mainPanel);
+
+        progressList.setCellRenderer(new ProgressListRenderer());
     }
 
     public SignonProgressBox(GuiSession guiSession) {
-        this.guiSession = guiSession;
+        DefensiveTools.checkNull(guiSession, "guiSession");
 
-        progressList.setCellRenderer(new ProgressListRenderer());
+        this.guiSession = guiSession;
 
         updateSession();
     }
@@ -90,7 +94,9 @@ public class SignonProgressBox extends JPanel implements SignonWindowBox {
         return this;
     }
 
-    public void signonWindowBoxShown() {
+    public void signonWindowBoxShown(SignonWindow window) {
+        signonWindow = window;
+        updateGui();
     }
 
     public void updateSession() {
@@ -113,7 +119,7 @@ public class SignonProgressBox extends JPanel implements SignonWindowBox {
             progressListModel = new ProgressListModel(conn);
             progressList.setModel(progressListModel);
         }
-        setSize(getPreferredSize());
+        signonWindow.updateSize(this);
     }
 
     private static class ProgressListModel extends AbstractListModel {

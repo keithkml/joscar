@@ -132,6 +132,14 @@ public final class GuiResources {
         return warningIcon.getIcon();
     }
 
+    public static String getFullProgramName() { return "Joust Secure IM Lite"; }
+
+    public static String getProjectName() { return "Joust"; }
+
+    public static String getProgramWebsiteUrl() {
+        return "http://joust.kano.net";
+    }
+
     private static final class IconResourceHolder {
         private final String resource;
         private ImageIcon icon = null;

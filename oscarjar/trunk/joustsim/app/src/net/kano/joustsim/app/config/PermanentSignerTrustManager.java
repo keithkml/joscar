@@ -48,7 +48,7 @@ import java.util.List;
 public class PermanentSignerTrustManager
         extends PermanentCertificateTrustManager implements SignerTrustManager {
 
-    public PermanentSignerTrustManager(net.kano.joustsim.Screenname buddy, File trustedCertsDir) {
+    public PermanentSignerTrustManager(Screenname buddy, File trustedCertsDir) {
         super(buddy, trustedCertsDir);
     }
 

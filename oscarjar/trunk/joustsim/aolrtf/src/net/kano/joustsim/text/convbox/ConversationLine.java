@@ -42,17 +42,17 @@ import net.kano.joscar.DefensiveTools;
 import java.util.Date;
 
 public class ConversationLine {
-    private final net.kano.joustsim.Screenname sender;
+    private final Screenname sender;
     private final AolRtfString message;
     private final Date timestamp;
     private final IconID[] iconIDs;
 
-    public ConversationLine(net.kano.joustsim.Screenname sender, AolRtfString message,
+    public ConversationLine(Screenname sender, AolRtfString message,
             Date timestamp, IconID iconID) {
         this(sender, message, timestamp, new IconID[] { iconID });
     }
 
-    public ConversationLine(net.kano.joustsim.Screenname sender, AolRtfString message,
+    public ConversationLine(Screenname sender, AolRtfString message,
             Date timestamp, IconID[] iconIDs) {
         DefensiveTools.checkNull(sender, "sender");
         DefensiveTools.checkNull(message, "message");
@@ -65,7 +65,7 @@ public class ConversationLine {
 
     public AolRtfString getMessage() { return message; }
 
-    public net.kano.joustsim.Screenname getSender() { return sender; }
+    public Screenname getSender() { return sender; }
 
     public Date getTimestamp() { return timestamp; }
 

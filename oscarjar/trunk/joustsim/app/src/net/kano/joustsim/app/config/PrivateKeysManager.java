@@ -79,7 +79,7 @@ public final class PrivateKeysManager extends DefaultFileBasedResource
 
     private static final String[] NAMES_EMPTY = new String[0];
 
-    private final net.kano.joustsim.Screenname screenname;
+    private final Screenname screenname;
     private File keysDir = null;
 
     private String certificateFilename = null;
@@ -96,7 +96,7 @@ public final class PrivateKeysManager extends DefaultFileBasedResource
 
     private PropertyChangeSupport pcs = new PropertyChangeSupport(this);
 
-    public PrivateKeysManager(net.kano.joustsim.Screenname screenname, File keysDir) {
+    public PrivateKeysManager(Screenname screenname, File keysDir) {
         DefensiveTools.checkNull(screenname, "screenname");
         DefensiveTools.checkNull(keysDir, "keysDir");
 
@@ -107,7 +107,7 @@ public final class PrivateKeysManager extends DefaultFileBasedResource
         this.possibleCerts = new PossibleCertificateList();
     }
 
-    public net.kano.joustsim.Screenname getScreenname() { return screenname; }
+    public Screenname getScreenname() { return screenname; }
 
     public void addPropertyChangeListener(PropertyChangeListener l) {
         pcs.addPropertyChangeListener(l);

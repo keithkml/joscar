@@ -106,7 +106,7 @@ public class CertificatesPrefsPanel extends JPanel {
     private JTextPane certErrorText;
 
     private final AppSession appSession;
-    private final net.kano.joustsim.Screenname sn;
+    private final Screenname sn;
     private final CertificateTrustManager certTrustMgr;
 
     private JFileChooser fileChooser = null;
@@ -237,7 +237,7 @@ public class CertificatesPrefsPanel extends JPanel {
         updateCertButtons();
     }
 
-    public CertificatesPrefsPanel(AppSession appSession, net.kano.joustsim.Screenname sn,
+    public CertificatesPrefsPanel(AppSession appSession, Screenname sn,
             CertificateTrustManager certTrustMgr) {
         DefensiveTools.checkNull(appSession, "appSession");
         DefensiveTools.checkNull(sn, "sn");

@@ -35,8 +35,10 @@
 
 package net.kano.joustsim.app.forms;
 
-import net.kano.joustsim.trust.DistinguishedName;
+import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joustsim.Screenname;
+import net.kano.joustsim.app.config.CantBeAddedException;
 import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.oscar.BuddyInfo;
 import net.kano.joustsim.oscar.BuddyInfoManager;
@@ -45,10 +47,7 @@ import net.kano.joustsim.oscar.oscar.service.info.BuddyTrustEvent;
 import net.kano.joustsim.oscar.oscar.service.info.BuddyTrustManager;
 import net.kano.joustsim.trust.BuddyCertificateInfo;
 import net.kano.joustsim.trust.CertificateTrustManager;
-import net.kano.joustsim.trust.TrustException;
 import net.kano.joustsim.trust.DistinguishedName;
-import net.kano.joscar.ByteBlock;
-import net.kano.joscar.DefensiveTools;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
@@ -58,6 +57,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JList;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
@@ -70,6 +70,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
+import java.security.cert.X509Certificate;
+import java.util.logging.Logger;
 
 public class BuddyTrustMiniDialog extends JPanel implements MiniDialog {
     private static final String TRUST_STRING = "Trust...";
@@ -82,7 +84,7 @@ public class BuddyTrustMiniDialog extends JPanel implements MiniDialog {
 
     private final CertificateTrustManager trustMgr;
     private final BuddyTrustManager buddyTrustMgr;
-    private final net.kano.joustsim.Screenname buddy;
+    private final Screenname buddy;
     private final BuddyCertificateInfo origCertificateInfo;
     private final BuddyInfoManager buddyInfoMgr;
 
@@ -182,7 +184,7 @@ public class BuddyTrustMiniDialog extends JPanel implements MiniDialog {
         textPane.setFont(UIManager.getFont("Label.font"));
     }
 
-    public BuddyTrustMiniDialog(AimConnection conn, net.kano.joustsim.Screenname buddy,
+    public BuddyTrustMiniDialog(AimConnection conn, Screenname buddy,
             BuddyCertificateInfo certInfo) {
         DefensiveTools.checkNull(conn, "conn");
         DefensiveTools.checkNull(buddy, "buddy");
@@ -286,19 +288,31 @@ public class BuddyTrustMiniDialog extends JPanel implements MiniDialog {
 
         public void actionPerformed(ActionEvent e) {
             BuddyCertificateInfo certInfo = getCertificateInfo();
+            X509Certificate enc = certInfo.getEncryptionCertificate();
+            X509Certificate sign = certInfo.getSigningCertificate();
+            Exception encFailed = null;
+            Exception signFailed = null;
             try {
-                trustMgr.trustCertificate(certInfo.getEncryptionCertificate());
-            } catch (TrustException e1) {
-                //TODO: couldn't trust
-                e1.printStackTrace();
+                trustMgr.trustCertificate(enc);
+            } catch (Exception e1) {
+                encFailed = e1;
             }
-            try {
-                trustMgr.trustCertificate(certInfo.getSigningCertificate());
-            } catch (TrustException e1) {
-                //TODO: couldn't trust
-                e1.printStackTrace();
+            if (sign != enc) {
+                try {
+                    trustMgr.trustCertificate(sign);
+                } catch (Exception e1) {
+                    signFailed = e1;
+                }
             }
-            hideMe();
+            if (encFailed != null || signFailed != null) {
+                JOptionPane.showMessageDialog(BuddyTrustMiniDialog.this,
+                        "<html><b>Could not add " + buddy + " to trusted "
+                        + "certificates list.<br><br>"
+                        + "An internal error occurred. His or her certificates "
+                        + "may be corrupt.");
+            } else {
+                hideMe();
+            }
         }
     }
     private class DontTrustAction extends AbstractAction {
