@@ -42,6 +42,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.IllegalCharsetNameException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -49,6 +50,8 @@ import java.util.regex.Pattern;
  * Provides a set of tools for performing OSCAR-specific functions.
  */
 public final class OscarTools {
+    private static final Logger logger = Logger.getLogger("net.kano.joscar");
+
     /**
      * A private constructor that is never called ensures that this class cannot
      * be instantiated.
@@ -272,25 +275,26 @@ public final class OscarTools {
         // charset name according to the isSupported javadoc (if there's a
         // method like isValidCharsetName(), please someone email me, but
         // I'm pretty sure there isn't)
-        if (charset == null || !isValidCharset(charset)) {
-            charset = fixCharset(charset);
+        String goodCharset = charset;
+        if (goodCharset == null || !isValidCharset(goodCharset)) {
+            goodCharset = fixCharset(goodCharset);
         } else {
             try {
-                if (!Charset.isSupported(charset)) {
+                if (!Charset.isSupported(goodCharset)) {
                     // if this character set isn't supported, try some other
                     // stuff
-                    charset = fixCharset(charset);
+                    goodCharset = fixCharset(goodCharset);
                 }
             } catch (IllegalCharsetNameException e) {
                 // this shouldn't happen, so be very loud and angry about it
-                System.err.println("charset=" + charset);
-                e.printStackTrace(System.err);
+                logger.warning("Illegal charset name: " + goodCharset + ": "
+                        + e.getMessage());
 
                 // and default to ASCII
-                charset = fixCharset(charset);
+                goodCharset = fixCharset(goodCharset);
             }
         }
-        return charset;
+        return goodCharset;
     }
 
     /**
@@ -306,10 +310,10 @@ public final class OscarTools {
      * @return a <code>String</code> decoded from the given block of data
      */
     public static String getString(ByteBlock data, String charset) {
-        charset = getValidCharset(charset);
+        String realCharset = getValidCharset(charset);
 
         try {
-            return ByteBlock.createString(data, charset);
+            return ByteBlock.createString(data, realCharset);
         } catch (UnsupportedEncodingException impossible) { return null; }
     }
 

@@ -35,12 +35,8 @@
 
 package net.kano.joscar.snaccmd.loc;
 
-import net.kano.joscar.BinaryTools;
-import net.kano.joscar.ByteBlock;
-import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.*;
 import net.kano.joscar.flapcmd.SnacPacket;
-import net.kano.joscar.OscarTools;
-import net.kano.joscar.StringBlock;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -73,7 +69,7 @@ public class GetInfoCmd extends LocCommand {
     /** The screenname of the user whose information is being requested. */
     private final String sn;
     /** The type of information being requested. */
-    protected final int type;
+    private final int type;
 
     /**
      * Generates a new info request command from the given incoming SNAC

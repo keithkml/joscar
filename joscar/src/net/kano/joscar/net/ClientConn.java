@@ -721,24 +721,24 @@ public class ClientConn {
                 }
             } finally {
                 synchronized(conn) {
-                    if (cancelled) return;
-
-                    try {
-                        if (!socket.isClosed()) {
-                            try {
-                                socket.close();
-                            } catch (IOException ignored) { }
+                    if (!cancelled) {
+                        try {
+                            if (!socket.isClosed()) {
+                                try {
+                                    socket.close();
+                                } catch (IOException ignored) { }
+                            }
+                        } finally {
+                            setState(STATE_NOT_CONNECTED, REASON_CONN_CLOSED);
                         }
-                    } finally {
-                        setState(STATE_NOT_CONNECTED, REASON_CONN_CLOSED);
                     }
-                }
 
-                // we'd like to have done this while locking on the ClientConn,
-                // but that won't happen if this thread has been cancelled, so
-                // we do it here just in case.
-                if (!socket.isClosed()) {
-                    try { socket.close(); } catch (IOException ignored) { }
+                    // we'd like to have done this while locking on the
+                    // ClientConn, but that won't happen if this thread has
+                    // been cancelled, so we do it here just in case.
+                    if (!socket.isClosed()) {
+                        try { socket.close(); } catch (IOException ignored) { }
+                    }
                 }
             }
         }

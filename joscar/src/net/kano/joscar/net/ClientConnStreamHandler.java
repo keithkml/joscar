@@ -59,6 +59,6 @@ public interface ClientConnStreamHandler {
      *
      * @throws IOException if an I/O error occurs
      */
-    public void handleStream(ClientConn conn, Socket socket)
+    void handleStream(ClientConn conn, Socket socket)
             throws IOException;
 }

@@ -35,8 +35,8 @@
 
 package net.kano.joscar.snac;
 
-import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.flapcmd.SnacCommand;
 
 /**
  * Represents a single SNAC command type, or a group of all SNAC command types

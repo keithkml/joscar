@@ -37,8 +37,8 @@ package net.kano.joscartests;
 
 import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rvcmd.sendfile.FileSendAcceptRvCmd;
-import net.kano.joscar.rvproto.ft.FileTransferHeader;
 import net.kano.joscar.rvproto.ft.FileTransferChecksum;
+import net.kano.joscar.rvproto.ft.FileTransferHeader;
 
 import java.io.*;
 import java.net.InetAddress;

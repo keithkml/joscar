@@ -35,10 +35,10 @@
 
 package net.kano.joscar.snaccmd.chat;
 
+import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snac.CmdType;
 import net.kano.joscar.snac.SnacCmdFactory;
-import net.kano.joscar.flapcmd.SnacCommand;
 
 /**
  * A SNAC command factory for all client-bound commands provided in this

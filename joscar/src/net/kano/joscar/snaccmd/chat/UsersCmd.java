@@ -60,7 +60,7 @@ public abstract class UsersCmd extends ChatCommand {
      * @param command the command's SNAC command subtype
      * @param packet an incoming user-based SNAC packet
      */
-    UsersCmd(int command, SnacPacket packet) {
+    protected UsersCmd(int command, SnacPacket packet) {
         super(command);
 
         DefensiveTools.checkNull(packet, "packet");
@@ -88,7 +88,7 @@ public abstract class UsersCmd extends ChatCommand {
      * @param command the SNAC command subtype of this command
      * @param users the users this command concerns
      */
-    UsersCmd(int command, FullUserInfo[] users) {
+    protected UsersCmd(int command, FullUserInfo[] users) {
         super(command);
 
         this.users = (FullUserInfo[]) (users == null ? null : users.clone());

@@ -35,9 +35,7 @@
 
 package net.kano.joscar;
 
-import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.ImEncodingParams;
-import net.kano.joscar.MinimalEncoder;
+
 
 /**
  * A simple structure containing a block of data and the name of the charset

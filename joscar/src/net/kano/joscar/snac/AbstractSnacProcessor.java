@@ -35,18 +35,18 @@
 
 package net.kano.joscar.snac;
 
-import net.kano.joscar.flap.FlapProcessor;
-import net.kano.joscar.flap.FlapPacketEvent;
-import net.kano.joscar.flap.VetoableFlapPacketListener;
-import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.CopyOnWriteArrayList;
+import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.flap.FlapPacketEvent;
+import net.kano.joscar.flap.FlapProcessor;
+import net.kano.joscar.flap.VetoableFlapPacketListener;
+import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.flapcmd.SnacFlapCmd;
 import net.kano.joscar.flapcmd.SnacPacket;
-import net.kano.joscar.flapcmd.SnacCommand;
 
+import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.Iterator;
 
 /**
  * Provides an easy interface to listening for incoming SNAC packets as well as

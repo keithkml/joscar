@@ -35,9 +35,6 @@
 
 package net.kano.joscar;
 
-import net.kano.joscar.ByteBlock;
-import net.kano.joscar.DefensiveTools;
-
 /**
  * A class representing a string encoded using "IM encoding," or the method of
  * unicode encoding used when sending instant messages.

@@ -35,14 +35,14 @@
 
 package net.kano.joscartests;
 
-import net.kano.joscar.snaccmd.icbm.RvCommand;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
+import net.kano.joscar.snaccmd.icbm.RvCommand;
 import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.TlvChain;
 
-import java.util.Iterator;
-import java.io.OutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.util.Iterator;
 
 public class GenericRvCommand extends RvCommand {
     private TlvChain chain;

@@ -153,11 +153,6 @@ public class FullUserInfo implements LiveWritable {
             TYPE_EXTRA_INFO, TYPE_ENCRYPTION_INFO,
         });
 
-        Tlv[] tlvs = extras.getTlvs();
-        for (int i = 0; i < tlvs.length; i++) {
-            System.out.println(tlvs[i]);
-        }
-
         Boolean away = null;
         int flags = -1;
         // check for the user flag TLV

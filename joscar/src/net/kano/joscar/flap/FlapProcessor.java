@@ -45,6 +45,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -367,12 +368,12 @@ public class FlapProcessor extends ConnProcessor {
         }
 
         if (errorHandlers.isEmpty()) {
-            System.err.println("FLAP PROCESSOR HAS NO ERROR HANDLERS, " +
+            logger.warning("FLAP PROCESSOR HAS NO ERROR HANDLERS, " +
                     "DUMPING TO STDERR:");
-            System.err.println("ERROR TYPE: " + type);
-            System.err.println("ERROR INFO: " + info);
-            System.err.println("EXCEPTION: " + t.getMessage());
-            t.printStackTrace(System.err);
+            logger.warning("ERROR TYPE: " + type);
+            logger.warning("ERROR INFO: " + info);
+            logger.warning("EXCEPTION: " + t.getMessage());
+            logger.warning(Arrays.asList(t.getStackTrace()).toString());
 
             return;
         }
@@ -387,7 +388,7 @@ public class FlapProcessor extends ConnProcessor {
             try {
                 handler.handleException(event);
             } catch (Throwable t2) {
-                t2.printStackTrace();
+                logger.warning("exception handler threw exception: " + t2);
             }
         }
     }

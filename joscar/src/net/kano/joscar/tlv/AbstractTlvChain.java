@@ -78,12 +78,12 @@ public abstract class AbstractTlvChain implements TlvChain {
     }
 
     /** The total size of this chain, as read from an incoming stream. */
-    protected int totalSize;
+    private int totalSize;
 
     /**
      * Creates a new TLV chain with a total size of <code>-1</code>.
      */
-    public AbstractTlvChain() {
+    protected AbstractTlvChain() {
         this(-1);
     }
 

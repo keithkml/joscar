@@ -67,7 +67,7 @@ public abstract class ItemsCmd extends SsiCommand {
      * @param command the SNAC command subtype for this command
      * @param packet an incoming item-based command packet
      */
-    ItemsCmd(int command, SnacPacket packet) {
+    protected ItemsCmd(int command, SnacPacket packet) {
         super(command);
 
         DefensiveTools.checkNull(packet, "packet");
@@ -97,7 +97,7 @@ public abstract class ItemsCmd extends SsiCommand {
      * @param itemObjs a list of SSI item objects to use in generating
      *        <code>SsiItem</code>s
      */
-    ItemsCmd(int command, SsiItemObj[] itemObjs) {
+    protected ItemsCmd(int command, SsiItemObj[] itemObjs) {
         this(command, AbstractItemObj.generateSsiItems(itemObjs));
     }
 
@@ -107,7 +107,7 @@ public abstract class ItemsCmd extends SsiCommand {
      * @param command the SNAC command subtype for this command
      * @param items the list of items to send in this commnad
      */
-    ItemsCmd(int command, SsiItem[] items) {
+    protected ItemsCmd(int command, SsiItem[] items) {
         super(command);
 
         DefensiveTools.checkNull(items, "items");

@@ -85,7 +85,7 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
      * @param command the SNAC command subtype of this command
      * @param packet an incoming IM ICBM
      */
-    AbstractImIcbm(int command, SnacPacket packet) {
+    protected AbstractImIcbm(int command, SnacPacket packet) {
         super(IcbmCommand.FAMILY_ICBM, command, packet);
     }
 
@@ -154,7 +154,7 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
      * @param wantsIcon whether to request the receiving user's buddy icon
      * @param iconInfo a set of our own buddy icon information
      */
-    AbstractImIcbm(int command, long messageId, String message,
+    protected AbstractImIcbm(int command, long messageId, String message,
             boolean autoResponse, boolean wantsIcon, OldIconHashInfo iconInfo) {
         super(IcbmCommand.FAMILY_ICBM, command, messageId, CHANNEL_IM);
 

@@ -35,11 +35,11 @@
 
 package net.kano.joscar.build.ant;
 
-import org.apache.tools.ant.Task;
 import org.apache.tools.ant.BuildException;
+import org.apache.tools.ant.Task;
 
-import java.lang.reflect.Method;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 public class JoscarVersionTask extends Task {
     private String property;

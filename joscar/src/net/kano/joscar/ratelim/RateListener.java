@@ -35,8 +35,8 @@
 
 package net.kano.joscar.ratelim;
 
-import net.kano.joscar.snaccmd.conn.RateClassInfo;
 import net.kano.joscar.snac.ClientSnacProcessor;
+import net.kano.joscar.snaccmd.conn.RateClassInfo;
 
 /**
  * An interface for listening for rate-related events on a {@link RateMonitor}.

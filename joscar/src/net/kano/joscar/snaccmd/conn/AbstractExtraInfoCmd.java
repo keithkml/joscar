@@ -48,7 +48,7 @@ import java.util.Arrays;
 
 public abstract class AbstractExtraInfoCmd extends ConnCommand {
     /** The set of icon information blocks contained in this command. */
-    protected final ExtraInfoBlock[] extraInfos;
+    private final ExtraInfoBlock[] extraInfos;
 
     protected AbstractExtraInfoCmd(int command, SnacPacket packet) {
         super(command);

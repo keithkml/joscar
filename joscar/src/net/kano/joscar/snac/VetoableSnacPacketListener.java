@@ -50,7 +50,7 @@ public interface VetoableSnacPacketListener {
      * allow for future expansion of the SNAC processing code internal to
      * joscar.
      */
-    static final Object STOP_PROCESSING_LISTENERS = new Object();
+    Object STOP_PROCESSING_LISTENERS = new Object();
 
     /**
      * A value indicating the SNAC processor should stop all further
@@ -58,13 +58,13 @@ public interface VetoableSnacPacketListener {
      * functionally equivalent to <code>STOP_PROCESSING_LISTENERS</code>, as
      * no further processing is done anyway.
      */
-    static final Object STOP_PROCESSING_ALL = new Object();
+    Object STOP_PROCESSING_ALL = new Object();
 
     /**
      * A value indicating that the SNAC processor should continue processing
      * the given packet normally.
      */
-    static final Object CONTINUE_PROCESSING = new Object();
+    Object CONTINUE_PROCESSING = new Object();
 
     /**
      * Called when a new packet arrives on a SNAC connection. See individual

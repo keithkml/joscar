@@ -35,8 +35,8 @@
 
 package net.kano.joscar.snac;
 
-import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.flapcmd.SnacCommand;
+import net.kano.joscar.flapcmd.SnacPacket;
 
 /**
  * Provides an interface for generating <code>SnacCommand</code>s from
@@ -60,7 +60,7 @@ public interface SnacCmdFactory {
      * @return a list of command types that can be passed to
      *         <code>genSnacCommand</code>
      */
-    public CmdType[] getSupportedTypes();
+    CmdType[] getSupportedTypes();
 
     /**
      * Attempts to convert the given SNAC packet to a <code>SnacCommand</code>.
@@ -74,5 +74,5 @@ public interface SnacCmdFactory {
      *         given <code>SnacPacket</code>, or <code>null</code> if no such
      *         object can be created
      */
-    public SnacCommand genSnacCommand(SnacPacket packet);
+    SnacCommand genSnacCommand(SnacPacket packet);
 }

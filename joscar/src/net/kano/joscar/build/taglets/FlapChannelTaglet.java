@@ -82,7 +82,7 @@ public class FlapChannelTaglet implements Taglet {
 
         StringBuffer buffer = new StringBuffer();
         for (int i = 0; i < tags.length; i++) {
-            if (i != 0) buffer.append("\n");
+            if (i != 0) buffer.append(System.getProperty("line.separator"));
 
             buffer.append(toString(tags[i]));
         }
