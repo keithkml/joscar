@@ -102,12 +102,32 @@ public final class ClientVersionInfo implements LiveWritable {
                 build, distCode);
     }
 
+
     /**
      * Creates a new client version information object with the given
      * properties.
      *
      * @param versionString a "client version string," like <code>"AOL Instant
      *        Messenger, version 5.1.3036/WIN32"</code>
+     * @param major a "major version," like <code>5</code> in the above example
+     * @param minor a "minor version," like <code>1</code> in the above example
+     * @param point a "point version"; WinAIM 5.1 sends <code>0</code>
+     * @param build a "build number," <code>3036</code> in the above example
+     * @param distCode a "distribution code," whose meaning is unknown at the
+     *        time of this writing
+     */
+    public ClientVersionInfo(String versionString, int major, int minor,
+            int point, int build, long distCode) {
+        this(versionString, -1, major, minor, point, build, distCode);
+    }
+
+    /**
+     * Creates a new client version information object with the given
+     * properties.
+     *
+     * @param versionString a "client version string," like <code>"AOL Instant
+     *        Messenger, version 5.1.3036/WIN32"</code>
+     * @param clientid a client ID, like <code>0x0109</code> (for AIM 5.2)
      * @param major a "major version," like <code>5</code> in the above example
      * @param minor a "minor version," like <code>1</code> in the above example
      * @param point a "point version"; WinAIM 5.1 sends <code>0</code>

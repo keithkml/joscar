@@ -7,7 +7,6 @@ pre {
     margin-top: 8pt;
     margin-bottom: 8pt;
     background-color: #FFFFEE;
-    white-space:pre;
     border-style:solid;
     border-width:1pt;
     border-color:#999999;
@@ -29,11 +28,10 @@ pre {
 
 <p>I have to admit that JoscarTester (and almost all of net.kano.joscartests.*) is some really awful code. It's not part of joscar, so I didn't worry too much about it. It's just a "client" I use to test new stuff. So that developers (like Adam :) don't have to parse through that garbage, I shall attempt to describe here how a typical client would function.</p>
 
-<p>First a bit of background on how OSCAR works over TCP. A typical OSCAR "session" consists of at least two but up to six (or so) TCP connections. The first is to the "authorizer" server, login.oscar.aol.com, where you log in with your screenname and password and which redirects you to a "basic online service" (BOS) server. You disconnect from the authorizer and connect to the BOS server. From there you can do most things (IM, info, buddy list, and so on), but other "services" require connections to new servers. We'll get to this in a moment.</p>
+<p>First a bit of background on how OSCAR works over TCP. A typical OSCAR "session" consists of at least two but up to six (or so) TCP connections. The first is to the "authorizer" server, login.oscar.aol.com, where you log in with your screenname and password. This server redirects you to a "basic online service" (BOS) server. You disconnect from the authorizer and connect to the BOS server. From there you can do most things (IM, info, buddy list, and so on), but other "services" require connections to new servers. Other services are not covered in this tutorial.</p>
 
 <p>To connect to the authorizer, you could create your own TCP <code>Socket</code> or simply use my pre-prepared <code>ClientConn</code> class (I personally prefer asynchronous sockets, probably from my Tcl days :). In fact, there's a ClientConn subclass designed specifically for OSCAR connections! It's called <code>ClientFlapConn</code> and not only does it connect and whatnot, it also runs a FLAP event loop!</p>
 
-<a name="more"></a>
 <p>What is a FLAP, you may ask? Well it looks like you need to do some more research on the protocol! Briefly, however, FLAP is the protocol over which all client-server (and <i>no</i> client-client) OSCAR communication takes place. It's very simple, allowing for "login cookies," disconnection messages ("you have been disconnected because your screenname was signed onto from another computer"), and separate "channels" of data. It is over the FLAP protocol that OSCAR's ever-popular SNAC commands are sent (on the SNAC data channel).</p>
 
 <p><i>So</i>, to utilize this whole FLAP thing, first we need to set up a FLAP event handler (for incoming FLAP data packets) <i>and</i> a SNAC command handler (for incoming SNAC commands on the SNAC flap channel) for each connection you make to an OSCAR server. Setting up a FLAP connection is done like so:
@@ -72,7 +70,6 @@ flapProcessor.addPacketListener(listener);
 
 <p>You should probably add an exception handler as well, but we won't get into that here. So now we're reading in FLAP packets. Yay. The problem is that we aren't that interested in FLAP-level data most of the time. We like SNACs; the majority of the interesting parts of the OSCAR protocol are SNAC-based. So let's add a SNAC processor too!
 
-
 <pre>
 ClientSnacProcessor snacProcessor = new ClientSnacProcessor(flapProcessor);
 </pre>
@@ -93,7 +90,9 @@ snacProcessor.addPacketListener(snacListener);
 </pre>
 </p>
 
-<p>(Note that we don't need to add an exception handler to the SNAC processor; it just uses the FLAP processor's exception handlers.)</p>
+<p>Also, some SNAC packets are sent in response to specific commands we sent; in joscar these are called SNAC Responses, and can be handled with a <code>SnacRequestListener</code>. All SNAC packets received during authorization are SNAC responses. For details, see the sample code at the end of this tutorial. </p>
+
+<p>We don't need to add an exception handler to the SNAC processor; it just uses the FLAP processor's exception handlers.</p>
 
 <p></p>
 
@@ -219,56 +218,10 @@ Here's how the connection to the authorizer goes:
 
 <p>So. That's the login process for you. Note that many of the commands sent in setting up the BOS connection are unnecessary, but it's good to send them even if you don't quite know what you're doing; the server sort of expects them and might behave differently without them, thinking you are an older or somehow broken client.</p>
 
-<p>I said I would explain how to connect to other services, like chat rooms or the buddy icon server, but I've been writing this for two and a half hours now and I'd like to stop. :) Here's some sample code to go out on. (It might not compile as-is, but the ideas are there. Note that beginners will always want to include the three italicized lines.)
-
-<pre>
-Socket socket = new Socket("login.oscar.aol.com", 5190);
-
-FlapProcessor fp = new FlapProcessor(socket);
-ClientSnacProcessor sp = new ClientSnacProcessor(fp);
-
-<i>fp.setFlapCmdFactory(new DefaultFlapCmdFactory());</i>
-<i>sp.addPreprocessor(new FamilyVersionPreprocessor());</i>
-<i>snacProcessor.getCmdFactoryMgr().setDefaultFactoryList(
-        new DefaultClientFactoryList());</i>
-
-fp.addPacketListener(new FlapPacketListener() {
-    public void handlePacket(FlapPacketEvent e) {
-        FlapCommand flapCmd = e.getFlapCommand();
-
-        if (flapCmd instanceof LoginFlapCmd) {
-            fp.sendFlap(new LoginFlapCmd(LoginFlapCmd.VERSION_DEFAULT));
-            sp.sendSnac(new KeyRequest("myscreenname"));
-        } else {
-            System.out.println("got unknown FLAP command: " + flapCmd);
-        }
-    }
-});
-
-sp.addPacketListener(new SnacPacketListener() {
-    public void handlePacket(SnacPacketEvent e) {
-        SnacCommand snacCmd = e.getSnacCommand();
-
-        if (snacCmd instanceof KeyResponse) {
-            KeyResponse keyResponse = (KeyResponse) snacCmd;
-            sp.sendSnac(new AuthRequest("myscreenname", "mypassword",
-                    new ClientVersionInfo("AOL Instant Messenger, "
-                    + "version 5.1.3036/WIN32", 5, 1, 0, 3036), 
-                    keyResponse.getKey());
-        } else if (snacCmd instanceof AuthResponse) {
-            // ...
-        }
-    }
-});
-
-// this is so messy :)
-new Thread() {
-    public void run() {
-        fp.runFlapLoop();
-    }
-}.start();
-</pre>
-</p>
+<p> I'll leave you with some sample code that connects to the authorization server and logs in. It doesn't even connect to the BOS server, but I think it serves as a good introduction to joscar:
+<ul>
+<li> <a href="TutorialDemo.java" title="joscar tutorial demo code">TutorialDemo.java</a> </li>
+</ul> </p>
 
 <p>If you can't get something working, you should try using the Java Logging API to trace what's going on inside joscar:
 <pre>

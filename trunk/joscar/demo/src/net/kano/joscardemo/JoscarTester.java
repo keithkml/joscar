@@ -96,6 +96,10 @@ import net.kano.joscar.ssiitem.RootItem;
 import net.kano.joscar.ssiitem.VisibilityItem;
 import net.kano.joscardemo.security.SecureSession;
 import net.kano.joscardemo.security.SecureSessionException;
+import net.kano.joscardemo.rv.TrillianEncSession;
+import net.kano.joscardemo.rv.SendFileThread;
+import net.kano.joscardemo.rv.GetFileThread;
+import net.kano.joscardemo.gui.ImTestFrame;
 
 import java.io.File;
 import java.io.FileInputStream;

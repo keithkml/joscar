@@ -93,6 +93,11 @@ import net.kano.joscar.snaccmd.icbm.RvResponse;
 import net.kano.joscar.snaccmd.rooms.RoomInfoReq;
 import net.kano.joscardemo.security.SecureSession;
 import net.kano.joscardemo.security.SecureSessionException;
+import net.kano.joscardemo.rv.TrillianEncSession;
+import net.kano.joscardemo.rv.RecvFileThread;
+import net.kano.joscardemo.rv.HostGetFileThread;
+import net.kano.joscardemo.rv.DirectIMSession;
+import net.kano.joscardemo.gui.ImTestFrame;
 
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
