@@ -41,6 +41,7 @@ import net.kano.joscar.flapcmd.SnacPacket;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Arrays;
 
 /**
  * A SNAC command sent to indicate that the client has finished initializing
@@ -103,5 +104,9 @@ public class ClientReadyCmd extends ConnCommand {
                 infos[i].write(out);
             }
         }
+    }
+
+    public String toString() {
+        return "ClientReadyCmd: " + Arrays.asList(infos);
     }
 }

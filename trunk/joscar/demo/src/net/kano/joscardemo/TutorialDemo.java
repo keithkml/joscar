@@ -126,8 +126,7 @@ public class TutorialDemo {
                 System.out.println("Got FLAP command: " + flapCmd);
 
                 if (flapCmd instanceof LoginFlapCmd) {
-                    flapProcessor.sendFlap(
-                            new LoginFlapCmd(LoginFlapCmd.VERSION_DEFAULT));
+                    flapProcessor.sendFlap(new LoginFlapCmd());
                     snacProcessor.sendSnac(new SnacRequest(
                             new KeyRequest(screenname), respListener));
                 }
