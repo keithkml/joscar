@@ -35,7 +35,7 @@ interface to AOL Instant Messenger's Oscar protocol on three levels:
    - as a client developer for the above
    - for other more low-level purposes (developing an Oscar server, etc.)
 
-Three separate components exist for these three purposes:
+Three separate components are planned for these three purposes:
 
    - Joust, a fully featured AIM client, building upon
    - jouscar, a high-level client interface to AIM, building upon
@@ -129,8 +129,9 @@ repository on SourceForge.
 Thanks to Elias Ross for some neat performance enhancements and various other
 rather important bug reports.
 
-Thanks to David Walluck for help with implementing the rate-limiting algorithm
-as well as with figuring out Trillian's Secure IM protocol.
+Thanks to David Walluck of daim (http://daim.dev.java.net) for help with
+implementing the rate-limiting algorithm as well as with figuring out
+Trillian's Secure IM protocol.
 
 Thanks to Doug Lea for the several classes from his concurrency package used in
 joscar.
@@ -138,8 +139,9 @@ joscar.
 Thanks to Ludovic LANGE for his rather indirect, but still important help in
 figuring out Trillian's Secure IM protocol.
 
-Thanks to David Hook for help in figuring out the format of AIM's encrypted
-IM data block.
+Thanks to David Hook of BouncyCastle (http://bouncycastle.org) for help in
+figuring out the format of AIM's encrypted IM data block and for promptly 
+fixing the problems the joscar demo was having with BouncyCastle.
 
 
 If you have contributed to joscar and are not listed here, please forgive our
