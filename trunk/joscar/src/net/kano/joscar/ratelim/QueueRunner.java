@@ -38,11 +38,9 @@ package net.kano.joscar.ratelim;
 import net.kano.joscar.CopyOnWriteArraySet;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snac.SnacProcessor;
-import net.kano.joscar.snac.SnacRequest;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 
 class QueueRunner implements Runnable {
@@ -52,11 +50,6 @@ class QueueRunner implements Runnable {
 
     private boolean updated = false;
     private final Set queues = new CopyOnWriteArraySet();
-    private final RateLimitingQueueMgr queueMgr;
-
-    public QueueRunner(RateLimitingQueueMgr queueMgr) {
-        this.queueMgr = queueMgr;
-    }
 
     private void forceStart() {
         started = true;
@@ -76,7 +69,10 @@ class QueueRunner implements Runnable {
         long minWait = 0;
         for (;;) {
             synchronized(lock) {
+                System.out.println("looping..");
                 if (!updated) {
+                    System.out.println("waiting for " + (minWait == 0 ? "ever"
+                            : minWait + "ms"));
                     // if we haven't been updated, we need to wait until a
                     // call to update() or until we need to send the next
                     // command (this time is specified in minWait, if non-
@@ -100,7 +96,6 @@ class QueueRunner implements Runnable {
 
                 boolean finished;
                 long wait = 0;
-                List reqs = null;
                 synchronized(queue) {
                     // if the queue is paused or there aren't any requests,
                     // we can skip it
@@ -111,7 +106,7 @@ class QueueRunner implements Runnable {
 
                     // if there are one or more commands that can be sent
                     // right now, dequeue them
-                    if (isReady(queue)) reqs = dequeueAll(queue);
+                    if (isReady(queue)) dequeueReady(queue);
 
                     // see whether the queue needs to be waited upon (if it
                     // doesn't have any queued commands, there's nothing to
@@ -123,12 +118,6 @@ class QueueRunner implements Runnable {
                     // for this queue (the time until the next command can
                     // be sent)
                     if (!finished) wait = getWaitTime(queue);
-                }
-
-                // if there are any commands that were dequeued above, we
-                // send them now, outside of the lock on the queue
-                if (reqs != null && !reqs.isEmpty()) {
-                    sendRequests(queue, reqs);
                 }
 
                 // and if there's nothing more to wait for, move on to the
@@ -147,34 +136,26 @@ class QueueRunner implements Runnable {
     }
 
     private long getWaitTime(RateQueue queue) {
-        return queue.getRateMonitor().getOptimalWaitTime();
+        long waitTime = queue.getRateClassMonitor().getOptimalWaitTime();
+
+        return waitTime;
     }
 
     private boolean isReady(RateQueue queue) {
         return getWaitTime(queue) <= 0;
     }
 
-    private List dequeueAll(RateQueue queue) {
-        List reqs = null;
+    private void dequeueReady(RateQueue queue) {
+        ConnectionQueueMgr connMgr = queue.getParentMgr();
+        SnacProcessor processor = connMgr.getSnacProcessor();
+        RateLimitingQueueMgr rateMgr = connMgr.getParentQueueMgr();
+
         synchronized(queue) {
             for (;;) {
                 if (!queue.hasRequests() || !isReady(queue)) break;
 
-                if (reqs == null) reqs = new ArrayList(5);
-                reqs.add(queue.dequeue());
+                rateMgr.sendSnac(processor, queue.dequeue());
             }
-        }
-
-        return reqs;
-    }
-
-    private void sendRequests(RateQueue queue, List reqs) {
-        SnacProcessor processor = queue.getParentMgr().getSnacProcessor();
-
-        for (Iterator it = reqs.iterator(); it.hasNext();) {
-            SnacRequest req = (SnacRequest) it.next();
-
-            queueMgr.sendSnac(processor, req);
         }
     }
 
@@ -207,9 +188,21 @@ class QueueRunner implements Runnable {
         update(queue);
     }
 
+    public void addQueues(RateQueue[] rateQueues) {
+        DefensiveTools.checkNull(rateQueues, "rateQueues");
+
+        queues.addAll(Arrays.asList(rateQueues));
+    }
+
     public void removeQueue(RateQueue queue) {
         DefensiveTools.checkNull(queue, "queue");
 
         queues.remove(queue);
+    }
+
+    public void removeQueues(RateQueue[] rateQueues) {
+        DefensiveTools.checkNull(rateQueues, "rateQueues");
+
+        queues.removeAll(Arrays.asList(rateQueues));
     }
 }

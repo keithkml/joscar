@@ -39,10 +39,29 @@ package net.kano.joscar.snac;
  * An interface for managing a "SNAC queue," which controls when individual
  * SNAC commands are sent on a <code>SnacProcessor</code>. Such a system is
  * useful for, for example, implementing an automatic rate limiting mechanism.
- *
- * @see DefaultSnacQueueMgr
  */
 public interface SnacQueueManager {
+    /**
+     * Called when this SNAC queue manager has been set as the SNAC queue
+     * manager for the given processor. This will always be the first method
+     * called in this queue manager for the given SNAC processor.
+     *
+     * @param processor the SNAC processor for which this manager has been set
+     */
+    void attached(SnacProcessor processor);
+
+    /**
+     * Called when this SNAC queue manager has been removed from being the SNAC
+     * queue manager for the given processor. This method will always be the
+     * last method called in this queue manager for the given SNAC processor
+     * unless this manager is re-set as the given processor's queue manager, in
+     * which case the next method to be called for the given processor will
+     * always be {@link #attached attached}.
+     *
+     * @param processor the SNAC processor for which this manager has been set
+     */
+    void detached(SnacProcessor processor);
+
     /**
      * A method called to indicate that the queue should be paused until a call
      * to {@link #unpause}. This method will never be called for a given

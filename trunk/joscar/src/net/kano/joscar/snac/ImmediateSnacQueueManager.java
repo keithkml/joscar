@@ -45,6 +45,15 @@ public class ImmediateSnacQueueManager implements SnacQueueManager {
     /** A map from SNAC processors to their respective SNAC queues. */
     private final Map queues = new IdentityHashMap();
 
+    public synchronized void attached(SnacProcessor processor) {
+        System.out.println("attaching...");
+        queues.put(processor, new SnacQueue());
+    }
+
+    public synchronized void detached(SnacProcessor processor) {
+        queues.remove(processor);
+    }
+
     /**
      * Returns (and creates, if necessary) a SNAC queue object for the given
      * SNAC processor.
@@ -54,14 +63,7 @@ public class ImmediateSnacQueueManager implements SnacQueueManager {
      * @return a SNAC queue object for the given SNAC processor
      */
     private synchronized SnacQueue getQueue(SnacProcessor processor) {
-        SnacQueue queue = (SnacQueue) queues.get(processor);
-
-        if (queue == null) {
-            queue = new SnacQueue();
-            queues.put(processor, queue);
-        }
-
-        return queue;
+        return (SnacQueue) queues.get(processor);
     }
 
     public void pause(SnacProcessor processor) {
@@ -92,6 +94,13 @@ public class ImmediateSnacQueueManager implements SnacQueueManager {
         }
     }
 
+    /**
+     * Sends the given SNAC request over the given processor, bypassing the
+     * queue.
+     *
+     * @param processor the SNAC processor on which to send
+     * @param req the request to send
+     */
     protected static final void sendSnac(SnacProcessor processor,
             SnacRequest req) {
         processor.sendSnacImmediately(req);

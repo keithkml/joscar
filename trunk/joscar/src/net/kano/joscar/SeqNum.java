@@ -35,31 +35,104 @@
 
 package net.kano.joscar;
 
-public class SeqNum {
-    private final long min;
-    private final long max;
-    private long current;
+/**
+ * Represents a sequence of numbers within a given range and allows for
+ * automatically-wrapping sequential traversal of such a sequence. This class
+ * has an internal value for the "current" value in the sequence, which is
+ * advanced with each call to {@link #next}.
+ * <br>
+ * <br>
+ * <i>Example usage:</i>
+ * <pre>
+class CommandSender {
+    // command ID's must be between 1 and 100 and each
+    // must be greater than the last, unless wrapping
+    // back to 1 from 100
+    SeqNum cmdIdSeq = new SeqNum(1, 100);
 
+    void sendCmd(Command cmd) {
+        long cmdId = cmdIdSeq.next();
+        System.out.println("Command #" + cmdId + ": "
+                + cmd);
+        reallySendCmd(cmd);
+    }
+
+    ...
+}
+ * </pre>
+ */
+public class SeqNum {
+    /** The minimum value for a number in this sequence. */
+    private final long min;
+    /** The maximum value for a number in this sequence. */
+    private final long max;
+    /** The last-generated value in this sequence. */
+    private long last;
+
+    /**
+     * Creates a new sequence with the given minimum and maximum values. Note
+     * that the given maximum value is an actual maximum value; that is, a
+     * value returned by <code>next</code> could be that value.
+     *
+     * @param min the smallest value allowed in this sequence
+     * @param max the largest value allowed in this sequence
+     */
     public SeqNum(long min, long max) {
         this(min, max, min);
     }
 
+    /**
+     * Creates a new sequence with the given minimum and maximum values. Note
+     * that the given maximum value is an actual maximum value; that is, a
+     * value returned by <code>next</code> could be that value.
+     *
+     * @param min the smallest value allowed in this sequence
+     * @param max the largest value allowed in this sequence
+     * @param current an initial value for the current value in this sequence
+     *
+     * @throws IllegalArgumentException if the given initial value does not lie
+     *         within the given range
+     */
     public SeqNum(long min, long max, long current) {
+        DefensiveTools.checkRange(current, "current", min, max);
+
         this.min = min;
         this.max = max;
-        this.current = current;
+        this.last = current;
     }
 
+    /**
+     * Returns the minimum value of an element of this sequence.
+     *
+     * @return this sequence's inclusive lower bound
+     */
     public final long getMin() { return min; }
 
+    /**
+     * Returns the maximum value of an element of this sequence.
+     *
+     * @return this sequence's inclusive upper bound
+     */
     public final long getMax() { return max; }
 
-    public synchronized final long getLast() { return current; }
+    /**
+     * Returns the last value returned by {@link #next}, or the initial value if
+     * <code>next()</code> has not been called.
+     *
+     * @return the last value returned by <code>next()</code>
+     */
+    public synchronized final long getLast() { return last; }
 
+    /**
+     * Returns the next element of this sequence. This method advances this
+     * class's "current" value of the sequence.
+     *
+     * @return the next element of this sequence, wrapping if necessary
+     */
     public synchronized long next() {
-        if (current == max) current = min;
-        else current++;
+        if (last == max) last = min;
+        else last++;
 
-        return current;
+        return last;
     }
 }

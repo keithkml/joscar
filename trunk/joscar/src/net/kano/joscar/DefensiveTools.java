@@ -77,7 +77,7 @@ public final class DefensiveTools {
      * @param max the maximum value of the given value
      *
      * @throws IllegalArgumentException if the given value is less than the
-     *         given minimum
+     *         given minimum or greater than the given maximum
      */
     public static final void checkRange(int val, String name,
             int min, int max) throws IllegalArgumentException {
@@ -86,6 +86,46 @@ public final class DefensiveTools {
                     "be >=" + min + " and <=" + max);
         }
     }
+
+
+    /**
+     * Ensures that the given value is greater than or equal to the given
+     * minimum value.
+     *
+     * @param val the value to check
+     * @param name the name of this variable, for debugging purposes
+     * @param min the minimum value of the given value
+     *
+     * @throws IllegalArgumentException if the given value is less than the
+     *         given minimum
+     */
+    public static void checkRange(long val, String name, int min)
+            throws IllegalArgumentException {
+        if (val < min) {
+            throw new IllegalArgumentException(name + " (" + val + ") must " +
+                    "be >= " + min);
+        }
+    }
+
+    /**
+     * Ensures that the given value is inclusively between the given minumum
+     * and maximum values.
+     *
+     * @param val the value to check
+     * @param name the name of this variable, for debugging purposes
+     * @param min the minimum value of the given value
+     * @param max the maximum value of the given value
+     *
+     * @throws IllegalArgumentException if the given value is less than the
+     *         given minimum or greater than the given maximum
+     */
+    public static void checkRange(long val, String name, long min, long max) {
+        if (val < min || val > max) {
+            throw new IllegalArgumentException(name + " (" + val + ") must " +
+                    "be >=" + min + " and <=" + max);
+        }
+    }
+
 
     /**
      * Ensures that the given value is not <code>null</code>.
@@ -140,28 +180,10 @@ public final class DefensiveTools {
         for (int i = offset, end = offset + len; i < end; i++) {
             if (array[i] == null) {
                 throw new IllegalArgumentException("'" + arrayName
-                        + "' array must not contain any null elements ("
-                        + arrayName + "[" + i + "] == null)");
+                        + "' array must not contain any null elements at "
+                        + "indices " + offset + " through " + (offset + len)
+                        + " (" + arrayName + "[" + i + "] == null)");
             }
-        }
-    }
-
-    /**
-     * Ensures that the given value is greater than or equal to the given
-     * minimum value.
-     *
-     * @param val the value to check
-     * @param name the name of this variable, for debugging purposes
-     * @param min the minimum value of the given value
-     *
-     * @throws IllegalArgumentException if the given value is less than the
-     *         given minimum
-     */
-    public static void checkRange(long val, String name, int min)
-            throws IllegalArgumentException {
-        if (val < min) {
-            throw new IllegalArgumentException(name + " (" + val + ") must " +
-                    "be >= " + min);
         }
     }
 }

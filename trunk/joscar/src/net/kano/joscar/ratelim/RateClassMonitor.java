@@ -35,31 +35,58 @@
 
 package net.kano.joscar.ratelim;
 
-import net.kano.joscar.snaccmd.conn.RateClassInfo;
-import net.kano.joscar.snaccmd.conn.RateChange;
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.ratelim.RateMonitor;
+import net.kano.joscar.snaccmd.conn.RateChange;
+import net.kano.joscar.snaccmd.conn.RateClassInfo;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Monitors rate information for a single rate class.
+ */
 public class RateClassMonitor {
+    /** A logger for rate-related logging. */
     private static final Logger logger
             = Logger.getLogger("net.kano.joscar.ratelim");
 
+    /** The rate monitor that acts as this monitor's parent. */
     private final RateMonitor rateMonitor;
+    /** Rate information for the rate class that this monitor is monitoring. */
     private RateClassInfo rateInfo;
+    /** The time at which the last command was sent in this class. */
     private long last = -1;
+    /** The current "running average" for this class. */
     private long runningAvg;
+    /** Whether or not this rate class is limited. */
     private boolean limited = false;
+    /**
+     * This class's error margin, or <code>-1</code> to fall through to the
+     * parent rate monitor's error margin.
+     */
     private int errorMargin = -1;
 
+    /**
+     * Creates a new rate class monitor with the given parent rate monitor and
+     * rate class information.
+     *
+     * @param rateMonitor this rate class monitor's "parent" rate monitor
+     * @param rateInfo information about the rate class that this monitor should
+     *        monitor
+     */
     RateClassMonitor(RateMonitor rateMonitor, RateClassInfo rateInfo) {
         this.rateMonitor = rateMonitor;
         this.rateInfo = rateInfo;
         this.runningAvg = rateInfo.getMax();
     }
 
+    /**
+     * Updates the rate information for this monitor's associated rate class.
+     *
+     * @param changeCode the rate change code sent by the server with the given
+     *        rate information, or <code>-1</code> if none was sent
+     * @param rateInfo the rate information that was sent
+     */
     synchronized void updateRateInfo(int changeCode, RateClassInfo rateInfo) {
         DefensiveTools.checkNull(rateInfo, "rateInfo");
 
@@ -69,13 +96,22 @@ public class RateClassMonitor {
                     "this rate class monitor");
         }
 
+        if (logger.isLoggable(Level.FINER)) {
+            logger.finer("Rate monitor for class " + rateInfo.getRateClass()
+                    + " thinks rate average is " + runningAvg + "ms; server "
+                    + "thinks it is " + rateInfo.getCurrentAvg() + "ms");
+        }
+
         this.rateInfo = rateInfo;
         // I'm not sure if this min call is necessary, or correct, but I know
         // sometimes the server will give you really crazy values (in the range
         // of several minutes) for an average. but that is only on the initial
         // rate class packet. either way I think your average can never
         // correctly be greater than the max.
-        runningAvg = Math.min(rateInfo.getCurrentAvg(), rateInfo.getMax());
+//        if (rateInfo.getCurrentAvg() < runningAvg) {
+//            runningAvg = Math.min(rateInfo.getCurrentAvg(), rateInfo.getMax());
+//        }
+        runningAvg = Math.min(rateInfo.getMax(), runningAvg);
 
         if (changeCode == RateChange.CODE_LIMITED) {
             if (logger.isLoggable(Level.FINE)) {
@@ -93,18 +129,35 @@ public class RateClassMonitor {
         }
     }
 
-    synchronized void updateRate(long cur) {
+    /**
+     * Updates this monitor's associated rate class's current rate with the
+     * given send time.
+     *
+     * @param sentTime the time at which a command in the associated rate class
+     *        was sent, in milliseconds since the unix epoch
+     */
+    synchronized void updateRate(long sentTime) {
         if (last != -1) {
-            assert cur >= last;
-            runningAvg = computeCurrentAvg(cur);
+            assert sentTime >= last;
+            runningAvg = computeCurrentAvg(sentTime);
         }
-        last = cur;
+        last = sentTime;
     }
 
+    /**
+     * Returns the rate information associated with this monitor's associated
+     * rate class.
+     *
+     * @return this monitor's associated rate class's rate information
+     */
     public synchronized final RateClassInfo getRateInfo() { return rateInfo; }
 
+    /**
+     * Ensures that this monitor's limited status ({@link #limited}) is
+     * accurate.
+     */
     private synchronized void updateLimitedStatus() {
-        if (isLimited()) {
+        if (limited) {
             long avg = computeCurrentAvg();
             if (avg > rateInfo.getClearAvg() + getErrorMargin()) {
                 if (logger.isLoggable(Level.FINE)) {
@@ -117,19 +170,51 @@ public class RateClassMonitor {
         }
     }
 
+    /**
+     * Returns this monitor's error margin. If this monitor's error margin is
+     * set to <code>-1</code>, the error margin of this monitor's parent
+     * <code>RateMonitor</code> will be returned.
+     *
+     * @return this monitor's error margin
+     */
     public synchronized final int getErrorMargin() {
         if (errorMargin == -1) return rateMonitor.getErrorMargin();
         else return errorMargin;
     }
 
+    /**
+     * Returns this monitor's locally set error margin. This value defaults to
+     * <code>-1</code>, which indicates that the error margin should be
+     * "inherited" from this rate class monitor's parent
+     * <code>RateMonitor</code>.
+     * @return
+     */
+    public synchronized final int getLocalErrorMargin() { return errorMargin; }
+
+    /**
+     * Sets this monitor's error margin. Note that if the given margin is
+     * <code>-1</code> this monitor's error margin will be "inherited" from this
+     * monitor's parent <code>RateMonitor</code>.
+     *
+     * @param errorMargin an error margin value
+     */
     public synchronized final void setErrorMargin(int errorMargin) {
         DefensiveTools.checkRange(errorMargin, "errorMargin", -1);
 
         this.errorMargin = errorMargin;
     }
 
-    private synchronized long computeCurrentAvg(long currentTime) {
-        long diff = currentTime - last;
+    /**
+     * Computes a new rate average given the time at which a command was sent.
+     * Note that this method does <i>not</i> modify the current running average;
+     * it merely computes a new one and returns it.
+     *
+     * @param sentTime the time at which the command was sent
+     * @return a new average computed from the given send time and the current
+     *         running average
+     */
+    private synchronized long computeCurrentAvg(long sentTime) {
+        long diff = sentTime - last;
         long winSize = rateInfo.getWindowSize();
         long max = rateInfo.getMax();
         return Math.min(max, (runningAvg * (winSize - 1) + diff) / winSize);
@@ -154,7 +239,7 @@ public class RateClassMonitor {
     }
 
     public synchronized final long getCurrentAvg() {
-        return runningAvg;
+        return computeCurrentAvg();
     }
 
     public final long getPotentialAvg(long time) {
@@ -171,6 +256,8 @@ public class RateClassMonitor {
 
     public synchronized final long getTimeUntil(long minAvg) {
         if (last == -1) return 0;
+
+        System.out.println("computing time until " + minAvg);
 
         long winSize = rateInfo.getWindowSize();
         long sinceLast = System.currentTimeMillis() - last;

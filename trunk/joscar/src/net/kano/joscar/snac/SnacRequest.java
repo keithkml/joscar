@@ -298,13 +298,18 @@ public class SnacRequest {
         if (logFiner) logger.finer("Finished processing Snac request send");
     }
 
+    /**
+     * Returns a copy of the list of listeners, for use in non-locking
+     * iteration.
+     *
+     * @return a copy of the listener list
+     */
     private List getListenersCopy() {
         List listeners;
         synchronized(this) {
             listeners = this.listeners;
             if (listeners != null && listeners.isEmpty()) listeners = null;
         }
-        // copy this so we don't have to lock while iterating
         if (listeners != null) return new ArrayList(listeners);
         else return null;
     }

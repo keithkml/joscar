@@ -120,8 +120,7 @@ public class FlapProcessor extends ConnProcessor {
     private final Object readLock = new Object();
 
     /**
-     * The sequence number of the next FLAP packet; increased on each packet
-     * send.
+     * An object used to generate sequential FLAP sequence numbers.
      */
     private SeqNum seqNum = new SeqNum(0, SEQNUM_MAX);
 
@@ -367,10 +366,19 @@ public class FlapProcessor extends ConnProcessor {
             return;
         }
 
+        if (errorHandlers.isEmpty()) {
+            System.err.println("FLAP PROCESSOR HAS NO ERROR HANDLERS, " +
+                    "DUMPING TO STDERR:");
+            System.err.println("ERROR TYPE: " + type);
+            System.err.println("ERROR INFO: " + info);
+            System.err.println("EXCEPTION: " + t.getMessage());
+            t.printStackTrace(System.err);
+
+            return;
+        }
+
         FlapExceptionEvent event = new FlapExceptionEvent(type, this, t, info);
 
-        // errorHandlers can be iterated over without locking because it is a
-        // copy-on-write list.
         for (Iterator it = errorHandlers.iterator(); it.hasNext();) {
             FlapExceptionHandler handler = (FlapExceptionHandler) it.next();
 

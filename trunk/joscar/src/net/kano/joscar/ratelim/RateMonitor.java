@@ -37,8 +37,9 @@ package net.kano.joscar.ratelim;
 
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.snac.*;
+import net.kano.joscar.flap.FlapProcessor;
 import net.kano.joscar.flapcmd.SnacCommand;
+import net.kano.joscar.snac.*;
 import net.kano.joscar.snaccmd.conn.RateChange;
 import net.kano.joscar.snaccmd.conn.RateClassInfo;
 import net.kano.joscar.snaccmd.conn.RateInfoCmd;
@@ -49,26 +50,128 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Keeps track of the current "rate" on a SNAC connection. See {@link
+ * RateClassInfo} for details on the algorithm used.
+ * <br>
+ * <br>
+ * To use a rate monitor, one could use code such as:
+ * <pre>
+RateMonitor monitor = new RateMonitor(snacProcessor);
+ * </pre>
+ * The rate monitor will attach itself to the given SNAC processor and compute
+ * the rate for each rate class without any further effort. A few notes:
+ * <ul>
+ * <li> <code>RateMonitor</code> assumes that the default joscar implementations
+ * of {@link RateInfoCmd} and {@link RateChange} are passed to its packet
+ * listeners. If you have provided {@linkplain SnacProcessor#getCmdFactoryMgr
+ * custom SNAC command factories} that use custom implementations of those SNAC
+ * commands, you will need to call {@link #setRateClasses(RateClassInfo[])
+ * setRateClasses} and {@link #updateRateClass(int, RateClassInfo)
+ * updateRateClass} on your own. (Note that this issue will not be a problem for
+ * the great majority of joscar users, and if you don't know what it all means,
+ * ignore it.) </li>
+ *  <li> <code>RateMonitor</code>'s behavior is undefined if it is attached to a
+ * SNAC processor that is already connected. That is, <b>only create
+ * <code>RateMonitor</code>s for <code>SnacProcessor</code>s which are not
+ * already connected</b>. Also note that when a SNAC processor is disconnected
+ * or detached, one should either throw out any rate monitors attached to it or
+ * call {@link #reset} for each. </li>
+ * </ul>
+ *
+ * Rate monitors can themselves be monitored via rate listeners, which listen
+ * for rate-related events. If any calls to these listeners' listener methods
+ * produces an error, the FLAP processor underneath a given rate monitor's
+ * attached SNAC processor will be notified of the error with its {@linkplain
+ * net.kano.joscar.flap.FlapProcessor#handleException
+ * <code>handleException</code> method}. The type of the error will be {@link
+ * #ERRTYPE_RATE_LISTENER}, and the info/reason object will be the
+ * <code>RateListener</code> whose listener method threw the exception.
+ * <br>
+ * <br>
+ * Rate monitors have a concept of an "error margin" to allow for error when
+ * computing whether or not a rate class is rate-limited. This value defaults
+ * to {@link #ERRORMARGIN_DEFAULT}, or <code>100</code> ms as of this writing. A
+ * value of <code>100</code> ms is <i>very</i> conservative value, as the
+ * largest recorded deviation from the actual average is less than
+ * <code>5</code> ms. The value of the error margin indicates how much error is
+ * allowed, in milliseconds, between the actual rate and the computed rate. The
+ * effect of setting this to, say, <code>50</code>ms, means that the rate
+ * monitor will not decide that it is un-rate-limited until its rate is
+ * <code>50</code>ms <i>above</i> the server-specified "rate cleared average."
+ * <br>
+ * <br>
+ * Once rate class information has been received from the server, a {@link
+ * RateClassMonitor} is created for each rate class. For more information on
+ * what exactly a rate class is, see {@link RateClassInfo}. After the initial
+ * rate class information is received, rate classes are never added or removed,
+ * and the SNAC commands which each rate class contains cannot be changed, so it
+ * is safe to keep references to <code>RateClassMonitor</code>s until new rate
+ * class information is received (as on a new connection). (You can be notified
+ * of rate class information's arrival by {@linkplain #addListener adding a
+ * rate listener}.
+ * <br>
+ * <br>
+ * <code>RateMonitor</code> logs to the Java Logging API namespace
+ * <code>"net.kano.joscar.ratelim"</code> on the levels <code>Level.FINE</code>
+ * and <code>Level.FINER</code> in order to, hopefully, ease the debugging
+ * rate-limiting-related applications. For information on how to access these
+ * logs, see the Java Logging API reference at the <a
+ * href="http://java.sun.com/j2se">J2SE website</a>.
+ * <br>
+ * <br>
+ * Most of the interesting rate limiting information is provided by the child of
+ * this class, {@link RateClassMonitor}. To access rate information for IM's,
+ * one could use code such as the following:
+ * <pre>
+CmdType cmd = new CmdType(IcbmCommand.FAMILY_ICBM,
+        IcbmCommand.CMD_IM);
+RateClassMonitor classMonitor = rateMonitor.getMonitor(type);
+System.out.println("Current IM rate average: "
+        + classMonitor.getCurrentAvg() + "ms");
+ * </pre>
+ */
 public class RateMonitor {
+    /**
+     * An error type indicating that an exception occurred when calling a
+     * rate listener method. The error info object for an error of this type
+     * will be the listener that threw the exception.
+     */
     public static final Object ERRTYPE_RATE_LISTENER = "ERRTYPE_RATE_LISTENER";
 
+    /** A default rate average error margin. */
     public static final int ERRORMARGIN_DEFAULT = 100;
 
+    /** A logger object for this class. */
     private static final Logger logger
             = Logger.getLogger("net.kano.joscar.ratelim");
 
+    /** The SNAC processor to which this rate monitor is attached. */
     private SnacProcessor snacProcessor;
 
+    /** A list of listeners for rate-related events. */
     private final CopyOnWriteArrayList listeners = new CopyOnWriteArrayList();
 
+    /**
+     * A "listener event lock" used to prevent overlapping or other lacks of
+     * synchronization of listener callbacks.
+      */
     private final Object listenerEventLock = new Object();
 
-    private Map classToQueue = new HashMap();
-    private Map typeToQueue = new HashMap(500);
+    /** A map from rate class numbers to rate class monitors. */
+    private Map classToMonitor = new HashMap(10);
+    /** A map from SNAC command types to rate class monitors. */
+    private Map typeToMonitor = new HashMap(500);
+    /**
+     * The default rate class monitor (for commands which are not a member of a
+     * specific rate class).
+      */
     private RateClassMonitor defaultMonitor = null;
 
+    /** The current error margin for this rate monitor. */
     private int errorMargin = ERRORMARGIN_DEFAULT;
 
+    /** A listener used to determine when SNAC commands are sent. */
     private OutgoingSnacRequestListener requestListener
             = new OutgoingSnacRequestListener() {
         public void handleSent(SnacRequestSentEvent e) {
@@ -77,6 +180,8 @@ public class RateMonitor {
 
         public void handleTimeout(SnacRequestTimeoutEvent event) { }
     };
+
+    /** A listener used to handle rate information packets. */
     private SnacResponseListener responseListener
             = new SnacResponseListener() {
         public void handleResponse(SnacResponseEvent e) {
@@ -89,6 +194,7 @@ public class RateMonitor {
             }
         }
     };
+    /** A listener used to handle rate change packets. */
     private SnacPacketListener packetListener = new SnacPacketListener() {
         public void handleSnacPacket(SnacPacketEvent e) {
             SnacCommand cmd = e.getSnacCommand();
@@ -105,6 +211,11 @@ public class RateMonitor {
         }
     };
 
+    /**
+     * Creates a new rate monitor for the given SNAC processor.
+     *
+     * @param processor the SNAC processor whose rates should be monitored
+     */
     public RateMonitor(SnacProcessor processor) {
         DefensiveTools.checkNull(processor, "processor");
 
@@ -115,26 +226,79 @@ public class RateMonitor {
         processor.addGlobalResponseListener(responseListener);
     }
 
-    public synchronized final void detach() {
-        if (snacProcessor == null) return;
+    /**
+     * "Detaches" this rate monitor from the SNAC processor to which it is
+     * attached. This monitor will stop listening for events on the given
+     * processor.
+     */
+    public final void detach() {
+        SnacProcessor oldProcessor;
+        synchronized(this) {
+            if (snacProcessor == null) return;
 
-        snacProcessor.removeGlobalRequestListener(requestListener);
-        snacProcessor.removePacketListener(packetListener);
-        snacProcessor.removeGlobalResponseListener(responseListener);
+            snacProcessor.removeGlobalRequestListener(requestListener);
+            snacProcessor.removePacketListener(packetListener);
+            snacProcessor.removeGlobalResponseListener(responseListener);
 
-        snacProcessor = null;
+            oldProcessor = snacProcessor;
+            snacProcessor = null;
+        }
+
+        synchronized(listenerEventLock) {
+            for (Iterator it = listeners.iterator(); it.hasNext();) {
+                RateListener l = (RateListener) it.next();
+
+                l.detached(this, oldProcessor);
+            }
+        }
     }
 
-    public final SnacProcessor getSnacProcessor() {
+    /**
+     * Resets this rate monitor to the state it was in when first created. All
+     * rate class and all rate class monitors are discarded until new rate
+     * information is received after a call to this method.
+     */
+    public synchronized final void reset() {
+        typeToMonitor.clear();
+        classToMonitor.clear();
+        defaultMonitor = null;
+
+        synchronized(listenerEventLock) {
+            for (Iterator it = listeners.iterator(); it.hasNext();) {
+                RateListener l = (RateListener) it.next();
+
+                l.reset(this);
+            }
+        }
+    }
+
+    /**
+     * Returns the SNAC processor which this rate monitor is monitoring.
+     *
+     * @return this rate monitor's attached SNAC processor
+     */
+    public synchronized final SnacProcessor getSnacProcessor() {
         return snacProcessor;
     }
 
+    /**
+     * Adds a listener for rate-monitor-related events.
+     *
+     * @param l the listener to add
+     */
     public final void addListener(RateListener l) {
         DefensiveTools.checkNull(l, "l");
 
         listeners.addIfAbsent(l);
     }
 
+    /**
+     * Removes the given listener from this rate monitor's listener list,
+     * if present. (Note that the given listener value cannot be
+     * <code>null</code>.)
+     *
+     * @param l the listener to remove
+     */
     public final void removeListener(RateListener l) {
         DefensiveTools.checkNull(l, "l");
 
@@ -142,7 +306,17 @@ public class RateMonitor {
     }
 
     /**
-     * Note that this method clears all rate information
+     * Clears all rate information present in this rate monitor and stores the
+     * given rate information. After a call to this method, the given rate
+     * information will be used in calculating the rate.
+     * <br>
+     * <br>
+     * Note that calling this method is not normally necessary as rate class
+     * information is automatically set upon receiving the associated commands
+     * on the attached SNAC processor. See {@linkplain RateMonitor above} for
+     * details.
+     *
+     * @param rateInfos the list of rate class information blocks to use
      */
     public final void setRateClasses(RateClassInfo[] rateInfos) {
         DefensiveTools.checkNull(rateInfos, "rateInfos");
@@ -153,11 +327,8 @@ public class RateMonitor {
             logger.fine("Got rate classes for monitor " + this);
         }
 
-        // I guess this is a new connection now
         synchronized(this) {
-            typeToQueue.clear();
-            classToQueue.clear();
-            defaultMonitor = null;
+            reset();
 
             for (int i = 0; i < rateInfos.length; i++) {
                 RateClassInfo rateInfo = rateInfos[i];
@@ -179,11 +350,20 @@ public class RateMonitor {
         }
     }
 
+    /**
+     * "Sets up" a single rate class, adding its command types to the
+     * {@linkplain #typeToMonitor type-to-monitor map} and the {@linkplain
+     * #classToMonitor class-to-monitor map}, both pointing to a newly created
+     * <code>RateClassMonitor</code> for the given rate class.
+     *
+     * @param rateInfo the rate class information block whose rate class is to
+     *        be set up
+     */
     private synchronized void setRateClass(RateClassInfo rateInfo) {
         DefensiveTools.checkNull(rateInfo, "rateInfo");
 
         RateClassMonitor monitor = new RateClassMonitor(this, rateInfo);
-        classToQueue.put(new Integer(rateInfo.getRateClass()), monitor);
+        classToMonitor.put(new Integer(rateInfo.getRateClass()), monitor);
 
         CmdType[] cmdTypes = rateInfo.getCommands();
         if (cmdTypes != null) {
@@ -197,17 +377,29 @@ public class RateMonitor {
                 // there are command types associated with this rate class,
                 // so, for speed, we put them into a map
                 for (int i = 0; i < cmdTypes.length; i++) {
-                    typeToQueue.put(cmdTypes[i], monitor);
+                    typeToMonitor.put(cmdTypes[i], monitor);
                 }
             }
         }
     }
 
+    /**
+     * Updates rate class information in this rate monitor with the given rate
+     * class information block.
+     *
+     * Note that calling this method is not normally necessary, as rate class
+     * information is automatically updated when the associated commands are
+     * received from the server. See {@linkplain RateMonitor above} for details.
+     *
+     * @param changeCode the "change code" sent in the rate class change packet
+     * @param rateInfo the rate information block sent in the rate class change
+     *        packet
+     */
     public void updateRateClass(int changeCode, RateClassInfo rateInfo) {
         DefensiveTools.checkRange(changeCode, "changeCode", 0);
         DefensiveTools.checkNull(rateInfo, "rateInfo");
 
-        RateClassMonitor monitor = getRateMonitor(rateInfo);
+        RateClassMonitor monitor = getMonitor(rateInfo.getRateClass());
 
         monitor.updateRateInfo(changeCode, rateInfo);
 
@@ -224,6 +416,17 @@ public class RateMonitor {
         }
     }
 
+    /**
+     * Handles an exception by passing it to the attached SNAC processor's
+     * attached FLAP processor.
+     *
+     * @param type the type of exception
+     * @param t the exception itself
+     * @param info an object providing more information about the associated
+     *        exception
+     *
+     * @see FlapProcessor#handleException
+     */
     private void handleException(Object type, Throwable t, Object info) {
         SnacProcessor processor;
         synchronized(this) {
@@ -232,6 +435,7 @@ public class RateMonitor {
 
         if (processor != null) {
             processor.getFlapProcessor().handleException(type, t, info);
+
         } else {
             System.err.println("Rate monitor couldn't process error because "
                     + "not attached to SNAC processor: " + t.getMessage()
@@ -240,6 +444,12 @@ public class RateMonitor {
         }
     }
 
+    /**
+     * Updates the rate for the rate class associated with the request
+     * associated with the given event.
+     *
+     * @param e a SNAC request send event
+     */
     private void updateRate(SnacRequestSentEvent e) {
         CmdType cmdType = CmdType.ofCmd(e.getRequest().getCommand());
 
@@ -250,6 +460,13 @@ public class RateMonitor {
         monitor.updateRate(e.getSentTime());
     }
 
+    /**
+     * Fires a rate limit status event to all registered listeners.
+     *
+     * @param monitor the rate class monitor whose rate class's limited state
+     *        has changed
+     * @param limited whether or not the associated rate class is rate-limited
+     */
     void fireLimitedEvent(RateClassMonitor monitor, boolean limited) {
         synchronized(listenerEventLock) {
             for (Iterator it = listeners.iterator(); it.hasNext();) {
@@ -265,35 +482,69 @@ public class RateMonitor {
     }
 
 
-    public synchronized final void setErrorMargin(int errorMargin) {
+    /**
+     * Sets this rate monitor's error margin. See {@linkplain RateMonitor above}
+     * for details on what this means.
+     *
+     * @param errorMargin a new error margin
+     *
+     * @throws IllegalArgumentException if the given error margin is negative
+     */
+    public synchronized final void setErrorMargin(int errorMargin)
+            throws IllegalArgumentException {
         DefensiveTools.checkRange(errorMargin, "errorMargin", 0);
 
         this.errorMargin = errorMargin;
     }
 
+    /**
+     * Returns this rate monitor's current error margin value. See {@linkplain
+     * RateMonitor above} for details on what this means.
+     *
+     * @return this rate monitor's error margin value
+     */
     public final synchronized int getErrorMargin() { return errorMargin; }
 
-    public final synchronized RateClassMonitor[] getMonitors() {
-        return (RateClassMonitor[])
-                classToQueue.values().toArray(new RateClassMonitor[0]);
+    /**
+     * Returns the rate class monitor for the rate class identified by the given
+     * rate class ID number.
+     *
+     * @param rateClass a rate class ID number
+     * @return the rate class monitor associated with the given rate class ID
+     *         number
+     */
+    private synchronized RateClassMonitor getMonitor(int rateClass) {
+        Integer key = new Integer(rateClass);
+        return (RateClassMonitor) classToMonitor.get(key);
     }
 
+    /**
+     * Returns the rate class monitor used to handle commands of the given type.
+     * Note that the returned value will never be <code>null</code> unless no
+     * rate information has yet been set or no default rate class was specified
+     * by the server.
+     *
+     * @param type the type of command whose associated rate class monitor is to
+     *        be returned
+     * @return the rate class monitor associated with the given command type
+     */
     public final synchronized RateClassMonitor getMonitor(CmdType type) {
         DefensiveTools.checkNull(type, "type");
 
-        RateClassMonitor queue = (RateClassMonitor) typeToQueue.get(type);
+        RateClassMonitor queue = (RateClassMonitor) typeToMonitor.get(type);
 
         if (queue == null) queue = defaultMonitor;
 
         return queue;
     }
 
-    private synchronized RateClassMonitor getRateMonitor(RateClassInfo info) {
-        return getRateMonitor(info.getRateClass());
-    }
-
-    private synchronized RateClassMonitor getRateMonitor(int rateClass) {
-        Integer key = new Integer(rateClass);
-        return (RateClassMonitor) classToQueue.get(key);
+    /**
+     * Returns all of the rate class monitors currently being used.
+     *
+     * @return all of the rate class monitors in use in this rate monitor
+     */
+    public final synchronized RateClassMonitor[] getMonitors() {
+        return (RateClassMonitor[])
+                classToMonitor.values().toArray(new RateClassMonitor[0]);
     }
 }

@@ -36,11 +36,13 @@
 package net.kano.joscar.ratelim;
 
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.snaccmd.conn.RateClassInfo;
-import net.kano.joscar.snac.*;
+import net.kano.joscar.snac.SnacProcessor;
+import net.kano.joscar.snac.SnacQueueManager;
+import net.kano.joscar.snac.SnacRequest;
 
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.Collection;
 
 /**
  * A SNAC queue manager which utilizes the "official" rate limiting algorithm to
@@ -53,67 +55,22 @@ public class RateLimitingQueueMgr implements SnacQueueManager {
 
     private int errorMargin = ERRORMARGIN_DEFAULT;
 
-    private QueueRunner runner = new QueueRunner(this);
+    private QueueRunner runner = new QueueRunner();
 
-    private RateListener rateListener = new RateListener() {
-        public void attached(RateMonitor monitor, SnacProcessor snacProcessor) {
-            attachToSnacProcessor(snacProcessor);
+    public final ConnectionQueueMgr[] getQueueMgrs() {
+        Collection values;
+        synchronized(conns) {
+            values = conns.values();
         }
-
-        public void detached(RateMonitor monitor, SnacProcessor snacProcessor) {
-            detachFromSnacProcessor(snacProcessor);
-        }
-
-        public void gotRateClasses(RateMonitor monitor) {
-            resetRateClasses(monitor);
-        }
-
-        public void rateClassUpdated(RateMonitor monitor,
-                RateClassMonitor classMonitor, RateClassInfo rateInfo) {
-            runner.update();
-        }
-
-        public void rateClassLimited(RateMonitor rateMonitor,
-                RateClassMonitor rateClassMonitor, boolean limited) {
-            runner.update();
-        }
-    };
-
-    public final void attach(RateMonitor monitor) {
-        monitor.addListener(rateListener);
-        SnacProcessor processor = monitor.getSnacProcessor();
-
-        if (processor != null) {
-            attachToSnacProcessor(processor);
-        }
-    }
-
-    private synchronized void attachToSnacProcessor(SnacProcessor processor) {
-        processor.setSnacQueueManager(this);
-    }
-
-    private synchronized void detachFromSnacProcessor(SnacProcessor processor) {
-        conns.remove(processor);
-
-        processor.unsetSnacQueueManager(this);
-    }
-
-    private void resetRateClasses(RateMonitor monitor) {
-        
+        return (ConnectionQueueMgr[]) values.toArray(new ConnectionQueueMgr[0]);
     }
 
     public final ConnectionQueueMgr getQueueMgr(SnacProcessor processor) {
         DefensiveTools.checkNull(processor, "processor");
 
-        ConnectionQueueMgr mgr;
         synchronized(conns) {
-            mgr = (ConnectionQueueMgr) conns.get(processor);
+            return (ConnectionQueueMgr) conns.get(processor);
         }
-        if (mgr == null) {
-            throw new IllegalArgumentException("this rate manager is not " +
-                    "currently attached to processor " + processor);
-        }
-        return mgr;
     }
 
     public synchronized final void setErrorMargin(int errorMargin) {
@@ -131,6 +88,22 @@ public class RateLimitingQueueMgr implements SnacQueueManager {
         processor.sendSnacImmediately(request);
     }
 
+
+    public void attached(SnacProcessor processor) {
+        RateMonitor monitor = new RateMonitor(processor);
+        synchronized(conns) {
+            conns.put(processor, new ConnectionQueueMgr(this, monitor));
+        }
+    }
+
+    public void detached(SnacProcessor processor) {
+        ConnectionQueueMgr mgr;
+        synchronized(conns) {
+            mgr = (ConnectionQueueMgr) conns.remove(processor);
+        }
+
+        mgr.detach();
+    }
 
     public void queueSnac(SnacProcessor processor, SnacRequest request) {
         DefensiveTools.checkNull(request, "request");

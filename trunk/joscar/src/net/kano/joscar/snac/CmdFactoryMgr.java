@@ -71,6 +71,11 @@ public final class CmdFactoryMgr extends SnacCmdFactoryList {
      */
     private SnacCmdFactoryList defaultFactories;
 
+    /**
+     * Creates a new command factory manager with no default factories.
+     *
+     * @see #setDefaultFactoryList
+     */
     CmdFactoryMgr() { }
 
     /**

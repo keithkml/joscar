@@ -36,35 +36,59 @@
 package net.kano.joscar.ratelim;
 
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.snaccmd.conn.RateClassInfo;
 import net.kano.joscar.snac.CmdType;
 import net.kano.joscar.snac.SnacProcessor;
 import net.kano.joscar.snac.SnacRequest;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 public final class ConnectionQueueMgr {
     private final RateLimitingQueueMgr queueMgr;
-
+    private final RateMonitor monitor;
     private final SnacProcessor snacProcessor;
 
     private boolean paused = false;
 
-    private Map typeToQueue = new HashMap();
-    private Map classToQueue = new HashMap();
-    private RateQueue defaultQueue = null;
+    private final Map queues = new IdentityHashMap();
 
-    ConnectionQueueMgr(RateLimitingQueueMgr queueMgr,
-            SnacProcessor snacProcessor) {
+    private RateListener rateListener = new RateListener() {
+        public void detached(RateMonitor rateMonitor, SnacProcessor processor) {
+            rateMonitor.removeListener(this);
+        }
+
+        public void reset(RateMonitor rateMonitor) { }
+
+        public void gotRateClasses(RateMonitor monitor) {
+            resetRateClasses();
+        }
+
+        public void rateClassUpdated(RateMonitor monitor,
+                RateClassMonitor classMonitor, RateClassInfo rateInfo) {
+            RateQueue queue = getRateQueue(classMonitor);
+
+            queueMgr.getRunner().update(queue);
+        }
+
+        public void rateClassLimited(RateMonitor rateMonitor,
+                RateClassMonitor rateClassMonitor, boolean limited) {
+            queueMgr.getRunner().update(getRateQueue(rateClassMonitor));
+        }
+    };
+
+    ConnectionQueueMgr(RateLimitingQueueMgr queueMgr, RateMonitor monitor) {
         DefensiveTools.checkNull(queueMgr, "queueMgr");
-        DefensiveTools.checkNull(snacProcessor, "snacProcessor");
+        DefensiveTools.checkNull(monitor, "monitor");
 
         this.queueMgr = queueMgr;
-        this.snacProcessor = snacProcessor;
+        this.monitor = monitor;
+        this.snacProcessor = monitor.getSnacProcessor();
+        monitor.addListener(rateListener);
     }
 
     public RateLimitingQueueMgr getParentQueueMgr() { return queueMgr; }
+
+    public RateMonitor getRateMonitor() { return monitor; }
 
     public SnacProcessor getSnacProcessor() { return snacProcessor; }
 
@@ -78,28 +102,31 @@ public final class ConnectionQueueMgr {
         if (queue == null) {
             // so there's no queue. let's send it right out!
             queueMgr.sendSnac(snacProcessor, request);
-            return;
-        }
 
-        queue.enqueue(request);
-        queueMgr.getRunner().update(queue);
+        } else {
+            queue.enqueue(request);
+            queueMgr.getRunner().update(queue);
+        }
     }
 
-    private synchronized RateQueue getRateQueue(CmdType type) {
+    private synchronized RateQueue getRateQueue(RateClassMonitor classMonitor) {
+        DefensiveTools.checkNull(classMonitor, "classMonitor");
+
+        return (RateQueue) queues.get(classMonitor);
+    }
+
+    public synchronized RateQueue getRateQueue(CmdType type) {
         DefensiveTools.checkNull(type, "type");
 
-        RateQueue queue = (RateQueue) typeToQueue.get(type);
+        RateClassMonitor cm = monitor.getMonitor(type);
 
-        if (queue == null) queue = defaultQueue;
+        if (cm == null) return null;
 
-        return queue;
+        return getRateQueue(cm);
     }
 
-
-
     public synchronized void clearQueue() {
-        for (Iterator it = classToQueue.values().iterator();
-             it.hasNext();) {
+        for (Iterator it = queues.values().iterator(); it.hasNext();) {
             RateQueue queue = (RateQueue) it.next();
 
             queue.clear();
@@ -128,4 +155,46 @@ public final class ConnectionQueueMgr {
     }
 
     public synchronized boolean isPaused() { return paused; }
+
+    private synchronized void resetRateClasses() {
+        RateClassMonitor[] monitors = monitor.getMonitors();
+
+        // clear the list of queues
+        RateQueue[] queueArray = (RateQueue[])
+                queues.values().toArray(new RateQueue[0]);
+        queueMgr.getRunner().removeQueues(queueArray);
+        queues.clear();
+
+        List reqs = new LinkedList();
+
+        // gather up all of the pending SNAC requests
+        for (int i = 0; i < queueArray.length; i++) {
+            RateQueue queue = queueArray[i];
+
+            queue.dequeueAll(reqs);
+        }
+
+        // create new rate queues
+        for (int i = 0; i < monitors.length; i++) {
+            RateQueue queue = new RateQueue(this, monitors[i]);
+            queues.put(monitors[i], queue);
+        }
+
+        // and re-queue all of the pending SNACs
+        for (Iterator it = reqs.iterator(); it.hasNext();) {
+            SnacRequest req = (SnacRequest) it.next();
+
+            queueSnac(req);
+        }
+
+        RateQueue[] rateQueues
+                = (RateQueue[]) queues.values().toArray(new RateQueue[0]);
+        queueMgr.getRunner().addQueues(rateQueues);
+        queueMgr.getRunner().update(this);
+    }
+
+    synchronized void detach() {
+        clearQueue();
+        monitor.detach();
+    }
 }
