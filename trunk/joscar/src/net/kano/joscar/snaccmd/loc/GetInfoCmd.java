@@ -51,7 +51,7 @@ import java.io.OutputStream;
  * is normally not as heavily rate limited and because it allows one to retrieve
  * a buddy's away message and user profile in a single command. This command is
  * also the only known way to retrieve a buddy's {@linkplain
- * InfoData#getCertificateInfo() security information}.
+ * net.kano.joscar.snaccmd.InfoData#getCertificateInfo() security information}.
  *
  * @snac.src client
  * @snac.cmd 0x02 0x15
@@ -66,8 +66,9 @@ public class GetInfoCmd extends LocCommand {
     public static final long FLAG_AWAYMSG = 0x00000002;
     /**
      * A flag indicating that the user's {@linkplain
-     * InfoData#getCertificateInfo() security information} is being requested.
-      */
+     * net.kano.joscar.snaccmd.InfoData#getCertificateInfo() security
+     * information} is being requested.
+     */
     public static final long FLAG_CERT = 0x00000008;
 
     /**
@@ -161,9 +162,7 @@ if ((getInfoCmd.getFlags()
     public void writeData(OutputStream out) throws IOException {
         if (flags != -1) {
             BinaryTools.writeUInt(out, flags);
-            if (sn != null) {
-                OscarTools.writeScreenname(out, sn);
-            }
+            if (sn != null) OscarTools.writeScreenname(out, sn);
         }
     }
 
