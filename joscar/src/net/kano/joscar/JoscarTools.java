@@ -54,7 +54,13 @@ public final class JoscarTools {
      * The "patch" version of joscar being used. This will return the
      * <code>3</code> in version <code>1.2.3</code>.
      */
-    public static final int JOSCAR_VERSION_PATCH = 2;
+    public static final int JOSCAR_VERSION_PATCH = 3;
+
+    /** A version string, like "1.2.3". */
+    private static final String VERSION_STRING
+            = JOSCAR_VERSION_MAJOR + "."
+            + JOSCAR_VERSION_MINOR + "."
+            + JOSCAR_VERSION_PATCH;
 
     /**
      * Ensures that this class is never instantiated.
@@ -71,8 +77,5 @@ public final class JoscarTools {
      * @see #JOSCAR_VERSION_MINOR
      * @see #JOSCAR_VERSION_PATCH
      */
-    public static String getVersionString() {
-        return JOSCAR_VERSION_MAJOR + "." + JOSCAR_VERSION_MINOR + "."
-                + JOSCAR_VERSION_PATCH;
-    }
+    public static String getVersionString() { return VERSION_STRING; }
 }
