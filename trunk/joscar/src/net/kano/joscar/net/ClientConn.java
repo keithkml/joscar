@@ -200,13 +200,13 @@ public class ClientConn {
      * A reason indicating that the reason for a state change to
      * <code>NOT_CONNECTED</code> was that <code>disconnect</code> was called.
      */
-    public static final State REASON_ON_PURPOSE = new State("ON_PURPOSE");
+    public static final Object REASON_ON_PURPOSE = "ON_PURPOSE";
     /**
      * A reason indicating that the reason for a state change to
      * <code>NOT_CONNECTED</code> was that the socket was closed for some
      * reason. This normally means some sort of network failure.
      */
-    public static final State REASON_CONN_CLOSED = new State("CONN_CLOSED");
+    public static final Object REASON_CONN_CLOSED = "CONN_CLOSED";
 
     /**
      * The current state of the connection.
