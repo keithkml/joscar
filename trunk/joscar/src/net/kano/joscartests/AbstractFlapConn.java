@@ -53,7 +53,6 @@ public abstract class AbstractFlapConn extends ClientFlapConn {
     { // init
         getFlapProcessor().setFlapCmdFactory(new DefaultFlapCmdFactory());
 
-        snacProcessor.setRequestTtl(0);
         snacProcessor.addPreprocessor(new FamilyVersionPreprocessor());
         snacProcessor.getCmdFactoryMgr().setDefaultFactoryList(
                 new DefaultClientFactoryList());

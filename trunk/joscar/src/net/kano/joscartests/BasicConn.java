@@ -163,7 +163,6 @@ public abstract class BasicConn extends AbstractFlapConn {
     { // init
         snacProcessor.setSnacQueueManager(rateMgr);
         rvProcessor.registerRvCmdFactory(new DefaultRvCommandFactory());
-        rvProcessor.registerRvCmdFactory(new GenericRvCommandFactory());
         rvProcessor.addListener(rvListener);
     }
 

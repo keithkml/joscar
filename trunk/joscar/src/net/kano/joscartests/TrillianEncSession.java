@@ -44,12 +44,14 @@ import net.kano.joscar.rv.RvSnacResponseEvent;
 import net.kano.joscar.rvcmd.trillcrypt.*;
 import net.kano.joscar.snaccmd.icbm.RvCommand;
 
-import javax.crypto.Cipher;
-import javax.crypto.NoSuchPaddingException;
+import javax.crypto.*;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.math.BigInteger;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.Random;
 
 public class TrillianEncSession implements RvSessionListener {
@@ -65,13 +67,13 @@ public class TrillianEncSession implements RvSessionListener {
     private BigInteger sessionKey;
 
     private final RvSession rvSession;
+    public Random random = new SecureRandom();
 
     public TrillianEncSession(RvSession session) {
         this.rvSession = session;
     }
 
     public void init() {
-        Random random = new Random();
         modulus = new BigInteger(128, random);
         myPrivate = new BigInteger(128, random).mod(modulus);
         myPublic = FIVE.modPow(myPrivate, modulus);
@@ -103,51 +105,48 @@ public class TrillianEncSession implements RvSessionListener {
 
             TrillianCryptReqRvCmd cmd = (TrillianCryptReqRvCmd) rvc;
 
-            try {
-                modulus = cmd.getModulus();
-                otherPublic = cmd.getPublicValue();
+            modulus = cmd.getModulus();
+            otherPublic = cmd.getPublicValue();
 
-                myPrivate = new BigInteger(128, new Random()).mod(modulus);
-                myPublic = FIVE.modPow(myPrivate, modulus);
-                initCiphers();
 
-                rvSession.sendRv(new TrillianCryptAcceptRvCmd(myPublic));
-            } catch (NoSuchAlgorithmException e) {
-                e.printStackTrace();
-            } catch (NoSuchPaddingException e) {
-                e.printStackTrace();
-            } catch (InvalidKeyException e) {
-                e.printStackTrace();
-            }
+            myPrivate = new BigInteger(128, random).mod(modulus);
+            myPublic = FIVE.modPow(myPrivate, modulus);
+
+            initCiphers();
+
+            rvSession.sendRv(new TrillianCryptAcceptRvCmd(myPublic));
 
         } else if (rvc instanceof TrillianCryptAcceptRvCmd) {
             otherPublic = ((TrillianCryptAcceptRvCmd) rvc).getPublicValue();
-            try {
-                initCiphers();
-            } catch (NoSuchAlgorithmException e) {
-                e.printStackTrace();
-            } catch (NoSuchPaddingException e) {
-                e.printStackTrace();
-            } catch (InvalidKeyException e) {
-                e.printStackTrace();
-            }
+            initCiphers();
+
             rvSession.sendRv(new TrillianCryptBeginRvCmd());
 
         } else if (rvc instanceof TrillianCryptBeginRvCmd) {
             System.out.println("encrypted session with "
                     + rvSession.getScreenname() + " begun!");
 
-
         } else if (rvc instanceof TrillianCryptMsgRvCmd) {
             TrillianCryptMsgRvCmd cmd = (TrillianCryptMsgRvCmd) rvc;
 
             byte[] encrypted = cmd.getEncryptedMsg().toByteArray();
-            System.out.println("len=" + encrypted.length);
 
-            byte[] decoded = decoder.update(encrypted);
-            System.out.println("decoded len=" + decoded.length);
-            System.out.println("message: " + BinaryTools.getAsciiString(
-                    ByteBlock.wrap(decoded)));
+            byte[] decoded;
+            try {
+                decoded = decoder.doFinal(encrypted);
+            } catch (IllegalBlockSizeException e) {
+                e.printStackTrace();
+                return;
+            } catch (BadPaddingException e) {
+                e.printStackTrace();
+                return;
+            }
+            ByteBlock fullDecoded = ByteBlock.wrap(decoded);
+            // the first eight bytes are garbage and the last byte is null
+            ByteBlock textBlock = fullDecoded.subBlock(8,
+                    fullDecoded.getLength() - 8 - 1);
+            String msg = BinaryTools.getAsciiString(textBlock);
+            System.out.println("message: " + msg);
 
         } else if (rvc instanceof TrillianCryptCloseRvCmd) {
             System.out.println("encryption session with "
@@ -155,28 +154,52 @@ public class TrillianEncSession implements RvSessionListener {
         }
     }
 
-    private void initCiphers() throws NoSuchAlgorithmException,
-            NoSuchPaddingException, InvalidKeyException {
+    private void initCiphers() {
         sessionKey = otherPublic.modPow(myPrivate, modulus);
 
         byte[] fbytes = sessionKey.toByteArray();
         if (fbytes.length == 17) {
-            System.out.println("trimming off byte: " + fbytes[0]);
             byte[] old = fbytes;
             fbytes = new byte[fbytes.length - 1];
             System.arraycopy(old, 1, fbytes, 0, fbytes.length);
         }
-        System.out.println("bit length: " + (fbytes.length * 8));
-        System.out.println("first byte: "
-                + Integer.toString(fbytes[0], 2));
+
         SecretKeySpec spec = new SecretKeySpec(fbytes, "Blowfish");
 
-        ///ECB/PKCS5Padding
-        encoder = Cipher.getInstance("Blowfish");
-        encoder.init(Cipher.ENCRYPT_MODE, spec);
+        byte[] ivb = new byte[8];
+        random.nextBytes(ivb);
 
-        decoder = Cipher.getInstance("Blowfish");
-        decoder.init(Cipher.DECRYPT_MODE, spec);
+        IvParameterSpec ips = new IvParameterSpec(ivb);
+
+        try {
+            encoder = Cipher.getInstance("Blowfish/CFB64/NoPadding");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (NoSuchPaddingException e) {
+            e.printStackTrace();
+        }
+        try {
+            encoder.init(Cipher.ENCRYPT_MODE, spec, ips);
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+        } catch (InvalidAlgorithmParameterException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            decoder = Cipher.getInstance("Blowfish/CFB64/NoPadding");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (NoSuchPaddingException e) {
+            e.printStackTrace();
+        }
+        try {
+            decoder.init(Cipher.DECRYPT_MODE, spec, ips);
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+        } catch (InvalidAlgorithmParameterException e) {
+            e.printStackTrace();
+        }
     }
 
     public void handleSnacResponse(RvSnacResponseEvent event) {
@@ -184,7 +207,26 @@ public class TrillianEncSession implements RvSessionListener {
     }
 
     public void sendMsg(String msg) {
-        getRvSession().sendRv(new TrillianCryptMsgRvCmd(ByteBlock.wrap(
-                encoder.update(BinaryTools.getAsciiBytes(msg)))));
+        byte[] data = BinaryTools.getAsciiBytes(msg);
+        byte[] encoded = new byte[encoder.getOutputSize(8 + data.length)];
+        int totalLen;
+        try {
+            int offset = encoder.update(new byte[8], 0, 8, encoded, 0);
+            int len = encoder.doFinal(data, 0, data.length, encoded, offset);
+            totalLen = offset + len;
+        } catch (IllegalBlockSizeException e) {
+            e.printStackTrace();
+            return;
+        } catch (BadPaddingException e) {
+            e.printStackTrace();
+            return;
+        } catch (ShortBufferException e) {
+            e.printStackTrace();
+            return;
+        }
+
+        ByteBlock encodedBlock = ByteBlock.wrap(encoded, 0, totalLen);
+
+        getRvSession().sendRv(new TrillianCryptMsgRvCmd(encodedBlock));
     }
 }
