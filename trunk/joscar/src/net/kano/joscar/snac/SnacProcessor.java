@@ -41,6 +41,7 @@ import net.kano.joscar.flap.FlapProcessor;
 import net.kano.joscar.flap.VetoableFlapPacketListener;
 import net.kano.joscar.flapcmd.SnacFlapCmd;
 import net.kano.joscar.flapcmd.SnacPacket;
+import net.kano.joscar.flapcmd.SnacCommand;
 
 import java.util.ArrayList;
 import java.util.Iterator;

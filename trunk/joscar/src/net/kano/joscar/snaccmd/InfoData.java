@@ -35,9 +35,7 @@
 
 package net.kano.joscar.snaccmd;
 
-import net.kano.joscar.ByteBlock;
-import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.LiveWritable;
+import net.kano.joscar.*;
 import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
@@ -208,7 +206,7 @@ public class InfoData implements LiveWritable {
     /**
      * Writes two TLV's to the given output stream: one to write the {@linkplain
      * #getFormatString format} of the given text, and one to write the text
-     * in the {@linkplain MinimalEncoder minimal encoding} possible.
+     * in the {@linkplain net.kano.joscar.MinimalEncoder minimal encoding} possible.
      *
      * @param text the text to write
      * @param out the stream to write to

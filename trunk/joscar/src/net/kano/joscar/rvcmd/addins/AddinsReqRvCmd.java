@@ -41,7 +41,7 @@ import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.rvcmd.AbstractRequestRvCmd;
 import net.kano.joscar.rvcmd.InvitationMessage;
 import net.kano.joscar.snaccmd.CapabilityBlock;
-import net.kano.joscar.snaccmd.StringBlock;
+import net.kano.joscar.StringBlock;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;

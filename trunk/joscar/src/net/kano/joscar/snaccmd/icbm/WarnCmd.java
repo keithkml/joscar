@@ -39,7 +39,7 @@ import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
-import net.kano.joscar.snaccmd.OscarTools;
+import net.kano.joscar.OscarTools;
 
 import java.io.IOException;
 import java.io.OutputStream;

@@ -36,6 +36,7 @@
 package net.kano.joscar.snac;
 
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.flapcmd.SnacCommand;
 
 import java.util.ArrayList;
 import java.util.Iterator;

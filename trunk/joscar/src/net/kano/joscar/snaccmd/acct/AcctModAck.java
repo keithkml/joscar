@@ -49,7 +49,7 @@ public class AcctModAck extends AcctResponse {
     /**
      * An error code indicating that the user attempted to reformat his or her
      * screenname in a way that made it a different screenname.
-     * @see net.kano.joscar.snaccmd.OscarTools#normalize
+     * @see net.kano.joscar.OscarTools#normalize
      */
     public static final int ERRORCODE_DIFFERENT_SN = 0x0001;
     /**

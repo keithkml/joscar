@@ -37,7 +37,6 @@ package net.kano.joscar.flap;
 
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.flapcmd.DefaultFlapCmdFactory;
 import net.kano.joscar.net.ConnProcessor;
 
 import java.io.IOException;
@@ -71,6 +70,12 @@ import java.util.logging.Logger;
  * says to halt processing. If a vetoable listener has not halted processing, an
  * event is next passed to each of the registered <i>non-vetoable</i> (that is,
  * normal <code>FlapPacketListener</code>) listeners.
+ * <br>
+ * <br>
+ * Note that a new instance of <code>FlapProcessor</code> does not come with any
+ * FLAP command factory installed! You are advised to {@link #setFlapCmdFactory
+ * install} an instance of {@link net.kano.joscar.flapcmd.DefaultFlapCmdFactory}
+ * (or your own custom factory).
  *
  * @see ClientFlapConn
  */
@@ -116,7 +121,7 @@ public class FlapProcessor extends ConnProcessor {
      * A FLAP command factory to generate <code>FlapCommand</code>s from
      * incoming FLAP packets.
      */
-    private FlapCommandFactory commandFactory = new DefaultFlapCmdFactory();
+    private FlapCommandFactory commandFactory = null;
 
     /**
      * Creates a FLAP processor with the default FLAP command factory and not

@@ -36,6 +36,7 @@
 package net.kano.joscar.snac;
 
 import net.kano.joscar.flapcmd.SnacPacket;
+import net.kano.joscar.flapcmd.SnacCommand;
 
 /**
  * Provides an interface for generating <code>SnacCommand</code>s from

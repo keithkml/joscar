@@ -38,8 +38,8 @@ package net.kano.joscar.snaccmd.chat;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.LiveWritable;
-import net.kano.joscar.snaccmd.EncodedStringInfo;
-import net.kano.joscar.snaccmd.MinimalEncoder;
+import net.kano.joscar.EncodedStringInfo;
+import net.kano.joscar.MinimalEncoder;
 import net.kano.joscar.tlv.*;
 
 import java.io.IOException;

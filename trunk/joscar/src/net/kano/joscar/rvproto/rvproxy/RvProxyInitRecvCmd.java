@@ -38,8 +38,8 @@ package net.kano.joscar.rvproto.rvproxy;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.snaccmd.OscarTools;
-import net.kano.joscar.snaccmd.StringBlock;
+import net.kano.joscar.OscarTools;
+import net.kano.joscar.StringBlock;
 
 import java.io.IOException;
 import java.io.OutputStream;

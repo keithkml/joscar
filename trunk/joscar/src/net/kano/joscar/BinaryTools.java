@@ -35,8 +35,6 @@
 
 package net.kano.joscar;
 
-import net.kano.joscar.snaccmd.StringBlock;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
@@ -87,7 +85,7 @@ import java.net.UnknownHostException;
  * clear enough.
  *
  * @see MiscTools
- * @see net.kano.joscar.snaccmd.OscarTools
+ * @see net.kano.joscar.OscarTools
  */
 public final class BinaryTools {
     /**

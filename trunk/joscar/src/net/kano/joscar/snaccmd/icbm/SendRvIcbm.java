@@ -40,8 +40,8 @@ import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.LiveWritable;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.CapabilityBlock;
-import net.kano.joscar.snaccmd.OscarTools;
-import net.kano.joscar.snaccmd.StringBlock;
+import net.kano.joscar.OscarTools;
+import net.kano.joscar.StringBlock;
 import net.kano.joscar.tlv.ImmutableTlvChain;
 import net.kano.joscar.tlv.TlvChain;
 

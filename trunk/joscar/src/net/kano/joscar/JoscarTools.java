@@ -73,6 +73,6 @@ public final class JoscarTools {
      */
     public static String getVersionString() {
         return JOSCAR_VERSION_MAJOR + "." + JOSCAR_VERSION_MINOR + "."
-                + JOSCAR_VERSION_MINOR;
+                + JOSCAR_VERSION_PATCH;
     }
 }

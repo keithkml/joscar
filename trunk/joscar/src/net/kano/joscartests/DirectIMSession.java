@@ -47,8 +47,8 @@ import net.kano.joscar.rvcmd.directim.DirectIMReqRvCmd;
 import net.kano.joscar.rvproto.directim.DirectImHeader;
 import net.kano.joscar.rvproto.rvproxy.RvProxyInitRecvCmd;
 import net.kano.joscar.rvproto.rvproxy.RvProxyReadyCmd;
-import net.kano.joscar.snaccmd.OscarTools;
-import net.kano.joscar.snaccmd.icbm.ImEncodedString;
+import net.kano.joscar.OscarTools;
+import net.kano.joscar.ImEncodedString;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 
 import java.io.IOException;
