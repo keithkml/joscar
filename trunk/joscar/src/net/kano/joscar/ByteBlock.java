@@ -393,7 +393,7 @@ public final class ByteBlock implements Writable, Serializable {
      * @throws IndexOutOfBoundsException if the given index is less than zero
      *         or greater than this block's length (<code>getLength()</code>)
      */
-    public final byte get(int index) throws IndexOutOfBoundsException {
+    public byte get(int index) throws IndexOutOfBoundsException {
         if (index < 0) {
             throw new IndexOutOfBoundsException("index (" + index
                     + ") must be >= 0");
@@ -409,9 +409,7 @@ public final class ByteBlock implements Writable, Serializable {
      * Returns the length of this byte block.
      * @return the length of this block
      */
-    public int getLength() {
-        return len;
-    }
+    public int getLength() { return len; }
 
     /**
      * Provided in order to satisfy the requirements of <code>Writable</code>;
@@ -585,7 +583,6 @@ public final class ByteBlock implements Writable, Serializable {
         System.arraycopy(bytes, offset, dest, destOffset, len);
     }
 
-
     /**
      * Returns <code>true</code> if this and the given object represent the same
      * data, byte for byte; <code>false</code> otherwise.
@@ -594,11 +591,11 @@ public final class ByteBlock implements Writable, Serializable {
      * @return <code>true</code> if this block represents the same data as the
      *         given block
      */
-    public final boolean equals(Object o) {
+    public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof ByteBlock)) return false;
 
-        final ByteBlock other = (ByteBlock) o;
+        ByteBlock other = (ByteBlock) o;
         if (len != other.len) return false;
 
         // if a hash code has been computed, we can test that first
@@ -623,13 +620,13 @@ public final class ByteBlock implements Writable, Serializable {
         return true;
     }
 
-    public synchronized final int hashCode() {
-        if (hashCode != 0) return hashCode;
-
+    public int hashCode() {
+        int current = hashCode;
+        if (current != 0) return current;
         int code = 0;
-        final int delta = Math.min(1, bytes.length/128);
-        for (int i = 0; i < bytes.length; i += delta) {
-            code ^= bytes[i];
+        int delta = Math.max(1, len/128);
+        for (int i = offset; i < len; i += delta) {
+            code = code * 29 + bytes[i];
         }
 
         // make sure it's not 0, which is a special code meaning that the
@@ -638,7 +635,7 @@ public final class ByteBlock implements Writable, Serializable {
 
         hashCode = code;
 
-        return hashCode;
+        return code;
     }
 
     public String toString() {
