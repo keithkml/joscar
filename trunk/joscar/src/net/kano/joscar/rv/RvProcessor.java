@@ -389,6 +389,8 @@ public class RvProcessor {
      *         <code>null</code> if none could be generated
      */
     private synchronized RvCommand genRvCommand(RecvRvIcbm icbm) {
+        DefensiveTools.checkNull(icbm, "icbm");
+
         // find a factory for this capability type
         RvCommandFactory factory
                 = (RvCommandFactory) rvFactories.get(icbm.getCapability());
@@ -415,6 +417,8 @@ public class RvProcessor {
      *         screenname
      */
     private synchronized RvSessionImpl getSession(long sessionId, String sn) {
+        DefensiveTools.checkNull(sn, "sn");
+
         RvSessionMapKey key = new RvSessionMapKey(sessionId, sn);
         RvSessionImpl session = (RvSessionImpl) sessions.get(key);
 
@@ -433,6 +437,8 @@ public class RvProcessor {
      */
     private synchronized RvSessionImpl getOrCreateIncomingSession(
             long sessionId, String sn) {
+        DefensiveTools.checkNull(sn, "sn");
+
         RvSessionImpl session = getSession(sessionId, sn);
 
         if (session == null) {
@@ -586,6 +592,8 @@ public class RvProcessor {
      * @return a new <code>RvSession</code> with the given user
      */
     public synchronized final RvSession createRvSession(String sn) {
+        DefensiveTools.checkNull(sn, "sn");
+
         lastSessionId++;
 
         return createRvSession(sn, lastSessionId);
@@ -605,6 +613,8 @@ public class RvProcessor {
      */
     public synchronized final RvSession createRvSession(String sn,
             long sessionID) {
+        DefensiveTools.checkNull(sn, "sn");
+
         logger.finer("Creating new outgoing RV session for " + sn);
 
         RvSessionImpl session = createNewSession(sessionID, sn);
@@ -713,8 +723,6 @@ public class RvProcessor {
         }
 
         public synchronized void removeListener(RvSessionListener l) {
-            DefensiveTools.checkNull(l, "l");
-
             listeners.remove(l);
         }
 

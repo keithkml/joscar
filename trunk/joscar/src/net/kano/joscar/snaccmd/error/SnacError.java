@@ -52,101 +52,101 @@ import java.io.OutputStream;
 public class SnacError extends SnacCommand {
 //    public static int CODE_INVALID_ERROR = 0x0000;
     /** An error code indicating that an invalid SNAC command was sent. */
-    public static int CODE_INVALID_SNAC = 0x0001;
+    public static final int CODE_INVALID_SNAC = 0x0001;
     /** An error code indicating that you sent commands too close together. */
-    public static int CODE_TOO_FAST_TO_HOST = 0x0002;
+    public static final int CODE_TOO_FAST_TO_HOST = 0x0002;
     /**
      * An error code indicating that you sent commands too close together for
      * the receiving user to receive them.
      */
-    public static int CODE_TOO_FAST_TO_CLIENT = 0x0003;
+    public static final int CODE_TOO_FAST_TO_CLIENT = 0x0003;
     /**
      * An error code indicating that a user is not "available," which may mean
      * the user has blocked you or that he or she is offline. Note that it does
      * *not* mean that you have blocked that user, like
      * {@link #CODE_IN_LOCAL_PERMIT_DENY} does.
       */
-    public static int CODE_USER_UNAVAILABLE = 0x0004;
+    public static final int CODE_USER_UNAVAILABLE = 0x0004;
     /**
      * An error code indicating that a SNAC family service is
      * "unavailable." This may mean the service no longer exists or that it is
      * temporarily down.
      */
-    public static int CODE_SERVICE_UNAVAILABLE = 0x0005;
+    public static final int CODE_SERVICE_UNAVAILABLE = 0x0005;
     /** An error code indicating that a SNAC family service does not exist. */
-    public static int CODE_SERVICE_UNDEFINED = 0x0006;
+    public static final int CODE_SERVICE_UNDEFINED = 0x0006;
     /** An error code indicating that a SNAC command is no longer supported. */
-    public static int CODE_OBSOLETE_SNAC = 0x0007;
+    public static final int CODE_OBSOLETE_SNAC = 0x0007;
     /**
      * An error code indicating that a given action is not supported by the
      * server. Sorry to be so vague; I've never seen this one.
      */
-    public static int CODE_NOT_SUPPORTED_BY_HOST = 0x0008;
+    public static final int CODE_NOT_SUPPORTED_BY_HOST = 0x0008;
     /**
      * An error code indicating that a given action, such as sending a file to
      * a user, is not supported by that user.
      */
-    public static int CODE_NOT_SUPPORTED_BY_CLIENT = 0x0009;
+    public static final int CODE_NOT_SUPPORTED_BY_CLIENT = 0x0009;
     /**
      * An error code indicating that a message or request was rejected by the
      * client to which it was sent.
      */
-    public static int CODE_REFUSED_BY_CLIENT = 0x000a;
+    public static final int CODE_REFUSED_BY_CLIENT = 0x000a;
     /**
      * An error code indicating that something is too large. I've never seen
      * this used.
      */
-    public static int CODE_REPLY_TOO_LARGE = 0x000b;
+    public static final int CODE_REPLY_TOO_LARGE = 0x000b;
     /** An error code indicating something. I've never seen this used. */
-    public static int CODE_RESPONSES_LOST = 0x000c;
+    public static final int CODE_RESPONSES_LOST = 0x000c;
     /**
      * An error code indicating that some request was denied. Sorry for the
      * vagueness; I've never seen this used before.
      */
-    public static int CODE_REQUEST_DENIED = 0x000d;
+    public static final int CODE_REQUEST_DENIED = 0x000d;
     /** An error code indicating that a SNAC was malformatted. */
-    public static int CODE_BROKEN_SNAC_DATA = 0x000e;
+    public static final int CODE_BROKEN_SNAC_DATA = 0x000e;
     /**
      * An error code indicating that the user does not have the necessary
      * permissions to perform an action.
      */
-    public static int CODE_INSUFFICIENT_RIGHTS = 0x000f;
+    public static final int CODE_INSUFFICIENT_RIGHTS = 0x000f;
     
     /**
      * An error code indicating that the client attempted to send a message to
      * someone you have blocked.
      */
-    public static int CODE_IN_LOCAL_PERMIT_DENY = 0x0010;
+    public static final int CODE_IN_LOCAL_PERMIT_DENY = 0x0010;
     /**
      * An error code indicating that you cannot send a message to a user because
      * your warning level is too high.
      */
-    public static int CODE_SENDER_WARNING_LEVEL = 0x0011;
+    public static final int CODE_SENDER_WARNING_LEVEL = 0x0011;
     /**
      * An error code indicating that you cannot send a message to a user because
      * his or her warning level is too high.
      */
-    public static int CODE_RECEIVER_WARNING_LEVEL = 0x0012;
+    public static final int CODE_RECEIVER_WARNING_LEVEL = 0x0012;
     /**
      * An error code indicating that a user is temporarily unavailable.
      */
-    public static int CODE_USER_TEMP_UNAVAILABLE = 0x0013;
+    public static final int CODE_USER_TEMP_UNAVAILABLE = 0x0013;
     /** An error code meaning something. I've never seen this used. */
-    public static int CODE_NO_MATCH = 0x0014;
+    public static final int CODE_NO_MATCH = 0x0014;
     /** An error code meaning something. I've never seen this used. */
-    public static int CODE_LIST_OVERFLOW = 0x0015;
+    public static final int CODE_LIST_OVERFLOW = 0x0015;
     /** An error code meaning something. I've never seen this used. */
-    public static int CODE_REQUEST_AMBIGUOUS = 0x0016;
+    public static final int CODE_REQUEST_AMBIGUOUS = 0x0016;
     /** An error code meaning something. I've never seen this used. */
-    public static int CODE_QUEUE_FULL = 0x0017;
+    public static final int CODE_QUEUE_FULL = 0x0017;
     /**
      * An error code indicating that a given action cannot be performed while
      * on AOL.
      */
-    public static int CODE_NO_AOL = 0x0018;
+    public static final int CODE_NO_AOL = 0x0018;
 
     /** The SNAC command subtype of SNAC errors. */
-    public static int CMD_ERROR = 0x0001;
+    public static final int CMD_ERROR = 0x0001;
 
     /** The error code. */
     private final int code;

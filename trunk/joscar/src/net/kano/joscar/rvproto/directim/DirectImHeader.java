@@ -150,7 +150,7 @@ public final class DirectImHeader implements LiveWritable {
      * @return a direct IM header appropriate for sending with the given message
      */
     public static DirectImHeader createMessageHeader(ImEncodedString message) {
-        return createMessageHeader(false, message);
+        return createMessageHeader(message, false);
     }
 
     /**
@@ -159,13 +159,15 @@ public final class DirectImHeader implements LiveWritable {
      * rather, it is simply appropriate for sending as a header for the message
      * body itself.
      *
+     * @param message a message for which a Direct IM header should be returned
      * @param autoresponse whether or not the given message is an
      *        "auto-response"
-     * @param message a message for which a Direct IM header should be returned
      * @return a direct IM header appropriate for sending with the given message
      */
-    public static DirectImHeader createMessageHeader(boolean autoresponse,
-            ImEncodedString message) {
+    public static DirectImHeader createMessageHeader(ImEncodedString message,
+            boolean autoresponse) {
+        DefensiveTools.checkNull(message, "message");
+
         DirectImHeader hdr = new DirectImHeader();
 
         hdr.setDefaults();
@@ -212,6 +214,8 @@ public final class DirectImHeader implements LiveWritable {
      * @param header a direct IM header object to copy
      */
     public DirectImHeader(DirectImHeader header) {
+        DefensiveTools.checkNull(header, "header");
+
         this.dcVersion = header.dcVersion;
         this.messageId = header.messageId;
         this.dataLength = header.dataLength;
@@ -234,6 +238,8 @@ public final class DirectImHeader implements LiveWritable {
      */
     public static DirectImHeader readDirectIMHeader(InputStream in)
             throws IOException {
+        DefensiveTools.checkNull(in, "in");
+
         // read the six-byte meta-header containing the ODC version and the
         // length of the real header
         byte[] miniHeader = new byte[6];
@@ -481,8 +487,10 @@ header.setScreenname("");
      * @throws IOException if an I/O error occurs
      * @throws IllegalArgumentException if a field is invalid
      */
-    public void write(OutputStream out)
+    public synchronized void write(OutputStream out)
             throws IOException, IllegalArgumentException {
+        DefensiveTools.checkNull(out, "out");
+
         checkValidity();
 
         ByteArrayOutputStream hout = new ByteArrayOutputStream(76);

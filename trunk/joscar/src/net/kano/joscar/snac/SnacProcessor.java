@@ -203,10 +203,10 @@ public class SnacProcessor {
 
     {
         //TODO: reqid's
-        // this algorithm seems to do what I want.
-        lastReqid = Math.min(Math.abs((new Random().nextLong()
-            / (Long.MAX_VALUE / BinaryTools.UINT_MAX))) + 1,
-            BinaryTools.UINT_MAX);
+//         this algorithm seems to do what I want.
+//        lastReqid = Math.min(Math.abs((new Random().nextLong()
+//            / (Long.MAX_VALUE / BinaryTools.UINT_MAX))) + 1,
+//            BinaryTools.UINT_MAX);
         lastReqid = 1;
     }
 
@@ -709,6 +709,8 @@ public class SnacProcessor {
             // with rate limiting and such.
             if (diff / 1000 < requestTtl) break;
 
+            System.out.println("timing out request #"
+                    + reqInfo.getRequest().getReqid());
             timeoutRequest(reqInfo);
 
             it.remove();

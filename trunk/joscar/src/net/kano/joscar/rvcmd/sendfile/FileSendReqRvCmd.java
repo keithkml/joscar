@@ -85,12 +85,12 @@ public class FileSendReqRvCmd extends AbstractRequestRvCmd {
      * Creates a new outgoing initial file send request with the given message,
      * connection information, and file transfer information block. As an
      * initial request, the created request's request type will be {@link
-     * #REQTYPE_INITIAL_REQUEST}.
+     * #REQTYPE_INITIALREQUEST}.
      * <br>
      * <br>
      * Using this constructor is equivalent to using {@link
      * #FileSendReqRvCmd(int, InvitationMessage, RvConnectionInfo,
-     * FileSendBlock) new FileSendReqRvCmd(REQTYPE_INITIAL_REQUEST, message,
+     * FileSendBlock) new FileSendReqRvCmd(REQTYPE_INITIALREQUEST, message,
      * connInfo, file)}.
      *
      * @param message an "invitation message," a message displayed to the user
@@ -174,10 +174,10 @@ public class FileSendReqRvCmd extends AbstractRequestRvCmd {
         if (connInfo != null) connInfo.write(out);
     }
 
-    protected boolean hasServiceData() { return true; }
+    protected boolean hasServiceData() { return fileSendBlock != null; }
 
     protected void writeServiceData(OutputStream out) throws IOException {
-        fileSendBlock.write(out);
+        if (fileSendBlock != null) fileSendBlock.write(out);
     }
 
     public String toString() {

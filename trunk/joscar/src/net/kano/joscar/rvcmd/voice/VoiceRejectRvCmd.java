@@ -39,11 +39,27 @@ import net.kano.joscar.rvcmd.AbstractRejectRvCmd;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 
+/**
+ * A rendezvous command used to indicate that a voice chat invitation has been
+ * denied or cancelled.
+ */
 public class VoiceRejectRvCmd extends AbstractRejectRvCmd {
+    /**
+     * Creates a new voice chat invitation rejection command from the given
+     * incoming voice chat invitation rejection RV ICBM.
+     *
+     * @param icbm an incoming voice chat invitation rejection RV ICBM command
+     */
     public VoiceRejectRvCmd(RecvRvIcbm icbm) {
         super(icbm);
     }
 
+    /**
+     * Creates a new outgoing voice chat invitation rejection command with the
+     * given rejection code.
+     *
+     * @param rejectionCode a rejection code, like {@link #REJECTCODE_CANCELLED}
+     */
     public VoiceRejectRvCmd(int rejectionCode) {
         super(CapabilityBlock.BLOCK_VOICE, rejectionCode);
     }

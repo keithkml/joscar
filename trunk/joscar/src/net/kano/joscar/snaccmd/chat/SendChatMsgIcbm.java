@@ -84,8 +84,8 @@ public class SendChatMsgIcbm extends AbstractChatMsgIcbm {
      * text and that is not an auto-response.
      * <br>
      * <br>
-     * Calling this method is equivalent to calling {@link
-     * #SendChatMsgIcbm(long, boolean, chatMsg) new SendChatMsgIcbm(0, true,
+     * Calling this method is equivalent to calling
+     * #SendChatMsgIcbm(long, boolean, ChatMsg) new SendChatMsgIcbm(0, true,
      * chatMsg)}.
      *
      * @param chatMsg the chat message to send to the chat room

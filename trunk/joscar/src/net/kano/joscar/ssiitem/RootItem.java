@@ -157,7 +157,9 @@ public class RootItem extends AbstractItemObj {
      *         <code>null</code> if this item contains no master group list
      *         field
      */
-    public synchronized final int[] getGroupids() { return groupids; }
+    public synchronized final int[] getGroupids() {
+        return (int[]) groupids.clone();
+    }
 
     /**
      * Sets the list of groups on the buddy list.
@@ -166,7 +168,7 @@ public class RootItem extends AbstractItemObj {
      *        in the order they should appear to the user
      */
     public synchronized final void setGroupids(int[] groupids) {
-        this.groupids = groupids;
+        this.groupids = (groupids == null ? null : (int[]) groupids.clone());
     }
 
     public synchronized SsiItem toSsiItem() {

@@ -100,7 +100,13 @@ public class RecvFileThread extends Thread {
                 if (new File(filename).exists()) {
                     FileInputStream fis = new FileInputStream(filename);
                     byte[] block = new byte[10];
-                    fis.read(block);
+                    for (int i = 0; i < block.length;) {
+                        int count = fis.read(block);
+
+                        if (count == -1) break;
+
+                        i += count;
+                    }
 
                     FileTransferChecksum summer = new FileTransferChecksum();
                     summer.update(block, 0, 10);

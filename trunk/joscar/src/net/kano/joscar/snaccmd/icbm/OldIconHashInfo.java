@@ -292,7 +292,7 @@ public final class OldIconHashInfo {
     /**
      * Writes this icon hash block to the given stream in the format normally
      * used in sending one's buddy icon to a buddy in a {@link
-     * SendBuddyIconRvCmd}.
+     * net.kano.joscar.rvcmd.icon.SendBuddyIconRvCmd}.
      *
      * @param out the stream to which to write this block
      *

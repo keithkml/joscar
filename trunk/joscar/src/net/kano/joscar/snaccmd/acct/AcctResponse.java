@@ -55,12 +55,12 @@ public abstract class AcctResponse extends AcctCommand {
      * An error code indicating that, for some reason, account information
      * cannot be displayed.
      */
-    public static int ERRORCODE_CANNOT_DISPLAY_INFO = 0x0012;
+    public static final int ERRORCODE_CANNOT_DISPLAY_INFO = 0x0012;
     /**
      * An error code indicating that this account has no associated email
      * address.
      */
-    public static int ERRORCODE_NO_EMAIL = 0x0015;
+    public static final int ERRORCODE_NO_EMAIL = 0x0015;
 
     /** The only response type seen as of this writing. */
     public static final int TYPE_DEFAULT = 0x0003;

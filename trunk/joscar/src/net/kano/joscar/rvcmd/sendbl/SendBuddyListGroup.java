@@ -67,6 +67,8 @@ public class SendBuddyListGroup implements LiveWritable {
      *         groups in the given block
      */
     public static SendBuddyListGroup[] readBuddyListGroups(ByteBlock block) {
+        DefensiveTools.checkNull(block, "block");
+
         List groups = new LinkedList();
         for (;;) {
             SendBuddyListGroup group = readBuddyListGroup(block);
@@ -133,6 +135,8 @@ public class SendBuddyListGroup implements LiveWritable {
      *         string value is the extracted ASCII string
      */
     private static final StringBlock readString(ByteBlock block) {
+        DefensiveTools.checkNull(block, "block");
+
         if (block.getLength() < 2) return null;
 
         int len = BinaryTools.getUShort(block, 0);
@@ -155,6 +159,9 @@ public class SendBuddyListGroup implements LiveWritable {
      */
     private static final void writeString(OutputStream out, String str)
             throws IOException {
+        DefensiveTools.checkNull(out, "out");
+        DefensiveTools.checkNull(str, "str");
+
         byte[] bytes = BinaryTools.getAsciiBytes(str);
 
         BinaryTools.writeUShort(out, bytes.length);

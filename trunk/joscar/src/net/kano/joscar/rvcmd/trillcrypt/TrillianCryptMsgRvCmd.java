@@ -92,7 +92,7 @@ public class TrillianCryptMsgRvCmd extends AbstractTrillianCryptRvCmd {
     public final ByteBlock getEncryptedMsg() { return encryptedMsg; }
 
     protected void writeExtraTlvs(OutputStream out) throws IOException {
-        new Tlv(TYPE_MSG, encryptedMsg).write(out);
+        if (encryptedMsg != null) new Tlv(TYPE_MSG, encryptedMsg).write(out);
     }
 
     public String toString() {

@@ -113,7 +113,9 @@ public final class ImEncodedString {
      *
      * @return the raw bytes of the associated string
      */
-    public final byte[] getBytes() { return bytes; }
+    public final byte[] getBytes() {
+        return (byte[]) bytes.clone();
+    }
 
     /**
      * Returns the string represented by this object.

@@ -72,7 +72,7 @@ public class SendFileThread extends Thread {
             fsh.setFileCount(1);
             fsh.setFilesLeft(1);
             fsh.setFilename(
-                    SegmentedFilename.createFromNativeFilename("wut up.gif"));
+                    SegmentedFilename.fromNativeFilename("wut up.gif"));
             fsh.setFileSize(2000000);
             fsh.setTotalFileSize(2000000);
             fsh.setHeaderType(FileTransferHeader.HEADERTYPE_SENDHEADER);

@@ -348,8 +348,7 @@ public class FlapProcessor extends ConnProcessor {
      *
      * @param command the command to send
      */
-    public synchronized final void send(FlapCommand command)
-            throws IllegalArgumentException {
+    public synchronized final void send(FlapCommand command) {
         DefensiveTools.checkNull(command, "command");
 
         OutputStream out = getOutputStream();

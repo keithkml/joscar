@@ -37,6 +37,7 @@ package net.kano.joscar;
 
 
 
+
 /**
  * A set of utilities for ensuring the validity (and non-<code>null</code>ness)
  * of arguments passed into methods or constructors.
@@ -103,7 +104,7 @@ public final class DefensiveTools {
     }
 
     /**
-     * Ensures that each element of the given array is not <code>null</code>.
+     * Ensures that no element of the given array is <code>null</code>.
      *
      * @param array an array of objects
      * @param arrayName the name of this array, for debugging purposes
@@ -115,11 +116,32 @@ public final class DefensiveTools {
             throws IllegalArgumentException {
         checkNull(array, arrayName);
 
-        for (int i = 0; i < array.length; i++) {
+        checkNullElements(array, arrayName, 0, array.length);
+    }
+
+    /**
+     * Ensures that each of the given number of elements (starting at the given
+     * index) of the given array are not <code>null</code>.
+     *
+     * @param array an array of objects
+     * @param arrayName the name of this array, for debugging purposes
+     * @param offset the index in the given array at which
+     *        <code>len</code> elements must not be <code>null</code>
+     * @param len the number of elements, starting at the given index, which
+     *        must not be <code>null</code>
+     *
+     * @throws IllegalArgumentException if an element of the given array is
+     *         <code>null</code>
+     */
+    public static void checkNullElements(Object[] array, String arrayName,
+            int offset, int len) throws IllegalArgumentException {
+        checkNull(array, arrayName);
+
+        for (int i = offset, end = offset + len; i < end; i++) {
             if (array[i] == null) {
-                throw new IllegalArgumentException(arrayName + " value must " +
-                        "not contain any null elements (" + arrayName + "[" + i
-                        + "] == null)");
+                throw new IllegalArgumentException("'" + arrayName
+                        + "' array must not contain any null elements ("
+                        + arrayName + "[" + i + "] == null)");
             }
         }
     }

@@ -68,6 +68,9 @@ public final class SegmentedFilename {
      */
     private static SegmentedFilename createFromString(String path,
             String separator) {
+        DefensiveTools.checkNull(path, "path");
+        DefensiveTools.checkNull(separator, "separator");
+
         StringTokenizer strtok = new StringTokenizer(path, separator);
 
         List parts = new LinkedList();
@@ -91,8 +94,7 @@ public final class SegmentedFilename {
      * @return a <code>SegmentedFilename</code> generated from the given native
      *         filename
      */
-    public static SegmentedFilename createFromNativeFilename(
-            String nativeFilename) {
+    public static SegmentedFilename fromNativeFilename(String nativeFilename) {
         return createFromString(nativeFilename, FILESEP_NATIVE);
     }
 
@@ -108,7 +110,7 @@ public final class SegmentedFilename {
      * @return a <code>SegmentedFilename</code> generated from the given "file
      *         transfer filename"
      */
-    public static SegmentedFilename createFromFTFilename(String ftFilename) {
+    public static SegmentedFilename fromFTFilename(String ftFilename) {
         return createFromString(ftFilename, FILESEP_FT);
     }
 
@@ -200,6 +202,8 @@ public final class SegmentedFilename {
      *         by the given separator
      */
     private final String toFilename(String sep) {
+        DefensiveTools.checkNull(sep, "sep");
+
         // we'll estimate the length as 16 letters per file/dir name
         StringBuffer buffer = new StringBuffer(parts.length*16);
 

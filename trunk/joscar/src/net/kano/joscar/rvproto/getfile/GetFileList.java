@@ -48,12 +48,34 @@ import java.io.OutputStream;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * A data structure representing a "Get File" directory listing. Note that a
+ * Get File list may contain only the files and directories in one directory or
+ * all files a directory and in all subdirectories, recursively. See {@link
+ * net.kano.joscar.rvcmd.getfile.GetFileReqRvCmd#FLAG_EXPAND_DYNAMIC} for
+ * details.
+ */
 public class GetFileList implements LiveWritable {
+    /** The Get File directory listing version string used by WinAIM. */
     public static final String GFLISTVERSION_DEFAULT = "Lst1";
 
+    /** The Get File directory listing version string for this list. */
     private final String gfListVersion;
+    /** The files on this list. */
     private final GetFileEntry[] files;
 
+    /**
+     * Reads a Get File directory list from the given block of binary data. Note
+     * that this method will return <code>null</code> if no valid list can be
+     * read. The given block should be the entire block of data sent following
+     * a {@link
+     *net.kano.joscar.rvproto.ft.FileTransferHeader#HEADERTYPE_FILELIST_SENDLIST
+     * }
+     * header.
+     *
+     * @param block a block of data containing a Get File directory listing
+     * @return a Get File directory listing object read from the given block
+     */
     public static GetFileList readGetFileList(ByteBlock block) {
         DefensiveTools.checkNull(block, "block");
 
@@ -73,7 +95,7 @@ public class GetFileList implements LiveWritable {
 
         for (int i = 0; i < tlvs.length;) {
             GetFileEntry entry
-                    = GetFileEntry.readGetFileEntry(tlvs, i);
+                    = GetFileEntry.readEntry(tlvs, i);
 
             System.out.println("read entry: " + entry);
 
@@ -89,10 +111,28 @@ public class GetFileList implements LiveWritable {
         return new GetFileList(version, entryArray);
     }
 
+    /**
+     * Creates a new Get File directory list with the given list of files.
+     * <br>
+     * <br>
+     * Using this constructor is equivalent to using {@link #GetFileList(String,
+     * GetFileEntry[]) new GetFileList(GFLISTVERSION_DEFAULT, files}.
+     *
+     * @param files a list of files to use in this list
+     */
     public GetFileList(GetFileEntry[] files) {
         this(GFLISTVERSION_DEFAULT, files);
     }
 
+    /**
+     * Creates a new Get File directory listing with the given list version
+     * string and the given list of files. Note that the given file list may
+     * not contain any <code>null</code> elements.
+     *
+     * @param gfListVersion a Get File list version string; this should normally
+     *        be {@link #GFLISTVERSION_DEFAULT}
+     * @param files a list of files to hold in this list
+     */
     public GetFileList(String gfListVersion, GetFileEntry[] files) {
         DefensiveTools.checkNull(gfListVersion, "gfListVersion");
         DefensiveTools.checkNull(files, "files");
@@ -100,11 +140,24 @@ public class GetFileList implements LiveWritable {
         this.gfListVersion = gfListVersion;
         this.files = (GetFileEntry[]) files.clone();
 
-        DefensiveTools.checkNullElements(files, "files");
+        DefensiveTools.checkNullElements(this.files, "files");
     }
 
+    /**
+     * Returns the Get File listing version string used in this list. This will
+     * normally be {@link #GFLISTVERSION_DEFAULT}.
+     *
+     * @return the Get Fle listing version string sent in this list
+     */
     public final String getGfListVersion() { return gfListVersion; }
 
+    /**
+     * Returns an array containing the Get File entries in this list. Note that
+     * changes to the returned array will not be reflected in this file list
+     * object.
+     *
+     * @return an array containing the Get File entries in this list
+     */
     public final GetFileEntry[] getFileEntries() {
         return (GetFileEntry[]) files.clone();
     }
@@ -114,5 +167,10 @@ public class GetFileList implements LiveWritable {
         for (int i = 0; i < files.length; i++) {
             files[i].write(out);
         }
+    }
+
+    public String toString() {
+        return "GetFileList: version=" + gfListVersion + ", files="
+                + files.length;
     }
 }
