@@ -220,10 +220,26 @@ public class RateClassMonitor {
         return Math.min(max, (runningAvg * (winSize - 1) + diff) / winSize);
     }
 
+    /**
+     * Computes "the current rate average," what the average would be if a
+     * command were sent at the time this method was invoked.
+     *
+     * @return the "current rate average"
+     *
+     * @see #computeCurrentAvg(long)
+     */
     private synchronized long computeCurrentAvg() {
         return computeCurrentAvg(System.currentTimeMillis());
     }
 
+    /**
+     * Sets whether this rate monitor's associated rate class is currently
+     * rate-limited. This method will notify any listeners if the value has
+     * changed.
+     *
+     * @param limited whether or not this monitor's rate class is currently rate
+     *        limited
+     */
     private synchronized void setLimited(boolean limited) {
         if (limited != this.limited) {
             this.limited = limited;
@@ -232,6 +248,13 @@ public class RateClassMonitor {
         }
     }
 
+    /**
+     * Returns whether this rate monitor's associated rate class is currently
+     * rate-limited.
+     *
+     * @return whether this rate monitor's associated rate class is currently
+     *         rate-limited
+     */
     public synchronized final boolean isLimited() {
         updateLimitedStatus();
 
@@ -242,18 +265,58 @@ public class RateClassMonitor {
         return computeCurrentAvg();
     }
 
+    /**
+     * Returns what the rate average <i>would</i> be if a command were sent at
+     * the given time.
+     *
+     * @param time the time at which a hypothetical command would be sent, in
+     *        milliseconds since the unix epoch
+     * @return the potential rate average
+     */
     public final long getPotentialAvg(long time) {
         return computeCurrentAvg(time);
     }
 
+    /**
+     * Returns how long one "should" wait before sending a command in this
+     * monitor's associated rate class (to avoid being rate limited). This
+     * algorithm attempts to stay above the rate limit (or the clear limit, if
+     * {@linkplain #isLimited currently rate limited) plus the {@linkplain
+     * #getErrorMargin error margin}. Note that this method will never return
+     * a value less than zero.
+     *
+     * @return how long one should wait before sending a command in the
+     *         associated rate class
+     */
     public synchronized final long getOptimalWaitTime() {
-        long minAvg;
-        if (isLimited()) minAvg = rateInfo.getClearAvg();
-        else minAvg = rateInfo.getLimitedAvg();
-
-        return getTimeUntil(minAvg + getErrorMargin());
+        return getTimeUntil(getMinSafeAvg() + getErrorMargin());
     }
 
+    /**
+     * Returns the average above which this monitor's associated rate class's
+     * average must stay to avoid being rate-limited. This method ignores the
+     * {@linkplain #getErrorMargin error margin}.
+     *
+     * @return the minimum average that this monitor's associated rate class
+     *         must stay above to avoid rate limiting
+     */
+    private synchronized long getMinSafeAvg() {
+        if (isLimited()) return rateInfo.getClearAvg();
+        else return rateInfo.getLimitedAvg();
+    }
+
+    /**
+     * Returns how long one must wait before sending a command in this monitor's
+     * associated rate class to keep the current average above the given
+     * average. This method ignores the {@linkplain #getErrorMargin error
+     * margin}; it returns exactly how long one must wait for the rate average
+     * to be equal to or above the given average. Note that this method will
+     * never return a value less than zero.
+     *
+     * @param minAvg the "target" average
+     * @return how long one must wait before sending a command to stay above the
+     *         given average
+     */
     public synchronized final long getTimeUntil(long minAvg) {
         if (last == -1) return 0;
 
@@ -263,7 +326,7 @@ public class RateClassMonitor {
         long sinceLast = System.currentTimeMillis() - last;
 
         long minLastDiff = (winSize * minAvg) - (runningAvg  * (winSize - 1));
-        long toWait = minLastDiff - sinceLast;
+        long toWait = minLastDiff - sinceLast + 1;
 
         if (logger.isLoggable(Level.FINE)) {
             logger.fine("Class " + rateInfo.getRateClass()
@@ -274,18 +337,46 @@ public class RateClassMonitor {
         return Math.max(toWait, 0);
     }
 
+    /**
+     * Returns the number of commands in this rate class that <i>could</i> be
+     * sent immediately, without being rate limited.
+     *
+     * @return the number of commands in this rate class that could be sent
+     *         immediately without being rate limited
+     */
     public synchronized final int getPossibleCmdCount() {
         return getPossibleCmdCount(runningAvg);
     }
 
+    /**
+     * Returns the <i>maximum</i> number of commands in this rate class that
+     * could ever be sent at the same time without being rate-limited. This
+     * method is similar to {@link #getPossibleCmdCount()} but differs in that
+     * this method essentially returns the upper limit for the return value
+     * of <code>getPossibleCmdCount()</code>: it returns the maximum number of
+     * commands that could <i>ever</i> be sent at once; that is, what
+     * <code>getPossibleCmdCount()</code> <i>would</i> return if the current
+     * rate average were at its maximum.
+     *
+     * @return the maximum number of commands that could be sent in this rate
+     *         class simultaneously without being rate limited
+     */
     public synchronized final int getMaxCmdCount() {
         return getPossibleCmdCount(rateInfo.getMax());
     }
 
+    /**
+     * Returns the number of commands that could be sent in this monitor's
+     * associated rate class without being rate-limited.
+     *
+     * @param currentAvg the starting average (normally the current average)
+     * @return the number of commands that could be sent in this monitor's
+     *         associated rate class without being rate-limited
+     */
     private synchronized int getPossibleCmdCount(long currentAvg) {
         long diff = System.currentTimeMillis() - last;
         long winSize = rateInfo.getWindowSize();
-        long limited = rateInfo.getLimitedAvg() + getErrorMargin();
+        long limited = getMinSafeAvg() + getErrorMargin();
         long avg = currentAvg;
         int count = 0;
 
@@ -298,6 +389,9 @@ public class RateClassMonitor {
 
             count++;
         }
+
+        // this means the loop never iterated, so no commands can be sent
+        if (count == 0) return 0;
 
         // the loop iterates once past the maximum, so we decrement the counter
         // to get the number of commands that can be sent
