@@ -730,8 +730,7 @@ public class ClientSnacProcessor extends AbstractSnacProcessor {
         return "ClientSnacProcessor: "
                 + "lastreqid=" + reqid.getLast()
                 + ", requests: " + requests.size()
-                + ", paused=" + paused
-                + ", queueManager=" + queueManager;
+                + ", paused=" + paused;
     }
 
     /**

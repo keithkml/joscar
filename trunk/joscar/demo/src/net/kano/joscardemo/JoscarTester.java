@@ -127,6 +127,8 @@ import java.util.StringTokenizer;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.TreeMap;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -321,11 +323,19 @@ public class JoscarTester implements CmdLineListener {
 
     {
         cmdMap.put("setexp", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<AIM expression name>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 aimexp = args[0];
             }
         });
         cmdMap.put("im", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<screenname> <single-word message>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 byte[] textBytes;
                 try {
@@ -347,6 +357,10 @@ public class JoscarTester implements CmdLineListener {
             }
         });
         cmdMap.put("info", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<screenname>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
 //                request(new OldGetInfoCmd(OldGetInfoCmd.TYPE_AWAYMSG, args[0]));
 //                request(new OldGetInfoCmd(OldGetInfoCmd.TYPE_INFO, args[0]));
@@ -354,67 +368,119 @@ public class JoscarTester implements CmdLineListener {
             }
         });
         cmdMap.put("dirinfo", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<screenname>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 request(new GetDirInfoCmd(args[0]));
             }
         });
         cmdMap.put("reformat", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<your new screenname format>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 request(new AcctModCmd(args[0], null));
             }
         });
         cmdMap.put("setemail", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<a new registered email address>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 request(new AcctModCmd(null, args[0]));
             }
         });
         cmdMap.put("confirm", new CLCommand() {
+            public String getArgumentsUsage() {
+                return null;
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 request(new ConfirmAcctCmd());
             }
         });
         cmdMap.put("getformat", new CLCommand() {
+            public String getArgumentsUsage() {
+                return null;
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 request(new AcctInfoRequest(AcctInfoRequest.TYPE_SN));
             }
         });
         cmdMap.put("getemail", new CLCommand() {
+            public String getArgumentsUsage() {
+                return null;
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 request(new AcctInfoRequest(AcctInfoRequest.TYPE_EMAIL));
             }
         });
         cmdMap.put("chatrights", new CLCommand() {
+            public String getArgumentsUsage() {
+                return null;
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 request(new RoomRightsRequest());
             }
         });
         cmdMap.put("joinroom", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<chat exchange number> <single-word chat room name>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 joinChat(Integer.parseInt(args[0]), args[1]);
             }
         });
         cmdMap.put("exinfo", new CLCommand() {
-            // request exchange info
+            public String getArgumentsUsage() {
+                return "<chat exchange number>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 request(new ExchangeInfoReq(Integer.parseInt(args[0])));
             }
         });
         cmdMap.put("chatsay", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<single-word chat room name> <single-word message>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 getChatConn(args[0]).sendMsg(args[1]);
             }
         });
         cmdMap.put("inviteafriend", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<email address to invite> "
+                        + "<single-word invitation message>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 request(new InviteFriendCmd(args[0], args[1]));
             }
         });
         cmdMap.put("getinterests", new CLCommand() {
+            public String getArgumentsUsage() {
+                return null;
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 request(new InterestListReq());
             }
         });
         cmdMap.put("searchbyname", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<single-word name to search for>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 request(SearchBuddiesCmd.createSearchByDirInfoCmd(new DirInfo(
                         null, null, args[0], null, null, null, null, null, null,
@@ -422,16 +488,28 @@ public class JoscarTester implements CmdLineListener {
             }
         });
         cmdMap.put("searchbyemail", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<email address to search for>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 request(SearchBuddiesCmd.createSearchByEmailCmd(args[0]));
             }
         });
         cmdMap.put("searchbyinterest", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<interest name to search for>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 request(SearchBuddiesCmd.createSearchByInterestCmd(args[0]));
             }
         });
         cmdMap.put("setdir", new CLCommand() {
+            public String getArgumentsUsage() {
+                return null;
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 request(new SetDirInfoCmd(new DirInfo(
                         "email", "first", "middle", "last", "maiden", "nick",
@@ -439,22 +517,59 @@ public class JoscarTester implements CmdLineListener {
             }
         });
         cmdMap.put("unsetdir", new CLCommand() {
+            public String getArgumentsUsage() {
+                return null;
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 request(new SetDirInfoCmd(null));
             }
         });
         cmdMap.put("setinterests", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "[interest name 1] [interest name 2] "
+                        + ".. [interest name n]";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 request(new SetInterestsCmd(args));
             }
         });
         cmdMap.put("setavail", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "[single-word iChat availability message]";
+            }
+
             public void handle(String line, String cmd, String[] args) {
-//                request(new SetExtraInfoCmd(
-//                        args.length == 0 ? "" : args[0]));
+                String msg = args[0];
+                if (msg == null) msg = "";
+
+                byte[] msgData;
+                try {
+                    msgData = msg.getBytes("UTF8");
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                    return;
+                }
+                byte[] data = new byte[msgData.length + 4];
+                System.arraycopy(msgData, 0, data, 2, msgData.length);
+                data[0] = (byte) ((msgData.length >> 2) & 0xff);
+                data[1] = (byte) (msgData.length & 0xff);
+
+                // this should work
+                request(new SetExtraInfoCmd(new ExtraInfoBlock[] {
+                    new ExtraInfoBlock(ExtraInfoBlock.TYPE_AVAILMSG,
+                            new ExtraInfoData(
+                                    ExtraInfoData.FLAG_AVAILMSG_PRESENT,
+                                    ByteBlock.wrap(data)))
+                }));
             }
         });
         cmdMap.put("testav", new CLCommand() {
+            public String getArgumentsUsage() {
+                return null;
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 request(new SetExtraInfoCmd(new ExtraInfoBlock[] {
                     new ExtraInfoBlock(3, new ExtraInfoData(0,
@@ -466,12 +581,20 @@ public class JoscarTester implements CmdLineListener {
             }
         });
         cmdMap.put("getcertinfo", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<screenname>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 request(new GetInfoCmd(GetInfoCmd.FLAG_CERT, args[0]));
             }
         });
         // WORKS
         cmdMap.put("addbuddy", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<screenname> <buddy group ID> <buddy item ID>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 request(new CreateItemsCmd(new SsiItem[] {
                     new BuddyItem(args[0], Integer.parseInt(args[1]),
@@ -483,6 +606,10 @@ public class JoscarTester implements CmdLineListener {
         });
         // WORKS
         cmdMap.put("delbuddy", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<screenname> <buddy group ID> <buddy item ID>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 request(new DeleteItemsCmd(new SsiItem[] {
                     new BuddyItem(args[0], Integer.parseInt(args[1]),
@@ -491,23 +618,33 @@ public class JoscarTester implements CmdLineListener {
         });
         // WORKS
         cmdMap.put("addgroup", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<new group name> <new group ID>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 request(new CreateItemsCmd(new SsiItem[] {
-                    new GroupItem(args[0], Integer.parseInt(args[1]),
-                            new int[] { Integer.parseInt(args[2]) })
+                    new GroupItem(args[0], Integer.parseInt(args[1]))
                         .toSsiItem() }));
             }
         });
         // WORKS
         cmdMap.put("delgroup", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<group name> <group ID>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 request(new DeleteItemsCmd(new SsiItem[] {
                     new GroupItem(args[0], Integer.parseInt(args[1]))
                         .toSsiItem() }));
             }
         });
-        // WORKS
         cmdMap.put("setprivacyvis", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<privacy item ID> <visibility item ID>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 request(new ModifyItemsCmd(new SsiItem[] {
                     new PrivacyItem(Integer.parseInt(args[0]),
@@ -520,8 +657,11 @@ public class JoscarTester implements CmdLineListener {
                 }));
             }
         });
-        // WORKS
         cmdMap.put("deletevis", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<visiblity item ID>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 request(new DeleteItemsCmd(new SsiItem[] {
                     new VisibilityItem(Integer.parseInt(args[0]), 0)
@@ -529,8 +669,11 @@ public class JoscarTester implements CmdLineListener {
                 }));
             }
         });
-        // WORKS
         cmdMap.put("setprivacy", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<privacy item ID> <privacy mode number 1-5>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 request(new ModifyItemsCmd(new SsiItem[] {
                     new PrivacyItem(Integer.parseInt(args[0]),
@@ -539,8 +682,11 @@ public class JoscarTester implements CmdLineListener {
                 }));
             }
         });
-        // WORKS
         cmdMap.put("adddeny", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<screenname to block> <new deny item ID>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 request(new CreateItemsCmd(new SsiItem[] {
                     new DenyItem(args[0], Integer.parseInt(args[1]))
@@ -548,8 +694,11 @@ public class JoscarTester implements CmdLineListener {
                 }));
             }
         });
-        // WORKS
         cmdMap.put("deldeny", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<screenname to unblock> <deny item ID>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 request(new DeleteItemsCmd(new SsiItem[] {
                     new DenyItem(args[0], Integer.parseInt(args[1]))
@@ -557,8 +706,11 @@ public class JoscarTester implements CmdLineListener {
                 }));
             }
         });
-        // WORKS
         cmdMap.put("addpermit", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<screenname to allow> <new allow item ID>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 request(new CreateItemsCmd(new SsiItem[] {
                     new PermitItem(args[0], Integer.parseInt(args[1]))
@@ -566,8 +718,11 @@ public class JoscarTester implements CmdLineListener {
                 }));
             }
         });
-        // WORKS
         cmdMap.put("delpermit", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<screenname to remove from allow list> <allow item ID>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 request(new DeleteItemsCmd(new SsiItem[] {
                     new PermitItem(args[0], Integer.parseInt(args[1]))
@@ -575,17 +730,22 @@ public class JoscarTester implements CmdLineListener {
                 }));
             }
         });
-        // WHATEVER
         cmdMap.put("addroot", new CLCommand() {
+            public String getArgumentsUsage() {
+                return null;
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 request(new CreateItemsCmd(new SsiItem[] {
-                    new RootItem()
-                        .toSsiItem()
+                    new RootItem().toSsiItem()
                 }));
             }
         });
-        // WORKS
         cmdMap.put("setroot", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<group ID 1> <group ID 2>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 request(new ModifyItemsCmd(new SsiItem[] {
                     new RootItem(new int[] { Integer.parseInt(args[0]),
@@ -595,6 +755,11 @@ public class JoscarTester implements CmdLineListener {
             }
         });
         cmdMap.put("seticon", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<icon number> <icon item ID> "
+                        + "<single-word local icon filename>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 try {
                     request(new ModifyItemsCmd(new SsiItem[] {
@@ -609,12 +774,12 @@ public class JoscarTester implements CmdLineListener {
                 }
             }
         });
-        cmdMap.put("starticon", new CLCommand() {
-            public void handle(String line, String cmd, String[] args) {
-                request(new ServiceRequest(0x10));
-            }
-        });
         cmdMap.put("addicon",  new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<icon number> <icon item ID> "
+                        + "<single-word local icon filename>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 try {
                     request(new CreateItemsCmd(new SsiItem[] {
@@ -630,6 +795,10 @@ public class JoscarTester implements CmdLineListener {
             }
         });
         cmdMap.put("delicon", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<icon number> <icon item ID>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 request(new DeleteItemsCmd(new SsiItem[] {
                     new IconItem(args[0], Integer.parseInt(args[1]), null)
@@ -638,12 +807,20 @@ public class JoscarTester implements CmdLineListener {
             }
         });
         cmdMap.put("uploadicon", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<single-word local icon filename>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 request(new UploadIconCmd(ByteBlock.createByteBlock(
                         new FileWritable(args[0]))));
             }
         });
         cmdMap.put("noicon", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<icon number> <icon item ID>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 request(new ModifyItemsCmd(new SsiItem[] {
                     new IconItem(args[0], Integer.parseInt(args[1]),
@@ -653,11 +830,19 @@ public class JoscarTester implements CmdLineListener {
             }
         });
         cmdMap.put("logims", new CLCommand() {
+            public String getArgumentsUsage() {
+                return null;
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 bosConn.setLogIms(new ImTestFrame(JoscarTester.this));
             }
         });
         cmdMap.put("sendfile", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<screenname>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 RvSession session = bosConn.rvProcessor.createRvSession(
                         args[0]);
@@ -677,13 +862,17 @@ public class JoscarTester implements CmdLineListener {
                 InetAddress localHost = bosConn.getSocket().getLocalAddress();
                 int port = socket.getLocalPort();
                 session.sendRv(new FileSendReqRvCmd(
-                        new InvitationMessage("take this file lol"),
+                        new InvitationMessage("take this file"),
                         RvConnectionInfo.createForOutgoingRequest(localHost,
                                 port),
-                        new FileSendBlock("wut up.gif", 2000000)));
+                        new FileSendBlock("hey.gif", 2000000)));
             }
         });
         cmdMap.put("secureimold", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<screenname> <modulus> <public value>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 RvSession session = bosConn.rvProcessor.createRvSession(
                         args[0]);
@@ -698,6 +887,10 @@ public class JoscarTester implements CmdLineListener {
             }
         });
         cmdMap.put("secureim", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<screenname>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 RvSession session = bosConn.rvProcessor.createRvSession(
                         args[0]);
@@ -712,7 +905,12 @@ public class JoscarTester implements CmdLineListener {
                         encSession);
             }
         });
-        cmdMap.put("sim", new CLCommand() {
+        cmdMap.put("sendsecureim", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<screenname with secureim session open> "
+                        + "<single-word message>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 System.out.println("sending secure IM to " + args[0]);
                 TrillianEncSession encSession = (TrillianEncSession)
@@ -724,6 +922,10 @@ public class JoscarTester implements CmdLineListener {
             }
         });
         cmdMap.put("sendbl", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<screenname>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 RvSession session = bosConn.rvProcessor.createRvSession(
                         args[0]);
@@ -731,13 +933,20 @@ public class JoscarTester implements CmdLineListener {
                 session.addListener(bosConn.rvSessionListener);
 
                 session.sendRv(new SendBuddyListRvCmd(new SendBuddyListGroup[] {
-                    new SendBuddyListGroup("HEYTOM", new String[] {
-                        "HEYTOMBUDDY"
+                    new SendBuddyListGroup("HEY", new String[] {
+                        "HEYBUDDY", "YOBUDDY",
+                    }),
+                    new SendBuddyListGroup("YO", new String[] {
+                        "HEYBUDDY2", "YOBUDDY2",
                     }),
                 }));
             }
         });
         cmdMap.put("invite", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<screenname to invite> <single-word chat room name>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 RvSession session = bosConn.rvProcessor.createRvSession(
                         args[0]);
@@ -748,10 +957,14 @@ public class JoscarTester implements CmdLineListener {
 
                 session.sendRv(new ChatInvitationRvCmd(
                         new MiniRoomInfo(conn.getRoomInfo()),
-                        new InvitationMessage("wut up d00d")));
+                        new InvitationMessage("hey")));
             }
         });
         cmdMap.put("directim", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<screenname>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 RvSession session = bosConn.rvProcessor.createRvSession(
                         args[0]);
@@ -769,6 +982,10 @@ public class JoscarTester implements CmdLineListener {
             }
         });
         cmdMap.put("getfile", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<screenname>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 RvSession session = bosConn.rvProcessor.createRvSession(
                         args[0]);
@@ -797,6 +1014,10 @@ public class JoscarTester implements CmdLineListener {
             }
         });
         cmdMap.put("voicechat", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<screenname>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 RvSession session = bosConn.rvProcessor.createRvSession(
                         args[0]);
@@ -814,6 +1035,10 @@ public class JoscarTester implements CmdLineListener {
             }
         });
         cmdMap.put("encim", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<screenname> <single-word message>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 try {
                     ByteBlock encodedMsg = secureSession.encryptIM(args[0],
@@ -833,6 +1058,10 @@ public class JoscarTester implements CmdLineListener {
             }
         });
         cmdMap.put("encsendfile", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<screenname>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 final String sn = args[0];
                 RvSession session = bosConn.rvProcessor.createRvSession(
@@ -853,12 +1082,16 @@ public class JoscarTester implements CmdLineListener {
                 InetAddress localHost = bosConn.getSocket().getLocalAddress();
                 int port = socket.getLocalPort();
                 session.sendRv(new FileSendReqRvCmd(
-                        new InvitationMessage("take this file lol"),
+                        new InvitationMessage("take this file"),
                         new RvConnectionInfo(localHost, null, null, port, false, true),
-                        new FileSendBlock("wut up.gif", 2000000)));
+                        new FileSendBlock("yo.gif", 2000000)));
             }
         });
         cmdMap.put("encjoinroom", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<exchange number> <single-word room name>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 FullRoomInfo roomInfo = new FullRoomInfo(
                         Integer.parseInt(args[0]), args[1], "us-ascii", "en",
@@ -867,11 +1100,19 @@ public class JoscarTester implements CmdLineListener {
             }
         });
         cmdMap.put("encchatsay", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<chat room name> <single-word message>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 getChatConn(args[0]).sendEncMsg(args[1]);
             }
         });
         cmdMap.put("fakeinvite", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<screenname> <room name>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 RvSession session = bosConn.rvProcessor.createRvSession(
                         args[0]);
@@ -880,11 +1121,13 @@ public class JoscarTester implements CmdLineListener {
 
                 session.sendRv(new ChatInvitationRvCmd(
                         new MiniRoomInfo(4, args[1], 0),
-                        new InvitationMessage("wut up d00d")));
+                        new InvitationMessage("yo")));
             }
         });
         cmdMap.put("encinvite", new CLCommand() {
-
+            public String getArgumentsUsage() {
+                return "<screenname> <chat room name>";
+            }
 
             public void handle(String line, String cmd, String[] args) {
                 RvSession session = bosConn.rvProcessor.createRvSession(
@@ -907,12 +1150,80 @@ public class JoscarTester implements CmdLineListener {
             }
         });
         cmdMap.put("enccreateroom", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<exchange number> <single-word chat room name>";
+            }
+
             public void handle(String line, String cmd, String[] args) {
                 FullRoomInfo roomInfo = new FullRoomInfo(
                         Integer.parseInt(args[0]), args[1], "us-ascii", "en",
                         "application/pkcs7-mime");
                 handleRequest(new SnacRequest(new JoinRoomCmd(roomInfo), null));
 
+            }
+        });
+        cmdMap.put("help", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "[command name]";
+            }
+
+            public void handle(String line, String cmd, String[] args) {
+                if (args.length == 0) {
+                    ArrayList cmdNames = new ArrayList(cmdMap.keySet());
+                    Collections.sort(cmdNames);
+                    System.out.println("Commands: ");
+                    int longest = 0;
+                    for (Iterator it = cmdNames.iterator(); it.hasNext();) {
+                        String name = (String) it.next();
+                        longest = Math.max(longest, name.length());
+                    }
+                    int perline = 80/(longest+1);
+                    int i = 0;
+                    for (Iterator it = cmdNames.iterator(); it.hasNext();) {
+                        String name = (String) it.next();
+                        boolean eol = (i % perline) == (perline-1) || !it.hasNext();
+
+                        System.out.print(name);
+                        if (!eol) {
+                            int spaces = (longest - name.length()) + 1;
+                            for (int j = 0; j < spaces; j++) {
+                                System.out.print(' ');
+                            }
+                            i++;
+                        } else {
+                            System.out.println();
+                            i = 0;
+                        }
+                    }
+                    System.out.println("   * For help on a specific command, type 'help xxx',");
+                    System.out.println("     where xxx is the command's name");
+                } else if (args.length == 1) {
+                    printUsage(args[0]);
+                } else {
+                    printUsage("help");
+                }
+            }
+            private void printUsage(String command) {
+                CLCommand clc = (CLCommand) cmdMap.get(command);
+                if (clc == null) {
+                    System.out.println("There is no command called '"
+                            + command + "'");
+                } else {
+                    String args = clc.getArgumentsUsage();
+                    System.out.println("Usage: " + command
+                            + (args == null ? "" : " " + args));
+                    if (args == null) {
+                        System.out.println("   * (This command takes no arguments)");
+                    } else {
+                        if (args.indexOf("<") != -1) {
+                            System.out.println("   * Arguments in <angle brackets> are required");
+                        }
+                        if (args.indexOf("[") != -1) {
+                            System.out.println("   * Arguments in [square brackets] are optional");
+                        }
+                        System.out.println("   * All arguments must be single words with no spaces");
+                    }
+                }
             }
         });
     }
@@ -926,8 +1237,6 @@ public class JoscarTester implements CmdLineListener {
         }
 
         if (cmds.isEmpty()) {
-            // this is a joke. :(
-            System.out.println("*** Empty lines are prohibited.");
             return;
         }
 
@@ -937,12 +1246,17 @@ public class JoscarTester implements CmdLineListener {
         CLCommand handler = (CLCommand) cmdMap.get(cmd);
 
         if (handler == null) {
-            System.out.println("!! Unknown command \"" + cmd + "\" !!");
+            System.out.println("!! There is no command called '" + cmd + "'");
+            System.out.println("!! Try typing 'help'");
         } else {
             try {
                 handler.handle(line, cmd, args);
             } catch (Throwable t) {
+                System.err.println("!! Error executing command '" + cmd + "'!");
+                System.err.println("!! Try typing 'help " + cmd + "'");
+                System.err.println("!! Stack trace of error:");
                 t.printStackTrace();
+                System.err.println("!! Try typing 'help " + cmd + "'");
             }
         }
     }
