@@ -39,14 +39,27 @@ import net.kano.joscar.rvcmd.AbstractRejectRvCmd;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 
-import java.io.IOException;
-import java.io.OutputStream;
-
+/**
+ * A rendezvous command sent to indicate that a {@linkplain FileSendReqRvCmd
+ * file send request} has been denied.
+ */
 public class FileSendRejectRvCmd extends AbstractRejectRvCmd {
+    /**
+     * Creates a new file transfer denial command from the given incoming file
+     * transfer denial RV ICBM.
+     *
+     * @param icbm an incoming file transfer denial RV ICBM command
+     */
     public FileSendRejectRvCmd(RecvRvIcbm icbm) {
         super(icbm);
     }
 
+    /**
+     * Creates a new outgoing file transfer denial command with the given
+     * denial code.
+     *
+     * @param rejectionCode a rejection code, like {@link #REJECTCODE_CANCELLED}
+     */
     public FileSendRejectRvCmd(int rejectionCode) {
         super(CapabilityBlock.BLOCK_FILE_SEND, rejectionCode);
     }

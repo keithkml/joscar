@@ -35,16 +35,16 @@
 
 package net.kano.joscar.rvcmd;
 
-import net.kano.joscar.snaccmd.icbm.RvCommand;
-import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
-import net.kano.joscar.snaccmd.CapabilityBlock;
-import net.kano.joscar.ByteBlock;
 import net.kano.joscar.BinaryTools;
+import net.kano.joscar.ByteBlock;
+import net.kano.joscar.snaccmd.CapabilityBlock;
+import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
+import net.kano.joscar.snaccmd.icbm.RvCommand;
 import net.kano.joscar.tlv.*;
 
-import java.io.OutputStream;
-import java.io.IOException;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Iterator;
 
 /**

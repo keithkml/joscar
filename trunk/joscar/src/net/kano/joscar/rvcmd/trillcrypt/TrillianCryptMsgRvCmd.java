@@ -35,14 +35,14 @@
 
 package net.kano.joscar.rvcmd.trillcrypt;
 
-import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
-import net.kano.joscar.tlv.TlvChain;
-import net.kano.joscar.tlv.Tlv;
-import net.kano.joscar.ByteBlock;
 import net.kano.joscar.BinaryTools;
+import net.kano.joscar.ByteBlock;
+import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
+import net.kano.joscar.tlv.Tlv;
+import net.kano.joscar.tlv.TlvChain;
 
-import java.io.OutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 
 public class TrillianCryptMsgRvCmd extends AbstractTrillianCryptRvCmd {
     private static final int TYPE_MSG = 0x3f2;
@@ -60,7 +60,7 @@ public class TrillianCryptMsgRvCmd extends AbstractTrillianCryptRvCmd {
     }
 
     public TrillianCryptMsgRvCmd(ByteBlock encryptedMsg) {
-        super(ENCSTATUS_MESSAGE);
+        super(CMDTYPE_MESSAGE);
 
         this.encryptedMsg = encryptedMsg;
     }

@@ -37,8 +37,8 @@ package net.kano.joscar.rvcmd.trillcrypt;
 
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 
-import java.io.OutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 
 public class TrillianCryptCloseRvCmd extends AbstractTrillianCryptRvCmd {
     public TrillianCryptCloseRvCmd(RecvRvIcbm icbm) {
@@ -46,7 +46,7 @@ public class TrillianCryptCloseRvCmd extends AbstractTrillianCryptRvCmd {
     }
 
     public TrillianCryptCloseRvCmd() {
-        super(ENCSTATUS_CLOSE);
+        super(CMDTYPE_CLOSE);
     }
 
     protected void writeExtraTlvs(OutputStream out) throws IOException { }

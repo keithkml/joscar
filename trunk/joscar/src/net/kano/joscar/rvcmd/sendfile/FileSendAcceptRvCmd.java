@@ -39,11 +39,24 @@ import net.kano.joscar.rvcmd.AbstractAcceptRvCmd;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 
+/**
+ * A rendezvous command used to indicate that a {@linkplain FileSendReqRvCmd
+ * file transfer request} has been accepted and a connection is being made.
+ */
 public class FileSendAcceptRvCmd extends AbstractAcceptRvCmd {
+    /**
+     * Creates a new file transfer acceptance command from the given incoming
+     * file transfer acceptance RV ICBM.
+     *
+     * @param icbm an incoming file transfer acceptance RV ICBM command
+     */
     public FileSendAcceptRvCmd(RecvRvIcbm icbm) {
         super(icbm);
     }
 
+    /**
+     * Creates a new outgoing file transfer acceptance command.
+     */
     public FileSendAcceptRvCmd() {
         super(CapabilityBlock.BLOCK_FILE_SEND);
     }

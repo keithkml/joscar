@@ -94,7 +94,7 @@ public class BosFlapConn extends BasicConn {
         SnacCommand cmd = e.getSnacCommand();
 
         if (cmd instanceof ServerReadyCmd) {
-            request(new SetIdleCmd(12345678));
+            request(new SetIdleCmd(123456789));
             request(new ParamInfoRequest());
             request(new LocRightsRequest());
             request(new SsiRightsRequest());
@@ -118,7 +118,7 @@ public class BosFlapConn extends BasicConn {
                         CapabilityBlock.BLOCK_GAMES2,
                         CapabilityBlock.BLOCK_ICON,
                         CapabilityBlock.BLOCK_SENDBUDDYLIST,
-//                        CapabilityBlock.BLOCK_TRILLIANCRYPT,
+                        CapabilityBlock.BLOCK_TRILLIANCRYPT,
                         CapabilityBlock.BLOCK_VOICE,
                         CapabilityBlock.BLOCK_ADDINS,
                     })));

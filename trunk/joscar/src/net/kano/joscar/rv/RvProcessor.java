@@ -588,9 +588,26 @@ public class RvProcessor {
     public synchronized final RvSession createRvSession(String sn) {
         lastSessionId++;
 
+        return createRvSession(sn, lastSessionId);
+    }
+
+    /**
+     * Creates a new "outgoing" rendezvous session with the given user and the
+     * given session ID. The session is only "outgoing" in that it was
+     * created locally, and the first command will probably be outgoing. Note
+     * that when this method is called a new <code>NewRvSessionEvent</code> of
+     * type {@link NewRvSessionEvent#TYPE_OUTGOING TYPE_OUTGOING}
+     * will be fired.
+     *
+     * @param sn the screenname of the user with whom to create a new session
+     * @param sessionID a session ID number to use for the created session
+     * @return a new <code>RvSession</code> with the given user
+     */
+    public synchronized final RvSession createRvSession(String sn,
+            long sessionID) {
         logger.finer("Creating new outgoing RV session for " + sn);
 
-        RvSessionImpl session = createNewSession(lastSessionId, sn);
+        RvSessionImpl session = createNewSession(sessionID, sn);
 
         fireNewSessionEvent(session, NewRvSessionEvent.TYPE_OUTGOING);
 

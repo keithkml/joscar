@@ -35,17 +35,17 @@
 
 package net.kano.joscar.rvcmd.icon;
 
-import net.kano.joscar.rvcmd.AbstractRequestRvCmd;
-import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
-import net.kano.joscar.snaccmd.icbm.OldIconHashInfo;
-import net.kano.joscar.snaccmd.CapabilityBlock;
+import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.LiveWritable;
-import net.kano.joscar.BinaryTools;
+import net.kano.joscar.rvcmd.AbstractRequestRvCmd;
+import net.kano.joscar.snaccmd.CapabilityBlock;
+import net.kano.joscar.snaccmd.icbm.OldIconHashInfo;
+import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 
-import java.io.OutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 
 /**
  * A rendezvous command used to send one's "buddy icon" to another user. Note

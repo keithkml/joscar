@@ -35,8 +35,8 @@
 
 package net.kano.joscar.rvcmd.sendbl;
 
-import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.rvcmd.AbstractRequestRvCmd;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;

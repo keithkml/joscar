@@ -202,10 +202,12 @@ public class SnacProcessor {
     private long lastReqid;
 
     {
+        //TODO: reqid's
         // this algorithm seems to do what I want.
         lastReqid = Math.min(Math.abs((new Random().nextLong()
             / (Long.MAX_VALUE / BinaryTools.UINT_MAX))) + 1,
             BinaryTools.UINT_MAX);
+        lastReqid = 1;
     }
 
     /**
