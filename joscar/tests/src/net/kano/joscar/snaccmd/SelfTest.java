@@ -39,6 +39,9 @@ import junit.framework.TestCase;
 
 import java.util.Map;
 
+import net.kano.joscar.OscarTools;
+import net.kano.joscar.MinimalEncoder;
+
 public class SelfTest extends TestCase {
     public void testMinimalEncoder() {
         MinimalEncoder me = new MinimalEncoder();
