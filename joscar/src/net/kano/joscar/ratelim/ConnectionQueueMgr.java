@@ -35,23 +35,20 @@
 
 package net.kano.joscar.ratelim;
 
+import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.snac.CmdType;
 import net.kano.joscar.snac.SnacProcessor;
 import net.kano.joscar.snac.SnacRequest;
-import net.kano.joscar.snac.CmdType;
-import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.snaccmd.conn.RateClassInfo;
 
-import java.util.Map;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.lang.reflect.Field;
+import java.util.Map;
 
 public final class ConnectionQueueMgr {
     private final RateLimitingQueueMgr queueMgr;
 
     private final SnacProcessor snacProcessor;
 
-    private boolean avoidLimiting = true;
     private boolean paused = false;
 
     private Map typeToQueue = new HashMap();
@@ -65,7 +62,6 @@ public final class ConnectionQueueMgr {
 
         this.queueMgr = queueMgr;
         this.snacProcessor = snacProcessor;
-        this.avoidLimiting = queueMgr.getDefaultAvoidLimiting();
     }
 
     public RateLimitingQueueMgr getParentQueueMgr() { return queueMgr; }
@@ -132,17 +128,4 @@ public final class ConnectionQueueMgr {
     }
 
     public synchronized boolean isPaused() { return paused; }
-
-
-    public synchronized final boolean isAvoidingLimiting() {
-        return avoidLimiting;
-    }
-
-    public synchronized final void setAvoidingLimiting(boolean avoidLimiting) {
-        if (avoidLimiting = this.avoidLimiting) return;
-
-        this.avoidLimiting = avoidLimiting;
-
-        if (!avoidLimiting) queueMgr.getRunner().update(this);
-    }
 }

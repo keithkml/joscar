@@ -63,9 +63,11 @@ public class RateMonitor {
 
     private final CopyOnWriteArrayList listeners = new CopyOnWriteArrayList();
 
+    private final Object listenerEventLock = new Object();
+
     private Map classToQueue = new HashMap();
     private Map typeToQueue = new HashMap(500);
-    private RateClassMonitor defaultQueue = null;
+    private RateClassMonitor defaultMonitor = null;
 
     private OutgoingSnacRequestListener requestListener
             = new OutgoingSnacRequestListener() {
@@ -75,7 +77,8 @@ public class RateMonitor {
 
         public void handleTimeout(SnacRequestTimeoutEvent event) { }
     };
-    private SnacResponseListener responseListener = new SnacResponseListener() {
+    private SnacResponseListener responseListener
+            = new SnacResponseListener() {
         public void handleResponse(SnacResponseEvent e) {
             SnacCommand cmd = e.getSnacCommand();
 
@@ -102,45 +105,97 @@ public class RateMonitor {
         }
     };
 
-    public synchronized final void attach(SnacProcessor processor) {
-        DefensiveTools.checkNull(processor, "processor");
+    public RateMonitor() { }
 
-        detach();
-
-        processor.addGlobalRequestListener(requestListener);
-        processor.addPacketListener(packetListener);
-        processor.addGlobalResponseListener(responseListener);
+    public RateMonitor(SnacProcessor snacProcessor) {
+        attach(snacProcessor);
     }
 
-    public synchronized final void detach() {
-        if (snacProcessor == null) return;
+    public final void attach(SnacProcessor processor) {
+        DefensiveTools.checkNull(processor, "processor");
 
-        snacProcessor.removeGlobalRequestListener(requestListener);
-        snacProcessor.removePacketListener(packetListener);
-        snacProcessor.removeGlobalResponseListener(responseListener);
+        synchronized(this) {
+            detach();
 
-        snacProcessor = null;
+            this.snacProcessor = processor;
+
+            processor.addGlobalRequestListener(requestListener);
+            processor.addPacketListener(packetListener);
+            processor.addGlobalResponseListener(responseListener);
+        }
+
+        synchronized(listenerEventLock) {
+            for (Iterator it = listeners.iterator(); it.hasNext();) {
+                RateListener l = (RateListener) it.next();
+
+                try {
+                    l.attached(this, processor);
+                } catch (Throwable t) {
+                    handleException(ERRTYPE_RATE_LISTENER, t, l);
+                }
+            }
+        }
+    }
+
+    public final void detach() {
+        SnacProcessor processor;
+        synchronized(this) {
+            if (snacProcessor == null) return;
+
+            snacProcessor.removeGlobalRequestListener(requestListener);
+            snacProcessor.removePacketListener(packetListener);
+            snacProcessor.removeGlobalResponseListener(responseListener);
+
+            processor = snacProcessor;
+            snacProcessor = null;
+        }
+
+        synchronized(listenerEventLock) {
+            for (Iterator it = listeners.iterator(); it.hasNext();) {
+                RateListener l = (RateListener) it.next();
+
+                try {
+                    l.detached(this, processor);
+                } catch (Throwable t) {
+                    handleException(ERRTYPE_RATE_LISTENER, t, l);
+                }
+            }
+        }
+    }
+
+    public synchronized final SnacProcessor getSnacProcessor() {
+        return snacProcessor;
+    }
+
+    public final void addListener(RateListener l) {
+        DefensiveTools.checkNull(l, "l");
+
+        listeners.addIfAbsent(l);
+    }
+
+    public final void removeListener(RateListener l) {
+        DefensiveTools.checkNull(l, "l");
+
+        listeners.remove(l);
     }
 
     /**
      * Note that this method clears all rate information
      */
-    public void setRateClasses(RateClassInfo[] rateInfos) {
+    public final void setRateClasses(RateClassInfo[] rateInfos) {
         DefensiveTools.checkNull(rateInfos, "rateInfos");
+        rateInfos = (RateClassInfo[]) rateInfos.clone();
+        DefensiveTools.checkNullElements(rateInfos, "rateInfos");
 
         if (logger.isLoggable(Level.FINE)) {
             logger.fine("Got rate classes for monitor " + this);
         }
 
-        rateInfos = (RateClassInfo[]) rateInfos.clone();
-
-        DefensiveTools.checkNullElements(rateInfos, "rateInfos");
-
         // I guess this is a new connection now
         synchronized(this) {
             typeToQueue.clear();
             classToQueue.clear();
-            defaultQueue = null;
+            defaultMonitor = null;
 
             for (int i = 0; i < rateInfos.length; i++) {
                 RateClassInfo rateInfo = rateInfos[i];
@@ -149,13 +204,60 @@ public class RateMonitor {
             }
         }
 
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            RateListener listener = (RateListener) it.next();
+        synchronized(listenerEventLock) {
+            for (Iterator it = listeners.iterator(); it.hasNext();) {
+                RateListener listener = (RateListener) it.next();
 
-            try {
-                listener.gotRateClasses(this);
-            } catch (Throwable t) {
-                handleException(ERRTYPE_RATE_LISTENER, t, listener);
+                try {
+                    listener.gotRateClasses(this);
+                } catch (Throwable t) {
+                    handleException(ERRTYPE_RATE_LISTENER, t, listener);
+                }
+            }
+        }
+    }
+
+    private synchronized void setRateClass(RateClassInfo rateInfo) {
+        DefensiveTools.checkNull(rateInfo, "rateInfo");
+
+        RateClassMonitor monitor = new RateClassMonitor(this, rateInfo);
+        classToQueue.put(new Integer(rateInfo.getRateClass()), monitor);
+
+        CmdType[] cmdTypes = rateInfo.getCommands();
+        if (cmdTypes != null) {
+            if (cmdTypes.length == 0) {
+                // if there aren't any member SNAC commands for this rate
+                // class, this is the "fallback" rate class, or the
+                // "default queue"
+                if (defaultMonitor == null) defaultMonitor = monitor;
+
+            } else {
+                // there are command types associated with this rate class,
+                // so, for speed, we put them into a map
+                for (int i = 0; i < cmdTypes.length; i++) {
+                    typeToQueue.put(cmdTypes[i], monitor);
+                }
+            }
+        }
+    }
+
+    public void updateRateClass(int changeCode, RateClassInfo rateInfo) {
+        DefensiveTools.checkRange(changeCode, "changeCode", 0);
+        DefensiveTools.checkNull(rateInfo, "rateInfo");
+
+        RateClassMonitor monitor = getRateMonitor(rateInfo);
+
+        monitor.updateRateInfo(changeCode, rateInfo);
+
+        synchronized(listenerEventLock) {
+            for (Iterator it = listeners.iterator(); it.hasNext();) {
+                RateListener listener = (RateListener) it.next();
+
+                try {
+                    listener.rateClassUpdated(this, monitor, rateInfo);
+                } catch (Throwable t) {
+                    handleException(ERRTYPE_RATE_LISTENER, t, listener);
+                }
             }
         }
     }
@@ -176,47 +278,6 @@ public class RateMonitor {
         }
     }
 
-    private synchronized void setRateClass(RateClassInfo rateInfo) {
-        DefensiveTools.checkNull(rateInfo, "rateInfo");
-
-        RateClassMonitor queue = createRateMonitor(rateInfo);
-
-        CmdType[] cmdTypes = rateInfo.getCommands();
-        if (cmdTypes != null) {
-            if (cmdTypes.length == 0) {
-                // if there aren't any member SNAC commands for this rate
-                // class, this is the "fallback" rate class, or the
-                // "default queue"
-                if (defaultQueue == null) defaultQueue = queue;
-            } else {
-                // there are command types associated with this rate class,
-                // so, for speed, we put them into a map
-                for (int i = 0; i < cmdTypes.length; i++) {
-                    typeToQueue.put(cmdTypes[i], queue);
-                }
-            }
-        }
-    }
-
-    public void updateRateClass(int changeCode, RateClassInfo rateInfo) {
-        DefensiveTools.checkRange(changeCode, "changeCode", 0);
-        DefensiveTools.checkNull(rateInfo, "rateInfo");
-
-        RateClassMonitor monitor = getRateMonitor(rateInfo);
-
-        monitor.updateRateInfo(changeCode, rateInfo);
-
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            RateListener listener = (RateListener) it.next();
-
-            try {
-                listener.rateClassUpdated(this, monitor, rateInfo);
-            } catch (Throwable t) {
-                handleException(ERRTYPE_RATE_LISTENER, t, listener);
-            }
-        }
-    }
-
     private void updateRate(SnacRequestSentEvent e) {
         CmdType cmdType = CmdType.ofCmd(e.getRequest().getCommand());
 
@@ -228,13 +289,15 @@ public class RateMonitor {
     }
 
     void fireLimitedEvent(RateClassMonitor monitor, boolean limited) {
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            RateListener listener = (RateListener) it.next();
+        synchronized(listenerEventLock) {
+            for (Iterator it = listeners.iterator(); it.hasNext();) {
+                RateListener listener = (RateListener) it.next();
 
-            try {
-                listener.rateClassLimited(this, monitor, limited);
-            } catch (Throwable t) {
-                handleException(ERRTYPE_RATE_LISTENER, t, listener);
+                try {
+                    listener.rateClassLimited(this, monitor, limited);
+                } catch (Throwable t) {
+                    handleException(ERRTYPE_RATE_LISTENER, t, listener);
+                }
             }
         }
     }
@@ -258,7 +321,7 @@ public class RateMonitor {
 
         RateClassMonitor queue = (RateClassMonitor) typeToQueue.get(type);
 
-        if (queue == null) queue = defaultQueue;
+        if (queue == null) queue = defaultMonitor;
 
         return queue;
     }
@@ -271,20 +334,4 @@ public class RateMonitor {
         Integer key = new Integer(rateClass);
         return (RateClassMonitor) classToQueue.get(key);
     }
-
-    private synchronized RateClassMonitor createRateMonitor(
-            RateClassInfo rateInfo) {
-        Integer key = new Integer(rateInfo.getRateClass());
-
-        if (classToQueue.containsKey(key)) {
-            throw new IllegalArgumentException("rate monitor already exists for " +
-                    "rate class '" + rateInfo + "'");
-        }
-
-        RateClassMonitor monitor = new RateClassMonitor(this, rateInfo);
-        classToQueue.put(key, monitor);
-
-        return monitor;
-    }
-
 }

@@ -35,18 +35,15 @@
 
 package net.kano.joscar.snac;
 
-import java.util.IdentityHashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.Map;
+import java.util.*;
 
 /**
  * A SNAC queue manager that sends all SNACs immediately, only queueing SNACs
  * during a pause.
  */
-public class ImmediateSnacQueueManager extends AbstractSnacQueueMgr {
+public class ImmediateSnacQueueManager implements SnacQueueManager {
     /** A map from SNAC processors to their respective SNAC queues. */
-    private Map queues = new IdentityHashMap();
+    private final Map queues = new IdentityHashMap();
 
     /**
      * Returns (and creates, if necessary) a SNAC queue object for the given
@@ -67,29 +64,27 @@ public class ImmediateSnacQueueManager extends AbstractSnacQueueMgr {
         return queue;
     }
 
-    /**
-     * Erases the SNAC queue object for the given SNAC processor.
-     *
-     * @param processor the SNAC processor whose SNAC queue object should be
-     *        cleared
-     */
-    private synchronized void removeQueue(SnacProcessor processor) {
-        queues.remove(processor);
-    }
-
-    public synchronized void pause(SnacProcessor processor) {
+    public void pause(SnacProcessor processor) {
         SnacQueue queue = getQueue(processor);
 
-        queue.paused = true;
+        synchronized(queue) {
+            queue.paused = true;
+        }
     }
 
-    public synchronized void unpause(SnacProcessor processor) {
+    public void unpause(SnacProcessor processor) {
         SnacQueue queue = getQueue(processor);
 
-        queue.paused = false;
+        List dequeued;
+        synchronized(queue) {
+            queue.paused = false;
+
+            dequeued = new ArrayList(queue.queue);
+            queue.queue.clear();
+        }
 
         // dequeue any queued snacs
-        for (Iterator it = queue.queue.iterator(); it.hasNext();) {
+        for (Iterator it = dequeued.iterator(); it.hasNext();) {
             SnacRequest req = (SnacRequest) it.next();
             it.remove();
 
@@ -97,16 +92,27 @@ public class ImmediateSnacQueueManager extends AbstractSnacQueueMgr {
         }
     }
 
-    public synchronized void queueSnac(SnacProcessor processor,
+    protected static final void sendSnac(SnacProcessor processor,
+            SnacRequest req) {
+        processor.sendSnacImmediately(req);
+    }
+
+    public void queueSnac(SnacProcessor processor,
             SnacRequest request) {
         SnacQueue queue = getQueue(processor);
 
-        if (queue.paused) queue.queue.addLast(request);
-        else sendSnac(processor, request);
+        boolean paused;
+        synchronized(queue) {
+            paused = queue.paused;
+
+            if (paused) queue.queue.addLast(request);
+        }
+
+        if (!paused) sendSnac(processor, request);
     }
 
     public synchronized void clearQueue(SnacProcessor processor) {
-        removeQueue(processor);
+        queues.remove(processor);
     }
 
     /**
@@ -118,6 +124,6 @@ public class ImmediateSnacQueueManager extends AbstractSnacQueueMgr {
         /**
          * A list of enqueued requests. Only nonempty if this queue is paused.
          */
-        public LinkedList queue = new LinkedList();
+        public final LinkedList queue = new LinkedList();
     }
 }

@@ -35,11 +35,15 @@
 
 package net.kano.joscar.ratelim;
 
+import net.kano.joscar.CopyOnWriteArraySet;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snac.SnacProcessor;
 import net.kano.joscar.snac.SnacRequest;
-import net.kano.joscar.DefensiveTools;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 class QueueRunner implements Runnable {
     private boolean started = false;
@@ -47,8 +51,8 @@ class QueueRunner implements Runnable {
     private final Object lock = new Object();
 
     private boolean updated = false;
-    private Set queues = new HashSet();
-    private RateLimitingQueueMgr queueMgr;
+    private final Set queues = new CopyOnWriteArraySet();
+    private final RateLimitingQueueMgr queueMgr;
 
     public QueueRunner(RateLimitingQueueMgr queueMgr) {
         this.queueMgr = queueMgr;
@@ -71,7 +75,6 @@ class QueueRunner implements Runnable {
     public void run() {
         long minWait = 0;
         for (;;) {
-            RateQueue[] queueArray;
             synchronized(lock) {
                 if (!updated) {
                     // if we haven't been updated, we need to wait until a
@@ -84,11 +87,6 @@ class QueueRunner implements Runnable {
                     } catch (InterruptedException ignored) { }
                 }
 
-                // cache the list of queues so we don't need to lock while
-                // iterating
-                queueArray = (RateQueue[])
-                        queues.toArray(new RateQueue[queues.size()]);
-
                 // and set this flag back to off while we're in the lock
                 updated = false;
             }
@@ -97,20 +95,8 @@ class QueueRunner implements Runnable {
             // figure out when the next command should be sent (so we can
             // wait that long in the next iteration of the outer loop)
             minWait = 0;
-            for (int i = 0; i < queueArray.length; i++) {
-                RateQueue queue = queueArray[i];
-
-                // a case for why the following line is safe outside a lock:
-                // it is possible that the queue manager changes its rate-
-                // limiting avoidance status between this line and the
-                // synchronizatoin block, but it doesn't matter, because if
-                // this happens, update() will be called, and this loop will
-                // simply be immediately run again once this iteration is
-                // over. I don't think there's any benefit to putting it in
-                // the synchronized block and I feel like it might cause
-                // deadlocks because I don't really know what's going on in
-                // that rate manager as I am a simple queue thread.
-                if (!queue.getParentMgr().isAvoidingLimiting()) continue;
+            for (Iterator it = queues.iterator(); it.hasNext();) {
+                RateQueue queue = (RateQueue) it.next();
 
                 boolean finished;
                 long wait = 0;
@@ -193,50 +179,15 @@ class QueueRunner implements Runnable {
     }
 
     public void update(ConnectionQueueMgr updated) {
-        if (updated.isAvoidingLimiting()) {
-            forceUpdate();
-        } else {
-            List queues = getQueuesCopy();
-
-            for (Iterator it = queues.iterator(); it.hasNext();) {
-                RateQueue queue = (RateQueue) it.next();
-
-                if (queue.getParentMgr() == updated) {
-                    flushQueue(queue);
-                }
-            }
-        }
+        forceUpdate();
     }
 
     public void update(RateQueue updated) {
-        if (updated.getParentMgr().isAvoidingLimiting()) {
-            forceUpdate();
-        } else {
-            sendRequests(updated, dequeueAll(updated));
-        }
+        forceUpdate();
     }
 
     public void update() {
-        List queues = getQueuesCopy();
-
-        boolean avoiding = false;
-        for (Iterator it = queues.iterator(); it.hasNext();) {
-            RateQueue queue = (RateQueue) it.next();
-
-            if (queue.getParentMgr().isAvoidingLimiting()) {
-                avoiding = true;
-                break;
-            }
-        }
-
-        if (avoiding) forceUpdate();
-        else flushAllQueues();
-    }
-
-    private List getQueuesCopy() {
-        synchronized(lock) {
-            return new ArrayList(this.queues);
-        }
+        forceUpdate();
     }
 
     private void forceUpdate() {
@@ -248,29 +199,17 @@ class QueueRunner implements Runnable {
         }
     }
 
-    private void flushAllQueues() {
-        // we make a copy of the queue list since we'd need to make a copy
-        // of something anyway (SNAC requests can't be sent inside a lock)
-        // and there's no reason to not just copy the queue list itself
-        List queues = getQueuesCopy();
-
-        for (Iterator it = queues.iterator(); it.hasNext();) {
-            RateQueue queue = (RateQueue) it.next();
-
-            flushQueue(queue);
-        }
-    }
-
-    private void flushQueue(RateQueue queue) {
-        sendRequests(queue, dequeueAll(queue));
-    }
-
     public void addQueue(RateQueue queue) {
         DefensiveTools.checkNull(queue, "queue");
 
-        synchronized(lock) {
-            queues.add(queue);
-        }
+        queues.add(queue);
+
         update(queue);
+    }
+
+    public void removeQueue(RateQueue queue) {
+        DefensiveTools.checkNull(queue, "queue");
+
+        queues.remove(queue);
     }
 }

@@ -37,7 +37,6 @@ package net.kano.joscar.ratelim;
 
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snac.SnacRequest;
-import net.kano.joscar.snaccmd.conn.RateClassInfo;
 
 import java.util.LinkedList;
 import java.util.logging.Level;
@@ -61,13 +60,15 @@ public class RateQueue {
         this.rateMonitor = monitor;
     }
 
-    public RateClassMonitor getRateMonitor() { return rateMonitor; }
-
     public ConnectionQueueMgr getParentMgr() { return parentMgr; }
+
+    public RateClassMonitor getRateMonitor() { return rateMonitor; }
 
     public synchronized int getQueueSize() { return queue.size(); }
 
-    public synchronized void enqueue(SnacRequest req) {
+    public synchronized boolean hasRequests() { return !queue.isEmpty(); }
+
+    synchronized void enqueue(SnacRequest req) {
         DefensiveTools.checkNull(req, "req");
 
         if (logger.isLoggable(Level.FINE)) {
@@ -79,11 +80,7 @@ public class RateQueue {
         queue.add(req);
     }
 
-    public synchronized boolean hasRequests() {
-        return !queue.isEmpty();
-    }
-
-    public synchronized SnacRequest dequeue() {
+    synchronized SnacRequest dequeue() {
         if (queue.isEmpty()) return null;
 
         SnacRequest request = (SnacRequest) queue.removeFirst();
@@ -97,7 +94,7 @@ public class RateQueue {
         return request;
     }
 
-    public synchronized void clear() {
+    synchronized void clear() {
         queue.clear();
     }
 }
