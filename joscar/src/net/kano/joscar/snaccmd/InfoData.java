@@ -59,6 +59,30 @@ public class InfoData implements LiveWritable {
      */
     public static final String NOT_AWAY = "";
 
+    public static InfoData forUserProfile(String profile) {
+        DefensiveTools.checkNull(profile, "profile");
+
+        return new InfoData(profile, null, null, null);
+    }
+
+    public static InfoData forAwayMessage(String awayMessage) {
+        DefensiveTools.checkNull(awayMessage, "awayMessage");
+
+        return new InfoData(null, awayMessage, null, null);
+    }
+
+    public static InfoData forCapabilities(CapabilityBlock[] caps) {
+        DefensiveTools.checkNull(caps, "caps");
+        return new InfoData(null, null, caps, null);
+    }
+
+    public static InfoData forCertificateInfo(CertificateInfo certInfo) {
+        DefensiveTools.checkNull(certInfo, "certInfo");
+        //TODO: allow certinfo to be null?
+
+        return new InfoData(null, null, null, certInfo);
+    }
+
     /**
      * Reads a user info data block from the given data block. Calling this
      * method is equvalent to calling {@link #readInfoDataFromChain
@@ -90,8 +114,7 @@ public class InfoData implements LiveWritable {
 
         String awayMessage = null;
         if (awayTlv != null) {
-            awayMessage
-                    = OscarTools.getInfoString(awayTlv.getData(), awayType);
+            awayMessage = OscarTools.getInfoString(awayTlv.getData(), awayType);
         }
 
         String info = null;
@@ -145,7 +168,7 @@ public class InfoData implements LiveWritable {
     /**
      * The user info text in this structure.
      */
-    private final String info;
+    private final String userProfile;
 
     /**
      * The away message text in this structure.
@@ -160,17 +183,6 @@ public class InfoData implements LiveWritable {
     /** A block of certificate information for the associated user. */
     private final CertificateInfo certInfo;
 
-    /**
-     * Creates a new <code>InfoData</code> structure containing only an away
-     * message. Note that the <code>awayMessage</code> can be {@link #NOT_AWAY}
-     * (an empty string), indicating that the user is back from being away.
-     *
-     * @param awayMessage the away message, or {@link #NOT_AWAY} (an empty
-     *        string) to indicate that the user is back from being away
-     */
-    public InfoData(String awayMessage) {
-        this(null, awayMessage, null, null);
-    }
 
     /**
      * Creates a new info data object with the given properties. Any of these
@@ -179,14 +191,14 @@ public class InfoData implements LiveWritable {
      * (which is actually just an empty string) instead of <code>null</code> for
      * the <code>awayMessage</code> argument.
      *
-     * @param info the user's user info text
+     * @param profile the user's user info text
      * @param awayMessage the user's away message
      * @param caps a list of supported capability blocks
      * @param certInfo client certificate information (for Encrypted IM)
      */
-    public InfoData(String info, String awayMessage, CapabilityBlock[] caps,
+    public InfoData(String profile, String awayMessage, CapabilityBlock[] caps,
             CertificateInfo certInfo) {
-        this.info = info;
+        this.userProfile = profile;
         this.awayMessage = awayMessage;
         this.caps = (CapabilityBlock[])
                 DefensiveTools.getSafeArrayCopy(caps, "caps");
@@ -194,14 +206,12 @@ public class InfoData implements LiveWritable {
     }
 
     /**
-     * Returns the user info text associated with this object, or
+     * Returns the user profile text associated with this object, or
      * <code>null</code> if that field was not included in this object.
      *
      * @return the users user info text (his or her "profile")
      */
-    public final String getInfo() {
-        return info;
-    }
+    public final String getUserProfile() { return userProfile; }
 
     /**
      * Returns the away message associated with this object, or
@@ -209,9 +219,7 @@ public class InfoData implements LiveWritable {
      *
      * @return the user's away message
      */
-    public final String getAwayMessage() {
-        return awayMessage;
-    }
+    public final String getAwayMessage() { return awayMessage; }
 
     /**
      * Returns a list of capability blocks advertised by this user, or
@@ -222,7 +230,7 @@ public class InfoData implements LiveWritable {
      * @return the user's supported capability blocks
      */
     public final CapabilityBlock[] getCaps() {
-        return (CapabilityBlock[]) (caps == null ? null : caps.clone());
+        return caps == null ? null : (CapabilityBlock[]) caps.clone();
     }
 
     /**
@@ -268,8 +276,8 @@ public class InfoData implements LiveWritable {
     }
 
     public void write(OutputStream out) throws IOException {
-        if (info != null) {
-            writeInfoTlvs(info, out, TYPE_INFO_FMT, TYPE_INFO);
+        if (userProfile != null) {
+            writeInfoTlvs(userProfile, out, TYPE_INFO_FMT, TYPE_INFO);
         }
         if (awayMessage != null) {
             writeInfoTlvs(awayMessage, out, TYPE_AWAY_FMT, TYPE_AWAY);
@@ -279,6 +287,7 @@ public class InfoData implements LiveWritable {
             new Tlv(TYPE_CAPS, ByteBlock.wrap(capBlock)).write(out);
         }
         if (certInfo != null) {
+            //TODO: add means of setting empty certificate block
             ByteBlock certInfoBlock = ByteBlock.createByteBlock(certInfo);
             new Tlv(TYPE_CERTIFICATE_INFO, certInfoBlock).write(out);
         }
@@ -287,8 +296,8 @@ public class InfoData implements LiveWritable {
     public String toString() {
         StringBuffer buffer = new StringBuffer();
         buffer.append("InfoData:");
-        if (info != null && info.length() > 0) {
-            String display = info;
+        if (userProfile != null && userProfile.length() > 0) {
+            String display = userProfile;
             if (display.length() > 20) {
                 display = display.substring(0, 20) + "...";
             }
