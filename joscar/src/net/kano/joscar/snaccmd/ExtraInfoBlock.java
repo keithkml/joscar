@@ -85,7 +85,7 @@ public final class ExtraInfoBlock implements LiveWritable {
      * @return a list of zero or more extra info block objects read from the
      *         given data block
      */
-    public static ExtraInfoBlock[] readExtraInfos(ByteBlock block) {
+    public static ExtraInfoBlock[] readExtraInfoBlocks(ByteBlock block) {
         DefensiveTools.checkNull(block, "block");
 
         List infos = new LinkedList();

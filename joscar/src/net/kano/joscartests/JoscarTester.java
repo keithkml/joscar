@@ -63,7 +63,7 @@ import net.kano.joscar.snaccmd.acct.AcctModCmd;
 import net.kano.joscar.snaccmd.acct.ConfirmAcctCmd;
 import net.kano.joscar.snaccmd.chat.ChatMsg;
 import net.kano.joscar.snaccmd.conn.ServiceRequest;
-import net.kano.joscar.snaccmd.conn.SetAvailabilityMsgCmd;
+import net.kano.joscar.snaccmd.conn.SetExtraInfoCmd;
 import net.kano.joscar.snaccmd.icbm.OldIconHashInfo;
 import net.kano.joscar.snaccmd.icbm.SendImIcbm;
 import net.kano.joscar.snaccmd.icon.UploadIconCmd;
@@ -412,14 +412,24 @@ public class JoscarTester implements CmdLineListener {
         });
         cmdMap.put("setavail", new CLCommand() {
             public void handle(String line, String cmd, String[] args) {
-                request(new SetAvailabilityMsgCmd(
-                        args.length == 0 ? "" : args[0]));
+//                request(new SetExtraInfoCmd(
+//                        args.length == 0 ? "" : args[0]));
+            }
+        });
+        cmdMap.put("testav", new CLCommand() {
+            public void handle(String line, String cmd, String[] args) {
+                request(new SetExtraInfoCmd(new ExtraInfoBlock[] {
+                    new ExtraInfoBlock(3, new ExtraInfoData(0,
+                                ByteBlock.wrap("hi".getBytes()))),
+                    new ExtraInfoBlock(2, new ExtraInfoData(4,
+                            ByteBlock.wrap(
+                                    new byte[] { 0, 3, 50, 40, 30, 0, 0 })))
+                }));
             }
         });
     }
 
-    protected static byte[] hashIcon(String filename)
-            throws IOException {
+    protected static byte[] hashIcon(String filename) throws IOException {
         FileInputStream in = new FileInputStream(filename);
         try {
             byte[] block = new byte[1024];

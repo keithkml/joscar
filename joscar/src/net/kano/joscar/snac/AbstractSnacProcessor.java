@@ -272,7 +272,9 @@ public abstract class AbstractSnacProcessor {
      *
      * @return this SNAC processor's FLAP processor
      */
-    public final FlapProcessor getFlapProcessor() { return flapProcessor; }
+    public synchronized final FlapProcessor getFlapProcessor() {
+        return flapProcessor;
+    }
 
     /**
      * Returns whether this SNAC processor is attached to its FLAP processor.

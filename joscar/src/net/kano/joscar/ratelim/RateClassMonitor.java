@@ -277,7 +277,7 @@ public class RateClassMonitor {
      *
      * @return the rate average at the time of the last command send
      */
-    public final long getLastRateAvg() {
+    public synchronized final long getLastRateAvg() {
         return runningAvg;
     }
 

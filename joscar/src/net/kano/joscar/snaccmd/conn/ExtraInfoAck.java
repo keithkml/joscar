@@ -68,7 +68,7 @@ public class ExtraInfoAck extends ConnCommand {
 
         ByteBlock snacData = packet.getData();
 
-        extraInfos = ExtraInfoBlock.readExtraInfos(snacData);
+        extraInfos = ExtraInfoBlock.readExtraInfoBlocks(snacData);
     }
 
     /**

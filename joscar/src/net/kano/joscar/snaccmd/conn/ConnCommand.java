@@ -65,8 +65,8 @@ public abstract class ConnCommand extends SnacCommand {
     public static final int CMD_PAUSE_ACK = 0x000c;
     /** A command subtype for setting one's idle time. */
     public static final int CMD_SET_IDLE = 0x0011;
-    /** A command subtype for setting one's iChat availability message. */
-    public static final int CMD_SETAVAILABILITY = 0x001e;
+    /** A command subtype for setting one's "extra info blocks." */
+    public static final int CMD_SETEXTRAINFO = 0x001e;
 
     /**
      * A command subtype for when the server is ready for the client to begin
