@@ -38,7 +38,7 @@ package net.kano.joscar.snaccmd.error;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snac.CmdType;
 import net.kano.joscar.snac.SnacCmdFactory;
-import net.kano.joscar.snac.SnacCommand;
+import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.snaccmd.acct.AcctCommand;
 import net.kano.joscar.snaccmd.auth.AuthCommand;
 import net.kano.joscar.snaccmd.buddy.BuddyCommand;

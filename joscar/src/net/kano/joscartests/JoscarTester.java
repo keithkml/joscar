@@ -37,6 +37,7 @@ package net.kano.joscartests;
 
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.FileWritable;
+import net.kano.joscar.OscarTools;
 import net.kano.joscar.flap.ClientFlapConn;
 import net.kano.joscar.flap.FlapCommand;
 import net.kano.joscar.rv.RvSession;
@@ -51,7 +52,7 @@ import net.kano.joscar.rvcmd.sendfile.FileSendBlock;
 import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
 import net.kano.joscar.rvcmd.trillcrypt.TrillianCryptReqRvCmd;
 import net.kano.joscar.rvcmd.voice.VoiceReqRvCmd;
-import net.kano.joscar.snac.SnacCommand;
+import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.snac.SnacProcessor;
 import net.kano.joscar.snac.SnacRequest;
 import net.kano.joscar.snac.SnacRequestListener;

@@ -35,7 +35,7 @@
 
 package net.kano.joscar.snaccmd.auth;
 
-import net.kano.joscar.snac.SnacCommand;
+import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.snaccmd.conn.SnacFamilyInfo;
 
 /**

@@ -37,6 +37,7 @@ package net.kano.joscartests;
 
 import net.kano.joscar.snac.*;
 import net.kano.joscar.snaccmd.conn.RateClassInfo;
+import net.kano.joscar.flapcmd.SnacCommand;
 
 import java.util.HashMap;
 import java.util.Iterator;

@@ -35,7 +35,7 @@
 
 package net.kano.joscar.snaccmd.conn;
 
-import net.kano.joscar.snac.SnacCommand;
+import net.kano.joscar.flapcmd.SnacCommand;
 
 /**
  * A base class for commands in the "service" or "basic connection"

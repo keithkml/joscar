@@ -38,7 +38,7 @@ package net.kano.joscar.snaccmd.acct;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snac.CmdType;
 import net.kano.joscar.snac.SnacCmdFactory;
-import net.kano.joscar.snac.SnacCommand;
+import net.kano.joscar.flapcmd.SnacCommand;
 
 /**
  * A command factory for the client-bound SNAC commands provided in this

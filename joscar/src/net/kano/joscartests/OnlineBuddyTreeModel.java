@@ -35,7 +35,7 @@
 
 package net.kano.joscartests;
 
-import net.kano.joscar.snaccmd.OscarTools;
+import net.kano.joscar.OscarTools;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;

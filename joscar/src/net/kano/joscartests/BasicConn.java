@@ -37,10 +37,12 @@ package net.kano.joscartests;
 
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.FileWritable;
+import net.kano.joscar.OscarTools;
 import net.kano.joscar.flap.FlapCommand;
 import net.kano.joscar.flap.FlapPacketEvent;
 import net.kano.joscar.flapcmd.LoginFlapCmd;
 import net.kano.joscar.flapcmd.SnacPacket;
+import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.rv.*;
 import net.kano.joscar.rvcmd.AbstractRequestRvCmd;
 import net.kano.joscar.rvcmd.DefaultRvCommandFactory;
