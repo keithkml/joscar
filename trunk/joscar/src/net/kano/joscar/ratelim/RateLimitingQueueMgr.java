@@ -95,8 +95,9 @@ public class RateLimitingQueueMgr implements SnacQueueManager {
 
     /** A thread to "run" the SNAC queues controlled by this queue manager. */
     private final QueueRunner runner = new QueueRunner();
+    private final Thread runnerThread = new Thread(runner);
     {
-        new Thread(runner).start();
+        runnerThread.start();
     }
 
     /**
@@ -105,6 +106,17 @@ public class RateLimitingQueueMgr implements SnacQueueManager {
      * @return this rate manager's queue runner thread object
      */
     final QueueRunner getRunner() { return runner; }
+
+    public void stop() {
+        runner.stop();
+    }
+
+    protected void finalize() {
+        //TODO: should finalize() kill the queue runner?
+        // if we're not referenced anymore, I don't think there's a reason for
+        // the queue to be running.
+        stop();
+    }
 
     /**
      * Sends the given SNAC request on the given SNAC processor.

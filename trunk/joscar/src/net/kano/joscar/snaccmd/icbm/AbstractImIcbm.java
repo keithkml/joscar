@@ -124,6 +124,7 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
         // get some TLV's
         Tlv messageTlv = chain.getLastTlv(TYPE_MESSAGE);
         Tlv iconTlv = chain.getLastTlv(TYPE_ICONINFO);
+        Tlv expInfoTlv = chain.getLastTlv(TYPE_EXPRESSION_INFO);
 
         // these we just know based on whether the TLV is there
         autoResponse = chain.hasTlv(TYPE_AUTORESPONSE);
@@ -147,28 +148,28 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
                 ByteBlock block = msgDataTlv.getData().subBlock(4);
                 int encCode = msgTLVs.getUShort(TYPE_ENCRYPTION_CODE);
                 message = new InstantMessage(encCode, block);
+
             } else {
                 // read each part of the multipart data
-                StringBuffer messageBuffer = new StringBuffer();
                 Tlv[] parts = msgTLVs.getTlvs(TYPE_MESSAGE_PARTS);
+                String msgString;
+                if (parts.length == 1) {
+                    msgString = extractMsgFromPart(parts[0].getData());
+                } else {
+                    StringBuffer messageBuffer = new StringBuffer();
 
-                for (int i = 0; i < parts.length; i++) {
-                    ByteBlock partBlock = parts[i].getData();
+                    for (int i = 0; i < parts.length; i++) {
+                        ByteBlock partBlock = parts[i].getData();
 
-                    int charsetCode = BinaryTools.getUShort(partBlock, 0);
-                    int charsetSubcode = BinaryTools.getUShort(partBlock, 2);
-                    ByteBlock messageBlock = partBlock.subBlock(4);
+                        String message = extractMsgFromPart(partBlock);
 
-                    ImEncodingParams encoding
-                            = new ImEncodingParams(charsetCode, charsetSubcode);
-                    String message = ImEncodedString.readImEncodedString(
-                            encoding, messageBlock);
+                        messageBuffer.append(message);
+                    }
 
-                    messageBuffer.append(message);
+                    // and set the message to the sum of all the parts
+                    msgString = messageBuffer.toString();
                 }
-
-                // and set the message to the sum of all the parts
-                message = new InstantMessage(messageBuffer.toString());
+                message = new InstantMessage(msgString);
             }
         } else {
             featuresBlock = null;
@@ -182,11 +183,22 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
             iconInfo = null;
         }
 
-        Tlv expInfoTlv = chain.getLastTlv(TYPE_EXPRESSION_INFO);
         if (expInfoTlv != null) {
             ByteBlock data = expInfoTlv.getData();
             expressionInfoBlocks = ExtraInfoBlock.readExtraInfoBlocks(data);
         }
+    }
+
+    private static String extractMsgFromPart(ByteBlock partBlock) {
+        int charsetCode = BinaryTools.getUShort(partBlock, 0);
+        int charsetSubcode = BinaryTools.getUShort(partBlock, 2);
+        ByteBlock messageBlock = partBlock.subBlock(4);
+
+        ImEncodingParams encoding
+                = new ImEncodingParams(charsetCode, charsetSubcode);
+        String message = ImEncodedString.readImEncodedString(
+                encoding, messageBlock);
+        return message;
     }
 
     /**

@@ -306,8 +306,9 @@ connQueueMgr.getRateMonitor().addListener(myRateListener);
         Collection vals = queues.values();
         RateQueue[] rateQueues
                 = (RateQueue[]) vals.toArray(new RateQueue[vals.size()]);
-        queueMgr.getRunner().addQueues(rateQueues);
-        queueMgr.getRunner().update(this);
+        QueueRunner runner = queueMgr.getRunner();
+        runner.addQueues(rateQueues);
+        runner.update(this);
     }
 
     /**

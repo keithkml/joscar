@@ -346,6 +346,12 @@ public abstract class BasicConn extends AbstractFlapConn {
                 System.out.println(encFlag + "*" + sn + "* " + msg);
             }
 
+//            ByteBlock features = icbm.getFeaturesBlock();
+//            if (features != null) {
+//                System.out.println("Features: "
+//                        + BinaryTools.describeData(features));
+//            }
+
 //            if (icbm.senderWantsIcon()) {
 //                System.out.println(sn + " wants our icon.. sending.");
 //                RvSession sess = rvProcessor.createRvSession(sn);

@@ -59,13 +59,23 @@ class QueueRunner implements Runnable {
     /** Whether or not this queue has been updated. */
     private boolean updated = true;
 
+    private boolean stop = false;
+
     /** The list of queues to "run." */
     private final Set queues = new CopyOnWriteArraySet();
 
+    public void stop() {
+        stop = true;
+    }
+
     public void run() {
-        //TODO: should QueueRunner be able to be stopped?
         long minWait = 0;
         for (;;) {
+            // if we were told to stop, we should stop. we don't need to lock
+            // for this because it's not so important for us to stop immediately
+            // or consistently.
+            if (stop) return;
+
             synchronized(lock) {
                 if (!updated) {
                     // if we haven't been updated, we need to wait until a
@@ -75,7 +85,7 @@ class QueueRunner implements Runnable {
                     try {
                         if (minWait == 0) lock.wait();
                         else lock.wait(minWait);
-                    } catch (InterruptedException ignored) { }
+                    } catch (InterruptedException nobigdeal) { }
                 }
 
                 // and set this flag back to off while we're in the lock
@@ -125,7 +135,7 @@ class QueueRunner implements Runnable {
                 if (wait < 1) wait = 1;
 
                 // now change the minimum waiting time if necessary
-                if (minWait == 0 || wait < minWait)  minWait = wait;
+                if (minWait == 0 || minWait > wait)  minWait = wait;
             }
         }
     }
@@ -234,11 +244,17 @@ class QueueRunner implements Runnable {
      * @param rateQueues the queues to add
      */
     public void addQueues(RateQueue[] rateQueues) {
-        RateQueue[] safeRateQueues = (RateQueue[])
-                DefensiveTools.getSafeNonnullArrayCopy(
-                        rateQueues, "rateQueues");
+//        RateQueue[] safeRateQueues = (RateQueue[])
+//                DefensiveTools.getSafeNonnullArrayCopy(
+//                        rateQueues, "rateQueues");
+//        queues.addAll(Arrays.asList(safeRateQueues));
 
-        queues.addAll(Arrays.asList(safeRateQueues));
+        DefensiveTools.checkNull(rateQueues, "rateQueues");
+        DefensiveTools.checkNullElements(rateQueues, "rateQueues");
+
+        queues.addAll(Arrays.asList(rateQueues));
+
+        //TODO: why doesn't addQueues call update()? I think it should.
     }
 
     /**
@@ -265,7 +281,6 @@ class QueueRunner implements Runnable {
     }
 
     public String toString() {
-        return "QueueRunner: "
-                + "queues=" + queues;
+        return "QueueRunner: queues=" + queues;
     }
 }

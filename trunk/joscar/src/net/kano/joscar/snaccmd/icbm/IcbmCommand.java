@@ -62,7 +62,7 @@ public abstract class IcbmCommand extends SnacCommand {
     /** A command type for sending a typing notification to another user. */
     public static final int CMD_SEND_TYPING = 0x0014;
     /** A command type for sending a typing notification to the client. */
-    public static final int CMD_RECV_TYPING = CMD_SEND_TYPING;
+    public static final int CMD_RECV_TYPING = 0x0014;
     /** A command type for warning another user. */
     public static final int CMD_WARN = 0x0008;
     /** A command type for informing the client of messages it missed. */
