@@ -69,6 +69,7 @@ import net.kano.joscar.snaccmd.ssi.SsiDataCmd;
 import net.kano.joscar.snaccmd.ssi.SsiDataRequest;
 import net.kano.joscar.snaccmd.ssi.SsiItem;
 import net.kano.joscar.snaccmd.ssi.SsiRightsRequest;
+import net.kano.joscar.snaccmd.ssi.SsiRightsCmd;
 import net.kano.joscar.ssiitem.DefaultSsiItemObjFactory;
 import net.kano.joscar.ssiitem.SsiItemObj;
 import net.kano.joscar.ssiitem.SsiItemObjectFactory;
@@ -226,10 +227,16 @@ public class BosFlapConn extends BasicConn {
             tester.connectToService(sr.getSnacFamily(), sr.getRedirectHost(),
                     sr.getCookie());
 
-//        } else if (cmd instanceof SsiRightsCmd) {
-//            SsiRightsCmd src = (SsiRightsCmd) cmd;
+        } else if (cmd instanceof SsiRightsCmd) {
+            SsiRightsCmd src = (SsiRightsCmd) cmd;
 
-//            int[] maxima = src.getMaxima();
+            int[] maxima = src.getMaxima();
+
+            for (int i = 0; i < maxima.length; i++) {
+                int max = maxima[i];
+                System.out.println("- Max SSI items of type 0x"
+                        + Integer.toHexString(i) + ": " + max);
+            }
 
         } else if (cmd instanceof SsiDataCmd) {
             SsiDataCmd sdc = (SsiDataCmd) cmd;

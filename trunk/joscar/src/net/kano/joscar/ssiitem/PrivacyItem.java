@@ -81,9 +81,8 @@ public class PrivacyItem extends AbstractItemObj {
     public static final int MODE_ALLOW_BUDDIES = 0x05;
 
     /**
-     * A visibility flag indicating that the fact that the user is or is not
-     * using a wireless/mobile device (cell phone) should be hidden from other
-     * users.
+     * A visibility flag indicating that whether the user is using a
+     * wireless/mobile device (cell phone) should be hidden from other users.
      */
     public static final long VISMASK_HIDE_WIRELESS = 0x00000002L;
 
@@ -97,7 +96,7 @@ public class PrivacyItem extends AbstractItemObj {
     /** A TLV type containing the user's "visible class mask." */
     private static final int TYPE_CLASS_MASK = 0x00cb;
     /** A TLV type containing the user's "visibility mask." */
-    private static final int TYPE_VISIBILE_MASK = 0x00cc;
+    private static final int TYPE_VISIBLE_MASK = 0x00cc;
 
     /** The privacy item ID. */
     private final int id;
@@ -135,9 +134,9 @@ public class PrivacyItem extends AbstractItemObj {
             classMask = -1;
         }
 
-        Tlv visibileMaskTlv = chain.getLastTlv(TYPE_VISIBILE_MASK);
-        if (visibileMaskTlv != null) {
-            visibleMask = BinaryTools.getUInt(visibileMaskTlv.getData(), 0);
+        Tlv visibleMaskTlv = chain.getLastTlv(TYPE_VISIBLE_MASK);
+        if (visibleMaskTlv != null) {
+            visibleMask = BinaryTools.getUInt(visibleMaskTlv.getData(), 0);
         } else {
             visibleMask = -1;
         }
@@ -145,7 +144,7 @@ public class PrivacyItem extends AbstractItemObj {
         MutableTlvChain extraTlvs = TlvTools.getMutableCopy(chain);
 
         extraTlvs.removeTlvs(new int[] {
-            TYPE_PRIVACY_MODE, TYPE_CLASS_MASK, TYPE_VISIBILE_MASK
+            TYPE_PRIVACY_MODE, TYPE_CLASS_MASK, TYPE_VISIBLE_MASK
         });
 
         addExtraTlvs(extraTlvs);
@@ -344,7 +343,7 @@ if ((privacyItem.getVisibleMask() & PrivacyItem.VISMASK_HIDE_WIRELESS) != 0) {
             chain.addTlv(Tlv.getUIntInstance(TYPE_CLASS_MASK, classMask));
         }
         if (visibleMask != -1) {
-            chain.addTlv(Tlv.getUIntInstance(TYPE_VISIBILE_MASK, visibleMask));
+            chain.addTlv(Tlv.getUIntInstance(TYPE_VISIBLE_MASK, visibleMask));
         }
 
         return generateItem(NAME_DEFAULT, PARENTID_DEFAULT, id,
