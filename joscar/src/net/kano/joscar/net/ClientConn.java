@@ -169,49 +169,49 @@ public class ClientConn {
     /**
      * A state indicating that this FLAP client is not connected to a server.
      */
-    public static final Object STATE_NOT_CONNECTED = "NOT_CONNECTED";
+    public static final State STATE_NOT_CONNECTED = new State("NOT_CONNECTED");
     /**
      * A state indicating that this FLAP client is preparing to connect. This
      * state normally does not last for more than a few milliseconds.
      */
-    public static final Object STATE_INITING = "INITING";
+    public static final State STATE_INITING = new State("INITING");
     /**
      * A state indicating that the given hostname is being resolved to an IP
      * address before connecting.
      */
-    public static final Object STATE_RESOLVING = "RESOLVING";
+    public static final State STATE_RESOLVING = new State("RESOLVING");
     /**
      * A state indicating that a TCP connection attempt is being made to the
      * given server on the given port.
      */
-    public static final Object STATE_CONNECTING = "CONNECTING";
+    public static final State STATE_CONNECTING = new State("CONNECTING");
     /**
      * A state indicating that a TCP connection has succeeded and is currently
      * open.
      */
-    public static final Object STATE_CONNECTED = "CONNECTED";
+    public static final State STATE_CONNECTED = new State("CONNECTED");
     /**
      * A state indicating that some stage of the connection failed. See
      * {@link ClientFlapConn} documentation for details on state transitions
      * and meanings.
      */
-    public static final Object STATE_FAILED = "FAILED";
+    public static final State STATE_FAILED = new State("FAILED");
     /**
      * A reason indicating that the reason for a state change to
      * <code>NOT_CONNECTED</code> was that <code>disconnect</code> was called.
      */
-    public static final Object REASON_ON_PURPOSE = "ON_PURPOSE";
+    public static final State REASON_ON_PURPOSE = new State("ON_PURPOSE");
     /**
      * A reason indicating that the reason for a state change to
      * <code>NOT_CONNECTED</code> was that the socket was closed for some
      * reason. This normally means some sort of network failure.
      */
-    public static final Object REASON_CONN_CLOSED = "CONN_CLOSED";
+    public static final State REASON_CONN_CLOSED = new State("CONN_CLOSED");
 
     /**
      * The current state of the connection.
      */
-    private Object state = STATE_NOT_CONNECTED;
+    private State state = STATE_NOT_CONNECTED;
 
     /**
      * The hostname we are supposed to connect to.
@@ -372,7 +372,7 @@ public class ClientConn {
      *
      * @return the current state of this connection
      */
-    public synchronized final Object getState() {
+    public synchronized final State getState() {
         return state;
     }
 
@@ -387,11 +387,11 @@ public class ClientConn {
      * @param reason a "reason" or description of this state change to provide
      *        to state listeners
      */
-    private synchronized final void setState(Object state, Object reason) {
+    private synchronized final void setState(State state, Object reason) {
         if (this.state == state || (this.state == STATE_FAILED
                 && state == STATE_NOT_CONNECTED)) return;
 
-        Object oldState = this.state;
+        State oldState = this.state;
         this.state = state;
 
         ClientConnEvent event = new ClientConnEvent(this, oldState, this.state,
@@ -738,4 +738,13 @@ public class ClientConn {
             }
         }
     }
+
+    public static final class State {
+        private final String name;
+
+        private State(String name) { this.name = name; }
+
+        public String toString() { return name; }
+    }
+
 }

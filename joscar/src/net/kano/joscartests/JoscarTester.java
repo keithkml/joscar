@@ -35,12 +35,10 @@
 
 package net.kano.joscartests;
 
-import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.FileWritable;
 import net.kano.joscar.OscarTools;
 import net.kano.joscar.flap.ClientFlapConn;
-import net.kano.joscar.flap.FlapCommand;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.flapcmd.SnacFlapCmd;
 import net.kano.joscar.rv.RvSession;
@@ -98,12 +96,17 @@ import net.kano.joscar.ssiitem.PermitItem;
 import net.kano.joscar.ssiitem.PrivacyItem;
 import net.kano.joscar.ssiitem.RootItem;
 import net.kano.joscar.ssiitem.VisibilityItem;
+import org.bouncycastle.cms.CMSEnvelopedData;
+import org.bouncycastle.cms.CMSEnvelopedDataGenerator;
+import org.bouncycastle.cms.CMSProcessableByteArray;
+import org.bouncycastle.cms.CMSSignedData;
+import org.bouncycastle.cms.CMSSignedDataGenerator;
 
-import javax.crypto.Cipher;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.net.InetAddress;
@@ -120,12 +123,10 @@ import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.Provider;
 import java.security.Security;
-import java.security.Signature;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.security.interfaces.RSAPublicKey;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -144,10 +145,6 @@ import java.util.TreeMap;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import org.bouncycastle.cms.CMSEnvelopedDataGenerator;
-import org.bouncycastle.cms.CMSProcessableByteArray;
-import org.bouncycastle.cms.CMSEnvelopedData;
 
 public class JoscarTester implements CmdLineListener {
     protected static final int DEFAULT_SERVICE_PORT = 5190;
@@ -354,7 +351,30 @@ public class JoscarTester implements CmdLineListener {
     }
     }
 
-    String aimexp = "the60s";
+    protected static byte[] hashIcon(String filename) throws IOException {
+        FileInputStream in = new FileInputStream(filename);
+        try {
+            byte[] block = new byte[1024];
+            MessageDigest md;
+            try {
+                md = MessageDigest.getInstance("MD5");
+            } catch (NoSuchAlgorithmException e) {
+                e.printStackTrace();
+                return null;
+            }
+            for (;;) {
+                int count = in.read(block);
+                if (count == -1) break;
+
+                md.update(block, 0, count);
+            }
+            return md.digest();
+        } finally {
+            in.close();
+        }
+    }
+
+    private String aimexp = "the60s";
 
     {
         cmdMap.put("setexp", new CLCommand() {
@@ -494,7 +514,7 @@ public class JoscarTester implements CmdLineListener {
             public void handle(String line, String cmd, String[] args) {
                 request(new SetExtraInfoCmd(new ExtraInfoBlock[] {
                     new ExtraInfoBlock(3, new ExtraInfoData(0,
-                                ByteBlock.wrap("hi".getBytes()))),
+                            ByteBlock.wrap("hi".getBytes()))),
                     new ExtraInfoBlock(2, new ExtraInfoData(4,
                             ByteBlock.wrap(
                                     new byte[] { 0, 3, 50, 40, 30, 0, 0 })))
@@ -506,33 +526,6 @@ public class JoscarTester implements CmdLineListener {
                 request(new GetCertificateInfoCmd(args[0]));
             }
         });
-    }
-
-    protected static byte[] hashIcon(String filename) throws IOException {
-        FileInputStream in = new FileInputStream(filename);
-        try {
-            byte[] block = new byte[1024];
-            MessageDigest md;
-            try {
-                md = MessageDigest.getInstance("MD5");
-            } catch (NoSuchAlgorithmException e) {
-                e.printStackTrace();
-                return null;
-            }
-            for (;;) {
-                int count = in.read(block);
-                if (count == -1) break;
-
-                md.update(block, 0, count);
-            }
-            return md.digest();
-        } finally {
-            in.close();
-        }
-    }
-
-    // ssi stuff
-    {
         // WORKS
         cmdMap.put("addbuddy", new CLCommand() {
             public void handle(String line, String cmd, String[] args) {
@@ -854,7 +847,6 @@ public class JoscarTester implements CmdLineListener {
                     return;
                 }
 
-                bosConn.getFlapProcessor().sendFlap(new MysteryFlapCmd());
                 try {
                     session.sendRv(new GetFileReqRvCmd(
                             RvConnectionInfo.createForOutgoingRequest(
@@ -906,7 +898,7 @@ public class JoscarTester implements CmdLineListener {
         });
         cmdMap.put("encim", new CLCommand() {
             public void handle(String line, String cmd, String[] args) {
-                Certificate cert = getCert(args[0]);
+                X509Certificate cert = getCert(args[0]);
 
                 if (cert == null) {
                     System.out.println("no cert for " + args[0] + "!");
@@ -914,11 +906,35 @@ public class JoscarTester implements CmdLineListener {
                 }
 
                 try {
+                    ByteArrayOutputStream bout = new ByteArrayOutputStream();
+                    OutputStreamWriter osw = new OutputStreamWriter(bout);
+                    osw.write("Content-Transfer-Encoding: binary\r\n"
+                            + "Content-Type: text/x-aolrtf; charset=us-ascii\r\n"
+                            + "Content-Language: en\r\n"
+                            + "\r\n");
+                    osw.flush();
+                    bout.write(args[1].getBytes());
+
+                    CMSSignedDataGenerator sgen = new CMSSignedDataGenerator();
+                    sgen.addSigner(privateKey, pubCert, CMSSignedDataGenerator.DIGEST_MD5);
+                    CMSSignedData csd = sgen.generate(
+                            new CMSProcessableByteArray(bout.toByteArray()),
+                            true, "BC");
+
+                    bout = new ByteArrayOutputStream();
+                    osw = new OutputStreamWriter(bout);
+                    osw.write("Content-Transfer-Encoding: binary\r\n"
+                            + "Content-Type: application/pkcs7-mime; charset=us-ascii\r\n"
+                            + "Content-Language: en\r\n"
+                            + "\r\n");
+                    osw.flush();
+                    bout.write(csd.getEncoded());
+
                     CMSEnvelopedDataGenerator gen = new CMSEnvelopedDataGenerator();
-                    gen.addKeyTransRecipient((X509Certificate) cert);
+                    gen.addKeyTransRecipient(cert);
                     CMSEnvelopedData envData = gen.generate(
-                            new CMSProcessableByteArray(args[1].getBytes()),
-                            "aes", "BC");
+                            new CMSProcessableByteArray(bout.toByteArray()),
+                            "2.16.840.1.101.3.4.1.2", "BC");
 
                     request(new SendImIcbm(args[0], new InstantMessage(
                             ByteBlock.wrap(envData.getEncoded())), false, 0,
@@ -932,26 +948,18 @@ public class JoscarTester implements CmdLineListener {
     }
 
     PrivateKey privateKey;
-    Certificate pubCert;
+    X509Certificate pubCert;
 
     private void loadPrivateKey() throws KeyStoreException,
             NoSuchProviderException, IOException, NoSuchAlgorithmException,
             CertificateException, UnrecoverableKeyException {
         KeyStore ks = KeyStore.getInstance("PKCS12", "BC");
-        ks.load(new FileInputStream("yoyocert.p12"),
+        ks.load(new FileInputStream("certificate-info.p12"),
                 "pass".toCharArray());
         String alias = (String) ks.aliases().nextElement();
-        pubCert = ks.getCertificate(alias);
+        pubCert = (X509Certificate) ks.getCertificate(alias);
         privateKey = (PrivateKey) ks.getKey(alias,
                 "pass".toCharArray());
-    }
-
-    private class MysteryFlapCmd extends FlapCommand {
-        public MysteryFlapCmd() {
-            super(5);
-        }
-
-        public void writeData(OutputStream out) throws IOException { }
     }
 
     public void processCmd(CmdLineReader reader, String line) {

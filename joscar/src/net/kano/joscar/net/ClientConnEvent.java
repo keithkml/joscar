@@ -50,12 +50,12 @@ public class ClientConnEvent {
     /**
      * The previous state of the associated connection.
      */
-    private final Object oldState;
+    private final ClientConn.State oldState;
 
     /**
      * The new state of the associated connection.
      */
-    private final Object newState;
+    private final ClientConn.State newState;
 
     /**
      * An object representing some sort of reason, description, or explanation
@@ -74,8 +74,8 @@ public class ClientConnEvent {
      *        or <code>null</code> to indicate an implied reason or no reason
      *        at all
      */
-    protected ClientConnEvent(ClientConn conn, Object oldState,
-            Object newState, Object reason) {
+    protected ClientConnEvent(ClientConn conn, ClientConn.State oldState,
+            ClientConn.State newState, Object reason) {
         DefensiveTools.checkNull(conn, "conn");
 
         this.clientConn = conn;
@@ -98,7 +98,7 @@ public class ClientConnEvent {
      *
      * @return the previous state of the connection that fired this event
      */
-    public final Object getOldState() {
+    public final ClientConn.State getOldState() {
         return oldState;
     }
 
@@ -107,7 +107,7 @@ public class ClientConnEvent {
      *
      * @return the new state of the connection that fired this event
      */
-    public final Object getNewState() {
+    public final ClientConn.State getNewState() {
         return newState;
     }
 
