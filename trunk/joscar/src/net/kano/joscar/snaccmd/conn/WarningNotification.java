@@ -40,6 +40,7 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.MiniUserInfo;
+import net.kano.joscar.snaccmd.WarningLevel;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -52,7 +53,7 @@ import java.io.OutputStream;
  */
 public class WarningNotification extends ConnCommand {
     /** The new warning level. */
-    private final int level;
+    private final WarningLevel level;
     /** The user who warned us. */
     private final MiniUserInfo by;
 
@@ -68,7 +69,8 @@ public class WarningNotification extends ConnCommand {
         DefensiveTools.checkNull(packet, "packet");
 
         ByteBlock snacData = packet.getData();
-        level = BinaryTools.getUShort(snacData, 0);
+        int wval = BinaryTools.getUShort(snacData, 0);
+        level = (wval == -1 ? null : WarningLevel.getInstanceFromX10(wval));
 
         by = MiniUserInfo.readUserInfo(snacData.subBlock(2));
     }
@@ -89,14 +91,19 @@ public class WarningNotification extends ConnCommand {
      * Creates a new outgoing warning notification command with the given
      * properties.
      *
-     * @param level the client's new warning level
+     * @param level the client's new warning level, multiplied by 10 (for
+     *        example, 250 for 25%)
      * @param by the user who warned the client, or <code>null</code> if the
      *        user was warned "anonymously"
      */
     public WarningNotification(int level, MiniUserInfo by) {
+        this(WarningLevel.getInstanceFromX10(level), by);
+    }
+
+    public WarningNotification(WarningLevel level, MiniUserInfo by) {
         super(CMD_WARNED);
 
-        DefensiveTools.checkRange(level, "level", 0);
+        DefensiveTools.checkNull(level, "level");
 
         this.level = level;
         this.by = by;
@@ -107,9 +114,7 @@ public class WarningNotification extends ConnCommand {
      *
      * @return the new warning level
      */
-    public final int getNewLevel() {
-        return level;
-    }
+    public final WarningLevel getNewLevel() { return level; }
 
     /**
      * A miniature user information block for the user who warned the client,
@@ -117,12 +122,10 @@ public class WarningNotification extends ConnCommand {
      *
      * @return an object representing the user who warned the client
      */
-    public final MiniUserInfo getWarner() {
-        return by;
-    }
+    public final MiniUserInfo getWarner() { return by; }
 
     public void writeData(OutputStream out) throws IOException {
-        BinaryTools.writeUShort(out, level);
+        BinaryTools.writeUShort(out, level.getX10Value());
         if (by != null) by.write(out);
     }
 

@@ -112,7 +112,7 @@ public class RateLimitingQueueMgr implements SnacQueueManager {
     }
 
     protected void finalize() {
-        //TODO: should finalize() kill the queue runner?
+        //TODO: should finalize() kill the queue runner? Should we add a connlistener?
         // if we're not referenced anymore, I don't think there's a reason for
         // the queue to be running.
         stop();

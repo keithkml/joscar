@@ -165,7 +165,8 @@ public class FullUserInfo implements LiveWritable {
 
         ByteBlock block = origBlock.subBlock(snLength);
 
-        int warningLevel = BinaryTools.getUShort(block, 0);
+        int warnval = BinaryTools.getUShort(block, 0);
+        WarningLevel warningLevel = WarningLevel.getInstanceFromX10(warnval);
 
         block = block.subBlock(2);
 
@@ -361,7 +362,7 @@ public class FullUserInfo implements LiveWritable {
      * <code>0</code>-<code>100</code>, or <code>-1</code> if this field is not
      * present.
      */
-    private final int warningLevel;
+    private final WarningLevel warningLevel;
 
     /** This user's user flags (like <code>MASK_FREE</code>). */
     private final int flags;
@@ -442,7 +443,7 @@ public class FullUserInfo implements LiveWritable {
      * @param totalSize the total size of the block, as read from a data block
      */
     private FullUserInfo(String sn, int totalSize) {
-        this(sn, -1, totalSize);
+        this(sn, null, totalSize);
     }
 
     /**
@@ -452,7 +453,7 @@ public class FullUserInfo implements LiveWritable {
      * @param warningLevel the warning level of the given user
      * @param totalSize the total size of this block, as read from a data block
      */
-    private FullUserInfo(String sn, int warningLevel, int totalSize) {
+    private FullUserInfo(String sn, WarningLevel warningLevel, int totalSize) {
         this(sn, warningLevel, -1, null, null, -1, -1, null, -1, null, null,
                 null, null, null, -1, null, totalSize);
     }
@@ -483,7 +484,7 @@ public class FullUserInfo implements LiveWritable {
      * @param shortCaps a list of "short capability blocks"
      * @param icqstatus an ICQ availability status code
      */
-    public FullUserInfo(String sn, int warningLevel, int flags,
+    public FullUserInfo(String sn, WarningLevel warningLevel, int flags,
             Date accountCreated, Date memberSince, long sessAIM, long sessAOL,
             Date onSince, int idleMins, CapabilityBlock[] capabilityBlocks,
             Boolean away, ExtraInfoBlock[] extraInfos, ByteBlock certHash,
@@ -523,7 +524,7 @@ public class FullUserInfo implements LiveWritable {
      * @param extraTlvs a set of extra TLV's to be appended to this user info
      *        block
      */
-    public FullUserInfo(String sn, int warningLevel, int flags,
+    public FullUserInfo(String sn, WarningLevel warningLevel, int flags,
             Date accountCreated, Date memberSince, long sessAIM, long sessAOL,
             Date onSince, int idleMins, CapabilityBlock[] capabilityBlocks,
             Boolean away, ExtraInfoBlock[] extraInfos, ByteBlock certHash,
@@ -564,14 +565,13 @@ public class FullUserInfo implements LiveWritable {
      * @param totalSize the total size of this object, as read from a block
      *        of binary data
      */
-    private FullUserInfo(String sn, int warningLevel, int flags,
+    private FullUserInfo(String sn, WarningLevel warningLevel, int flags,
             Date accountCreated, Date memberSince, long sessAIM, long sessAOL,
             Date onSince, int idleMins, CapabilityBlock[] caps,
             Boolean away, ExtraInfoBlock[] extraInfos, ByteBlock certHash,
             ShortCapabilityBlock[] shortCaps, long icqstatus,
             ImmutableTlvChain extraTlvs, int totalSize) {
         DefensiveTools.checkNull(sn, "sn");
-        DefensiveTools.checkRange(warningLevel, "warningLevel", 0);
         DefensiveTools.checkRange(sessAIM, "sessAIM", -1);
         DefensiveTools.checkRange(sessAOL, "sessAOL", -1);
         DefensiveTools.checkRange(idleMins, "idleMins", -1);
@@ -615,14 +615,12 @@ public class FullUserInfo implements LiveWritable {
     }
 
     /**
-     * Returns the warning level of this user, as a "percentage," but multiplied
-     * by ten. This value normally ranges inclusively from <code>0</code> to
-     * <code>999</code> (which represents the percentage range 0% to 99.9%), but
-     * will be <code>-1</code> if no warning level was sent.
+     * Returns the warning level of this user, or <code>null</code> if no
+     * warning level was sent.
      *
      * @return the warning level of this user
      */
-    public final int getWarningLevel() {
+    public final WarningLevel getWarningLevel() {
         return warningLevel;
     }
 
@@ -802,9 +800,9 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
     public void write(OutputStream out) throws IOException {
         OscarTools.writeScreenname(out, sn);
 
-        if (warningLevel == -1) return;
+        if (warningLevel == null) return;
 
-        BinaryTools.writeUByte(out, warningLevel);
+        BinaryTools.writeUByte(out, warningLevel.getX10Value());
 
         MutableTlvChain chain = TlvTools.createMutableChain();
 
@@ -885,7 +883,8 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
 
     public String toString() {
         return "UserInfo for " + sn + 
-                (warningLevel != 0 ? " <" + (warningLevel/10) + "%>"  : "") +
+                (warningLevel != null && warningLevel.intValue() != 0
+                ? " <" + warningLevel.floatValue() + "%>"  : "") +
                 ": flags=0x" + Integer.toHexString(flags) + " ("
                 + MiscTools.getFlagFieldsString(FullUserInfo.class, flags,
                         flagFieldRE) + ")" +

@@ -39,10 +39,12 @@ import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.LiveWritable;
+import net.kano.joscar.MiscTools;
 import net.kano.joscar.snaccmd.FullUserInfo;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.regex.Pattern;
 
 /**
  * A data structure used to transmit information about messages that could not
@@ -205,13 +207,17 @@ public class MissedMsgInfo implements LiveWritable {
         BinaryTools.writeUShort(out, reason);
     }
 
+    /** A pattern matching the REASON_* fields of this class. */
+    private Pattern reasonFieldRE = Pattern.compile("REASON_.*");
+
     public String toString() {
+        String reasonValue = MiscTools.findIntField(MissedMsgInfo.class, reason,
+                reasonFieldRE);
+        if (reasonValue == null) {
+            reasonValue = "0x" + Integer.toHexString(reason);
+        }
         return "MissedMsgInfo from " + userInfo.getScreenname() + ": "
-                + number + " missed on channel " + channel + ": " + (
-                reason == REASON_TOO_LARGE ? "TOO_LARGE" :
-                reason == REASON_TOO_FAST ? "TOO_FAST" :
-                reason == REASON_SENDER_WARNING_LEVEL ? "SENDER_WARNING" :
-                reason == REASON_YOUR_WARNING_LEVEL ? "YOUR_WARNING"
-                : "reason=0x" + Integer.toHexString(reason));
+                + number + " missed on channel " + channel + ", reason="
+                + reasonValue;
     }
 }
