@@ -38,6 +38,8 @@ package net.kano.joscar.snac;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.flapcmd.SnacPacket;
 
+import java.util.List;
+
 /**
  * Provides an interface for generating <code>SnacCommand</code>s from
  * <code>SnacPacket</code>s.
@@ -60,7 +62,7 @@ public interface SnacCmdFactory {
      * @return a list of command types that can be passed to
      *         <code>genSnacCommand</code>
      */
-    CmdType[] getSupportedTypes();
+    List<CmdType> getSupportedTypes();
 
     /**
      * Attempts to convert the given SNAC packet to a <code>SnacCommand</code>.

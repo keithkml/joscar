@@ -44,7 +44,6 @@ import net.kano.joscar.snaccmd.conn.RateClassInfo;
 
 import java.util.Collection;
 import java.util.IdentityHashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -70,7 +69,7 @@ public final class ConnectionQueueMgr {
     private boolean paused = false;
 
     /** A map from <code>RateClassMonitor</code>s to <code>RateQueue</code>s. */
-    private final Map queues = new IdentityHashMap();
+    private final Map<RateClassMonitor,RateQueue> queues = new IdentityHashMap<RateClassMonitor, RateQueue>();
 
     /** A rate listener used to monitor rate events. */
     private RateListener rateListener = new RateListener() {
@@ -154,7 +153,7 @@ public final class ConnectionQueueMgr {
     private synchronized RateQueue getRateQueue(RateClassMonitor classMonitor) {
         DefensiveTools.checkNull(classMonitor, "classMonitor");
 
-        return (RateQueue) queues.get(classMonitor);
+        return queues.get(classMonitor);
     }
 
     /**
@@ -221,11 +220,7 @@ connQueueMgr.getRateMonitor().addListener(myRateListener);
      * @see SnacQueueManager#clearQueue(ClientSnacProcessor)
      */
     synchronized void clearQueue() {
-        for (Iterator it = queues.values().iterator(); it.hasNext();) {
-            RateQueue queue = (RateQueue) it.next();
-
-            queue.clear();
-        }
+        for (RateQueue queue : queues.values()) queue.clear();
 
         paused = false;
     }
@@ -276,38 +271,27 @@ connQueueMgr.getRateMonitor().addListener(myRateListener);
      * monitor's current rate class information.
      */
     private synchronized void updateRateClasses() {
-        RateClassMonitor[] monitors = monitor.getMonitors();
+        List<RateClassMonitor> monitors = monitor.getMonitors();
 
         // clear the list of queues
-        RateQueue[] queueArray = clearQueues();
+        Collection<RateQueue> queueArray = clearQueues();
 
-        List reqs = new LinkedList();
+        List<SnacRequest> reqs = new LinkedList<SnacRequest>();
 
         // gather up all of the pending SNAC requests
-        for (int i = 0; i < queueArray.length; i++) {
-            RateQueue queue = queueArray[i];
-
-            queue.dequeueAll(reqs);
-        }
+        for (RateQueue queue : queueArray) queue.dequeueAll(reqs);
 
         // create new rate queues
-        for (int i = 0; i < monitors.length; i++) {
-            RateQueue queue = new RateQueue(this, monitors[i]);
-            queues.put(monitors[i], queue);
+        for (RateClassMonitor monitor1 : monitors) {
+            queues.put(monitor1, new RateQueue(this, monitor1));
         }
 
         // and re-queue all of the pending SNACs
-        for (Iterator it = reqs.iterator(); it.hasNext();) {
-            SnacRequest req = (SnacRequest) it.next();
+        for (SnacRequest req : reqs) queueSnac(req);
 
-            queueSnac(req);
-        }
-
-        Collection vals = queues.values();
-        RateQueue[] rateQueues
-                = (RateQueue[]) vals.toArray(new RateQueue[vals.size()]);
+        Collection<RateQueue> vals = queues.values();
         QueueRunner runner = queueMgr.getRunner();
-        runner.addQueues(rateQueues);
+        runner.addQueues(vals);
         runner.update(this);
     }
 
@@ -316,14 +300,12 @@ connQueueMgr.getRateMonitor().addListener(myRateListener);
      *
      * @return the rate queues formerly in the queue list
      */
-    private synchronized RateQueue[] clearQueues() {
-        Collection vals = queues.values();
-        RateQueue[] queueArray = (RateQueue[])
-                vals.toArray(new RateQueue[vals.size()]);
-        queueMgr.getRunner().removeQueues(queueArray);
+    private synchronized Collection<RateQueue> clearQueues() {
+        Collection<RateQueue> vals = queues.values();
+        queueMgr.getRunner().removeQueues(vals);
         queues.clear();
 
-        return queueArray;
+        return DefensiveTools.getUnmodifiableCopy(vals);
     }
 
     /**

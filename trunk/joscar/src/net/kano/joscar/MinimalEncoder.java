@@ -44,6 +44,7 @@ import java.nio.charset.UnsupportedCharsetException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Collection;
 
 /**
  * Provides a means of encoding a set of strings in the "smallest" encoding
@@ -81,10 +82,10 @@ public final class MinimalEncoder {
      * <code>MinimalEncoder</code>, in order of increasing complexity (and thus
      * the order in which they will be tried).
      */
-    private static final List validCharsets
-            = Collections.unmodifiableList(Arrays.asList(new Object[] {
+    private static final List<String> validCharsets
+            = Collections.unmodifiableList(Arrays.asList(
                 ENCODING_ASCII, ENCODING_ISO, ENCODING_UTF16, ENCODING_UTF8
-            }));
+            ));
 
     static {
         Charset ascii = null;
@@ -195,10 +196,8 @@ public final class MinimalEncoder {
      *
      * @param strings the strings to accommodate
      */
-    public synchronized final void updateAll(String[] strings) {
-        for (int i = 0; i < strings.length; i++) {
-            update(strings[i]);
-        }
+    public synchronized final void updateAll(Collection<String> strings) {
+        for (String string : strings) update(string);
     }
 
     /**

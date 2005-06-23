@@ -47,8 +47,6 @@ import net.kano.joscar.logging.Logger;
 import net.kano.joscar.logging.LoggingSystem;
 import net.kano.joscar.net.ConnProcessor;
 
-import java.util.Iterator;
-
 
 /**
  * Provides an easy interface to listening for incoming SNAC packets as well as
@@ -179,20 +177,20 @@ public abstract class AbstractSnacProcessor {
     /**
      * The SNAC preprocessors registered on this SNAC connection.
      */
-    private final CopyOnWriteArrayList preprocessors
-            = new CopyOnWriteArrayList();
+    private final CopyOnWriteArrayList<SnacPreprocessor> preprocessors
+            = new CopyOnWriteArrayList<SnacPreprocessor>();
 
     /**
      * The vetoable packet listeners registered on this SNAC connection.
      */
-    private final CopyOnWriteArrayList vetoableListeners
-            = new CopyOnWriteArrayList();
+    private final CopyOnWriteArrayList<VetoableSnacPacketListener> vetoableListeners
+            = new CopyOnWriteArrayList<VetoableSnacPacketListener>();
 
     /**
      * The SNAC packet listeners registered on this SNAC connection.
      */
-    private final CopyOnWriteArrayList packetListeners
-            = new CopyOnWriteArrayList();
+    private final CopyOnWriteArrayList<SnacPacketListener> packetListeners
+            = new CopyOnWriteArrayList<SnacPacketListener>();
 
     /**
      * The FLAP packet listener we add to whichever FLAP processor to which we
@@ -409,15 +407,14 @@ public abstract class AbstractSnacProcessor {
 
         synchronized(readLock) {
             MutableSnacPacket mutablePacket = null;
-            for (Iterator it = preprocessors.iterator(); it.hasNext();) {
-                SnacPreprocessor preprocessor = (SnacPreprocessor) it.next();
-
+            for (SnacPreprocessor preprocessor : preprocessors) {
                 if (mutablePacket == null) {
                     mutablePacket = new MutableSnacPacket(snacPacket);
                 }
 
                 if (logFiner) {
-                    logger.logFiner("Running snac preprocessor " + preprocessor);
+                    logger.logFiner("Running snac preprocessor "
+                            + preprocessor);
                 }
 
                 try {
@@ -449,10 +446,7 @@ public abstract class AbstractSnacProcessor {
                     cmd);
             if (!continueHandling(event)) return;
 
-            for (Iterator it = vetoableListeners.iterator(); it.hasNext();) {
-                VetoableSnacPacketListener listener
-                        = (VetoableSnacPacketListener) it.next();
-
+            for (VetoableSnacPacketListener listener : vetoableListeners) {
                 if (logFiner) {
                     logger.logFiner("Running vetoable Snac packet listener "
                             + listener);
@@ -471,9 +465,7 @@ public abstract class AbstractSnacProcessor {
                 }
             }
 
-            for (Iterator it = packetListeners.iterator(); it.hasNext();) {
-                SnacPacketListener listener = (SnacPacketListener) it.next();
-
+            for (SnacPacketListener listener : packetListeners) {
                 if (logFiner) {
                     logger.logFiner("Running Snac packet listener " + listener);
                 }

@@ -38,6 +38,8 @@ package net.kano.joscar.snaccmd.chat;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.FullUserInfo;
 
+import java.util.Collection;
+
 /**
  * A SNAC command sent to indicate that one or more users have joined a chat
  * room. Also sent upon joining a room to list the users in that room.
@@ -61,7 +63,7 @@ public class UsersJoinedCmd extends UsersCmd {
      * @param users the users who have joined the chat room (or a list of the
      *        users in the chat room if this is sent to a joining user)
      */ 
-    public UsersJoinedCmd(FullUserInfo[] users) {
+    public UsersJoinedCmd(Collection<FullUserInfo> users) {
         super(CMD_USERS_JOINED, users);
     }
 }

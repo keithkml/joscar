@@ -59,7 +59,7 @@ public class RateQueue {
     private final ConnectionQueueMgr parentMgr;
 
     /** The actual request queue. */
-    private final LinkedList queue = new LinkedList();
+    private final LinkedList<SnacRequest> queue = new LinkedList<SnacRequest>();
 
     /** The rate class monitor for this rate queue. */
     private final RateClassMonitor rateMonitor;
@@ -132,7 +132,7 @@ public class RateQueue {
     synchronized SnacRequest dequeue() {
         if (queue.isEmpty()) return null;
 
-        SnacRequest request = (SnacRequest) queue.removeFirst();
+        SnacRequest request = queue.removeFirst();
 
         if (logger.logFineEnabled()) {
             logger.logFine("Dequeueing " + request.getCommand()
@@ -149,7 +149,7 @@ public class RateQueue {
      *
      * @param dest the collection to which the dequeued requests should be added
      */
-    synchronized void dequeueAll(Collection dest) {
+    synchronized void dequeueAll(Collection<? super SnacRequest> dest) {
         dest.addAll(queue);
         queue.clear();
     }

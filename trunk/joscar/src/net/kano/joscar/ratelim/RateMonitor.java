@@ -57,7 +57,7 @@ import net.kano.joscar.snaccmd.conn.RateInfoCmd;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 
@@ -77,7 +77,7 @@ RateMonitor monitor = new RateMonitor(snacProcessor);
  * of {@link RateInfoCmd} and {@link RateChange} are passed to its packet
  * listeners. If you have provided {@linkplain ClientSnacProcessor#getCmdFactoryMgr
  * custom SNAC command factories} that use custom implementations of those SNAC
- * commands, you will need to call {@link #setRateClasses(RateClassInfo[])
+ * commands, you will need to call {@link #setRateClasses(Collection<RateClassInfo>)
  * setRateClasses} and {@link #updateRateClass(int, RateClassInfo)
  * updateRateClass} on your own. (Note that this issue will not be a problem for
  * the great majority of joscar users, and if you don't know what it all means,
@@ -162,7 +162,7 @@ public class RateMonitor {
     private ClientSnacProcessor snacProcessor;
 
     /** A list of listeners for rate-related events. */
-    private final CopyOnWriteArrayList listeners = new CopyOnWriteArrayList();
+    private final CopyOnWriteArrayList<RateListener> listeners = new CopyOnWriteArrayList<RateListener>();
 
     /**
      * A "listener event lock" used to prevent overlapping or other lacks of
@@ -171,9 +171,9 @@ public class RateMonitor {
     private final Object listenerEventLock = new Object();
 
     /** A map from rate class numbers to rate class monitors. */
-    private Map classToMonitor = new HashMap(10);
+    private Map<Integer,RateClassMonitor> classToMonitor = new HashMap<Integer, RateClassMonitor>(10);
     /** A map from SNAC command types to rate class monitors. */
-    private Map typeToMonitor = new HashMap(500);
+    private Map<CmdType,RateClassMonitor> typeToMonitor = new HashMap<CmdType, RateClassMonitor>(500);
     /**
      * The default rate class monitor (for commands which are not a member of a
      * specific rate class).
@@ -257,9 +257,7 @@ public class RateMonitor {
         }
 
         synchronized(listenerEventLock) {
-            for (Iterator it = listeners.iterator(); it.hasNext();) {
-                RateListener l = (RateListener) it.next();
-
+            for (RateListener l : listeners) {
                 l.detached(this, oldProcessor);
             }
         }
@@ -276,9 +274,7 @@ public class RateMonitor {
         defaultMonitor = null;
 
         synchronized(listenerEventLock) {
-            for (Iterator it = listeners.iterator(); it.hasNext();) {
-                RateListener l = (RateListener) it.next();
-
+            for (RateListener l : listeners) {
                 l.reset(this);
             }
         }
@@ -330,9 +326,9 @@ public class RateMonitor {
      *
      * @param rateInfos the list of rate class information blocks to use
      */
-    public final void setRateClasses(RateClassInfo[] rateInfos) {
-        RateClassInfo[] safeRateInfos =
-                (RateClassInfo[]) DefensiveTools.getSafeNonnullArrayCopy(
+    public final void setRateClasses(Collection<RateClassInfo> rateInfos) {
+        List<RateClassInfo> safeRateInfos =
+                 DefensiveTools.getSafeNonnullListCopy(
                 rateInfos, "rateInfos");
 
         if (logger.logFineEnabled()) {
@@ -342,17 +338,11 @@ public class RateMonitor {
         synchronized(this) {
             reset();
 
-            for (int i = 0; i < safeRateInfos.length; i++) {
-                RateClassInfo rateInfo = safeRateInfos[i];
-
-                setRateClass(rateInfo);
-            }
+            for (RateClassInfo info : safeRateInfos) setRateClass(info);
         }
 
         synchronized(listenerEventLock) {
-            for (Iterator it = listeners.iterator(); it.hasNext();) {
-                RateListener listener = (RateListener) it.next();
-
+            for (RateListener listener : listeners) {
                 try {
                     listener.gotRateClasses(this);
                 } catch (Throwable t) {
@@ -375,22 +365,22 @@ public class RateMonitor {
         DefensiveTools.checkNull(rateInfo, "rateInfo");
 
         RateClassMonitor monitor = new RateClassMonitor(this, rateInfo);
-        classToMonitor.put(new Integer(rateInfo.getRateClass()), monitor);
+        classToMonitor.put(rateInfo.getRateClass(), monitor);
 
-        CmdType[] cmdTypes = rateInfo.getCommands();
-        if (cmdTypes != null) {
-            if (cmdTypes.length == 0) {
-                // if there aren't any member SNAC commands for this rate
-                // class, this is the "fallback" rate class, or the
-                // "default queue"
-                if (defaultMonitor == null) defaultMonitor = monitor;
+        List<CmdType> cmdTypes = rateInfo.getCommands();
+        if (cmdTypes == null) return;
 
-            } else {
-                // there are command types associated with this rate class,
-                // so, for speed, we put them into a map
-                for (int i = 0; i < cmdTypes.length; i++) {
-                    typeToMonitor.put(cmdTypes[i], monitor);
-                }
+        if (cmdTypes.size() == 0) {
+            // if there aren't any member SNAC commands for this rate
+            // class, this is the "fallback" rate class, or the
+            // "default queue"
+            if (defaultMonitor == null) defaultMonitor = monitor;
+
+        } else {
+            // there are command types associated with this rate class,
+            // so, for speed, we put them into a map
+            for (CmdType cmdType : cmdTypes) {
+                typeToMonitor.put(cmdType, monitor);
             }
         }
     }
@@ -416,9 +406,7 @@ public class RateMonitor {
         monitor.updateRateInfo(changeCode, rateInfo);
 
         synchronized(listenerEventLock) {
-            for (Iterator it = listeners.iterator(); it.hasNext();) {
-                RateListener listener = (RateListener) it.next();
-
+            for (RateListener listener : listeners) {
                 try {
                     listener.rateClassUpdated(this, monitor, rateInfo);
                 } catch (Throwable t) {
@@ -439,7 +427,7 @@ public class RateMonitor {
      *
      * @see FlapProcessor#handleException
      */
-    private void handleException(ConnProcessor.ErrorType type, Throwable t, Object info) {
+    private void handleException(ConnProcessor.ErrorType type, Throwable t, RateListener info) {
         ClientSnacProcessor processor;
         synchronized(this) {
             processor = snacProcessor;
@@ -480,9 +468,7 @@ public class RateMonitor {
      */
     void fireLimitedEvent(RateClassMonitor monitor, boolean limited) {
         synchronized(listenerEventLock) {
-            for (Iterator it = listeners.iterator(); it.hasNext();) {
-                RateListener listener = (RateListener) it.next();
-
+            for (RateListener listener : listeners) {
                 try {
                     listener.rateClassLimited(this, monitor, limited);
                 } catch (Throwable t) {
@@ -525,8 +511,7 @@ public class RateMonitor {
      *         number
      */
     private synchronized RateClassMonitor getMonitor(int rateClass) {
-        Integer key = new Integer(rateClass);
-        return (RateClassMonitor) classToMonitor.get(key);
+        return classToMonitor.get(rateClass);
     }
 
     /**
@@ -542,7 +527,7 @@ public class RateMonitor {
     public final synchronized RateClassMonitor getMonitor(CmdType type) {
         DefensiveTools.checkNull(type, "type");
 
-        RateClassMonitor queue = (RateClassMonitor) typeToMonitor.get(type);
+        RateClassMonitor queue = typeToMonitor.get(type);
 
         if (queue == null) queue = defaultMonitor;
 
@@ -554,10 +539,9 @@ public class RateMonitor {
      *
      * @return all of the rate class monitors in use in this rate monitor
      */
-    public final synchronized RateClassMonitor[] getMonitors() {
-        Collection vals = classToMonitor.values();
-        return (RateClassMonitor[])
-                vals.toArray(new RateClassMonitor[vals.size()]);
+    public final synchronized List<RateClassMonitor> getMonitors() {
+        Collection<RateClassMonitor> vals = classToMonitor.values();
+        return DefensiveTools.getUnmodifiableCopy(vals);
     }
 
     public String toString() {

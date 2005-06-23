@@ -76,7 +76,7 @@ public class SnacFamilyInfoFactory {
     private SnacFamilyInfoFactory() { }
 
     /** A map of SNAC family codes to their version informations. */
-    private static final Map families = new HashMap();
+    private static final Map<Integer,SnacFamilyInfo> families = new HashMap<Integer, SnacFamilyInfo>();
 
     /*
     From WinAIM 5.2 beta or so:
@@ -145,9 +145,8 @@ public class SnacFamilyInfoFactory {
         };
 
         synchronized(families) {
-            for (int i = 0; i < infos.length; i++) {
-                SnacFamilyInfo sfi = infos[i];
-                families.put(new Integer(sfi.getFamily()), sfi);
+            for (SnacFamilyInfo sfi : infos) {
+                families.put(sfi.getFamily(), sfi);
             }
         }
     }
@@ -177,21 +176,21 @@ void handleServerReadyCmd(ServerReadyCmd serverReadyCmd) {
      * @return a list of SNAC family info objects corresponding to supported
      *         SNAC families in the given list of families
      */
-    public static SnacFamilyInfo[] getDefaultFamilyInfos(
+    public static List<SnacFamilyInfo> getDefaultFamilyInfos(
             int[] supportedFamilies) {
         DefensiveTools.checkNull(supportedFamilies, "supportedFamilies");
 
-        List list = new LinkedList();
+        List<SnacFamilyInfo> list = new LinkedList<SnacFamilyInfo>();
 
         synchronized(families) {
-            for (int i = 0; i < supportedFamilies.length; i++) {
-                SnacFamilyInfo info = getFamily(supportedFamilies[i]);
+            for (int supportedFamily : supportedFamilies) {
+                SnacFamilyInfo info = getFamily(supportedFamily);
 
                 if (info != null) list.add(info);
             }
         }
 
-        return (SnacFamilyInfo[]) list.toArray(new SnacFamilyInfo[list.size()]);
+        return DefensiveTools.getUnmodifiable(list);
     }
 
     /**
@@ -203,7 +202,7 @@ void handleServerReadyCmd(ServerReadyCmd serverReadyCmd) {
      */
     private static SnacFamilyInfo getFamily(int family) {
         synchronized(families) {
-            return (SnacFamilyInfo) families.get(new Integer(family));
+            return families.get(family);
         }
     }
 }

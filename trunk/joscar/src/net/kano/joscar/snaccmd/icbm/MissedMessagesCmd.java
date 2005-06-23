@@ -41,7 +41,8 @@ import net.kano.joscar.flapcmd.SnacPacket;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -54,7 +55,7 @@ import java.util.List;
  */
 public class MissedMessagesCmd extends IcbmCommand {
     /** The list of missed message blocks. */
-    private final MissedMsgInfo[] missedMsgInfos;
+    private final List<MissedMsgInfo> missedMsgInfos;
 
     /**
      * Generates a new missed-messages command from the given incoming SNAC
@@ -69,7 +70,7 @@ public class MissedMessagesCmd extends IcbmCommand {
 
         ByteBlock block = packet.getData();
 
-        List messages = new LinkedList();
+        List<MissedMsgInfo> messages = new ArrayList<MissedMsgInfo>();
 
         for (;;) {
             MissedMsgInfo info = MissedMsgInfo.readMissedMsgInfo(block);
@@ -79,8 +80,7 @@ public class MissedMessagesCmd extends IcbmCommand {
             block = block.subBlock(info.getTotalSize());
         }
 
-        missedMsgInfos = (MissedMsgInfo[])
-                messages.toArray(new MissedMsgInfo[messages.size()]);
+        missedMsgInfos = DefensiveTools.getUnmodifiable(messages);
     }
 
     /**
@@ -89,12 +89,11 @@ public class MissedMessagesCmd extends IcbmCommand {
      *
      * @param missedMsgInfos a list of objects describing the missed messages
      */
-    public MissedMessagesCmd(MissedMsgInfo[] missedMsgInfos) {
+    public MissedMessagesCmd(Collection<MissedMsgInfo> missedMsgInfos) {
         super(CMD_MISSED);
 
-        this.missedMsgInfos = (MissedMsgInfo[]) (missedMsgInfos == null
-                ? null
-                : missedMsgInfos.clone());
+        this.missedMsgInfos = DefensiveTools.getSafeNonnullListCopy(missedMsgInfos,
+                "missedMsgInfos");
     }
 
     /**
@@ -103,14 +102,14 @@ public class MissedMessagesCmd extends IcbmCommand {
      *
      * @return the list of missed message blocks
      */
-    public final MissedMsgInfo[] getMissedMsgInfos() {
-        return (MissedMsgInfo[]) missedMsgInfos.clone();
+    public final List<MissedMsgInfo> getMissedMsgInfos() {
+        return missedMsgInfos;
     }
 
     public void writeData(OutputStream out) throws IOException {
         if (missedMsgInfos != null) {
-            for (int i = 0; i < missedMsgInfos.length; i++) {
-                missedMsgInfos[i].write(out);
+            for (MissedMsgInfo missedMsgInfo : missedMsgInfos) {
+                missedMsgInfo.write(out);
             }
         }
     }
@@ -119,11 +118,15 @@ public class MissedMessagesCmd extends IcbmCommand {
         StringBuffer buffer = new StringBuffer();
         buffer.append("MissedMessagesCmd: ");
         if (missedMsgInfos != null) {
-            buffer.append(missedMsgInfos.length);
+            buffer.append(missedMsgInfos.size());
             buffer.append(" missed: ");
-            for (int i = 0; i < missedMsgInfos.length; i++) {
-                if (i != 0) buffer.append(", ");
-                buffer.append(missedMsgInfos[i]);
+
+            boolean first = true;
+            for (MissedMsgInfo missedMsgInfo : missedMsgInfos) {
+                if (first) first = false;
+                else buffer.append(", ");
+
+                buffer.append(missedMsgInfo);
             }
         }
         return buffer.toString();

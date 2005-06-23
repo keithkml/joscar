@@ -35,12 +35,14 @@
 
 package net.kano.joscar;
 
+import net.kano.joscar.snaccmd.CapabilityBlock;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.Collection;
 import java.util.regex.Pattern;
 
 /**
@@ -70,7 +72,7 @@ public final class MiscTools {
      * @param cl the class whose name will be returned
      * @return the name of the given class, without package name
      */
-    public static String getClassName(Class cl) {
+    public static String getClassName(Class<?> cl) {
         return getClassName(cl.getName());
     }
 
@@ -98,13 +100,10 @@ public final class MiscTools {
      *        searched, or <code>null</code> to match all fields of the class
      * @return the name of a field matching the given constraints
      */
-    public static String findIntField(Class cl, long value, String pattern) {
-        Field[] fields = cl.getFields();
+    public static String findIntField(Class<?> cl, long value, String pattern) {
         Pattern p = pattern == null ? null : Pattern.compile(pattern);
 
-        for (int i = 0; i < fields.length; i++) {
-            Field field = fields[i];
-
+        for (Field field : cl.getFields()) {
             int modifiers = field.getModifiers();
 
             // only accept static final fields
@@ -138,13 +137,10 @@ public final class MiscTools {
      *        searched, or <code>null</code> to match all fields of the class
      * @return the name of a field matching the given constraints
      */
-    public static String findEqualField(Class cl, Object value, String pattern) {
+    public static String findEqualField(Class<?> cl, CapabilityBlock value, String pattern) {
         Pattern p = pattern == null ? null : Pattern.compile(pattern);
 
-        Field[] fields = cl.getFields();
-        for (int i = 0; i < fields.length; i++) {
-            Field field = fields[i];
-
+        for (Field field : cl.getFields()) {
             int modifiers = field.getModifiers();
             if (!Modifier.isStatic(modifiers) || !Modifier.isFinal(modifiers)) {
                 continue;
@@ -196,15 +192,13 @@ class Something {
      *
      * @see #getFlagFieldsString(Class, long, String)
      */
-    public static String[] findFlagFields(Class cl, long value,
+    public static Collection<String> findFlagFields(Class<?> cl, long value,
             String p) {
         Field[] fields = cl.getFields();
-        SortedMap matches = new TreeMap(Collections.reverseOrder());
+        SortedMap<Long,String> matches = new TreeMap<Long, String>(Collections.reverseOrder());
         Pattern pattern = p == null ? null : Pattern.compile(p);
 
-        for (int i = 0; i < fields.length; i++) {
-            Field field = fields[i];
-
+        for (Field field : fields) {
             int modifiers = field.getModifiers();
 
             // only accept static final fields
@@ -225,12 +219,12 @@ class Something {
             }
 
             if ((value & fieldValue) == fieldValue) {
-                matches.put(new Long(fieldValue), fieldName);
+                matches.put(fieldValue, fieldName);
             }
         }
 
-        Collection values = matches.values();
-        return (String[]) values.toArray(new String[values.size()]);
+        Collection<String> values = matches.values();
+        return Collections.unmodifiableCollection(values);
     }
 
     /**
@@ -260,14 +254,14 @@ class Something {
      *        match
      * @return a string containing the names of the matching fields
      */
-    public static String getFlagFieldsString(Class cl, long value,
+    public static String getFlagFieldsString(Class<?> cl, long value,
             String pattern) {
-        String[] fields = findFlagFields(cl, value, pattern);
+        Collection<String> fields = findFlagFields(cl, value, pattern);
 
         StringBuffer b = new StringBuffer();
         long covered = 0;
-        for (int i = 0; i < fields.length; i++) {
-            String field = fields[i];
+        boolean first = true;
+        for (String field : fields) {
             long fieldValue = 0;
             try {
                 fieldValue = cl.getField(field).getLong(null);
@@ -279,7 +273,11 @@ class Something {
 
             covered |= fieldValue;
 
-            if (i != 0) b.append(" | ");
+            if (first) {
+                first = false;
+            } else {
+                b.append(" | ");
+            }
             b.append(field);
         }
 
@@ -290,4 +288,5 @@ class Something {
 
         return b.toString();
     }
+
 }

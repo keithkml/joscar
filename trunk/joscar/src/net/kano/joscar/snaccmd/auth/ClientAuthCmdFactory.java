@@ -35,10 +35,13 @@
 
 package net.kano.joscar.snaccmd.auth;
 
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snac.CmdType;
 import net.kano.joscar.snac.SnacCmdFactory;
+
+import java.util.List;
 
 /**
  * A SNAC command factory for the client-bound SNAC commands provided in this
@@ -46,13 +49,12 @@ import net.kano.joscar.snac.SnacCmdFactory;
  */
 public class ClientAuthCmdFactory implements SnacCmdFactory {
     /** A list of command types supported by this package. */
-    protected static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
+    protected static final List<CmdType> SUPPORTED_TYPES = DefensiveTools.asUnmodifiableList(
         new CmdType(AuthCommand.FAMILY_AUTH, AuthCommand.CMD_KEY_RESP),
-        new CmdType(AuthCommand.FAMILY_AUTH, AuthCommand.CMD_AUTH_RESP)
-    };
+        new CmdType(AuthCommand.FAMILY_AUTH, AuthCommand.CMD_AUTH_RESP));
 
-    public CmdType[] getSupportedTypes() {
-        return (CmdType[]) SUPPORTED_TYPES.clone();
+    public List<CmdType> getSupportedTypes() {
+        return SUPPORTED_TYPES;
     }
 
     public SnacCommand genSnacCommand(SnacPacket packet) {

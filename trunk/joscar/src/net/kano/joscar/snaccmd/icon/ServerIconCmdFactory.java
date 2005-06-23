@@ -35,10 +35,13 @@
 
 package net.kano.joscar.snaccmd.icon;
 
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snac.CmdType;
 import net.kano.joscar.snac.SnacCmdFactory;
+
+import java.util.List;
 
 /**
  * A SNAC command factory for the server-bound commands provided in this
@@ -46,13 +49,12 @@ import net.kano.joscar.snac.SnacCmdFactory;
  */
 public class ServerIconCmdFactory implements SnacCmdFactory {
     /** The supported command types. */
-    protected static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
+    protected static final List<CmdType> SUPPORTED_TYPES = DefensiveTools.asUnmodifiableList(
         new CmdType(IconCommand.FAMILY_ICON, IconCommand.CMD_ICON_REQ),
-        new CmdType(IconCommand.FAMILY_ICON, IconCommand.CMD_UPLOAD_ICON),
-    };
+        new CmdType(IconCommand.FAMILY_ICON, IconCommand.CMD_UPLOAD_ICON));
 
-    public CmdType[] getSupportedTypes() {
-        return (CmdType[]) SUPPORTED_TYPES.clone();
+    public List<CmdType> getSupportedTypes() {
+        return SUPPORTED_TYPES;
     }
 
     public SnacCommand genSnacCommand(SnacPacket packet) {

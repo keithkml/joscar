@@ -35,6 +35,8 @@
 
 package net.kano.joscar.snac;
 
+import java.util.Collection;
+
 /**
  * A class created to make creating <code>SnacCmdFactoryList</code>s a bit
  * simpler.
@@ -46,10 +48,8 @@ public class DefaultSnacCmdFactoryList extends SnacCmdFactoryList {
      *
      * @param factories a list of SNAC command factories
      */
-    public DefaultSnacCmdFactoryList(SnacCmdFactory[] factories) {
-        for (int i = 0; i < factories.length; i++) {
-            registerAll(factories[i]);
-        }
+    public DefaultSnacCmdFactoryList(Collection<? extends SnacCmdFactory> factories) {
+        for (SnacCmdFactory factory : factories) registerAll(factory);
     }
 
     public String toString() {

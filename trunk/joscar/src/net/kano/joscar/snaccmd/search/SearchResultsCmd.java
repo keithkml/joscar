@@ -45,6 +45,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Collection;
 
 /**
  * A SNAC command containing a list of search results. Normally sent in response
@@ -66,7 +67,7 @@ public class SearchResultsCmd extends SearchCommand {
     /** Some sort of result subcode. */
     private final int subCode;
     /** A list of results. */
-    private final DirInfo[] results;
+    private final List<DirInfo> results;
 
     /**
      * Generates a new search result list command from the given incoming SNAC
@@ -86,7 +87,7 @@ public class SearchResultsCmd extends SearchCommand {
 
         if (snacData.getLength() >= 6) {
             int resultCount = BinaryTools.getUShort(snacData, 4);
-            List resultList = new ArrayList();
+            List<DirInfo> resultList = new ArrayList<DirInfo>();
 
             ByteBlock block = snacData.subBlock(6);
             for (int i = 0; i < resultCount; i++) {
@@ -102,8 +103,7 @@ public class SearchResultsCmd extends SearchCommand {
                 block = block.subBlock(2 + dirInfo.getTotalSize());
             }
 
-            results = (DirInfo[])
-                    resultList.toArray(new DirInfo[resultList.size()]);
+            results = DefensiveTools.getUnmodifiable(resultList);
         } else {
             results = null;
         }
@@ -113,13 +113,13 @@ public class SearchResultsCmd extends SearchCommand {
      * Creates a new outgoing search results command with the given list of
      * results. The code and subcode are set to {@link #CODE_DEFAULT} and
      * {@link #SUBCODE_DEFAULT}, respectively. Using this constructor is
-     * equivalent to using {@link #SearchResultsCmd(int, int, DirInfo[]) new
+     * equivalent to using {@link #SearchResultsCmd(int, int, Collection<DirInfo>) new
      * SearchResultsCmd(SearchResultsCmd.CODE_DEFAULT,
      * SearchResultsCmd.SUBCODE_DEFAULT, results)}.
      *
      * @param results the list of reuslts to send in this command
      */
-    public SearchResultsCmd(DirInfo[] results) {
+    public SearchResultsCmd(Collection<DirInfo> results) {
         this(CODE_DEFAULT, SUBCODE_DEFAULT, results);
     }
 
@@ -131,7 +131,7 @@ public class SearchResultsCmd extends SearchCommand {
      * @param subCode a result subcode, normally {@link #SUBCODE_DEFAULT}
      * @param results a list of results, or <code>null</code> for none
      */
-    public SearchResultsCmd(int code, int subCode, DirInfo[] results) {
+    public SearchResultsCmd(int code, int subCode, Collection<DirInfo> results) {
         super(CMD_RESULTS);
 
         DefensiveTools.checkRange(code, "code", 0);
@@ -139,7 +139,7 @@ public class SearchResultsCmd extends SearchCommand {
 
         this.code = code;
         this.subCode = subCode;
-        this.results = (DirInfo[]) (results == null ? null : results.clone());
+        this.results = DefensiveTools.getSafeNonnullListCopy(results, "results");
     }
 
     /**
@@ -168,24 +168,22 @@ public class SearchResultsCmd extends SearchCommand {
      *
      * @return the search results
      */
-    public DirInfo[] getResults() {
-        return (DirInfo[]) (results == null ? null : results.clone());
-    }
+    public List<DirInfo> getResults() { return results; }
 
     public void writeData(OutputStream out) throws IOException {
         BinaryTools.writeUShort(out, code);
         BinaryTools.writeUShort(out, subCode);
         if (results != null) {
-            BinaryTools.writeUShort(out, results.length);
+            BinaryTools.writeUShort(out, results.size());
 
-            for (int i = 0; i < results.length; i++) {
-                BinaryTools.writeUShort(out, results[i].getTlvCount());
-                results[i].write(out);
+            for (DirInfo result : results) {
+                BinaryTools.writeUShort(out, result.getTlvCount());
+                result.write(out);
             }
         }
     }
 
     public String toString() {
-        return "SearchResultsCmd: " + results.length + " results";
+        return "SearchResultsCmd: " + results.size() + " results";
     }
 }

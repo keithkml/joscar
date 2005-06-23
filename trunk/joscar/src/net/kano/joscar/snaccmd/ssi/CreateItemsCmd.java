@@ -38,6 +38,8 @@ package net.kano.joscar.snaccmd.ssi;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 
+import java.util.Collection;
+
 /**
  * A SNAC command sent to create new server-stored "items." Normally
  * responded-to with a {@link SsiDataModResponse}.
@@ -64,7 +66,7 @@ public class CreateItemsCmd extends ItemsCmd {
      *
      * @param items the items to create on the server
      */
-    public CreateItemsCmd(SsiItem[] items) {
+    public CreateItemsCmd(Collection<? extends SsiItem> items) {
         super(CMD_CREATE_ITEMS, items);
     }
 }

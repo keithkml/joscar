@@ -43,6 +43,7 @@ import net.kano.joscar.snac.CmdType;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.List;
 
 /**
  * A data structure containing rate limiting information for a specific "class"
@@ -180,7 +181,7 @@ public class RateClassInfo implements Writable {
     private final long max;
 
     /** The commands in this rate class. */
-    private CmdType[] commands = null;
+    private List<CmdType> commands = null;
 
     /**
      * Generates a rate class information block from the given block of data.
@@ -220,8 +221,8 @@ public class RateClassInfo implements Writable {
      *
      * @param commands the SNAC commands included in this rate class
      */
-    synchronized void setCommands(CmdType[] commands) {
-        this.commands = commands;
+    synchronized void setCommands(List<CmdType> commands) {
+        this.commands = DefensiveTools.getSafeListCopy(commands, "commands");
     }
 
     /**
@@ -346,8 +347,8 @@ public class RateClassInfo implements Writable {
      *
      * @return the SNAC command types included in this rate class
      */
-    public synchronized final CmdType[] getCommands() {
-        return (CmdType[]) (commands == null ? null : commands.clone());
+    public synchronized final List<CmdType> getCommands() {
+        return commands;
     }
 
     public long getWritableLength() {
@@ -375,6 +376,6 @@ public class RateClassInfo implements Writable {
                 ", disconnectAvg=" + disconnectAvg +
                 ", max=" + max +
                 ", families: "
-                + (commands == null ? "none" : "" + commands.length);
+                + (commands == null ? "none" : "" + commands.size());
     }
 }

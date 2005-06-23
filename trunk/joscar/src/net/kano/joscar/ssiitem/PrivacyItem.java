@@ -46,8 +46,6 @@ import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
 import net.kano.joscar.tlv.TlvTools;
 
-import java.util.regex.Pattern;
-
 /**
  * An SSI item object containing various privacy-related settings.
  * <br>

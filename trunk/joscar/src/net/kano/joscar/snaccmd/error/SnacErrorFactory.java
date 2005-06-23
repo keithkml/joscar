@@ -52,13 +52,17 @@ import net.kano.joscar.snaccmd.popup.PopupCommand;
 import net.kano.joscar.snaccmd.rooms.RoomCommand;
 import net.kano.joscar.snaccmd.search.SearchCommand;
 import net.kano.joscar.snaccmd.ssi.SsiCommand;
+import net.kano.joscar.DefensiveTools;
+
+import java.util.List;
+import java.util.Arrays;
 
 /**
  * A base class for both the client and server error factories.
  */
 public abstract class SnacErrorFactory implements SnacCmdFactory {
     /** The supported SNAC error command types. */
-    protected static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
+    protected static final List<CmdType> SUPPORTED_TYPES = DefensiveTools.asUnmodifiableList(
         new CmdType(AuthCommand.FAMILY_AUTH, SnacError.CMD_ERROR),
         new CmdType(ConnCommand.FAMILY_CONN, SnacError.CMD_ERROR),
         new CmdType(LocCommand.FAMILY_LOC, SnacError.CMD_ERROR),
@@ -71,14 +75,13 @@ public abstract class SnacErrorFactory implements SnacCmdFactory {
         new CmdType(SearchCommand.FAMILY_SEARCH, SnacError.CMD_ERROR),
         new CmdType(IconCommand.FAMILY_ICON, SnacError.CMD_ERROR),
         new CmdType(SsiCommand.FAMILY_SSI, SnacError.CMD_ERROR),
-        new CmdType(IcbmCommand.FAMILY_ICBM, SnacError.CMD_ERROR),
-    };
+        new CmdType(IcbmCommand.FAMILY_ICBM, SnacError.CMD_ERROR));
 
     /** Creates a new SNAC error factory. */
     protected SnacErrorFactory() { }
 
-    public CmdType[] getSupportedTypes() {
-        return (CmdType[]) SUPPORTED_TYPES.clone();
+    public List<CmdType> getSupportedTypes() {
+        return SUPPORTED_TYPES;
     }
 
     public SnacCommand genSnacCommand(SnacPacket packet) {

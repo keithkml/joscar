@@ -44,6 +44,7 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
+import java.util.Collection;
 
 /**
  * Provides a read-only interface to an underlying block of data. This class
@@ -251,36 +252,38 @@ public final class ByteBlock implements Writable, Serializable {
      *         the maximum size of an array (<code>n >= {@link
      *         Integer#MAX_VALUE}</code>)
      */
-    public static ByteBlock createByteBlock(LiveWritable[] writables)
-            throws ArrayIndexOutOfBoundsException {
-        if (writables.length == 0) return EMPTY_BLOCK;
-        else if (writables.length == 1) return createByteBlock(writables[0]);
+    public static ByteBlock createByteBlock(Collection<? extends LiveWritable> writables) {
+        if (writables.size() == 0) return EMPTY_BLOCK;
+        if (writables.size() == 1) return createByteBlock(writables.iterator().next());
 
         long ttlSize = 0;
         boolean good = true;
-        for (int i = 0; i < writables.length; i++) {
-            if (!(writables[i] instanceof Writable)) {
+        for (LiveWritable writable : writables) {
+            if (!(writable instanceof Writable)) {
                 good = false;
                 break;
             }
 
-            long len = ((Writable) writables[i]).getWritableLength();
+            long len = ((Writable) writable).getWritableLength();
             ttlSize += len;
         }
 
         if (ttlSize > Integer.MAX_VALUE) {
-            throw new ArrayIndexOutOfBoundsException("sum of writable length "
+            throw new IllegalArgumentException("sum of writable length "
                     + "of writables is " + ttlSize + ", must be <= " +
                     "Integer.MAX_VALUE (" + Integer.MAX_VALUE + ")");
         }
 
         ByteArrayOutputStream out;
-        if (good) out = new ByteArrayOutputStream((int) ttlSize);
-        else out = new ByteArrayOutputStream();
+        if (good) {
+            out = new ByteArrayOutputStream((int) ttlSize);
+        } else {
+            out = new ByteArrayOutputStream();
+        }
 
         try {
-            for (int i = 0; i < writables.length; i++) {
-                writables[i].write(out);
+            for (LiveWritable writable : writables) {
+                writable.write(out);
             }
         } catch (IOException impossible) { }
 
@@ -440,7 +443,7 @@ public final class ByteBlock implements Writable, Serializable {
     public byte[] toByteArray() {
         if (offset == 0 && len == bytes.length) {
             // this is faster
-            return (byte[]) bytes.clone();
+            return bytes.clone();
         } else {
             byte[] array = new byte[len];
             System.arraycopy(bytes, offset, array, 0, len);

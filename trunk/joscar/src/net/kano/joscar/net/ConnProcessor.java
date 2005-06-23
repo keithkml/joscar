@@ -72,8 +72,8 @@ public abstract class ConnProcessor {
      */
     private OutputStream out = null;
     /** A list of handlers for connection-related errors and exceptions. */
-    private final CopyOnWriteArrayList errorHandlers
-            = new CopyOnWriteArrayList();
+    private final CopyOnWriteArrayList<ConnProcessorExceptionHandler> errorHandlers
+            = new CopyOnWriteArrayList<ConnProcessorExceptionHandler>();
 
     /**
      * Attaches this connection processor to the given socket's input and output
@@ -238,7 +238,7 @@ public abstract class ConnProcessor {
         // get the iterator now, so we can use the same one later and be working
         // with the same copy of the handler list (this method is not
         // synchronized)
-        Iterator iterator = errorHandlers.iterator();
+        Iterator<ConnProcessorExceptionHandler> iterator = errorHandlers.iterator();
         if (!iterator.hasNext()) {
             if (logger.logWarningEnabled()) {
                 logger.logException(
@@ -256,7 +256,7 @@ public abstract class ConnProcessor {
 
         while (iterator.hasNext()) {
             ConnProcessorExceptionHandler handler
-                    = (ConnProcessorExceptionHandler) iterator.next();
+                    = iterator.next();
 
             if (logFiner) {
                 logger.logFiner("Running ConnProcessor error handler " + handler);

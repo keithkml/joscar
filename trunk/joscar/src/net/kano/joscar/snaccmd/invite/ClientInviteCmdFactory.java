@@ -39,6 +39,10 @@ import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snac.CmdType;
 import net.kano.joscar.snac.SnacCmdFactory;
+import net.kano.joscar.DefensiveTools;
+
+import java.util.List;
+import java.util.Arrays;
 
 /**
  * A SNAC command factory for the client-bound SNAC commands provided in this
@@ -46,12 +50,11 @@ import net.kano.joscar.snac.SnacCmdFactory;
  */
 public class ClientInviteCmdFactory implements SnacCmdFactory {
     /** The supported SNAC command types. */
-    protected static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
-        new CmdType(InviteCommand.FAMILY_INVITE, InviteCommand.CMD_INVITE_ACK),
-    };
+    protected static final List<CmdType> SUPPORTED_TYPES = DefensiveTools.asUnmodifiableList(
+        new CmdType(InviteCommand.FAMILY_INVITE, InviteCommand.CMD_INVITE_ACK));
 
-    public CmdType[] getSupportedTypes() {
-        return (CmdType[]) SUPPORTED_TYPES.clone();
+    public List<CmdType> getSupportedTypes() {
+        return SUPPORTED_TYPES;
     }
 
     public SnacCommand genSnacCommand(SnacPacket packet) {

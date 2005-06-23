@@ -47,8 +47,8 @@ import net.kano.joscar.tlv.TlvTools;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Collections;
 
 /**
  * A SNAC command used to store a list of "chat interests." Normally
@@ -66,7 +66,7 @@ public class SetInterestsCmd extends LocCommand {
     private static final int TYPE_INTEREST = 0x000b;
 
     /** The interests being set. */
-    private final String[] interests;
+    private final List<String> interests;
 
     /**
      * Generates a new set-chat-interests command from the given incoming SNAC
@@ -85,18 +85,17 @@ public class SetInterestsCmd extends LocCommand {
 
         String charset = chain.getString(TYPE_CHARSET);
 
-        Tlv[] interestTlvs = chain.getTlvs(TYPE_INTEREST);
+        List<Tlv> interestTlvs = chain.getTlvs(TYPE_INTEREST);
 
-        List interestList = new ArrayList();
+        List<String> interestList = new ArrayList<String>();
 
-        for (int i = 0; i < interestTlvs.length; i++) {
-            ByteBlock interestBytes = interestTlvs[i].getData();
+        for (Tlv interestTlv : interestTlvs) {
+            ByteBlock interestBytes = interestTlv.getData();
             String interest = OscarTools.getString(interestBytes, charset);
             interestList.add(interest);
         }
 
-        interests = (String[])
-                interestList.toArray(new String[interestList.size()]);
+        interests = Collections.unmodifiableList(interestList);
     }
 
     /**
@@ -105,12 +104,10 @@ public class SetInterestsCmd extends LocCommand {
      *
      * @param interests the list of chat interests to set
      */
-    public SetInterestsCmd(String[] interests) {
+    public SetInterestsCmd(List<String> interests) {
         super(CMD_SET_INTERESTS);
 
-        this.interests = (String[]) (interests == null
-                ? null
-                : interests.clone());
+        this.interests = DefensiveTools.getUnmodifiableCopy(interests);
     }
 
     /**
@@ -121,24 +118,24 @@ public class SetInterestsCmd extends LocCommand {
      *
      * @return the chat interests being set
      */
-    public final String[] getInterests() {
-        return (String[]) (interests == null ? null : interests.clone());
+    public final List<String> getInterests() {
+        return interests;
     }
 
     public void writeData(OutputStream out) throws IOException {
-        if (interests != null && interests.length > 0) {
-            MinimalEncoder enc = new MinimalEncoder();
-            enc.updateAll(interests);
+        if (interests == null || interests.isEmpty()) return;
 
-            Tlv.getStringInstance(TYPE_CHARSET, enc.getCharset()).write(out);
-            for (int i = 0; i < interests.length; i++) {
-                byte[] interestBytes = enc.encode(interests[i]).getData();
-                new Tlv(TYPE_INTEREST, ByteBlock.wrap(interestBytes)).write(out);
-            }
+        MinimalEncoder enc = new MinimalEncoder();
+        enc.updateAll(interests);
+
+        Tlv.getStringInstance(TYPE_CHARSET, enc.getCharset()).write(out);
+        for (String interest : interests) {
+            byte[] interestBytes = enc.encode(interest).getData();
+            new Tlv(TYPE_INTEREST, ByteBlock.wrap(interestBytes)).write(out);
         }
     }
 
     public String toString() {
-        return "SetInterestsCmd: interests=" + Arrays.asList(interests);
+        return "SetInterestsCmd: interests=" + interests;
     }
 }

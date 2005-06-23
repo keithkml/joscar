@@ -130,8 +130,8 @@ public class SsiRightsCmd extends SsiCommand {
             ByteArrayOutputStream maximout = new ByteArrayOutputStream();
 
             try {
-                for (int i = 0; i < maxima.length; i++) {
-                    BinaryTools.writeUShort(maximout, maxima[i]);
+                for (int aMaxima : maxima) {
+                    BinaryTools.writeUShort(maximout, aMaxima);
                 }
             } catch (IOException impossible) { }
 

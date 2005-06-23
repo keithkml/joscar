@@ -38,6 +38,8 @@ package net.kano.joscar.snaccmd.ssi;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 
+import java.util.Collection;
+
 /**
  * A SNAC command used to modify server-stored "items" that already exist on the
  * server. Normally responded-to with a {@link SsiDataModResponse}.
@@ -69,7 +71,7 @@ public class ModifyItemsCmd extends ItemsCmd {
      *
      * @param items a list of items to "modify"
      */
-    public ModifyItemsCmd(SsiItem[] items) {
+    public ModifyItemsCmd(Collection<? extends SsiItem> items) {
         super(CMD_MODIFY_ITEMS, items);
     }
 }

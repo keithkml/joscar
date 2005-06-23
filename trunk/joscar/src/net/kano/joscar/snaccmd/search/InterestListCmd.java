@@ -89,7 +89,7 @@ public class InterestListCmd extends SearchCommand {
         if (snacData.getLength() > 4) {
             ByteBlock block = snacData.subBlock(4);
 
-            List interestList = new ArrayList();
+            List<InterestInfo> interestList = new ArrayList<InterestInfo>();
             for (int i = 0; i < interestCount; i++) {
                 InterestInfo interest = InterestInfo.readInterestInfo(block);
                 if (interest == null) break;
@@ -170,8 +170,8 @@ public class InterestListCmd extends SearchCommand {
         BinaryTools.writeUShort(out, code);
         if (interests != null) {
             BinaryTools.writeUShort(out, interests.length);
-            for (int i = 0; i < interests.length; i++) {
-                interests[i].write(out);
+            for (InterestInfo interest : interests) {
+                interest.write(out);
             }
         }
     }

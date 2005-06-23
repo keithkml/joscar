@@ -48,7 +48,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.util.Iterator;
 
 
 /**
@@ -99,15 +98,15 @@ public class FlapProcessor extends ConnProcessor {
     /**
      * A list of listeners for incoming FLAP packets.
      */
-    private final CopyOnWriteArrayList packetListeners
-            = new CopyOnWriteArrayList();
+    private final CopyOnWriteArrayList<FlapPacketListener> packetListeners
+            = new CopyOnWriteArrayList<FlapPacketListener>();
 
     /**
      * A list of "vetoable listeners" for incoming FLAP packets. Vetoable
      * listeners have the ability to halt the processing of a given packet.
      */
-    private final CopyOnWriteArrayList vetoablePacketListeners
-            = new CopyOnWriteArrayList();
+    private final CopyOnWriteArrayList<VetoableFlapPacketListener> vetoablePacketListeners
+            = new CopyOnWriteArrayList<VetoableFlapPacketListener>();
 
     /** A lock for writing to the stream. */
     private final Object writeLock = new Object();
@@ -247,10 +246,7 @@ public class FlapProcessor extends ConnProcessor {
 
         FlapPacketEvent event = new FlapPacketEvent(this, packet, cmd);
 
-        for (Iterator it = vetoablePacketListeners.iterator(); it.hasNext();) {
-            VetoableFlapPacketListener listener
-                    = (VetoableFlapPacketListener) it.next();
-
+        for (VetoableFlapPacketListener listener : vetoablePacketListeners) {
             if (logFiner) {
                 logger.logFiner("Running vetoable flap packet listener: "
                         + listener);
@@ -274,9 +270,7 @@ public class FlapProcessor extends ConnProcessor {
             }
         }
 
-        for (Iterator it = packetListeners.iterator(); it.hasNext();) {
-            FlapPacketListener listener = (FlapPacketListener) it.next();
-
+        for (FlapPacketListener listener : packetListeners) {
             if (logFiner) {
                 logger.logFiner("Running Flap packet listener " + listener);
             }

@@ -47,6 +47,7 @@ import net.kano.joscar.tlv.TlvTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Collection;
 
 /**
  * A SNAC command used to send an instant message to another user.
@@ -141,7 +142,7 @@ public class SendImIcbm extends AbstractImIcbm implements SendIcbm {
 
     public SendImIcbm(String sn, String message, boolean autoResponse,
             long messageId, boolean wantsIcon, OldIconHashInfo iconInfo,
-            ExtraInfoBlock[] expInfoBlocks, boolean ackRequested) {
+            Collection<ExtraInfoBlock> expInfoBlocks, boolean ackRequested) {
         this(sn, new InstantMessage(message), autoResponse, messageId,
                 wantsIcon, iconInfo, expInfoBlocks, ackRequested);
     }
@@ -162,7 +163,7 @@ public class SendImIcbm extends AbstractImIcbm implements SendIcbm {
      */
     public SendImIcbm(String sn, InstantMessage message, boolean autoResponse,
             long messageId, boolean wantsIcon, OldIconHashInfo iconInfo,
-            ExtraInfoBlock[] expInfoBlocks, boolean ackRequested) {
+            Collection<ExtraInfoBlock> expInfoBlocks, boolean ackRequested) {
         this(sn, message, autoResponse, messageId, wantsIcon, iconInfo,
                 expInfoBlocks, FEATURES_DEFAULT, ackRequested);
     }
@@ -184,7 +185,7 @@ public class SendImIcbm extends AbstractImIcbm implements SendIcbm {
      */
     public SendImIcbm(String sn, InstantMessage message, boolean autoResponse,
             long messageId, boolean wantsIcon, OldIconHashInfo iconInfo,
-            ExtraInfoBlock[] expInfoBlocks, ByteBlock featuresBlock,
+            Collection<ExtraInfoBlock> expInfoBlocks, ByteBlock featuresBlock,
             boolean ackRequested) {
         super(IcbmCommand.CMD_SEND_ICBM, messageId, message, autoResponse,
                 wantsIcon, iconInfo, expInfoBlocks, featuresBlock);

@@ -41,9 +41,10 @@ import net.kano.joscar.logging.Logger;
 import net.kano.joscar.logging.LoggingSystem;
 import net.kano.joscar.snac.ClientSnacProcessor;
 
-import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
+import java.util.Collection;
 
 /**
  * "Runs" a set of <code>RateQueue</code>s, dequeuing SNACs at appropriate
@@ -66,7 +67,7 @@ public final class QueueRunner {
     private boolean updated = true;
 
     /** The list of queues to "run." */
-    private final Set queues = new CopyOnWriteArraySet();
+    private final Set<RateQueue> queues = new CopyOnWriteArraySet<RateQueue>();
 
     private boolean stop = false;
 
@@ -145,8 +146,8 @@ public final class QueueRunner {
 
                 if (queues.isEmpty()) continue;
 
-                for (Iterator it = queues.iterator(); it.hasNext();) {
-                    RateQueue queue = (RateQueue) it.next();
+                for (Iterator<RateQueue> it = queues.iterator(); it.hasNext();) {
+                    RateQueue queue = it.next();
 
                     boolean finished;
                     long wait = 0;
@@ -360,13 +361,13 @@ public final class QueueRunner {
      *
      * @param rateQueues the queues to add
      */
-    void addQueues(RateQueue[] rateQueues) {
+    void addQueues(Collection<RateQueue> rateQueues) {
         // we need to copy these, because the elements may be set to null
         // between a null check and the addAll
-        RateQueue[] safeRateQueues = (RateQueue[])
-                DefensiveTools.getSafeNonnullArrayCopy(
+        List<RateQueue> safeRateQueues =
+                DefensiveTools.getSafeNonnullListCopy(
                         rateQueues, "rateQueues");
-        queues.addAll(Arrays.asList(safeRateQueues));
+        queues.addAll(safeRateQueues);
 
         update();
     }
@@ -388,10 +389,10 @@ public final class QueueRunner {
      *
      * @param rateQueues the queues to remove
      */
-    void removeQueues(RateQueue[] rateQueues) {
+    void removeQueues(Collection<RateQueue> rateQueues) {
         DefensiveTools.checkNull(rateQueues, "rateQueues");
 
-        queues.removeAll(Arrays.asList(rateQueues));
+        queues.removeAll(rateQueues);
     }
 
     public String toString() {

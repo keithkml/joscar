@@ -48,7 +48,8 @@ import java.util.Map;
  */
 public class ImmediateSnacQueueManager implements SnacQueueManager {
     /** A map from SNAC processors to their respective SNAC queues. */
-    private final Map queues = new IdentityHashMap();
+    private final Map<ClientSnacProcessor,SnacQueue> queues
+            = new IdentityHashMap<ClientSnacProcessor, SnacQueue>();
 
     public synchronized void attached(ClientSnacProcessor processor) {
         queues.put(processor, new SnacQueue());
@@ -67,7 +68,7 @@ public class ImmediateSnacQueueManager implements SnacQueueManager {
      * @return a SNAC queue object for the given SNAC processor
      */
     private synchronized SnacQueue getQueue(ClientSnacProcessor processor) {
-        return (SnacQueue) queues.get(processor);
+        return queues.get(processor);
     }
 
     public void pause(ClientSnacProcessor processor) {
@@ -81,17 +82,17 @@ public class ImmediateSnacQueueManager implements SnacQueueManager {
     public void unpause(ClientSnacProcessor processor) {
         SnacQueue queue = getQueue(processor);
 
-        List dequeued;
+        List<SnacRequest> dequeued;
         synchronized(queue) {
             queue.paused = false;
 
-            dequeued = new ArrayList(queue.queue);
+            dequeued = new ArrayList<SnacRequest>(queue.queue);
             queue.queue.clear();
         }
 
         // dequeue any queued snacs
-        for (Iterator it = dequeued.iterator(); it.hasNext();) {
-            SnacRequest req = (SnacRequest) it.next();
+        for (Iterator<SnacRequest> it = dequeued.iterator(); it.hasNext();) {
+            SnacRequest req = it.next();
             it.remove();
 
             sendSnac(processor, req);
@@ -142,7 +143,7 @@ public class ImmediateSnacQueueManager implements SnacQueueManager {
         /**
          * A list of enqueued requests. Only nonempty if this queue is paused.
          */
-        private final LinkedList queue = new LinkedList();
+        private final LinkedList<SnacRequest> queue = new LinkedList<SnacRequest>();
 
         public String toString() {
             return "SnacQueue: "

@@ -45,7 +45,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.regex.Pattern;
 
 /**
  * Short capability blocks are means of storing a capability block in two bytes
@@ -93,17 +92,16 @@ public class ShortCapabilityBlock implements Writable {
      * @return an array of short capability block objects, read from the given
      *         block of binary data
      */
-    public static ShortCapabilityBlock[] readShortCaps(ByteBlock block) {
+    public static List<ShortCapabilityBlock> readShortCaps(ByteBlock block) {
         DefensiveTools.checkNull(block, "block");
 
-        List caps = new LinkedList();
+        List<ShortCapabilityBlock> caps = new LinkedList<ShortCapabilityBlock>();
 
         for (int i = 0; i < block.getLength(); i += 2) {
             caps.add(new ShortCapabilityBlock(block.subBlock(i, 2)));
         }
 
-        return (ShortCapabilityBlock[])
-                caps.toArray(new ShortCapabilityBlock[caps.size()]);
+        return DefensiveTools.getUnmodifiable(caps);
     }
 
     /**
@@ -203,7 +201,7 @@ public class ShortCapabilityBlock implements Writable {
      *         capability block
      */
     public final CapabilityBlock toCapabilityBlock() {
-        byte[] block = (byte[]) CAP_TEMPLATE_BYTES.clone();
+        byte[] block = CAP_TEMPLATE_BYTES.clone();
         System.arraycopy(data.toByteArray(), 0, block, 2, 2);
 
         return new CapabilityBlock(ByteBlock.wrap(block));

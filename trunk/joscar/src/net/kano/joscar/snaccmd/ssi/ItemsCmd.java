@@ -39,13 +39,11 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.MiscTools;
 import net.kano.joscar.flapcmd.SnacPacket;
-import net.kano.joscar.ssiitem.AbstractItemObj;
-import net.kano.joscar.ssiitem.SsiItemObj;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Arrays;
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -59,7 +57,7 @@ import java.util.List;
  */
 public abstract class ItemsCmd extends SsiCommand {
     /** The items sent in this command. */
-    private final SsiItem[] items;
+    private final List<SsiItem> items;
 
     /**
      * Generates a new item-based command from the given incoming SNAC packet.
@@ -74,7 +72,7 @@ public abstract class ItemsCmd extends SsiCommand {
 
         ByteBlock block = packet.getData();
 
-        List itemList = new LinkedList();
+        List<SsiItem> itemList = new ArrayList<SsiItem>();
 
         for (;;) {
             SsiItem item = SsiItem.readSsiItem(block);
@@ -85,21 +83,12 @@ public abstract class ItemsCmd extends SsiCommand {
             block = block.subBlock(item.getTotalSize());
         }
 
-        items = (SsiItem[]) itemList.toArray(new SsiItem[itemList.size()]);
+        items = DefensiveTools.getUnmodifiable(itemList);
     }
 
-    /**
-     * Creates a new item-based command with a list of <code>SsiItem</code>s
-     * {@linkplain AbstractItemObj#toSsiItem generated} from the given list
-     * of item objects.
-     *
-     * @param command the SNAC command subtype of this command
-     * @param itemObjs a list of SSI item objects to use in generating
-     *        <code>SsiItem</code>s
-     */
-    protected ItemsCmd(int command, SsiItemObj[] itemObjs) {
-        this(command, AbstractItemObj.generateSsiItems(itemObjs));
-    }
+//    protected ItemsCmd(int command, Collection<? extends SsiItemObj> itemObjs) {
+//        this(command, AbstractItemObj.generateSsiItems(itemObjs));
+//    }
 
     /**
      * Creates a new outgoing item-based command with the given list of items.
@@ -107,10 +96,10 @@ public abstract class ItemsCmd extends SsiCommand {
      * @param command the SNAC command subtype for this command
      * @param items the list of items to send in this commnad
      */
-    protected ItemsCmd(int command, SsiItem[] items) {
+    protected ItemsCmd(int command, Collection<? extends SsiItem> items) {
         super(command);
 
-        this.items = (SsiItem[]) DefensiveTools.getSafeNonnullArrayCopy(
+        this.items = DefensiveTools.getSafeNonnullListCopy(
                 items, "items");
     }
 
@@ -119,18 +108,14 @@ public abstract class ItemsCmd extends SsiCommand {
      *
      * @return the list of "items" sent in this command
      */
-    public final SsiItem[] getItems() {
-        return (SsiItem[]) items.clone();
-    }
+    public final List<SsiItem> getItems() { return items; }
 
     public void writeData(OutputStream out) throws IOException {
-        for (int i = 0; i < items.length; i++) {
-            items[i].write(out);
-        }
+        for (SsiItem item : items) item.write(out);
     }
 
     public String toString() {
-        return MiscTools.getClassName(this) + ": " + items.length + " items: "
-                + Arrays.asList(items);
+        return MiscTools.getClassName(this) + ": " + items.size() + " items: "
+                + items;
     }
 }

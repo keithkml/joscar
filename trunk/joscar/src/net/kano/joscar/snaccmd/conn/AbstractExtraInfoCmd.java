@@ -44,7 +44,8 @@ import net.kano.joscar.snaccmd.ExtraInfoBlock;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Arrays;
+import java.util.List;
+import java.util.Collection;
 
 /**
  * A base class for the two SNAC commands which contain only a sequence of
@@ -52,7 +53,7 @@ import java.util.Arrays;
  */
 public abstract class AbstractExtraInfoCmd extends ConnCommand {
     /** The set of extra information blocks contained in this command. */
-    private final ExtraInfoBlock[] extraInfos;
+    private final List<ExtraInfoBlock> extraInfos;
 
     /**
      * Creates a new extra info block command with the given SNAC command
@@ -80,11 +81,11 @@ public abstract class AbstractExtraInfoCmd extends ConnCommand {
      * @param command the SNAC command subtype for this command
      * @param blocks the list of extra info blocks to send in this command
      */
-    protected AbstractExtraInfoCmd(int command, ExtraInfoBlock[] blocks) {
+    protected AbstractExtraInfoCmd(int command, Collection<ExtraInfoBlock> blocks) {
         super(command);
 
-        this.extraInfos = (ExtraInfoBlock[])
-                DefensiveTools.getSafeNonnullArrayCopy(blocks, "blocks");
+        this.extraInfos =
+                DefensiveTools.getSafeNonnullListCopy(blocks, "blocks");
     }
 
     /**
@@ -92,9 +93,8 @@ public abstract class AbstractExtraInfoCmd extends ConnCommand {
      *
      * @return this command's extra information blocks
      */
-    public final ExtraInfoBlock[] getExtraInfos() {
-        return (ExtraInfoBlock[]) (extraInfos == null ? null
-                : extraInfos.clone());
+    public final List<ExtraInfoBlock> getExtraInfos() {
+        return extraInfos;
     }
 
     public void writeData(OutputStream out) throws IOException {
@@ -105,6 +105,6 @@ public abstract class AbstractExtraInfoCmd extends ConnCommand {
 
     public String toString() {
         return MiscTools.getClassName(this) + ": blocks=" +
-                (extraInfos == null ? null : Arrays.asList(extraInfos));
+                (extraInfos == null ? null : extraInfos);
     }
 }

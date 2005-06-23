@@ -38,6 +38,8 @@ import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 
+import java.util.List;
+
 /**
  * Provides a set of utilites for working with TLV chains.
  */
@@ -90,13 +92,13 @@ public final class TlvTools {
      * @return a TLV chain containing the given number of TLV's starting at the
      *         given index of the given array of TLV's
      */
-    public static ImmutableTlvChain createChain(Tlv[] tlvs, int offset,
+    public static ImmutableTlvChain createChain(List<Tlv> tlvs, int offset,
             int len) {
         DefensiveTools.checkNull(tlvs, "tlvs");
 
-        if (offset < 0 || len < 0 || offset + len > tlvs.length) {
+        if (offset < 0 || len < 0 || offset + len > tlvs.size()) {
             throw new ArrayIndexOutOfBoundsException("offset=" + offset
-                    + ", len=" + len + ", tlvs.length=" + tlvs.length);
+                    + ", len=" + len + ", tlvs.length=" + tlvs.size());
         }
 
         DefensiveTools.checkNullElements(tlvs, "tlvs", offset, len);

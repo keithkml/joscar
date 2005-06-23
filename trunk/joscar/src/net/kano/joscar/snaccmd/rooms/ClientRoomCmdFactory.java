@@ -35,10 +35,13 @@
 
 package net.kano.joscar.snaccmd.rooms;
 
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snac.CmdType;
 import net.kano.joscar.snac.SnacCmdFactory;
+
+import java.util.List;
 
 /**
  * A SNAC command factory for the client-bound commands provided in this
@@ -46,12 +49,11 @@ import net.kano.joscar.snac.SnacCmdFactory;
  */
 public class ClientRoomCmdFactory implements SnacCmdFactory {
     /** The supported SNAC command types. */
-    protected static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
-        new CmdType(RoomCommand.FAMILY_ROOM, RoomCommand.CMD_ROOM_RESPONSE),
-    };
+    protected static final List<CmdType> SUPPORTED_TYPES = DefensiveTools.asUnmodifiableList(
+        new CmdType(RoomCommand.FAMILY_ROOM, RoomCommand.CMD_ROOM_RESPONSE));
 
-    public CmdType[] getSupportedTypes() {
-        return (CmdType[]) SUPPORTED_TYPES.clone();
+    public List<CmdType> getSupportedTypes() {
+        return SUPPORTED_TYPES;
     }
 
     public SnacCommand genSnacCommand(SnacPacket packet) {

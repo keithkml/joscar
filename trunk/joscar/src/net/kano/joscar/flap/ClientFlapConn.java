@@ -85,7 +85,7 @@ public class ClientFlapConn extends ClientConn {
 
         addConnListener(new ClientConnListener() {
             public void stateChanged(ClientConnEvent e) {
-                Object newState = e.getNewState();
+                State newState = e.getNewState();
                 if (newState == ClientConn.STATE_CONNECTED) {
                     try {
                         flapProcessor.attachToSocket(getSocket());

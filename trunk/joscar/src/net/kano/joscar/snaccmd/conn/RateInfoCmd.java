@@ -43,6 +43,10 @@ import net.kano.joscar.snac.CmdType;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.Collection;
 
 /**
  * A SNAC command sent to inform the client of a set of rate-limiting
@@ -58,7 +62,7 @@ import java.io.OutputStream;
  */
 public class RateInfoCmd extends ConnCommand {
     /** The list of rate class information blocks sent in this command. */
-    private final RateClassInfo[] infos;
+    private final List<RateClassInfo> infos;
 
     /**
      * Generates a rate information command from the given incoming SNAC
@@ -74,20 +78,25 @@ public class RateInfoCmd extends ConnCommand {
         ByteBlock snacData = packet.getData();
 
         int rates = BinaryTools.getUShort(snacData, 0);
-        RateClassInfo[] infos = new RateClassInfo[rates];
+        List<RateClassInfo> infos = new ArrayList<RateClassInfo>(rates);
 
         ByteBlock block = snacData.subBlock(2);
         for (int i = 0; i < rates; i++) {
-            infos[i] = RateClassInfo.readRateClassInfo(block);
-            block = block.subBlock((int) infos[i].getWritableLength());
+            RateClassInfo info = RateClassInfo.readRateClassInfo(block);
+            infos.add(info);
+            block = block.subBlock((int) info.getWritableLength());
         }
 
+        Iterator<RateClassInfo> rit = infos.iterator();
         for (int ri = 0; ri < rates; ri++) {
+            assert rit.hasNext();
+
             int rclass = BinaryTools.getUShort(block, 0);
             int familyCount = BinaryTools.getUShort(block, 2);
-            CmdType[] cmds = new CmdType[familyCount];
+            List<CmdType> cmds = new ArrayList<CmdType>(familyCount);
 
-            if (rclass != infos[ri].getRateClass()) {
+            RateClassInfo info = rit.next();
+            if (rclass != info.getRateClass()) {
                 // the server sent the classes in the wrong order....
                 continue;
             }
@@ -95,9 +104,9 @@ public class RateInfoCmd extends ConnCommand {
             for (int fi = 0; fi < familyCount; fi++) {
                 int family = BinaryTools.getUShort(block, 4+fi*4);
                 int command = BinaryTools.getUShort(block, 4+fi*4+2);
-                cmds[fi] = new CmdType(family, command);
+                cmds.add(new CmdType(family, command));
             }
-            infos[ri].setCommands(cmds);
+            info.setCommands(cmds);
             block = block.subBlock(4 + familyCount * 4);
         }
 
@@ -110,10 +119,10 @@ public class RateInfoCmd extends ConnCommand {
      *
      * @param infos a set of rate information blocks to send in this command
      */
-    public RateInfoCmd(RateClassInfo[] infos) {
+    public RateInfoCmd(Collection<RateClassInfo> infos) {
         super(CMD_RATE_INFO);
 
-        this.infos = (RateClassInfo[]) (infos == null ? null : infos.clone());
+        this.infos = DefensiveTools.getSafeListCopy(infos, "infos");
     }
 
     /**
@@ -121,22 +130,21 @@ public class RateInfoCmd extends ConnCommand {
      *
      * @return this command's enclosed rate class information blocks
      */
-    public RateClassInfo[] getRateClassInfos() {
-        return (RateClassInfo[]) (infos == null ? null : infos.clone());
+    public List<RateClassInfo> getRateClassInfos() {
+        return infos;
     }
 
     public void writeData(OutputStream out) throws IOException {
-        int len = infos == null ? 0 : infos.length;
+        int len = infos == null ? 0 : infos.size();
         BinaryTools.writeUShort(out, len);
         if (infos != null) {
-            for (int i = 0; i < infos.length; i++) {
-                infos[i].write(out);
+            for (RateClassInfo info : infos) {
+                info.write(out);
             }
-            for (int i = 0; i < infos.length; i++) {
-                CmdType[] families = infos[i].getCommands();
-                for (int j = 0; j < families.length; j++) {
-                    BinaryTools.writeUShort(out, families[j].getFamily());
-                    BinaryTools.writeUShort(out, families[j].getCommand());
+            for (RateClassInfo info1 : infos) {
+                for (CmdType family1 : info1.getCommands()) {
+                    BinaryTools.writeUShort(out, family1.getFamily());
+                    BinaryTools.writeUShort(out, family1.getCommand());
                 }
             }
         }
@@ -145,8 +153,8 @@ public class RateInfoCmd extends ConnCommand {
     public String toString() {
         StringBuffer buffer = new StringBuffer();
         buffer.append("RateInfoCmd: ");
-        for (int i = 0; i < infos.length; i++) {
-            buffer.append(infos[i]);
+        for (RateClassInfo info : infos) {
+            buffer.append(info);
             buffer.append(" - ");
         }
 

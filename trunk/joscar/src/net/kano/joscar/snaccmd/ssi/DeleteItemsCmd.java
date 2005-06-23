@@ -38,6 +38,8 @@ package net.kano.joscar.snaccmd.ssi;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 
+import java.util.Collection;
+
 /**
  * A SNAC command used to delete specific server-stored "items." Normally
  * responded-to with a {@link SsiDataModResponse}.
@@ -65,7 +67,7 @@ public class DeleteItemsCmd extends ItemsCmd {
      *
      * @param items the items to delete from the server
      */
-    public DeleteItemsCmd(SsiItem[] items) {
+    public DeleteItemsCmd(Collection<? extends SsiItem> items) {
         super(CMD_DELETE_ITEMS, items);
     }
 }

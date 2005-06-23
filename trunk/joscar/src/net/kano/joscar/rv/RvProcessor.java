@@ -60,7 +60,7 @@ import net.kano.joscar.snaccmd.icbm.SendRvIcbm;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -171,13 +171,13 @@ public class RvProcessor {
             new Random().nextLong());
 
     /** The sessions being managed by this RV processor. */
-    private Map sessions = new HashMap();
+    private Map<RvSessionMapKey,RvSessionImpl> sessions = new HashMap<RvSessionMapKey, RvSessionImpl>();
 
     /** The "new session listeners" attached to this processor. */
-    private CopyOnWriteArrayList rvListeners = new CopyOnWriteArrayList();
+    private CopyOnWriteArrayList<RvProcessorListener> rvListeners = new CopyOnWriteArrayList<RvProcessorListener>();
 
     /** The <code>RvCommand</code> factories attached to this processor. */
-    private Map rvFactories = new HashMap();
+    private Map<CapabilityBlock,RvCommandFactory> rvFactories = new HashMap<CapabilityBlock, RvCommandFactory>();
 
     /**
      * The packet listener that is attached to whichever SNAC processor this RV
@@ -313,13 +313,13 @@ public class RvProcessor {
             RvCommandFactory factory) {
         DefensiveTools.checkNull(factory, "factory");
 
-        CapabilityBlock[] blocks = factory.getSupportedCapabilities();
+        List<CapabilityBlock> blocks = factory.getSupportedCapabilities();
 
         if (blocks == null) {
             registerRvCmdFactory(null, factory);
         } else {
-            for (int i = 0; i < blocks.length; i++) {
-                registerRvCmdFactory(blocks[i], factory);
+            for (CapabilityBlock block : blocks) {
+                registerRvCmdFactory(block, factory);
             }
         }
     }
@@ -367,7 +367,7 @@ public class RvProcessor {
      */
     public synchronized final RvCommandFactory getRegisteredRvCmdFactory(
             CapabilityBlock cap) {
-        return (RvCommandFactory) rvFactories.get(cap);
+        return rvFactories.get(cap);
     }
 
     /**
@@ -422,16 +422,20 @@ public class RvProcessor {
         RvCommandFactory factory;
         synchronized(this) {
             // find a factory for this capability type
-            factory = (RvCommandFactory) rvFactories.get(icbm.getCapability());
+            factory = rvFactories.get(icbm.getCapability());
 
             if (factory == null) {
                 // if there's no factory for that type, try the generic factory
-                factory = (RvCommandFactory) rvFactories.get(null);
+                factory = rvFactories.get(null);
             }
         }
 
         // if there's no factory, we can't make a rendezvous command
-        if (factory == null) return null;
+        if (factory == null) {
+            logger.logWarning("No rendezvous factory is present in RvProcessor; "
+                    + "rendezvous packets cannot be processed");
+            return null;
+        }
 
         // tell the factory to make a command
         return factory.genRvCommand(icbm);
@@ -450,7 +454,7 @@ public class RvProcessor {
         DefensiveTools.checkNull(sn, "sn");
 
         RvSessionMapKey key = new RvSessionMapKey(sessionId, sn);
-        return (RvSessionImpl) sessions.get(key);
+        return sessions.get(key);
     }
 
     /**
@@ -539,9 +543,7 @@ public class RvProcessor {
             NewRvSessionEvent.EventType type) {
         NewRvSessionEvent event = new NewRvSessionEvent(this, session, type);
 
-        for (Iterator it = rvListeners.iterator(); it.hasNext();) {
-            RvProcessorListener listener = (RvProcessorListener) it.next();
-
+        for (RvProcessorListener listener : rvListeners) {
             try {
                 listener.handleNewSession(event);
             } catch (Throwable t) {
@@ -604,11 +606,14 @@ public class RvProcessor {
         boolean logFiner = logger.logFinerEnabled();
         if (logFiner) {
             if (rvCommand == null) {
-                logger.logFiner("Couldn't generate RV command, data was:" + cmd.getRvData());
+                logger.logFiner("Couldn't generate RV command, data was:"
+                        + cmd.getRvData());
             } else {
                 logger.logFiner("Generated RV command: " + rvCommand);
             }
         }
+        //TOLATER: a way to notify listeners about unknown commands?
+        if (rvCommand == null) return;
 
         // notify the session object that we retrieved/created above
         RecvRvEvent event = new RecvRvEvent(e, this, session, rvCommand);
@@ -761,7 +766,7 @@ public class RvProcessor {
         private final String sn;
 
         /** This session's listeners. */
-        private CopyOnWriteArrayList listeners = new CopyOnWriteArrayList();
+        private CopyOnWriteArrayList<RvSessionListener> listeners = new CopyOnWriteArrayList<RvSessionListener>();
 
         /**
          * A SNAC request listener attached to all outgoing SNAC requests sent
@@ -814,9 +819,7 @@ public class RvProcessor {
          * @param event the incoming rendezvous event
          */
         private void processRv(RecvRvEvent event) {
-            for (Iterator it = listeners.iterator(); it.hasNext();) {
-                RvSessionListener listener = (RvSessionListener) it.next();
-
+            for (RvSessionListener listener : listeners) {
                 try {
                     listener.handleRv(event);
                 } catch (Throwable t) {
@@ -832,9 +835,7 @@ public class RvProcessor {
          * @param event the incoming rendezvous event
          */
         private void processSnacResponse(RvSnacResponseEvent event) {
-            for (Iterator it = listeners.iterator(); it.hasNext();) {
-                RvSessionListener listener = (RvSessionListener) it.next();
-
+            for (RvSessionListener listener : listeners) {
                 try {
                     listener.handleSnacResponse(event);
                 } catch (Throwable t) {

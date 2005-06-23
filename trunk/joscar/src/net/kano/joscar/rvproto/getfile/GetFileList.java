@@ -47,6 +47,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Collection;
 
 /**
  * A data structure representing a "Get File" directory listing. Note that a
@@ -62,7 +63,7 @@ public class GetFileList implements LiveWritable {
     /** The Get File directory listing version string for this list. */
     private final String gfListVersion;
     /** The files on this list. */
-    private final GetFileEntry[] files;
+    private final List<GetFileEntry> files;
 
     /**
      * Reads a Get File directory list from the given block of binary data. Note
@@ -86,11 +87,11 @@ public class GetFileList implements LiveWritable {
         ByteBlock rest = block.subBlock(4);
         TlvChain chain = TlvTools.readChain(rest);
 
-        Tlv[] tlvs = chain.getTlvs();
+        List<Tlv> tlvs = chain.getTlvs();
 
-        List entries = new LinkedList();
+        List<GetFileEntry> entries = new LinkedList<GetFileEntry>();
 
-        for (int i = 0; i < tlvs.length;) {
+        for (int i = 0; i < tlvs.size();) {
             GetFileEntry entry
                     = GetFileEntry.readEntry(tlvs, i);
 
@@ -101,9 +102,7 @@ public class GetFileList implements LiveWritable {
             i += entry.getTotalTlvCount();
         }
 
-        GetFileEntry[] entryArray = (GetFileEntry[])
-                entries.toArray(new GetFileEntry[entries.size()]);
-        return new GetFileList(version, entryArray);
+        return new GetFileList(version, entries);
     }
 
     /**
@@ -115,7 +114,7 @@ public class GetFileList implements LiveWritable {
      *
      * @param files a list of files to use in this list
      */
-    public GetFileList(GetFileEntry[] files) {
+    public GetFileList(Collection<GetFileEntry> files) {
         this(GFLISTVERSION_DEFAULT, files);
     }
 
@@ -128,11 +127,10 @@ public class GetFileList implements LiveWritable {
      *        be {@link #GFLISTVERSION_DEFAULT}
      * @param files a list of files to hold in this list
      */
-    public GetFileList(String gfListVersion, GetFileEntry[] files) {
+    public GetFileList(String gfListVersion, Collection<GetFileEntry> files) {
         DefensiveTools.checkNull(gfListVersion, "gfListVersion");
 
-        this.files = (GetFileEntry[]) DefensiveTools.getSafeNonnullArrayCopy(
-                files, "files");
+        this.files = DefensiveTools.getSafeNonnullListCopy(files, "files");
         this.gfListVersion = gfListVersion;
     }
 
@@ -151,19 +149,17 @@ public class GetFileList implements LiveWritable {
      *
      * @return an array containing the Get File entries in this list
      */
-    public final GetFileEntry[] getFileEntries() {
-        return (GetFileEntry[]) files.clone();
+    public final List<GetFileEntry> getFileEntries() {
+        return files;
     }
 
     public final void write(OutputStream out) throws IOException {
         out.write(BinaryTools.getAsciiBytes(gfListVersion));
-        for (int i = 0; i < files.length; i++) {
-            files[i].write(out);
-        }
+        for (GetFileEntry file : files) file.write(out);
     }
 
     public String toString() {
         return "GetFileList: version=" + gfListVersion + ", files="
-                + files.length;
+                + files.size();
     }
 }

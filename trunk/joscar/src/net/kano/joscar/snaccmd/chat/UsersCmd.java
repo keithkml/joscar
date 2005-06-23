@@ -43,8 +43,9 @@ import net.kano.joscar.snaccmd.FullUserInfo;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Collection;
 
 /**
  * A base class for the two member-list-based commands in this package,
@@ -52,7 +53,7 @@ import java.util.List;
  */
 public abstract class UsersCmd extends ChatCommand {
     /** The user info blocks contained in this user command. */
-    private final FullUserInfo[] users;
+    private final List<FullUserInfo> users;
 
     /**
      * Creates a new user-based command from the given incoming SNAC packet.
@@ -65,7 +66,7 @@ public abstract class UsersCmd extends ChatCommand {
 
         DefensiveTools.checkNull(packet, "packet");
 
-        List userList = new LinkedList();
+        List<FullUserInfo> userList = new ArrayList<FullUserInfo>();
 
         ByteBlock block = packet.getData();
 
@@ -78,8 +79,7 @@ public abstract class UsersCmd extends ChatCommand {
             block = block.subBlock(user.getTotalSize());
         }
 
-        users = (FullUserInfo[])
-                userList.toArray(new FullUserInfo[userList.size()]);
+        users = DefensiveTools.getUnmodifiable(userList);
     }
 
     /**
@@ -89,10 +89,10 @@ public abstract class UsersCmd extends ChatCommand {
      * @param command the SNAC command subtype of this command
      * @param users the users this command concerns
      */
-    protected UsersCmd(int command, FullUserInfo[] users) {
+    protected UsersCmd(int command, Collection<FullUserInfo> users) {
         super(command);
 
-        this.users = (FullUserInfo[]) (users == null ? null : users.clone());
+        this.users = DefensiveTools.getSafeNonnullListCopy(users, "users");
     }
 
     /**
@@ -100,19 +100,19 @@ public abstract class UsersCmd extends ChatCommand {
      *
      * @return the list of users
      */
-    public final FullUserInfo[] getUsers() {
-        return (FullUserInfo[]) (users == null ? null : users.clone());
+    public final List<FullUserInfo> getUsers() {
+        return users;
     }
 
     public void writeData(OutputStream out) throws IOException {
         if (users != null) {
-            for (int i = 0; i < users.length; i++) {
-                users[i].write(out);
+            for (FullUserInfo user : users) {
+                user.write(out);
             }
         }
     }
 
     public String toString() {
-        return MiscTools.getClassName(this) + " for " + users.length + " users";
+        return MiscTools.getClassName(this) + " for " + users.size() + " users";
     }
 }

@@ -46,6 +46,7 @@ import net.kano.joscar.tlv.TlvTools;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Arrays;
 
 /**
  * Represents a set of "directory information," used for searching for buddies
@@ -507,12 +508,12 @@ public final class DirInfo implements LiveWritable {
     private static boolean writeString(OutputStream out, int type, String str,
             MinimalEncoder encoder)
             throws IOException {
-        if (str != null) {
-            new Tlv(type, ByteBlock.wrap(encoder.encode(str).getData()))
-                    .write(out);
-            return true;
-        } else {
+        if (str == null) {
             return false;
+        } else {
+            Tlv tlv = new Tlv(type, ByteBlock.wrap(encoder.encode(str).getData()));
+            tlv.write(out);
+            return true;
         }
     }
 
@@ -528,10 +529,10 @@ public final class DirInfo implements LiveWritable {
 
         MinimalEncoder menc = new MinimalEncoder();
 
-        menc.updateAll(new String[] {
+        menc.updateAll(Arrays.asList(
             sn, email, first, middle, last, maiden, nickname, address, city,
             state, zip, country, language
-        });
+        ));
 
         Tlv.getStringInstance(TYPE_CHARSET, menc.getCharset()).write(out);
         count++;

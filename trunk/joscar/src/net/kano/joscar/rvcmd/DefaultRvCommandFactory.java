@@ -67,6 +67,8 @@ import net.kano.joscar.snaccmd.icbm.AbstractRvIcbm;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.snaccmd.icbm.RvCommand;
 
+import java.util.List;
+
 /**
  * A default RV command factory that generates instances of the
  * <code>RvCommand</code>s defined in the <code>net.kano.joscar.rvcmd</code>
@@ -89,8 +91,8 @@ import net.kano.joscar.snaccmd.icbm.RvCommand;
  */
 public class DefaultRvCommandFactory implements RvCommandFactory {
     /** The capabilities supported by this factory. */
-    private static final CapabilityBlock[] SUPPORTED_CAPS
-            = new CapabilityBlock[] {
+    private static final List<CapabilityBlock> SUPPORTED_CAPS
+            = DefensiveTools.asUnmodifiableList(
                 CapabilityBlock.BLOCK_FILE_SEND,
                 CapabilityBlock.BLOCK_TRILLIANCRYPT,
                 CapabilityBlock.BLOCK_SENDBUDDYLIST,
@@ -99,11 +101,10 @@ public class DefaultRvCommandFactory implements RvCommandFactory {
                 CapabilityBlock.BLOCK_FILE_GET,
                 CapabilityBlock.BLOCK_ICON,
                 CapabilityBlock.BLOCK_ADDINS,
-                CapabilityBlock.BLOCK_VOICE,
-            };
+                CapabilityBlock.BLOCK_VOICE);
 
-    public CapabilityBlock[] getSupportedCapabilities() {
-        return (CapabilityBlock[]) SUPPORTED_CAPS.clone();
+    public List<CapabilityBlock> getSupportedCapabilities() {
+        return SUPPORTED_CAPS;
     }
 
     public RvCommand genRvCommand(RecvRvIcbm rvIcbm) {

@@ -35,10 +35,13 @@
 
 package net.kano.joscar.snaccmd.chat;
 
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snac.CmdType;
 import net.kano.joscar.snac.SnacCmdFactory;
+
+import java.util.List;
 
 /**
  * A SNAC command factory for all client-bound commands provided in this
@@ -46,15 +49,14 @@ import net.kano.joscar.snac.SnacCmdFactory;
  */
 public class ClientChatCmdFactory implements SnacCmdFactory {
     /** A list of command types supported by this factory. */
-    protected static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
+    protected static final List<CmdType> SUPPORTED_TYPES = DefensiveTools.asUnmodifiableList(
         new CmdType(ChatCommand.FAMILY_CHAT, ChatCommand.CMD_ROOM_UPDATE),
         new CmdType(ChatCommand.FAMILY_CHAT, ChatCommand.CMD_USERS_JOINED),
         new CmdType(ChatCommand.FAMILY_CHAT, ChatCommand.CMD_USERS_LEFT),
-        new CmdType(ChatCommand.FAMILY_CHAT, ChatCommand.CMD_RECV_CHAT_MSG),
-    };
+        new CmdType(ChatCommand.FAMILY_CHAT, ChatCommand.CMD_RECV_CHAT_MSG));
 
-    public CmdType[] getSupportedTypes() {
-        return (CmdType[]) SUPPORTED_TYPES.clone();
+    public List<CmdType> getSupportedTypes() {
+        return SUPPORTED_TYPES;
     }
 
     public SnacCommand genSnacCommand(SnacPacket packet) {

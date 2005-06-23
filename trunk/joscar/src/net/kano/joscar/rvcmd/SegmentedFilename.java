@@ -41,6 +41,8 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.StringTokenizer;
+import java.util.Collection;
+import java.util.ArrayList;
 
 /**
  * A data structure containing a series of directory and file names ("segments")
@@ -54,6 +56,10 @@ public final class SegmentedFilename {
     /** The file separator used by the current platform. */
     private static final String FILESEP_NATIVE
             = System.getProperty("file.separator");
+
+    public SegmentedFilename(String... strings) {
+        this(Arrays.asList(strings));
+    }
 
     /**
      * Creates a <code>SegmentedFilename</code> from the given string whose
@@ -73,14 +79,13 @@ public final class SegmentedFilename {
 
         StringTokenizer strtok = new StringTokenizer(path, separator);
 
-        List parts = new LinkedList();
+        List<String> parts = new LinkedList<String>();
         while (strtok.hasMoreTokens()) {
             String part = strtok.nextToken();
             parts.add(part);
         }
 
-        return new SegmentedFilename((String[])
-                parts.toArray(new String[parts.size()]));
+        return new SegmentedFilename(parts);
     }
 
     /**
@@ -118,7 +123,7 @@ public final class SegmentedFilename {
     /**
      * The component "parts" or "segments" of this segmented filename object.
      */
-    private final String[] parts;
+    private final List<String> parts;
 
     /**
      * Creates a new <code>SegmentedFilename</code> with the given segmented
@@ -129,7 +134,7 @@ public final class SegmentedFilename {
      * <br>
      * <br>
      * Note that if <code>parent</code> is <code>null</code>, this method is
-     * equivalent to using {@link #SegmentedFilename(String[]) new
+     * equivalent to using {@link #SegmentedFilename(Collection<String>) new
      * SegmentedFilename(new String[] { file })}. Also note that
      * <code>file</code> cannot be <code>null</code>.
      *
@@ -138,7 +143,7 @@ public final class SegmentedFilename {
      *        filename
      */
     public SegmentedFilename(SegmentedFilename parent, String file) {
-        this(parent, new SegmentedFilename(new String[] { file }));
+        this(parent, new SegmentedFilename(Arrays.asList(file)));
     }
 
     /**
@@ -159,11 +164,11 @@ public final class SegmentedFilename {
         if (parent == null) {
             parts = child.parts;
         } else {
-            parts = new String[parent.parts.length + child.parts.length];
-
-            System.arraycopy(parent.parts, 0, parts, 0, parent.parts.length);
-            System.arraycopy(child.parts, 0, parts, parent.parts.length,
-                    child.parts.length);
+            List<String> list = new ArrayList<String>(parent.parts.size()
+                    + child.parts.size());
+            list.addAll(parent.parts);
+            list.addAll(child.parts);
+            parts = DefensiveTools.getUnmodifiable(list);
         }
     }
 
@@ -174,8 +179,8 @@ public final class SegmentedFilename {
      * @param parts the list of filename "segments" of which the created
      *        segmented filename should consist
      */
-    public SegmentedFilename(String[] parts) {
-        this.parts = (String[]) DefensiveTools.getSafeNonnullArrayCopy(parts, "parts");
+    public SegmentedFilename(Collection<String> parts) {
+        this.parts = DefensiveTools.getSafeNonnullListCopy(parts, "parts");
     }
 
     /**
@@ -185,8 +190,8 @@ public final class SegmentedFilename {
      * @return an array containing this segmented filename's component
      *         "segments"
      */
-    public final String[] getSegments() {
-        return (String[]) parts.clone();
+    public final List<String> getSegments() {
+        return parts;
     }
 
     /**
@@ -198,16 +203,18 @@ public final class SegmentedFilename {
      * @return a <code>String</code> containing the list of segments separated
      *         by the given separator
      */
-    private final String toFilename(String sep) {
+    private String toFilename(String sep) {
         DefensiveTools.checkNull(sep, "sep");
 
         // we'll estimate the length as 16 letters per file/dir name
-        StringBuffer buffer = new StringBuffer(parts.length*16);
+        StringBuffer buffer = new StringBuffer(parts.size()*16);
 
-        for (int i = 0; i < parts.length; i++) {
-            if (i != 0) buffer.append(sep);
+        boolean first = true;
+        for (String part : parts) {
+            if (first) first = false;
+            else buffer.append(sep);
 
-            buffer.append(parts[i]);
+            buffer.append(part);
         }
 
         return buffer.toString();
@@ -238,9 +245,7 @@ public final class SegmentedFilename {
 
     public int hashCode() {
         int code = 0;
-        for (int i = 0; i < parts.length; i++) {
-            code ^= parts[i].hashCode();
-        }
+        for (String part : parts) code ^= part.hashCode();
 
         return code;
     }
@@ -249,11 +254,11 @@ public final class SegmentedFilename {
         if (this == obj) return true;
         if (!(obj instanceof SegmentedFilename)) return false;
 
-        return Arrays.equals(parts, ((SegmentedFilename) obj).parts);
+        return parts.equals(((SegmentedFilename) obj).parts);
     }
 
     public String toString() {
-        return "SegmentedFilename: " + Arrays.asList(parts) + " ("
+        return "SegmentedFilename: " + parts + " ("
                 + toNativeFilename() + ")";
     }
 }

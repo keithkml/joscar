@@ -42,7 +42,7 @@ import net.kano.joscar.Writable;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -102,7 +102,7 @@ public class ExtraInfoBlockHolder implements Writable {
      *         given block of binary data
      */
     public static ExtraInfoBlockHolder[] readBlockHolders(ByteBlock block) {
-        List list = new LinkedList();
+        List<ExtraInfoBlockHolder> list = new ArrayList<ExtraInfoBlockHolder>();
         ByteBlock next = block;
         for (;;) {
             ExtraInfoBlockHolder bh = readBlockHolder(next);

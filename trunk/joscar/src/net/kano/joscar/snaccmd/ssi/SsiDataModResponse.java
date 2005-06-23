@@ -43,7 +43,6 @@ import net.kano.joscar.flapcmd.SnacPacket;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.regex.Pattern;
 
 /**
  * A SNAC command used to acknowledge the modification of the user's
@@ -150,9 +149,7 @@ public class SsiDataModResponse extends SsiCommand {
     }
 
     public void writeData(OutputStream out) throws IOException {
-        for (int i = 0; i < results.length; i++) {
-            int result = results[i];
-
+        for (int result : results) {
             BinaryTools.writeUShort(out, result);
         }
     }

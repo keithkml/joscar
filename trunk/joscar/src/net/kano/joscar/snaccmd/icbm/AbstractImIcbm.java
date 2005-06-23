@@ -40,7 +40,6 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.ImEncodedString;
 import net.kano.joscar.ImEncodingParams;
-import net.kano.joscar.LiveWritable;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.AbstractIcbm;
 import net.kano.joscar.snaccmd.ExtraInfoBlock;
@@ -52,6 +51,9 @@ import net.kano.joscar.tlv.TlvTools;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Collection;
 
 /**
  * A base class for the two IM-based ICBM commands in this family. These
@@ -97,7 +99,7 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
     /** A set of icon data provided by the user who sent this IM. */
     private OldIconHashInfo iconInfo;
     /** A list of AIM Expressions information blocks. */
-    private ExtraInfoBlock[] expressionInfoBlocks;
+    private List<ExtraInfoBlock> expressionInfoBlocks;
     /** This ICBM's IM "features" block. */
     private ByteBlock featuresBlock;
 
@@ -151,15 +153,15 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
 
             } else {
                 // read each part of the multipart data
-                Tlv[] parts = msgTLVs.getTlvs(TYPE_MESSAGE_PARTS);
+                List<Tlv> parts = msgTLVs.getTlvs(TYPE_MESSAGE_PARTS);
                 String msgString;
-                if (parts.length == 1) {
-                    msgString = extractMsgFromPart(parts[0].getData());
+                if (parts.size() == 1) {
+                    msgString = extractMsgFromPart(parts.get(0).getData());
                 } else {
                     StringBuffer messageBuffer = new StringBuffer();
 
-                    for (int i = 0; i < parts.length; i++) {
-                        ByteBlock partBlock = parts[i].getData();
+                    for (Tlv part : parts) {
+                        ByteBlock partBlock = part.getData();
 
                         String message = extractMsgFromPart(partBlock);
 
@@ -196,9 +198,8 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
 
         ImEncodingParams encoding
                 = new ImEncodingParams(charsetCode, charsetSubcode);
-        String message = ImEncodedString.readImEncodedString(
+        return ImEncodedString.readImEncodedString(
                 encoding, messageBlock);
-        return message;
     }
 
     /**
@@ -215,12 +216,12 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
      */
     protected AbstractImIcbm(int command, long messageId,
             InstantMessage message, boolean autoResponse, boolean wantsIcon,
-            OldIconHashInfo iconInfo, ExtraInfoBlock[] expInfoBlocks,
+            OldIconHashInfo iconInfo, Collection<ExtraInfoBlock> expInfoBlocks,
             ByteBlock featuresBlock) {
         super(IcbmCommand.FAMILY_ICBM, command, messageId, CHANNEL_IM);
 
-        ExtraInfoBlock[] safeExpInfoBlocks
-                = (ExtraInfoBlock[]) DefensiveTools.getSafeArrayCopy(
+        List<ExtraInfoBlock> safeExpInfoBlocks
+                = DefensiveTools.getSafeListCopy(
                 expInfoBlocks, "expInfoBlocks");
 
         this.message = message;
@@ -268,10 +269,8 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
      * @return the list of AIM Expression information blocks sent in this
      *         command, or <code>null</code> if none were sent
      */
-    public final ExtraInfoBlock[] getAimExpressionInfo() {
-        return expressionInfoBlocks == null
-                ? null
-                : (ExtraInfoBlock[]) expressionInfoBlocks.clone();
+    public final List<ExtraInfoBlock> getAimExpressionInfo() {
+        return expressionInfoBlocks;
     }
 
     /**
@@ -301,7 +300,7 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
                 ByteBlock encBlock = ENCBLOCK_NULLS;
                 ByteBlock encryptData = message.getEncryptedData();
                 messageData = ByteBlock.createByteBlock(
-                        new LiveWritable[] { encBlock, encryptData });
+                        Arrays.asList(encBlock, encryptData));
 
                 chain.addTlv(encCodeTlv);
 

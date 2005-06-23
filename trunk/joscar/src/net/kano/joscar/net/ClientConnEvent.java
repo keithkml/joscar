@@ -37,6 +37,8 @@ package net.kano.joscar.net;
 
 import net.kano.joscar.DefensiveTools;
 
+import java.io.Serializable;
+
 /**
  * An event fired upon a change in the connection state of an
  * <code>AbstractClientConn</code>.
@@ -61,7 +63,7 @@ public class ClientConnEvent {
      * An object representing some sort of reason, description, or explanation
      * for this event.
      */
-    private final Object reason;
+    private final Serializable reason;
 
     /**
      * Creates a new event representing a state change on the given
@@ -75,7 +77,7 @@ public class ClientConnEvent {
      *        at all
      */
     protected ClientConnEvent(ClientConn conn, ClientConn.State oldState,
-            ClientConn.State newState, Object reason) {
+            ClientConn.State newState, Serializable reason) {
         DefensiveTools.checkNull(conn, "conn");
 
         this.clientConn = conn;
@@ -113,7 +115,7 @@ public class ClientConnEvent {
      * @return an object representing a reason, description, or explanation
      *         for why this state change occurred
      */
-    public final Object getReason() { return reason; }
+    public final Serializable getReason() { return reason; }
 
     public String toString() {
         return "ClientConnEvent: "

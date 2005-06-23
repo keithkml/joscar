@@ -37,7 +37,6 @@ package net.kano.joscar.snac;
 
 import net.kano.joscar.DefensiveTools;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -52,7 +51,7 @@ public abstract class SnacCmdFactoryList {
     /**
      * The map of factories from <code>CmdType</code>s.
      */
-    private Map factories = new HashMap();
+    private Map<CmdType,SnacCmdFactory> factories = new HashMap<CmdType, SnacCmdFactory>();
 
     /**
       * Registers the given command factory for the given command type.
@@ -71,7 +70,7 @@ public abstract class SnacCmdFactoryList {
             SnacCmdFactory factory) {
         DefensiveTools.checkNull(type, "type");
 
-        if (!Arrays.asList(factory.getSupportedTypes()).contains(type)) return;
+        if (!factory.getSupportedTypes().contains(type)) return;
 
         factories.put(type, factory);
     }
@@ -86,10 +85,8 @@ public abstract class SnacCmdFactoryList {
             SnacCmdFactory factory) {
         DefensiveTools.checkNull(factory, "factory");
 
-        CmdType[] types = factory.getSupportedTypes();
-
-        for (int i = 0; i < types.length; i++) {
-            factories.put(types[i], factory);
+        for (CmdType type : factory.getSupportedTypes()) {
+            factories.put(type, factory);
         }
     }
 
@@ -106,7 +103,7 @@ public abstract class SnacCmdFactoryList {
             SnacCmdFactory factory) {
         DefensiveTools.checkNull(type, "type");
 
-        SnacCmdFactory other = (SnacCmdFactory) factories.get(type);
+        SnacCmdFactory other = factories.get(type);
 
         if (other == factory) factories.remove(type);
     }
@@ -120,7 +117,7 @@ public abstract class SnacCmdFactoryList {
     public synchronized final void unregisterAll(SnacCmdFactory factory) {
         DefensiveTools.checkNull(factory, "factory");
 
-        Collection c = factories.values();
+        Collection<SnacCmdFactory> c = factories.values();
 
         // remove each instance of this factory
         while (c.remove(factory));
@@ -151,6 +148,6 @@ public abstract class SnacCmdFactoryList {
     public synchronized final SnacCmdFactory getFactory(CmdType type) {
         DefensiveTools.checkNull(type, "type");
 
-        return (SnacCmdFactory) factories.get(type);
+        return factories.get(type);
     }
 }

@@ -157,14 +157,14 @@ public class ClientSnacProcessor extends AbstractSnacProcessor {
     /**
      * The outgoing SNAC request listeners registered on this SNAC connection.
      */
-    private final CopyOnWriteArrayList requestListeners
-            = new CopyOnWriteArrayList();
+    private final CopyOnWriteArrayList<OutgoingSnacRequestListener> requestListeners
+            = new CopyOnWriteArrayList<OutgoingSnacRequestListener>();
 
     /**
      * The SNAC request response listeners registered on this SNAC connection.
      */
-    private final CopyOnWriteArrayList responseListeners
-            = new CopyOnWriteArrayList();
+    private final CopyOnWriteArrayList<SnacResponseListener> responseListeners
+            = new CopyOnWriteArrayList<SnacResponseListener>();
 
     /** The "time to live" of SNAC requests. */
     private int requestTtl = REQUEST_TTL_DEFAULT;
@@ -173,10 +173,10 @@ public class ClientSnacProcessor extends AbstractSnacProcessor {
      * A map from request ID's (<code>Integer</code>s) to
      *  <code>RequestInfo</code>s, which contain <code>SnacRequest</code>s.
      */
-    private final Map requests = new HashMap();
+    private final Map<Long,RequestInfo> requests = new HashMap<Long, RequestInfo>();
 
     /** A list of requests that have been sent (not just queued). */
-    private final List requestQueue = new LinkedList();
+    private final List<RequestInfo> requestQueue = new LinkedList<RequestInfo>();
 
     /** Whether or not this SNAC connection is currently paused. */
     private boolean paused = false;
@@ -408,7 +408,7 @@ public class ClientSnacProcessor extends AbstractSnacProcessor {
      * @return a SNAC request with the given request ID, if one has been sent
      */
     public synchronized SnacRequest getRequest(long reqid) {
-        RequestInfo reqinfo = (RequestInfo) requests.get(new Long(reqid));
+        RequestInfo reqinfo = requests.get(reqid);
         if (reqinfo == null) return null;
 
         return reqinfo.getRequest();
@@ -438,10 +438,7 @@ public class ClientSnacProcessor extends AbstractSnacProcessor {
         synchronized(requestEventLock) {
             // tell the global listeners
             if (!requestListeners.isEmpty()) {
-                for (Iterator it = requestListeners.iterator(); it.hasNext();) {
-                    OutgoingSnacRequestListener l
-                            = (OutgoingSnacRequestListener) it.next();
-
+                for (OutgoingSnacRequestListener l : requestListeners) {
                     try {
                         l.handleTimeout(event);
                     } catch (Throwable t) {
@@ -461,9 +458,7 @@ public class ClientSnacProcessor extends AbstractSnacProcessor {
      */
     private final void clearAllRequests() {
         synchronized(requests) {
-            for (Iterator it = requests.values().iterator(); it.hasNext();) {
-                RequestInfo reqInfo = (RequestInfo) it.next();
-
+            for (RequestInfo reqInfo : requests.values()) {
                 timeoutRequest(reqInfo);
             }
 
@@ -482,7 +477,7 @@ public class ClientSnacProcessor extends AbstractSnacProcessor {
             ttl = requestTtl;
         }
 
-        List timedout = new LinkedList();
+        List<RequestInfo> timedout = new LinkedList<RequestInfo>();
         synchronized(requests) {
             if (requestQueue.isEmpty()) return;
 
@@ -495,8 +490,8 @@ public class ClientSnacProcessor extends AbstractSnacProcessor {
 
             long ttlms = ttl * 1000;
 
-            for (Iterator it = requestQueue.iterator(); it.hasNext();) {
-                RequestInfo reqInfo = (RequestInfo) it.next();
+            for (Iterator<RequestInfo> it = requestQueue.iterator(); it.hasNext();) {
+                RequestInfo reqInfo = it.next();
 
                 long sentTime = reqInfo.getSentTime();
                 if (sentTime == -1) continue;
@@ -513,14 +508,12 @@ public class ClientSnacProcessor extends AbstractSnacProcessor {
 
                 // and remove the request from the queue and the reqid map
                 it.remove();
-                requests.remove(new Long(reqInfo.getRequest().getReqid()));
+                requests.remove(reqInfo.getRequest().getReqid());
             }
         }
 
         // we time out the requests outside of the lock
-        for (Iterator it = timedout.iterator(); it.hasNext();) {
-            RequestInfo reqInfo = (RequestInfo) it.next();
-
+        for (RequestInfo reqInfo : timedout) {
             timeoutRequest(reqInfo);
         }
     }
@@ -594,7 +587,7 @@ public class ClientSnacProcessor extends AbstractSnacProcessor {
             if (ttl != 0) {
                 requestQueue.add(reqInfo);
             } else {
-                requests.remove(new Long(reqid));
+                requests.remove(reqid);
             }
         }
 
@@ -629,10 +622,7 @@ public class ClientSnacProcessor extends AbstractSnacProcessor {
         synchronized(requestEventLock) {
             // tell the global request listeners first
             if (!requestListeners.isEmpty()) {
-                for (Iterator it = requestListeners.iterator(); it.hasNext();) {
-                    OutgoingSnacRequestListener l
-                            = (OutgoingSnacRequestListener) it.next();
-
+                for (OutgoingSnacRequestListener l : requestListeners) {
                     try {
                         l.handleSent(event);
                     } catch (Throwable t) {
@@ -659,14 +649,14 @@ public class ClientSnacProcessor extends AbstractSnacProcessor {
     private RequestInfo registerSnacRequest(SnacRequest request) {
         synchronized(requests) {
             if (request.getReqid() != -1) {
-                return (RequestInfo) requests.get(new Long(request.getReqid()));
+                return requests.get(request.getReqid());
             }
 
             long id = reqid.next();
 
             request.setReqid(id);
 
-            Long key = new Long(id);
+            Long key = id;
 
             cleanRequests();
 
@@ -705,10 +695,10 @@ public class ClientSnacProcessor extends AbstractSnacProcessor {
 
         SnacPacket snacPacket = event.getSnacPacket();
 
-        Long key = new Long(snacPacket.getReqid());
+        Long key = snacPacket.getReqid();
         RequestInfo reqInfo;
         synchronized(requests) {
-            reqInfo = (RequestInfo) requests.get(key);
+            reqInfo = requests.get(key);
         }
 
         if (reqInfo == null) return true;
@@ -721,9 +711,7 @@ public class ClientSnacProcessor extends AbstractSnacProcessor {
         SnacResponseEvent sre = new SnacResponseEvent(event, request);
 
         if (!responseListeners.isEmpty()) {
-            for (Iterator it = responseListeners.iterator(); it.hasNext();) {
-                SnacResponseListener l = (SnacResponseListener) it.next();
-
+            for (SnacResponseListener l : responseListeners) {
                 try {
                     l.handleResponse(sre);
                 } catch (Throwable t) {

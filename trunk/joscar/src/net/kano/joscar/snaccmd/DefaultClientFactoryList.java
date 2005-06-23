@@ -36,7 +36,6 @@
 package net.kano.joscar.snaccmd;
 
 import net.kano.joscar.snac.DefaultSnacCmdFactoryList;
-import net.kano.joscar.snac.SnacCmdFactory;
 import net.kano.joscar.snaccmd.acct.ClientAcctCmdFactory;
 import net.kano.joscar.snaccmd.auth.ClientAuthCmdFactory;
 import net.kano.joscar.snaccmd.buddy.ClientBuddyCmdFactory;
@@ -52,6 +51,8 @@ import net.kano.joscar.snaccmd.rooms.ClientRoomCmdFactory;
 import net.kano.joscar.snaccmd.search.ClientSearchCmdFactory;
 import net.kano.joscar.snaccmd.ssi.ClientSsiCmdFactory;
 
+import java.util.Arrays;
+
 /**
  * Provides a default <code>SnacCmdFactoryList</code> appropriate for use by
  * an AIM client. The included factories produce instances of the
@@ -63,7 +64,7 @@ public class DefaultClientFactoryList extends DefaultSnacCmdFactoryList {
      * Creates the default AIM client SNAC command factory list.
      */
     public DefaultClientFactoryList() {
-        super(new SnacCmdFactory[] {
+        super(Arrays.asList(
             new ClientAuthCmdFactory(),
             new ClientConnCmdFactory(),
             new ClientLocCmdFactory(),
@@ -77,7 +78,6 @@ public class DefaultClientFactoryList extends DefaultSnacCmdFactoryList {
             new ClientIconCmdFactory(),
             new ClientSsiCmdFactory(),
             new ClientIcbmCmdFactory(),
-            new ClientSnacErrorFactory(),
-        });
+            new ClientSnacErrorFactory()));
     }
 }

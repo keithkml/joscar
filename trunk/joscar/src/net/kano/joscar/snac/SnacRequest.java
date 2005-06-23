@@ -42,7 +42,6 @@ import net.kano.joscar.logging.LoggingSystem;
 import net.kano.joscar.net.ConnProcessor;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 
@@ -106,7 +105,7 @@ public class SnacRequest {
     /**
      * A list of listeners for this-request-specific events.
      */
-    private List listeners = null;
+    private List<SnacRequestListener> listeners = null;
 
     /** A lock for calling listeners' methods. */
     private final Object listenerEventLock = new Object();
@@ -114,7 +113,7 @@ public class SnacRequest {
     /**
      * A list of responses this request has received, just to waste memory.
      */
-    private List responses = null;
+    private List<SnacResponseEvent> responses = null;
 
     /**
      * The date at which this outgoing request was originally sent.
@@ -129,14 +128,7 @@ public class SnacRequest {
      * locally.
      */
     private boolean storingResponses = false;
-
-    /**
-     * A SNAC request response list containing no SNAC responses. This field is
-     * present to avoid creating new empty arrays.
-     */
-    private static final SnacResponseEvent[] NO_SNAC_RESPONSES
-            = new SnacResponseEvent[0];
-
+    
     /**
      * Creates a new <code>SnacRequest</code> for the given command and adds the
      * given event listener to its listener list.
@@ -177,7 +169,7 @@ public class SnacRequest {
     public synchronized final void addListener(SnacRequestListener l) {
         DefensiveTools.checkNull(l, "l");
 
-        if (listeners == null) listeners = new ArrayList(4);
+        if (listeners == null) listeners = new ArrayList<SnacRequestListener>(4);
 
         listeners.add(l);
     }
@@ -253,13 +245,12 @@ public class SnacRequest {
      *
      * @see #setStoringResponses
      */
-    public synchronized final SnacResponseEvent[] getResponses() {
+    public synchronized final List<SnacResponseEvent> getResponses() {
         // this is for performance.
-        List responses = this.responses;
-        if (responses == null || responses.isEmpty()) return NO_SNAC_RESPONSES;
+        List<SnacResponseEvent> responses = this.responses;
+        if (responses == null || responses.isEmpty()) return DefensiveTools.emptyList();
 
-        return (SnacResponseEvent[])
-                responses.toArray(new SnacResponseEvent[responses.size()]);
+        return DefensiveTools.getUnmodifiableCopy(responses);
     }
 
     /**
@@ -277,16 +268,14 @@ public class SnacRequest {
             sentAt = event.getSentTime();
         }
 
-        List listeners = getListenersCopy();
+        List<SnacRequestListener> listeners = getListenersCopy();
 
         if (listeners != null) {
             synchronized(listenerEventLock) {
-                for (Iterator it = listeners.iterator(); it.hasNext();) {
-                    SnacRequestListener listener
-                            = (SnacRequestListener) it.next();
-
+                for (SnacRequestListener listener : listeners) {
                     if (logFiner) {
-                        logger.logFiner("Running response listener " + listener);
+                        logger.logFiner("Running response listener "
+                                + listener);
                     }
 
                     try {
@@ -308,13 +297,13 @@ public class SnacRequest {
      *
      * @return a copy of the listener list
      */
-    private List getListenersCopy() {
-        List listeners;
+    private List<SnacRequestListener> getListenersCopy() {
+        List<SnacRequestListener> listeners;
         synchronized(this) {
             listeners = this.listeners;
             if (listeners != null && listeners.isEmpty()) listeners = null;
         }
-        if (listeners != null) return new ArrayList(listeners);
+        if (listeners != null) return new ArrayList<SnacRequestListener>(listeners);
         else return null;
     }
 
@@ -333,21 +322,19 @@ public class SnacRequest {
 
         synchronized(this) {
             if (storingResponses) {
-                if (responses == null) responses = new ArrayList(5);
+                if (responses == null) responses = new ArrayList<SnacResponseEvent>(5);
                 responses.add(event);
             }
         }
 
-        List listeners = getListenersCopy();
+        List<SnacRequestListener> listeners = getListenersCopy();
 
         if (listeners != null) {
             synchronized(listenerEventLock) {
-                for (Iterator it = listeners.iterator(); it.hasNext();) {
-                    SnacRequestListener listener
-                            = (SnacRequestListener) it.next();
-
+                for (SnacRequestListener listener : listeners) {
                     if (logFiner) {
-                        logger.logFiner("Running response listener " + listener);
+                        logger.logFiner("Running response listener "
+                                + listener);
                     }
 
                     try {
@@ -375,14 +362,11 @@ public class SnacRequest {
 
         if (logFiner) logger.logFiner("Snac request " + this + " timed out");
 
-        List listeners = getListenersCopy();
+        List<SnacRequestListener> listeners = getListenersCopy();
 
         if (listeners != null) {
             synchronized(listenerEventLock) {
-                for (Iterator it = listeners.iterator(); it.hasNext();) {
-                    SnacRequestListener listener
-                            = (SnacRequestListener) it.next();
-
+                for (SnacRequestListener listener : listeners) {
                     if (logFiner) {
                         logger.logFiner("Running response listener " + listener
                                 + " for request timeout");

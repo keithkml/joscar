@@ -107,8 +107,8 @@ public class EncryptionInfoAck extends ConnCommand {
     }
 
     public void writeData(OutputStream out) throws IOException {
-        for (int i = 0; i < blocks.length; i++) {
-            blocks[i].write(out);
+        for (ExtraInfoBlockHolder block : blocks) {
+            block.write(out);
         }
     }
 

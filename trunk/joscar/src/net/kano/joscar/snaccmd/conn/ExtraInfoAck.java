@@ -38,6 +38,8 @@ package net.kano.joscar.snaccmd.conn;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.ExtraInfoBlock;
 
+import java.util.Collection;
+
 /**
  * A SNAC command sent to tell the client what his or her current "extra
  * information" is (such as a buddy icon and iChat availability message).
@@ -63,7 +65,7 @@ public class ExtraInfoAck extends AbstractExtraInfoCmd {
      *
      * @param blocks the extra information blocks to send in this command
      */
-    public ExtraInfoAck(ExtraInfoBlock[] blocks) {
+    public ExtraInfoAck(Collection<ExtraInfoBlock> blocks) {
         super(CMD_EXTRA_ACK, blocks);
     }
 }
