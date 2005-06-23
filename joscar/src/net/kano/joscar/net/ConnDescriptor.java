@@ -38,6 +38,7 @@ package net.kano.joscar.net;
 import net.kano.joscar.DefensiveTools;
 
 import java.net.InetAddress;
+import java.io.Serializable;
 
 /**
  * A class describing a destination host and port, for making an outgoing TCP
@@ -139,7 +140,7 @@ public class ConnDescriptor {
     }
 
     public String toString() {
-        Object first = (host == null ? (Object) address : (Object) host);
+        Serializable first = (host == null ? (Serializable) address : (Serializable) host);
         return "ConnDescriptor: " + first + ":" + port;
     }
 }

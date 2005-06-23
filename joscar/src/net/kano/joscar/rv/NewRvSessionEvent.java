@@ -66,7 +66,7 @@ public class NewRvSessionEvent {
     /** The session that was created. */
     private final RvSession newSession;
     /** The new session's "session type." */
-    private final Object sessionType;
+    private final EventType sessionType;
 
     /**
      * Creates a new new-rendezvous-session event with the given properties.
@@ -113,7 +113,7 @@ public class NewRvSessionEvent {
      *
      * @return the new session's "session type"
      */
-    public final Object getSessionType() { return sessionType; }
+    public final EventType getSessionType() { return sessionType; }
 
     public String toString() {
         return "NewRvSessionEvent: "

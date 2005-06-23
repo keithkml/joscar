@@ -182,8 +182,8 @@ public class RootItem extends AbstractItemObj {
                 = new ByteArrayOutputStream(groupids.length * 2);
 
             try {
-                for (int i = 0; i < groupids.length; i++) {
-                    BinaryTools.writeUShort(out, groupids[i]);
+                for (int groupid : groupids) {
+                    BinaryTools.writeUShort(out, groupid);
                 }
             } catch (IOException impossible) { }
 
@@ -199,9 +199,9 @@ public class RootItem extends AbstractItemObj {
     public synchronized String toString() {
         StringBuffer buffer = new StringBuffer();
 
-        for (int i = 0; i < groupids.length; i++) {
+        for (int groupid : groupids) {
             buffer.append("0x");
-            buffer.append(Integer.toHexString(groupids[i]));
+            buffer.append(Integer.toHexString(groupid));
             buffer.append(", ");
         }
 

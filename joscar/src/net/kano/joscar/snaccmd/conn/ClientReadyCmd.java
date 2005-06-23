@@ -41,7 +41,9 @@ import net.kano.joscar.flapcmd.SnacPacket;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * A SNAC command sent to indicate that the client has finished initializing
@@ -54,7 +56,7 @@ import java.util.Arrays;
  */
 public class ClientReadyCmd extends ConnCommand {
     /** A list of SNAC family information objects to be sent in this command. */
-    private final SnacFamilyInfo[] infos;
+    private final List<SnacFamilyInfo> infos;
 
     /**
      * Creates a new client ready command from the given incoming SNAC packet.
@@ -68,13 +70,15 @@ public class ClientReadyCmd extends ConnCommand {
 
         ByteBlock snacData = packet.getData();
 
-        infos = new SnacFamilyInfo[snacData.getLength()/8];
+        int num = snacData.getLength() / 8;
+        List<SnacFamilyInfo> infos = new ArrayList<SnacFamilyInfo>(num);
 
-        for (int i = 0; i < infos.length; i++) {
-            infos[i] = SnacFamilyInfo.readSnacFamilyInfo(snacData);
+        for (int i = 0; i < num; i++) {
+            infos.add(SnacFamilyInfo.readSnacFamilyInfo(snacData));
 
             snacData = snacData.subBlock(8);
         }
+        this.infos = DefensiveTools.getUnmodifiable(infos);
     }
 
     /**
@@ -83,10 +87,10 @@ public class ClientReadyCmd extends ConnCommand {
      *
      * @param infos the SNAC family information blocks to send with this command
      */
-    public ClientReadyCmd(SnacFamilyInfo[] infos) {
+    public ClientReadyCmd(Collection<SnacFamilyInfo> infos) {
         super(CMD_CLIENT_READY);
 
-        this.infos = (SnacFamilyInfo[]) (infos == null ? null : infos.clone());
+        this.infos = DefensiveTools.getSafeListCopy(infos, "infos");
     }
 
     /**
@@ -94,19 +98,17 @@ public class ClientReadyCmd extends ConnCommand {
      *
      * @return this command's SNAC family information blocks
      */
-    public final SnacFamilyInfo[] getSnacFamilyInfos() {
-        return (SnacFamilyInfo[]) (infos == null ? null : infos.clone());
+    public final List<SnacFamilyInfo> getSnacFamilyInfos() {
+        return infos;
     }
 
     public void writeData(OutputStream out) throws IOException {
         if (infos != null) {
-            for (int i = 0; i < infos.length; i++) {
-                infos[i].write(out);
-            }
+            for (SnacFamilyInfo info : infos) info.write(out);
         }
     }
 
     public String toString() {
-        return "ClientReadyCmd: " + Arrays.asList(infos);
+        return "ClientReadyCmd: " + infos;
     }
 }

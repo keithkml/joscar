@@ -124,7 +124,7 @@ public class CertificateInfo implements LiveWritable {
         DefensiveTools.checkNull(block, "block");
 
         TlvChain chain = TlvTools.readChain(block);
-        System.out.println(chain);
+//        System.out.println(chain);
         /*
         // this doesn't seem to matter
         int code = -1;
@@ -163,8 +163,7 @@ public class CertificateInfo implements LiveWritable {
 
         if (signCertData == null) {
             // the encryption cert is probably the common cert (or null)
-            //TODO: readCertificateInfo should not return null if one cert is
-            // missing
+            //TODO: readCertificateInfo should not return null if one cert is missing
             if (encCertData == null) return null;
             return new CertificateInfo(certHash, encCertData, null, null, hashA, hashB);
         } else {
@@ -293,6 +292,7 @@ public class CertificateInfo implements LiveWritable {
             ByteBlock encCertData, ByteBlock signCertData, ByteBlock hashA,
             ByteBlock hashB) {
 
+        //TODO: allow way to set null certificates
         if (commonCertData == null) {
             DefensiveTools.checkNull(signCertData, "signCertData");
             DefensiveTools.checkNull(encCertData, "encCertData");

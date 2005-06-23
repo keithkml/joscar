@@ -42,6 +42,10 @@ import net.kano.joscar.tlv.MutableTlvChain;
 import net.kano.joscar.tlv.TlvChain;
 import net.kano.joscar.tlv.TlvTools;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
 /**
  * A base class for each of the item object classes provided in this package.
  */
@@ -57,16 +61,16 @@ public abstract class AbstractItemObj implements SsiItemObj {
      *
      * @see #toSsiItem
      */
-    public static SsiItem[] generateSsiItems(SsiItemObj[] itemObjs) {
-        SsiItemObj[] safeItemObjs = (SsiItemObj[])
-                DefensiveTools.getSafeNonnullArrayCopy(itemObjs, "itemObjs");
+    public static List<SsiItem> generateSsiItems(Collection<? extends SsiItemObj> itemObjs) {
+        List<SsiItemObj> safeItemObjs =
+                DefensiveTools.getSafeNonnullListCopy(itemObjs, "itemObjs");
 
-        SsiItem[] items = new SsiItem[safeItemObjs.length];
-        for (int i = 0; i < safeItemObjs.length; i++) {
-            items[i] = safeItemObjs[i].toSsiItem();
+        List<SsiItem> items = new ArrayList<SsiItem>(safeItemObjs.size());
+        for (SsiItemObj itemObj : safeItemObjs) {
+            items.add(itemObj.toSsiItem());
         }
 
-        return items;
+        return DefensiveTools.getUnmodifiable(items);
     }
 
     /** The "extra TLV's" in this item. This is never <code>null</code>*/

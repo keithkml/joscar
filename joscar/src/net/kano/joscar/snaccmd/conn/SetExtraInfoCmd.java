@@ -46,7 +46,7 @@ import net.kano.joscar.tlv.TlvTools;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Arrays;
+import java.util.List;
 
 /**
  * A SNAC command used to set the user's online status (ICQ-only) and the list
@@ -66,7 +66,7 @@ public class SetExtraInfoCmd extends ConnCommand {
     /** The user's ICQ online status, if any. */
     private final long icqstatus;
     /** The extra info blocks stored in this command. */
-    private final ExtraInfoBlock[] blocks;
+    private final List<ExtraInfoBlock> blocks;
 
     /**
      * Generates a new set-extra-info-blocks command from the given incoming
@@ -99,7 +99,7 @@ public class SetExtraInfoCmd extends ConnCommand {
         }
     }
 
-    public SetExtraInfoCmd(ExtraInfoBlock[] blocks) {
+    public SetExtraInfoCmd(List<ExtraInfoBlock> blocks) {
         this(ICQSTATUS_NONE, blocks);
     }
 
@@ -110,13 +110,13 @@ public class SetExtraInfoCmd extends ConnCommand {
      * @param icqstatus an ICQ availability status code
      * @param blocks a list of extra information blocks
      */
-    public SetExtraInfoCmd(int icqstatus, ExtraInfoBlock[] blocks) {
+    public SetExtraInfoCmd(int icqstatus, List<ExtraInfoBlock> blocks) {
         super(CMD_SETEXTRAINFO);
 
         DefensiveTools.checkRange(icqstatus, "icqstatus", -1);
 
         this.icqstatus = icqstatus;
-        this.blocks = (ExtraInfoBlock[]) DefensiveTools.getSafeNonnullArrayCopy(
+        this.blocks = DefensiveTools.getSafeNonnullListCopy(
                 blocks, "blocks");
     }
 
@@ -134,8 +134,8 @@ public class SetExtraInfoCmd extends ConnCommand {
      *
      * @return a list of the extra info blocks stored in this command
      */
-    public final ExtraInfoBlock[] getInfoBlocks() {
-        return (ExtraInfoBlock[]) blocks.clone();
+    public final List<ExtraInfoBlock> getInfoBlocks() {
+        return blocks;
     }
 
     public void writeData(OutputStream out) throws IOException {
@@ -144,16 +144,15 @@ public class SetExtraInfoCmd extends ConnCommand {
         }
         if (blocks != null) {
             ByteArrayOutputStream bout = new ByteArrayOutputStream();
-            for (int i = 0; i < blocks.length; i++) {
-                blocks[i].write(bout);
-            }
+            for (ExtraInfoBlock block : blocks) block.write(bout);
+
             new Tlv(TYPE_DATA, ByteBlock.wrap(bout.toByteArray())).write(out);
         }
     }
 
     public String toString() {
         return "SetExtraInfoCmd: blocks="
-                + (blocks == null ? null : Arrays.asList(blocks))
+                + (blocks == null ? null : blocks)
                 + (icqstatus != -1 ? ", icqstatus=" + icqstatus : "");
     }
 }

@@ -109,7 +109,7 @@ public class MigrationNotice extends ConnCommand {
     public MigrationNotice(String host, ByteBlock cookie, int[] families) {
         super(CMD_MIGRATE_PLS);
 
-        this.families = (int[]) (families == null ? null : families.clone());
+        this.families = families == null ? null : families.clone();
         this.host = host;
         this.cookie = cookie;
     }
@@ -139,15 +139,15 @@ public class MigrationNotice extends ConnCommand {
      * @return the migration host's supported SNAC families
      */
     public final int[] getFamilies() {
-        return (int[]) (families == null ? null : families.clone());
+        return families == null ? null : families.clone();
     }
 
     public void writeData(OutputStream out) throws IOException {
         int len = families == null ? 0 : families.length;
         BinaryTools.writeUShort(out, len);
         if (families != null) {
-            for (int i = 0; i < families.length; i++) {
-                BinaryTools.writeUShort(out, families[i]);
+            for (int family1 : families) {
+                BinaryTools.writeUShort(out, family1);
             }
         }
         if (host != null) Tlv.getStringInstance(TYPE_HOST, host).write(out);

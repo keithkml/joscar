@@ -43,7 +43,8 @@ import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * A rendezvous command used in sending portions of one's buddy list to another
@@ -63,7 +64,7 @@ import java.util.Arrays;
  */
 public class SendBuddyListRvCmd extends AbstractRequestRvCmd {
     /** The buddy groups being sent. */
-    private final SendBuddyListGroup[] groups;
+    private final List<SendBuddyListGroup> groups;
 
     /**
      * Creates a new Send Buddy List command from the given incoming Send Buddy
@@ -86,11 +87,10 @@ public class SendBuddyListRvCmd extends AbstractRequestRvCmd {
      *
      * @param groups the list of buddy groups
      */
-    public SendBuddyListRvCmd(SendBuddyListGroup[] groups) {
+    public SendBuddyListRvCmd(Collection<SendBuddyListGroup> groups) {
         super(CapabilityBlock.BLOCK_SENDBUDDYLIST);
 
-        this.groups = (SendBuddyListGroup[])
-                DefensiveTools.getSafeNonnullArrayCopy(groups, "groups");
+        this.groups = DefensiveTools.getSafeNonnullListCopy(groups, "groups");
     }
 
     /**
@@ -100,19 +100,19 @@ public class SendBuddyListRvCmd extends AbstractRequestRvCmd {
      *
      * @return a list of the buddy groups sent in this command
      */
-    public final SendBuddyListGroup[] getGroups() {
-        return (SendBuddyListGroup[]) groups.clone();
+    public final List<SendBuddyListGroup> getGroups() {
+        return groups;
     }
 
     protected void writeServiceData(OutputStream out) throws IOException {
-        for (int i = 0; i < groups.length; i++) {
-            groups[i].write(out);
+        for (SendBuddyListGroup group : groups) {
+            group.write(out);
         }
     }
 
     protected void writeRvTlvs(OutputStream out) throws IOException { }
 
     public String toString() {
-        return "SendBuddyListRvCmd: " + Arrays.asList(groups);
+        return "SendBuddyListRvCmd: " + groups;
     }
 }

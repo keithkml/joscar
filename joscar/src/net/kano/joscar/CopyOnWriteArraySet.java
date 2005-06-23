@@ -66,15 +66,15 @@ import java.util.Iterator;
  **/
 
 
-public class CopyOnWriteArraySet
-        extends AbstractSet implements Cloneable, java.io.Serializable {
-  protected final CopyOnWriteArrayList al;
+public class CopyOnWriteArraySet<E>
+        extends AbstractSet<E> implements Cloneable, java.io.Serializable {
+  protected final CopyOnWriteArrayList<E> al;
 
   /**
    * Constructs an empty set
    */
   public CopyOnWriteArraySet() {
-    al = new CopyOnWriteArrayList();
+    al = new CopyOnWriteArrayList<E>();
   }
 
   /**
@@ -82,7 +82,7 @@ public class CopyOnWriteArraySet
    * Collection.
    */
   public CopyOnWriteArraySet(Collection c) { 
-    al = new CopyOnWriteArrayList();
+    al = new CopyOnWriteArrayList<E>();
     al.addAllAbsent(c);
   }
 
@@ -91,14 +91,14 @@ public class CopyOnWriteArraySet
   public boolean  isEmpty()                 { return al.isEmpty(); }
   public boolean  contains(Object o)        { return al.contains(o); }
   public Object[] toArray()                 { return al.toArray(); }
-  public Object[] toArray(Object[] a)       { return al.toArray(a); }
+  public <T> T[] toArray(T[] a)       { return al.toArray(a); }
   public void     clear()                   {        al.clear(); }  
-  public Iterator iterator()                { return al.iterator(); }
+  public Iterator<E> iterator()                { return al.iterator(); }
   public boolean  remove(Object o)          { return al.remove(o); }
-  public boolean  containsAll(Collection c) { return al.containsAll(c); }
-  public boolean  addAll(Collection c)      { return al.addAllAbsent(c) > 0; }
-  public boolean  removeAll(Collection c)   { return al.removeAll(c); }
-  public boolean  retainAll(Collection c)   { return al.retainAll(c); }
-  public boolean  add(Object o)             { return al.addIfAbsent(o); }
+  public boolean  containsAll(Collection<?> c) { return al.containsAll(c); }
+  public boolean  addAll(Collection<? extends E> c)      { return al.addAllAbsent(c) > 0; }
+  public boolean  removeAll(Collection<?> c)   { return al.removeAll(c); }
+  public boolean  retainAll(Collection<?> c)   { return al.retainAll(c); }
+  public boolean  add(E o)             { return al.addIfAbsent(o); }
 
 }

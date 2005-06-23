@@ -39,6 +39,9 @@ import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snac.CmdType;
 import net.kano.joscar.snac.SnacCmdFactory;
+import net.kano.joscar.DefensiveTools;
+
+import java.util.List;
 
 /**
  * A SNAC command factory for the client-bound commands provided in this
@@ -46,7 +49,7 @@ import net.kano.joscar.snac.SnacCmdFactory;
  */
 public class ClientConnCmdFactory implements SnacCmdFactory {
     /** A list of command types supported by this factory. */
-    protected static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
+    protected static final List<CmdType> SUPPORTED_TYPES = DefensiveTools.asUnmodifiableList(
         new CmdType(ConnCommand.FAMILY_CONN, ConnCommand.CMD_SERVER_READY),
         new CmdType(ConnCommand.FAMILY_CONN, ConnCommand.CMD_SERV_VERS),
         new CmdType(ConnCommand.FAMILY_CONN, ConnCommand.CMD_RATE_INFO),
@@ -60,11 +63,10 @@ public class ClientConnCmdFactory implements SnacCmdFactory {
         new CmdType(ConnCommand.FAMILY_CONN, ConnCommand.CMD_RESUME),
         new CmdType(ConnCommand.FAMILY_CONN, ConnCommand.CMD_MIGRATE_PLS),
         new CmdType(ConnCommand.FAMILY_CONN, ConnCommand.CMD_EXTRA_ACK),
-        new CmdType(ConnCommand.FAMILY_CONN, ConnCommand.CMD_ENCINFOACK),
-    };
+        new CmdType(ConnCommand.FAMILY_CONN, ConnCommand.CMD_ENCINFOACK));
 
-    public CmdType[] getSupportedTypes() {
-        return (CmdType[]) SUPPORTED_TYPES.clone();
+    public List<CmdType> getSupportedTypes() {
+        return SUPPORTED_TYPES;
     }
 
     public SnacCommand genSnacCommand(SnacPacket packet) {

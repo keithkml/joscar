@@ -37,9 +37,7 @@ package net.kano.joscar.tlv;
 
 import net.kano.joscar.ByteBlock;
 
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -50,12 +48,12 @@ import java.util.Map;
  */
 public final class ImmutableTlvChain extends AbstractTlvChain {
     /** A list of the TLV's in this chain, in order. */
-    private final List tlvList = new LinkedList();
+    private final List<Tlv> tlvList = new LinkedList<Tlv>();
     /**
      * A map from TLV type codes to <code>List</code>s of the TLV's in this
      * chain with that type.
      */
-    private final Map tlvMap = new HashMap();
+    private final Map<Integer,List<Tlv>> tlvMap = new HashMap<Integer, List<Tlv>>();
 
     /**
      * Creates a new immutable TLV chain with the given number of TLV's starting
@@ -65,11 +63,9 @@ public final class ImmutableTlvChain extends AbstractTlvChain {
      * @param offset the index of the first TLV that this chain should contain
      * @param len the number of TLV's to include in this chain
      */
-    ImmutableTlvChain(Tlv[] tlvs, int offset, int len) {
-        List list = Arrays.asList(tlvs).subList(offset, offset + len);
-        for (Iterator it = list.iterator(); it.hasNext();) {
-            addTlvImpl((Tlv) it.next());
-        }
+    ImmutableTlvChain(List<Tlv> tlvs, int offset, int len) {
+        List<Tlv> list = tlvs.subList(offset, offset + len);
+        for (Tlv tlv : list) addTlvImpl(tlv);
     }
 
     /**
@@ -97,7 +93,7 @@ public final class ImmutableTlvChain extends AbstractTlvChain {
         copy(other);
     }
 
-    protected final List getTlvList() { return tlvList; }
+    protected final List<Tlv> getTlvList() { return tlvList; }
 
-    protected final Map getTlvMap() { return tlvMap; }
+    protected final Map<Integer,List<Tlv>> getTlvMap() { return tlvMap; }
 }

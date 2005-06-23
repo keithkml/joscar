@@ -39,6 +39,10 @@ import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snac.CmdType;
 import net.kano.joscar.snac.SnacCmdFactory;
+import net.kano.joscar.DefensiveTools;
+
+import java.util.List;
+import java.util.Arrays;
 
 /**
  * A SNAC command factory for the client-bound commands provided in this
@@ -46,17 +50,16 @@ import net.kano.joscar.snac.SnacCmdFactory;
  */
 public class ClientLocCmdFactory implements SnacCmdFactory {
     /** The supported SNAC command types. */
-    protected static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
+    protected static final List<CmdType> SUPPORTED_TYPES = DefensiveTools.asUnmodifiableList(
         new CmdType(LocCommand.FAMILY_LOC, LocCommand.CMD_RIGHTS_RESP),
         new CmdType(LocCommand.FAMILY_LOC, LocCommand.CMD_USER_INFO),
         new CmdType(LocCommand.FAMILY_LOC, LocCommand.CMD_DIR_INFO),
         new CmdType(LocCommand.FAMILY_LOC, LocCommand.CMD_INTEREST_ACK),
-        new CmdType(LocCommand.FAMILY_LOC, LocCommand.CMD_SET_DIR_ACK),
-    };
+        new CmdType(LocCommand.FAMILY_LOC, LocCommand.CMD_SET_DIR_ACK));
 
     
-    public CmdType[] getSupportedTypes() {
-        return (CmdType[]) SUPPORTED_TYPES.clone();
+    public List<CmdType> getSupportedTypes() {
+        return SUPPORTED_TYPES;
     }
 
     public SnacCommand genSnacCommand(SnacPacket packet) {

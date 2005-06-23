@@ -56,9 +56,6 @@ import java.util.Map;
  * See {@link #getTlvList} and {@link #getTlvMap} for details.
  */
 public abstract class AbstractTlvChain implements TlvChain {
-    /** An empty array of TLV's. */
-    private static final Tlv[] TLVARRAY_EMPTY = new Tlv[0];
-
     /** The total size of this chain, as read from an incoming stream. */
     private int totalSize;
 
@@ -93,8 +90,8 @@ public abstract class AbstractTlvChain implements TlvChain {
 
         totalSize = getTotalSize();
 
-        List tlvList = getTlvList();
-        Map tlvMap = getTlvMap();
+        List<Tlv> tlvList = getTlvList();
+        Map<Integer,List<Tlv>> tlvMap = getTlvMap();
 
         tlvList.clear();
         tlvMap.clear();
@@ -107,10 +104,7 @@ public abstract class AbstractTlvChain implements TlvChain {
             tlvMap.putAll(atc.getTlvMap());
         } else {
             // this is messier and a bit slower
-            Tlv[] tlvs = chain.getTlvs();
-            for (int i = 0; i < tlvs.length; i++) {
-                addTlvImpl(tlvs[i]);
-            }
+            for (Tlv tlv : chain.getTlvs()) addTlvImpl(tlv);
         }
     }
 
@@ -152,8 +146,8 @@ public abstract class AbstractTlvChain implements TlvChain {
 
         getTlvList().add(tlv);
 
-        Integer type = new Integer(tlv.getType());
-        List siblings = (List) getTlvMap().get(type);
+        Integer type = tlv.getType();
+        List<Tlv> siblings = getTlvMap().get(type);
 
         if (siblings == null) {
             siblings = createSiblingList();
@@ -166,16 +160,15 @@ public abstract class AbstractTlvChain implements TlvChain {
     public boolean hasTlv(int type) {
         DefensiveTools.checkRange(type, "type", 0);
 
-        return getTlvMap().containsKey(new Integer(type));
+        return getTlvMap().containsKey(type);
     }
 
-    public Tlv[] getTlvs() {
-        List list = getTlvList();
-        return (Tlv[]) list.toArray(new Tlv[list.size()]);
+    public List<Tlv> getTlvs() {
+        return DefensiveTools.getUnmodifiableCopy(getTlvList());
     }
 
-    public Iterator iterator() {
-        return Collections.unmodifiableList(getTlvList()).iterator();
+    public Iterator<Tlv> iterator() {
+        return getTlvs().iterator();
     }
 
     public int getTlvCount() {
@@ -185,32 +178,26 @@ public abstract class AbstractTlvChain implements TlvChain {
     public Tlv getFirstTlv(int type) {
         DefensiveTools.checkRange(type, "type", 0);
 
-        Integer typeNum = new Integer(type);
-
-        List list = (List) getTlvMap().get(typeNum);
-        return list == null ? null : (Tlv) list.get(0);
+        List<Tlv> list = getTlvMap().get(type);
+        return list == null ? null : list.get(0);
     }
 
     public Tlv getLastTlv(int type) {
         DefensiveTools.checkRange(type, "type", 0);
 
-        Integer typeNum = new Integer(type);
-
-        List list = (List) getTlvMap().get(typeNum);
-        return list == null ? null : (Tlv) list.get(list.size() - 1);
+        List<Tlv> list = getTlvMap().get(type);
+        return list == null ? null : list.get(list.size() - 1);
     }
 
-    public Tlv[] getTlvs(int type) {
+    public List<Tlv> getTlvs(int type) {
         DefensiveTools.checkRange(type, "type", 0);
 
-        Integer typeNum = new Integer(type);
-
-        List list = (List) getTlvMap().get(typeNum);
+        List<Tlv> list = getTlvMap().get(type);
         if (list == null) {
-            return TLVARRAY_EMPTY;
+            return DefensiveTools.emptyList();
         }
         else {
-            return (Tlv[]) list.toArray(new Tlv[list.size()]);
+            return DefensiveTools.getUnmodifiableCopy(list);
         }
     }
 
@@ -238,9 +225,12 @@ public abstract class AbstractTlvChain implements TlvChain {
 
     public long getUInt(int type) {
         Tlv tlv = getFirstTlv(type);
-        
-        if (tlv != null) return tlv.getDataAsUInt();
-        else return -1;
+
+        if (tlv != null) {
+            return tlv.getDataAsUInt();
+        } else {
+            return -1;
+        }
     }
 
     public synchronized int getTotalSize() {
@@ -249,15 +239,14 @@ public abstract class AbstractTlvChain implements TlvChain {
 
     public long getWritableLength() {
         int sum = 0;
-        for (Iterator it = getTlvList().iterator(); it.hasNext();) {
-            sum += ((Tlv) it.next()).getWritableLength();
+        for (Tlv tlv : getTlvList()) {
+            sum += (tlv).getWritableLength();
         }
         return sum;
     }
 
     public void write(OutputStream out) throws IOException {
-        for (Iterator it = getTlvList().iterator(); it.hasNext();) {
-            Tlv tlv = (Tlv) it.next();
+        for (Tlv tlv : getTlvList()) {
             tlv.write(out);
         }
     }
@@ -267,7 +256,7 @@ public abstract class AbstractTlvChain implements TlvChain {
      *
      * @return a list containing each of the TLV's in this chain, in order
      */
-    protected abstract List getTlvList();
+    protected abstract List<Tlv> getTlvList();
 
     /**
      * Returns a map from TLV types (as <code>Integer</code>s) to TLV lists (as
@@ -277,7 +266,7 @@ public abstract class AbstractTlvChain implements TlvChain {
      *
      * @return a map from TLV type to
      */
-    protected abstract Map getTlvMap();
+    protected abstract Map<Integer,List<Tlv>> getTlvMap();
 
     /**
      * Creates a new <code>List</code> to serve as a value for the {@linkplain
@@ -287,8 +276,8 @@ public abstract class AbstractTlvChain implements TlvChain {
      * @return an empty list that can be used to store TLV's in this chain's TLV
      *         map
      */
-    protected List createSiblingList() {
-        return new LinkedList();
+    protected List<Tlv> createSiblingList() {
+        return new LinkedList<Tlv>();
     }
 
     public String toString() {

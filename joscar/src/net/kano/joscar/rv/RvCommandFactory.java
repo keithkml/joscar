@@ -39,6 +39,8 @@ import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.snaccmd.icbm.RvCommand;
 
+import java.util.List;
+
 /**
  * An interface for producing <code>RvCommand</code>s from incoming rendezvous
  * ICBM commands.
@@ -62,7 +64,7 @@ public interface RvCommandFactory {
      *         convert, or <code>null</code> if it can handle all types of
      *         rendezvous commands
      */
-    CapabilityBlock[] getSupportedCapabilities();
+    List<CapabilityBlock> getSupportedCapabilities();
 
     /**
      * Attempts to generate a <code>RvCommand</code> from the data in the given

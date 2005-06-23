@@ -47,6 +47,7 @@ import net.kano.joscar.tlv.TlvTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.List;
 
 /**
  * A data structure used to transmit one's "info" ("profile"), away message,
@@ -71,16 +72,19 @@ public class InfoData implements LiveWritable {
         return new InfoData(null, awayMessage, null, null);
     }
 
-    public static InfoData forCapabilities(CapabilityBlock[] caps) {
+    public static InfoData forCapabilities(List<CapabilityBlock> caps) {
         DefensiveTools.checkNull(caps, "caps");
         return new InfoData(null, null, caps, null);
     }
 
     public static InfoData forCertificateInfo(CertificateInfo certInfo) {
         DefensiveTools.checkNull(certInfo, "certInfo");
-        //TODO: allow certinfo to be null?
 
         return new InfoData(null, null, null, certInfo);
+    }
+
+    public static InfoData forEmptyInfo() {
+        return new InfoData(null, null, null, null);
     }
 
     /**
@@ -122,7 +126,7 @@ public class InfoData implements LiveWritable {
             info = OscarTools.getInfoString(infoTlv.getData(), infoType);
         }
 
-        CapabilityBlock[] caps = null;
+        List<CapabilityBlock> caps = null;
         if (capTlv != null) {
             caps = CapabilityBlock.getCapabilityBlocks(capTlv.getData());
         }
@@ -178,7 +182,7 @@ public class InfoData implements LiveWritable {
     /**
      * The capability block list in this structure.
      */
-    private final CapabilityBlock[] caps;
+    private final List<CapabilityBlock> caps;
 
     /** A block of certificate information for the associated user. */
     private final CertificateInfo certInfo;
@@ -196,12 +200,11 @@ public class InfoData implements LiveWritable {
      * @param caps a list of supported capability blocks
      * @param certInfo client certificate information (for Encrypted IM)
      */
-    public InfoData(String profile, String awayMessage, CapabilityBlock[] caps,
+    public InfoData(String profile, String awayMessage, List<CapabilityBlock> caps,
             CertificateInfo certInfo) {
         this.userProfile = profile;
         this.awayMessage = awayMessage;
-        this.caps = (CapabilityBlock[])
-                DefensiveTools.getSafeArrayCopy(caps, "caps");
+        this.caps = DefensiveTools.getSafeListCopy(caps, "caps");
         this.certInfo = certInfo;
     }
 
@@ -229,8 +232,8 @@ public class InfoData implements LiveWritable {
      *
      * @return the user's supported capability blocks
      */
-    public final CapabilityBlock[] getCaps() {
-        return caps == null ? null : (CapabilityBlock[]) caps.clone();
+    public final List<CapabilityBlock> getCaps() {
+        return caps;
     }
 
     /**
@@ -312,9 +315,9 @@ public class InfoData implements LiveWritable {
             buffer.append("  away: ");
             buffer.append(display);
         }
-        if (caps != null && caps.length > 0) {
+        if (caps != null && caps.size() > 0) {
             buffer.append("  capabilities: ");
-            buffer.append(caps.length);
+            buffer.append(caps.size());
         }
         if (certInfo != null) {
             buffer.append("  certinfo: ");

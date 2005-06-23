@@ -39,6 +39,10 @@ import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snac.CmdType;
 import net.kano.joscar.snac.SnacCmdFactory;
+import net.kano.joscar.DefensiveTools;
+
+import java.util.List;
+import java.util.Collections;
 
 /**
  * An (empty) SNAC command factory for the (nonexistent) server-bound commands
@@ -46,10 +50,10 @@ import net.kano.joscar.snac.SnacCmdFactory;
  */
 public class ServerBuddyCmdFactory implements SnacCmdFactory {
     /** The (lack of) command types supported by this factory. */
-    protected static final CmdType[] SUPPORTED_TYPES = new CmdType[0];
+    protected static final List<CmdType> SUPPORTED_TYPES = DefensiveTools.emptyList();
 
-    public CmdType[] getSupportedTypes() {
-        return (CmdType[]) SUPPORTED_TYPES.clone();
+    public List<CmdType> getSupportedTypes() {
+        return DefensiveTools.getUnmodifiable(SUPPORTED_TYPES);
     }
 
     public SnacCommand genSnacCommand(SnacPacket packet) {

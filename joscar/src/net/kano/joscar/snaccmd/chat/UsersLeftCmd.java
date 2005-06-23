@@ -38,6 +38,8 @@ package net.kano.joscar.snaccmd.chat;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.FullUserInfo;
 
+import java.util.Collection;
+
 /**
  * A SNAC command sent to indicate that one or more users have left a chat room.
  *
@@ -59,7 +61,7 @@ public class UsersLeftCmd extends UsersCmd {
      *
      * @param users the users who have left the chat room
      */
-    public UsersLeftCmd(FullUserInfo[] users) {
+    public UsersLeftCmd(Collection<FullUserInfo> users) {
         super(CMD_USERS_LEFT, users);
     }
 }

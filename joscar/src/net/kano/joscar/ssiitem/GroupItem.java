@@ -210,8 +210,8 @@ public class GroupItem extends AbstractItemObj {
                     = new ByteArrayOutputStream(buddies.length * 2);
 
             try {
-                for (int i = 0; i < buddies.length; i++) {
-                    BinaryTools.writeUShort(out, buddies[i]);
+                for (int buddy : buddies) {
+                    BinaryTools.writeUShort(out, buddy);
                 }
             } catch (IOException impossible) { }
 
@@ -227,9 +227,9 @@ public class GroupItem extends AbstractItemObj {
         String buddyStr;
         if (buddies != null) {
             StringBuffer buffer = new StringBuffer();
-            for (int i = 0; i < buddies.length; i++) {
+            for (int buddy : buddies) {
                 buffer.append("0x");
-                buffer.append(Integer.toHexString(buddies[i]));
+                buffer.append(Integer.toHexString(buddy));
                 buffer.append(", ");
             }
             buddyStr = buffer.toString();

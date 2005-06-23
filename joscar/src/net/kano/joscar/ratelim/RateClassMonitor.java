@@ -265,7 +265,7 @@ public class RateClassMonitor {
     }
 
 /*
-    //TODO: implement, document getCurrentAvg
+    //TOLATER: implement, document getCurrentAvg
     public final long getCurrentAvg() {
         return computeCurrentAvg();
     }

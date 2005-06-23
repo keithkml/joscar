@@ -50,16 +50,16 @@ public class RecvRvEvent extends SnacPacketEvent {
      *
      * @see #getRvCommand()
      */
-    public static final Object TYPE_RV = "TYPE_RV";
+    public static final String TYPE_RV = "TYPE_RV";
     /**
      * An event type indicating that a RV response was received.
      *
      * @see #getRvResponseCode
      */
-    public static final Object TYPE_RESPONSE = "TYPE_RESPONSE";
+    public static final String TYPE_RESPONSE = "TYPE_RESPONSE";
 
     /** The type of event that this object represents. */
-    private final Object type;
+    private final String type;
 
     /** The RV processor on which the RV command/response was received. */
     private final RvProcessor rvProcessor;
@@ -113,7 +113,7 @@ public class RecvRvEvent extends SnacPacketEvent {
      * @param rvCommand the RV command that was received, if any
      * @param responseCode the result code of the received RV response
      */
-    private RecvRvEvent(Object type, SnacPacketEvent other,
+    private RecvRvEvent(String type, SnacPacketEvent other,
             RvProcessor rvProcessor, RvSession rvSession, RvCommand rvCommand,
             int responseCode) {
         super(other);
@@ -151,7 +151,7 @@ public class RecvRvEvent extends SnacPacketEvent {
      *
      * @return the event type represented by this object
      */
-    public final Object getRvEventType() { return type; }
+    public final String getRvEventType() { return type; }
 
     /**
      * Returns the RV processor on which the associated RV command/response was

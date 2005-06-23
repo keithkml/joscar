@@ -45,7 +45,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.regex.Pattern;
 
 /**
  * Represents an "extra information block," as I call it, which contains a
@@ -111,10 +110,10 @@ public final class ExtraInfoBlock implements Writable {
      * @return a list of zero or more extra info block objects read from the
      *         given data block
      */
-    public static ExtraInfoBlock[] readExtraInfoBlocks(ByteBlock block) {
+    public static List<ExtraInfoBlock> readExtraInfoBlocks(ByteBlock block) {
         DefensiveTools.checkNull(block, "block");
 
-        List infos = new LinkedList();
+        List<ExtraInfoBlock> infos = new LinkedList<ExtraInfoBlock>();
 
         ByteBlock nextBlock = block;
         for (;;) {
@@ -126,7 +125,7 @@ public final class ExtraInfoBlock implements Writable {
             nextBlock = nextBlock.subBlock(info.getTotalSize());
         }
 
-        return (ExtraInfoBlock[]) infos.toArray(new ExtraInfoBlock[infos.size()]);
+        return DefensiveTools.getUnmodifiableCopy(infos);
     }
 
     /**

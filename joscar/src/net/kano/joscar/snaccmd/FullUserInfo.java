@@ -50,8 +50,8 @@ import net.kano.joscar.tlv.TlvTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 
 /**
  * A very widely used structure that represents a single screen name and various
@@ -243,14 +243,14 @@ public class FullUserInfo implements LiveWritable {
         }
 
         // the capabilities!!!
-        CapabilityBlock[] capabilityBlocks = null;
+        List<CapabilityBlock> capabilityBlocks = null;
         if (capTlv != null) {
             // and create a new CapabilityBlock from each one.
             capabilityBlocks = CapabilityBlock.getCapabilityBlocks(
                     capTlv.getData());
         }
 
-        ExtraInfoBlock[] extraInfos = null;
+        List<ExtraInfoBlock> extraInfos = null;
         if (extraInfoTlv != null) {
             ByteBlock extraBlocks = extraInfoTlv.getData();
             extraInfos = ExtraInfoBlock.readExtraInfoBlocks(extraBlocks);
@@ -261,7 +261,7 @@ public class FullUserInfo implements LiveWritable {
             certHash = certHashTlv.getData();
         }
 
-        ShortCapabilityBlock[] shortCaps = null;
+        List<ShortCapabilityBlock> shortCaps = null;
         if (shortCapTlv != null) {
             ByteBlock shortCapData = shortCapTlv.getData();
             shortCaps = ShortCapabilityBlock.readShortCaps(shortCapData);
@@ -404,7 +404,7 @@ public class FullUserInfo implements LiveWritable {
      * The capability blocks advertised by this user, or <code>null</code> if
      * this field was not sent.
      */
-    private final CapabilityBlock[] capabilityBlocks;
+    private final List<CapabilityBlock> capabilityBlocks;
 
     /**
      * Whether this user is away or not; <code>null</code> if this field is not
@@ -416,13 +416,13 @@ public class FullUserInfo implements LiveWritable {
      * A set of extra information blocks advertised by this user, or
      * <code>null</code> if this field was not sent.
      */
-    private final ExtraInfoBlock[] extraInfos;
+    private final List<ExtraInfoBlock> extraInfos;
 
     /** An MD5 hash of the user's certificate information. */
     private final ByteBlock certInfoHash;
 
     /** A list of "short capability blocks." */
-    private final ShortCapabilityBlock[] shortCaps;
+    private final List<ShortCapabilityBlock> shortCaps;
 
     /**
      * The ICQ availability status advertised by this user (like
@@ -483,9 +483,9 @@ public class FullUserInfo implements LiveWritable {
      */
     public FullUserInfo(String sn, WarningLevel warningLevel, int flags,
             Date accountCreated, Date memberSince, long sessAIM, long sessAOL,
-            Date onSince, int idleMins, CapabilityBlock[] capabilityBlocks,
-            Boolean away, ExtraInfoBlock[] extraInfos, ByteBlock certHash,
-            ShortCapabilityBlock[] shortCaps, long icqstatus) {
+            Date onSince, int idleMins, List<CapabilityBlock> capabilityBlocks,
+            Boolean away, List<ExtraInfoBlock> extraInfos, ByteBlock certHash,
+            List<ShortCapabilityBlock> shortCaps, long icqstatus) {
         this(sn, warningLevel, flags, accountCreated, memberSince, sessAIM,
                 sessAOL, onSince, idleMins, capabilityBlocks, away, extraInfos,
                 certHash, shortCaps, icqstatus, null);
@@ -523,9 +523,9 @@ public class FullUserInfo implements LiveWritable {
      */
     public FullUserInfo(String sn, WarningLevel warningLevel, int flags,
             Date accountCreated, Date memberSince, long sessAIM, long sessAOL,
-            Date onSince, int idleMins, CapabilityBlock[] capabilityBlocks,
-            Boolean away, ExtraInfoBlock[] extraInfos, ByteBlock certHash,
-            ShortCapabilityBlock[] shortCaps, long icqstatus,
+            Date onSince, int idleMins, List<CapabilityBlock> capabilityBlocks,
+            Boolean away, List<ExtraInfoBlock> extraInfos, ByteBlock certHash,
+            List<ShortCapabilityBlock> shortCaps, long icqstatus,
             ImmutableTlvChain extraTlvs) {
         this(sn, warningLevel, flags, accountCreated, memberSince, sessAIM,
                 sessAOL, onSince, idleMins, capabilityBlocks, away, extraInfos,
@@ -560,13 +560,12 @@ public class FullUserInfo implements LiveWritable {
      * @param extraTlvs a set of extra TLV's to be appended to this user info
      *        block
      * @param totalSize the total size of this object, as read from a block
-     *        of binary data
      */
     private FullUserInfo(String sn, WarningLevel warningLevel, int flags,
             Date accountCreated, Date memberSince, long sessAIM, long sessAOL,
-            Date onSince, int idleMins, CapabilityBlock[] caps,
-            Boolean away, ExtraInfoBlock[] extraInfos, ByteBlock certHash,
-            ShortCapabilityBlock[] shortCaps, long icqstatus,
+            Date onSince, int idleMins, List<CapabilityBlock> caps,
+            Boolean away, List<ExtraInfoBlock> extraInfos, ByteBlock certHash,
+            List<ShortCapabilityBlock> shortCaps, long icqstatus,
             ImmutableTlvChain extraTlvs, int totalSize) {
         DefensiveTools.checkNull(sn, "sn");
         DefensiveTools.checkRange(sessAIM, "sessAIM", -1);
@@ -574,14 +573,14 @@ public class FullUserInfo implements LiveWritable {
         DefensiveTools.checkRange(idleMins, "idleMins", -1);
         DefensiveTools.checkRange(totalSize, "totalSize", -1);
 
-        CapabilityBlock[] safeCaps = (CapabilityBlock[])
-                        DefensiveTools.getSafeArrayCopy(caps, "caps");
+        List<CapabilityBlock> safeCaps =
+                        DefensiveTools.getSafeListCopy(caps, "caps");
 
-        ExtraInfoBlock[] safeExtraInfos = (ExtraInfoBlock[])
-                DefensiveTools.getSafeArrayCopy(extraInfos, "extraInfos");
+        List<ExtraInfoBlock> safeExtraInfos =
+                DefensiveTools.getSafeListCopy(extraInfos, "extraInfos");
 
-        ShortCapabilityBlock[] safeShortCaps = (ShortCapabilityBlock[])
-                DefensiveTools.getSafeArrayCopy(shortCaps, "shortCaps");
+        List<ShortCapabilityBlock> safeShortCaps =
+                DefensiveTools.getSafeListCopy(shortCaps, "shortCaps");
 
         this.sn = sn;
         this.warningLevel = warningLevel;
@@ -701,9 +700,8 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
      *
      * @return this user's advertised "capability blocks"
      */
-    public final CapabilityBlock[] getCapabilityBlocks() {
-        return (CapabilityBlock[])
-                (capabilityBlocks == null ? null : capabilityBlocks.clone());
+    public final List<CapabilityBlock> getCapabilityBlocks() {
+        return capabilityBlocks;
     }
 
     /**
@@ -721,8 +719,8 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
      *
      * @return a list of advertised extra information blocks
      */
-    public final ExtraInfoBlock[] getExtraInfoBlocks() {
-        return (ExtraInfoBlock[]) (extraInfos == null ? null : extraInfos.clone());
+    public final List<ExtraInfoBlock> getExtraInfoBlocks() {
+        return extraInfos;
     }
 
     /**
@@ -740,10 +738,8 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
      *
      * @return the list of short capability blocks for the associated user
      */
-    public ShortCapabilityBlock[] getShortCapabilityBlocks() {
-        return (shortCaps == null)
-                ? null
-                : (ShortCapabilityBlock[]) shortCaps.clone();
+    public List<ShortCapabilityBlock> getShortCapabilityBlocks() {
+        return shortCaps;
     }
 
     /**
@@ -790,7 +786,7 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
         if (flags != -1 || away != null) {
             int flags = this.flags == -1 ? 0 : this.flags;
             if (away != null) {
-                if (away.booleanValue()) flags |= MASK_AWAY;
+                if (away) flags |= MASK_AWAY;
                 else flags &= ~MASK_AWAY;
             }
             chain.addTlv(Tlv.getUShortInstance(TYPE_USER_FLAG, flags));
@@ -878,20 +874,20 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
 
                 (idleMins > 0 ? ", idleMins=" + idleMins : "") +
 
-                (away.booleanValue() ? ", away" : "") +
+                (away ? ", away" : "") +
 
                 (extraInfos != null
-                ? ", extraInfos=" + Arrays.asList(extraInfos) : "") +
+                ? ", extraInfos=" + extraInfos : "") +
 
                 (certInfoHash != null ? ", encInfo=" + certInfoHash : "") +
 
                 (extraTlvs != null && extraTlvs.getTlvCount() > 0
-                ? ", extraTlvs=" + Arrays.asList(extraTlvs.getTlvs()) : "")
+                ? ", extraTlvs=" + extraTlvs.getTlvs() : "")
 
                 + (shortCaps != null ? ", shortcaps: "
-                + Arrays.asList(shortCaps) : "")
+                + shortCaps : "")
 
                 + (capabilityBlocks != null ? ", longcaps: "
-                + Arrays.asList(capabilityBlocks) : "");
+                + capabilityBlocks : "");
     }
 }

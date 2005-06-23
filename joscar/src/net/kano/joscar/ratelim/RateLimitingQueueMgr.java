@@ -42,6 +42,7 @@ import net.kano.joscar.snac.SnacRequest;
 
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.List;
 
 /**
  * A SNAC queue manager which uses a <code>RateMonitor</code> to determine when
@@ -91,7 +92,8 @@ import java.util.Map;
  */
 public class RateLimitingQueueMgr implements SnacQueueManager {
     /** A map from SNAC processors to connection managers. */
-    private final Map connMgrs = new IdentityHashMap();
+    private final Map<ClientSnacProcessor,ConnectionQueueMgr> connMgrs
+            = new IdentityHashMap<ClientSnacProcessor, ConnectionQueueMgr>();
 
     /** A thread to "run" the SNAC queues controlled by this queue manager. */
     private final QueueRunner runner = new QueueRunner();
@@ -107,8 +109,10 @@ public class RateLimitingQueueMgr implements SnacQueueManager {
         runner.stopCurrentRun();
     }
 
-    protected void finalize() {
-        //TODO: should finalize() kill the queue runner? Should we add a connlistener?
+    protected void finalize() throws Throwable {
+        super.finalize();
+
+        //TOLATER: should finalize() kill the queue runner? Should we add a connlistener?
         // if we're not referenced anymore, I don't think there's a reason for
         // the queue to be running.
         stop();
@@ -135,10 +139,9 @@ public class RateLimitingQueueMgr implements SnacQueueManager {
      * @return a list of all single-SNAC-processor queue managers currently in
      *         use
      */
-    public final ConnectionQueueMgr[] getQueueMgrs() {
+    public final List<ConnectionQueueMgr> getQueueMgrs() {
         synchronized(connMgrs) {
-            return (ConnectionQueueMgr[]) connMgrs.values().toArray(
-                    new ConnectionQueueMgr[connMgrs.size()]);
+            return DefensiveTools.getUnmodifiableCopy(connMgrs.values());
         }
     }
 
@@ -157,7 +160,7 @@ public class RateLimitingQueueMgr implements SnacQueueManager {
         DefensiveTools.checkNull(processor, "processor");
 
         synchronized(connMgrs) {
-            return (ConnectionQueueMgr) connMgrs.get(processor);
+            return connMgrs.get(processor);
         }
     }
 
@@ -170,7 +173,7 @@ public class RateLimitingQueueMgr implements SnacQueueManager {
     public void detached(ClientSnacProcessor processor) {
         ConnectionQueueMgr mgr;
         synchronized(connMgrs) {
-            mgr = (ConnectionQueueMgr) connMgrs.remove(processor);
+            mgr = connMgrs.remove(processor);
         }
 
         mgr.detach();

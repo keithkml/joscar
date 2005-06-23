@@ -38,6 +38,8 @@ package net.kano.joscar.snaccmd.conn;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 
+import java.util.Collection;
+
 /**
  * A SNAC command sent to indicate to the client the versions of the SNAC
  * families supported by the server.
@@ -64,7 +66,7 @@ public class ServerVersionsCmd extends FamilyVersionsCmd {
      *
      * @param families the SNAC families and versions supported
      */
-    public ServerVersionsCmd(SnacFamilyInfo[] families) {
+    public ServerVersionsCmd(Collection<SnacFamilyInfo> families) {
         super(CMD_SERV_VERS, families);
     }
 }

@@ -97,8 +97,8 @@ public class RateAck extends ConnCommand {
 
     public void writeData(OutputStream out) throws IOException {
         if (classes != null) {
-            for (int i = 0; i < classes.length; i++) {
-                BinaryTools.writeUShort(out, classes[i]);
+            for (int aClass : classes) {
+                BinaryTools.writeUShort(out, aClass);
             }
         }
     }
@@ -107,8 +107,8 @@ public class RateAck extends ConnCommand {
         StringBuffer buffer = new StringBuffer();
         buffer.append("RateAck for classes: ");
         if (classes != null) {
-            for (int i = 0; i < classes.length; i++) {
-                buffer.append(classes[i]).append(", ");
+            for (int aClass : classes) {
+                buffer.append(aClass).append(", ");
             }
         }
 

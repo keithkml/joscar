@@ -49,6 +49,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Collection;
 
 /**
  * A SNAC command used to respond to every possible request or query made in the
@@ -83,7 +84,7 @@ public class RoomResponse extends RoomCommand {
      */
     private final int maxRooms;
     /** A set of exchange information blocks. */
-    private final ExchangeInfo[] exchangeInfos;
+    private final List<ExchangeInfo> exchangeInfos;
     /** A chat room information block. */
     private final FullRoomInfo roomInfo;
 
@@ -110,10 +111,9 @@ public class RoomResponse extends RoomCommand {
             maxRooms = -1;
         }
 
-        Tlv[] exchangeTlvs = chain.getTlvs(TYPE_EXCHANGE_INFO);
-        List exchangeList = new LinkedList();
-        for (int i = 0; i < exchangeTlvs.length; i++) {
-            ByteBlock exTlvBlock = exchangeTlvs[i].getData();
+        List<ExchangeInfo> exchangeList = new LinkedList<ExchangeInfo>();
+        for (Tlv exchangeTlv : chain.getTlvs(TYPE_EXCHANGE_INFO)) {
+            ByteBlock exTlvBlock = exchangeTlv.getData();
 
             ExchangeInfo exchange = ExchangeInfo.readExchangeInfo(exTlvBlock);
             if (exchange != null) exchangeList.add(exchange);
@@ -122,8 +122,7 @@ public class RoomResponse extends RoomCommand {
         if (exchangeList.isEmpty()) {
             exchangeInfos = null;
         } else {
-            exchangeInfos = (ExchangeInfo[]) exchangeList.toArray(
-                    new ExchangeInfo[exchangeList.size()]);
+            exchangeInfos = exchangeList;
         }
 
         Tlv roomInfoTlv = chain.getLastTlv(TYPE_ROOM_INFO);
@@ -155,7 +154,7 @@ public class RoomResponse extends RoomCommand {
      *        simultaneously reside
      * @param exchangeInfos a list of exchange information blocks
      */
-    public RoomResponse(int maxRooms, ExchangeInfo[] exchangeInfos) {
+    public RoomResponse(int maxRooms, Collection<ExchangeInfo> exchangeInfos) {
         this(maxRooms, exchangeInfos, null);
     }
 
@@ -169,16 +168,14 @@ public class RoomResponse extends RoomCommand {
      * @param exchangeInfos a list of exchange information blocks
      * @param roomInfo a room information block
      */
-    public RoomResponse(int maxRooms, ExchangeInfo[] exchangeInfos,
+    public RoomResponse(int maxRooms, Collection<ExchangeInfo> exchangeInfos,
             FullRoomInfo roomInfo) {
         super(CMD_ROOM_RESPONSE);
 
         DefensiveTools.checkRange(maxRooms, "maxRooms", -1);
 
         this.maxRooms = maxRooms;
-        this.exchangeInfos = (ExchangeInfo[]) (exchangeInfos == null
-                ? null
-                : exchangeInfos.clone());
+        this.exchangeInfos = DefensiveTools.getUnmodifiableCopy(exchangeInfos);
         this.roomInfo = roomInfo;
     }
 
@@ -201,10 +198,8 @@ public class RoomResponse extends RoomCommand {
      * @return the list of chat exchange information blocks sent in this
      *         response
      */
-    public final ExchangeInfo[] getExchangeInfos() {
-        return (ExchangeInfo[]) (exchangeInfos == null
-                ? null
-                : exchangeInfos.clone());
+    public final List<ExchangeInfo> getExchangeInfos() {
+        return exchangeInfos;
     }
 
     /**
@@ -222,9 +217,9 @@ public class RoomResponse extends RoomCommand {
             Tlv.getUShortInstance(TYPE_MAX_ROOMS, maxRooms).write(out);
         }
         if (exchangeInfos != null) {
-            for (int i = 0; i < exchangeInfos.length; i++) {
+            for (int i = 0; i < exchangeInfos.size(); i++) {
                 new Tlv(TYPE_EXCHANGE_INFO,
-                        ByteBlock.createByteBlock(exchangeInfos[i])).write(out);
+                        ByteBlock.createByteBlock(exchangeInfos.get(i))).write(out);
             }
         }
         if (roomInfo != null) {
@@ -237,7 +232,7 @@ public class RoomResponse extends RoomCommand {
         return "RoomResponse: " +
                 "maxRooms=" + maxRooms +
                 ", exchangeInfos="
-                + (exchangeInfos == null ? -1 : exchangeInfos.length) +
+                + (exchangeInfos == null ? -1 : exchangeInfos.size()) +
                 ", roomInfo=" + roomInfo;
     }
 }

@@ -35,10 +35,13 @@
 
 package net.kano.joscar.snaccmd.ssi;
 
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snac.CmdType;
 import net.kano.joscar.snac.SnacCmdFactory;
+
+import java.util.List;
 
 /**
  * A SNAC command factory for the client-bound commands provided in this
@@ -46,15 +49,14 @@ import net.kano.joscar.snac.SnacCmdFactory;
  */
 public class ClientSsiCmdFactory implements SnacCmdFactory {
     /** The SNAC command types supported by this factory. */
-    protected static final CmdType[] SUPPORTED_TYPES = new CmdType[] {
+    protected static final List<CmdType> SUPPORTED_TYPES = DefensiveTools.asUnmodifiableList(
         new CmdType(SsiCommand.FAMILY_SSI, SsiCommand.CMD_RIGHTS),
         new CmdType(SsiCommand.FAMILY_SSI, SsiCommand.CMD_SSI_DATA),
         new CmdType(SsiCommand.FAMILY_SSI, SsiCommand.CMD_UNCHANGED),
-        new CmdType(SsiCommand.FAMILY_SSI, SsiCommand.CMD_MOD_ACK),
-    };
+        new CmdType(SsiCommand.FAMILY_SSI, SsiCommand.CMD_MOD_ACK));
 
-    public CmdType[] getSupportedTypes() {
-        return (CmdType[]) SUPPORTED_TYPES.clone();
+    public List<CmdType> getSupportedTypes() {
+        return SUPPORTED_TYPES;
     }
 
     public SnacCommand genSnacCommand(SnacPacket packet) {

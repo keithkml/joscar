@@ -47,7 +47,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Date;
-import java.util.regex.Pattern;
+import java.util.List;
 
 /**
  * A data structure representing a single file or directory in a "Get File"
@@ -74,19 +74,20 @@ public class GetFileEntry implements LiveWritable {
      * returned <code>GetFileEntry</code>'s {@link #getTotalTlvCount()} method.
      *
      * @param tlvs a list of TLV's containing a Get File directory list entry
+     * @return a Get File directory list entry read from the given list of TLV's
      * @param offset the index of the first TLV in the given array from which
      *        the file entry TLV's should be read
-     * @return a Get File directory list entry read from the given list of TLV's
      */
-    public static GetFileEntry readEntry(Tlv[] tlvs, int offset) {
+    public static GetFileEntry readEntry(List<Tlv> tlvs, int offset) {
         DefensiveTools.checkNull(tlvs, "tlvs");
-        DefensiveTools.checkRange(offset, "offset", 0, tlvs.length - 1);
+        DefensiveTools.checkRange(offset, "offset", 0, tlvs.size() - 1);
 
         boolean gotLastmod = false;
         int lastTlv = -1;
-        for (int i = offset; i < tlvs.length; i++) {
-            DefensiveTools.checkNull(tlvs[i], "tlvs elements");
-            int type = tlvs[i].getType();
+        for (int i = offset; i < tlvs.size(); i++) {
+            Tlv tlv = tlvs.get(i);
+            DefensiveTools.checkNull(tlv, "tlvs elements");
+            int type = tlv.getType();
             if (type == TYPE_LASTMOD) {
                 if (!gotLastmod) {
                     gotLastmod = true;
@@ -101,7 +102,7 @@ public class GetFileEntry implements LiveWritable {
         }
 
         int totalTlvCount;
-        if (lastTlv == -1) totalTlvCount = tlvs.length - offset;
+        if (lastTlv == -1) totalTlvCount = tlvs.size() - offset;
         else totalTlvCount = lastTlv - offset + 1;
 
         if (totalTlvCount == 0) return null;

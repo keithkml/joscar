@@ -42,10 +42,10 @@ import net.kano.joscar.flap.ClientFlapConn;
 
 import javax.net.SocketFactory;
 import java.io.IOException;
+import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.Iterator;
 
 /**
  *
@@ -200,13 +200,13 @@ public class ClientConn {
      * A reason indicating that the reason for a state change to
      * <code>NOT_CONNECTED</code> was that <code>disconnect</code> was called.
      */
-    public static final Object REASON_ON_PURPOSE = "ON_PURPOSE";
+    public static final String REASON_ON_PURPOSE = "ON_PURPOSE";
     /**
      * A reason indicating that the reason for a state change to
      * <code>NOT_CONNECTED</code> was that the socket was closed for some
      * reason. This normally means some sort of network failure.
      */
-    public static final Object REASON_CONN_CLOSED = "CONN_CLOSED";
+    public static final String REASON_CONN_CLOSED = "CONN_CLOSED";
 
     /**
      * The current state of the connection.
@@ -229,7 +229,8 @@ public class ClientConn {
     /**
      * A list of connection listeners (state change listeners).
      */
-    private CopyOnWriteArrayList connListeners = new CopyOnWriteArrayList();
+    private CopyOnWriteArrayList<ClientConnListener> connListeners
+            = new CopyOnWriteArrayList<ClientConnListener>();
 
     /** A socket factory for generating outgoing sockets. */
     private SocketFactory socketFactory = null;
@@ -339,7 +340,7 @@ public class ClientConn {
      * @param reason a "reason" or description of this state change to provide
      *        to state listeners
      */
-    private synchronized final void setState(State state, Object reason) {
+    private synchronized void setState(State state, Serializable reason) {
         if (this.state == state || (this.state == STATE_FAILED
                 && state == STATE_NOT_CONNECTED)) return;
 
@@ -349,9 +350,7 @@ public class ClientConn {
         ClientConnEvent event = new ClientConnEvent(this, oldState, this.state,
                 reason);
 
-        for (Iterator it = connListeners.iterator(); it.hasNext();) {
-            ClientConnListener listener = (ClientConnListener) it.next();
-
+        for (ClientConnListener listener : connListeners) {
             listener.stateChanged(event);
         }
     }
@@ -361,7 +360,7 @@ public class ClientConn {
      *
      * @param socket the socket to associate with this connection
      */
-    private synchronized final void setSocket(Socket socket) {
+    private synchronized void setSocket(Socket socket) {
         this.socket = socket;
     }
 
@@ -399,7 +398,7 @@ public class ClientConn {
 
         setState(STATE_INITING, null);
 
-        Object dest = (host == null ? (Object) ip : (Object) host);
+        Serializable dest = (host == null ? (Serializable) ip : (Serializable) host);
 
         connThread = new ConnectionThread(MiscTools.getClassName(this)
                 + " to " + dest + ":" + port);
@@ -414,25 +413,24 @@ public class ClientConn {
         }
     }
 
-    //TODO: add processError(Object)
     /**
      * Closes this connection and sets the state to
-     * <code>STATE_NOT_CONNECTED</code>, with the given exception or error as
+     * <code>STATE_NOT_CONNECTED</code>, with the given object as
      * the state change's {@linkplain ClientConnEvent#getReason reason object}.
      * Note that calling this method will have no effect if the connection state
      * is already <CODE>STATE_NOT_CONNECTED</code> or <code>STATE_FAILED</code>.
      *
-     * @param t an exception or error that caused the connection to close
+     * @param o an exception or error that caused the connection to close
      */
-    protected synchronized final void processError(Throwable t) {
-        DefensiveTools.checkNull(t, "t");
+    protected synchronized final void processError(IOException o) {
+        DefensiveTools.checkNull(o, "o");
 
         if (state == STATE_NOT_CONNECTED || state == STATE_FAILED) return;
 
         try {
             closeConn();
         } finally {
-            setState(STATE_NOT_CONNECTED, t);
+            setState(STATE_NOT_CONNECTED, o);
         }
     }
 
@@ -546,7 +544,7 @@ public class ClientConn {
      *
      * @throws IOException if an I/O error occurs
      */
-    private final Socket createSocket(InetAddress host, int port)
+    private Socket createSocket(InetAddress host, int port)
             throws IOException {
         // this method can't be synchronized because we shouldn't freeze
         // the state of the connection while waiting for a socket to open; all
@@ -574,7 +572,7 @@ public class ClientConn {
      */
     private class ConnectionThread extends Thread {
         /** Whether this connection attempt has been cancelled. */
-        private boolean cancelled = false;
+        private volatile boolean cancelled = false;
 
         /**
          * Cretes a new connection thread with the given thread name.

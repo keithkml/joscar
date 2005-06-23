@@ -43,8 +43,9 @@ import net.kano.joscar.flapcmd.SnacPacket;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Date;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Collection;
 
 /**
  * A SNAC command containing the user's server-stored information. Normally
@@ -67,7 +68,7 @@ public class SsiDataCmd extends SsiCommand {
     /** The SSI version being used. */
     private final int version;
     /** The list of items. */
-    private final SsiItem[] items;
+    private final List<SsiItem> items;
     /** The last modification date of the SSI data. */
     private final long lastmod;
 
@@ -87,7 +88,7 @@ public class SsiDataCmd extends SsiCommand {
 
         int itemCount = BinaryTools.getUShort(snacData, 1);
 
-        List itemList = new LinkedList();
+        List<SsiItem> itemList = new ArrayList<SsiItem>();
 
         ByteBlock block = snacData.subBlock(3);
 
@@ -100,7 +101,7 @@ public class SsiDataCmd extends SsiCommand {
             block = block.subBlock(item.getTotalSize());
         }
 
-        items = (SsiItem[]) itemList.toArray(new SsiItem[itemList.size()]);
+        items = DefensiveTools.getUnmodifiable(itemList);
 
         lastmod = BinaryTools.getUInt(block, 0);
     }
@@ -113,7 +114,7 @@ public class SsiDataCmd extends SsiCommand {
      * @param lastmod the last modification date of the user's SSI data, in
      *        seconds since the unix epoch
      */
-    public SsiDataCmd(SsiItem[] items, long lastmod) {
+    public SsiDataCmd(Collection<? extends SsiItem> items, long lastmod) {
         this(VERSION_DEFAULT, items, lastmod);
     }
 
@@ -127,12 +128,12 @@ public class SsiDataCmd extends SsiCommand {
      *        seconds since the unix epoch, or <code>0</code> to indicate that
      *        this is <i>not</i> the last of a series of SSI data packets
      */
-    public SsiDataCmd(int version, SsiItem[] items, long lastmod) {
+    public SsiDataCmd(int version, Collection<? extends SsiItem> items, long lastmod) {
         super(CMD_SSI_DATA);
 
         DefensiveTools.checkRange(version, "version", 0);
         DefensiveTools.checkRange(lastmod, "lastmod", 0);
-        SsiItem[] safeItems = (SsiItem[]) DefensiveTools.getSafeNonnullArrayCopy(
+        List<SsiItem> safeItems =  DefensiveTools.getSafeNonnullListCopy(
                 items, "items");
 
         this.version = version;
@@ -160,8 +161,8 @@ public class SsiDataCmd extends SsiCommand {
      *
      * @return the items in this user's server-stored information
      */
-    public final SsiItem[] getItems() {
-        return (SsiItem[]) items.clone();
+    public final List<SsiItem> getItems() {
+        return items;
     }
 
     /**
@@ -175,15 +176,15 @@ public class SsiDataCmd extends SsiCommand {
 
     public void writeData(OutputStream out) throws IOException {
         BinaryTools.writeUByte(out, version);
-        BinaryTools.writeUShort(out, items.length);
-        for (int i = 0; i < items.length; i++) {
-            items[i].write(out);
+        BinaryTools.writeUShort(out, items.size());
+        for (SsiItem item : items) {
+            item.write(out);
         }
         BinaryTools.writeUInt(out, lastmod);
     }
 
     public String toString() {
-        return "SsiDataCmd (ssi version=" + version + "): " + items.length
+        return "SsiDataCmd (ssi version=" + version + "): " + items.size()
                 + " items, modified " + new Date(lastmod * 1000);
     }
 }

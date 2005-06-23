@@ -132,12 +132,12 @@ public final class OscarTools {
      * @param  str the content type string
      * @return     a map with keys and values extracted from the given string
      */
-    public static Map parseContentTypeString(String str) {
+    public static Map<String,String> parseContentTypeString(String str) {
         // create a fun matcher
         Matcher matcher = typePattern.matcher(str);
 
         // and a map to store keys/values in
-        Map entries = new HashMap();
+        Map<String,String> entries = new HashMap<String, String>();
 
         // and get all the matches..
         while (matcher.find()) {
@@ -248,10 +248,10 @@ public final class OscarTools {
 
         if (infoType != null) {
             // get a content type map
-            Map type = parseContentTypeString(infoType);
+            Map<String,String> type = parseContentTypeString(infoType);
 
             // extract the charset, if there is one
-            charset = (String) type.get("charset");
+            charset = type.get("charset");
 
             charset = getValidCharset(charset);
         } else {
@@ -451,7 +451,7 @@ System.out.println("message text is "
     public static HttpHeaderInfo parseHttpHeader(ByteBlock data) {
         DefensiveTools.checkNull(data, "data");
 
-        Map map = new HashMap();
+        Map<String,String> map = new HashMap<String, String>();
 
         DynAsciiCharSequence seq = new DynAsciiCharSequence(data);
         Matcher m = httpHeaderRE.matcher(seq);
@@ -481,7 +481,7 @@ System.out.println("message text is "
      */
     public static final class HttpHeaderInfo {
         /** The header information. */
-        private final Map headers;
+        private final Map<String,String> headers;
         /** The data sent in the HTTP stream. */
         private final ByteBlock data;
 
@@ -492,7 +492,7 @@ System.out.println("message text is "
          * @param headers the HTTP header information
          * @param data the block of data sent in the HTTP stream
          */
-        private HttpHeaderInfo(Map headers, ByteBlock data) {
+        private HttpHeaderInfo(Map<String,String> headers, ByteBlock data) {
             DefensiveTools.checkNull(headers, "headers");
             DefensiveTools.checkNull(data, "data");
 
@@ -509,7 +509,7 @@ System.out.println("message text is "
          *         given header was not sent in the associated HTTP stream
          */
         public String get(String headerName) {
-            return (String) headers.get(headerName);
+            return headers.get(headerName);
         }
 
         /**
@@ -519,7 +519,7 @@ System.out.println("message text is "
          *
          * @return a map from HTTP header names to their values
          */
-        public Map getHeaders() { return headers; }
+        public Map<String,String> getHeaders() { return headers; }
 
         /**
          * Returns the block of data sent in the associated HTTP stream.

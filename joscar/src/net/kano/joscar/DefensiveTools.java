@@ -35,6 +35,12 @@
 
 package net.kano.joscar;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * A set of utilities for ensuring the validity (and non-<code>null</code>ness)
  * of arguments passed into methods or constructors.
@@ -184,6 +190,21 @@ public final class DefensiveTools {
         }
     }
 
+
+    public static void checkNullElements(List<?> list, String listName,
+            int offset, int len) {
+        checkNull(list, listName);
+
+        for (int i = offset, end = offset + len; i < end; i++) {
+            if (list.get(i) == null) {
+                throw new IllegalArgumentException("'" + listName
+                        + "' array must not contain any null elements at "
+                        + "indices " + offset + " through " + (offset + len)
+                        + " (" + listName + "[" + i + "] == null)");
+            }
+        }
+    }
+
     /**
      * Returns a copy of the given array, ensuring that no element of the
      * returned array is <code>null</code>. If any elements of the given array
@@ -199,11 +220,11 @@ public final class DefensiveTools {
      * @throws IllegalArgumentException if any elements of the given array are
      *         <code>null</code>
      */
-    public static Object[] getSafeArrayCopy(Object[] array, String name)
+    public static <E> E[] getSafeArrayCopy(E[] array, String name)
             throws IllegalArgumentException {
         if (array == null) return null;
 
-        Object[] safeArray = (Object[]) array.clone();
+        E[] safeArray = array.clone();
         DefensiveTools.checkNullElements(safeArray, name);
 
         return safeArray;
@@ -222,12 +243,12 @@ public final class DefensiveTools {
      * @throws IllegalArgumentException if any elements of the given array are
      *         <code>null</code> or if the given array is <code>null</code>
      */
-    public static Object[] getSafeNonnullArrayCopy(Object[] array, String name)
+    public static <E> E[] getSafeNonnullArrayCopy(E[] array, String name)
             throws IllegalArgumentException {
         DefensiveTools.checkNull(array, name);
 
-        Object[] safeArray = (Object[]) array.clone();
-        DefensiveTools.checkNullElements(safeArray, name);
+        E[] safeArray = array.clone();
+        checkNullElements(safeArray, name);
 
         return safeArray;
     }
@@ -250,7 +271,7 @@ public final class DefensiveTools {
     public static int[] getSafeMinArrayCopy(int[] array, String name, int min) {
         checkNull(array, name);
 
-        int[] safeResults = (int[]) array.clone();
+        int[] safeResults = array.clone();
 
         for (int i = 0; i < safeResults.length; i++) {
             if (safeResults[i] < min) {
@@ -260,5 +281,42 @@ public final class DefensiveTools {
             }
         }
         return safeResults;
+    }
+
+    public static <E> List<E> getSafeNonnullListCopy(Collection<? extends E> list,
+            String listName) {
+        checkNull(list, listName);
+        List<E> copy = getUnmodifiableCopy(list);
+        checkNullElements(copy, listName);
+        return copy;
+    }
+
+    private static void checkNullElements(List<?> list, String listName) {
+        checkNullElements(list, listName, 0, list.size());
+    }
+
+    public static <E> List<E> getUnmodifiableCopy(Collection<? extends E> list) {
+        if (list == null) return null;
+        return Collections.unmodifiableList(new ArrayList<E>(list));
+    }
+
+    public static <E> List<E> getUnmodifiable(List<E> collection) {
+        return Collections.unmodifiableList(collection);
+    }
+
+    public static <E> List<E> getSafeListCopy(Collection<E> list, String listName) {
+        if (list == null) return null;
+        List<E> copy = getUnmodifiableCopy(list);
+        checkNullElements(copy, listName);
+        return copy;
+    }
+
+    public static <E> List<E> asUnmodifiableList(E... objects) {
+        return getUnmodifiable(Arrays.asList(objects));
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <E> List<E> emptyList() {
+        return Collections.EMPTY_LIST;
     }
 }

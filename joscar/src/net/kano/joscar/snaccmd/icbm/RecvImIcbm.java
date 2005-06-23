@@ -46,6 +46,7 @@ import net.kano.joscar.tlv.TlvTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Collection;
 
 /**
  * A SNAC command containing an IM.
@@ -106,7 +107,7 @@ public class RecvImIcbm extends AbstractImIcbm implements RecvIcbm {
      */
     public RecvImIcbm(long messageId, FullUserInfo userInfo,
             InstantMessage message, boolean autoResponse, boolean wantsIcon,
-            OldIconHashInfo iconInfo, ExtraInfoBlock[] expInfoBlocks,
+            OldIconHashInfo iconInfo, Collection<ExtraInfoBlock> expInfoBlocks,
             ByteBlock featuresBlock, boolean canType) {
         super(IcbmCommand.CMD_ICBM, messageId, message, autoResponse,
                 wantsIcon, iconInfo, expInfoBlocks, featuresBlock);

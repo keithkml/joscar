@@ -43,6 +43,9 @@ import net.kano.joscar.flapcmd.SnacPacket;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Collection;
+import java.util.List;
+import java.util.ArrayList;
 
 /**
  * A base class for the two SNAC-family-version-based commands in this family.
@@ -53,7 +56,7 @@ import java.io.OutputStream;
  */
 public abstract class FamilyVersionsCmd extends ConnCommand {
     /** The SNAC family information blocks in this command. */
-    private final SnacFamilyInfo[] families;
+    private final List<SnacFamilyInfo> families;
 
     /**
      * Creates a new family-version-based command read from the given incoming
@@ -69,13 +72,16 @@ public abstract class FamilyVersionsCmd extends ConnCommand {
 
         ByteBlock snacData = packet.getData();
 
-        families = new SnacFamilyInfo[snacData.getLength()/4];
+        int num = snacData.getLength() / 4;
+        List<SnacFamilyInfo> families = new ArrayList<SnacFamilyInfo>(num);
 
-        for (int i = 0; i < families.length; i++) {
+        for (int i = 0; i < num; i++) {
             int family = BinaryTools.getUShort(snacData, i*4);
             int version = BinaryTools.getUShort(snacData, i*4+2);
-            families[i] = new SnacFamilyInfo(family, version);
+            families.add(new SnacFamilyInfo(family, version));
         }
+
+        this.families = DefensiveTools.getUnmodifiable(families);
     }
 
     /**
@@ -85,12 +91,10 @@ public abstract class FamilyVersionsCmd extends ConnCommand {
      * @param command the SNAC command subtype of this command
      * @param families a list of SNAC family version information blocks
      */
-    protected FamilyVersionsCmd(int command, SnacFamilyInfo[] families) {
+    protected FamilyVersionsCmd(int command, Collection<SnacFamilyInfo> families) {
         super(command);
 
-        this.families = families == null
-                ? null
-                : (SnacFamilyInfo[]) families.clone();
+        this.families = DefensiveTools.getSafeListCopy(families, "families");
     }
 
     /**
@@ -98,15 +102,15 @@ public abstract class FamilyVersionsCmd extends ConnCommand {
      *
      * @return this command's list of SNAC family information blocks
      */
-    public final SnacFamilyInfo[] getSnacFamilyInfos() {
-        return (SnacFamilyInfo[]) families.clone();
+    public final List<SnacFamilyInfo> getSnacFamilyInfos() {
+        return families;
     }
 
     public void writeData(OutputStream out) throws IOException {
         if (families != null) {
-            for (int i = 0; i < families.length; i++) {
-                BinaryTools.writeUShort(out, families[i].getFamily());
-                BinaryTools.writeUShort(out, families[i].getVersion());
+            for (SnacFamilyInfo family1 : families) {
+                BinaryTools.writeUShort(out, family1.getFamily());
+                BinaryTools.writeUShort(out, family1.getVersion());
             }
         }
     }
@@ -116,10 +120,10 @@ public abstract class FamilyVersionsCmd extends ConnCommand {
         buffer.append(MiscTools.getClassName(this) + ": family versions: ");
 
         if (families != null) {
-            for (int i = 0; i < families.length; i++) {
-                buffer.append(Integer.toHexString(families[i].getFamily()));
+            for (SnacFamilyInfo family1 : families) {
+                buffer.append(Integer.toHexString(family1.getFamily()));
                 buffer.append(" (v=");
-                buffer.append(Integer.toHexString(families[i].getVersion()));
+                buffer.append(Integer.toHexString(family1.getVersion()));
                 buffer.append("), ");
             }
         }

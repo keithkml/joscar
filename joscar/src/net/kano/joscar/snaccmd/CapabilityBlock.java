@@ -42,7 +42,8 @@ import net.kano.joscar.Writable;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.regex.Pattern;
+import java.util.List;
+import java.util.ArrayList;
 
 /**
  * Represents a single "capability" that a client may have. Such capabilities
@@ -187,10 +188,10 @@ public final class CapabilityBlock implements Writable {
      * @return a block of binary data containing the binary representations of
      *         the given capabilities
      */
-    public static byte[] convertToBytes(CapabilityBlock[] capabilities) {
-        byte[] data = new byte[capabilities.length * 16];
-        for (int i = 0; i < capabilities.length; i++) {
-            capabilities[i].getBlock().copyTo(data, i*16);
+    public static byte[] convertToBytes(List<CapabilityBlock> capabilities) {
+        byte[] data = new byte[capabilities.size() * 16];
+        for (int i = 0; i < capabilities.size(); i++) {
+            capabilities.get(i).getBlock().copyTo(data, i*16);
         }
 
         return data;
@@ -202,12 +203,12 @@ public final class CapabilityBlock implements Writable {
      * @param block the data block containing zero or more capability blocks
      * @return a list of capability blocks contained in the given data block
      */
-    public static CapabilityBlock[] getCapabilityBlocks(ByteBlock block) {
-        CapabilityBlock[] blocks = new CapabilityBlock[block.getLength()/16];
+    public static List<CapabilityBlock> getCapabilityBlocks(ByteBlock block) {
+        List<CapabilityBlock> blocks = new ArrayList<CapabilityBlock>(block.getLength()/16);
 
         ByteBlock nextBlock = block;
-        for (int i = 0; i < blocks.length; i++) {
-            blocks[i] = new CapabilityBlock(nextBlock.subBlock(0, 16));
+        for (int i = 0; i < blocks.size(); i++) {
+            blocks.add(new CapabilityBlock(nextBlock.subBlock(0, 16)));
 
             nextBlock= nextBlock.subBlock(16);
         }

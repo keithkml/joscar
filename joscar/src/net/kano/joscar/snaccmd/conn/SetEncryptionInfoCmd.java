@@ -38,6 +38,8 @@ package net.kano.joscar.snaccmd.conn;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.ExtraInfoBlock;
 
+import java.util.Collection;
+
 /**
  * A SNAC command used for setting some sort of security information. As of this
  * writing, the significance of this command is unknown. This command is
@@ -77,7 +79,7 @@ public class SetEncryptionInfoCmd extends AbstractExtraInfoCmd {
      *
      * @param blocks the list of extra info blocks to send in this command
      */
-    public SetEncryptionInfoCmd(ExtraInfoBlock[] blocks) {
+    public SetEncryptionInfoCmd(Collection<ExtraInfoBlock> blocks) {
         super(CMD_SETENCINFO, blocks);
     }
 }

@@ -43,7 +43,6 @@ import net.kano.joscar.Writable;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.regex.Pattern;
 
 /**
  * A data structure used to hold data in {@link ExtraInfoBlock}s, containing

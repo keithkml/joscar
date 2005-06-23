@@ -37,7 +37,6 @@ package net.kano.joscar.tlv;
 
 import net.kano.joscar.DefensiveTools;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -50,12 +49,12 @@ import java.util.Map;
 public class DefaultMutableTlvChain
         extends AbstractTlvChain implements MutableTlvChain {
     /** A list of the TLV's in this chain, in order. */
-    private final List tlvList = new LinkedList();
+    private final List<Tlv> tlvList = new LinkedList<Tlv>();
     /**
      * A map from TLV type codes to <code>List</code>s of the TLV's in this
      * chain with that type.
      */
-    private final Map tlvMap = new HashMap();
+    private final Map<Integer,List<Tlv>> tlvMap = new HashMap<Integer, List<Tlv>>();
 
     /**
      * Creates an empty TLV chain.
@@ -81,18 +80,18 @@ public class DefaultMutableTlvChain
         DefensiveTools.checkNull(tlv, "tlv");
 
         int typeCode = tlv.getType();
-        Integer type = new Integer(typeCode);
-        List tlvs = (List) getTlvMap().get(type);
+        List<Tlv> tlvs = getTlvMap().get(typeCode);
 
         int insertAt = -1;
         if (tlvs == null) {
-            tlvs = new LinkedList();
-            getTlvMap().put(type, tlvs);
+            tlvs = new LinkedList<Tlv>();
+            getTlvMap().put((Integer)typeCode, tlvs);
+            
         } else if (!tlvs.isEmpty()) {
             // find the first instance of a tlv of this type
             int i = 0;
-            for (Iterator it = getTlvList().iterator(); it.hasNext();) {
-                Tlv next = (Tlv) it.next();
+            for (Iterator<Tlv> it = getTlvList().iterator(); it.hasNext();) {
+                Tlv next = it.next();
                 if (next.getType() == typeCode) {
                     // we found one!
                     if (insertAt == -1) insertAt = i;
@@ -113,8 +112,7 @@ public class DefaultMutableTlvChain
         DefensiveTools.checkNull(tlv, "tlv");
 
         int typeCode = tlv.getType();
-        Integer type = new Integer(typeCode);
-        List tlvs = (List) getTlvMap().get(type);
+        List<Tlv> tlvs = getTlvMap().get(typeCode);
 
         // isn't this neat
         if (tlvs != null) {
@@ -126,8 +124,7 @@ public class DefaultMutableTlvChain
     public synchronized final void removeTlvs(int type) {
         DefensiveTools.checkRange(type, "type", 0);
 
-        Integer typeKey = new Integer(type);
-        List tlvs = (List) getTlvMap().remove(typeKey);
+        List<Tlv> tlvs = getTlvMap().remove(type);
 
         if (tlvs != null) getTlvList().removeAll(tlvs);
     }
@@ -135,29 +132,27 @@ public class DefaultMutableTlvChain
     public synchronized final void removeTlvs(int[] types) {
         DefensiveTools.checkNull(types, "types");
 
-        int[] safeTypes = (int[]) types.clone();
+        int[] safeTypes = types.clone();
 
-        for (int i = 0; i < safeTypes.length; i++) {
-            DefensiveTools.checkRange(safeTypes[i], "types[] elements", 0);
+        for (int safeType : safeTypes) {
+            DefensiveTools.checkRange(safeType, "types[] elements", 0);
         }
 
-        for (int i = 0; i < safeTypes.length; i++) {
-            removeTlvs(safeTypes[i]);
+        for (int safeType1 : safeTypes) {
+            removeTlvs(safeType1);
         }
     }
 
     public synchronized final void addAll(TlvChain other) {
         DefensiveTools.checkNull(other, "other");
 
-        List tlvs;
+        List<Tlv> tlvs;
         if (other instanceof AbstractTlvChain) {
             tlvs = ((AbstractTlvChain) other).getTlvList();
         } else {
-            tlvs = Arrays.asList(other.getTlvs());
+            tlvs = other.getTlvs();
         }
-        for (Iterator it = tlvs.iterator(); it.hasNext();) {
-            Tlv tlv = (Tlv) it.next();
-
+        for (Tlv tlv : tlvs) {
             addTlvImpl(tlv);
         }
     }
@@ -165,20 +160,16 @@ public class DefaultMutableTlvChain
     public synchronized final void replaceAll(TlvChain other) {
         DefensiveTools.checkNull(other, "other");
 
-        List tlvs;
+        List<Tlv> tlvs;
         if (other instanceof AbstractTlvChain) {
             tlvs = ((AbstractTlvChain) other).getTlvList();
         } else {
-            tlvs = Arrays.asList(other.getTlvs());
+            tlvs = other.getTlvs();
         }
-        for (Iterator it = tlvs.iterator(); it.hasNext();) {
-            Tlv tlv = (Tlv) it.next();
-
-            replaceTlv(tlv);
-        }
+        for (Tlv tlv : tlvs) replaceTlv(tlv);
     }
 
-    protected synchronized List getTlvList() { return tlvList; }
+    protected synchronized List<Tlv> getTlvList() { return tlvList; }
 
-    protected synchronized Map getTlvMap() { return tlvMap; }
+    protected synchronized Map<Integer,List<Tlv>> getTlvMap() { return tlvMap; }
 }

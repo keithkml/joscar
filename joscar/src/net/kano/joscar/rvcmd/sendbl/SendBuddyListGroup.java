@@ -43,7 +43,8 @@ import net.kano.joscar.StringBlock;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -66,11 +67,11 @@ public class SendBuddyListGroup implements LiveWritable {
      * @return a list of <code>SendBuddyListGroup</code>s representing the
      *         groups in the given block
      */
-    public static SendBuddyListGroup[] readBuddyListGroups(ByteBlock block) {
+    public static List<SendBuddyListGroup> readBuddyListGroups(ByteBlock block) {
         DefensiveTools.checkNull(block, "block");
 
         ByteBlock nextBlock = block;
-        List groups = new LinkedList();
+        List<SendBuddyListGroup> groups = new LinkedList<SendBuddyListGroup>();
         for (;;) {
             SendBuddyListGroup group = readBuddyListGroup(nextBlock);
 
@@ -81,8 +82,7 @@ public class SendBuddyListGroup implements LiveWritable {
             nextBlock = nextBlock.subBlock(group.getTotalSize());
         }
 
-        return (SendBuddyListGroup[])
-                groups.toArray(new SendBuddyListGroup[groups.size()]);
+        return DefensiveTools.getUnmodifiable(groups);
     }
 
     /**
@@ -107,17 +107,17 @@ public class SendBuddyListGroup implements LiveWritable {
 
         int buddyCount = BinaryTools.getUShort(block, groupName.getTotalSize());
 
-        String[] buddies = new String[buddyCount];
+        List<String> buddies = new ArrayList<String>(buddyCount);
         ByteBlock rest = block.subBlock(groupName.getTotalSize() + 2);
 
         int size = groupName.getTotalSize() + 2;
 
-        for (int i = 0; i < buddies.length; i++) {
+        for (int i = 0; i < buddyCount; i++) {
             StringBlock buddyString = readString(rest);
 
             if (buddyString == null) return null;
 
-            buddies[i] = buddyString.getString();
+            buddies.add(buddyString.getString());
 
             rest = rest.subBlock(buddyString.getTotalSize());
             size += buddyString.getTotalSize();
@@ -173,7 +173,7 @@ public class SendBuddyListGroup implements LiveWritable {
     /** The name of the group represented. */
     private final String groupName;
     /** A list of the screennames of the buddies in this group. */
-    private final String[] buddies;
+    private final List<String> buddies;
     /**
      * The total size of this structure, as read from an incoming block of
      * binary data.
@@ -190,18 +190,16 @@ public class SendBuddyListGroup implements LiveWritable {
      * @param totalSize the total size of this structure, as read from an
      *        incoming block of binary data, or <code>-1</code> for none
      */
-    private SendBuddyListGroup(String groupName, String[] buddies,
+    private SendBuddyListGroup(String groupName, Collection<String> buddies,
             int totalSize) {
         DefensiveTools.checkNull(groupName, "groupName");
-        String[] safeBuddies = (String[])
-                DefensiveTools.getSafeNonnullArrayCopy(buddies, "buddies");
+        List<String> safeBuddies =
+                DefensiveTools.getSafeNonnullListCopy(buddies, "buddies");
         DefensiveTools.checkRange(totalSize, "totalSize", -1);
 
         this.groupName = groupName;
         this.buddies = safeBuddies;
         this.totalSize = totalSize;
-
-        DefensiveTools.checkNullElements(this.buddies, "buddies");
     }
 
     /**
@@ -211,7 +209,7 @@ public class SendBuddyListGroup implements LiveWritable {
      * @param groupName the name of the represented group
      * @param buddies a list of the screennames of the buddies in this group
      */
-    public SendBuddyListGroup(String groupName, String[] buddies) {
+    public SendBuddyListGroup(String groupName, Collection<String> buddies) {
         this(groupName, buddies, -1);
     }
 
@@ -228,8 +226,8 @@ public class SendBuddyListGroup implements LiveWritable {
      *
      * @return a list of the screennames of the buddies in this group
      */
-    public final String[] getBuddies() {
-        return (String[]) buddies.clone();
+    public final List<String> getBuddies() {
+        return buddies;
     }
 
     /**
@@ -245,14 +243,14 @@ public class SendBuddyListGroup implements LiveWritable {
 
     public void write(OutputStream out) throws IOException {
         writeString(out, groupName);
-        BinaryTools.writeUShort(out, buddies.length);
-        for (int i = 0; i < buddies.length; i++) {
-            writeString(out, buddies[i]);
+        BinaryTools.writeUShort(out, buddies.size());
+        for (String buddy : buddies) {
+            writeString(out, buddy);
         }
     }
 
     public String toString() {
         return "SendBuddyListGroup for group '" + groupName + "': "
-                + Arrays.asList(buddies);
+                + buddies;
     }
 }

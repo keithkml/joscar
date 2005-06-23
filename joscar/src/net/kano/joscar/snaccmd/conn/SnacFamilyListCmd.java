@@ -98,8 +98,8 @@ public abstract class SnacFamilyListCmd extends ConnCommand {
 
     public void writeData(OutputStream out) throws IOException {
         if (snacFamilies != null) {
-            for (int i = 0; i < snacFamilies.length; i++) {
-                BinaryTools.writeUShort(out, snacFamilies[i]);
+            for (int snacFamily : snacFamilies) {
+                BinaryTools.writeUShort(out, snacFamily);
             }
         }
     }
