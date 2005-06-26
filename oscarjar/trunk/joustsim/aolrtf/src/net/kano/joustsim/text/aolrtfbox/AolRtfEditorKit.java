@@ -47,7 +47,6 @@ import javax.swing.text.Element;
 import javax.swing.text.MutableAttributeSet;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
-import javax.swing.text.ViewFactory;
 import javax.swing.text.html.CSS;
 import javax.swing.text.html.HTML;
 import javax.swing.text.html.HTMLEditorKit;
@@ -266,15 +265,15 @@ public class AolRtfEditorKit extends HTMLEditorKit {
         }
 
         protected void writeAttributes(AttributeSet attr) throws IOException {
-            Map fixed = new HashMap();
+            Map<String,String> fixed = new HashMap<String, String>();
             writeStyleConstantsAttrs(attr, fixed);
             writeHtmlAttrs(attr, fixed);
             writeCssAttrs(attr, fixed);
-            for (Iterator it = fixed.entrySet().iterator(); it.hasNext();) {
-                Map.Entry entry = (Map.Entry) it.next();
+            for (Iterator<Map.Entry<String,String>> it = fixed.entrySet().iterator(); it.hasNext();) {
+                Map.Entry<String,String> entry = it.next();
 
-                String key = (String) entry.getKey();
-                String val = (String) entry.getValue();
+                String key = entry.getKey();
+                String val = entry.getValue();
 
                 write(' ');
                 write(key);
@@ -324,7 +323,7 @@ public class AolRtfEditorKit extends HTMLEditorKit {
             // do nothing
         }
 
-        private void writeCssAttrs(AttributeSet attr, Map fixed) {
+        private void writeCssAttrs(AttributeSet attr, Map<String,String> fixed) {
             Object fontFamily = attr.getAttribute(CSS.Attribute.FONT_FAMILY);
             if (fontFamily != null) fixed.put("face", fontFamily.toString());
 
@@ -350,7 +349,7 @@ public class AolRtfEditorKit extends HTMLEditorKit {
             else return trans.getHtmlFontSizeFromCss(s);
         }
 
-        private void writeHtmlAttrs(AttributeSet attr, Map fixed) {
+        private void writeHtmlAttrs(AttributeSet attr, Map<String,String> fixed) {
             String fontFamily = (String) attr.getAttribute(HTML.Attribute.FACE);
             if (fontFamily != null) fixed.put("face", fontFamily);
 
@@ -361,12 +360,12 @@ public class AolRtfEditorKit extends HTMLEditorKit {
             if (fg != null) fixed.put("color", fg);
         }
 
-        private void writeStyleConstantsAttrs(AttributeSet attr, Map fixed) {
+        private void writeStyleConstantsAttrs(AttributeSet attr, Map<String,String> fixed) {
             String fontFamily = (String) attr.getAttribute(StyleConstants.FontFamily);
             if (fontFamily != null) fixed.put("face", fontFamily);
 
             Integer size = (Integer) attr.getAttribute(StyleConstants.FontSize);
-            if (size != null) fixed.put("size", size);
+            if (size != null) fixed.put("size", size.toString());
 
             Color fg = (Color) attr.getAttribute(StyleConstants.Foreground);
             if (fg != null) fixed.put("color", colorToHex(fg));

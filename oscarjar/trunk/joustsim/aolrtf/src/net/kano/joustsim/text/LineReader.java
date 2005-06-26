@@ -54,8 +54,8 @@ import java.util.List;
 class LineReader extends HTMLEditorKit.ParserCallback {
     private final StyleSheet sheet;
 
-    private List elements = new LinkedList();
-    private LinkedList attrs = new LinkedList();
+    private List<LineElement> elements = new LinkedList<LineElement>();
+    private LinkedList<AttributeSet> attrs = new LinkedList<AttributeSet>();
     private Color bgColor = null;
     private FontSizeTranslator fontSizeTranslator = new WinAimFontSizeTranslator();
 
@@ -75,7 +75,7 @@ class LineReader extends HTMLEditorKit.ParserCallback {
     }
 
     private AttributeSet getCurrentAttr() {
-        return (AttributeSet) attrs.getLast();
+        return attrs.getLast();
     }
 
     private void pop() {

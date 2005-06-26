@@ -83,7 +83,7 @@ public class AolRtfFilterParser extends ParserDelegator {
          */
         private int filledUntil = 0;
         private StringBuffer toPrepend = new StringBuffer(10);
-        private Map implieds = new HashMap();
+        private Map<HTML.Tag,Boolean> implieds = new HashMap<HTML.Tag, Boolean>();
         private int lastPos = 0;
 
         public AolRtfFilterCallback(HTMLEditorKit.ParserCallback cb,
@@ -127,13 +127,13 @@ public class AolRtfFilterParser extends ParserDelegator {
             StringBuffer out = new StringBuffer(total);
             flushPrepend(pos);
 
-            List newlines = null;
+            List<Integer> newlines = null;
             int i = skip, j = skip;
             for (; i < extra; i++) {
                 char ch = realChars[i];
                 assert ch == ' ' || ch == '\n';
                 if (ch == '\n') {
-                    if (newlines == null) newlines = new ArrayList(5);
+                    if (newlines == null) newlines = new ArrayList<Integer>(5);
                     newlines.add(new Integer(out.length()));
 
                 } else {
@@ -147,7 +147,7 @@ public class AolRtfFilterParser extends ParserDelegator {
                 if (isSpace) {
                     while (i < realChars.length && realChars[i] != ' ') {
                         if (realChars[i] == '\n') {
-                            if (newlines == null) newlines = new ArrayList(5);
+                            if (newlines == null) newlines = new ArrayList<Integer>(5);
                             newlines.add(new Integer(out.length()));
                         }
                         i++;
@@ -155,7 +155,7 @@ public class AolRtfFilterParser extends ParserDelegator {
                     while (i < realChars.length && (realChars[i] == ' '
                             || realChars[i] == '\n')) {
                         if (realChars[i] == '\n') {
-                            if (newlines == null) newlines = new ArrayList(5);
+                            if (newlines == null) newlines = new ArrayList<Integer>(5);
                             newlines.add(new Integer(out.length()));
                         } else {
                             out.append(' ');
@@ -171,8 +171,8 @@ public class AolRtfFilterParser extends ParserDelegator {
             filterReader.clearUntil(realpos+i);
             if (newlines != null) {
                 int start = 0;
-                for (Iterator it = newlines.iterator(); it.hasNext();) {
-                    int off = ((Integer) it.next()).intValue();
+                for (Iterator<Integer> it = newlines.iterator(); it.hasNext();) {
+                    int off = (it.next()).intValue();
                     if (start != off) {
                         String sub = out.substring(start, start+off);
                         char[] chars = sub.toCharArray();

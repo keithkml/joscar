@@ -59,13 +59,13 @@ import java.util.List;
 import java.util.Map;
 
 public class ConversationDocument extends HTMLDocument {
-    public static final Object ATTR_SPLIT_WORDS = "SPLIT_WORDS";
+    public static final String ATTR_SPLIT_WORDS = "SPLIT_WORDS";
 
-    private static final Object ATTR_ICON_IDS = "ICON_IDS";
+    private static final String ATTR_ICON_IDS = "ICON_IDS";
     private static final char[] SPACE_CHARS = new char[] { ' ' };
 
     private HTMLDocument.BlockElement rootTable;
-    private Map iconMap = new HashMap();
+    private Map<IconID,Icon[]> iconMap = new HashMap<IconID, Icon[]>();
 
     public ConversationDocument() {
         setupStyles();
@@ -210,11 +210,11 @@ public class ConversationDocument extends HTMLDocument {
         insertAtEnd(finspecs);
     }
 
-    private Map snids = new HashMap();
+    private Map<Screenname,Integer> snids = new HashMap<Screenname, Integer>();
     private int nextsnid = 1;
 
     private synchronized int getScreennameID(Screenname sn) {
-        Integer val = (Integer) snids.get(sn);
+        Integer val = snids.get(sn);
         if (val == null) {
             int id = nextsnid;
             snids.put(sn, new Integer(id));
@@ -283,7 +283,7 @@ public class ConversationDocument extends HTMLDocument {
         for (int i = 0; i < specss.length; i++) {
             total += specss[i].length;
         }
-        List list = new ArrayList(total);
+        List<ElementSpec> list = new ArrayList<ElementSpec>(total);
         for (int i = 0; i < specss.length; i++) {
             list.addAll(Arrays.asList(specss[i]));
         }
@@ -291,10 +291,10 @@ public class ConversationDocument extends HTMLDocument {
     }
 
     private synchronized Icon[] getIcons(IconID[] iconids) {
-        List list = new ArrayList();
+        List<Icon> list = new ArrayList<Icon>();
         for (int i = 0; i < iconids.length; i++) {
             IconID id = iconids[i];
-            Icon[] icons = (Icon[]) iconMap.get(id);
+            Icon[] icons = iconMap.get(id);
             if (icons != null) list.addAll(Arrays.asList(icons));
         }
         return (Icon[]) list.toArray(new Icon[list.size()]);
@@ -377,7 +377,7 @@ public class ConversationDocument extends HTMLDocument {
 
     public void setIconsForID(IconID id, Icon[] icons) {
         writeLock();
-        Icon[] sicons = (Icon[]) DefensiveTools.getNonnullArray(icons, "icons");
+        Icon[] sicons = (Icon[]) DefensiveTools.getSafeNonnullArrayCopy(icons, "icons");
         try {
             doSetIconsForID(id, sicons);
         } finally {
@@ -387,7 +387,7 @@ public class ConversationDocument extends HTMLDocument {
 
     private void doSetIconsForID(IconID id, Icon[] icons) {
         synchronized(this) {
-            Icon[] oldIcons = (Icon[]) iconMap.put(id, icons);
+            Icon[] oldIcons = iconMap.put(id, icons);
             if (oldIcons == icons || (oldIcons != null
                     && Arrays.equals(oldIcons, icons))) {
                 // there was no change
@@ -426,7 +426,7 @@ public class ConversationDocument extends HTMLDocument {
     }
 
     private void setIcons(BlockElement tdblock, Icon[] icons) {
-        Icon[] sicons = (Icon[]) DefensiveTools.getNonnullArray(icons, "icons");
+        Icon[] sicons = (Icon[]) DefensiveTools.getSafeNonnullArrayCopy(icons, "icons");
 
         ElementSpec[] els = getIconSpecs(sicons);
 
