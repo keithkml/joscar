@@ -107,7 +107,6 @@ import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
 
@@ -118,8 +117,8 @@ public class BCSecureSession extends SecureSession {
     private KeyStore keystore;
     private PrivateKey privateKey;
     private X509Certificate pubCert;
-    private Map chatKeys = new HashMap();
-    private Map certs = new HashMap();
+    private Map<String,SecretKey> chatKeys = new HashMap<String, SecretKey>();
+    private Map<String,X509Certificate> certs = new HashMap<String, X509Certificate>();
 
     {
         try {
@@ -157,7 +156,7 @@ public class BCSecureSession extends SecureSession {
     }
 
     public X509Certificate getCert(String sn) {
-        return (X509Certificate) certs.get(OscarTools.normalize(sn));
+        return certs.get(OscarTools.normalize(sn));
     }
 
     public boolean hasCert(String sn) { return getCert(sn) != null; }
@@ -227,8 +226,8 @@ public class BCSecureSession extends SecureSession {
             CMSSignedData csd = new CMSSignedData(in);
             SignerInformationStore signerInfos = csd.getSignerInfos();
             Collection signers = signerInfos.getSigners();
-            for (Iterator sit = signers.iterator(); sit.hasNext();) {
-                SignerInformation si = (SignerInformation) sit.next();
+            for (Object signer : signers) {
+                SignerInformation si = (SignerInformation) signer;
                 boolean verified = si.verify(getCert(sn), "BC");
                 System.out.println("verified: " + verified);
             }
@@ -239,7 +238,7 @@ public class BCSecureSession extends SecureSession {
                     = OscarTools.parseHttpHeader(data);
 
             String msg = OscarTools.getInfoString(bodyInfo.getData(),
-                    (String) bodyInfo.getHeaders().get("content-type"));
+                    bodyInfo.getHeaders().get("content-type"));
 
             return OscarTools.stripHtml(msg);
         } catch (Exception e) {
@@ -324,10 +323,10 @@ public class BCSecureSession extends SecureSession {
             SSLContext context = SSLContext.getInstance("SSL");
             KeyManager[] kms = kmf.getKeyManagers();
             X509KeyManager xkm = null;
-            for (int i = 0; i < kms.length; i++) {
-                if (kms[i] instanceof X509KeyManager) {
+            for (KeyManager km : kms) {
+                if (km instanceof X509KeyManager) {
                     System.out.println("found x509keymgr");
-                    if (xkm == null) xkm = (X509KeyManager) kms[i];
+                    if (xkm == null) xkm = (X509KeyManager) km;
                 }
             }
             final X509KeyManager xkm1 = xkm;
@@ -419,7 +418,7 @@ public class BCSecureSession extends SecureSession {
     }
 
     public SecretKey getChatKey(String chat) {
-        return (SecretKey) chatKeys.get(chat);
+        return chatKeys.get(chat);
     }
 
     public ByteBlock genChatSecurityInfo(FullRoomInfo chatInfo, String sn)
@@ -468,8 +467,8 @@ public class BCSecureSession extends SecureSession {
             CMSSignedData csd
                     = new CMSSignedData(ByteBlock.createInputStream(data));
             Collection signers = csd.getSignerInfos().getSigners();
-            for (Iterator sit = signers.iterator(); sit.hasNext();) {
-                SignerInformation si = (SignerInformation) sit.next();
+            for (Object signer : signers) {
+                SignerInformation si = (SignerInformation) signer;
                 boolean verified = si.verify(getCert(sn), "BC");
                 if (!verified) System.err.println("NOTE: key not verified!");
             }
@@ -530,8 +529,8 @@ public class BCSecureSession extends SecureSession {
             X509Certificate cert = getCert(sn);
             if (cert != null) {
                 Collection signers = csd.getSignerInfos().getSigners();
-                for (Iterator sit = signers.iterator(); sit.hasNext();) {
-                    SignerInformation si = (SignerInformation) sit.next();
+                for (Object signer : signers) {
+                    SignerInformation si = (SignerInformation) signer;
                     boolean verified = si.verify(cert, "BC");
                     if (!verified) {
                         System.err.println("NOTE: message not verified");
@@ -546,7 +545,7 @@ public class BCSecureSession extends SecureSession {
             OscarTools.HttpHeaderInfo hinfo2
                     = OscarTools.parseHttpHeader(signedContent);
             return OscarTools.getInfoString(hinfo2.getData(),
-                    (String) hinfo2.getHeaders().get("content-type"));
+                    hinfo2.getHeaders().get("content-type"));
         } catch (Exception e) {
             throw new SecureSessionException(e);
         }

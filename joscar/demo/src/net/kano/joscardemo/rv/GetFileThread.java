@@ -47,6 +47,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.List;
 
 public class GetFileThread extends Thread {
     private RvSession rvSession;
@@ -90,9 +91,9 @@ public class GetFileThread extends Thread {
             ByteBlock listBlock = ByteBlock.wrap(buffer);
             GetFileList list = GetFileList.readGetFileList(listBlock);
 
-            GetFileEntry[] entries = list.getFileEntries();
-            for (int i = 0; i < entries.length; i++) {
-                System.out.println("* " + entries[i]);
+            List<GetFileEntry> entries = list.getFileEntries();
+            for (GetFileEntry entry : entries) {
+                System.out.println("* " + entry);
             }
 
             FileTransferHeader fin = new FileTransferHeader(ack);
@@ -105,8 +106,7 @@ public class GetFileThread extends Thread {
             FileTransferHeader dirreq = new FileTransferHeader(fin);
 
             dirreq.setHeaderType(FileTransferHeader.HEADERTYPE_FILELIST_REQDIR);
-            dirreq.setFilename(new SegmentedFilename(
-                    new String[] { "in", "ebaything" }));
+            dirreq.setFilename(new SegmentedFilename("in", "ebaything"));
             dirreq.setTotalFileSize(0);
             dirreq.setFileSize(0);
             dirreq.setFileCount(0);

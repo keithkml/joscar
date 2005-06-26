@@ -46,9 +46,9 @@ import net.kano.joscar.snac.SnacRequestAdapter;
 import net.kano.joscar.snac.SnacRequestListener;
 import net.kano.joscar.snac.SnacResponseEvent;
 import net.kano.joscar.snaccmd.DirInfo;
+import net.kano.joscar.snaccmd.ExchangeInfo;
 import net.kano.joscar.snaccmd.FullRoomInfo;
 import net.kano.joscar.snaccmd.MiniRoomInfo;
-import net.kano.joscar.snaccmd.ExchangeInfo;
 import net.kano.joscar.snaccmd.conn.RateInfoCmd;
 import net.kano.joscar.snaccmd.conn.ServiceRedirect;
 import net.kano.joscar.snaccmd.conn.ServiceRequest;
@@ -60,15 +60,12 @@ import net.kano.joscar.snaccmd.search.SearchResultsCmd;
 
 import java.awt.Image;
 import java.awt.Toolkit;
-import java.net.InetAddress;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
 public class ServiceConn extends BasicConn {
-    private List listeners = new LinkedList();
     protected int serviceFamily;
 
     public ServiceConn(ConnDescriptor cd, JoscarTester tester,
@@ -119,43 +116,40 @@ public class ServiceConn extends BasicConn {
             InterestInfo[] infos = ilc.getInterests();
 
             if (infos != null) {
-                Map children = new HashMap();
+                Map<Integer,List<InterestInfo>> children = new HashMap<Integer, List<InterestInfo>>();
 
-                for (int i = 0; i < infos.length; i++) {
-                    if (infos[i].getType() == InterestInfo.TYPE_CHILD) {
-                        int parentCode = infos[i].getParentId();
-                        Integer parent = new Integer(parentCode);
+                for (InterestInfo info1 : infos) {
+                    if (info1.getType() == InterestInfo.TYPE_CHILD) {
+                        int parentCode = info1.getParentId();
 
-                        List interests = (List) children.get(parent);
+                        List<InterestInfo> interests = children.get(parentCode);
 
                         if (interests == null) {
-                            interests = new LinkedList();
-                            children.put(parent, interests);
+                            interests = new LinkedList<InterestInfo>();
+                            children.put(parentCode, interests);
                         }
 
-                        interests.add(infos[i]);
+                        interests.add(info1);
                     }
                 }
-                for (int i = 0; i < infos.length; i++) {
-                    if (infos[i].getType() == InterestInfo.TYPE_PARENT) {
-                        Integer id = new Integer(infos[i].getParentId());
-                        List interests = (List) children.get(id);
+                for (InterestInfo info2 : infos) {
+                    if (info2.getType() == InterestInfo.TYPE_PARENT) {
+                        Integer id = info2.getParentId();
+                        List<InterestInfo> interests = children.get(id);
 
-                        System.out.println("- " + infos[i].getName());
+                        System.out.println("- " + info2.getName());
                         if (interests != null) {
-                            for (Iterator it = interests.iterator();
-                                 it.hasNext();) {
-                                InterestInfo info = (InterestInfo) it.next();
+                            for (InterestInfo info : interests) {
                                 System.out.println("  - " + info.getName());
                             }
                         }
                     }
                 }
-                List toplevels = (List) children.get(new Integer(0));
+                List<InterestInfo> toplevels = children.get(0);
                 if (toplevels != null) {
-                    for (Iterator it = toplevels.iterator(); it.hasNext();) {
+                    for (InterestInfo toplevel : toplevels) {
                         System.out.println("  "
-                                + ((InterestInfo) it.next()).getName());
+                                + (toplevel).getName());
                     }
                 }
             }
@@ -163,10 +157,10 @@ public class ServiceConn extends BasicConn {
         } else if (cmd instanceof SearchResultsCmd) {
             SearchResultsCmd src = (SearchResultsCmd) cmd;
 
-            DirInfo[] results = src.getResults();
+            List<DirInfo> results = src.getResults();
 
-            for (int i = 0; i < results.length; i++) {
-                System.out.println("result " + (i + 1) + ": " + results[i]);
+            for (int i = 0; i < results.size(); i++) {
+                System.out.println("result " + (i + 1) + ": " + results.get(i));
             }
 
         } else if (cmd instanceof IconDataCmd) {
@@ -213,11 +207,11 @@ public class ServiceConn extends BasicConn {
 
                 dispatchRequest(request, listener);
             }
-            ExchangeInfo[] exis = rr.getExchangeInfos();
-            if (exis != null && exis.length > 0) {
+            List<ExchangeInfo> exis = rr.getExchangeInfos();
+            if (exis != null && exis.size() > 0) {
                 System.out.println("Exchange infos:");
-                for (int i = 0; i < exis.length; i++) {
-                    System.out.println("- " + exis[i]);
+                for (ExchangeInfo exi : exis) {
+                    System.out.println("- " + exi);
                 }
             }
         }

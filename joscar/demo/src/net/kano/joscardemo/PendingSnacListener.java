@@ -37,6 +37,8 @@ package net.kano.joscardemo;
 
 import net.kano.joscar.snac.SnacRequest;
 
+import java.util.List;
+
 public interface PendingSnacListener {
-    void dequeueSnacs(SnacRequest[] pending);
+    void dequeueSnacs(List<SnacRequest> pending);
 }

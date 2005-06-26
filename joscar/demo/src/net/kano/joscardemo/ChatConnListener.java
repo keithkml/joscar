@@ -38,16 +38,18 @@ package net.kano.joscardemo;
 import net.kano.joscar.snaccmd.FullUserInfo;
 import net.kano.joscar.snaccmd.chat.ChatMsg;
 
+import java.util.List;
+
 public interface ChatConnListener {
     void connFailed(ChatConn conn, Object reason);
 
     void connected(ChatConn conn);
 
-    void joined(ChatConn conn, FullUserInfo[] members);
+    void joined(ChatConn conn, List<FullUserInfo> members);
     void left(ChatConn conn, Object reason);
 
-    void usersJoined(ChatConn conn, FullUserInfo[] members);
-    void usersLeft(ChatConn conn, FullUserInfo[] members);
+    void usersJoined(ChatConn conn, List<FullUserInfo> members);
+    void usersLeft(ChatConn conn, List<FullUserInfo> members);
 
     void gotMsg(ChatConn conn, FullUserInfo sender, ChatMsg msg);
 }

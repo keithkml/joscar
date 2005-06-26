@@ -104,19 +104,15 @@ public class HostGetFileThread extends Thread {
             throws IOException {
         File[] files = dir.listFiles();
 
-        List list = new LinkedList();
-        for (int i = 0; i < files.length; i++) {
-            File file = files[i];
+        List<GetFileEntry> list = new LinkedList<GetFileEntry>();
+        for (File file : files) {
             SegmentedFilename segFN;
             segFN = new SegmentedFilename(null, file.getName());
             System.out.println("segFN: " + segFN);
             list.add(new GetFileEntry(segFN, file));
         }
 
-        GetFileEntry[] entryList
-                = (GetFileEntry[]) list.toArray(new GetFileEntry[0]);
-
-        GetFileList gflist = new GetFileList(entryList);
+        GetFileList gflist = new GetFileList(list);
 
         ByteArrayOutputStream listout = new ByteArrayOutputStream();
 
@@ -131,7 +127,7 @@ public class HostGetFileThread extends Thread {
         hdr.setHeaderType(FileTransferHeader.HEADERTYPE_FILELIST_SENDLIST);
         hdr.setFlags(FileTransferHeader.FLAG_DEFAULT
                 | FileTransferHeader.FLAG_FILELIST);
-        hdr.setFileCount(entryList.length);
+        hdr.setFileCount(list.size());
         hdr.setFilesLeft(1);
         hdr.setPartCount(1);
         hdr.setPartsLeft(1);

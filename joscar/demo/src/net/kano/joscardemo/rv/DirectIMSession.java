@@ -172,6 +172,7 @@ public class DirectIMSession {
         conn.disconnect();
     }
 
+	// TODO: fix directim demo
     private boolean handleDirectImData()
             throws IOException {
         String sn = rvSession.getScreenname();

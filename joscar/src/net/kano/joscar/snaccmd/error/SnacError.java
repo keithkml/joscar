@@ -44,7 +44,6 @@ import net.kano.joscar.flapcmd.SnacPacket;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.regex.Pattern;
 
 /**
  * A SNAC command representing a SNAC error sent in any supported SNAC family.

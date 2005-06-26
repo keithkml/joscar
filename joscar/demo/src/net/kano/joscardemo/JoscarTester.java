@@ -69,6 +69,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.List;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Formatter;
 import java.util.logging.Level;
@@ -110,8 +111,8 @@ public class JoscarTester implements CmdLineListener, ServiceListener {
 
     private LoginConn loginConn = null;
     private BosFlapConn bosConn = null;
-    private Set services = new HashSet();
-    private Map chats = new HashMap();
+    private Set<ServiceConn> services = new HashSet<ServiceConn>();
+    private Map<String,ChatConn> chats = new HashMap<String, ChatConn>();
 
     private NumberFormat formatter = NumberFormat.getNumberInstance();
     { // init
@@ -213,14 +214,14 @@ public class JoscarTester implements CmdLineListener, ServiceListener {
     }
 
     public ChatConn getChatConn(String name) {
-        return (ChatConn) chats.get(OscarTools.normalize(name));
+        return chats.get(OscarTools.normalize(name));
     }
 
     private SnacManager snacMgr = new SnacManager(new PendingSnacListener() {
-        public void dequeueSnacs(SnacRequest[] pending) {
-            System.out.println("dequeuing " + pending.length + " snacs");
-            for (int i = 0; i < pending.length; i++) {
-                handleRequest(pending[i]);
+        public void dequeueSnacs(List<SnacRequest> pending) {
+            System.out.println("dequeuing " + pending.size() + " snacs");
+            for (SnacRequest request : pending) {
+                handleRequest(request);
             }
         }
     });
@@ -289,7 +290,7 @@ public class JoscarTester implements CmdLineListener, ServiceListener {
 
     public void processCmd(CmdLineReader reader, String line) {
         Matcher m = cmdRE.matcher(line);
-        LinkedList arglist = new LinkedList();
+        LinkedList<String> arglist = new LinkedList<String>();
         while (m.find()) {
             String arg = m.group(1);
             if (arg == null) arg = m.group(2);
@@ -303,8 +304,7 @@ public class JoscarTester implements CmdLineListener, ServiceListener {
 
         if (arglist.isEmpty()) return;
 
-        String cmd = (String) arglist.removeFirst();
-        String[] args = (String[]) arglist.toArray(new String[arglist.size()]);
+        String cmd = arglist.removeFirst();
 
         CLCommand handler = clHandler.getCommand(cmd);
 
@@ -313,7 +313,7 @@ public class JoscarTester implements CmdLineListener, ServiceListener {
             System.err.println("!! Try typing 'help'");
         } else {
             try {
-                handler.handle(this, line, cmd, args);
+                handler.handle(this, line, cmd, arglist);
             } catch (Throwable t) {
                 System.err.println("!! Error executing command '" + cmd + "'!");
                 System.err.println("!! Try typing 'help " + cmd + "'");
@@ -349,14 +349,14 @@ public class JoscarTester implements CmdLineListener, ServiceListener {
 
         public void connected(ChatConn conn) { }
 
-        public void joined(ChatConn conn, FullUserInfo[] members) {
+        public void joined(ChatConn conn, List<FullUserInfo> members) {
             String name = conn.getRoomInfo().getName();
             chats.put(OscarTools.normalize(name), conn);
 
             System.out.println("*** Joined "
                     + conn.getRoomInfo().getRoomName() + ", members:");
-            for (int i = 0; i < members.length; i++) {
-                System.out.println("  " + members[i].getScreenname());
+            for (FullUserInfo member : members) {
+                System.out.println("  " + member.getScreenname());
             }
         }
 
@@ -368,16 +368,16 @@ public class JoscarTester implements CmdLineListener, ServiceListener {
                     + conn.getRoomInfo().getRoomName());
         }
 
-        public void usersJoined(ChatConn conn, FullUserInfo[] members) {
-            for (int i = 0; i < members.length; i++) {
-                System.out.println("*** " + members[i].getScreenname()
+        public void usersJoined(ChatConn conn, List<FullUserInfo> members) {
+            for (FullUserInfo member : members) {
+                System.out.println("*** " + member.getScreenname()
                         + " joined " + conn.getRoomInfo().getRoomName());
             }
         }
 
-        public void usersLeft(ChatConn conn, FullUserInfo[] members) {
-            for (int i = 0; i < members.length; i++) {
-                System.out.println("*** " + members[i].getScreenname()
+        public void usersLeft(ChatConn conn, List<FullUserInfo> members) {
+            for (FullUserInfo member : members) {
+                System.out.println("*** " + member.getScreenname()
                         + " left " + conn.getRoomInfo().getRoomName());
             }
         }

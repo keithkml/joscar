@@ -50,8 +50,6 @@ import net.kano.joscar.snaccmd.auth.ClientVersionInfo;
 import net.kano.joscar.snaccmd.auth.KeyRequest;
 import net.kano.joscar.snaccmd.auth.KeyResponse;
 
-import java.net.InetAddress;
-
 public class LoginConn extends AbstractFlapConn {
     protected boolean loggedin = false;
 
@@ -98,7 +96,7 @@ public class LoginConn extends AbstractFlapConn {
 //                    0x0109, 5, 2, 0, 3292, 238);
             ClientVersionInfo version = new ClientVersionInfo(
                     "AOL Instant Messenger, version 5.5.3415/WIN32",
-                    0x0109, 5, 5, 0, 3415, 239);
+                    -1, 5, 5, 0, 3415, 239);
 
             request(new AuthRequest(
                     tester.getScreenname(), tester.getPassword(),

@@ -50,7 +50,7 @@ public class FlapChannelTaglet implements Taglet {
      *
      * @param tagletMap a taglet map with which to register this taglet
      */
-    public static void register(Map tagletMap) {
+    public static void register(Map<String,FlapChannelTaglet> tagletMap) {
         FlapChannelTaglet instance = new FlapChannelTaglet();
         tagletMap.put(instance.getName(), instance);
     }

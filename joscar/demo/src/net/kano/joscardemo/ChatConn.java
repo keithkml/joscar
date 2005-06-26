@@ -52,21 +52,20 @@ import net.kano.joscardemo.security.SecureSession;
 import net.kano.joscardemo.security.SecureSessionException;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.io.Serializable;
 
 public class ChatConn extends ServiceConn {
     protected FullRoomInfo roomInfo;
 
-    protected List listeners = new ArrayList();
+    protected List<ChatConnListener> listeners = new ArrayList<ChatConnListener>();
 
     protected boolean joined = false;
 
-    protected Set members = new HashSet();
+    protected Set<FullUserInfo> members = new HashSet<FullUserInfo>();
     private SecureSession secureSession;
 
     public ChatConn(ConnDescriptor cd, JoscarTester tester,
@@ -87,13 +86,13 @@ public class ChatConn extends ServiceConn {
     }
 
     public FullUserInfo[] getMembers() {
-        return (FullUserInfo[]) members.toArray(new FullUserInfo[0]);
+        return members.toArray(new FullUserInfo[0]);
     }
 
     protected void handleStateChange(ClientConnEvent e) {
         super.handleStateChange(e);
 
-        Object state = e.getNewState();
+        State state = e.getNewState();
 
         if (state == ClientFlapConn.STATE_CONNECTED) {
             fireConnectedEvent();
@@ -115,7 +114,7 @@ public class ChatConn extends ServiceConn {
         if (cmd instanceof UsersJoinedCmd) {
             UsersJoinedCmd ujc = (UsersJoinedCmd) cmd;
 
-            members.addAll(Arrays.asList(ujc.getUsers()));
+            members.addAll(ujc.getUsers());
 
             if (!joined) {
                 fireJoinedEvent(ujc.getUsers());
@@ -126,7 +125,7 @@ public class ChatConn extends ServiceConn {
         } else if (cmd instanceof UsersLeftCmd) {
             UsersLeftCmd ulc = (UsersLeftCmd) cmd;
 
-            members.removeAll(Arrays.asList(ulc.getUsers()));
+            members.removeAll(ulc.getUsers());
 
             fireUsersLeftEvent(ulc.getUsers());
         } else if (cmd instanceof RecvChatMsgIcbm) {
@@ -145,51 +144,51 @@ public class ChatConn extends ServiceConn {
     }
 
     protected void fireConnectedEvent() {
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            ChatConnListener l = (ChatConnListener) it.next();
+        for (Object listener : listeners) {
+            ChatConnListener l = (ChatConnListener) listener;
 
             l.connected(this);
         }
     }
 
-    protected void fireConnFailedEvent(Object reason) {
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            ChatConnListener l = (ChatConnListener) it.next();
+    protected void fireConnFailedEvent(Serializable reason) {
+        for (Object listener : listeners) {
+            ChatConnListener l = (ChatConnListener) listener;
 
             l.connFailed(this, reason);
         }
     }
-    protected void fireJoinedEvent(FullUserInfo[] members) {
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            ChatConnListener l = (ChatConnListener) it.next();
+    protected void fireJoinedEvent(List<FullUserInfo> members) {
+        for (Object listener : listeners) {
+            ChatConnListener l = (ChatConnListener) listener;
 
             l.joined(this, members);
         }
     }
-    protected void fireLeftEvent(Object reason) {
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            ChatConnListener l = (ChatConnListener) it.next();
+    protected void fireLeftEvent(Serializable reason) {
+        for (Object listener : listeners) {
+            ChatConnListener l = (ChatConnListener) listener;
 
             l.left(this, reason);
         }
     }
-    protected void fireUsersJoinedEvent(FullUserInfo[] members) {
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            ChatConnListener l = (ChatConnListener) it.next();
+    protected void fireUsersJoinedEvent(List<FullUserInfo> members) {
+        for (Object listener : listeners) {
+            ChatConnListener l = (ChatConnListener) listener;
 
             l.usersJoined(this, members);
         }
     }
-    protected void fireUsersLeftEvent(FullUserInfo[] members) {
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            ChatConnListener l = (ChatConnListener) it.next();
+    protected void fireUsersLeftEvent(List<FullUserInfo> members) {
+        for (Object listener : listeners) {
+            ChatConnListener l = (ChatConnListener) listener;
 
             l.usersLeft(this, members);
         }
     }
     protected void fireMsgEvent(FullUserInfo sender, ChatMsg msg) {
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            ChatConnListener l = (ChatConnListener) it.next();
+        for (Object listener : listeners) {
+            ChatConnListener l = (ChatConnListener) listener;
 
             l.gotMsg(this, sender, msg);
         }
