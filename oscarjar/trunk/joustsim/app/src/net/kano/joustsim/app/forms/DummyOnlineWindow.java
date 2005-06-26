@@ -79,6 +79,7 @@ public class DummyOnlineWindow extends JFrame {
             updateMemoryUse();
         }
     });
+    private BuddyListBox buddyListBox;
 
     {
         getContentPane().add(mainPanel);
@@ -149,6 +150,7 @@ public class DummyOnlineWindow extends JFrame {
                 String sn = conn.getScreenname().getFormatted();
                 setTitle(sn);
                 onlineLabel.setText("You are online as " + sn);
+                buddyListBox.updateSession(guiSession);
                 snBox.setText("");
                 updateButtons();
             }

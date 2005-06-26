@@ -35,8 +35,6 @@
 
 package net.kano.joustsim.trust;
 
-import net.kano.joustsim.trust.TrustedCertificateInfo;
-
 public interface TrustedCertificatesListener {
     void certificateTrusted(TrustedCertificatesTracker manager,
             TrustedCertificateInfo info);

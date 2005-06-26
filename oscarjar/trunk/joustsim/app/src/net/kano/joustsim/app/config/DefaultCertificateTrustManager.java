@@ -35,20 +35,20 @@
 
 package net.kano.joustsim.app.config;
 
+import net.kano.joscar.CopyOnWriteArrayList;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joustsim.Screenname;
-import net.kano.joustsim.trust.CertificateHolder;
 import net.kano.joustsim.trust.CertificateTrustListener;
 import net.kano.joustsim.trust.CertificateTrustManager;
 import net.kano.joustsim.trust.DefaultCertificateHolder;
 import net.kano.joustsim.trust.TrustException;
 import net.kano.joustsim.trust.TrustTools;
-import net.kano.joscar.CopyOnWriteArrayList;
-import net.kano.joscar.DefensiveTools;
 
 import java.io.File;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -58,9 +58,9 @@ public class DefaultCertificateTrustManager implements CertificateTrustManager {
 
     private final Screenname buddy;
 
-    private final Set trusted = new HashSet();
+    private final Set<DefaultCertificateHolder> trusted = new HashSet<DefaultCertificateHolder>();
 
-    private final CopyOnWriteArrayList listeners = new CopyOnWriteArrayList();
+    private final CopyOnWriteArrayList<CertificateTrustListener> listeners = new CopyOnWriteArrayList<CertificateTrustListener>();
 
     public DefaultCertificateTrustManager(Screenname buddy) {
         this.buddy = buddy;
@@ -101,13 +101,10 @@ public class DefaultCertificateTrustManager implements CertificateTrustManager {
         return removed;
     }
 
-    public synchronized X509Certificate[] getTrustedCertificates() {
-        X509Certificate[] certs = new X509Certificate[trusted.size()];
-        int i = 0;
-        for (Iterator it = trusted.iterator(); it.hasNext();) {
-            CertificateHolder holder = (CertificateHolder) it.next();
-            certs[i] = holder.getCertificate();
-            i++;
+    public synchronized List<X509Certificate> getTrustedCertificates() {
+        List<X509Certificate> certs = new ArrayList<X509Certificate>(trusted.size());
+        for (DefaultCertificateHolder holder : trusted) {
+            certs.add(holder.getCertificate());
         }
         return certs;
     }
@@ -127,8 +124,7 @@ public class DefaultCertificateTrustManager implements CertificateTrustManager {
 
         DefensiveTools.checkNull(cert, "cert");
 
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            CertificateTrustListener listener = (CertificateTrustListener) it.next();
+        for (CertificateTrustListener listener : listeners) {
             listener.trustAdded(this, cert);
         }
     }
@@ -138,8 +134,7 @@ public class DefaultCertificateTrustManager implements CertificateTrustManager {
 
         DefensiveTools.checkNull(cert, "cert");
 
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            CertificateTrustListener listener = (CertificateTrustListener) it.next();
+        for (CertificateTrustListener listener : listeners) {
             listener.trustRemoved(this, cert);
         }
     }

@@ -35,13 +35,28 @@
 
 package net.kano.joustsim.app.forms;
 
+import net.kano.joustsim.app.GuiSession;
+import net.kano.joustsim.oscar.oscar.service.ssi.BuddyList;
+
 import javax.swing.JButton;
 import javax.swing.JTree;
+import javax.swing.JPanel;
+import java.awt.BorderLayout;
 
-public class BuddyListBox {
+public class BuddyListBox extends JPanel {
     private JButton infoButton;
     private JButton chatButton;
     private JButton imButton;
     private JTree buddyTree;
+    private JPanel mainPanel;
 
+    {
+        setLayout(new BorderLayout());
+        add(mainPanel);
+    }
+
+    public void updateSession(GuiSession guiSession) {
+        BuddyList list = guiSession.getAimConnection().getSsiService().getBuddyList();
+        buddyTree.setModel(new BuddyListModel(list));
+    }
 }

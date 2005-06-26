@@ -36,9 +36,10 @@
 package net.kano.joustsim.trust;
 
 import java.security.cert.X509Certificate;
+import java.util.List;
 
 public interface SignerTrustManager extends CertificateTrustManager {
     boolean isSignedByTrustedSigner(X509Certificate cert);
 
-    X509Certificate[] getTrustedSigners(X509Certificate cert);
+    List<X509Certificate> getTrustedSigners(X509Certificate cert);
 }

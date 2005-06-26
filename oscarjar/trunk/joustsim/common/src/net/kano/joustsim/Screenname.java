@@ -44,7 +44,7 @@ public final class Screenname implements Comparable {
     private final int hashCode;
 
     public Screenname(String format) {
-        net.kano.joscar.DefensiveTools.checkNull(format, "format");
+        DefensiveTools.checkNull(format, "format");
 
         this.format = format;
         this.normal = net.kano.joscar.OscarTools.normalize(format);
@@ -56,9 +56,9 @@ public final class Screenname implements Comparable {
     public String getNormal() { return normal; }
 
     public boolean matches(String screenname) {
-        net.kano.joscar.DefensiveTools.checkNull(screenname, "screenname");
+        DefensiveTools.checkNull(screenname, "screenname");
 
-        return net.kano.joscar.OscarTools.normalize(screenname).equals(normal);
+        return OscarTools.normalize(screenname).equals(normal);
     }
 
     public int compareTo(Object o) {

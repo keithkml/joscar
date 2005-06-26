@@ -82,8 +82,7 @@ public final class TrustTools {
             throw new IllegalArgumentException("this file is not an X.509 "
                     + "certificate, it's a " + cert.getClass().getName());
         }
-        X509Certificate xcert = (X509Certificate) cert;
-        return xcert;
+        return (X509Certificate) cert;
     }
 
     public static X509Certificate decodeCertificate(ByteBlock certData)

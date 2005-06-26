@@ -42,7 +42,6 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -55,10 +54,13 @@ public class TrustedCertificatesTracker {
     private final CertificateTrustManager certTrustMgr;
     private final SignerTrustManager signerTrustMgr;
 
-    private Map trackedCerts = new HashMap();
-    private Map signers = new HashMap();
+    private Map<CertificateHolder,TrustedCertificateInfoImpl> trackedCerts
+            = new HashMap<CertificateHolder, TrustedCertificateInfoImpl>();
+    private Map<X509Certificate,SignerInfoImpl> signers
+            = new HashMap<X509Certificate, SignerInfoImpl>();
 
-    private CopyOnWriteArrayList listeners = new CopyOnWriteArrayList();
+    private CopyOnWriteArrayList<TrustedCertificatesListener> listeners
+            = new CopyOnWriteArrayList<TrustedCertificatesListener>();
 
     public TrustedCertificatesTracker(CertificateTrustManager certTrustMgr,
             SignerTrustManager signerTrustMgr) {
@@ -104,11 +106,9 @@ public class TrustedCertificatesTracker {
     }
 
     private void signerTrustAdded(X509Certificate signer) {
-        List newTrusted = new ArrayList();
+        List<TrustedCertificateInfoImpl> newTrusted = new ArrayList<TrustedCertificateInfoImpl>();
         synchronized(this) {
-            for (Iterator it = trackedCerts.values().iterator(); it.hasNext();) {
-                TrustedCertificateInfoImpl info = (TrustedCertificateInfoImpl) it.next();
-
+            for (TrustedCertificateInfoImpl info : trackedCerts.values()) {
                 boolean wasTrusted = info.isSomehowTrusted();
                 X509Certificate cert = info.getCertificate();
                 if (TrustTools.isSigned(signer, cert)) {
@@ -119,22 +119,21 @@ public class TrustedCertificatesTracker {
                 }
             }
         }
-        for (Iterator it = newTrusted.iterator(); it.hasNext();) {
-            TrustedCertificateInfo info = (TrustedCertificateInfo) it.next();
-            fireNowTrustedEvent(info);
+        for (TrustedCertificateInfoImpl aNewTrusted : newTrusted) {
+            fireNowTrustedEvent(aNewTrusted);
         }
     }
 
     private void signerTrustRemoved(X509Certificate cert) {
-        List noLongerTrusted = new ArrayList();
+        List<TrustedCertificateInfoImpl> noLongerTrusted = new ArrayList<TrustedCertificateInfoImpl>();
         synchronized(this) {
-            SignerInfo signerInfo = (SignerInfo) signers.get(cert);
+            SignerInfo signerInfo = signers.get(cert);
             if (signerInfo == null) return;
 
-            TrustedCertificateInfo[] signedCerts = signerInfo.getSignedCerts();
-            for (int i = 0; i < signedCerts.length; i++) {
+            List<TrustedCertificateInfo> signedCerts = signerInfo.getSignedCerts();
+            for (TrustedCertificateInfo signedCert1 : signedCerts) {
                 TrustedCertificateInfoImpl signedCert
-                        = (TrustedCertificateInfoImpl) signedCerts[i];
+                        = (TrustedCertificateInfoImpl) signedCert1;
 
                 boolean wasTrusted = signedCert.isSomehowTrusted();
                 signedCert.removeSigner(signerInfo);
@@ -146,17 +145,15 @@ public class TrustedCertificatesTracker {
             signers.remove(cert);
         }
 
-        for (Iterator it = noLongerTrusted.iterator(); it.hasNext();) {
-            TrustedCertificateInfo info = (TrustedCertificateInfo) it.next();
-            fireNoLongerTrustedEvent(info);
+        for (TrustedCertificateInfoImpl aNoLongerTrusted : noLongerTrusted) {
+            fireNoLongerTrustedEvent(aNoLongerTrusted);
         }
     }
 
     private void fireNowTrustedEvent(TrustedCertificateInfo info) {
         assert !Thread.holdsLock(this);
 
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            TrustedCertificatesListener listener = (TrustedCertificatesListener) it.next();
+        for (TrustedCertificatesListener listener : listeners) {
             listener.certificateTrusted(this, info);
         }
     }
@@ -164,8 +161,7 @@ public class TrustedCertificatesTracker {
     private void fireNoLongerTrustedEvent(TrustedCertificateInfo info) {
         assert !Thread.holdsLock(this);
 
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            TrustedCertificatesListener listener = (TrustedCertificatesListener) it.next();
+        for (TrustedCertificatesListener listener : listeners) {
             listener.certificateNoLongerTrusted(this, info);
         }
     }
@@ -180,7 +176,7 @@ public class TrustedCertificatesTracker {
         boolean newTrusted;
         synchronized(this) {
             DefaultCertificateHolder holder = new DefaultCertificateHolder(cert);
-            info = (TrustedCertificateInfoImpl) trackedCerts.get(holder);
+            info = trackedCerts.get(holder);
             if (info == null) return;
 
             boolean wasTrusted = info.isSomehowTrusted();
@@ -199,7 +195,7 @@ public class TrustedCertificatesTracker {
         boolean noLongerTrusted;
         synchronized(this) {
             DefaultCertificateHolder holder = new DefaultCertificateHolder(cert);
-            info = (TrustedCertificateInfoImpl) trackedCerts.get(holder);
+            info = trackedCerts.get(holder);
             if (info == null) return;
 
             boolean wasTrusted = info.isSomehowTrusted();
@@ -237,10 +233,8 @@ public class TrustedCertificatesTracker {
             info.setExplicitlyTrusted(explicitlyTrusted);
             SignerTrustManager signerTrustMgr = this.signerTrustMgr;
             if (signerTrustMgr != null) {
-                X509Certificate[] ts = signerTrustMgr.getTrustedSigners(cert);
-                for (int i = 0; i < ts.length; i++) {
-                    X509Certificate signer = ts[i];
-
+                List<X509Certificate> ts = signerTrustMgr.getTrustedSigners(cert);
+                for (X509Certificate signer : ts) {
                     if (signer == null) continue;
 
                     registerSignerSignee(info, signer);
@@ -270,7 +264,9 @@ public class TrustedCertificatesTracker {
     }
 
     private SignerInfoImpl getSignerInfoInstance(X509Certificate signer) {
-        SignerInfoImpl info = (SignerInfoImpl) signers.get(signer);
+        assert Thread.holdsLock(this);
+
+        SignerInfoImpl info = signers.get(signer);
         if (info == null) {
             info = new SignerInfoImpl(signer);
             signers.put(signer, info);
@@ -284,14 +280,13 @@ public class TrustedCertificatesTracker {
         boolean noLongerTrusted;
         TrustedCertificateInfo info;
         synchronized(this) {
-            info = (TrustedCertificateInfo)
-                    trackedCerts.remove(new DefaultCertificateHolder(cert));
+            info = trackedCerts.remove(new DefaultCertificateHolder(cert));
             if (info == null) return false;
 
             noLongerTrusted = info.isSomehowTrusted();
-            SignerInfo[] signers = info.getSigners();
-            for (int i = 0; i < signers.length; i++) {
-                SignerInfoImpl signer = (SignerInfoImpl) signers[i];
+            List<SignerInfo> signers = info.getSigners();
+            for (SignerInfo signer1 : signers) {
+                SignerInfoImpl signer = (SignerInfoImpl) signer1;
                 signer.removeSignee(info);
             }
         }
@@ -303,8 +298,7 @@ public class TrustedCertificatesTracker {
 
     public synchronized boolean isTrusted(X509Certificate cert) {
         CertificateHolder holder = new DefaultCertificateHolder(cert);
-        TrustedCertificateInfo info
-                = (TrustedCertificateInfo) trackedCerts.get(holder);
+        TrustedCertificateInfo info = trackedCerts.get(holder);
         if (info == null) return false;
         return info.isSomehowTrusted();
     }
@@ -312,7 +306,7 @@ public class TrustedCertificatesTracker {
     public static final class TrustedCertificateInfoImpl
             extends DefaultCertificateHolder implements TrustedCertificateInfo {
         private boolean explicitlyTrusted = false;
-        private final Set signers = new HashSet(5);
+        private final Set<SignerInfo> signers = new HashSet<SignerInfo>(5);
 
         private TrustedCertificateInfoImpl(X509Certificate cert) {
             super(cert);
@@ -336,8 +330,8 @@ public class TrustedCertificatesTracker {
             return signers.add(signer);
         }
 
-        public synchronized SignerInfo[] getSigners() {
-            return (SignerInfo[]) signers.toArray(new SignerInfo[signers.size()]);
+        public synchronized List<SignerInfo> getSigners() {
+            return DefensiveTools.getUnmodifiableCopy(signers);
         }
 
         public synchronized boolean isSignedBy(SignerInfo signer) {
@@ -355,7 +349,8 @@ public class TrustedCertificatesTracker {
 
     private static final class SignerInfoImpl
             extends DefaultCertificateHolder implements SignerInfo {
-        private final Set signees = new HashSet(10);
+        private final Set<TrustedCertificateInfo> signees
+                = new HashSet<TrustedCertificateInfo>(10);
 
         private SignerInfoImpl(X509Certificate cert) {
             super(cert);
@@ -369,9 +364,8 @@ public class TrustedCertificatesTracker {
             signees.add(signee);
         }
 
-        public synchronized TrustedCertificateInfo[] getSignedCerts() {
-            return (TrustedCertificateInfoImpl[]) signees.toArray(
-                    new TrustedCertificateInfoImpl[signees.size()]);
+        public synchronized List<TrustedCertificateInfo> getSignedCerts() {
+            return DefensiveTools.getUnmodifiableCopy(signees);
         }
 
         private synchronized void removeSignee(TrustedCertificateInfo signee) {

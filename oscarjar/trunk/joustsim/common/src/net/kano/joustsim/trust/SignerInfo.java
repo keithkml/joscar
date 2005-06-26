@@ -35,8 +35,9 @@
 
 package net.kano.joustsim.trust;
 
+import java.util.List;
 
 
 public interface SignerInfo extends CertificateHolder {
-    TrustedCertificateInfo[] getSignedCerts();
+    List<TrustedCertificateInfo> getSignedCerts();
 }

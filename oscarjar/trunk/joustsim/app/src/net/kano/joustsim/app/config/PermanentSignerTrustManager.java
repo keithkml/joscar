@@ -61,9 +61,8 @@ public class PermanentSignerTrustManager
     public synchronized boolean isSignedByTrustedSigner(X509Certificate cert) {
         DefensiveTools.checkNull(cert, "cert");
 
-        X509Certificate[] certs = getTrustedCertificates();
-        for (int i = 0; i < certs.length; i++) {
-            X509Certificate signer = certs[i];
+        List<X509Certificate> certs = getTrustedCertificates();
+        for (X509Certificate signer : certs) {
             try {
                 cert.verify(signer.getPublicKey());
 
@@ -76,13 +75,12 @@ public class PermanentSignerTrustManager
         return false;
     }
 
-    public synchronized X509Certificate[] getTrustedSigners(X509Certificate cert) {
+    public synchronized List<X509Certificate> getTrustedSigners(X509Certificate cert) {
         DefensiveTools.checkNull(cert, "cert");
 
-        List signed = new ArrayList();
-        X509Certificate[] certs = getTrustedCertificates();
-        for (int i = 0; i < certs.length; i++) {
-            X509Certificate signer = certs[i];
+        List<X509Certificate> signed = new ArrayList<X509Certificate>();
+        List<X509Certificate> certs = getTrustedCertificates();
+        for (X509Certificate signer : certs) {
             try {
                 cert.verify(signer.getPublicKey());
 
@@ -91,6 +89,6 @@ public class PermanentSignerTrustManager
             } catch (Exception ignored) { }
         }
 
-        return (X509Certificate[]) signed.toArray(new X509Certificate[signed.size()]);
+        return DefensiveTools.getUnmodifiable(signed);
     }
 }

@@ -39,6 +39,7 @@ import net.kano.joustsim.Screenname;
 
 import java.io.File;
 import java.security.cert.X509Certificate;
+import java.util.List;
 
 public interface CertificateTrustManager {
     Screenname getBuddy();
@@ -53,7 +54,7 @@ public interface CertificateTrustManager {
 
     boolean revokeTrust(X509Certificate cert);
 
-    X509Certificate[] getTrustedCertificates();
+    List<X509Certificate> getTrustedCertificates();
 
     boolean importCertificate(File file) throws TrustException;
 }
