@@ -41,8 +41,6 @@ import net.kano.joustsim.trust.TrustedCertificatesTracker;
 import net.kano.joustsim.trust.BuddyCertificateInfo;
 import net.kano.joustsim.trust.CertificateHolder;
 import net.kano.joustsim.trust.DefaultCertificateHolder;
-import net.kano.joustsim.trust.TrustedCertificatesListener;
-import net.kano.joustsim.trust.TrustedCertificatesTracker;
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 
@@ -58,9 +56,9 @@ import java.util.Set;
 public class CertificateInfoTrustManager {
     private final TrustedCertificatesTracker certTrustMgr;
 
-    private Map certInfoTrust = new HashMap();
-    private Map certHolders = new HashMap();
-    private CopyOnWriteArrayList listeners = new CopyOnWriteArrayList();
+    private Map<CertificateHolder,Set<BuddyCertificateInfoHolder>> certInfoTrust = new HashMap<CertificateHolder, Set<BuddyCertificateInfoHolder>>();
+    private Map<BuddyHashHolder,BuddyCertificateInfoHolder> certHolders = new HashMap<BuddyHashHolder, BuddyCertificateInfoHolder>();
+    private CopyOnWriteArrayList<CertificateInfoTrustListener> listeners = new CopyOnWriteArrayList<CertificateInfoTrustListener>();
 
     public CertificateInfoTrustManager(TrustedCertificatesTracker certTrustMgr) {
         DefensiveTools.checkNull(certTrustMgr, "certTrustMgr");
@@ -93,25 +91,22 @@ public class CertificateInfoTrustManager {
         assert !Thread.holdsLock(this);
 
         CertificateHolder holder = new DefaultCertificateHolder(cert);
-        List updated = new ArrayList();
+        List<BuddyCertificateInfoHolder> updated = new ArrayList<BuddyCertificateInfoHolder>();
         synchronized(this) {
-            Set certinfos = (Set) certInfoTrust.get(holder);
-            for (Iterator it = certinfos.iterator(); it.hasNext();) {
-                BuddyCertificateInfoHolder infoHolder
-                        = (BuddyCertificateInfoHolder) it.next();
-
+            Set<BuddyCertificateInfoHolder> certinfos = certInfoTrust.get(holder);
+            for (BuddyCertificateInfoHolder infoHolder : certinfos) {
                 if (updateTrusted(infoHolder)) {
                     updated.add(infoHolder);
                 }
             }
         }
 
-        for (Iterator it = updated.iterator(); it.hasNext();) {
-            BuddyCertificateInfoHolder infoHolder
-                    = (BuddyCertificateInfoHolder) it.next();
-
-            if (infoHolder.isTrusted()) fireCertInfoTrustedEvent(infoHolder);
-            else fireCertInfoNoLongerTrustedEvent(infoHolder);
+        for (BuddyCertificateInfoHolder infoHolder : updated) {
+            if (infoHolder.isTrusted()) {
+                fireCertInfoTrustedEvent(infoHolder);
+            } else {
+                fireCertInfoNoLongerTrustedEvent(infoHolder);
+            }
         }
     }
 
@@ -142,9 +137,7 @@ public class CertificateInfoTrustManager {
         assert !Thread.holdsLock(this);
 
         BuddyCertificateInfo buddyCertInfo = infoHolder.getInfo();
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            CertificateInfoTrustListener listener
-                    = (CertificateInfoTrustListener) it.next();
+        for (CertificateInfoTrustListener listener : listeners) {
             listener.certificateInfoTrusted(this, buddyCertInfo);
         }
     }
@@ -154,9 +147,7 @@ public class CertificateInfoTrustManager {
         assert !Thread.holdsLock(this);
 
         BuddyCertificateInfo buddyCertInfo = infoHolder.getInfo();
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            CertificateInfoTrustListener listener
-                    = (CertificateInfoTrustListener) it.next();
+        for (CertificateInfoTrustListener listener : listeners) {
             listener.certificateInfoNoLongerTrusted(this, buddyCertInfo);
         }
     }
@@ -217,7 +208,7 @@ public class CertificateInfoTrustManager {
 
             BuddyHashHolder hashHolder = new BuddyHashHolder(certInfo.getBuddy(),
                     certInfo.getCertificateInfoHash());
-            holder = (BuddyCertificateInfoHolder) certHolders.remove(hashHolder);
+            holder = certHolders.remove(hashHolder);
             wasTrusted = holder != null && holder.isTrusted();
         }
 
@@ -227,11 +218,11 @@ public class CertificateInfoTrustManager {
     private synchronized void disassociateCert(X509Certificate cert,
             BuddyCertificateInfo certInfo) {
         CertificateHolder certHolder = new DefaultCertificateHolder(cert);
-        Set associated = (Set) certInfoTrust.get(certHolder);
+        Set<BuddyCertificateInfoHolder> associated = certInfoTrust.get(certHolder);
         if (associated == null)return;
-        for (Iterator it = associated.iterator(); it.hasNext();) {
+        for (Iterator<BuddyCertificateInfoHolder> it = associated.iterator(); it.hasNext();) {
             BuddyCertificateInfoHolder holder
-                    = (BuddyCertificateInfoHolder) it.next();
+                    = it.next();
             if (holder.getInfo().equals(certInfo)) it.remove();
         }
     }
@@ -239,9 +230,9 @@ public class CertificateInfoTrustManager {
     private synchronized boolean associateCert(X509Certificate cert,
             BuddyCertificateInfoHolder infoHolder) {
         CertificateHolder certHolder = new DefaultCertificateHolder(cert);
-        Set associated = (Set) certInfoTrust.get(certHolder);
+        Set<BuddyCertificateInfoHolder> associated = certInfoTrust.get(certHolder);
         if (associated == null) {
-            associated = new HashSet();
+            associated = new HashSet<BuddyCertificateInfoHolder>();
             certInfoTrust.put(certHolder, associated);
         }
         return associated.add(infoHolder);
@@ -251,7 +242,7 @@ public class CertificateInfoTrustManager {
         BuddyHashHolder hashHolder = new BuddyHashHolder(certInfo.getBuddy(),
                 certInfo.getCertificateInfoHash());
         BuddyCertificateInfoHolder holder
-                = (BuddyCertificateInfoHolder) certHolders.get(hashHolder);
+                = certHolders.get(hashHolder);
         return holder != null && holder.isTrusted();
     }
 

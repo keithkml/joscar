@@ -37,6 +37,6 @@ package net.kano.joustsim.oscar.oscar.service.icbm;
 
 
 
-public interface ImConversationListener extends ConversationListener {
+public interface ImConversationListener extends ConversationListener, TypingListener {
     void missedMessages(ImConversation conv, MissedImInfo info);
 }

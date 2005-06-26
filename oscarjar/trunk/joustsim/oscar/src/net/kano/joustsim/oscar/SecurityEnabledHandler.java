@@ -42,6 +42,7 @@ import net.kano.joustsim.trust.PrivateKeysPreferences;
 import net.kano.joustsim.trust.TrustPreferences;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.snaccmd.CertificateInfo;
 
 import java.beans.PropertyChangeEvent;
@@ -50,6 +51,7 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.List;
 
 public class SecurityEnabledHandler implements CapabilityHandler {
     private static final Logger logger
@@ -58,13 +60,16 @@ public class SecurityEnabledHandler implements CapabilityHandler {
     private final AimConnection conn;
     private boolean boundInfoService = false;
     private final PrivateKeysPreferences keysMgr;
+    private CopyOnWriteArrayList<CapabilityListener> listeners
+            = new CopyOnWriteArrayList<CapabilityListener>();
+    private boolean enabled = false;
 
     public SecurityEnabledHandler(AimConnection conn) {
         DefensiveTools.checkNull(conn, "conn");
 
         this.conn = conn;
         conn.addOpenedServiceListener(new OpenedServiceListener() {
-            public void openedServices(AimConnection conn, Service[] services) {
+            public void openedServices(AimConnection conn, List<Service> services) {
                 bindToInfoService();
             }
         });
@@ -85,6 +90,7 @@ public class SecurityEnabledHandler implements CapabilityHandler {
                 }
             });
         }
+        updateEnabledStatus();
     }
 
     private void bindToInfoService() {
@@ -101,15 +107,19 @@ public class SecurityEnabledHandler implements CapabilityHandler {
 
     private void updateCertInfo() {
         InfoService infoService = conn.getInfoService();
-        if (infoService == null) return;
-
-        infoService.setCertificateInfo(generateLocalCertificateInfo());
+        if (infoService != null) {
+            infoService.setCertificateInfo(generateLocalCertificateInfo());
+        }
+        updateEnabledStatus();
     }
 
     private CertificateInfo generateLocalCertificateInfo() {
         PrivateKeys keys;
-        if (keysMgr != null) keys = keysMgr.getKeysInfo();
-        else keys = null;
+        if (keysMgr != null) {
+            keys = keysMgr.getKeysInfo();
+        } else {
+            keys = null;
+        }
 
         if (keys == null) {
             logger.fine("User has no private keys");
@@ -174,10 +184,35 @@ public class SecurityEnabledHandler implements CapabilityHandler {
     public void handleRemoved(CapabilityManager manager) {
     }
 
-    public boolean isEnabled() {
+    private void updateEnabledStatus() {
+        boolean old;
+        boolean newStatus;
+        synchronized (this) {
+            old = enabled;
+            newStatus = computeEnabledStatus();
+            enabled = newStatus;
+        }
+        if (old != newStatus) {
+            for (CapabilityListener listener : listeners) {
+                listener.capabilityEnabled(this, newStatus);
+            }
+        }
+    }
+
+    public synchronized boolean isEnabled() { return enabled; }
+
+    private synchronized boolean computeEnabledStatus() {
         if (keysMgr == null) return false;
         PrivateKeys keys = keysMgr.getKeysInfo();
         return keys != null && keys.getEncryptingKeys() != null
                 && keys.getSigningKeys() != null;
+    }
+
+    public void addCapabilityListener(CapabilityListener listener) {
+        listeners.addIfAbsent(listener);
+    }
+
+    public void removeCapabilityListener(CapabilityListener listener) {
+        listeners.remove(listener);
     }
 }

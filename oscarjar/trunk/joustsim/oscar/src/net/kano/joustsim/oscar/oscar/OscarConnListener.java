@@ -35,11 +35,9 @@
 
 package net.kano.joustsim.oscar.oscar;
 
-import net.kano.joscar.net.ClientConnEvent;
-
 public interface OscarConnListener {
     void registeredSnacFamilies(OscarConnection conn);
-    void connStateChanged(OscarConnection conn, ClientConnEvent event);
+    void connStateChanged(OscarConnection conn, OscarConnStateEvent event);
     
     void allFamiliesReady(OscarConnection conn);
 }

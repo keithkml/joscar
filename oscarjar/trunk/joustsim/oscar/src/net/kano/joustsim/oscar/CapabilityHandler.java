@@ -40,6 +40,8 @@ public interface CapabilityHandler {
 
     void handleRemoved(CapabilityManager manager);
 
-    //TODO: capability handler enabled listeners
     boolean isEnabled();
+
+    void addCapabilityListener(CapabilityListener listener);
+    void removeCapabilityListener(CapabilityListener listener);
 }

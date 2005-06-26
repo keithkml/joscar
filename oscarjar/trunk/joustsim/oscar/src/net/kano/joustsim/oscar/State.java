@@ -43,6 +43,8 @@ public final class State {
     public static State SIGNINGON = new State("SIGNINGON");
     public static State FAILED = new State("FAILED");
     public static State ONLINE = new State("ONLINE");
+    //TODO: implement PRE_ONLINE
+//    public static State PRE_ONLINE = new State("PRE_ONLINE");
     public static State DISCONNECTED = new State("DISCONNECTED");
 
     private final String name;

@@ -35,9 +35,6 @@
 
 package net.kano.joustsim.oscar.oscar.service;
 
-import net.kano.joustsim.Screenname;
-import net.kano.joustsim.oscar.AimConnection;
-import net.kano.joustsim.oscar.oscar.OscarConnection;
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.MiscTools;
@@ -49,8 +46,10 @@ import net.kano.joscar.snac.SnacRequest;
 import net.kano.joscar.snac.SnacRequestListener;
 import net.kano.joscar.snac.SnacResponseEvent;
 import net.kano.joscar.snaccmd.conn.SnacFamilyInfo;
+import net.kano.joustsim.Screenname;
+import net.kano.joustsim.oscar.AimConnection;
+import net.kano.joustsim.oscar.oscar.OscarConnection;
 
-import java.util.Iterator;
 import java.util.logging.Logger;
 
 public abstract class Service {
@@ -59,7 +58,7 @@ public abstract class Service {
     private AimConnection aimConnection;
     private final OscarConnection oscarConnection;
     private final int family;
-    private CopyOnWriteArrayList listeners = new CopyOnWriteArrayList();
+    private CopyOnWriteArrayList<ServiceListener> listeners = new CopyOnWriteArrayList<ServiceListener>();
     private boolean ready = false;
     private boolean finished = false;
 
@@ -144,8 +143,7 @@ public abstract class Service {
             if (ready) return;
             ready = true;
         }
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            ServiceListener l = (ServiceListener) it.next();
+        for (ServiceListener l : listeners) {
             l.ready(this);
         }
     }
@@ -157,8 +155,7 @@ public abstract class Service {
             if (finished) return;
             finished = true;
         }
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            ServiceListener l = (ServiceListener) it.next();
+        for (ServiceListener l : listeners) {
             l.finished(this);
         }
     }

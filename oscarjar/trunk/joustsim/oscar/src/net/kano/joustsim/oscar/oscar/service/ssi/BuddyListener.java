@@ -31,8 +31,21 @@
  *
  */
 
-package net.kano.joustsim.oscar;
+package net.kano.joustsim.oscar.oscar.service.ssi;
 
-public interface CapabilityListener {
-    void capabilityEnabled(CapabilityHandler handler, boolean enabled);
+import net.kano.joustsim.Screenname;
+
+public interface BuddyListener {
+    void screennameChanged(Buddy buddy, Screenname oldScreenname, Screenname newScreenname);
+
+    void aliasChanged(Buddy buddy, String oldAlias, String newAlias);
+
+    void buddyCommentChanged(Buddy buddy, String oldComment, String newComment);
+
+    void alertActionChanged(Buddy buddy, int oldAlertAction, int newAlertAction);
+
+    void alertTimeChanged(Buddy buddy, int oldAlertEvent, int newAlertEvent);
+
+    void alertSoundChanged(Buddy buddy, String oldAlertSound,
+            String newAlertSound);
 }

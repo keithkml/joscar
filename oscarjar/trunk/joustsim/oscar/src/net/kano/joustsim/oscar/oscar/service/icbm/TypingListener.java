@@ -31,8 +31,8 @@
  *
  */
 
-package net.kano.joustsim.oscar;
+package net.kano.joustsim.oscar.oscar.service.icbm;
 
-public interface CapabilityListener {
-    void capabilityEnabled(CapabilityHandler handler, boolean enabled);
+public interface TypingListener extends ConversationListener {
+    void gotTypingState(Conversation conversation, TypingInfo typingInfo);
 }

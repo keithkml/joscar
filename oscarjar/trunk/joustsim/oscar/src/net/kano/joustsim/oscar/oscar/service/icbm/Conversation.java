@@ -35,17 +35,16 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm;
 
-import net.kano.joustsim.Screenname;
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.MiscTools;
-
-import java.util.Iterator;
+import net.kano.joustsim.Screenname;
 
 public abstract class Conversation {
     private final Screenname buddy;
 
-    private CopyOnWriteArrayList listeners = new CopyOnWriteArrayList();
+    private CopyOnWriteArrayList<ConversationListener> listeners
+            = new CopyOnWriteArrayList<ConversationListener>();
     private boolean open = false;
     private boolean closed = false;
 
@@ -87,9 +86,7 @@ public abstract class Conversation {
     private void fireOpenEvent() {
         assert !Thread.holdsLock(this);
 
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            ConversationListener l = (ConversationListener) it.next();
-
+        for (ConversationListener l : listeners) {
             l.conversationOpened(this);
         }
     }
@@ -109,9 +106,7 @@ public abstract class Conversation {
     private void fireClosedEvent() {
         assert !Thread.holdsLock(this);
 
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            ConversationListener l = (ConversationListener) it.next();
-
+        for (ConversationListener l : listeners) {
             l.conversationClosed(this);
         }
     }
@@ -126,35 +121,48 @@ public abstract class Conversation {
 
     public synchronized boolean isClosed() { return closed; }
 
-    protected void fireIncomingEvent(MessageInfo msg) {
+    protected void fireIncomingEvent(ConversationEventInfo event) {
         assert !Thread.holdsLock(this);
 
-        DefensiveTools.checkNull(msg, "msg");
+        DefensiveTools.checkNull(event, "event");
 
-        System.out.println(MiscTools.getClassName(this) + ": firing incoming event: " + msg);
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            ConversationListener l = (ConversationListener) it.next();
-            l.gotMessage(this, msg);
+        System.out.println(MiscTools.getClassName(this) + ": firing incoming "
+                + "event: " + event);
+        if (event instanceof MessageInfo) {
+            MessageInfo messageInfo = (MessageInfo) event;
+            for (ConversationListener l : listeners) {
+                l.gotMessage(this, messageInfo);
+            }
+        } else {
+            for (ConversationListener l : listeners) {
+                l.gotOtherEvent(this, event);
+            }
         }
     }
 
-    protected void fireOutgoingEvent(MessageInfo msg) {
+    protected void fireOutgoingEvent(ConversationEventInfo event) {
         assert !Thread.holdsLock(this);
 
-        DefensiveTools.checkNull(msg, "msg");
+        DefensiveTools.checkNull(event, "event");
 
-        System.out.println(MiscTools.getClassName(this) + ": firing outgoing event: " + msg);
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            ConversationListener l = (ConversationListener) it.next();
-            l.sentMessage(this, msg);
+        System.out.println(MiscTools.getClassName(this) + ": firing outgoing "
+                + "event: " + event);
+        if (event instanceof MessageInfo) {
+            MessageInfo messageInfo = (MessageInfo) event;
+            for (ConversationListener l : listeners) {
+                l.sentMessage(this, messageInfo);
+            }
+        } else {
+            for (ConversationListener l : listeners) {
+                l.sentOtherEvent(this, event);
+            }
         }
     }
 
     protected void fireCanSendChangedEvent(boolean canSend) {
         assert !Thread.holdsLock(this);
 
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            ConversationListener listener = (ConversationListener) it.next();
+        for (ConversationListener listener : listeners) {
             listener.canSendMessageChanged(this, canSend);
         }
     }
@@ -170,9 +178,9 @@ public abstract class Conversation {
     public abstract void sendMessage(Message msg)
             throws ConversationException;
 
-    protected CopyOnWriteArrayList getListeners() { return listeners; }
+    protected CopyOnWriteArrayList<ConversationListener> getListeners() { return listeners; }
 
-    protected void handleIncomingMessage(MessageInfo msg) {
-        fireIncomingEvent(msg);
+    protected void handleIncomingEvent(ConversationEventInfo event) {
+        fireIncomingEvent(event);
     }
 }

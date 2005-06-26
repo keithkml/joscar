@@ -39,9 +39,9 @@ import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.AimConnection;
 
 import java.util.Date;
-import java.util.Iterator;
 
 public class ImConversation extends Conversation {
+    //TODO: store typing state, but think about whether the buddy is on our buddy list and we'll get signon/off notifications
     private final AimConnection conn;
 
     ImConversation(AimConnection conn, Screenname buddy) {
@@ -61,16 +61,36 @@ public class ImConversation extends Conversation {
                 getBuddy(), msg, new Date()));
     }
 
+    protected void handleIncomingEvent(ConversationEventInfo event) {
+        assert !Thread.holdsLock(this);
+
+        super.handleIncomingEvent(event);
+
+        if (event instanceof TypingInfo) {
+            TypingInfo typingInfo = (TypingInfo) event;
+            for (ConversationListener listener : getListeners()) {
+                if (listener instanceof TypingListener) {
+                    TypingListener typingListener = (TypingListener) listener;
+                    typingListener.gotTypingState(this, typingInfo);
+                }
+            }
+        }
+    }
+
+    public void setTypingState(int typingState) {
+        conn.getIcbmService().sendTypingStatus(getBuddy(), typingState);
+        fireOutgoingEvent(new TypingInfo(conn.getScreenname(), getBuddy(),
+                new Date(), typingState));
+    }
+
     public void handleMissedMsg(MissedImInfo info) {
-        for (Iterator it = getListeners().iterator(); it.hasNext();) {
-            ConversationListener listener = (ConversationListener) it.next();
+        for (ConversationListener listener : getListeners()) {
+            if (listener instanceof ImConversationListener) {
+                ImConversationListener imlistener
+                        = (ImConversationListener) listener;
 
-            if (!(listener instanceof ImConversationListener)) continue;
-
-            ImConversationListener imlistener
-                    = (ImConversationListener) listener;
-
-            imlistener.missedMessages(this, info);
+                imlistener.missedMessages(this, info);
+            }
         }
     }
 }

@@ -38,6 +38,7 @@ package net.kano.joustsim.oscar.oscar.service.bos;
 import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.oscar.oscar.OscarConnection;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.snac.SnacPacketEvent;
 import net.kano.joscar.snaccmd.CertificateInfo;
@@ -49,8 +50,11 @@ import net.kano.joscar.snaccmd.conn.SetIdleCmd;
 import net.kano.joscar.snaccmd.conn.YourInfoCmd;
 
 import java.util.Date;
+import java.util.Arrays;
+import java.util.List;
 
 public class MainBosService extends BosService {
+    private CopyOnWriteArrayList<MainBosServiceListener> listeners = new CopyOnWriteArrayList<MainBosServiceListener>();
     private Date idleSince = null;
 
     public MainBosService(AimConnection aimConnection,
@@ -59,15 +63,14 @@ public class MainBosService extends BosService {
     }
 
     protected void serverReady() {
-        ExtraInfoBlock[] blocks = new ExtraInfoBlock[] {
-            new ExtraInfoBlock(ExtraInfoBlock.TYPE_CERTINFO_HASHA,
-                    new ExtraInfoData(ExtraInfoData.FLAG_HASH_PRESENT,
-                            CertificateInfo.HASHA_DEFAULT)),
+        List<ExtraInfoBlock> blocks = Arrays.asList(
+                new ExtraInfoBlock(ExtraInfoBlock.TYPE_CERTINFO_HASHA,
+                        new ExtraInfoData(ExtraInfoData.FLAG_HASH_PRESENT,
+                                CertificateInfo.HASHA_DEFAULT)),
 
-            new ExtraInfoBlock(ExtraInfoBlock.TYPE_CERTINFO_HASHB,
-                    new ExtraInfoData(ExtraInfoData.FLAG_HASH_PRESENT,
-                            CertificateInfo.HASHB_DEFAULT)),
-        };
+                new ExtraInfoBlock(ExtraInfoBlock.TYPE_CERTINFO_HASHB,
+                        new ExtraInfoData(ExtraInfoData.FLAG_HASH_PRESENT,
+                                CertificateInfo.HASHB_DEFAULT)));
         sendSnac(new SetEncryptionInfoCmd(blocks));
         sendSnac(new MyInfoRequest());
     }
@@ -77,12 +80,14 @@ public class MainBosService extends BosService {
 
         if (snac instanceof YourInfoCmd) {
             YourInfoCmd yic = (YourInfoCmd) snac;
-            String formattedsn = yic.getUserInfo().getScreenname();
-            //TODO: pass your info command to listeners (create listeners, too)
+            for (MainBosServiceListener listener : listeners) {
+                listener.handleYourInfo(this, yic.getUserInfo());
+            }
         }
 
         super.handleSnacPacket(snacPacketEvent);
     }
+
 
     public void setIdleSince(Date at) throws IllegalArgumentException {
         DefensiveTools.checkNull(at, "at");
@@ -94,8 +99,8 @@ public class MainBosService extends BosService {
         }
         long idleSecs = idlems / 1000;
 
-        sendSnac(new SetIdleCmd(idleSecs));
         setIdleSinceDate(at);
+        sendSnac(new SetIdleCmd(idleSecs));
     }
 
     public void setUnidle() {
@@ -108,4 +113,12 @@ public class MainBosService extends BosService {
     }
 
     public synchronized Date getIdleSince() { return idleSince; }
+
+    public void addMainBosServiceListener(MainBosServiceListener listener) {
+        listeners.add(listener);
+    }
+
+    public void removeMainBosServiceListener(MainBosServiceListener listener) {
+        listeners.remove(listener);
+    }
 }

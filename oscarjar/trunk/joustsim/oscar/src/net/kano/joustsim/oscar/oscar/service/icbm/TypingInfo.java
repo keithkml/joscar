@@ -31,8 +31,21 @@
  *
  */
 
-package net.kano.joustsim.oscar;
+package net.kano.joustsim.oscar.oscar.service.icbm;
 
-public interface CapabilityListener {
-    void capabilityEnabled(CapabilityHandler handler, boolean enabled);
+import net.kano.joustsim.Screenname;
+
+import java.util.Date;
+
+public class TypingInfo extends ConversationEventInfo {
+    private final int typingState;
+
+    public TypingInfo(Screenname from, Screenname to, Date date, int typingState) {
+        super(from, to, date);
+        this.typingState = typingState;
+    }
+
+    public int getTypingState() {
+        return typingState;
+    }
 }

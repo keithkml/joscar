@@ -31,8 +31,24 @@
  *
  */
 
-package net.kano.joustsim.oscar;
+package net.kano.joustsim.oscar.oscar.service.ssi;
 
-public interface CapabilityListener {
-    void capabilityEnabled(CapabilityHandler handler, boolean enabled);
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Collections;
+
+class SyntheticGroup extends Group {
+    protected SyntheticGroup(SimpleBuddyList buddyList) {
+        super(buddyList);
+    }
+
+    protected List<Buddy> getSortedBuddies() {
+        List<Buddy> list = new ArrayList<Buddy>(getBuddies());
+        Collections.sort(list, SimpleBuddyList.COMPARATOR_SN);
+        return list;
+    }
+
+    public String getName() {
+        return "Synthetic group";
+    }
 }

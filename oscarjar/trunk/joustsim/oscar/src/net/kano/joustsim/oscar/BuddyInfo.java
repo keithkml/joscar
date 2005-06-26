@@ -35,17 +35,18 @@
 
 package net.kano.joustsim.oscar;
 
-import net.kano.joustsim.Screenname;
-import net.kano.joustsim.trust.BuddyCertificateInfo;
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.DirInfo;
 import net.kano.joscar.snaccmd.icbm.OldIconHashInfo;
+import net.kano.joustsim.Screenname;
+import net.kano.joustsim.trust.BuddyCertificateInfo;
 
 import java.beans.PropertyChangeSupport;
 import java.util.Date;
-import java.util.Iterator;
+import java.util.Collection;
+import java.util.List;
 
 public final class BuddyInfo {
     public static final String PROP_CERTIFICATE_INFO = "certificateInfo";
@@ -64,8 +65,6 @@ public final class BuddyInfo {
             = "supportsTypingNotifications";
     public static final String PROP_WANTS_OUR_ICON = "wantsOurIcon";
 
-    private static final CapabilityBlock[] CAPS_EMPTY = new CapabilityBlock[0];
-    
     private final Screenname screenname;
 
     private BuddyCertificateInfo certificateInfo = null;
@@ -73,7 +72,7 @@ public final class BuddyInfo {
     private DirInfo directoryInfo = null;
     private Date onlineSince = null;
     private boolean away = false;
-    private CapabilityBlock[] capabilities = CAPS_EMPTY;
+    private List<CapabilityBlock> capabilities = DefensiveTools.emptyList();
     private Date idleSince = null;
     private int warningLevel = -1;
     private String awayMessage = null;
@@ -86,7 +85,8 @@ public final class BuddyInfo {
     private boolean wantsOurIcon = false;
 
     private PropertyChangeSupport pcs = new PropertyChangeSupport(this);
-    private CopyOnWriteArrayList listeners = new CopyOnWriteArrayList();
+    private CopyOnWriteArrayList<BuddyInfoChangeListener> listeners
+            = new CopyOnWriteArrayList<BuddyInfoChangeListener>();
 
     public BuddyInfo(Screenname screenname) {
         DefensiveTools.checkNull(screenname, "screenname");
@@ -163,11 +163,9 @@ public final class BuddyInfo {
 
     public synchronized boolean isAway() { return away; }
 
-    void setCapabilities(CapabilityBlock[] capabilities) {
-        DefensiveTools.checkNull(capabilities, "capabilities");
-
-        CapabilityBlock[] cloned = (CapabilityBlock[]) capabilities.clone();
-        CapabilityBlock[] old;
+    void setCapabilities(Collection<CapabilityBlock> capabilities) {
+        List<CapabilityBlock> cloned = DefensiveTools.getSafeNonnullListCopy(capabilities, "capabilities");
+        List<CapabilityBlock> old;
         synchronized (this) {
             old = this.capabilities;
             this.capabilities = cloned;
@@ -175,8 +173,8 @@ public final class BuddyInfo {
         pcs.firePropertyChange(PROP_CAPABILITIES, old, capabilities);
     }
 
-    public synchronized CapabilityBlock[] getCapabilities() {
-        return (CapabilityBlock[]) capabilities.clone();
+    public synchronized List<CapabilityBlock> getCapabilities() {
+        return capabilities;
     }
 
     void setIdleSince(Date idleSince) {
@@ -275,8 +273,7 @@ public final class BuddyInfo {
     void receivedBuddyStatusUpdate() {
         assert !Thread.holdsLock(this);
 
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            BuddyInfoChangeListener listener = (BuddyInfoChangeListener) it.next();
+        for (BuddyInfoChangeListener listener : listeners) {
             listener.receivedBuddyStatusUpdate(this);
         }
     }

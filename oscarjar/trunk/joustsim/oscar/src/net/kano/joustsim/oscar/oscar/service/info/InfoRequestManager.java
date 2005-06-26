@@ -46,7 +46,8 @@ import java.util.Set;
 
 public abstract class InfoRequestManager {
     private final InfoService service;
-    private final Map listenerMap = new HashMap();
+    private final Map<Screenname,Set<InfoResponseListener>> listenerMap
+            = new HashMap<Screenname, Set<InfoResponseListener>>();
 
     protected InfoRequestManager(InfoService service) {
         this.service = service;
@@ -75,28 +76,28 @@ public abstract class InfoRequestManager {
         DefensiveTools.checkNull(sn, "sn");
 
         boolean shouldRequest = !listenerMap.containsKey(sn);
-        Set listeners = getListeners(sn);
+        Set<InfoResponseListener> listeners = getListeners(sn);
         if (listener != null) listeners.add(listener);
         return shouldRequest;
     }
 
-    protected synchronized final Set getListeners(Screenname sn) {
+    protected synchronized final Set<InfoResponseListener> getListeners(Screenname sn) {
         DefensiveTools.checkNull(sn, "sn");
 
-        Set set = (Set) listenerMap.get(sn);
+        Set<InfoResponseListener> set = listenerMap.get(sn);
         if (set == null) {
-            set = new LinkedHashSet();
+            set = new LinkedHashSet<InfoResponseListener>();
             set.add(service.getInfoRequestListener());
             listenerMap.put(sn, set);
         }
         return set;
     }
 
-    protected synchronized final Set clearListeners(Screenname sn) {
+    protected synchronized final Set<InfoResponseListener> clearListeners(Screenname sn) {
         DefensiveTools.checkNull(sn, "sn");
 
-        Set set = (Set) listenerMap.remove(sn);
-        if (set == null) return Collections.EMPTY_SET;
+        Set<InfoResponseListener> set = listenerMap.remove(sn);
+        if (set == null) return (Set<InfoResponseListener>) Collections.EMPTY_SET;
         else return set;
     }
 

@@ -33,6 +33,20 @@
 
 package net.kano.joustsim.oscar;
 
-public interface CapabilityListener {
-    void capabilityEnabled(CapabilityHandler handler, boolean enabled);
+class EmptyCapabilityHandler implements CapabilityHandler {
+    public void handleAdded(CapabilityManager manager) {
+    }
+
+    public void handleRemoved(CapabilityManager manager) {
+    }
+
+    public boolean isEnabled() {
+        return true;
+    }
+
+    public void addCapabilityListener(CapabilityListener listener) {
+    }
+
+    public void removeCapabilityListener(CapabilityListener listener) {
+    }
 }

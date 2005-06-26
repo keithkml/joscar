@@ -35,22 +35,68 @@
 
 package net.kano.joustsim.oscar.oscar.service.ssi;
 
+import net.kano.joscar.MiscTools;
+import net.kano.joscar.flapcmd.SnacCommand;
+import net.kano.joscar.snac.SnacPacketEvent;
+import net.kano.joscar.snac.SnacRequestListener;
+import net.kano.joscar.snac.SnacResponseEvent;
+import net.kano.joscar.snac.SnacResponseListener;
+import net.kano.joscar.snaccmd.conn.SnacFamilyInfo;
+import net.kano.joscar.snaccmd.ssi.ActivateSsiCmd;
+import net.kano.joscar.snaccmd.ssi.CreateItemsCmd;
+import net.kano.joscar.snaccmd.ssi.DeleteItemsCmd;
+import net.kano.joscar.snaccmd.ssi.ItemsCmd;
+import net.kano.joscar.snaccmd.ssi.ModifyItemsCmd;
+import net.kano.joscar.snaccmd.ssi.SsiCommand;
+import net.kano.joscar.snaccmd.ssi.SsiDataCmd;
+import net.kano.joscar.snaccmd.ssi.SsiDataModResponse;
+import net.kano.joscar.snaccmd.ssi.SsiDataRequest;
+import net.kano.joscar.snaccmd.ssi.SsiItem;
+import net.kano.joscar.snaccmd.ssi.SsiRightsRequest;
 import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.oscar.oscar.OscarConnection;
 import net.kano.joustsim.oscar.oscar.service.Service;
-import net.kano.joscar.flapcmd.SnacCommand;
-import net.kano.joscar.snac.SnacPacketEvent;
-import net.kano.joscar.snaccmd.conn.SnacFamilyInfo;
-import net.kano.joscar.snaccmd.ssi.ActivateSsiCmd;
-import net.kano.joscar.snaccmd.ssi.SsiCommand;
-import net.kano.joscar.snaccmd.ssi.SsiDataCmd;
-import net.kano.joscar.snaccmd.ssi.SsiDataRequest;
-import net.kano.joscar.snaccmd.ssi.SsiRightsRequest;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
 public class SsiService extends Service {
+    private BuddyList buddyList = new SsiBuddyList(this);
+
     public SsiService(AimConnection aimConnection,
             OscarConnection oscarConnection) {
         super(aimConnection, oscarConnection, SsiCommand.FAMILY_SSI);
+
+        oscarConnection.getSnacProcessor().addGlobalResponseListener(new SnacResponseListener() {
+            public void handleResponse(SnacResponseEvent e) {
+                if (e.getSnacCommand() instanceof SsiDataModResponse) {
+                    SsiDataModResponse dataModResponse = (SsiDataModResponse) e.getSnacCommand();
+                    SnacCommand origCmd = e.getRequest().getCommand();
+                    boolean create = origCmd instanceof CreateItemsCmd;
+                    boolean modify = origCmd instanceof ModifyItemsCmd;
+                    boolean delete = origCmd instanceof DeleteItemsCmd;
+                    if (!(create || modify || delete)) {
+                        return;
+                    }
+                    ItemsCmd itemsCmd = (ItemsCmd) origCmd;
+                    List<SsiItem> items = itemsCmd.getItems();
+
+                    int[] results = dataModResponse.getResults();
+                    for (int i = 0; i < results.length; i++) {
+                        int result = results[i];
+
+                        if (result == SsiDataModResponse.RESULT_SUCCESS) {
+                            SsiItem item = items.get(i);
+                            if (create) itemCreated(item);
+                            else if (modify) itemModified(item);
+                            else if (delete) itemDeleted(item);
+                        }
+                    }
+                }
+            }
+        });
     }
 
     public SnacFamilyInfo getSnacFamilyInfo() {
@@ -65,10 +111,134 @@ public class SsiService extends Service {
     public void handleSnacPacket(SnacPacketEvent snacPacketEvent) {
         SnacCommand snac = snacPacketEvent.getSnacCommand();
 
-        System.out.println("got ssi snac: " + snac);
+        System.out.println("got ssi snac in " + MiscTools.getClassName(this)
+                + ": " + snac);
+        if (snac == null) {
+            System.out.println("- packet: " + snacPacketEvent.getSnacPacket());
+        }
         if (snac instanceof SsiDataCmd) {
-            sendSnac(new ActivateSsiCmd());
-            setReady();
+            SsiDataCmd ssiDataCmd = (SsiDataCmd) snac;
+            for (SsiItem item : ssiDataCmd.getItems()) itemCreated(item);
+
+            if ((snac.getFlag2() & SnacCommand.SNACFLAG2_MORECOMING) == 0) {
+                sendSnac(new ActivateSsiCmd());
+                setReady();
+            }
+        } else if (snac instanceof CreateItemsCmd) {
+            CreateItemsCmd createItemsCmd = (CreateItemsCmd) snac;
+            for (SsiItem ssiItem : createItemsCmd.getItems()) {
+                itemCreated(ssiItem);
+            }
+        } else if (snac instanceof ModifyItemsCmd) {
+            ModifyItemsCmd modifyItemsCmd = (ModifyItemsCmd) snac;
+            for (SsiItem ssiItem : modifyItemsCmd.getItems()) {
+                itemModified(ssiItem);
+            }
+        } else if (snac instanceof DeleteItemsCmd) {
+            DeleteItemsCmd deleteItemsCmd = (DeleteItemsCmd) snac;
+            for (SsiItem ssiItem : deleteItemsCmd.getItems()) {
+                itemDeleted(ssiItem);
+            }
+        }
+    }
+
+    public BuddyList getBuddyList() {
+        return buddyList;
+    }
+
+    private Map<ItemId, SsiItem> items = new HashMap<ItemId, SsiItem>();
+
+    public void itemCreated(SsiItem item) {
+        ItemId id = new ItemId(item);
+        SsiItem old = items.get(id);
+        if (old != null) {
+            throw new IllegalArgumentException("item " + id + " already exists "
+                    + "as " + old + ", tried to add as " + item);
+        }
+        items.put(id, item);
+        buddyList.handleItemCreated(item);
+    }
+
+    public void itemModified(SsiItem item) {
+        ItemId id = new ItemId(item);
+        if (items.get(id) == null) {
+            throw new IllegalArgumentException("item does not exist: " + id
+                    + " - " + item);
+        }
+        items.put(id, item);
+        buddyList.handleItemModified(item);
+    }
+
+    public void itemDeleted(SsiItem item) {
+        SsiItem removed = items.remove(new ItemId(item));
+        if (removed == null) {
+            throw new IllegalArgumentException("no such item " + item);
+        }
+        buddyList.handleItemDeleted(item);
+    }
+
+    private Random random = new Random();
+
+    public int getUniqueItemId(int type, int parent) {
+        //TODO: include ids in group child lists
+        int nextid = random.nextInt();
+        while (items.containsKey(new ItemId(type, parent, nextid))) {
+            nextid = random.nextInt(0xffff+1);
+        }
+        return nextid;
+    }
+
+    public void sendSsiModification(ItemsCmd cmd,
+            SnacRequestListener listener) {
+        sendSnacRequest(cmd, listener);
+    }
+
+    public void sendSsiModification(ItemsCmd cmd) {
+        sendSnac(cmd);
+    }
+
+    private static class ItemId {
+        private final int type;
+        private final int parent;
+        private final int id;
+
+        public ItemId(int type, int parent, int id) {
+            this.type = type;
+            this.parent = parent;
+            this.id = id;
+        }
+
+        public ItemId(SsiItem item) {
+            this(item.getItemType(), item.getParentId(), item.getId());
+        }
+
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            final ItemId itemId = (ItemId) o;
+
+            if (id != itemId.id) return false;
+            if (parent != itemId.parent) return false;
+            if (type != itemId.type) return false;
+
+            return true;
+        }
+
+        public int hashCode() {
+            int result;
+            result = type;
+            result = 29 * result + parent;
+            result = 29 * result + id;
+            return result;
+        }
+
+        public String toString() {
+            return "ItemId{" +
+                    "type=" + MiscTools.findIntField(SsiItem.class, type, "TYPE_.*") +
+                    ", parent=0x" + Integer.toHexString(parent) +
+                    ", id=0x" + Integer.toHexString(id) +
+                    "}";
         }
     }
 }

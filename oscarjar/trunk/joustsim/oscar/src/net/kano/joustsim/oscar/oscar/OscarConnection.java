@@ -35,10 +35,6 @@
 
 package net.kano.joustsim.oscar.oscar;
 
-import net.kano.joustsim.oscar.oscar.service.Service;
-import net.kano.joustsim.oscar.oscar.service.ServiceFactory;
-import net.kano.joustsim.oscar.oscar.service.ServiceListener;
-import net.kano.joustsim.oscar.oscar.service.ServiceManager;
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.MiscTools;
@@ -53,6 +49,7 @@ import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.net.ClientConn;
 import net.kano.joscar.net.ClientConnEvent;
 import net.kano.joscar.net.ClientConnListener;
+import net.kano.joscar.net.ConnDescriptor;
 import net.kano.joscar.snac.ClientSnacProcessor;
 import net.kano.joscar.snac.FamilyVersionPreprocessor;
 import net.kano.joscar.snac.SnacPacketEvent;
@@ -62,11 +59,14 @@ import net.kano.joscar.snac.SnacRequestListener;
 import net.kano.joscar.snac.SnacResponseEvent;
 import net.kano.joscar.snac.SnacResponseListener;
 import net.kano.joscar.snaccmd.DefaultClientFactoryList;
+import net.kano.joustsim.oscar.oscar.service.Service;
+import net.kano.joustsim.oscar.oscar.service.ServiceFactory;
+import net.kano.joustsim.oscar.oscar.service.ServiceListener;
+import net.kano.joustsim.oscar.oscar.service.ServiceManager;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -88,7 +88,9 @@ public class OscarConnection {
     private final ServiceManager serviceManager = new ServiceManager();
     private ServiceFactory serviceFactory = null;
 
-    private CopyOnWriteArrayList listeners = new CopyOnWriteArrayList();
+    private CopyOnWriteArrayList<OscarConnListener> listeners
+            = new CopyOnWriteArrayList<OscarConnListener>();
+    private int lastCloseCode = -1;
 
     public OscarConnection(String host, int port) {
         DefensiveTools.checkNull(host, "host");
@@ -97,7 +99,7 @@ public class OscarConnection {
         this.host = host;
         this.port = port;
 
-        conn = new ClientFlapConn(host, port);
+        conn = new ClientFlapConn(new ConnDescriptor(host, port));
 
         flapProcessor = conn.getFlapProcessor();
         flapProcessor.setFlapCmdFactory(new DefaultFlapCmdFactory());
@@ -151,8 +153,7 @@ public class OscarConnection {
         logger.fine("Connected to " + host);
 
         Service[] services = getServices();
-        for (int i = 0; i < services.length; i++) {
-            Service service = services[i];
+        for (Service service : services) {
             service.connected();
         }
     }
@@ -160,25 +161,25 @@ public class OscarConnection {
     private void internalDisconnected() {
         logger.fine("Disconnected from " + host);
 
-        Service[] services = getServices();
-        for (int i = 0; i < services.length; i++) {
-            Service service = services[i];
+        for (Service service : getServices()) {
             service.disconnected();
         }
     }
 
     private void stateChanged(ClientConnEvent clientConnEvent) {
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            OscarConnListener l = (OscarConnListener) it.next();
-
-            l.connStateChanged(this, clientConnEvent);
+        OscarConnStateEvent evt;
+        if (clientConnEvent.getNewState() == ClientConn.STATE_NOT_CONNECTED) {
+            evt = new OscarConnDisconnectEvent(clientConnEvent, getLastCloseCode());
+        } else {
+            evt = new OscarConnStateEvent(clientConnEvent);
+        }
+        for (OscarConnListener l : listeners) {
+            l.connStateChanged(this, evt);
         }
     }
 
     private void registeredSnacFamilies() {
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            OscarConnListener l = (OscarConnListener) it.next();
-
+        for (OscarConnListener l : listeners) {
             l.registeredSnacFamilies(this);
         }
     }
@@ -283,9 +284,7 @@ public class OscarConnection {
         if (flap instanceof CloseFlapCmd) {
             CloseFlapCmd cfc = (CloseFlapCmd) flap;
 
-            if (cfc.getCode() != 0) {
-                //TODO: send connection closed reason code to listeners?
-            }
+            setLastCloseCode(cfc.getCode());
         }
     }
 
@@ -307,7 +306,7 @@ public class OscarConnection {
 
     public final void setSnacFamilies(int[] snacFamilies)
             throws IllegalStateException {
-        List services;
+        List<Service> services;
         synchronized(this) {
             if (this.snacFamilies != null) {
                 throw new IllegalStateException("this connection "
@@ -316,14 +315,12 @@ public class OscarConnection {
             }
             DefensiveTools.checkNull(snacFamilies, "snacFamilies");
 
-            int[] families = (int[]) snacFamilies.clone();
+            int[] families = snacFamilies.clone();
             Arrays.sort(families);
             this.snacFamilies = families;
 
-            services = new ArrayList(snacFamilies.length);
-            for (int i = 0; i < snacFamilies.length; i++) {
-                int family = snacFamilies[i];
-
+            services = new ArrayList<Service>(snacFamilies.length);
+            for (int family : snacFamilies) {
                 Service service = serviceFactory.getService(this, family);
 
                 if (service == null) {
@@ -351,9 +348,7 @@ public class OscarConnection {
         ClientConn.State state = conn.getState();
         boolean connected = state == ClientConn.STATE_CONNECTED;
         boolean disconnected = isDisconnected();
-        for (Iterator it = services.iterator(); it.hasNext();) {
-            Service service = (Service) it.next();
-
+        for (Service service : services) {
             service.addServiceListener(new ServiceListener() {
                 public void ready(Service service) {
                     serviceReady(service);
@@ -371,8 +366,8 @@ public class OscarConnection {
         registeredSnacFamilies();
     }
 
-    private CopyOnWriteArrayList globalServiceListeners
-            = new CopyOnWriteArrayList();
+    private CopyOnWriteArrayList<ServiceListener> globalServiceListeners
+            = new CopyOnWriteArrayList<ServiceListener>();
 
     public void addGlobalServiceListener(ServiceListener l) {
         globalServiceListeners.addIfAbsent(l);
@@ -382,8 +377,8 @@ public class OscarConnection {
         globalServiceListeners.remove(l);
     }
 
-    private Set unready = new HashSet();
-    private Set unfinished = new HashSet();
+    private Set<Service> unready = new HashSet<Service>();
+    private Set<Service> unfinished = new HashSet<Service>();
 
     private void serviceReady(Service service) {
         boolean allReady;
@@ -393,16 +388,12 @@ public class OscarConnection {
                     + unready.size() + ": " + unready);
             allReady = unready.isEmpty();
         }
-        for (Iterator it = globalServiceListeners.iterator(); it.hasNext();) {
-            ServiceListener sl = (ServiceListener) it.next();
-
+        for (ServiceListener sl : globalServiceListeners) {
             sl.ready(service);
         }
         if (allReady) {
             logger.finer("All services are ready");
-            for (Iterator it = listeners.iterator(); it.hasNext();) {
-                OscarConnListener l = (OscarConnListener) it.next();
-
+            for (OscarConnListener l : listeners) {
                 logger.finer("Telling " + l.getClass().getName()
                         + " that all services are ready");
 
@@ -417,9 +408,7 @@ public class OscarConnection {
             unfinished.remove(service);
             allFinished = unfinished.isEmpty();
         }
-        for (Iterator it = globalServiceListeners.iterator(); it.hasNext();) {
-            ServiceListener sl = (ServiceListener) it.next();
-
+        for (ServiceListener sl : globalServiceListeners) {
             sl.finished(service);
         }
         if (allFinished) {
@@ -435,5 +424,13 @@ public class OscarConnection {
 
     public Service[] getServices() {
         return serviceManager.getServices();
+    }
+
+    public synchronized void setLastCloseCode(int lastCloseCode) {
+        this.lastCloseCode = lastCloseCode;
+    }
+
+    public synchronized int getLastCloseCode() {
+        return lastCloseCode;
     }
 }

@@ -31,8 +31,10 @@
  *
  */
 
-package net.kano.joustsim.oscar;
+package net.kano.joustsim.oscar.oscar.service.bos;
 
-public interface CapabilityListener {
-    void capabilityEnabled(CapabilityHandler handler, boolean enabled);
+import net.kano.joscar.snaccmd.FullUserInfo;
+
+public interface MainBosServiceListener {
+    void handleYourInfo(MainBosService service, FullUserInfo userInfo);
 }

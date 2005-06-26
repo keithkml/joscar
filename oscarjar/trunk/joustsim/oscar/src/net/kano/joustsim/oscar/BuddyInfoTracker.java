@@ -53,7 +53,8 @@ public class BuddyInfoTracker {
     private final BuddyTrustManager buddyTrustManager;
 
     private Set globalTrackers = new HashSet();
-    private Map trackers = new HashMap();
+    private Map<Screenname,Set<BuddyInfoTrackerListener>> trackers
+            = new HashMap<Screenname, Set<BuddyInfoTrackerListener>>();
 
     public BuddyInfoTracker(AimConnection conn) {
         DefensiveTools.checkNull(conn, "conn");
@@ -100,9 +101,7 @@ public class BuddyInfoTracker {
     }
 
     private InfoService getInfoService() {
-        InfoService infoService
-                = this.conn.getInfoService();
-        return infoService;
+        return conn.getInfoService();
     }
 
     public boolean addTracker(Screenname buddy,
@@ -112,11 +111,11 @@ public class BuddyInfoTracker {
 
         boolean startTracking = false;
         boolean added;
-        Set btrackers;
+        Set<BuddyInfoTrackerListener> btrackers;
         synchronized (this) {
-            btrackers = (Set) trackers.get(buddy);
+            btrackers = trackers.get(buddy);
             if (btrackers == null) {
-                btrackers = new HashSet();
+                btrackers = new HashSet<BuddyInfoTrackerListener>();
                 trackers.put(buddy, btrackers);
                 startTracking = true;
             }
@@ -137,10 +136,10 @@ public class BuddyInfoTracker {
 
         boolean stopTracking;
         synchronized (this) {
-            Set btrackers = (Set) trackers.get(buddy);
+            Set<BuddyInfoTrackerListener> btrackers = trackers.get(buddy);
             if (btrackers == null) return false;
 
-            boolean removed = btrackers.remove(buddy);
+            boolean removed = btrackers.remove(listener);
             if (!removed) return false;
 
             // if there aren't any trackers left, we should remove the entry and

@@ -35,19 +35,18 @@
 
 package net.kano.joustsim.oscar.oscar.service.info;
 
+import net.kano.joscar.ByteBlock;
+import net.kano.joscar.CopyOnWriteArrayList;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.oscar.BuddyInfo;
 import net.kano.joustsim.oscar.BuddyInfoManager;
 import net.kano.joustsim.oscar.GlobalBuddyInfoAdapter;
 import net.kano.joustsim.trust.BuddyCertificateInfo;
-import net.kano.joscar.ByteBlock;
-import net.kano.joscar.CopyOnWriteArrayList;
-import net.kano.joscar.DefensiveTools;
 
 import java.beans.PropertyChangeEvent;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 //TODO: find out why paradigmmm and cheshirecatv2 are untrusted instead of unknown
@@ -57,11 +56,15 @@ public class BuddyTrustManager {
     private final AimConnection conn;
     private final CertificateInfoTrustManager certTrustMgr;
 
-    private Map trustInfos = new HashMap();
-    private Map latestInfos = new HashMap();
-    private Map cachedCertInfos = new HashMap();
+    private Map<Screenname,BuddyTrustInfoHolder> trustInfos
+            = new HashMap<Screenname, BuddyTrustInfoHolder>();
+    private Map<Screenname,BuddyCertificateInfo> latestInfos
+            = new HashMap<Screenname, BuddyCertificateInfo>();
+    private Map<BuddyHashHolder,BuddyCertificateInfoHolder> cachedCertInfos
+            = new HashMap<BuddyHashHolder, BuddyCertificateInfoHolder>();
 
-    private CopyOnWriteArrayList listeners = new CopyOnWriteArrayList();
+    private CopyOnWriteArrayList<BuddyTrustListener> listeners
+            = new CopyOnWriteArrayList<BuddyTrustListener>();
 
     public BuddyTrustManager(AimConnection conn) {
         DefensiveTools.checkNull(conn, "conn");
@@ -152,7 +155,7 @@ public class BuddyTrustManager {
                 certInfoHolder.setTrusted(trusted);
             }
 
-            BuddyCertificateInfo curCertInfo = (BuddyCertificateInfo) latestInfos.get(sn);
+            BuddyCertificateInfo curCertInfo = latestInfos.get(sn);
             ByteBlock hash = curCertInfo == null
                     ? null
                     : curCertInfo.getCertificateInfoHash();
@@ -210,7 +213,7 @@ public class BuddyTrustManager {
         DefensiveTools.checkNull(sn, "sn");
 
         // store the new hash and get his old hash
-        BuddyCertificateInfo oldInfo = (BuddyCertificateInfo) latestInfos.put(sn, certInfo);
+        BuddyCertificateInfo oldInfo = latestInfos.put(sn, certInfo);
 
         if (oldInfo == certInfo || (oldInfo != null && oldInfo.equals(certInfo))) {
             // the buddy's new hash is the same as his old hash
@@ -287,8 +290,7 @@ public class BuddyTrustManager {
 
         BuddyTrustEvent event = new BuddyTrustEvent(this, sn, certInfo);
 
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            BuddyTrustListener listener = (BuddyTrustListener) it.next();
+        for (BuddyTrustListener listener : listeners) {
             listener.gotTrustedCertificateChange(event);
         }
     }
@@ -299,8 +301,7 @@ public class BuddyTrustManager {
 
         BuddyTrustEvent event = new BuddyTrustEvent(this, sn, certInfo);
 
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            BuddyTrustListener listener = (BuddyTrustListener) it.next();
+        for (BuddyTrustListener listener : listeners) {
             listener.gotUntrustedCertificateChange(event);
         }
     }
@@ -311,8 +312,7 @@ public class BuddyTrustManager {
 
         BuddyTrustEvent event = new BuddyTrustEvent(this, sn, certInfo);
 
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            BuddyTrustListener listener = (BuddyTrustListener) it.next();
+        for (BuddyTrustListener listener : listeners) {
             listener.gotUnknownCertificateChange(event);
         }
     }
@@ -323,8 +323,7 @@ public class BuddyTrustManager {
 
         BuddyTrustEvent event = new BuddyTrustEvent(this, sn, certInfo);
 
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            BuddyTrustListener listener = (BuddyTrustListener) it.next();
+        for (BuddyTrustListener listener : listeners) {
             listener.buddyTrusted(event);
         }
     }
@@ -335,8 +334,7 @@ public class BuddyTrustManager {
 
         BuddyTrustEvent event = new BuddyTrustEvent(this, sn, certInfo);
 
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            BuddyTrustListener listener = (BuddyTrustListener) it.next();
+        for (BuddyTrustListener listener : listeners) {
             listener.buddyTrustRevoked(event);
         }
     }
@@ -345,7 +343,7 @@ public class BuddyTrustManager {
             Screenname sn) {
         DefensiveTools.checkNull(sn, "sn");
 
-        BuddyTrustInfoHolder inst = (BuddyTrustInfoHolder) trustInfos.get(sn);
+        BuddyTrustInfoHolder inst = trustInfos.get(sn);
         if (inst == null) {
             inst = new BuddyTrustInfoHolder(sn);
             trustInfos.put(sn, inst);
@@ -393,11 +391,11 @@ public class BuddyTrustManager {
         if (hash == null) return null;
 
         BuddyHashHolder holder = new BuddyHashHolder(sn, hash);
-        return (BuddyCertificateInfoHolder) cachedCertInfos.get(holder);
+        return cachedCertInfos.get(holder);
     }
 
     public synchronized ByteBlock getCurrentCertificateInfoHash(Screenname sn) {
-        return ((BuddyCertificateInfo) latestInfos.get(sn)).getCertificateInfoHash();
+        return (latestInfos.get(sn)).getCertificateInfoHash();
     }
 
     public synchronized boolean isTrusted(Screenname buddy) {
@@ -454,7 +452,7 @@ public class BuddyTrustManager {
 
             this.trustedStatus = trustedStatus;
         }
-    };
+    }
 
     private static class TrustStatus {
         public static final TrustStatus UNKNOWN = new TrustStatus("UNKNOWN");

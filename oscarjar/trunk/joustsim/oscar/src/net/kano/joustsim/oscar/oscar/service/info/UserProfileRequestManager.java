@@ -55,6 +55,6 @@ public class UserProfileRequestManager extends UserInfoRequestManager {
     }
 
     protected Object getDesiredValue(InfoData infodata) {
-        return infodata.getInfo();
+        return infodata.getUserProfile();
     }
 }

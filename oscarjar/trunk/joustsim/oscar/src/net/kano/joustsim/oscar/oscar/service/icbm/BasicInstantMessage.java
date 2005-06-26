@@ -41,6 +41,8 @@ import net.kano.joscar.snaccmd.ExtraInfoBlock;
 import net.kano.joscar.snaccmd.icbm.InstantMessage;
 import net.kano.joscar.snaccmd.icbm.RecvImIcbm;
 
+import java.util.Collection;
+
 public class BasicInstantMessage extends SimpleMessage {
     static BasicInstantMessage getInstance(RecvImIcbm icbm) {
         InstantMessage message = icbm.getMessage();
@@ -56,14 +58,17 @@ public class BasicInstantMessage extends SimpleMessage {
         return new BasicInstantMessage(msg, ar, aimexp);
     }
 
-    private static String extractAimExpressionName(ExtraInfoBlock[] aimexpInfo) {
+    private static String extractAimExpressionName(Collection<? extends ExtraInfoBlock> aimexpInfo) {
         if (aimexpInfo == null) return null;
 
         String aimexp = null;
 
-        for (int i = 0; i < aimexpInfo.length; i++) {
-            ExtraInfoBlock infoBlock = aimexpInfo[i];
-            if (infoBlock.getType() != ExtraInfoBlock.TYPE_AIMEXPINFO) continue;
+        for (ExtraInfoBlock infoBlock : aimexpInfo) {
+            int blockType = infoBlock.getType();
+            if (blockType != ExtraInfoBlock.TYPE_AIMEXPINFO_A
+                    && blockType != ExtraInfoBlock.TYPE_AIMEXPINFO_B) {
+                continue;
+            }
 
             ByteBlock data = infoBlock.getExtraData().getData();
             if (data.getLength() > 1) {

@@ -35,12 +35,24 @@
 
 package net.kano.joustsim.oscar;
 
+import net.kano.joscar.CopyOnWriteArrayList;
+import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.flapcmd.SnacCommand;
+import net.kano.joscar.net.ClientConn;
+import net.kano.joscar.snaccmd.CapabilityBlock;
+import net.kano.joscar.snaccmd.auth.AuthCommand;
+import net.kano.joscar.snaccmd.buddy.BuddyCommand;
+import net.kano.joscar.snaccmd.conn.ConnCommand;
+import net.kano.joscar.snaccmd.icbm.IcbmCommand;
+import net.kano.joscar.snaccmd.loc.LocCommand;
+import net.kano.joscar.snaccmd.ssi.SsiCommand;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.oscar.BasicConnection;
 import net.kano.joustsim.oscar.oscar.LoginConnection;
 import net.kano.joustsim.oscar.oscar.LoginServiceListener;
 import net.kano.joustsim.oscar.oscar.OscarConnListener;
 import net.kano.joustsim.oscar.oscar.OscarConnection;
+import net.kano.joustsim.oscar.oscar.OscarConnStateEvent;
 import net.kano.joustsim.oscar.oscar.loginstatus.LoginFailureInfo;
 import net.kano.joustsim.oscar.oscar.loginstatus.LoginSuccessInfo;
 import net.kano.joustsim.oscar.oscar.service.Service;
@@ -59,22 +71,9 @@ import net.kano.joustsim.trust.CertificateTrustManager;
 import net.kano.joustsim.trust.SignerTrustManager;
 import net.kano.joustsim.trust.TrustPreferences;
 import net.kano.joustsim.trust.TrustedCertificatesTracker;
-import net.kano.joscar.CopyOnWriteArrayList;
-import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.flapcmd.SnacCommand;
-import net.kano.joscar.net.ClientConn;
-import net.kano.joscar.net.ClientConnEvent;
-import net.kano.joscar.snaccmd.CapabilityBlock;
-import net.kano.joscar.snaccmd.auth.AuthCommand;
-import net.kano.joscar.snaccmd.buddy.BuddyCommand;
-import net.kano.joscar.snaccmd.conn.ConnCommand;
-import net.kano.joscar.snaccmd.icbm.IcbmCommand;
-import net.kano.joscar.snaccmd.loc.LocCommand;
-import net.kano.joscar.snaccmd.ssi.SsiCommand;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -92,15 +91,17 @@ public class AimConnection {
     private final LoginConnection loginConn;
     private BasicConnection mainConn = null;
 
-    private Map snacfamilies = new HashMap();
+    private Map<Integer,List<Service>> snacfamilies = new HashMap<Integer, List<Service>>();
 
     private boolean triedConnecting = false;
     private State state = State.NOTCONNECTED;
     private StateInfo stateInfo = NotConnectedStateInfo.getInstance();
     private boolean wantedDisconnect = false;
 
-    private CopyOnWriteArrayList stateListeners = new CopyOnWriteArrayList();
-    private CopyOnWriteArrayList serviceListeners = new CopyOnWriteArrayList();
+    private CopyOnWriteArrayList<StateListener> stateListeners
+            = new CopyOnWriteArrayList<StateListener>();
+    private CopyOnWriteArrayList<OpenedServiceListener> serviceListeners
+            = new CopyOnWriteArrayList<OpenedServiceListener>();
 
     private final BuddyInfoManager buddyInfoManager;
     private final BuddyInfoTracker buddyInfoTracker;
@@ -188,6 +189,10 @@ public class AimConnection {
         capabilityManager = new CapabilityManager(this);
         capabilityManager.setCapabilityHandler(CapabilityBlock.BLOCK_ENCRYPTION,
                 new SecurityEnabledHandler(this));
+        capabilityManager.setCapabilityHandler(CapabilityBlock.BLOCK_ICQCOMPATIBLE,
+                new EmptyCapabilityHandler());
+        capabilityManager.setCapabilityHandler(CapabilityBlock.BLOCK_SHORTCAPS,
+                new EmptyCapabilityHandler());
 
         loginConn.addOscarListener(new LoginConnListener());
         loginConn.setServiceFactory(new LoginServiceFactory());
@@ -247,8 +252,8 @@ public class AimConnection {
     }
 
     public synchronized Service getService(int family) {
-        List list = getServiceListIfExists(family);
-        return list == null ? null : (Service) list.get(0);
+        List<Service> list = getServiceListIfExists(family);
+        return list == null ? null : list.get(0);
     }
 
     public LoginService getLoginService() {
@@ -278,6 +283,12 @@ public class AimConnection {
     public InfoService getInfoService() {
         Service service = getService(LocCommand.FAMILY_LOC);
         if (service instanceof InfoService) return (InfoService) service;
+        else return null;
+    }
+
+    public SsiService getSsiService() {
+        Service service = getService(SsiCommand.FAMILY_SSI);
+        if (service instanceof SsiService) return (SsiService) service;
         else return null;
     }
 
@@ -311,9 +322,7 @@ public class AimConnection {
         StateEvent event = new StateEvent(this, oldState, oldStateInfo, state,
                 info);
 
-        for (Iterator it = stateListeners.iterator(); it.hasNext();) {
-            StateListener listener = (StateListener) it.next();
-
+        for (StateListener listener : stateListeners) {
             listener.handleStateChange(event);
         }
         return true;
@@ -340,20 +349,20 @@ public class AimConnection {
         closeConnections();
     }
 
-    private void closeConnections() {
-        //TODO: close all related OSCAR connections
+    private synchronized void closeConnections() {
+        assert Thread.holdsLock(this);
+
+        //TODO: close all related OSCAR connections here
         loginConn.disconnect();
         BasicConnection mainConn = this.mainConn;
         if (mainConn != null) mainConn.disconnect();
     }
 
     private void recordSnacFamilies(OscarConnection conn) {
-        List added = new ArrayList();
+        List<Service> added = new ArrayList<Service>();
         synchronized(this) {
-            int[] families = conn.getSnacFamilies();
-            for (int i = 0; i < families.length; i++) {
-                int family = families[i];
-                List services = getServiceList(family);
+            for (int family : conn.getSnacFamilies()) {
+                List<Service> services = getServiceList(family);
                 Service service = conn.getService(family);
                 if (service != null) {
                     services.add(service);
@@ -365,28 +374,24 @@ public class AimConnection {
             }
         }
 
-        Service[] services = (Service[])
-                added.toArray(new Service[added.size()]);
+        List<Service> addedClone = DefensiveTools.getUnmodifiable(added);
 
-        for (Iterator it = serviceListeners.iterator(); it.hasNext();) {
-            OpenedServiceListener listener = (OpenedServiceListener) it.next();
-
-            listener.openedServices(this, (Service[]) services.clone());
+        for (OpenedServiceListener listener : serviceListeners) {
+            listener.openedServices(this, addedClone);
         }
     }
 
-    private synchronized List getServiceList(int family) {
-        Integer key = new Integer(family);
-        List list = (List) snacfamilies.get(key);
+    private synchronized List<Service> getServiceList(int family) {
+        List<Service> list = snacfamilies.get(family);
         if (list == null) {
-            list = new ArrayList();
-            snacfamilies.put(key, list);
+            list = new ArrayList<Service>();
+            snacfamilies.put(family, list);
         }
         return list;
     }
 
-    private synchronized List getServiceListIfExists(int family) {
-        List list = (List) snacfamilies.get(new Integer(family));
+    private synchronized List<Service> getServiceListIfExists(int family) {
+        List<Service> list = snacfamilies.get(family);
         return list == null || list.isEmpty() ? null : list;
     }
 
@@ -453,7 +458,7 @@ public class AimConnection {
         }
 
         public void connStateChanged(OscarConnection conn,
-                ClientConnEvent event) {
+                OscarConnStateEvent event) {
         }
 
         public void allFamiliesReady(OscarConnection conn) {
@@ -468,8 +473,8 @@ public class AimConnection {
             ls.addLoginListener(new LoginProcessListener());
         }
 
-        public void connStateChanged(OscarConnection conn, ClientConnEvent event) {
-            ClientConn.State state = event.getNewState();
+        public void connStateChanged(OscarConnection conn, OscarConnStateEvent event) {
+            ClientConn.State state = event.getClientConnEvent().getNewState();
             if (state == ClientConn.STATE_CONNECTED) {
                 setState(State.CONNECTINGAUTH, State.AUTHORIZING,
                         new AuthorizingStateInfo(loginConn));
@@ -502,8 +507,8 @@ public class AimConnection {
         }
 
         public void connStateChanged(OscarConnection conn,
-                ClientConnEvent event) {
-            ClientConn.State state = event.getNewState();
+                OscarConnStateEvent event) {
+            ClientConn.State state = event.getClientConnEvent().getNewState();
 
             if (state == ClientConn.STATE_FAILED) {
                 setState(null, State.FAILED, new ConnectionFailedStateInfo(
@@ -518,4 +523,5 @@ public class AimConnection {
             }
         }
     }
+
 }

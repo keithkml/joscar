@@ -31,8 +31,18 @@
  *
  */
 
-package net.kano.joustsim.oscar;
+package net.kano.joustsim.oscar.oscar;
 
-public interface CapabilityListener {
-    void capabilityEnabled(CapabilityHandler handler, boolean enabled);
+import net.kano.joscar.net.ClientConnEvent;
+
+public class OscarConnDisconnectEvent extends OscarConnStateEvent {
+    private final int disconnectCode;
+
+    public OscarConnDisconnectEvent(ClientConnEvent event, int disconnectCode) {
+        super(event);
+
+        this.disconnectCode = disconnectCode;
+    }
+
+    public int getDisconnectCode() { return disconnectCode; }
 }

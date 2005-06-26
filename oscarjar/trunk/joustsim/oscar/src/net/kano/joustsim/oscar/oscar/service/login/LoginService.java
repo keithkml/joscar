@@ -66,7 +66,6 @@ import net.kano.joustsim.oscar.oscar.loginstatus.SnacErrorFailureInfo;
 import net.kano.joustsim.oscar.oscar.loginstatus.TimeoutFailureInfo;
 import net.kano.joustsim.oscar.oscar.service.Service;
 
-import java.util.Iterator;
 import java.util.logging.Logger;
 
 public class LoginService extends Service {
@@ -74,14 +73,15 @@ public class LoginService extends Service {
 
     public static final ClientVersionInfo VERSIONINFO_DEFAULT
             = new ClientVersionInfo(
-                    "AOL Instant Messenger, version 5.5.3415/WIN32",
-                    5, 5, 0, 3415, 239);
+        "AOL Instant Messenger, version 5.5.3415/WIN32",
+                -1, 5, 5, 0, 3415, 239);
 
     private final Screenname screenname;
     private final String password;
     private ClientVersionInfo versionInfo = VERSIONINFO_DEFAULT;
 
-    private CopyOnWriteArrayList listeners = new CopyOnWriteArrayList();
+    private CopyOnWriteArrayList<LoginServiceListener> listeners
+            = new CopyOnWriteArrayList<LoginServiceListener>();
 
     private boolean notified = false;
 
@@ -124,8 +124,7 @@ public class LoginService extends Service {
             if (notified) return;
             notified = true;
         }
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            LoginServiceListener listener = (LoginServiceListener) it.next();
+        for (LoginServiceListener listener : listeners) {
             listener.loginSucceeded(info);
         }
         setFinished();
@@ -139,8 +138,7 @@ public class LoginService extends Service {
             if (notified) return;
             notified = true;
         }
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            LoginServiceListener listener = (LoginServiceListener) it.next();
+        for (LoginServiceListener listener : listeners) {
             listener.loginFailed(info);
         }
         setFinished();

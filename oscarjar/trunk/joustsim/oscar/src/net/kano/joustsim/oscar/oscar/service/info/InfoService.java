@@ -35,14 +35,6 @@
 
 package net.kano.joustsim.oscar.oscar.service.info;
 
-import net.kano.joustsim.Screenname;
-import net.kano.joustsim.oscar.AimConnection;
-import net.kano.joustsim.oscar.CapabilityHandler;
-import net.kano.joustsim.oscar.CapabilityListener;
-import net.kano.joustsim.oscar.CapabilityManager;
-import net.kano.joustsim.oscar.oscar.OscarConnection;
-import net.kano.joustsim.oscar.oscar.service.Service;
-import net.kano.joustsim.trust.BuddyCertificateInfo;
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.CapabilityBlock;
@@ -52,14 +44,25 @@ import net.kano.joscar.snaccmd.InfoData;
 import net.kano.joscar.snaccmd.conn.SnacFamilyInfo;
 import net.kano.joscar.snaccmd.loc.LocCommand;
 import net.kano.joscar.snaccmd.loc.SetInfoCmd;
+import net.kano.joustsim.Screenname;
+import net.kano.joustsim.oscar.AimConnection;
+import net.kano.joustsim.oscar.CapabilityHandler;
+import net.kano.joustsim.oscar.CapabilityListener;
+import net.kano.joustsim.oscar.CapabilityManager;
+import net.kano.joustsim.oscar.CapabilityManagerListener;
+import net.kano.joustsim.oscar.oscar.OscarConnection;
+import net.kano.joustsim.oscar.oscar.service.Service;
+import net.kano.joustsim.trust.BuddyCertificateInfo;
 
 import java.util.Iterator;
+import java.util.List;
 
 public class InfoService extends Service {
     private static final CertificateInfo CERTINFO_EMPTY
             = new CertificateInfo(null);
 
-    private CopyOnWriteArrayList listeners = new CopyOnWriteArrayList();
+    private CopyOnWriteArrayList<InfoServiceListener> listeners
+            = new CopyOnWriteArrayList<InfoServiceListener>();
 
     private final InfoResponseListener infoRequestListener
             = new InfoResponseAdapter() {
@@ -67,8 +70,8 @@ public class InfoService extends Service {
                 String userInfo) {
             assert InfoService.this == service;
 
-            for (Iterator it = listeners.iterator(); it.hasNext();) {
-                InfoServiceListener listener = (InfoServiceListener) it.next();
+            for (Iterator<InfoServiceListener> it = listeners.iterator(); it.hasNext();) {
+                InfoServiceListener listener = it.next();
                 listener.handleUserProfile(service, buddy, userInfo);
             }
         }
@@ -77,8 +80,8 @@ public class InfoService extends Service {
                 String awayMessage) {
             assert InfoService.this == service;
 
-            for (Iterator it = listeners.iterator(); it.hasNext();) {
-                InfoServiceListener listener = (InfoServiceListener) it.next();
+            for (Iterator<InfoServiceListener> it = listeners.iterator(); it.hasNext();) {
+                InfoServiceListener listener = it.next();
                 listener.handleAwayMessage(service, buddy, awayMessage);
             }
         }
@@ -87,8 +90,8 @@ public class InfoService extends Service {
                 BuddyCertificateInfo certInfo) {
             assert InfoService.this == service;
 
-            for (Iterator it = listeners.iterator(); it.hasNext();) {
-                InfoServiceListener listener = (InfoServiceListener) it.next();
+            for (Iterator<InfoServiceListener> it = listeners.iterator(); it.hasNext();) {
+                InfoServiceListener listener = it.next();
                 listener.handleCertificateInfo(service, buddy, certInfo);
             }
         }
@@ -97,21 +100,28 @@ public class InfoService extends Service {
                 DirInfo dirInfo) {
             assert InfoService.this == service;
 
-            for (Iterator it = listeners.iterator(); it.hasNext();) {
-                InfoServiceListener listener = (InfoServiceListener) it.next();
+            for (Iterator<InfoServiceListener> it = listeners.iterator(); it.hasNext();) {
+                InfoServiceListener listener = it.next();
                 listener.handleDirectoryInfo(service, buddy, dirInfo);
             }
         }
     };
     private final CapabilityManager capabilityManager;
-    private final CapabilityListener capListener = new CapabilityListener() {
+    private CapabilityListener individualCapListener = new CapabilityListener() {
+        public void capabilityEnabled(CapabilityHandler handler, boolean enabled) {
+            updateCaps();
+        }
+    };
+    private final CapabilityManagerListener capListener = new CapabilityManagerListener() {
         public void capabilityHandlerAdded(CapabilityManager manager,
                 CapabilityBlock block, CapabilityHandler handler) {
+            handler.addCapabilityListener(individualCapListener);
             updateCaps();
         }
 
         public void capabilityHandlerRemoved(CapabilityManager manager,
                 CapabilityBlock block, CapabilityHandler handler) {
+            handler.removeCapabilityListener(individualCapListener);
             updateCaps();
         }
     };
@@ -140,8 +150,9 @@ public class InfoService extends Service {
     public void connected() {
         InfoData infoData;
         synchronized (this) {
+            List<CapabilityBlock> caps = capabilityManager.getEnabledCapabilities();
             infoData = new InfoData(awayMessage, userProfile,
-                            capabilityManager.getHandledCapabilities(),
+                            caps,
                             certificateInfo);
         }
         sendSnac(new SetInfoCmd(infoData));
@@ -254,7 +265,7 @@ public class InfoService extends Service {
 
     private void updateCaps() {
         sendSnac(new SetInfoCmd(new InfoData(null, null,
-                capabilityManager.getHandledCapabilities(), null)));
+                capabilityManager.getEnabledCapabilities(), null)));
     }
 
     InfoResponseListener getInfoRequestListener() {

@@ -100,9 +100,10 @@ public class CertificateInfoRequestManager extends UserInfoRequestManager {
 
     private void fireInvalidCertsException(Screenname sn,
             Exception e, CertificateInfo origCertInfo) {
-        for (Iterator it = getListeners(sn).iterator(); it.hasNext();) {
-            InfoResponseListener listener = (InfoResponseListener) it.next();
-            listener.handleInvalidCertificates(getService(), sn, origCertInfo, e);
+        for (Object o : getListeners(sn)) {
+            InfoResponseListener listener = (InfoResponseListener) o;
+            listener.handleInvalidCertificates(getService(), sn, origCertInfo,
+                    e);
         }
     }
 

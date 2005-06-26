@@ -31,8 +31,29 @@
  *
  */
 
-package net.kano.joustsim.oscar;
+package net.kano.joustsim.oscar.oscar.service.ssi;
 
-public interface CapabilityListener {
-    void capabilityEnabled(CapabilityHandler handler, boolean enabled);
+import java.util.List;
+
+public interface BuddyListLayoutListener {
+    void groupsReordered(BuddyList list, List<Group> oldOrder,
+            List<Group> newOrder);
+
+    void groupAdded(BuddyList list, List<Group> oldItems, List<Group> newItems,
+            Group group, List<Buddy> buddies);
+
+    void groupRemoved(BuddyList list, List<Group> oldItems,
+            List<Group> newItems,
+            Group group);
+
+    void buddyAdded(BuddyList list, Group group, List<Buddy> oldItems,
+            List<Buddy> newItems,
+            Buddy buddy);
+
+    void buddyRemoved(BuddyList list, Group group, List<Buddy> oldItems,
+            List<Buddy> newItems,
+            Buddy buddy);
+
+    void buddiesReordered(BuddyList list, Group group,
+            List<Buddy> oldBuddies, List<Buddy> newBuddies);
 }

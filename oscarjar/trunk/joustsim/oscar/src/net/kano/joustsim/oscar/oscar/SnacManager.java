@@ -40,16 +40,15 @@ import net.kano.joscar.snac.SnacRequest;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
 public class SnacManager {
-    protected final Map conns = new HashMap();
+    protected final Map<Integer,List<BasicConnection>> conns = new HashMap<Integer, List<BasicConnection>>();
     protected final PendingSnacMgr pendingSnacs = new PendingSnacMgr();
-    protected final List listeners = new ArrayList();
-    protected final Map supportedFamilies = new IdentityHashMap();
+    protected final List<PendingSnacListener> listeners = new ArrayList<PendingSnacListener>();
+    protected final Map<BasicConnection,int[]> supportedFamilies = new IdentityHashMap<BasicConnection, int[]>();
 
     public SnacManager() { }
 
@@ -61,14 +60,13 @@ public class SnacManager {
         int[] families = conn.getSnacFamilies();
         supportedFamilies.put(conn, families);
 
-        for (int i = 0; i < families.length; i++) {
-            int familyCode = families[i];
-            Integer family = new Integer(familyCode);
+        for (int familyCode : families) {
+            Integer family = familyCode;
 
-            List handlers = (List) conns.get(family);
+            List<BasicConnection> handlers = conns.get(family);
 
             if (handlers == null) {
-                handlers = new LinkedList();
+                handlers = new LinkedList<BasicConnection>();
                 conns.put(family, handlers);
             }
 
@@ -77,11 +75,10 @@ public class SnacManager {
     }
 
     public void dequeueSnacs(BasicConnection conn) {
-        int[] infos = (int[]) supportedFamilies.get(conn);
+        int[] infos = supportedFamilies.get(conn);
 
         if (infos != null) {
-            for (int i = 0; i < infos.length; i++) {
-                int familyCode = infos[i];
+            for (int familyCode : infos) {
                 if (pendingSnacs.isPending(familyCode)) {
                     dequeueSnacs(familyCode);
                 }
@@ -94,29 +91,25 @@ public class SnacManager {
 
         pendingSnacs.setPending(familyCode, false);
 
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            PendingSnacListener listener = (PendingSnacListener) it.next();
-
+        for (PendingSnacListener listener : listeners) {
             listener.dequeueSnacs(pending);
         }
     }
 
     public void unregister(BasicConnection conn) {
-        for (Iterator it = conns.values().iterator(); it.hasNext();) {
-            List handlers = (List) it.next();
-
+        for (List<BasicConnection> handlers : conns.values()) {
             handlers.remove(conn);
         }
     }
 
     public BasicConnection getConn(int familyCode) {
-        Integer family = new Integer(familyCode);
+        Integer family = familyCode;
 
-        List handlers = (List) conns.get(family);
+        List<BasicConnection> handlers = conns.get(family);
 
         if (handlers == null || handlers.size() == 0) return null;
 
-        return (BasicConnection) handlers.get(0);
+        return handlers.get(0);
     }
 
 

@@ -39,25 +39,14 @@ import net.kano.joustsim.Screenname;
 
 import java.util.Date;
 
-public abstract class MessageInfo {
-    private final Screenname from;
-    private final Screenname to;
+public abstract class MessageInfo extends ConversationEventInfo {
     private final Message message;
-    private final Date date;
 
     protected MessageInfo(Screenname from, Screenname to, Message message,
             Date date) {
-        this.from = from;
-        this.to = to;
+        super(from, to, date);
         this.message = message;
-        this.date = date;
     }
 
-    public final Screenname getFrom() { return from; }
-
-    public final Screenname getTo() { return to; }
-
     public Message getMessage() { return message; }
-
-    public Date getTimestamp() { return date; }
 }

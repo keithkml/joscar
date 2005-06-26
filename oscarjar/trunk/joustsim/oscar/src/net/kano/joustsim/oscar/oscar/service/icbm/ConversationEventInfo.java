@@ -31,8 +31,26 @@
  *
  */
 
-package net.kano.joustsim.oscar;
+package net.kano.joustsim.oscar.oscar.service.icbm;
 
-public interface CapabilityListener {
-    void capabilityEnabled(CapabilityHandler handler, boolean enabled);
+import net.kano.joustsim.Screenname;
+
+import java.util.Date;
+
+public class ConversationEventInfo {
+    private final Screenname from;
+    private final Screenname to;
+    private final Date date;
+
+    public ConversationEventInfo(Screenname from, Screenname to, Date date) {
+        this.from = from;
+        this.to = to;
+        this.date = date;
+    }
+
+    public final Screenname getFrom() { return from; }
+
+    public final Screenname getTo() { return to; }
+
+    public Date getTimestamp() { return date; }
 }

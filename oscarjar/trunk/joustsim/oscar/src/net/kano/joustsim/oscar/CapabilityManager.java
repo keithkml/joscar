@@ -39,18 +39,17 @@ import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class CapabilityManager {
     private final AimConnection conn;
-    private Map handlers = new HashMap();
-
-    private CopyOnWriteArrayList listeners = new CopyOnWriteArrayList();
+    private Map<CapabilityBlock,CapabilityHandler> handlers
+            = new HashMap<CapabilityBlock, CapabilityHandler>();
+    private CopyOnWriteArrayList<CapabilityManagerListener> listeners
+            = new CopyOnWriteArrayList<CapabilityManagerListener>();
 
     public CapabilityManager(AimConnection conn) {
         DefensiveTools.checkNull(conn, "conn");
@@ -60,11 +59,11 @@ public class CapabilityManager {
 
     public AimConnection getAimConnection() { return conn; }
 
-    public void addCapabilityListener(CapabilityListener l) {
+    public void addCapabilityListener(CapabilityManagerListener l) {
         listeners.addIfAbsent(l);
     }
 
-    public void removeCapabilityListener(CapabilityListener l) {
+    public void removeCapabilityListener(CapabilityManagerListener l) {
         listeners.remove(l);
     }
 
@@ -76,7 +75,7 @@ public class CapabilityManager {
         boolean isnew;
         CapabilityHandler old;
         synchronized(this) {
-            old = (CapabilityHandler) handlers.put(block, handler);
+            old = handlers.put(block, handler);
             if (old == handler) return false;
             isnew = old == null;
         }
@@ -87,7 +86,7 @@ public class CapabilityManager {
 
     public synchronized CapabilityHandler getCapabilityHandler(
             CapabilityBlock block) {
-        return (CapabilityHandler) handlers.get(block);
+        return handlers.get(block);
     }
 
     public boolean removeCapabilityHandler(CapabilityBlock block,
@@ -105,19 +104,16 @@ public class CapabilityManager {
         return true;
     }
 
-    public synchronized CapabilityBlock[] getHandledCapabilities() {
-        Collection blocks = handlers.entrySet();
-        List actual = new ArrayList(handlers.size());
-        for (Iterator it = blocks.iterator(); it.hasNext();) {
-            Map.Entry pair = (Map.Entry) it.next();
-            CapabilityHandler handler = (CapabilityHandler) pair.getValue();
+    public synchronized List<CapabilityBlock> getEnabledCapabilities() {
+        List<CapabilityBlock> actual = new ArrayList<CapabilityBlock>(handlers.size());
+        for (Map.Entry<CapabilityBlock, CapabilityHandler> pair : handlers.entrySet()) {
+            CapabilityHandler handler = pair.getValue();
             if (handler.isEnabled()) {
-                CapabilityBlock block = (CapabilityBlock) pair.getKey();
+                CapabilityBlock block = pair.getKey();
                 actual.add(block);
             }
         }
-        return (CapabilityBlock[])
-                actual.toArray(new CapabilityBlock[actual.size()]);
+        return DefensiveTools.getUnmodifiable(actual);
     }
 
     private void fireCapabilityHandlerAdded(CapabilityBlock block,
@@ -129,8 +125,7 @@ public class CapabilityManager {
 
         handler.handleAdded(this);
 
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            CapabilityListener listener = (CapabilityListener) it.next();
+        for (CapabilityManagerListener listener : listeners) {
             listener.capabilityHandlerAdded(this, block, handler);
         }
     }
@@ -156,8 +151,7 @@ public class CapabilityManager {
 
         handler.handleRemoved(this);
 
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            CapabilityListener listener = (CapabilityListener) it.next();
+        for (CapabilityManagerListener listener : listeners) {
             listener.capabilityHandlerRemoved(this, block, handler);
         }
     }

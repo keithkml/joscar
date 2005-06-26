@@ -35,17 +35,11 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm;
 
-import net.kano.joustsim.Screenname;
-import net.kano.joustsim.oscar.AimConnection;
-import net.kano.joustsim.oscar.BuddyInfo;
-import net.kano.joustsim.oscar.BuddyInfoManager;
-import net.kano.joustsim.oscar.oscar.OscarConnection;
-import net.kano.joustsim.oscar.oscar.service.Service;
-import net.kano.joustsim.trust.BuddyCertificateInfo;
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.snac.SnacPacketEvent;
 import net.kano.joscar.snaccmd.FullUserInfo;
+import net.kano.joscar.snaccmd.WarningLevel;
 import net.kano.joscar.snaccmd.conn.SnacFamilyInfo;
 import net.kano.joscar.snaccmd.icbm.IcbmCommand;
 import net.kano.joscar.snaccmd.icbm.InstantMessage;
@@ -55,19 +49,28 @@ import net.kano.joscar.snaccmd.icbm.ParamInfo;
 import net.kano.joscar.snaccmd.icbm.ParamInfoCmd;
 import net.kano.joscar.snaccmd.icbm.ParamInfoRequest;
 import net.kano.joscar.snaccmd.icbm.RecvImIcbm;
+import net.kano.joscar.snaccmd.icbm.RecvTypingNotification;
 import net.kano.joscar.snaccmd.icbm.SendImIcbm;
 import net.kano.joscar.snaccmd.icbm.SetParamInfoCmd;
+import net.kano.joscar.snaccmd.icbm.SendTypingNotification;
+import net.kano.joustsim.Screenname;
+import net.kano.joustsim.oscar.AimConnection;
+import net.kano.joustsim.oscar.BuddyInfo;
+import net.kano.joustsim.oscar.BuddyInfoManager;
+import net.kano.joustsim.oscar.oscar.OscarConnection;
+import net.kano.joustsim.oscar.oscar.service.Service;
+import net.kano.joustsim.trust.BuddyCertificateInfo;
 
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 public class IcbmService extends Service {
     private ParamInfo paramInfo = null;
     private SecureAimEncoder encoder = null;
 
-    private CopyOnWriteArrayList listeners = new CopyOnWriteArrayList();
+    private CopyOnWriteArrayList<IcbmListener> listeners = new CopyOnWriteArrayList<IcbmListener>();
     private final BuddyInfoManager buddyInfoManager;
 
     public IcbmService(AimConnection aimConnection,
@@ -107,6 +110,10 @@ public class IcbmService extends Service {
         } else if (snac instanceof MissedMessagesCmd) {
             MissedMessagesCmd mc = (MissedMessagesCmd) snac;
             handleMissedMessages(mc);
+
+        } else if (snac instanceof RecvTypingNotification) {
+            RecvTypingNotification typnot = (RecvTypingNotification) snac;
+            handleTypingNotification(typnot);
         }
     }
 
@@ -119,7 +126,9 @@ public class IcbmService extends Service {
                 | ParamInfo.FLAG_MISSEDCALLS_ALLOWED
                 | ParamInfo.FLAG_TYPING_NOTIFICATION;
 
-        ParamInfo newparams = new ParamInfo(newflags, 8000, 999, 999, 0);
+        ParamInfo newparams = new ParamInfo(newflags, 8000,
+                WarningLevel.getInstanceFromX10(999),
+                WarningLevel.getInstanceFromX10(999), 0);
         this.paramInfo = newparams;
 
         sendSnac(new SetParamInfoCmd(newparams));
@@ -128,10 +137,8 @@ public class IcbmService extends Service {
     }
 
     private void handleMissedMessages(MissedMessagesCmd mc) {
-        MissedMsgInfo[] msgs = mc.getMissedMsgInfos();
-        for (int i = 0; i < msgs.length; i++) {
-            MissedMsgInfo msg = msgs[i];
-
+        List<MissedMsgInfo> msgs = mc.getMissedMsgInfos();
+        for (MissedMsgInfo msg : msgs) {
             Screenname sn = new Screenname(msg.getUserInfo().getScreenname());
             ImConversation conv = getImConversation(sn);
 
@@ -161,7 +168,7 @@ public class IcbmService extends Service {
                     getScreenname(), icbm, certInfo, new Date());
             if (minfo == null) return;
 
-            conv.handleIncomingMessage(minfo);
+            conv.handleIncomingEvent(minfo);
 
         } else {
             ImConversation conv = getImConversation(sender);
@@ -169,17 +176,25 @@ public class IcbmService extends Service {
             ImMessageInfo msg = ImMessageInfo.getInstance(getScreenname(),
                     icbm, new Date());
 
-            conv.handleIncomingMessage(msg);
+            conv.handleIncomingEvent(msg);
         }
     }
 
-    private Map secureAimConvs = new HashMap();
+    private void handleTypingNotification(RecvTypingNotification typnot) {
+        Screenname sender = new Screenname(typnot.getScreenname());
+        Conversation conv = getImConversation(sender);
+        conv.handleIncomingEvent(new TypingInfo(sender, getScreenname(),
+                new Date(), typnot.getTypingState()));
+    }
+
+    private Map<Screenname,SecureAimConversation> secureAimConvs
+            = new HashMap<Screenname, SecureAimConversation>();
 
     public SecureAimConversation getSecureAimConversation(Screenname sn) {
         boolean isnew = false;
         SecureAimConversation conv;
         synchronized(this) {
-            conv = (SecureAimConversation) secureAimConvs.get(sn);
+            conv = secureAimConvs.get(sn);
             if (conv == null) {
                 isnew = true;
                 conv = new SecureAimConversation(getAimConnection(), sn);
@@ -192,13 +207,13 @@ public class IcbmService extends Service {
         return conv;
     }
 
-    private Map imconvs = new HashMap();
+    private Map<Screenname,ImConversation> imconvs = new HashMap<Screenname, ImConversation>();
 
     public synchronized ImConversation getImConversation(Screenname sn) {
         boolean isnew = false;
         ImConversation conv;
         synchronized(this) {
-            conv = (ImConversation) imconvs.get(sn);
+            conv = imconvs.get(sn);
             if (conv == null) {
                 isnew = true;
                 conv = new ImConversation(getAimConnection(), sn);
@@ -212,10 +227,11 @@ public class IcbmService extends Service {
     }
 
     private void initConversation(Conversation conv) {
+        assert !Thread.holdsLock(this);
+
         conv.initialize();
 
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            IcbmListener listener = (IcbmListener) it.next();
+        for (IcbmListener listener : listeners) {
             listener.newConversation(this, conv);
         }
     }
@@ -228,5 +244,9 @@ public class IcbmService extends Service {
             boolean autoresponse) {
         sendSnac(new SendImIcbm(buddy.getFormatted(), im, autoresponse, 0,
                 false, null, null, true));
+    }
+
+    void sendTypingStatus(Screenname buddy, int typingState) {
+        sendSnac(new SendTypingNotification(buddy.getFormatted(), typingState));
     }
 }

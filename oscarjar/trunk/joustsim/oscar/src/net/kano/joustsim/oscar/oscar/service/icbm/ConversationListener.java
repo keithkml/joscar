@@ -49,4 +49,8 @@ public interface ConversationListener {
     void sentMessage(Conversation c, MessageInfo minfo);
 
     void canSendMessageChanged(Conversation c, boolean canSend);
+
+    void gotOtherEvent(Conversation conversation, ConversationEventInfo event);
+
+    void sentOtherEvent(Conversation conversation, ConversationEventInfo event);
 }

@@ -51,23 +51,27 @@ import net.kano.joscar.snaccmd.CertificateInfo;
 import net.kano.joscar.snaccmd.DirInfo;
 import net.kano.joscar.snaccmd.FullUserInfo;
 import net.kano.joscar.snaccmd.ShortCapabilityBlock;
+import net.kano.joscar.snaccmd.WarningLevel;
 
 import java.beans.PropertyChangeEvent;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
 
 public class BuddyInfoManager {
     private final AimConnection conn;
-    private Map buddyInfos = new HashMap();
-    private Map cachedCertInfos = new HashMap();
+    private Map<Screenname,BuddyInfo> buddyInfos = new HashMap<Screenname, BuddyInfo>();
+    private Map<BuddyHashHolder,BuddyCertificateInfo> cachedCertInfos
+            = new HashMap<BuddyHashHolder, BuddyCertificateInfo>();
 
 
     private boolean initedBuddyService = false;
     private boolean initedInfoService = false;
 
-    private CopyOnWriteArrayList listeners = new CopyOnWriteArrayList();
+    private CopyOnWriteArrayList<GlobalBuddyInfoListener> listeners
+            = new CopyOnWriteArrayList<GlobalBuddyInfoListener>();
 
     private BuddyInfoChangeListener pcl = new BuddyInfoChangeListener() {
         public void propertyChange(PropertyChangeEvent evt) {
@@ -84,7 +88,7 @@ public class BuddyInfoManager {
 
         this.conn = conn;
         conn.addOpenedServiceListener(new OpenedServiceListener() {
-            public void openedServices(AimConnection conn, Service[] services) {
+            public void openedServices(AimConnection conn, List<Service> services) {
                 initBuddyService();
                 initInfoService();
             }
@@ -99,7 +103,7 @@ public class BuddyInfoManager {
         Screenname buddy = certInfo.getBuddy();
         ByteBlock hash = certInfo.getCertificateInfoHash();
         BuddyHashHolder holder = new BuddyHashHolder(buddy, hash);
-        if (cachedCertInfos.containsKey(buddy)) return;
+        if (cachedCertInfos.containsKey(holder)) return;
         cachedCertInfos.put(holder, certInfo);
     }
 
@@ -182,21 +186,21 @@ public class BuddyInfoManager {
         if (onSince != null) buddyInfo.setOnlineSince(onSince);
 
         Boolean awayStatus = info.getAwayStatus();
-        if (awayStatus != null) buddyInfo.setAway(awayStatus.booleanValue());
+        if (awayStatus != null) buddyInfo.setAway(awayStatus);
 
-        CapabilityBlock[] caps = info.getCapabilityBlocks();
-        ShortCapabilityBlock[] shortCaps = info.getShortCapabilityBlocks();
+        List<CapabilityBlock> caps = info.getCapabilityBlocks();
+        List<ShortCapabilityBlock> shortCaps = info.getShortCapabilityBlocks();
         if (caps != null || shortCaps != null) {
-            int numLong = caps == null ? 0 : caps.length;
-            int numShort = shortCaps == null ? 0 : shortCaps.length;
+            int numLong = caps == null ? 0 : caps.size();
+            int numShort = shortCaps == null ? 0 : shortCaps.size();
 
-            CapabilityBlock[] blocks = new CapabilityBlock[numLong + numShort];
+            List<CapabilityBlock> blocks = new ArrayList<CapabilityBlock>(numLong + numShort);
             if (caps != null) {
-                System.arraycopy(caps, 0, blocks, 0, caps.length);
+                blocks.addAll(caps);
             }
             if (shortCaps != null) {
-                for (int i = 0, j = numLong; i < shortCaps.length; i++, j++) {
-                    blocks[j] = shortCaps[i].toCapabilityBlock();
+                for (ShortCapabilityBlock shortCap : shortCaps) {
+                    blocks.add(shortCap.toCapabilityBlock());
                 }
             }
             buddyInfo.setCapabilities(caps);
@@ -218,10 +222,11 @@ public class BuddyInfoManager {
         }
         buddyInfo.setIdleSince(idleSince);
 
-        int warningLevelx10 = info.getWarningLevel();
-        if (warningLevelx10 != -1) {
-            int rounder = (warningLevelx10 % 10) >= 5 ? 1 : 0;
-            int warningLevel = (warningLevelx10 / 10) + rounder;
+        WarningLevel level = info.getWarningLevel();
+        if (level != null) {
+            int x10 = level.getX10Value();
+            int rounder = (x10 % 10) >= 5 ? 1 : 0;
+            int warningLevel = (x10 / 10) + rounder;
             buddyInfo.setWarningLevel(warningLevel);
         }
 
@@ -244,11 +249,11 @@ public class BuddyInfoManager {
         if (hash == null) return null;
 
         BuddyHashHolder holder = new BuddyHashHolder(buddy, hash);
-        return (BuddyCertificateInfo) cachedCertInfos.get(holder);
+        return cachedCertInfos.get(holder);
     }
 
     private synchronized BuddyInfo getBuddyInfoInstance(Screenname buddy) {
-        BuddyInfo info = (BuddyInfo) buddyInfos.get(buddy);
+        BuddyInfo info = buddyInfos.get(buddy);
         if (info == null) {
             info = new BuddyInfo(buddy);
             info.addPropertyListener(pcl);
@@ -267,9 +272,7 @@ public class BuddyInfoManager {
         BuddyInfo info = (BuddyInfo) evt.getSource();
         Screenname sn = info.getScreenname();
 
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            GlobalBuddyInfoListener l = (GlobalBuddyInfoListener) it.next();
-
+        for (GlobalBuddyInfoListener l : listeners) {
             l.buddyInfoChanged(this, sn, info, evt);
         }
     }
@@ -279,9 +282,7 @@ public class BuddyInfoManager {
 
         Screenname sn = info.getScreenname();
 
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            GlobalBuddyInfoListener l = (GlobalBuddyInfoListener) it.next();
-
+        for (GlobalBuddyInfoListener l : listeners) {
             l.receivedStatusUpdate(this, sn, info);
         }
     }

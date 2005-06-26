@@ -31,8 +31,12 @@
  *
  */
 
-package net.kano.joustsim.oscar;
+package net.kano.joustsim.oscar.oscar.service.ssi;
 
-public interface CapabilityListener {
-    void capabilityEnabled(CapabilityHandler handler, boolean enabled);
+import java.util.List;
+
+public interface DetectedChangeListener<E> {
+    void itemAdded(List<E> oldItems, List<E> newItems, E item);
+    void itemRemoved(List<E> oldItems, List<E> newItems, E item);
+    void itemsReordered(List<E> oldItems, List<E> newItems);
 }

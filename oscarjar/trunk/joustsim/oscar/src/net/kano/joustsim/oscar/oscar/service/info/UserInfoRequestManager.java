@@ -80,8 +80,8 @@ public abstract class UserInfoRequestManager extends InfoRequestManager {
 
     private void runListeners(Screenname sn, Object value) {
         Set listeners = clearListeners(sn);
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            InfoResponseListener listener = (InfoResponseListener) it.next();
+        for (Object listener1 : listeners) {
+            InfoResponseListener listener = (InfoResponseListener) listener1;
             callListener(listener, sn, value);
         }
     }

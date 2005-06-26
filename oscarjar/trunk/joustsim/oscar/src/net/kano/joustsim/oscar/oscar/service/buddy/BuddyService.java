@@ -55,7 +55,7 @@ public class BuddyService extends Service {
     private static final Logger logger
             = Logger.getLogger(BuddyService.class.getName());
 
-    private CopyOnWriteArrayList listeners = new CopyOnWriteArrayList();
+    private CopyOnWriteArrayList<BuddyServiceListener> listeners = new CopyOnWriteArrayList<BuddyServiceListener>();
 
     public BuddyService(AimConnection aimConnection,
             OscarConnection oscarConnection) {
@@ -87,9 +87,7 @@ public class BuddyService extends Service {
             String snText = userInfo == null ? null : userInfo.getScreenname();
             if (userInfo != null && snText != null) {
                 Screenname sn = new Screenname(snText);
-                for (Iterator it = listeners.iterator(); it.hasNext();) {
-                    BuddyServiceListener listener
-                            = (BuddyServiceListener) it.next();
+                for (BuddyServiceListener listener : listeners) {
                     listener.gotBuddyStatus(this, sn, userInfo);
                 }
             }
@@ -99,9 +97,7 @@ public class BuddyService extends Service {
             String snText = boc.getScreenname();
             if (snText != null) {
                 Screenname sn = new Screenname(snText);
-                for (Iterator it = listeners.iterator(); it.hasNext();) {
-                    BuddyServiceListener listener
-                            = (BuddyServiceListener) it.next();
+                for (BuddyServiceListener listener : listeners) {
                     listener.buddyOffline(this, sn);
                 }
             }

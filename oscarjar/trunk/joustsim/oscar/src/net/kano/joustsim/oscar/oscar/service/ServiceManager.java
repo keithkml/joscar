@@ -45,20 +45,20 @@ import java.util.Map;
 import java.util.TreeMap;
 
 public final class ServiceManager {
-    private final Map services = new TreeMap();
+    private final Map<Integer,Service> services = new TreeMap<Integer, Service>();
 
     public synchronized void setService(int family, Service service) {
         DefensiveTools.checkNull(service, "service");
 
-        services.put(new Integer(family), service);
+        services.put(family, service);
     }
 
     public synchronized Service getService(int family) {
-        return (Service) services.get(new Integer(family));
+        return services.get(family);
     }
 
     public synchronized Service[] getServices() {
-        Collection vals = services.values();
+        Collection<? extends Service> vals = services.values();
         return (Service[]) vals.toArray(new Service[vals.size()]);
     }
 

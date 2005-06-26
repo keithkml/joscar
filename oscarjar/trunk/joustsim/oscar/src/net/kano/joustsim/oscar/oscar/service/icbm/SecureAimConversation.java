@@ -35,6 +35,9 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm;
 
+import net.kano.joscar.ByteBlock;
+import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.snaccmd.icbm.InstantMessage;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.oscar.BuddyInfo;
@@ -47,16 +50,12 @@ import net.kano.joustsim.trust.BuddyCertificateInfo;
 import net.kano.joustsim.trust.PrivateKeys;
 import net.kano.joustsim.trust.PrivateKeysPreferences;
 import net.kano.joustsim.trust.TrustPreferences;
-import net.kano.joscar.ByteBlock;
-import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.snaccmd.icbm.InstantMessage;
 import org.bouncycastle.cms.CMSException;
 
 import java.beans.PropertyChangeEvent;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -75,7 +74,8 @@ public class SecureAimConversation extends Conversation {
     private PrivateKeys privates = null;
     private BuddyCertificateInfo buddyCertInfo = null;
 
-    private Map decryptables = new HashMap();
+    private Map<ByteBlock,LinkedList<QueuedDecryptableMsg>> decryptables
+            = new HashMap<ByteBlock, LinkedList<QueuedDecryptableMsg>>();
 
     private boolean canSend = false;
 
@@ -122,42 +122,44 @@ public class SecureAimConversation extends Conversation {
     private void tryQueuedMessages(BuddyCertificateInfo certInfo) {
         if (certInfo == null || !certInfo.isUpToDate()) return;
 
-        List decrypted = tryDecrypting(certInfo);
+        List<? extends QueuedDecryptableMsg> decrypted = tryDecrypting(certInfo);
 
-        for (Iterator it = decrypted.iterator(); it.hasNext();) {
-            QueuedDecryptableMsg msg = (QueuedDecryptableMsg) it.next();
+        for (Object aDecrypted : decrypted) {
+            QueuedDecryptableMsg msg = (QueuedDecryptableMsg) aDecrypted;
 
             String decryptedMsg = msg.getDecryptedForm().getMessage();
             handleDecrypted(msg.getMessageInfo(), decryptedMsg);
         }
     }
 
-    private synchronized List tryDecrypting(BuddyCertificateInfo certInfo) {
+    private synchronized List<QueuedDecryptableMsg> tryDecrypting(BuddyCertificateInfo certInfo) {
         ByteBlock hash = certInfo.getCertificateInfoHash();
-        if (hash == null) return Collections.EMPTY_LIST;
+        if (hash == null) return DefensiveTools.emptyList();
 
-        List forHash = tryDecryptingWithHash(certInfo, hash);
-        List hashless = tryDecryptingWithHash(certInfo, null);
+        List<QueuedDecryptableMsg> forHash = tryDecryptingWithHash(certInfo, hash);
+        List<QueuedDecryptableMsg> hashless = tryDecryptingWithHash(certInfo, null);
         // if one of the lists is empty, we don't need to combine them
         if (forHash.isEmpty()) return hashless;
         if (hashless.isEmpty()) return forHash;
 
-        List combined = new ArrayList(forHash.size() + hashless.size());
+        List<QueuedDecryptableMsg> combined
+                = new ArrayList<QueuedDecryptableMsg>(forHash.size()
+                + hashless.size());
         combined.addAll(forHash);
         combined.addAll(hashless);
 
         return combined;
     }
 
-    private synchronized List tryDecryptingWithHash(BuddyCertificateInfo certInfo,
-            ByteBlock hash) {
-        List decHash = (List) decryptables.get(hash);
-        if (decHash == null) return Collections.EMPTY_LIST;
+    private synchronized List<QueuedDecryptableMsg> tryDecryptingWithHash(
+            BuddyCertificateInfo certInfo, ByteBlock hash) {
+        List<QueuedDecryptableMsg> decHash = decryptables.get(hash);
+        if (decHash == null) return DefensiveTools.emptyList();
 
-        List success = null;
+        List<QueuedDecryptableMsg> success = null;
         decoder.setBuddyCerts(certInfo);
-        for (Iterator it = decHash.iterator(); it.hasNext();) {
-            QueuedDecryptableMsg msg = (QueuedDecryptableMsg) it.next();
+        for (Iterator<QueuedDecryptableMsg> it = decHash.iterator(); it.hasNext();) {
+            QueuedDecryptableMsg msg = it.next();
 
             ByteBlock encrypted = msg.getMessage().getEncryptedForm();
             try {
@@ -166,7 +168,7 @@ public class SecureAimConversation extends Conversation {
                         = decoder.decryptMessage(encrypted);
                 it.remove();
                 msg.setDecryptedForm(decrypted);
-                if (success == null) success = new ArrayList();
+                if (success == null) success = new ArrayList<QueuedDecryptableMsg>();
                 success.add(msg);
 
             } catch (Exception expected) {
@@ -175,7 +177,7 @@ public class SecureAimConversation extends Conversation {
         }
         if (decHash.isEmpty()) decryptables.remove(hash);
 
-        if (success == null) return Collections.EMPTY_LIST;
+        if (success == null) return DefensiveTools.emptyList();
         else return success;
     }
 
@@ -189,7 +191,7 @@ public class SecureAimConversation extends Conversation {
     }
 
     private void fireCanSendChanged(Boolean updated) {
-        if (updated != null) fireCanSendChangedEvent(updated.booleanValue());
+        if (updated != null) fireCanSendChangedEvent(updated);
     }
 
     private synchronized Boolean updateCanSend() {
@@ -261,7 +263,7 @@ public class SecureAimConversation extends Conversation {
         fireOutgoingEvent(msginfo);
     }
 
-    protected void handleIncomingMessage(MessageInfo minfo) {
+    protected void handleIncomingEvent(ConversationEventInfo minfo) {
         open();
 
         if (!(minfo instanceof EncryptedAimMessageInfo)) {
@@ -353,9 +355,9 @@ public class SecureAimConversation extends Conversation {
 
         ByteBlock hash = queued.getCertificateHash();
 
-        LinkedList queue = (LinkedList) decryptables.get(hash);
+        LinkedList<QueuedDecryptableMsg> queue = decryptables.get(hash);
         if (queue == null) {
-            queue = new LinkedList();
+            queue = new LinkedList<QueuedDecryptableMsg>();
             decryptables.put(hash, queue);
         }
         queue.addLast(queued);

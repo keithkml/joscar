@@ -29,48 +29,17 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- *  File created by keith @ Jan 15, 2004
+ *  File created by keith @ Feb 7, 2004
  *
  */
 
-package net.kano.joustsim.oscar.oscar;
+package net.kano.joustsim.oscar;
 
-import net.kano.joscar.snac.SnacRequest;
+import net.kano.joscar.snaccmd.CapabilityBlock;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-public class PendingSnacMgr {
-    protected Map<Integer,ArrayList<SnacRequest>> snacs = new HashMap<Integer, ArrayList<SnacRequest>>();
-
-    public boolean isPending(int familyCode) {
-        Integer family = familyCode;
-
-        return snacs.containsKey(family);
-    }
-
-    public void add(SnacRequest request) {
-        Integer family = request.getCommand().getFamily();
-
-        List<SnacRequest> pending = (List<SnacRequest>) snacs.get(family);
-
-        pending.add(request);
-    }
-
-    public SnacRequest[] getPending(int familyCode) {
-        Integer family = familyCode;
-
-        List<SnacRequest> pending = (List<SnacRequest>) snacs.get(family);
-
-        return (SnacRequest[]) pending.toArray(new SnacRequest[pending.size()]);
-    }
-
-    public void setPending(int familyCode, boolean pending) {
-        Integer family = familyCode;
-
-        if (pending) snacs.put(family, new ArrayList<SnacRequest>());
-        else snacs.remove(family);
-    }
+public interface CapabilityManagerListener {
+    void capabilityHandlerAdded(CapabilityManager manager,
+            CapabilityBlock block, CapabilityHandler handler);
+    void capabilityHandlerRemoved(CapabilityManager manager,
+            CapabilityBlock block, CapabilityHandler handler);
 }

@@ -31,8 +31,8 @@
  *
  */
 
-package net.kano.joustsim.oscar;
+package net.kano.joustsim.oscar.oscar.service.ssi;
 
-public interface CapabilityListener {
-    void capabilityEnabled(CapabilityHandler handler, boolean enabled);
+public interface GroupListener {
+    void groupNameChanged(Group group, String oldName, String newName);
 }

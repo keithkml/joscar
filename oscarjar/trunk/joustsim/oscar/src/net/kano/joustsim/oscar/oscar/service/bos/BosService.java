@@ -35,12 +35,7 @@
 
 package net.kano.joustsim.oscar.oscar.service.bos;
 
-import net.kano.joustsim.oscar.AimConnection;
-import net.kano.joustsim.oscar.oscar.OscarConnListener;
-import net.kano.joustsim.oscar.oscar.OscarConnection;
-import net.kano.joustsim.oscar.oscar.service.Service;
 import net.kano.joscar.flapcmd.SnacCommand;
-import net.kano.joscar.net.ClientConnEvent;
 import net.kano.joscar.ratelim.RateMonitor;
 import net.kano.joscar.snac.SnacPacketEvent;
 import net.kano.joscar.snaccmd.conn.ClientReadyCmd;
@@ -52,13 +47,20 @@ import net.kano.joscar.snaccmd.conn.RateInfoCmd;
 import net.kano.joscar.snaccmd.conn.RateInfoRequest;
 import net.kano.joscar.snaccmd.conn.ServerReadyCmd;
 import net.kano.joscar.snaccmd.conn.SnacFamilyInfo;
+import net.kano.joustsim.oscar.AimConnection;
+import net.kano.joustsim.oscar.oscar.OscarConnListener;
+import net.kano.joustsim.oscar.oscar.OscarConnStateEvent;
+import net.kano.joustsim.oscar.oscar.OscarConnection;
+import net.kano.joustsim.oscar.oscar.service.Service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 public class BosService extends Service {
     private static final Logger logger = Logger.getLogger(BosService.class.getName());
 
-    private SnacFamilyInfo[] snacFamilyInfos = null;
+    private List<SnacFamilyInfo> snacFamilyInfos = null;
 
     private RateMonitor rateMonitor;
 
@@ -72,7 +74,7 @@ public class BosService extends Service {
             public void registeredSnacFamilies(OscarConnection conn) {
             }
 
-            public void connStateChanged(OscarConnection conn, ClientConnEvent event) {
+            public void connStateChanged(OscarConnection conn, OscarConnStateEvent event) {
             }
 
             public void allFamiliesReady(OscarConnection conn) {
@@ -98,12 +100,10 @@ public class BosService extends Service {
 
             ServerReadyCmd src = (ServerReadyCmd) snac;
 
-            int[] families = src.getSnacFamilies();
-
             Service[] services = getOscarConnection().getServices();
-            SnacFamilyInfo[] familyInfos = new SnacFamilyInfo[services.length];
-            for (int i = 0; i < services.length; i++) {
-                familyInfos[i] = services[i].getSnacFamilyInfo();
+            List<SnacFamilyInfo> familyInfos = new ArrayList<SnacFamilyInfo>(services.length);
+            for (Service service : services) {
+                familyInfos.add(service.getSnacFamilyInfo());
             }
 
             setSnacFamilyInfos(familyInfos);
@@ -116,11 +116,11 @@ public class BosService extends Service {
         } else if (snac instanceof RateInfoCmd) {
             RateInfoCmd ric = (RateInfoCmd) snac;
 
-            RateClassInfo[] rateClasses = ric.getRateClassInfos();
+            List<RateClassInfo> rateClasses = ric.getRateClassInfos();
 
-            int[] classes = new int[rateClasses.length];
-            for (int i = 0; i < rateClasses.length; i++) {
-                classes[i] = rateClasses[i].getRateClass();
+            int[] classes = new int[rateClasses.size()];
+            for (int i = 0; i < rateClasses.size(); i++) {
+                classes[i] = rateClasses.get(i).getRateClass();
             }
 
             sendSnac(new RateAck(classes));
@@ -148,11 +148,11 @@ public class BosService extends Service {
     }
 
     private synchronized void setSnacFamilyInfos(
-            SnacFamilyInfo[] snacFamilyInfos) {
+            List<SnacFamilyInfo> snacFamilyInfos) {
         this.snacFamilyInfos = snacFamilyInfos;
     }
 
-    private synchronized SnacFamilyInfo[] getSnacFamilyInfos() {
+    private synchronized List<SnacFamilyInfo> getSnacFamilyInfos() {
         return snacFamilyInfos;
     }
 }

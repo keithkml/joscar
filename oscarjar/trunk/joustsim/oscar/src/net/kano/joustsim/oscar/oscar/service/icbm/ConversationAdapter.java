@@ -50,4 +50,12 @@ public class ConversationAdapter implements ConversationListener {
 
     public void canSendMessageChanged(Conversation c, boolean canSend) {
     }
+
+    public void gotOtherEvent(Conversation conversation,
+            ConversationEventInfo event) {
+    }
+
+    public void sentOtherEvent(Conversation conversation,
+            ConversationEventInfo event) {
+    }
 }
