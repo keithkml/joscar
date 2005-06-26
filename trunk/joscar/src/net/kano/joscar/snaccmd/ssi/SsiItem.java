@@ -44,7 +44,6 @@ import net.kano.joscar.MiscTools;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
-import java.util.regex.Pattern;
 
 /**
  * A data structure used to store various types of "items" on the server. These
@@ -56,6 +55,8 @@ import java.util.regex.Pattern;
  * @see net.kano.joscar.ssiitem
  */
 public class SsiItem implements LiveWritable, Serializable {
+    /** The group ID of the "root group." */
+    public static final int GROUP_ROOT = 0x0000;
     /**
      * An SSI item type for a buddy.
      *

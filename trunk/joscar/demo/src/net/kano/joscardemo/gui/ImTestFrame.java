@@ -58,7 +58,7 @@ public class ImTestFrame extends JFrame {
     protected JTextArea output;
     protected JTextField input;
 
-    protected List lines = new ArrayList();
+    protected List<String> lines = new ArrayList<String>();
     protected int lineIndex;
 
     protected JScrollPane outputScrollPane;
@@ -128,11 +128,11 @@ public class ImTestFrame extends JFrame {
                 if (key == KeyEvent.VK_UP) {
                     lineIndex--;
                     if (lineIndex < 0) lineIndex = lines.size() - 1;
-                    input.setText((String) lines.get(lineIndex));
+                    input.setText(lines.get(lineIndex));
                 } else if (key == KeyEvent.VK_DOWN) {
                     lineIndex++;
                     if (lineIndex >= lines.size()) lineIndex = 0;
-                    input.setText((String) lines.get(lineIndex));
+                    input.setText(lines.get(lineIndex));
                 }
             }
         });

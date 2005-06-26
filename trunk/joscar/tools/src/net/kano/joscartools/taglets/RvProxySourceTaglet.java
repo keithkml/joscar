@@ -50,7 +50,7 @@ public class RvProxySourceTaglet implements Taglet {
      *
      * @param tagletMap a taglet map with which to register this taglet
      */
-    public static void register(Map tagletMap) {
+    public static void register(Map<String,RvProxySourceTaglet> tagletMap) {
         RvProxySourceTaglet instance = new RvProxySourceTaglet();
         tagletMap.put(instance.getName(), instance);
     }

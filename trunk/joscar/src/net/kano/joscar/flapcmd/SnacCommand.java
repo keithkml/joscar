@@ -36,6 +36,7 @@
 package net.kano.joscar.flapcmd;
 
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.snaccmd.ssi.SsiDataCmd;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -51,6 +52,16 @@ public abstract class SnacCommand {
      * command.
      */
     public static final short SNACFLAG_DEFAULT = 0;
+
+    /**
+     * A flag whose presence in {@link #getFlag2() flag2} indicates that a SNAC
+     * command is part of a series of commands. As of this writing, the flag is
+     * only used by the server when sending a series of
+     * <code>{@link SsiDataCmd}s</code> when the SSI data will not fit in a
+     * single packet. The series of packets is complete when a packet is
+     * received without this {@code SNACFLAG2_MORECOMING} flag.
+     */
+    public static final short SNACFLAG2_MORECOMING = 0x01;
 
     /**
      * The command family of this SNAC command.

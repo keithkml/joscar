@@ -137,7 +137,7 @@ public final class MiscTools {
      *        searched, or <code>null</code> to match all fields of the class
      * @return the name of a field matching the given constraints
      */
-    public static String findEqualField(Class<?> cl, CapabilityBlock value, String pattern) {
+    public static String findEqualField(Class<?> cl, Object value, String pattern) {
         Pattern p = pattern == null ? null : Pattern.compile(pattern);
 
         for (Field field : cl.getFields()) {

@@ -41,6 +41,7 @@ import net.kano.joscar.ByteBlock;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 
 public class SelfTest extends TestCase {
     public void testTlvs() {
@@ -120,21 +121,21 @@ public class SelfTest extends TestCase {
             assertEquals(-1, big.getUShort(-1));
             fail("should not be able to access negative TLV types");
         } catch (IllegalArgumentException e) { }
-        Tlv[] tlvs = big.getTlvs();
-        assertEquals(2, tlvs.length);
-        assertEquals(big.getTlvCount(), tlvs.length);
-        assertEquals(2, tlvs[0].getType());
-        assertEquals(6, tlvs[1].getType());
+        List<Tlv> tlvs = big.getTlvs();
+        assertEquals(2, tlvs.size());
+        assertEquals(big.getTlvCount(), tlvs.size());
+        assertEquals(2, tlvs.get(0).getType());
+        assertEquals(6, tlvs.get(1).getType());
 
-        Tlv[] type2 = big.getTlvs(2);
-        assertEquals(1, type2.length);
-        assertEquals(2, type2[0].getType());
+        List<Tlv> type2 = big.getTlvs(2);
+        assertEquals(1, type2.size());
+        assertEquals(2, type2.get(0).getType());
 
 
         TlvChain firstOfBig = TlvTools.readChain(chainBlock, 1);
 
         assertEquals(1, firstOfBig.getTlvCount());
-        assertEquals(2, firstOfBig.getTlvs()[0].getType());
+        assertEquals(2, firstOfBig.getTlvs().get(0).getType());
         assertTrue(ByteBlock.wrap(new byte[] { 1, 2, 3, 4 })
                 .equals(firstOfBig.getFirstTlv(2).getData()));
 
@@ -155,16 +156,16 @@ public class SelfTest extends TestCase {
         assertTrue(ByteBlock.wrap(new byte[] { 1, 2, 3, 4, 5})
                 .equals(duplicates.getLastTlv(1).getData()));
 
-        Tlv[] matches = duplicates.getTlvs(1);
-        assertEquals(3, matches.length);
-        assertEquals(100, matches[0].getDataAsUShort());
-        assertEquals(0, matches[1].getData().getLength());
-        assertEquals(5, matches[2].getData().getLength());
+        List<Tlv> matches = duplicates.getTlvs(1);
+        assertEquals(3, matches.size());
+        assertEquals(100, matches.get(0).getDataAsUShort());
+        assertEquals(0, matches.get(1).getData().getLength());
+        assertEquals(5, matches.get(2).getData().getLength());
 
         TlvChain tooMany = TlvTools.readChain(ByteBlock.wrap(new byte[0]), 100);
 
         assertEquals(0, tooMany.getTlvCount());
-        assertEquals(0, tooMany.getTlvs(100).length);
+        assertEquals(0, tooMany.getTlvs(100).size());
 
         TlvChain tooShort
                 = TlvTools.readChain(ByteBlock.wrap(new byte[] { 1, 2 }));
@@ -216,47 +217,45 @@ public class SelfTest extends TestCase {
         chain.addTlv(tlv1a);
         chain.addTlv(tlv2a);
 
-        assertTrue(Arrays.equals(new Tlv[] { tlv1a, tlv2a }, chain.getTlvs()));
-        assertTrue(Arrays.equals(new Tlv[] { tlv1a }, chain.getTlvs(1)));
+        assertTrue(Arrays.asList(tlv1a, tlv2a).equals(chain.getTlvs()));
+        assertTrue(Arrays.asList(tlv1a).equals(chain.getTlvs(1)));
 
         chain.removeTlv(tlv1a);
 
         assertEquals(1, chain.getTlvCount());
-        assertTrue(Arrays.equals(new Tlv[] { tlv2a }, chain.getTlvs()));
-        assertEquals(0, chain.getTlvs(1).length);
+        assertTrue(Arrays.asList(tlv2a).equals(chain.getTlvs()));
+        assertEquals(0, chain.getTlvs(1).size());
 
         chain.addTlv(tlv2a);
 
-        assertTrue(Arrays.equals(new Tlv[] { tlv2a, tlv2a }, chain.getTlvs()));
-        assertTrue(Arrays.equals(new Tlv[] { tlv2a, tlv2a }, chain.getTlvs(2)));
+        assertTrue(Arrays.asList(tlv2a, tlv2a).equals(chain.getTlvs()));
+        assertTrue(Arrays.asList(tlv2a, tlv2a).equals(chain.getTlvs(2)));
 
         chain.removeTlvs(2);
 
-        assertEquals(0, chain.getTlvs().length);
-        assertEquals(0, chain.getTlvs(2).length);
+        assertEquals(0, chain.getTlvs().size());
+        assertEquals(0, chain.getTlvs(2).size());
 
         chain.addTlv(tlv1a);
         chain.addTlv(tlv3a);
         chain.addTlv(tlv1b);
 
-        assertTrue(Arrays.equals(new Tlv[] { tlv1a, tlv3a, tlv1b },
-                chain.getTlvs()));
-        assertTrue(Arrays.equals(new Tlv[] { tlv1a, tlv1b }, chain.getTlvs(1)));
+        assertTrue(Arrays.asList(tlv1a, tlv3a, tlv1b).equals(chain.getTlvs()));
+        assertTrue(Arrays.asList(tlv1a, tlv1b).equals(chain.getTlvs(1)));
 
         chain.replaceTlv(tlv1c);
 
-        assertTrue(Arrays.equals(new Tlv[] { tlv1c, tlv3a }, chain.getTlvs()));
-        assertTrue(Arrays.equals(new Tlv[] { tlv1c }, chain.getTlvs(1)));
+        assertTrue(Arrays.asList(tlv1c, tlv3a).equals(chain.getTlvs()));
+        assertTrue(Arrays.asList(tlv1c).equals(chain.getTlvs(1)));
 
         chain.addTlv(tlv1a);
 
-        assertTrue(Arrays.equals(new Tlv[] { tlv1c, tlv3a, tlv1a },
-                chain.getTlvs()));
-        assertTrue(Arrays.equals(new Tlv[] { tlv1c, tlv1a }, chain.getTlvs(1)));
+        assertTrue(Arrays.asList(tlv1c, tlv3a, tlv1a).equals(chain.getTlvs()));
+        assertTrue(Arrays.asList(tlv1c, tlv1a).equals(chain.getTlvs(1)));
 
         chain.removeTlv(tlv1c);
 
-        assertTrue(Arrays.equals(new Tlv[] { tlv3a, tlv1a }, chain.getTlvs()));
-        assertTrue(Arrays.equals(new Tlv[] { tlv1a }, chain.getTlvs(1)));
+        assertTrue(Arrays.asList(tlv3a, tlv1a).equals(chain.getTlvs()));
+        assertTrue(Arrays.asList(tlv1a).equals(chain.getTlvs(1)));
     }
 }

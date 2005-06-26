@@ -39,6 +39,7 @@ import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 
 import java.util.Collection;
+import java.util.Arrays;
 
 /**
  * A SNAC command used to modify server-stored "items" that already exist on the
@@ -60,6 +61,10 @@ public class ModifyItemsCmd extends ItemsCmd {
         super(CMD_MODIFY_ITEMS, packet);
 
         DefensiveTools.checkNull(packet, "packet");
+    }
+
+    public ModifyItemsCmd(SsiItem... items) {
+        super(CMD_MODIFY_ITEMS, Arrays.asList(items));
     }
 
     /**

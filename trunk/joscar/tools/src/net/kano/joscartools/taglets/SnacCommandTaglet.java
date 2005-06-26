@@ -50,7 +50,7 @@ public class SnacCommandTaglet implements Taglet {
      *
      * @param tagletMap a taglet map with which to register this taglet
      */
-    public static void register(Map tagletMap) {
+    public static void register(Map<String,SnacCommandTaglet> tagletMap) {
         SnacCommandTaglet instance = new SnacCommandTaglet();
         tagletMap.put(instance.getName(), instance);
     }

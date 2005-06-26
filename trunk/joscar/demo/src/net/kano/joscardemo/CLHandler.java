@@ -38,6 +38,7 @@ package net.kano.joscardemo;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.FileWritable;
 import net.kano.joscar.OscarTools;
+import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rvcmd.InvitationMessage;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
@@ -76,8 +77,10 @@ import net.kano.joscar.snaccmd.search.SearchBuddiesCmd;
 import net.kano.joscar.snaccmd.ssi.CreateItemsCmd;
 import net.kano.joscar.snaccmd.ssi.DeleteItemsCmd;
 import net.kano.joscar.snaccmd.ssi.ModifyItemsCmd;
-import net.kano.joscar.snaccmd.ssi.SsiItem;
 import net.kano.joscar.snaccmd.ssi.RemoveMeCmd;
+import net.kano.joscar.snaccmd.ssi.PreModCmd;
+import net.kano.joscar.snaccmd.ssi.PostModCmd;
+import net.kano.joscar.snaccmd.ssi.SsiCommand;
 import net.kano.joscar.ssiitem.BuddyItem;
 import net.kano.joscar.ssiitem.DenyItem;
 import net.kano.joscar.ssiitem.GroupItem;
@@ -95,11 +98,13 @@ import net.kano.joscardemo.security.SecureSessionException;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.io.OutputStream;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -111,7 +116,7 @@ import java.util.regex.Pattern;
 
 public class CLHandler {
 
-    private SortedMap cmdMap = new TreeMap();
+    private SortedMap<String,CLCommand> cmdMap = new TreeMap<String, CLCommand>();
     private JoscarTester tester;
 
     public CLHandler(JoscarTester tester) {
@@ -119,16 +124,16 @@ public class CLHandler {
     }
 
     public CLCommand getCommand(String cmd) {
-        return (CLCommand) cmdMap.get(cmd);
+        return cmdMap.get(cmd);
     }
 
     private static final Pattern wrapRE = Pattern.compile(".{0,79}(?:\\S(?:-| |$)|$)|.{0,80}");
 
-    private static String[] wordWrap(String str) {
-        List list = new LinkedList();
+    private static List<String> wordWrap(String str) {
+        List<String> list = new LinkedList<String>();
         Matcher m = wrapRE.matcher(str);
         while (m.find()) list.add(m.group(0));
-        return (String[]) list.toArray(new String[list.size()]);
+        return list;
     }
 
     {
@@ -145,8 +150,8 @@ public class CLHandler {
                 return "<AIM expression name>";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                tester.setAimExp(args[0]);
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                tester.setAimExp(args.get(0));
             }
         });
         cmdMap.put("im", new CLCommand() {
@@ -162,7 +167,7 @@ public class CLHandler {
                 return "joustacular \"hey joustacular\"";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
                 byte[] textBytes;
                 try {
                     textBytes = tester.getAimExp().getBytes("US-ASCII");
@@ -176,13 +181,12 @@ public class CLHandler {
                 System.arraycopy(textBytes, 0, data, 1, textBytes.length);
                 ByteBlock block = ByteBlock.wrap(data);
 
-                ExtraInfoBlock[] expInfo = new ExtraInfoBlock[]{
+                List<ExtraInfoBlock> expInfo = Arrays.asList(
                     new ExtraInfoBlock(ExtraInfoBlock.TYPE_AIMEXPINFO_A,
                             new ExtraInfoData(0, block)),
                     new ExtraInfoBlock(ExtraInfoBlock.TYPE_AIMEXPINFO_B,
-                            new ExtraInfoData(0, block))
-                                        };
-                tester.request(new SendImIcbm(args[0], args[1],
+                            new ExtraInfoData(0, block)));
+                tester.request(new SendImIcbm(args.get(0), args.get(1),
                         false, 0, false, tester.getOldIconInfo(),
                         expInfo, true));
             }
@@ -200,10 +204,11 @@ public class CLHandler {
                 return "joustacular";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
 //                request(new OldGetInfoCmd(OldGetInfoCmd.TYPE_AWAYMSG, args[0]));
 //                request(new OldGetInfoCmd(OldGetInfoCmd.TYPE_INFO, args[0]));
-                tester.request(new GetInfoCmd(GetInfoCmd.FLAG_AWAYMSG | GetInfoCmd.FLAG_INFO, args[0]));
+                tester.request(new GetInfoCmd(GetInfoCmd.FLAG_AWAYMSG
+                        | GetInfoCmd.FLAG_INFO, args.get(0)));
             }
         });
         cmdMap.put("dirinfo", new CLCommand() {
@@ -219,8 +224,8 @@ public class CLHandler {
                 return "joustacular";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                tester.request(new GetDirInfoCmd(args[0]));
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                tester.request(new GetDirInfoCmd(args.get(0)));
             }
         });
         cmdMap.put("reformat", new CLCommand() {
@@ -236,8 +241,8 @@ public class CLHandler {
                 return "\"JoUsT aC uLaR\"";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                tester.request(new AcctModCmd(args[0], null));
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                tester.request(new AcctModCmd(args.get(0), null));
             }
         });
         cmdMap.put("setemail", new CLCommand() {
@@ -253,8 +258,8 @@ public class CLHandler {
                 return "user@something.com";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                tester.request(new AcctModCmd(null, args[0]));
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                tester.request(new AcctModCmd(null, args.get(0)));
             }
         });
         cmdMap.put("confirm", new CLCommand() {
@@ -271,7 +276,7 @@ public class CLHandler {
                 return null;
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
                 tester.request(new ConfirmAcctCmd());
             }
         });
@@ -289,7 +294,7 @@ public class CLHandler {
                 return null;
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
                 tester.request(new AcctInfoRequest(AcctInfoRequest.TYPE_SN));
             }
         });
@@ -307,7 +312,7 @@ public class CLHandler {
                 return null;
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
                 tester.request(new AcctInfoRequest(AcctInfoRequest.TYPE_EMAIL));
             }
         });
@@ -324,7 +329,7 @@ public class CLHandler {
                 return null;
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
                 tester.request(new RoomRightsRequest());
             }
         });
@@ -342,8 +347,8 @@ public class CLHandler {
                 return "4 \"Movies\"";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                tester.joinChat(Integer.parseInt(args[0]), args[1]);
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                tester.joinChat(Integer.parseInt(args.get(0)), args.get(1));
             }
         });
         cmdMap.put("exinfo", new CLCommand() {
@@ -359,8 +364,8 @@ public class CLHandler {
                 return "4";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                tester.request(new ExchangeInfoReq(Integer.parseInt(args[0])));
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                tester.request(new ExchangeInfoReq(Integer.parseInt(args.get(0))));
             }
         });
         cmdMap.put("chatsay", new CLCommand() {
@@ -378,8 +383,8 @@ public class CLHandler {
                 return "\"My Chat Room\" \"hey guys\"";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                tester.getChatConn(args[0]).sendMsg(args[1]);
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                tester.getChatConn(args.get(0)).sendMsg(args.get(1));
             }
         });
         cmdMap.put("inviteafriend", new CLCommand() {
@@ -396,8 +401,8 @@ public class CLHandler {
                 return "user@something.com \"Use AIM\"";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                tester.request(new InviteFriendCmd(args[0], args[1]));
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                tester.request(new InviteFriendCmd(args.get(0), args.get(1)));
             }
         });
         cmdMap.put("getinterests", new CLCommand() {
@@ -413,7 +418,7 @@ public class CLHandler {
                 return null;
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
                 tester.request(new InterestListReq());
             }
         });
@@ -431,9 +436,10 @@ public class CLHandler {
                 return "\"Donnie Darko\"";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
                 tester.request(SearchBuddiesCmd.createSearchByDirInfoCmd(new DirInfo(
-                        null, null, args[0], null, null, null, null, null, null,
+                        null, null, args.get(0), null, null, null, null, null,
+                        null,
                         null, null, null, null)));
             }
         });
@@ -451,8 +457,8 @@ public class CLHandler {
                 return "user@something.com";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                tester.request(SearchBuddiesCmd.createSearchByEmailCmd(args[0]));
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                tester.request(SearchBuddiesCmd.createSearchByEmailCmd(args.get(0)));
             }
         });
         cmdMap.put("searchbyinterest", new CLCommand() {
@@ -469,8 +475,8 @@ public class CLHandler {
                 return "Games";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                tester.request(SearchBuddiesCmd.createSearchByInterestCmd(args[0]));
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                tester.request(SearchBuddiesCmd.createSearchByInterestCmd(args.get(0)));
             }
         });
         cmdMap.put("setdir", new CLCommand() {
@@ -487,7 +493,7 @@ public class CLHandler {
                 return null;
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
                 tester.request(new SetDirInfoCmd(new DirInfo(
                         "email", "first", "middle", "last", "maiden", "nick",
                         "address", "city", "st", "zip", "CA", "en")));
@@ -507,7 +513,7 @@ public class CLHandler {
                 return null;
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
                 tester.request(new SetDirInfoCmd(null));
             }
         });
@@ -527,7 +533,7 @@ public class CLHandler {
                 return "Games Movies Travel";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
                 tester.request(new SetInterestsCmd(args));
             }
         });
@@ -546,8 +552,8 @@ public class CLHandler {
                 return "\"At work\"";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                String msg = args[0];
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                String msg = args.get(0);
                 if (msg == null) msg = "";
 
                 byte[] msgData;
@@ -563,12 +569,11 @@ public class CLHandler {
                 data[1] = (byte) (msgData.length & 0xff);
 
                 // this should work
-                tester.request(new SetExtraInfoCmd(new ExtraInfoBlock[] {
+                tester.request(new SetExtraInfoCmd(Arrays.asList(
                     new ExtraInfoBlock(ExtraInfoBlock.TYPE_AVAILMSG,
                             new ExtraInfoData(
                                     ExtraInfoData.FLAG_AVAILMSG_PRESENT,
-                                    ByteBlock.wrap(data)))
-                }));
+                                    ByteBlock.wrap(data))))));
             }
         });
         cmdMap.put("getcertinfo", new CLCommand() {
@@ -587,8 +592,8 @@ public class CLHandler {
                 return "joustacular";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                tester.request(new GetInfoCmd(GetInfoCmd.FLAG_CERT, args[0]));
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                tester.request(new GetInfoCmd(GetInfoCmd.FLAG_CERT, args.get(0)));
             }
         });
         cmdMap.put("addbuddy", new CLCommand() {
@@ -607,17 +612,17 @@ public class CLHandler {
                 return "joustacular 12 9238";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                tester.request(new CreateItemsCmd(new SsiItem[] {
-                    new BuddyItem(args[0],
-                            Integer.parseInt(args[1]),
-                            Integer.parseInt(args[2]),
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                tester.request(new CreateItemsCmd(Arrays.asList(
+                    new BuddyItem(args.get(0),
+                            Integer.parseInt(args.get(1)),
+                            Integer.parseInt(args.get(2)),
                             "ALIASDUDE",
                             "COMMENTDUDE",
                             BuddyItem.MASK_WHEN_ONLINE,
                             BuddyItem.MASK_ACTION_PLAY_SOUND,
                             "newalert"
-                    ).toSsiItem() }));
+                    ).toSsiItem())));
             }
         });
         cmdMap.put("delbuddy", new CLCommand() {
@@ -634,10 +639,10 @@ public class CLHandler {
                 return "joustacular 12 9238";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                tester.request(new DeleteItemsCmd(new SsiItem[] {
-                    new BuddyItem(args[0], Integer.parseInt(args[1]),
-                            Integer.parseInt(args[2])).toSsiItem() }));
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                tester.request(new DeleteItemsCmd(Arrays.asList(
+                    new BuddyItem(args.get(0), Integer.parseInt(args.get(1)),
+                            Integer.parseInt(args.get(2))).toSsiItem() )));
             }
         });
         cmdMap.put("addgroup", new CLCommand() {
@@ -655,10 +660,10 @@ public class CLHandler {
                 return "Buddies 12";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                tester.request(new CreateItemsCmd(new SsiItem[] {
-                    new GroupItem(args[0], Integer.parseInt(args[1]))
-                        .toSsiItem() }));
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                tester.request(new CreateItemsCmd(Arrays.asList(
+                    new GroupItem(args.get(0), Integer.parseInt(args.get(1)))
+                        .toSsiItem())));
             }
         });
         cmdMap.put("delgroup", new CLCommand() {
@@ -674,10 +679,89 @@ public class CLHandler {
                 return "Buddies 12";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                tester.request(new DeleteItemsCmd(new SsiItem[] {
-                    new GroupItem(args[0], Integer.parseInt(args[1]))
-                        .toSsiItem() }));
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                tester.request(new DeleteItemsCmd(Arrays.asList(
+                    new GroupItem(args.get(0), Integer.parseInt(args.get(1)))
+                        .toSsiItem())));
+            }
+        });
+        cmdMap.put("premod", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "";
+            }
+
+            public String getDescription() {
+                return "Sends the mysterious \"pre-mod\" command to the server.";
+            }
+
+            public String getExampleArgs() {
+                return "";
+            }
+
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                tester.request(new PreModCmd());
+            }
+        });
+        cmdMap.put("postmod", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "";
+            }
+
+            public String getDescription() {
+                return "Sends the mysterious \"post-mod\" packet to the server.";
+            }
+
+            public String getExampleArgs() {
+                return "";
+            }
+
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                tester.request(new PostModCmd());
+            }
+        });
+        cmdMap.put("rollback", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "";
+            }
+
+            public String getDescription() {
+                return "Sends the mysterious \"rollback\" packet to the server.";
+            }
+
+            public String getExampleArgs() {
+                return "";
+            }
+
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                tester.request(new SnacCommand(SsiCommand.FAMILY_SSI, 0x13) {
+                    public void writeData(OutputStream out) throws IOException {
+                    }
+                });
+            }
+        });
+        cmdMap.put("createvis", new CLCommand() {
+            public String getArgumentsUsage() {
+                return "<visibility item ID>";
+            }
+
+            public String getDescription() {
+                return "Creates a Visibility SSI item on this account with a "
+                        + "predefined set of visibility settings (for testing "
+                        + "purposes). The item will be created with the given "
+                        + "ID number.";
+            }
+
+            public String getExampleArgs() {
+                return "1928";
+            }
+
+            public void handle(JoscarTester tester, String line, String cmd,
+                    List<String> args) {
+                tester.request(new CreateItemsCmd(Arrays.asList(
+                    new VisibilityItem(Integer.parseInt(args.get(0)),
+                            VisibilityItem.MASK_SHOW_TYPING
+                        | VisibilityItem.MASK_SHOW_IDLE_TIME)
+                        .toSsiItem())));
             }
         });
         cmdMap.put("setprivacyvis", new CLCommand() {
@@ -696,16 +780,15 @@ public class CLHandler {
                 return "19 13";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                tester.request(new ModifyItemsCmd(new SsiItem[] {
-                    new PrivacyItem(Integer.parseInt(args[0]),
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                tester.request(new ModifyItemsCmd(Arrays.asList(
+                    new PrivacyItem(Integer.parseInt(args.get(0)),
                             PrivacyItem.MODE_BLOCK_DENIES, 0xffffffffL, 0)
                         .toSsiItem(),
-                    new VisibilityItem(Integer.parseInt(args[1]),
+                    new VisibilityItem(Integer.parseInt(args.get(1)),
                             VisibilityItem.MASK_SHOW_TYPING
                         | VisibilityItem.MASK_SHOW_IDLE_TIME)
-                        .toSsiItem()
-                }));
+                        .toSsiItem())));
             }
         });
         cmdMap.put("deletevis", new CLCommand() {
@@ -721,11 +804,10 @@ public class CLHandler {
                 return "13";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                tester.request(new DeleteItemsCmd(new SsiItem[] {
-                    new VisibilityItem(Integer.parseInt(args[0]), 0)
-                        .toSsiItem()
-                }));
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                tester.request(new DeleteItemsCmd(Arrays.asList(
+                    new VisibilityItem(Integer.parseInt(args.get(0)), 0)
+                        .toSsiItem())));
             }
         });
         cmdMap.put("setprivacymode", new CLCommand() {
@@ -743,12 +825,11 @@ public class CLHandler {
                 return "19 3";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                tester.request(new ModifyItemsCmd(new SsiItem[] {
-                    new PrivacyItem(Integer.parseInt(args[0]),
-                            Integer.parseInt(args[1]), 0xffffffffL, 0)
-                        .toSsiItem(),
-                }));
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                tester.request(new ModifyItemsCmd(Arrays.asList(
+                    new PrivacyItem(Integer.parseInt(args.get(0)),
+                            Integer.parseInt(args.get(1)), 0xffffffffL, 0)
+                        .toSsiItem())));
             }
         });
         cmdMap.put("blockuser", new CLCommand() {
@@ -766,11 +847,10 @@ public class CLHandler {
                 return "joustacular 132";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                tester.request(new CreateItemsCmd(new SsiItem[] {
-                    new DenyItem(args[0], Integer.parseInt(args[1]))
-                        .toSsiItem()
-                }));
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                tester.request(new CreateItemsCmd(Arrays.asList(
+                    new DenyItem(args.get(0), Integer.parseInt(args.get(1)))
+                        .toSsiItem())));
             }
         });
         cmdMap.put("unblockuser", new CLCommand() {
@@ -788,11 +868,10 @@ public class CLHandler {
                 return "joustacular 132";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                tester.request(new DeleteItemsCmd(new SsiItem[] {
-                    new DenyItem(args[0], Integer.parseInt(args[1]))
-                        .toSsiItem()
-                }));
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                tester.request(new DeleteItemsCmd(Arrays.asList(
+                    new DenyItem(args.get(0), Integer.parseInt(args.get(1)))
+                        .toSsiItem())));
             }
         });
         cmdMap.put("addpermit", new CLCommand() {
@@ -808,11 +887,10 @@ public class CLHandler {
                 return "joustacular 204";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                tester.request(new CreateItemsCmd(new SsiItem[] {
-                    new PermitItem(args[0], Integer.parseInt(args[1]))
-                        .toSsiItem()
-                }));
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                tester.request(new CreateItemsCmd(Arrays.asList(
+                    new PermitItem(args.get(0), Integer.parseInt(args.get(1)))
+                        .toSsiItem())));
             }
         });
         cmdMap.put("delpermit", new CLCommand() {
@@ -830,11 +908,10 @@ public class CLHandler {
                 return "joustacular 204";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                tester.request(new DeleteItemsCmd(new SsiItem[] {
-                    new PermitItem(args[0], Integer.parseInt(args[1]))
-                        .toSsiItem()
-                }));
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                tester.request(new DeleteItemsCmd(Arrays.asList(
+                    new PermitItem(args.get(0), Integer.parseInt(args.get(1)))
+                        .toSsiItem())));
             }
         });
         cmdMap.put("addrootitem", new CLCommand() {
@@ -852,10 +929,9 @@ public class CLHandler {
                 return null;
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                tester.request(new CreateItemsCmd(new SsiItem[] {
-                    new RootItem().toSsiItem()
-                }));
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                tester.request(new CreateItemsCmd(Arrays.asList(
+                    new RootItem().toSsiItem())));
             }
         });
         cmdMap.put("setroot", new CLCommand() {
@@ -872,12 +948,11 @@ public class CLHandler {
                 return "12 9";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                tester.request(new ModifyItemsCmd(new SsiItem[] {
-                    new RootItem(new int[] { Integer.parseInt(args[0]),
-                                             Integer.parseInt(args[1]) })
-                        .toSsiItem()
-                }));
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                tester.request(new ModifyItemsCmd(Arrays.asList(
+                    new RootItem(new int[] { Integer.parseInt(args.get(0)),
+                                             Integer.parseInt(args.get(1)) })
+                        .toSsiItem())));
             }
         });
         cmdMap.put("seticon", new CLCommand() {
@@ -896,15 +971,14 @@ public class CLHandler {
                 return "1 309 \"/home/keith/in/icon.gif\"";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
                 try {
                     ExtraInfoData extrainfo = new ExtraInfoData(0,
-                            ByteBlock.wrap(JoscarTester.hashIcon(args[2])));
-                    IconItem iconItem = new IconItem(args[0],
-                            Integer.parseInt(args[1]), extrainfo);
-                    tester.request(new ModifyItemsCmd(new SsiItem[] {
-                        iconItem.toSsiItem()
-                    }));
+                            ByteBlock.wrap(JoscarTester.hashIcon(args.get(2))));
+                    IconItem iconItem = new IconItem(args.get(0),
+                            Integer.parseInt(args.get(1)), extrainfo);
+                    tester.request(new ModifyItemsCmd(Arrays.asList(
+                        iconItem.toSsiItem())));
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -926,15 +1000,14 @@ public class CLHandler {
                 return "2 905 \"/home/keith/in/icon.gif\"";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
                 try {
-                    tester.request(new CreateItemsCmd(new SsiItem[] {
-                        new IconItem(args[0], Integer.parseInt(args[1]),
+                    tester.request(new CreateItemsCmd(Arrays.asList(
+                        new IconItem(args.get(0), Integer.parseInt(args.get(1)),
                                 new ExtraInfoData(0, ByteBlock.wrap(
-                                        JoscarTester.hashIcon(args[2])
+                                        JoscarTester.hashIcon(args.get(2))
                                 )))
-                            .toSsiItem()
-                    }));
+                            .toSsiItem())));
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -953,11 +1026,10 @@ public class CLHandler {
                 return "2 905";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                tester.request(new DeleteItemsCmd(new SsiItem[] {
-                    new IconItem(args[0], Integer.parseInt(args[1]), null)
-                        .toSsiItem()
-                }));
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                tester.request(new DeleteItemsCmd(Arrays.asList(
+                    new IconItem(args.get(0), Integer.parseInt(args.get(1)), null)
+                        .toSsiItem())));
             }
         });
         cmdMap.put("uploadicon", new CLCommand() {
@@ -974,9 +1046,9 @@ public class CLHandler {
                 return "\"/home/keith/in/icon.gif\"";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
                 tester.request(new UploadIconCmd(ByteBlock.createByteBlock(
-                        new FileWritable(args[0]))));
+                        new FileWritable(args.get(0)))));
             }
         });
         cmdMap.put("noicon", new CLCommand() {
@@ -993,12 +1065,11 @@ public class CLHandler {
                 return "2 905";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                tester.request(new ModifyItemsCmd(new SsiItem[] {
-                    new IconItem(args[0], Integer.parseInt(args[1]),
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                tester.request(new ModifyItemsCmd(Arrays.asList(
+                    new IconItem(args.get(0), Integer.parseInt(args.get(1)),
                             new ExtraInfoData(0, ExtraInfoData.HASH_SPECIAL))
-                        .toSsiItem()
-                }));
+                        .toSsiItem())));
             }
         });
         cmdMap.put("logims", new CLCommand() {
@@ -1015,7 +1086,7 @@ public class CLHandler {
                 return null;
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
                 tester.getBosConn().setLogIms(new ImTestFrame(tester));
             }
         });
@@ -1034,9 +1105,8 @@ public class CLHandler {
                 return "joustacular";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                RvSession session = tester.getBosConn().rvProcessor.createRvSession(
-                        args[0]);
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                RvSession session = tester.getBosConn().rvProcessor.createRvSession(args.get(0));
 
                 ServerSocket socket;
                 try {
@@ -1078,17 +1148,16 @@ public class CLHandler {
                 return "joustacular 25 125";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                RvSession session = tester.getBosConn().rvProcessor.createRvSession(
-                        args[0]);
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                RvSession session = tester.getBosConn().rvProcessor.createRvSession(args.get(0));
                 System.out.println("created rv session: "
                         + session.getRvSessionId());
 
                 session.addListener(tester.getBosConn().rvSessionListener);
 
                 session.sendRv(new TrillianCryptReqRvCmd(
-                        new BigInteger(args[1]),
-                        new BigInteger(args[2])));
+                        new BigInteger(args.get(1)),
+                        new BigInteger(args.get(2))));
             }
         });
         cmdMap.put("secureim", new CLCommand() {
@@ -1107,9 +1176,8 @@ public class CLHandler {
                 return "joustacular";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                RvSession session = tester.getBosConn().rvProcessor.createRvSession(
-                        args[0]);
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                RvSession session = tester.getBosConn().rvProcessor.createRvSession(args.get(0));
                 System.out.println("created rv session: "
                         + session.getRvSessionId());
 
@@ -1117,7 +1185,7 @@ public class CLHandler {
 
                 TrillianEncSession encSession = new TrillianEncSession(session);
                 encSession.init();
-                tester.getBosConn().trillianEncSessions.put(OscarTools.normalize(args[0]),
+                tester.getBosConn().trillianEncSessions.put(OscarTools.normalize(args.get(0)),
                         encSession);
             }
         });
@@ -1137,13 +1205,12 @@ public class CLHandler {
                 return "joustacular \"Hey what's up\"";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                System.out.println("sending secure IM to " + args[0]);
-                TrillianEncSession encSession = (TrillianEncSession)
-                        tester.getBosConn().trillianEncSessions.get(
-                                OscarTools.normalize(args[0]));
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                System.out.println("sending secure IM to " + args.get(0));
+                TrillianEncSession encSession = tester.getBosConn().trillianEncSessions.get(
+                        OscarTools.normalize(args.get(0)));
 
-                encSession.sendMsg(args[1]);
+                encSession.sendMsg(args.get(1));
 
             }
         });
@@ -1161,20 +1228,19 @@ public class CLHandler {
                 return "joustacular";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                RvSession session = tester.getBosConn().rvProcessor.createRvSession(
-                        args[0]);
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                RvSession session = tester.getBosConn().rvProcessor.createRvSession(args.get(0));
 
                 session.addListener(tester.getBosConn().rvSessionListener);
 
-                session.sendRv(new SendBuddyListRvCmd(new SendBuddyListGroup[] {
-                    new SendBuddyListGroup("HEY", new String[] {
-                        "HEYBUDDY", "YOBUDDY",
-                    }),
-                    new SendBuddyListGroup("YO", new String[] {
-                        "HEYBUDDY2", "YOBUDDY2",
-                    }),
-                }));
+                session.sendRv(new SendBuddyListRvCmd(Arrays.asList(
+                    new SendBuddyListGroup("HEY", Arrays.asList(
+                        "HEYBUDDY", "YOBUDDY"
+                    )),
+                    new SendBuddyListGroup("YO", Arrays.asList(
+                        "HEYBUDDY2", "YOBUDDY2"
+                    ))
+                )));
             }
         });
         cmdMap.put("invite", new CLCommand() {
@@ -1192,11 +1258,10 @@ public class CLHandler {
                 return "joustacular \"Movies\"";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                RvSession session = tester.getBosConn().rvProcessor.createRvSession(
-                        args[0]);
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                RvSession session = tester.getBosConn().rvProcessor.createRvSession(args.get(0));
 
-                ChatConn conn = tester.getChatConn(args[1]);
+                ChatConn conn = tester.getChatConn(args.get(1));
 
                 session.addListener(tester.getBosConn().rvSessionListener);
 
@@ -1219,9 +1284,8 @@ public class CLHandler {
                 return "joustacular";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                RvSession session = tester.getBosConn().rvProcessor.createRvSession(
-                        args[0]);
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                RvSession session = tester.getBosConn().rvProcessor.createRvSession(args.get(0));
 
                 session.addListener(tester.getBosConn().rvSessionListener);
 
@@ -1249,9 +1313,8 @@ public class CLHandler {
                 return "joustacular";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                RvSession session = tester.getBosConn().rvProcessor.createRvSession(
-                        args[0]);
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                RvSession session = tester.getBosConn().rvProcessor.createRvSession(args.get(0));
 
                 session.addListener(tester.getBosConn().rvSessionListener);
 
@@ -1291,9 +1354,8 @@ public class CLHandler {
                 return "joustacular";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                RvSession session = tester.getBosConn().rvProcessor.createRvSession(
-                        args[0]);
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                RvSession session = tester.getBosConn().rvProcessor.createRvSession(args.get(0));
 
                 session.addListener(tester.getBosConn().rvSessionListener);
 
@@ -1325,18 +1387,20 @@ public class CLHandler {
                 return "joustacular \"hey\"";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
                 try {
                     SecureSession ss = tester.getSecureSession();
-                    ByteBlock encodedMsg = ss.encryptIM(args[0], args[1]);
+                    ByteBlock encodedMsg = ss.encryptIM(args.get(0),
+                            args.get(1));
 
                     if (encodedMsg == null) {
-                        System.err.println("no cert for " + args[0] + "!");
+                        System.err.println("no cert for " + args.get(0) + "!");
                         return;
                     }
 
-                    tester.request(new SendImIcbm(args[0], new InstantMessage(
-                            encodedMsg), false, 0,
+                    tester.request(new SendImIcbm(args.get(0),
+                            new InstantMessage(
+                                    encodedMsg), false, 0,
                             false, null, null, true));
 
                 } catch (Exception e) {
@@ -1362,8 +1426,8 @@ public class CLHandler {
                 return "joustacular";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                final String sn = args[0];
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                final String sn = args.get(0);
                 RvSession session = tester.getBosConn().rvProcessor.createRvSession(
                         sn);
 
@@ -1404,9 +1468,10 @@ public class CLHandler {
                 return "4 \"Encryption Party\"";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
                 FullRoomInfo roomInfo = new FullRoomInfo(
-                        Integer.parseInt(args[0]), args[1], "us-ascii", "en",
+                        Integer.parseInt(args.get(0)), args.get(1), "us-ascii",
+                        "en",
                         "application/pkcs7-mime");
                 tester.request(new JoinRoomCmd(roomInfo));
             }
@@ -1427,8 +1492,8 @@ public class CLHandler {
                 return "\"Encryption Party\" \"hey guys\"";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                tester.getChatConn(args[0]).sendEncMsg(args[1]);
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                tester.getChatConn(args.get(0)).sendEncMsg(args.get(1));
             }
         });
         cmdMap.put("fakeinvite", new CLCommand() {
@@ -1445,14 +1510,13 @@ public class CLHandler {
                 return "joustacular SomeChatRoom";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                RvSession session = tester.getBosConn().rvProcessor.createRvSession(
-                        args[0]);
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                RvSession session = tester.getBosConn().rvProcessor.createRvSession(args.get(0));
 
                 session.addListener(tester.getBosConn().rvSessionListener);
 
                 session.sendRv(new ChatInvitationRvCmd(
-                        new MiniRoomInfo(4, args[1], 0),
+                        new MiniRoomInfo(4, args.get(1), 0),
                         new InvitationMessage("yo")));
             }
         });
@@ -1472,17 +1536,16 @@ public class CLHandler {
                 return "joustacular EncryptionParty";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                RvSession session = tester.getBosConn().rvProcessor.createRvSession(
-                        args[0]);
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                RvSession session = tester.getBosConn().rvProcessor.createRvSession(args.get(0));
 
-                ChatConn conn = tester.getChatConn(args[1]);
+                ChatConn conn = tester.getChatConn(args.get(1));
 
                 session.addListener(tester.getBosConn().rvSessionListener);
 
                 try {
                     ByteBlock secInfo = tester.getSecureSession().genChatSecurityInfo(
-                            conn.getRoomInfo(), args[0]);
+                            conn.getRoomInfo(), args.get(0));
                     session.sendRv(new ChatInvitationRvCmd(
                             new MiniRoomInfo(conn.getRoomInfo()),
                             new InvitationMessage("yo"),
@@ -1505,9 +1568,10 @@ public class CLHandler {
                 return "4 \"Encryption Party\"";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
                 FullRoomInfo roomInfo = new FullRoomInfo(
-                        Integer.parseInt(args[0]), args[1], "us-ascii", "en",
+                        Integer.parseInt(args.get(0)), args.get(1), "us-ascii",
+                        "en",
                         "application/pkcs7-mime");
                 tester.request(new JoinRoomCmd(roomInfo));
             }
@@ -1527,12 +1591,12 @@ public class CLHandler {
             }
 
             public void handle(JoscarTester tester, String line, String cmd,
-                    String[] args) {
+                    List<String> args) {
                 int secs;
-                if (args.length == 0) {
+                if (args.size() == 0) {
                     secs = 0;
                 } else {
-                    secs = Integer.parseInt(args[0]);
+                    secs = Integer.parseInt(args.get(0));
                 }
                 tester.request(new SetIdleCmd(secs));
             }
@@ -1557,8 +1621,8 @@ public class CLHandler {
             }
 
             public void handle(JoscarTester tester, String line, String cmd,
-                    String[] args) {
-                tester.request(new RemoveMeCmd(args[0]));
+                    List<String> args) {
+                tester.request(new RemoveMeCmd(args.get(0)));
             }
         });
         cmdMap.put("sendnewline", new CLCommand() {
@@ -1576,8 +1640,8 @@ public class CLHandler {
             }
 
             public void handle(JoscarTester tester, String line, String cmd,
-                    String[] args) {
-                tester.request(new SendImIcbm(args[0], "test\ntest"));
+                    List<String> args) {
+                tester.request(new SendImIcbm(args.get(0), "test\ntest"));
             }
         });
         cmdMap.put("help", new CLCommand() {
@@ -1593,29 +1657,30 @@ public class CLHandler {
                 return "im";
             }
 
-            public void handle(JoscarTester tester, String line, String cmd, String[] args) {
-                if (args.length == 0) {
+            public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
+                int size = args.size();
+                if (size == 0) {
                     printMainHelp();
-                } else if (args.length == 1) {
-                    printUsage(args[0]);
+                } else if (size == 1) {
+                    printUsage(args.get(0));
                 } else {
                     printUsage("help");
                 }
             }
 
             private void printMainHelp() {
-                ArrayList cmdNames = new ArrayList(cmdMap.keySet());
+                ArrayList<String> cmdNames = new ArrayList<String>(cmdMap.keySet());
                 Collections.sort(cmdNames);
                 System.out.println("Commands (" + cmdNames.size() + "): ");
                 int longest = 0;
-                for (Iterator it = cmdNames.iterator(); it.hasNext();) {
-                    String name = (String) it.next();
+                for (Iterator<String> it = cmdNames.iterator(); it.hasNext();) {
+                    String name = it.next();
                     longest = Math.max(longest, name.length());
                 }
                 int perline = 80/(longest+1);
                 int i = 0;
-                for (Iterator it = cmdNames.iterator(); it.hasNext();) {
-                    String name = (String) it.next();
+                for (Iterator<String> it = cmdNames.iterator(); it.hasNext();) {
+                    String name = it.next();
                     boolean eol = (i % perline) == (perline-1) || !it.hasNext();
 
                     System.out.print(name);
@@ -1635,7 +1700,7 @@ public class CLHandler {
             }
 
             private void printUsage(String command) {
-                CLCommand clc = (CLCommand) cmdMap.get(command);
+                CLCommand clc = cmdMap.get(command);
                 if (clc == null) {
                     System.err.println("There is no command called '"
                             + command + "' - try typing 'help'");
@@ -1660,9 +1725,7 @@ public class CLHandler {
                 }
                 String desc = clc.getDescription();
                 if (desc != null) {
-                    String[] wrapped = wordWrap(desc);
-                    for (int i = 0; i < wrapped.length; i++) {
-                        String line = wrapped[i];
+                    for (String line : wordWrap(desc)) {
                         System.out.print("  ");
                         System.out.println(line);
                     }

@@ -43,6 +43,20 @@ import net.kano.joscar.snaccmd.ssi.SsiItem;
  * SSI items to their respective classes provided in this package.
  */
 public class DefaultSsiItemObjFactory implements SsiItemObjectFactory {
+    /**
+     * Returns whether the given SSI item is the "root group" item, which is the
+     * parent of every buddy group and most other types of items.
+     * <br /><br />
+     * The root group item is characterized by being of type
+     * {@link SsiItem#TYPE_GROUP} and having a parent ID of 0.
+     *
+     * @param item an SSI item
+     * @return whether {@code item} is the "root group" item
+     */
+    public static boolean isRootItem(SsiItem item) {
+        return item.getItemType() == SsiItem.TYPE_GROUP && item.getParentId() == 0;
+    }
+
     public SsiItemObj getItemObj(SsiItem item) {
         DefensiveTools.checkNull(item, "item");
 
@@ -51,7 +65,7 @@ public class DefaultSsiItemObjFactory implements SsiItemObjectFactory {
             return new BuddyItem(item);
 
         } else if (type == SsiItem.TYPE_GROUP) {
-            if (item.getParentId() == 0) return new RootItem(item);
+            if (isRootItem(item)) return new RootItem(item);
             else return new GroupItem(item);
 
         } else if (type == SsiItem.TYPE_PRIVACY) {

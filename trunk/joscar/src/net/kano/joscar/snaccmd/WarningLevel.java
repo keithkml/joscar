@@ -35,8 +35,6 @@
 
 package net.kano.joscar.snaccmd;
 
-import net.kano.joscar.DefensiveTools;
-
 public final class WarningLevel extends Number {
     public static WarningLevel getInstanceFromX10(int x10) {
         if (x10 < 0) return null;
@@ -74,4 +72,8 @@ public final class WarningLevel extends Number {
     public long longValue() { return rv; }
 
     public int getX10Value() { return orig; }
+
+    public String toString() {
+        return intValue() + "." + getX10Value() % 10 + "%";
+    }
 }

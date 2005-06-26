@@ -81,11 +81,13 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
+import java.util.List;
 
 public class BosFlapConn extends BasicConn {
     private SsiItemObjectFactory itemFactory = new DefaultSsiItemObjFactory();
 
-    private static final CapabilityBlock[] MY_CAPS = new CapabilityBlock[] {
+    private static final List<CapabilityBlock> MY_CAPS = Arrays.asList(
         CapabilityBlock.BLOCK_CHAT,
         CapabilityBlock.BLOCK_DIRECTIM,
         CapabilityBlock.BLOCK_FILE_GET,
@@ -123,10 +125,10 @@ public class BosFlapConn extends BasicConn {
         ShortCapabilityBlock.getCapFromShortBytes(0xf0, 0x05),
         new CapabilityBlock(
                 0x09, 0x46, 0x01, 0x05, 0x4c, 0x7f, 0x11, 0xd1,
-                0x82, 0x22, 0x44, 0x45, 0x45, 0x53, 0x54, 0x00),
+                0x82, 0x22, 0x44, 0x45, 0x45, 0x53, 0x54, 0x00)
 
 //        CapabilityBlock.BLOCK_SOMETHING,
-    };
+    );
 
     public BosFlapConn(ConnDescriptor cd, JoscarTester tester,
             ByteBlock cookie) {
@@ -181,7 +183,7 @@ public class BosFlapConn extends BasicConn {
                 }
             }
             request(new SetInfoCmd(new InfoData("yo", null, MY_CAPS, certInfo)));
-            request(new SetEncryptionInfoCmd(new ExtraInfoBlock[] {
+            request(new SetEncryptionInfoCmd(Arrays.asList(
                 new ExtraInfoBlock(ExtraInfoBlock.TYPE_CERTINFO_HASHA,
                         new ExtraInfoData(
                             ExtraInfoData.FLAG_HASH_PRESENT,
@@ -189,8 +191,7 @@ public class BosFlapConn extends BasicConn {
                 new ExtraInfoBlock(ExtraInfoBlock.TYPE_CERTINFO_HASHB,
                         new ExtraInfoData(
                             ExtraInfoData.FLAG_HASH_PRESENT,
-                            CertificateInfo.HASHB_DEFAULT)),
-            }));
+                            CertificateInfo.HASHB_DEFAULT)))));
             request(new MyInfoRequest());
 
         } else if (cmd instanceof ParamInfoCmd) {
@@ -243,15 +244,15 @@ public class BosFlapConn extends BasicConn {
         } else if (cmd instanceof SsiDataCmd) {
             SsiDataCmd sdc = (SsiDataCmd) cmd;
 
-            SsiItem[] items = sdc.getItems();
-            System.out.println("SSI items: " + items.length);
-            for (int i = 0; i < items.length; i++) {
-                SsiItemObj obj = itemFactory.getItemObj(items[i]);
-                System.out.println("- " + (obj == null ? (Object) items[i]
+            List<SsiItem> items = sdc.getItems();
+            System.out.println("SSI items: " + items.size());
+            for (SsiItem item : items) {
+                SsiItemObj obj = itemFactory.getItemObj(item);
+                System.out.println("- " + (obj == null ? (Object) item
                         : (Object) obj));
             }
 
-            if (items.length == 0 || sdc.getLastModDate() != 0) {
+            if (items.size() == 0 || sdc.getLastModDate() != 0) {
                 System.out.println("done with SSI");
                 request(new ActivateSsiCmd());
                 clientReady();
@@ -284,9 +285,8 @@ public class BosFlapConn extends BasicConn {
 
             tester.getSecureSession().setCert(sn, cert);
 
-            X509Certificate x = cert;
             System.out.println("got certificate for " + sn + ": "
-                    + x.getSubjectX500Principal().getName());
+                    + cert.getSubjectX500Principal().getName());
 
 
         } catch (CertificateException e1) {

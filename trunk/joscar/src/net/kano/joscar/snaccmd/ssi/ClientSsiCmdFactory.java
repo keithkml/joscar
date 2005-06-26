@@ -53,7 +53,12 @@ public class ClientSsiCmdFactory implements SnacCmdFactory {
         new CmdType(SsiCommand.FAMILY_SSI, SsiCommand.CMD_RIGHTS),
         new CmdType(SsiCommand.FAMILY_SSI, SsiCommand.CMD_SSI_DATA),
         new CmdType(SsiCommand.FAMILY_SSI, SsiCommand.CMD_UNCHANGED),
-        new CmdType(SsiCommand.FAMILY_SSI, SsiCommand.CMD_MOD_ACK));
+        new CmdType(SsiCommand.FAMILY_SSI, SsiCommand.CMD_MOD_ACK),
+        new CmdType(SsiCommand.FAMILY_SSI, SsiCommand.CMD_PRE_MOD),
+        new CmdType(SsiCommand.FAMILY_SSI, SsiCommand.CMD_POST_MOD),
+        new CmdType(SsiCommand.FAMILY_SSI, SsiCommand.CMD_CREATE_ITEMS),
+        new CmdType(SsiCommand.FAMILY_SSI, SsiCommand.CMD_MODIFY_ITEMS),
+        new CmdType(SsiCommand.FAMILY_SSI, SsiCommand.CMD_DELETE_ITEMS));
 
     public List<CmdType> getSupportedTypes() {
         return SUPPORTED_TYPES;
@@ -72,6 +77,16 @@ public class ClientSsiCmdFactory implements SnacCmdFactory {
             return new SsiUnchangedCmd(packet);
         } else if (command == SsiCommand.CMD_MOD_ACK) {
             return new SsiDataModResponse(packet);
+        } else if (command == SsiCommand.CMD_PRE_MOD) {
+            return new PreModCmd(packet);
+        } else if (command == SsiCommand.CMD_POST_MOD) {
+            return new PostModCmd(packet);
+        } else if (command == SsiCommand.CMD_CREATE_ITEMS) {
+            return new CreateItemsCmd(packet);
+        } else if (command == SsiCommand.CMD_MODIFY_ITEMS) {
+            return new ModifyItemsCmd(packet);
+        } else if (command == SsiCommand.CMD_DELETE_ITEMS) {
+            return new DeleteItemsCmd(packet);
         } else {
             return null;
         }

@@ -36,15 +36,15 @@
 package net.kano.joscardemo;
 
 import net.kano.joscar.flap.ClientFlapConn;
-import net.kano.joscar.net.ConnProcessorExceptionHandler;
 import net.kano.joscar.flap.FlapPacketEvent;
 import net.kano.joscar.flap.FlapPacketListener;
 import net.kano.joscar.flapcmd.DefaultFlapCmdFactory;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.net.ClientConnEvent;
 import net.kano.joscar.net.ClientConnListener;
-import net.kano.joscar.net.ConnProcessorExceptionEvent;
 import net.kano.joscar.net.ConnDescriptor;
+import net.kano.joscar.net.ConnProcessorExceptionEvent;
+import net.kano.joscar.net.ConnProcessorExceptionHandler;
 import net.kano.joscar.snac.ClientSnacProcessor;
 import net.kano.joscar.snac.FamilyVersionPreprocessor;
 import net.kano.joscar.snac.SnacPacketEvent;
@@ -54,8 +54,6 @@ import net.kano.joscar.snac.SnacRequestAdapter;
 import net.kano.joscar.snac.SnacRequestListener;
 import net.kano.joscar.snac.SnacResponseEvent;
 import net.kano.joscar.snaccmd.DefaultClientFactoryList;
-
-import java.net.InetAddress;
 
 public abstract class AbstractFlapConn extends ClientFlapConn {
     protected JoscarTester tester;

@@ -36,11 +36,11 @@
 package net.kano.joscar.snaccmd;
 
 import junit.framework.TestCase;
-
-import java.util.Map;
-
-import net.kano.joscar.OscarTools;
 import net.kano.joscar.MinimalEncoder;
+import net.kano.joscar.OscarTools;
+
+import java.util.Arrays;
+import java.util.Map;
 
 public class SelfTest extends TestCase {
     public void testMinimalEncoder() {
@@ -63,10 +63,10 @@ public class SelfTest extends TestCase {
 
         me = new MinimalEncoder();
 
-        me.updateAll(new String[] { "hi", "hello", "ok" });
+        me.updateAll(Arrays.asList("hi", "hello", "ok"));
         assertSame(MinimalEncoder.ENCODING_ASCII, me.getCharset());
 
-        me.updateAll(new String[] { "ascii", "\u0fbfhi" });
+        me.updateAll(Arrays.asList("ascii", "\u0fbfhi"));
         assertSame(MinimalEncoder.ENCODING_UTF16, me.getCharset());
 
 
@@ -81,7 +81,7 @@ public class SelfTest extends TestCase {
     }
 
     public void testCharsetParser() {
-        Map map = OscarTools.parseContentTypeString(
+        Map<String,String> map = OscarTools.parseContentTypeString(
                 "text/aolrtf; charset=\"us-ascii\"");
 
         assertEquals(2, map.size());

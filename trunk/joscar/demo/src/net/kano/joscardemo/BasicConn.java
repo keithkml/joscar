@@ -38,12 +38,12 @@ package net.kano.joscardemo;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.OscarTools;
-import net.kano.joscar.net.ConnDescriptor;
 import net.kano.joscar.flap.FlapCommand;
 import net.kano.joscar.flap.FlapPacketEvent;
 import net.kano.joscar.flapcmd.LoginFlapCmd;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.flapcmd.SnacPacket;
+import net.kano.joscar.net.ConnDescriptor;
 import net.kano.joscar.ratelim.RateLimitingQueueMgr;
 import net.kano.joscar.rv.NewRvSessionEvent;
 import net.kano.joscar.rv.RecvRvEvent;
@@ -73,7 +73,6 @@ import net.kano.joscar.snaccmd.ExtraInfoData;
 import net.kano.joscar.snaccmd.FullUserInfo;
 import net.kano.joscar.snaccmd.MiniUserInfo;
 import net.kano.joscar.snaccmd.SnacFamilyInfoFactory;
-import net.kano.joscar.snaccmd.ShortCapabilityBlock;
 import net.kano.joscar.snaccmd.buddy.BuddyOfflineCmd;
 import net.kano.joscar.snaccmd.buddy.BuddyStatusCmd;
 import net.kano.joscar.snaccmd.conn.ClientReadyCmd;
@@ -84,22 +83,22 @@ import net.kano.joscar.snaccmd.conn.RateClassInfo;
 import net.kano.joscar.snaccmd.conn.RateInfoCmd;
 import net.kano.joscar.snaccmd.conn.RateInfoRequest;
 import net.kano.joscar.snaccmd.conn.ServerReadyCmd;
+import net.kano.joscar.snaccmd.conn.ServerVersionsCmd;
 import net.kano.joscar.snaccmd.conn.SnacFamilyInfo;
 import net.kano.joscar.snaccmd.conn.WarningNotification;
-import net.kano.joscar.snaccmd.conn.ServerVersionsCmd;
 import net.kano.joscar.snaccmd.icbm.InstantMessage;
 import net.kano.joscar.snaccmd.icbm.RecvImIcbm;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.snaccmd.icbm.RvCommand;
 import net.kano.joscar.snaccmd.icbm.RvResponse;
 import net.kano.joscar.snaccmd.rooms.RoomInfoReq;
+import net.kano.joscardemo.gui.ImTestFrame;
+import net.kano.joscardemo.rv.DirectIMSession;
+import net.kano.joscardemo.rv.HostGetFileThread;
+import net.kano.joscardemo.rv.RecvFileThread;
+import net.kano.joscardemo.rv.TrillianEncSession;
 import net.kano.joscardemo.security.SecureSession;
 import net.kano.joscardemo.security.SecureSessionException;
-import net.kano.joscardemo.rv.TrillianEncSession;
-import net.kano.joscardemo.rv.RecvFileThread;
-import net.kano.joscardemo.rv.HostGetFileThread;
-import net.kano.joscardemo.rv.DirectIMSession;
-import net.kano.joscardemo.gui.ImTestFrame;
 
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -111,16 +110,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Collection;
 
 public abstract class BasicConn extends AbstractFlapConn {
     protected final ByteBlock cookie;
     protected boolean sentClientReady = false;
 
     protected int[] snacFamilies = null;
-    protected SnacFamilyInfo[] snacFamilyInfos;
+    protected Collection<SnacFamilyInfo> snacFamilyInfos;
     protected RateLimitingQueueMgr rateMgr = new RateLimitingQueueMgr();
     protected RvProcessor rvProcessor = new RvProcessor(snacProcessor);
     protected RvProcessorListener rvListener = new RvProcessorListener() {
@@ -130,7 +129,7 @@ public abstract class BasicConn extends AbstractFlapConn {
             event.getSession().addListener(rvSessionListener);
         }
     };
-    protected Map trillianEncSessions = new HashMap();
+    protected Map<String,TrillianEncSession> trillianEncSessions = new HashMap<String, TrillianEncSession>();
 
     protected RvSessionListener rvSessionListener = new RvSessionListener() {
         public void handleRv(RecvRvEvent event) {
@@ -159,8 +158,7 @@ public abstract class BasicConn extends AbstractFlapConn {
 
             } else if (cmd instanceof AbstractTrillianCryptRvCmd) {
                 String key = OscarTools.normalize(session.getScreenname());
-                TrillianEncSession encSession = (TrillianEncSession)
-                        trillianEncSessions.get(key);
+                TrillianEncSession encSession = trillianEncSessions.get(key);
                 if (encSession == null) {
                     encSession = new TrillianEncSession(session);
                     trillianEncSessions.put(key, encSession);
@@ -288,7 +286,7 @@ public abstract class BasicConn extends AbstractFlapConn {
 
             setSnacFamilies(families);
 
-            SnacFamilyInfo[] familyInfos = SnacFamilyInfoFactory
+            List<SnacFamilyInfo> familyInfos = SnacFamilyInfoFactory
                     .getDefaultFamilyInfos(families);
             setSnacFamilyInfos(familyInfos);
 
@@ -376,11 +374,10 @@ public abstract class BasicConn extends AbstractFlapConn {
 
             String sn = info.getScreenname();
 
-            ExtraInfoBlock[] extraInfos = info.getExtraInfoBlocks();
+            List<ExtraInfoBlock> extraInfos = info.getExtraInfoBlocks();
 
             if (extraInfos != null) {
-                for (int i = 0; i < extraInfos.length; i++) {
-                    ExtraInfoBlock extraInfo = extraInfos[i];
+                for (ExtraInfoBlock extraInfo : extraInfos) {
                     ExtraInfoData data = extraInfo.getExtraData();
 
 //                    if ((hashInfo.getFlags() & ExtraInfoData.FLAG_ICON_PRESENT)
@@ -397,7 +394,8 @@ public abstract class BasicConn extends AbstractFlapConn {
                     if (extraInfo.getType() == ExtraInfoBlock.TYPE_AVAILMSG) {
                         ByteBlock msgBlock = data.getData();
                         int len = BinaryTools.getUShort(msgBlock, 0);
-                        byte[] msgBytes = msgBlock.subBlock(2, len).toByteArray();
+                        byte[] msgBytes = msgBlock.subBlock(2, len)
+                                .toByteArray();
 
                         String msg;
                         try {
@@ -415,7 +413,7 @@ public abstract class BasicConn extends AbstractFlapConn {
             }
 
             if (info.getCapabilityBlocks() != null) {
-                List known = Arrays.asList(new CapabilityBlock[] {
+                List<CapabilityBlock> known = Arrays.asList(
                     CapabilityBlock.BLOCK_CHAT,
                     CapabilityBlock.BLOCK_DIRECTIM,
                     CapabilityBlock.BLOCK_FILE_GET,
@@ -428,17 +426,16 @@ public abstract class BasicConn extends AbstractFlapConn {
                     CapabilityBlock.BLOCK_VOICE,
                     CapabilityBlock.BLOCK_ADDINS,
                     CapabilityBlock.BLOCK_ICQCOMPATIBLE,
-                    CapabilityBlock.BLOCK_SOMETHING,
-                });
+                    CapabilityBlock.BLOCK_SOMETHING
+                );
 
-                List caps = new ArrayList(Arrays.asList(
-                        info.getCapabilityBlocks()));
+                List<CapabilityBlock> caps = new ArrayList<CapabilityBlock>(info.getCapabilityBlocks());
                 caps.removeAll(known);
                 if (!caps.isEmpty()) {
                     System.out.println(sn + " has " + caps.size()
                             + " unknown caps:");
-                    for (Iterator it = caps.iterator(); it.hasNext();) {
-                        System.out.println("- " + it.next());
+                    for (CapabilityBlock cap : caps) {
+                        System.out.println("- " + cap);
                     }
                 }
 /*
@@ -464,7 +461,7 @@ public abstract class BasicConn extends AbstractFlapConn {
         } else if (cmd instanceof ServerVersionsCmd) {
             ServerVersionsCmd svc = (ServerVersionsCmd) cmd;
 
-            SnacFamilyInfo[] familyInfos = svc.getSnacFamilyInfos();
+            List<SnacFamilyInfo> familyInfos = svc.getSnacFamilyInfos();
         }
     }
 
@@ -480,12 +477,13 @@ public abstract class BasicConn extends AbstractFlapConn {
         if (cmd instanceof RateInfoCmd) {
             RateInfoCmd ric = (RateInfoCmd) cmd;
 
-            RateClassInfo[] rateClasses = ric.getRateClassInfos();
+            List<RateClassInfo> rateClasses = ric.getRateClassInfos();
 
-            int[] classes = new int[rateClasses.length];
-            for (int i = 0; i < rateClasses.length; i++) {
-                classes[i] = rateClasses[i].getRateClass();
-                System.out.println("- " + rateClasses[i] + ": " + Arrays.asList(rateClasses[i].getCommands()));
+            int[] classes = new int[rateClasses.size()];
+            for (int i = 0; i < rateClasses.size(); i++) {
+                RateClassInfo rateClass = rateClasses.get(i);
+                classes[i] = rateClass.getRateClass();
+                System.out.println("- " + rateClass + ": " + rateClass.getCommands());
             }
 
             request(new RateAck(classes));
@@ -495,11 +493,11 @@ public abstract class BasicConn extends AbstractFlapConn {
     public int[] getSnacFamilies() { return snacFamilies; }
 
     protected void setSnacFamilies(int[] families) {
-        this.snacFamilies = (int[]) families.clone();
+        this.snacFamilies = families.clone();
         Arrays.sort(snacFamilies);
     }
 
-    protected void setSnacFamilyInfos(SnacFamilyInfo[] infos) {
+    protected void setSnacFamilyInfos(Collection<SnacFamilyInfo> infos) {
         snacFamilyInfos = infos;
     }
 

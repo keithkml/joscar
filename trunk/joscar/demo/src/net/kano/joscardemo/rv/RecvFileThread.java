@@ -54,6 +54,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
+import java.util.List;
 
 public class RecvFileThread extends Thread {
     private JoscarTester tester;
@@ -116,9 +117,9 @@ public class RecvFileThread extends Thread {
 
                 System.out.println("header: " + header);
 
-                String[] parts = header.getFilename().getSegments();
+                List<String> parts = header.getFilename().getSegments();
                 String filename;
-                if (parts.length > 0) filename = "dl-" + parts[parts.length-1];
+                if (parts.size() > 0) filename = "dl-" + parts.get(parts.size()-1);
                 else filename = "dl-" + session.getScreenname();
                 System.out.println("writing to file " + filename);
 
