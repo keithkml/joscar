@@ -65,7 +65,7 @@ public class GroupItem extends AbstractItemObj {
     private static final int TYPE_BUDDIES = 0x00c8;
 
     /** This group's name. */
-    private final String name;
+    private String name;
     /** This group's group ID. */
     private final int id;
     /** The ID's of the buddies in this group. */
@@ -159,7 +159,7 @@ public class GroupItem extends AbstractItemObj {
 
         this.name = name;
         this.id = id;
-        this.buddies = (int[]) (buddies == null ? null : buddies.clone());
+        this.buddies = buddies == null ? null : buddies.clone();
     }
 
     /**
@@ -186,7 +186,7 @@ public class GroupItem extends AbstractItemObj {
      *         buddy field
      */
     public synchronized final int[] getBuddies() {
-        return (int[]) (buddies == null ? null : buddies.clone());
+        return buddies == null ? null : buddies.clone();
     }
 
     /**
@@ -200,6 +200,10 @@ public class GroupItem extends AbstractItemObj {
      */
     public synchronized final void setBuddies(int[] buddies) {
         this.buddies = DefensiveTools.getSafeMinArrayCopy(buddies, "buddies", 0);
+    }
+
+    public void setGroupName(String name) {
+        this.name = name;
     }
 
     public synchronized SsiItem toSsiItem() {
