@@ -33,205 +33,26 @@
 
 package net.kano.joustsim.oscar.oscar.service.ssi;
 
-import net.kano.joscar.ssiitem.BuddyItem;
-import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joustsim.Screenname;
 
-//TODO: item objects are mutable. we shouldn't make them public, or we should clone them
-public class Buddy {
-    private final SimpleBuddyList buddyList;
+public interface Buddy {
+    BuddyList getBuddyList();
 
-    private CopyOnWriteArrayList<BuddyListener> listeners
-            = new CopyOnWriteArrayList<BuddyListener>();
+    boolean isActive();
 
-    private final int itemId;
-    private BuddyItem item;
-    private boolean active = true;
+    Screenname getScreenname();
 
-    private Screenname screenname;
-    private String alias;
-    private String buddyComment;
+    String getAlias();
 
-    private int alertActionMask;
-    private String alertSound;
-    private int alertEventMask;
+    int getAlertActionMask();
 
-    public Buddy(SimpleBuddyList list, BuddyItem item) {
-        this.buddyList = list;
+    String getAlertSound();
 
-        this.itemId = item.getId();
-        setItem(item);
-    }
+    int getAlertEventMask();
 
-    public BuddyItem getItem() {
-        synchronized(getBuddyListLock()) {
-            return item;
-        }
-    }
+    String getBuddyComment();
 
-    public void setItem(BuddyItem item) {
-        synchronized(getBuddyListLock()) {
-            if (item.getId() != itemId) {
-                throw new IllegalArgumentException("item " + item + " does not "
-                        + "match ID " + itemId);
-            }
-            this.item = item;
-            screenname = new Screenname(item.getScreenname());
-            alias = item.getAlias();
-            alertActionMask = item.getAlertActionMask();
-            alertSound = item.getAlertSound();
-            alertEventMask = item.getAlertWhenMask();
-            buddyComment = item.getBuddyComment();
-        }
-    }
+    void addBuddyListener(BuddyListener listener);
 
-    protected BuddyState saveState() {
-        synchronized(getBuddyListLock()) {
-            return new BuddyState();
-        }
-    }
-
-    public void detectChanges(BuddyState oldState, BuddyState newState) {
-        Screenname oldSn = oldState.getScreenname();
-        Screenname newSn = newState.getScreenname();
-        if (!Group.areEqual(oldSn.getFormatted(), newSn.getFormatted())) {
-            for (BuddyListener listener : listeners) {
-                listener.screennameChanged(this, oldSn, newSn);
-            }
-        }
-        String oldAlias = oldState.getAlias();
-        String newAlias = newState.getAlias();
-        if (!Group.areEqual(oldAlias, newAlias)) {
-            for (BuddyListener listener : listeners) {
-                listener.aliasChanged(this, oldAlias, newAlias);
-            }
-        }
-        String oldComment = oldState.getBuddyComment();
-        String newComment = newState.getBuddyComment();
-        if (!Group.areEqual(oldComment, newComment)) {
-            for (BuddyListener listener : listeners) {
-                listener.buddyCommentChanged(this, oldComment, newComment);
-            }
-        }
-        int oldAlertAction = oldState.getAlertActionMask();
-        int newAlertAction = newState.getAlertActionMask();
-        if (oldAlertAction != newAlertAction) {
-            for (BuddyListener listener : listeners) {
-                listener.alertActionChanged(this, oldAlertAction, newAlertAction);
-            }
-        }
-        String oldAlertSound = oldState.getAlertSound();
-        String newAlertSound = newState.getAlertSound();
-        if (!Group.areEqual(oldAlertSound, newAlertSound)) {
-            for (BuddyListener listener : listeners) {
-                listener.alertSoundChanged(this, oldAlertSound, newAlertSound);
-            }
-        }
-        int oldAlertEvent = oldState.getAlertEventMask();
-        int newAlertEvent = newState.getAlertEventMask();
-        if (oldAlertEvent != newAlertEvent) {
-            for (BuddyListener listener : listeners) {
-                listener.alertTimeChanged(this, oldAlertEvent, newAlertEvent);
-            }
-        }
-    }
-
-    protected class BuddyState {
-        private Screenname screenname;
-        private String alias;
-        private String buddyComment;
-
-        private int alertActionMask;
-        private String alertSound;
-        private int alertEventMask;
-
-        public BuddyState() {
-            this.screenname = Buddy.this.screenname;
-            this.alias = Buddy.this.alias;
-            this.buddyComment = Buddy.this.buddyComment;
-            this.alertActionMask = Buddy.this.alertActionMask;
-            this.alertSound = Buddy.this.alertSound;
-            this.alertEventMask = Buddy.this.alertEventMask;
-        }
-
-        public Screenname getScreenname() {
-            return screenname;
-        }
-
-        public String getAlias() {
-            return alias;
-        }
-
-        public String getBuddyComment() {
-            return buddyComment;
-        }
-
-        public int getAlertActionMask() {
-            return alertActionMask;
-        }
-
-        public String getAlertSound() {
-            return alertSound;
-        }
-
-        public int getAlertEventMask() {
-            return alertEventMask;
-        }
-    }
-
-    private Object getBuddyListLock() {
-        return buddyList.getLock();
-    }
-
-    public void setActive(boolean active) {
-        synchronized(getBuddyListLock()) {
-            this.active = active;
-        }
-    }
-
-    public boolean isActive() {
-        synchronized(getBuddyListLock()) {
-            return active;
-        }
-    }
-
-    public Screenname getScreenname() {
-        synchronized(getBuddyListLock()) {
-            return screenname;
-        }
-    }
-
-    public String getAlias() {
-        synchronized(getBuddyListLock()) {
-            return alias;
-        }
-    }
-
-    public int getAlertActionMask() {
-        synchronized(getBuddyListLock()) {
-            return alertActionMask;
-        }
-    }
-
-    public String getAlertSound() {
-        synchronized(getBuddyListLock()) {
-            return alertSound;
-        }
-    }
-
-    public int getAlertEventMask() {
-        synchronized(getBuddyListLock()) {
-            return alertEventMask;
-        }
-    }
-
-    public String getBuddyComment() {
-        synchronized(getBuddyListLock()) {
-            return buddyComment;
-        }
-    }
-
-    public String toString() {
-        return "Buddy " + getScreenname() + " (alias " + getAlias() + ")";
-    }
+    void removeBuddyListener(BuddyListener listener);
 }

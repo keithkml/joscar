@@ -36,24 +36,25 @@ package net.kano.joustsim.oscar.oscar.service.ssi;
 import java.util.List;
 
 public interface BuddyListLayoutListener {
-    void groupsReordered(BuddyList list, List<Group> oldOrder,
-            List<Group> newOrder);
+    void groupsReordered(BuddyList list, List<? extends Group> oldOrder,
+            List<? extends Group> newOrder);
 
-    void groupAdded(BuddyList list, List<Group> oldItems, List<Group> newItems,
-            Group group, List<Buddy> buddies);
+    void groupAdded(BuddyList list, List<? extends Group> oldItems,
+            List<? extends Group> newItems,
+            Group group, List<? extends Buddy> buddies);
 
-    void groupRemoved(BuddyList list, List<Group> oldItems,
-            List<Group> newItems,
+    void groupRemoved(BuddyList list, List<? extends Group> oldItems,
+            List<? extends Group> newItems,
             Group group);
 
-    void buddyAdded(BuddyList list, Group group, List<Buddy> oldItems,
-            List<Buddy> newItems,
+    void buddyAdded(BuddyList list, Group group, List<? extends Buddy> oldItems,
+            List<? extends Buddy> newItems,
             Buddy buddy);
 
-    void buddyRemoved(BuddyList list, Group group, List<Buddy> oldItems,
-            List<Buddy> newItems,
+    void buddyRemoved(BuddyList list, Group group, List<? extends Buddy> oldItems,
+            List<? extends Buddy> newItems,
             Buddy buddy);
 
     void buddiesReordered(BuddyList list, Group group,
-            List<Buddy> oldBuddies, List<Buddy> newBuddies);
+            List<? extends Buddy> oldBuddies, List<? extends Buddy> newBuddies);
 }

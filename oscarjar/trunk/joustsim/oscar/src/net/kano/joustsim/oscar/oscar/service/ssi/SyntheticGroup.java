@@ -37,13 +37,13 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
 
-class SyntheticGroup extends Group {
+class SyntheticGroup extends AbstractGroup {
     protected SyntheticGroup(SimpleBuddyList buddyList) {
         super(buddyList);
     }
 
-    protected List<Buddy> getSortedBuddies() {
-        List<Buddy> list = new ArrayList<Buddy>(getBuddies());
+    protected List<SimpleBuddy> getSortedBuddies() {
+        List<SimpleBuddy> list = new ArrayList<SimpleBuddy>(getBuddies());
         Collections.sort(list, SimpleBuddyList.COMPARATOR_SN);
         return list;
     }

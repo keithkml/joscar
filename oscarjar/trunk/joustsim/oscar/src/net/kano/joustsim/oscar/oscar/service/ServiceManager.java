@@ -40,7 +40,7 @@ import net.kano.joscar.snaccmd.auth.AuthCommand;
 import net.kano.joscar.snaccmd.conn.ConnCommand;
 import net.kano.joscar.snaccmd.icbm.IcbmCommand;
 
-import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -57,9 +57,8 @@ public final class ServiceManager {
         return services.get(family);
     }
 
-    public synchronized Service[] getServices() {
-        Collection<? extends Service> vals = services.values();
-        return (Service[]) vals.toArray(new Service[vals.size()]);
+    public synchronized List<Service> getServices() {
+        return DefensiveTools.getUnmodifiableCopy(services.values());
     }
 
     public Service getBosService() {
@@ -69,7 +68,7 @@ public final class ServiceManager {
     public Service getLoginService() {
         return getService(AuthCommand.FAMILY_AUTH);
     }
-    
+
     public Service getIcbmService() {
         return getService(IcbmCommand.FAMILY_ICBM);
     }

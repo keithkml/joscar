@@ -40,25 +40,37 @@ import net.kano.joscar.snaccmd.ssi.DeleteItemsCmd;
 import net.kano.joscar.snaccmd.ssi.ModifyItemsCmd;
 import net.kano.joscar.snaccmd.ssi.SsiDataModResponse;
 import net.kano.joscar.snaccmd.ssi.SsiItem;
+import net.kano.joscar.ssiitem.BuddyItem;
 import net.kano.joscar.ssiitem.GroupItem;
 import net.kano.joscar.ssiitem.RootItem;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Collection;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
-class SsiBuddyList extends SimpleBuddyList {
+class SsiBuddyList extends SimpleBuddyList implements MutableBuddyList {
     private final SsiService service;
 
     protected SsiBuddyList(SsiService service) {
         this.service = service;
     }
 
+    protected SimpleBuddy createBuddy(BuddyItem buddyItem) {
+        return new SsiBuddy(this, buddyItem);
+    }
+
+    protected SimpleBuddyGroup createBuddyGroup(GroupItem groupItem) {
+        return new SsiBuddyGroup(this, groupItem);
+    }
+
     public void addGroup(String name) {
-        final int id = getUniqueItemId(SsiItem.TYPE_GROUP, SsiItem.GROUP_ROOT);
-        CreateItemsCmd cmd1 = new CreateItemsCmd(
-                Arrays.asList(new GroupItem(name, id).toSsiItem()));
-        service.sendSsiModification(cmd1, new SnacRequestAdapter() {
+        final int id = service.getUniqueGroupId();
+        CreateItemsCmd cmd = new CreateItemsCmd(new GroupItem(name, id).toSsiItem());
+        service.sendSsiModification(cmd, new SnacRequestAdapter() {
             public void handleResponse(SnacResponseEvent e) {
                 if (e.getSnacCommand() instanceof SsiDataModResponse) {
                     SsiDataModResponse dataModResponse
@@ -75,11 +87,16 @@ class SsiBuddyList extends SimpleBuddyList {
 
             private boolean addGroupToRootItem(RootItem rootItem, int id) {
                 int[] oldIds = rootItem.getGroupids();
-                for (int oldId : oldIds) {
-                    if (oldId == id) return false;
+                int[] newIds;
+                if (oldIds == null) {
+                    newIds = new int[1];
+                } else {
+                    for (int oldId : oldIds) {
+                        if (oldId == id) return false;
+                    }
+                    newIds = new int[oldIds.length + 1];
+                    System.arraycopy(oldIds, 0, newIds, 0, oldIds.length);
                 }
-                int[] newIds = new int[oldIds.length + 1];
-                System.arraycopy(oldIds, 0, newIds, 0, oldIds.length);
                 newIds[newIds.length-1] = id;
 
                 RootItem newRootItem = new RootItem(rootItem);
@@ -91,22 +108,53 @@ class SsiBuddyList extends SimpleBuddyList {
         });
     }
 
+    public void moveBuddies(Collection<? extends Buddy> buddies, MutableGroup group) {
+        Map<Group,List<Buddy>> group2buddy = new HashMap<Group, List<Buddy>>();
+        for (Buddy buddy : buddies) {
+            for (Group parent : getGroups()) {
+                if (parent == group) continue;
 
-    private int getUniqueItemId(int type, int parent) {
-        return service.getUniqueItemId(type, parent);
+                if (parent.getBuddiesCopy().contains(buddy)) {
+                    List<Buddy> ingroup = group2buddy.get(parent);
+                    if (ingroup == null) {
+                        ingroup = new ArrayList<Buddy>();
+                        group2buddy.put(parent, ingroup);
+                    }
+                    ingroup.add(buddy);
+                }
+            }
+        }
+
+
+        // this list might be different than the passed buddies because some of
+        // the buddies might already be in the right group
+        Set<Buddy> toAdd = new LinkedHashSet<Buddy>();
+        for (Map.Entry<Group, List<Buddy>> entry : group2buddy.entrySet()) {
+            Group parent = entry.getKey();
+            List<Buddy> ingroup = entry.getValue();
+            if (parent instanceof MutableGroup) {
+                MutableGroup mutableGroup = (MutableGroup) parent;
+                mutableGroup.deleteBuddies(ingroup);
+            }
+            toAdd.addAll(ingroup);
+        }
+        group.copyBuddies(toAdd);
     }
 
     public void deleteGroupAndBuddies(Group group) {
         List<SsiItem> items = new ArrayList<SsiItem>();
         for (Buddy buddy : group.getBuddiesCopy()) {
-            items.add(buddy.getItem().toSsiItem());
+            if (buddy instanceof SimpleBuddy) {
+                SimpleBuddy simpleBuddy = (SimpleBuddy) buddy;
+                items.add(simpleBuddy.getItem().toSsiItem());
+            }
         }
         final Integer groupid;
-        if (group instanceof BuddyGroup) {
-            BuddyGroup buddyGroup = (BuddyGroup) group;
+        if (group instanceof SimpleBuddyGroup) {
+            SimpleBuddyGroup buddyGroup = (SimpleBuddyGroup) group;
             SsiItem groupItem = buddyGroup.getItem().toSsiItem();
             items.add(groupItem);
-            groupid = groupItem.getId();
+            groupid = groupItem.getParentId();
         } else {
             groupid = null;
         }
@@ -129,30 +177,39 @@ class SsiBuddyList extends SimpleBuddyList {
                 // figure out how long to make the new array (there might be
                 // duplicate copies of groupid in the list)
                 int[] oldIds = rootItem.getGroupids();
-                int total = 0;
-                for (int i = 0; i < oldIds.length; i++) {
-                    if (oldIds[i] == groupid) {
-                        total++;
+                int[] newIds;
+                if (oldIds != null) {
+                    int total = 0;
+                    for (int i = 0; i < oldIds.length; i++) {
+                        if (oldIds[i] == groupid) total++;
                     }
-                }
-                if (total == 0) return false;
+                    if (total == 0) return false;
 
-                // copy the ID's over
-                int[] newIds = new int[oldIds.length - total];
-                int i = 0;
-                for (int id : oldIds) {
-                    if (id == groupid) continue;
-                    newIds[i] = id;
-                    i++;
+                    // copy the ID's over
+                    newIds = new int[oldIds.length - total];
+                    int i = 0;
+                    for (int id : oldIds) {
+                        if (id == groupid) continue;
+                        newIds[i] = id;
+                        i++;
+                    }
+                    assert i == newIds.length;
+
+                } else {
+                    newIds = new int[0];
                 }
-                assert i == newIds.length;
 
                 // modify the root item
                 RootItem newRootItem = new RootItem(rootItem);
                 newRootItem.setGroupids(newIds);
-                service.sendSsiModification(new ModifyItemsCmd(newRootItem.toSsiItem()));
+                service.sendSsiModification(
+                        new ModifyItemsCmd(newRootItem.toSsiItem()));
                 return true;
             }
         });
+    }
+
+    public SsiService getSsiService() {
+        return service;
     }
 }

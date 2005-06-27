@@ -36,7 +36,7 @@ package net.kano.joustsim.oscar.oscar.service.ssi;
 import java.util.List;
 
 public interface DetectedChangeListener<E> {
-    void itemAdded(List<E> oldItems, List<E> newItems, E item);
-    void itemRemoved(List<E> oldItems, List<E> newItems, E item);
-    void itemsReordered(List<E> oldItems, List<E> newItems);
+    void itemAdded(List<? extends E> oldItems, List<? extends E> newItems, E item);
+    void itemRemoved(List<? extends E> oldItems, List<? extends E> newItems, E item);
+    void itemsReordered(List<? extends E> oldItems, List<? extends E> newItems);
 }

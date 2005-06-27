@@ -40,8 +40,8 @@ public final class ChangeTools {
     private ChangeTools() { }
 
 
-    public static <E> void detectChanges(List<E> oldItems,
-            List<E> newItems, DetectedChangeListener<E> listener) {
+    public static <E> void detectChanges(List<? extends E> oldItems,
+            List<? extends E> newItems, DetectedChangeListener<? super E> listener) {
 //        List<Group> oldGroups = new ArrayList<Group>(
 //                saved.getBuddies().keySet());
 //        List<Group> newGroups = groups;
@@ -77,5 +77,9 @@ public final class ChangeTools {
             // some buddies were re-ordered
             listener.itemsReordered(oldItems, newItems);
         }
+    }
+
+    public static boolean areEqual(Object first, Object newName) {
+        return first == null ? newName == null : first.equals(newName);
     }
 }

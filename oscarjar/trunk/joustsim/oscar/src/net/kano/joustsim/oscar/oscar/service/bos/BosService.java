@@ -100,8 +100,8 @@ public class BosService extends Service {
 
             ServerReadyCmd src = (ServerReadyCmd) snac;
 
-            Service[] services = getOscarConnection().getServices();
-            List<SnacFamilyInfo> familyInfos = new ArrayList<SnacFamilyInfo>(services.length);
+            List<Service> services = getOscarConnection().getServices();
+            List<SnacFamilyInfo> familyInfos = new ArrayList<SnacFamilyInfo>(services.size());
             for (Service service : services) {
                 familyInfos.add(service.getSnacFamilyInfo());
             }
@@ -111,6 +111,7 @@ public class BosService extends Service {
             sendSnac(new ClientVersionsCmd(familyInfos));
             sendSnac(new RateInfoRequest());
 
+            getOscarConnection().postServiceEvent(new ServerReadyEvent(this));
             serverReady();
 
         } else if (snac instanceof RateInfoCmd) {
@@ -155,4 +156,5 @@ public class BosService extends Service {
     private synchronized List<SnacFamilyInfo> getSnacFamilyInfos() {
         return snacFamilyInfos;
     }
+
 }

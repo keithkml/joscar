@@ -60,6 +60,7 @@ import net.kano.joscar.snac.SnacResponseEvent;
 import net.kano.joscar.snac.SnacResponseListener;
 import net.kano.joscar.snaccmd.DefaultClientFactoryList;
 import net.kano.joustsim.oscar.oscar.service.Service;
+import net.kano.joustsim.oscar.oscar.service.ServiceEvent;
 import net.kano.joustsim.oscar.oscar.service.ServiceFactory;
 import net.kano.joustsim.oscar.oscar.service.ServiceListener;
 import net.kano.joustsim.oscar.oscar.service.ServiceManager;
@@ -91,6 +92,7 @@ public class OscarConnection {
     private CopyOnWriteArrayList<OscarConnListener> listeners
             = new CopyOnWriteArrayList<OscarConnListener>();
     private int lastCloseCode = -1;
+    private List<ServiceEvent> eventLog = new ArrayList<ServiceEvent>();
 
     public OscarConnection(String host, int port) {
         DefensiveTools.checkNull(host, "host");
@@ -152,7 +154,7 @@ public class OscarConnection {
     private void internalConnected() {
         logger.fine("Connected to " + host);
 
-        Service[] services = getServices();
+        List<Service> services = getServices();
         for (Service service : services) {
             service.connected();
         }
@@ -318,9 +320,11 @@ public class OscarConnection {
             int[] families = snacFamilies.clone();
             Arrays.sort(families);
             this.snacFamilies = families;
+            int[] sorted = families;
+            Arrays.sort(sorted);
 
             services = new ArrayList<Service>(snacFamilies.length);
-            for (int family : snacFamilies) {
+            for (int family : sorted) {
                 Service service = serviceFactory.getService(this, family);
 
                 if (service == null) {
@@ -359,8 +363,9 @@ public class OscarConnection {
                 }
             });
 
-            if (connected) service.connected();
-            else if (disconnected) service.disconnected();
+            if (connected) {
+                service.connected();
+            } else if (disconnected) service.disconnected();
         }
 
         registeredSnacFamilies();
@@ -422,7 +427,7 @@ public class OscarConnection {
         return serviceManager.getService(family);
     }
 
-    public Service[] getServices() {
+    public List<Service> getServices() {
         return serviceManager.getServices();
     }
 
@@ -432,5 +437,26 @@ public class OscarConnection {
 
     public synchronized int getLastCloseCode() {
         return lastCloseCode;
+    }
+
+    public void postServiceEvent(ServiceEvent event) {
+        synchronized (this) {
+            eventLog.add(event);
+        }
+        for (Service service : getServices()) {
+            service.handleEvent(event);
+        }
+    }
+
+    public synchronized <E extends ServiceEvent> List<E> getServiceEvents(Class<E> cls) {
+        List<E> matches = new ArrayList<E>();
+        for (ServiceEvent event : eventLog) {
+            if (cls.isInstance(event)) matches.add((E) event);
+        }
+        return matches;
+    }
+
+    public synchronized List<ServiceEvent> getEventLog() {
+        return DefensiveTools.getUnmodifiableCopy(eventLog);
     }
 }

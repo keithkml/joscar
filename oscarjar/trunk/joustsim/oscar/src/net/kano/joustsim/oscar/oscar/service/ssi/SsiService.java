@@ -56,20 +56,34 @@ import net.kano.joscar.snaccmd.ssi.SsiRightsRequest;
 import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.oscar.oscar.OscarConnection;
 import net.kano.joustsim.oscar.oscar.service.Service;
+import net.kano.joustsim.oscar.oscar.service.ServiceEvent;
+import net.kano.joustsim.oscar.oscar.service.bos.ServerReadyEvent;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.TreeSet;
 
 public class SsiService extends Service {
-    private BuddyList buddyList = new SsiBuddyList(this);
+    private SsiBuddyList buddyList = new SsiBuddyList(this);
+    private boolean requestedList = false;
+    private static final int NUM_IDS = 0x7fff+1;
 
     public SsiService(AimConnection aimConnection,
             OscarConnection oscarConnection) {
         super(aimConnection, oscarConnection, SsiCommand.FAMILY_SSI);
 
-        oscarConnection.getSnacProcessor().addGlobalResponseListener(new SnacResponseListener() {
+    }
+
+    public SnacFamilyInfo getSnacFamilyInfo() {
+        return SsiCommand.FAMILY_INFO;
+    }
+
+    public void connected() {
+        getOscarConnection().getSnacProcessor().addGlobalResponseListener(new SnacResponseListener() {
             public void handleResponse(SnacResponseEvent e) {
                 if (e.getSnacCommand() instanceof SsiDataModResponse) {
                     SsiDataModResponse dataModResponse = (SsiDataModResponse) e.getSnacCommand();
@@ -87,23 +101,40 @@ public class SsiService extends Service {
                     for (int i = 0; i < results.length; i++) {
                         int result = results[i];
 
+                        SsiItem item = items.get(i);
                         if (result == SsiDataModResponse.RESULT_SUCCESS) {
-                            SsiItem item = items.get(i);
-                            if (create) itemCreated(item);
-                            else if (modify) itemModified(item);
-                            else if (delete) itemDeleted(item);
+                            if (create) {
+                                int n = 0x8859;
+                                itemCreated(item);
+                            } else if (modify) {
+                                itemModified(item);
+                            } else if (delete) itemDeleted(item);
+                        } else if (result == SsiDataModResponse.RESULT_ID_TAKEN) {
+                            int id = item.getId();
+                            Set<Integer> possible = new TreeSet<Integer>(
+                                    getIdsForType(item.getItemType()));
+                            System.out.println("ID taken: " + id);
+                            System.out.println("possible ID's: " + possible);
                         }
                     }
                 }
             }
         });
+        if (!getOscarConnection().getServiceEvents(ServerReadyEvent.class).isEmpty()) {
+            requestList();
+        }
     }
 
-    public SnacFamilyInfo getSnacFamilyInfo() {
-        return SsiCommand.FAMILY_INFO;
+    public void handleEvent(ServiceEvent event) {
+        super.handleEvent(event);
+        if (event instanceof ServerReadyEvent) requestList();
     }
 
-    public void connected() {
+    private void requestList() {
+        synchronized(this) {
+            if (requestedList) return;
+            requestedList = true;
+        }
         sendSnac(new SsiRightsRequest());
         sendSnac(new SsiDataRequest());
     }
@@ -142,7 +173,7 @@ public class SsiService extends Service {
         }
     }
 
-    public BuddyList getBuddyList() {
+    public MutableBuddyList getBuddyList() {
         return buddyList;
     }
 
@@ -161,7 +192,8 @@ public class SsiService extends Service {
 
     public void itemModified(SsiItem item) {
         ItemId id = new ItemId(item);
-        if (items.get(id) == null) {
+        SsiItem oldItem = items.get(id);
+        if (oldItem == null) {
             throw new IllegalArgumentException("item does not exist: " + id
                     + " - " + item);
         }
@@ -179,12 +211,32 @@ public class SsiService extends Service {
 
     private Random random = new Random();
 
-    public int getUniqueItemId(int type, int parent) {
-        //TODO: include ids in group child lists
-        int nextid = random.nextInt();
-        while (items.containsKey(new ItemId(type, parent, nextid))) {
-            nextid = random.nextInt(0xffff+1);
+    int getUniqueItemId(int type, int parent) {
+        if (type == SsiItem.TYPE_GROUP) {
+            throw new IllegalArgumentException("groups all have id 0");
         }
+        Set<Integer> idsForType = getIdsForType(type);
+        //TODO: include ids in group child lists
+        int nextid;
+        do {
+            nextid = random.nextInt(NUM_IDS);
+        } while (idsForType.contains(nextid));
+        return nextid;
+    }
+
+    private Set<Integer> getIdsForType(int type) {
+        Set<Integer> idsForType = new HashSet<Integer>(items.size());
+        for (ItemId id : items.keySet()) {
+            if (id.getType() == type) idsForType.add(id.getId());
+        }
+        return idsForType;
+    }
+
+    int getUniqueGroupId() {
+        int nextid;
+        do {
+            nextid = random.nextInt(NUM_IDS);
+        } while (items.containsKey(new ItemId(SsiItem.TYPE_GROUP, nextid, 0)));
         return nextid;
     }
 
@@ -210,6 +262,18 @@ public class SsiService extends Service {
 
         public ItemId(SsiItem item) {
             this(item.getItemType(), item.getParentId(), item.getId());
+        }
+
+        public int getType() {
+            return type;
+        }
+
+        public int getParent() {
+            return parent;
+        }
+
+        public int getId() {
+            return id;
         }
 
         public boolean equals(Object o) {

@@ -35,9 +35,10 @@ package net.kano.joustsim.app.forms;
 
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joustsim.oscar.oscar.service.ssi.Buddy;
+import net.kano.joustsim.oscar.oscar.service.ssi.BuddyList;
 import net.kano.joustsim.oscar.oscar.service.ssi.BuddyListLayoutListener;
 import net.kano.joustsim.oscar.oscar.service.ssi.Group;
-import net.kano.joustsim.oscar.oscar.service.ssi.BuddyList;
+import net.kano.joustsim.oscar.oscar.service.ssi.MutableGroup;
 
 import javax.swing.event.TreeModelEvent;
 import javax.swing.event.TreeModelListener;
@@ -56,8 +57,8 @@ public class BuddyListModel implements TreeModel {
     public BuddyListModel(BuddyList list) {
         this.list = list;
         list.addRetroactiveLayoutListener(new BuddyListLayoutListener() {
-            public void groupsReordered(BuddyList list, List<Group> oldOrder,
-                    List<Group> newOrder) {
+            public void groupsReordered(BuddyList list, List<? extends Group> oldOrder,
+                    List<? extends Group> newOrder) {
                 List<GroupHolder> newGroups = new ArrayList<GroupHolder>();
                 for (Group group : newOrder) {
                     BuddyListModel.GroupHolder holder = getGroupHolder(group);
@@ -72,8 +73,9 @@ public class BuddyListModel implements TreeModel {
                 }
             }
 
-            public void groupAdded(BuddyList list, List<Group> oldItems,
-                    List<Group> newItems, Group group, List<Buddy> buddies) {
+            public void groupAdded(BuddyList list, List<? extends Group> oldItems,
+                    List<? extends Group> newItems, Group group,
+                    List<? extends Buddy> buddies) {
                 int index = newItems.indexOf(group);
                 assert index != -1 : newItems + " - " + group;
 
@@ -101,8 +103,8 @@ public class BuddyListModel implements TreeModel {
                 }
             }
 
-            public void groupRemoved(BuddyList list, List<Group> oldItems,
-                    List<Group> newItems, Group group) {
+            public void groupRemoved(BuddyList list, List<? extends Group> oldItems,
+                    List<? extends Group> newItems, Group group) {
                 BuddyListModel.GroupHolder holder = getGroupHolder(group);
                 int index = groups.indexOf(holder);
                 groups.remove(index);
@@ -114,7 +116,8 @@ public class BuddyListModel implements TreeModel {
             }
 
             public void buddyAdded(BuddyList list, Group group,
-                    List<Buddy> oldItems, List<Buddy> newItems, Buddy buddy) {
+                    List<? extends Buddy> oldItems, List<? extends Buddy> newItems,
+                    Buddy buddy) {
                 int index = newItems.indexOf(buddy);
                 assert index != -1 : newItems + " - " + buddy;
                 GroupHolder groupHolder = getGroupHolder(group);
@@ -135,26 +138,29 @@ public class BuddyListModel implements TreeModel {
                 groupHolder.addBuddy(toinsert, newHolder);
                 for (TreeModelListener listener : listeners) {
                     listener.treeNodesInserted(new TreeModelEvent(
-                            BuddyListModel.this, new Object[] { groupHolder },
+                            BuddyListModel.this, new Object[] { getRoot(), groupHolder },
                             new int[] { toinsert }, new Object[] { newHolder }));
                 }
             }
 
+
             public void buddyRemoved(BuddyList list, Group group,
-                    List<Buddy> oldItems, List<Buddy> newItems, Buddy buddy) {
+                    List<? extends Buddy> oldItems, List<? extends Buddy> newItems,
+                    Buddy buddy) {
                 BuddyListModel.GroupHolder groupHolder = getGroupHolder(group);
                 BuddyHolder holder = groupHolder.getBuddyHolder(buddy);
                 int index = groupHolder.getIndexOfBuddy(holder);
                 groupHolder.removeBuddy(index);
                 for (TreeModelListener listener : listeners) {
                     listener.treeNodesRemoved(new TreeModelEvent(
-                            BuddyListModel.this, new Object[] { groupHolder },
+                            BuddyListModel.this, new Object[] { getRoot(), groupHolder },
                             new int[] { index }, new Object[] { holder }));
                 }
             }
 
             public void buddiesReordered(BuddyList list, Group group,
-                    List<Buddy> oldBuddies, List<Buddy> newBuddies) {
+                    List<? extends Buddy> oldBuddies,
+                    List<? extends Buddy> newBuddies) {
                 BuddyListModel.GroupHolder holder = getGroupHolder(group);
                 List<BuddyHolder> newHolders = new ArrayList<BuddyHolder>();
                 for (Buddy buddy : newBuddies) {
@@ -166,7 +172,7 @@ public class BuddyListModel implements TreeModel {
                 for (TreeModelListener listener : listeners) {
                     listener.treeStructureChanged(new TreeModelEvent(
                             BuddyListModel.this,
-                            new Object[] { holder }));
+                            new Object[] { getRoot(), holder }));
                 }
             }
         });
@@ -210,6 +216,19 @@ public class BuddyListModel implements TreeModel {
     }
 
     public void valueForPathChanged(TreePath path, Object newValue) {
+        if (!(newValue instanceof String)) return;
+        String newName = (String) newValue;
+
+        Object[] objs = path.getPath();
+        int len = objs.length;
+        if (len == 2) {
+            GroupHolder holder = (GroupHolder) objs[1];
+            Group group = holder.getGroup();
+            if (group instanceof MutableGroup) {
+                MutableGroup mutableGroup = (MutableGroup) group;
+                mutableGroup.rename(newName);
+            }
+        }
     }
 
     public int getIndexOfChild(Object parent, Object child) {
@@ -230,11 +249,15 @@ public class BuddyListModel implements TreeModel {
         listeners.remove(l);
     }
 
-    private class GroupHolder {
+    public TreePath getPathToGroup(final MutableGroup mutableGroup) {
+        return new TreePath(new Object[] { getRoot(), getGroupHolder(mutableGroup) });
+    }
+
+    public static class GroupHolder {
         private final Group group;
         private List<BuddyHolder> buddies = new ArrayList<BuddyHolder>();
 
-        public GroupHolder(Group group) {
+        private GroupHolder(Group group) {
             this.group = group;
         }
 
@@ -282,10 +305,10 @@ public class BuddyListModel implements TreeModel {
         }
     }
 
-    private class BuddyHolder {
+    public static class BuddyHolder {
         private final Buddy buddy;
 
-        public BuddyHolder(Buddy buddy) {
+        private BuddyHolder(Buddy buddy) {
             this.buddy = buddy;
         }
 
@@ -294,7 +317,7 @@ public class BuddyListModel implements TreeModel {
         }
 
         public String toString() {
-            return buddy.getScreenname().getFormatted() + "(" + buddy.getAlias() + ")";
+            return buddy.getScreenname().getFormatted() + " (" + buddy.getAlias() + ")";
         }
     }
 }

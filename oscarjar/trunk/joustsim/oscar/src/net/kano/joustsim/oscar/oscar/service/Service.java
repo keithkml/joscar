@@ -173,4 +173,8 @@ public abstract class Service {
     public void handleSnacResponse(SnacResponseEvent snacResponseEvent) {
         handleSnacPacket(snacResponseEvent);
     }
+
+    public void handleEvent(ServiceEvent event) {
+
+    }
 }

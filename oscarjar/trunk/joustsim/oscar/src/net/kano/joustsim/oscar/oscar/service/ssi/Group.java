@@ -33,136 +33,14 @@
 
 package net.kano.joustsim.oscar.oscar.service.ssi;
 
-import net.kano.joscar.DefensiveTools;
-
 import java.util.List;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.concurrent.CopyOnWriteArrayList;
 
-//TODO: add thread.holdslock checks before listener calls
-public abstract class Group {
-    private final SimpleBuddyList buddyList;
-    private CopyOnWriteArrayList<GroupListener> listeners
-            = new CopyOnWriteArrayList<GroupListener>();
+public interface Group {
+    String getName();
 
-    private List<Buddy> buddies = new ArrayList<Buddy>();
+    List<? extends Buddy> getBuddiesCopy();
 
-    protected Group(SimpleBuddyList buddyList) {
-        this.buddyList = buddyList;
-    }
+    void addGroupListener(GroupListener listener);
 
-    void sortBuddies() {
-        buddies = getSortedBuddies();
-    }
-
-    protected abstract List<Buddy> getSortedBuddies();
-
-    protected List<Buddy> getBuddies() {
-        return buddies;
-    }
-
-    public abstract String getName();
-
-    public List<Buddy> getBuddiesCopy() {
-        synchronized(getBuddyListLock()) {
-            return DefensiveTools.getUnmodifiableCopy(getBuddies());
-        }
-    }
-
-    protected Object getBuddyListLock() {
-        return buddyList.getLock();
-    }
-
-    protected BuddyList getBuddyList() {
-        return buddyList;
-    }
-
-    void addBuddies(Collection<? extends Buddy> buddies) {
-        this.buddies.addAll(buddies);
-        assert isGroupValid();
-    }
-
-    void removeBuddies(Collection<? extends Buddy> buddies) {
-        this.buddies.removeAll(buddies);
-        assert isGroupValid();
-    }
-
-    void addBuddy(Buddy buddy) {
-        buddies.add(buddy);
-        assert isGroupValid();
-    }
-
-    protected boolean isGroupValid() {
-        for (Buddy buddy : buddies) {
-            if (buddy == null) return false;
-        }
-        Set<Buddy> set = new HashSet<Buddy>(buddies);
-        if (set.size() != buddies.size()) return false;
-        return true;
-    }
-
-    Buddy getBuddy(int id) {
-        for (Buddy buddy : getBuddies()) {
-            if (buddy.getItem().getId() == id) return buddy;
-        }
-        return null;
-    }
-
-    void removeBuddy(Buddy buddy) {
-        boolean removed = buddies.remove(buddy);
-        if (!removed) {
-            throw new IllegalArgumentException("buddy " + buddy + " is not "
-                    + "in group " + this);
-        }
-    }
-
-    protected CopyOnWriteArrayList<GroupListener> getListeners() {
-        return listeners;
-    }
-
-    public void addListener(GroupListener listener) {
-        listeners.addIfAbsent(listener);
-    }
-
-    public void removeListener(GroupListener listener) {
-        listeners.remove(listener);
-    }
-
-    protected GroupState saveState() {
-        return new GroupState();
-    }
-
-    protected void detectChanges(GroupState oldState, GroupState newState) {
-        assert !Thread.holdsLock(this);
-
-        String oldName = oldState.getName();
-        String newName = newState.getName();
-        if (areEqual(oldName, newName)) {
-            for (GroupListener listener : getListeners()) {
-                listener.groupNameChanged(this, oldName, newName);
-            }
-        }
-    }
-
-    public static boolean areEqual(Object first, Object newName) {
-        return first == null ? newName == null : first.equals(newName);
-    }
-
-    public String toString() {
-        return "Group " + getName() + ": " + buddies.size() + " buddies";
-    }
-
-    protected class GroupState {
-        private final String name;
-        protected GroupState() {
-            name = getName();
-        }
-
-        public String getName() {
-            return name;
-        }
-    }
+    void removeGroupListener(GroupListener listener);
 }
