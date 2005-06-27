@@ -100,9 +100,9 @@ public class BuddyItem extends AbstractItemObj {
     /** The buddy's screenname. */
     private final String sn;
     /** The ID of the parent group of this buddy. */
-    private final int groupid;
+    private int groupid;
     /** The ID of this buddy in its parent group. */
-    private final int id;
+    private int id;
 
     /** The buddy's "alias." */
     private String alias;
@@ -350,6 +350,14 @@ if ((buddyItem.getAlertWhenMask() & BuddyItem.MASK_WHEN_ONLINE) != 0) {
      * @see #getAlertActionMask
      */
     public synchronized final String getAlertSound() { return alertSound; }
+
+    public void setGroupid(int groupid) {
+        this.groupid = groupid;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
 
     /**
      * Sets this buddy's "alias" or "display name."

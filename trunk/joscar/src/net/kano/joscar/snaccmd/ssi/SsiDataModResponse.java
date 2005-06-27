@@ -97,6 +97,12 @@ public class SsiDataModResponse extends SsiCommand {
      * ICQ
      */
     public static final int RESULT_ICQ_AUTH_REQUIRED = 0x000e;
+    /**
+     * A result code indicating that the given SSI item contained invalid data.
+     * This result code is returned when a client attempts to add a buddy whose
+     * screenname is longer than the screenname length limit. 
+     */
+    public static final int RESULT_BAD_FORMAT = 0x0010;
 
     /** The result codes. */
     private final int[] results;
