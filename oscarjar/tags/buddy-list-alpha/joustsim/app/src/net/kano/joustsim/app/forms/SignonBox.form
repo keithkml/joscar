@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="net.kano.joustsim.app.forms.SignonBox">
+  <grid id="96b0" binding="mainPanel" row-count="5" column-count="1" hgap="5" vgap="-1">
+    <margin top="10" left="5" bottom="5" right="5"/>
+    <constraints>
+      <xy x="42" y="25" width="283" height="211"/>
+      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3"/>
+    </constraints>
+    <properties/>
+    <border type="none"/>
+    <children>
+      <grid id="2cbe7" binding="localPanel" row-count="2" column-count="1" hgap="-1" vgap="7">
+        <margin top="0" left="2" bottom="2" right="2"/>
+        <constraints>
+          <xy x="5" y="69" width="273" height="82"/>
+          <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="3"/>
+        </constraints>
+        <properties>
+          <enabled value="true"/>
+        </properties>
+        <border type="none"/>
+        <children>
+          <grid id="9b0f9" row-count="2" column-count="2" hgap="10" vgap="1">
+            <margin top="2" left="0" bottom="0" right="0"/>
+            <constraints>
+              <xy x="2" y="0" width="269" height="48"/>
+              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="7" anchor="0" fill="3"/>
+            </constraints>
+            <properties/>
+            <border type="none"/>
+            <children>
+              <component id="8ebe" class="javax.swing.JLabel" binding="passwordLabel">
+                <constraints>
+                  <xy x="0" y="5" width="59" height="15"/>
+                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="4" fill="0"/>
+                </constraints>
+                <properties>
+                  <text value="Password:"/>
+                </properties>
+              </component>
+              <component id="69f2c" class="javax.swing.JPasswordField" binding="passwordBox">
+                <constraints>
+                  <xy x="69" y="2" width="110" height="22"/>
+                  <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="7" anchor="8" fill="0">
+                    <preferred-size width="110" height="-1"/>
+                  </grid>
+                </constraints>
+                <properties>
+                  <toolTipText value="Enter your AIM password"/>
+                </properties>
+              </component>
+              <component id="4e9e7" class="javax.swing.JCheckBox" binding="rememberPassBox">
+                <constraints>
+                  <xy x="0" y="25" width="149" height="23"/>
+                  <grid row="1" column="0" row-span="1" col-span="2" vsize-policy="0" hsize-policy="3" anchor="8" fill="0"/>
+                </constraints>
+                <properties>
+                  <enabled value="true"/>
+                  <text value="Remember password"/>
+                  <toolTipText value="Remember your password for this screenname so you don't have to type it each time"/>
+                </properties>
+              </component>
+            </children>
+          </grid>
+          <component id="dcb83" class="javax.swing.JButton" binding="prefsButton">
+            <constraints>
+              <xy x="120" y="55" width="151" height="25"/>
+              <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="1" anchor="4" fill="0"/>
+            </constraints>
+            <properties>
+              <text value="Account Preferences"/>
+            </properties>
+          </component>
+        </children>
+      </grid>
+      <grid id="96d0a" row-count="1" column-count="2" hgap="10" vgap="10">
+        <margin top="5" left="0" bottom="0" right="0"/>
+        <constraints>
+          <xy x="126" y="156" width="152" height="30"/>
+          <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="1" anchor="4" fill="0"/>
+        </constraints>
+        <properties/>
+        <border type="none"/>
+        <children>
+          <component id="b06d1" class="javax.swing.JButton" binding="signonButton">
+            <constraints>
+              <xy x="75" y="5" width="77" height="25"/>
+              <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="1" anchor="0" fill="0"/>
+            </constraints>
+            <properties>
+              <text value="Sign On"/>
+              <toolTipText value="Sign on to AIM"/>
+            </properties>
+          </component>
+          <component id="ca43f" class="javax.swing.JButton" binding="closeButton">
+            <constraints>
+              <xy x="0" y="5" width="65" height="25"/>
+              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="1" anchor="0" fill="0"/>
+            </constraints>
+            <properties>
+              <text value="Close"/>
+              <toolTipText value="Close this window"/>
+            </properties>
+          </component>
+        </children>
+      </grid>
+      <component id="f8cef" class="javax.swing.JLabel">
+        <constraints>
+          <xy x="45" y="12" width="193" height="15"/>
+          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0"/>
+        </constraints>
+        <properties>
+          <text value="Sign On to AOL Instant Messenger"/>
+        </properties>
+      </component>
+      <grid id="e35c7" row-count="1" column-count="2" hgap="10" vgap="-1">
+        <margin top="2" left="0" bottom="3" right="0"/>
+        <constraints>
+          <xy x="33" y="35" width="216" height="29"/>
+          <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="1" anchor="0" fill="0"/>
+        </constraints>
+        <properties/>
+        <border type="none"/>
+        <children>
+          <component id="bc376" class="javax.swing.JLabel" binding="screennameLabel">
+            <constraints>
+              <xy x="0" y="6" width="78" height="15"/>
+              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="4" fill="0"/>
+            </constraints>
+            <properties>
+              <text value="Screen name:"/>
+            </properties>
+          </component>
+          <component id="554a" class="javax.swing.JComboBox" binding="screennameBox">
+            <constraints>
+              <xy x="88" y="2" width="110" height="24"/>
+              <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="1" anchor="8" fill="0">
+                <preferred-size width="110" height="-1"/>
+                <maximum-size width="110" height="-1"/>
+              </grid>
+            </constraints>
+            <properties>
+              <editable value="true"/>
+              <lightWeightPopupEnabled value="true"/>
+            </properties>
+          </component>
+        </children>
+      </grid>
+      <grid id="fb304" binding="errorPanel" row-count="1" column-count="2" hgap="-1" vgap="-1">
+        <margin top="0" left="0" bottom="0" right="0"/>
+        <constraints>
+          <xy x="5" y="191" width="273" height="125"/>
+          <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="2" hsize-policy="3" anchor="0" fill="3"/>
+        </constraints>
+        <properties>
+          <visible value="false"/>
+        </properties>
+        <border type="none" title="Blah blah"/>
+        <children>
+          <component id="c8781" class="javax.swing.JLabel" binding="errorIconLabel">
+            <constraints>
+              <xy x="5" y="20" width="31" height="15"/>
+              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="1" fill="0"/>
+            </constraints>
+            <properties>
+              <text value="(icon)"/>
+              <visible value="true"/>
+            </properties>
+          </component>
+          <scrollpane id="e79f2" binding="errorScrollPane">
+            <constraints>
+              <xy x="41" y="20" width="227" height="100"/>
+              <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="3"/>
+            </constraints>
+            <properties>
+              <horizontalScrollBarPolicy value="30"/>
+            </properties>
+            <border type="none"/>
+            <children>
+              <component id="cf6a4" class="javax.swing.JTextPane" binding="errorText">
+                <constraints/>
+                <properties>
+                  <contentType value="text/html"/>
+                  <editable value="false"/>
+                  <opaque value="false"/>
+                  <text value="&lt;html&gt;
+  &lt;head&gt;
+
+  &lt;/head&gt;
+  &lt;body&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+"/>
+                </properties>
+              </component>
+            </children>
+          </scrollpane>
+        </children>
+      </grid>
+    </children>
+  </grid>
+</form>
