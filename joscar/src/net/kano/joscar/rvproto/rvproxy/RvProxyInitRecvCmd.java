@@ -40,6 +40,12 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.OscarTools;
 import net.kano.joscar.StringBlock;
+import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.ImmutableTlvChain;
+import net.kano.joscar.tlv.DefaultMutableTlvChain;
+import net.kano.joscar.tlv.TlvTools;
+import net.kano.joscar.tlv.Tlv;
+import net.kano.joscar.snaccmd.CapabilityBlock;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -54,12 +60,15 @@ import java.io.OutputStream;
  * @rvproxy.src client
  */
 public class RvProxyInitRecvCmd extends RvProxyCmd {
+    private static final int TYPE_CAP = 0x0001;
+
     /** The screenname of the connecting client. */
     private final String sn;
     /** An ICBM message ID "cookie" sent in this command. */
     private final long icbmMessageId;
     /** A "port" value sent in this command. */
     private final int port;
+    private final CapabilityBlock capabilityBlock;
 
     /**
      * Creates a new RV proxy connection initialization command from the given
@@ -81,10 +90,19 @@ public class RvProxyInitRecvCmd extends RvProxyCmd {
 
             port = BinaryTools.getUShort(rest, 0);
             icbmMessageId = BinaryTools.getLong(rest, 2);
+            ByteBlock tlvBlock = rest.subBlock(10);
+            TlvChain chain = TlvTools.readChain(tlvBlock);
+            Tlv cap = chain.getLastTlv(TYPE_CAP);
+            if (cap != null) {
+                capabilityBlock  = new CapabilityBlock(cap.getData());
+            } else {
+                capabilityBlock = null;
+            }
         } else {
             sn = null;
             icbmMessageId = 0;
             port = -1;
+            capabilityBlock = null;
         }
     }
 
@@ -101,6 +119,24 @@ public class RvProxyInitRecvCmd extends RvProxyCmd {
      *        user to make the associated proxy connection
      */
     public RvProxyInitRecvCmd(String sn, long icbmMessageId, int port) {
+        this(sn, icbmMessageId, port, null);
+    }
+
+    /**
+     * Creates a new outgoing RV proxy receiving-end initialization command with
+     * the given properties.
+     *
+     * @param sn the screenname of the connecting client (that is, if being used
+     *        by a client, "your" screenname)
+     * @param icbmMessageId an ICBM message ID "cookie," normally the ICBM
+     *        message ID of the RV ICBM command which invited the user to
+     *        make the associated proxy connection
+     * @param port the "port" value sent in the RV ICBM command which invited
+     *        user to make the associated proxy connection
+     * @param block a capability block corresponding to the type of connection
+     *        being made over the proxy
+     */
+    public RvProxyInitRecvCmd(String sn, long icbmMessageId, int port, CapabilityBlock block) {
         super(RvProxyPacket.CMDTYPE_INIT_RECV);
 
         DefensiveTools.checkNull(sn, "sn");
@@ -109,6 +145,7 @@ public class RvProxyInitRecvCmd extends RvProxyCmd {
         this.sn = sn;
         this.icbmMessageId = icbmMessageId;
         this.port = port;
+        this.capabilityBlock = block;
     }
 
     /**
@@ -146,6 +183,10 @@ public class RvProxyInitRecvCmd extends RvProxyCmd {
                 BinaryTools.writeUShort(out, port);
 
                 BinaryTools.writeLong(out, icbmMessageId);
+
+                if (capabilityBlock != null) {
+                    new Tlv(TYPE_CAP, capabilityBlock.getBlock()).write(out);
+                }
             }
         }
     }
