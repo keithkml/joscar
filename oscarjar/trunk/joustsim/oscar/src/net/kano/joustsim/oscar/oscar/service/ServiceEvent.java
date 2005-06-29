@@ -31,22 +31,18 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm;
+package net.kano.joustsim.oscar.oscar.service;
 
-import net.kano.joustsim.Screenname;
+import net.kano.joustsim.oscar.oscar.service.Service;
 
-import java.util.Date;
+public abstract class ServiceEvent {
+    private final Service author;
 
-//TODO: typing state should be cleared when receiving a message
-public class TypingInfo extends ConversationEventInfo {
-    private final int typingState;
-
-    public TypingInfo(Screenname from, Screenname to, Date date, int typingState) {
-        super(from, to, date);
-        this.typingState = typingState;
+    protected ServiceEvent(Service author) {
+        this.author = author;
     }
 
-    public int getTypingState() {
-        return typingState;
+    public Service getAuthor() {
+        return author;
     }
 }

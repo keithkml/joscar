@@ -33,20 +33,19 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm;
 
+import net.kano.joscar.snaccmd.icbm.InstantMessage;
 import net.kano.joustsim.Screenname;
 
-import java.util.Date;
+/**
+ * This class should not be used from outside the library itself
+ */
+@Deprecated
+public final class InternalIcbmTools {
+    private InternalIcbmTools() { }
 
-//TODO: typing state should be cleared when receiving a message
-public class TypingInfo extends ConversationEventInfo {
-    private final int typingState;
 
-    public TypingInfo(Screenname from, Screenname to, Date date, int typingState) {
-        super(from, to, date);
-        this.typingState = typingState;
-    }
-
-    public int getTypingState() {
-        return typingState;
+    public static void sendIM(IcbmService service, Screenname buddy, InstantMessage im,
+            boolean autoresponse) {
+        service.sendIM(buddy, im, autoresponse);
     }
 }

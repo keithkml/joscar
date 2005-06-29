@@ -158,6 +158,7 @@ public class SsiService extends Service {
         } else if (snac instanceof CreateItemsCmd) {
             CreateItemsCmd createItemsCmd = (CreateItemsCmd) snac;
             for (SsiItem ssiItem : createItemsCmd.getItems()) {
+                //TODO: handle exceptions individually while adding ssi items
                 itemCreated(ssiItem);
             }
         } else if (snac instanceof ModifyItemsCmd) {

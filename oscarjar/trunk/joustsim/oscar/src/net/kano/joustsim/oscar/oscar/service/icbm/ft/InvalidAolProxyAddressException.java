@@ -31,22 +31,20 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-import net.kano.joustsim.Screenname;
+import java.io.IOException;
+import java.net.InetAddress;
 
-import java.util.Date;
+public class InvalidAolProxyAddressException extends IOException {
+    private InetAddress inet6Address;
 
-//TODO: typing state should be cleared when receiving a message
-public class TypingInfo extends ConversationEventInfo {
-    private final int typingState;
-
-    public TypingInfo(Screenname from, Screenname to, Date date, int typingState) {
-        super(from, to, date);
-        this.typingState = typingState;
+    public InvalidAolProxyAddressException(InetAddress inet6Address) {
+        super("Invalid AOL Proxy Server address: " + inet6Address);
+        this.inet6Address = inet6Address;
     }
 
-    public int getTypingState() {
-        return typingState;
+    public InetAddress getInet6Address() {
+        return inet6Address;
     }
 }

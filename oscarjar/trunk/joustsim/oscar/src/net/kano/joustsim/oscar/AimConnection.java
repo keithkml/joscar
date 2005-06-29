@@ -190,9 +190,9 @@ public class AimConnection {
         capabilityManager.setCapabilityHandler(CapabilityBlock.BLOCK_ENCRYPTION,
                 new SecurityEnabledHandler(this));
         capabilityManager.setCapabilityHandler(CapabilityBlock.BLOCK_ICQCOMPATIBLE,
-                new EmptyCapabilityHandler());
+                new DefaultEnabledCapabilityHandler());
         capabilityManager.setCapabilityHandler(CapabilityBlock.BLOCK_SHORTCAPS,
-                new EmptyCapabilityHandler());
+                new DefaultEnabledCapabilityHandler());
 
         loginConn.addOscarListener(new LoginConnListener());
         loginConn.setServiceFactory(new LoginServiceFactory());

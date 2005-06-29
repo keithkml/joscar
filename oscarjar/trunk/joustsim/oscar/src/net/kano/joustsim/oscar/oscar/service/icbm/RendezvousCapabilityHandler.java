@@ -33,20 +33,9 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm;
 
-import net.kano.joustsim.Screenname;
+import net.kano.joustsim.oscar.CapabilityHandler;
+import net.kano.joscar.rv.RvSession;
 
-import java.util.Date;
-
-//TODO: typing state should be cleared when receiving a message
-public class TypingInfo extends ConversationEventInfo {
-    private final int typingState;
-
-    public TypingInfo(Screenname from, Screenname to, Date date, int typingState) {
-        super(from, to, date);
-        this.typingState = typingState;
-    }
-
-    public int getTypingState() {
-        return typingState;
-    }
+public interface RendezvousCapabilityHandler extends CapabilityHandler {
+    RendezvousSessionHandler handleSession(IcbmService service, RvSession session);
 }

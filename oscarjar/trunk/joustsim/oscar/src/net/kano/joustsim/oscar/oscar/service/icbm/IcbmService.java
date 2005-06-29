@@ -36,8 +36,17 @@
 package net.kano.joustsim.oscar.oscar.service.icbm;
 
 import net.kano.joscar.CopyOnWriteArrayList;
+import net.kano.joscar.rvcmd.DefaultRvCommandFactory;
 import net.kano.joscar.flapcmd.SnacCommand;
+import net.kano.joscar.rv.NewRvSessionEvent;
+import net.kano.joscar.rv.RecvRvEvent;
+import net.kano.joscar.rv.RvProcessor;
+import net.kano.joscar.rv.RvProcessorListener;
+import net.kano.joscar.rv.RvSession;
+import net.kano.joscar.rv.RvSessionListener;
+import net.kano.joscar.rv.RvSnacResponseEvent;
 import net.kano.joscar.snac.SnacPacketEvent;
+import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.FullUserInfo;
 import net.kano.joscar.snaccmd.WarningLevel;
 import net.kano.joscar.snaccmd.conn.SnacFamilyInfo;
@@ -51,32 +60,48 @@ import net.kano.joscar.snaccmd.icbm.ParamInfoRequest;
 import net.kano.joscar.snaccmd.icbm.RecvImIcbm;
 import net.kano.joscar.snaccmd.icbm.RecvTypingNotification;
 import net.kano.joscar.snaccmd.icbm.SendImIcbm;
-import net.kano.joscar.snaccmd.icbm.SetParamInfoCmd;
 import net.kano.joscar.snaccmd.icbm.SendTypingNotification;
+import net.kano.joscar.snaccmd.icbm.SetParamInfoCmd;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.oscar.BuddyInfo;
 import net.kano.joustsim.oscar.BuddyInfoManager;
+import net.kano.joustsim.oscar.CapabilityHandler;
 import net.kano.joustsim.oscar.oscar.OscarConnection;
 import net.kano.joustsim.oscar.oscar.service.Service;
+import net.kano.joustsim.oscar.oscar.service.icbm.secureim.EncryptedAimMessage;
+import net.kano.joustsim.oscar.oscar.service.icbm.secureim.EncryptedAimMessageInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.secureim.InternalSecureTools;
+import net.kano.joustsim.oscar.oscar.service.icbm.secureim.SecureAimConversation;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferManager;
 import net.kano.joustsim.trust.BuddyCertificateInfo;
 
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 public class IcbmService extends Service {
-    private ParamInfo paramInfo = null;
-    private SecureAimEncoder encoder = null;
+    private static final Logger LOGGER = Logger.getLogger(IcbmService.class.getName());
+    private RvProcessor rvProcessor;
+    private FileTransferManager fileTransferManager = new FileTransferManager(this);
 
-    private CopyOnWriteArrayList<IcbmListener> listeners = new CopyOnWriteArrayList<IcbmListener>();
+    private CopyOnWriteArrayList<IcbmListener> listeners
+            = new CopyOnWriteArrayList<IcbmListener>();
     private final BuddyInfoManager buddyInfoManager;
 
     public IcbmService(AimConnection aimConnection,
             OscarConnection oscarConnection) {
         super(aimConnection, oscarConnection, IcbmCommand.FAMILY_ICBM);
         buddyInfoManager = getAimConnection().getBuddyInfoManager();
+        rvProcessor = new RvProcessor(oscarConnection.getSnacProcessor());
+        rvProcessor.registerRvCmdFactory(new DefaultRvCommandFactory());
+        rvProcessor.addListener(new DelegatingRvProcessorListener());
+    }
+
+    public FileTransferManager getFileTransferManager() {
+        return fileTransferManager;
     }
 
     public void addIcbmListener(IcbmListener l) {
@@ -117,6 +142,10 @@ public class IcbmService extends Service {
         }
     }
 
+    public RvProcessor getRvProcessor() {
+        return rvProcessor;
+    }
+
     private void handleParamInfo(ParamInfoCmd pic) {
         // we need to change from the default parameter infos to something
         // cooler, so we do it here
@@ -129,7 +158,6 @@ public class IcbmService extends Service {
         ParamInfo newparams = new ParamInfo(newflags, 8000,
                 WarningLevel.getInstanceFromX10(999),
                 WarningLevel.getInstanceFromX10(999), 0);
-        this.paramInfo = newparams;
 
         sendSnac(new SetParamInfoCmd(newparams));
 
@@ -158,7 +186,7 @@ public class IcbmService extends Service {
         if (message.isEncrypted()) {
             SecureAimConversation conv = getSecureAimConversation(sender);
 
-            EncryptedAimMessage msg = EncryptedAimMessage.getInstance(icbm);
+            EncryptedAimMessage msg = InternalSecureTools.getEncryptedAimMessageInstance(icbm);
             if (msg == null) return;
 
             BuddyInfo info = buddyInfoManager.getBuddyInfo(sender);
@@ -168,7 +196,7 @@ public class IcbmService extends Service {
                     getScreenname(), icbm, certInfo, new Date());
             if (minfo == null) return;
 
-            conv.handleIncomingEvent(minfo);
+            ((Conversation) conv).handleIncomingEvent(minfo);
 
         } else {
             ImConversation conv = getImConversation(sender);
@@ -197,7 +225,7 @@ public class IcbmService extends Service {
             conv = secureAimConvs.get(sn);
             if (conv == null) {
                 isnew = true;
-                conv = new SecureAimConversation(getAimConnection(), sn);
+                conv = InternalSecureTools.newSecureAimConversation(getAimConnection(), sn);
                 secureAimConvs.put(sn, conv);
             }
         }
@@ -209,7 +237,7 @@ public class IcbmService extends Service {
 
     private Map<Screenname,ImConversation> imconvs = new HashMap<Screenname, ImConversation>();
 
-    public synchronized ImConversation getImConversation(Screenname sn) {
+    public ImConversation getImConversation(Screenname sn) {
         boolean isnew = false;
         ImConversation conv;
         synchronized(this) {
@@ -248,5 +276,52 @@ public class IcbmService extends Service {
 
     void sendTypingStatus(Screenname buddy, int typingState) {
         sendSnac(new SendTypingNotification(buddy.getFormatted(), typingState));
+    }
+
+    private class DelegatingRvProcessorListener implements RvProcessorListener {
+        public void handleNewSession(NewRvSessionEvent event) {
+            final RvSession session = event.getSession();
+            session.addListener(new SessionListenerDelegate(session));
+        }
+
+    }
+    private class SessionListenerDelegate implements RvSessionListener {
+        private RendezvousSessionHandler sessionHandler;
+        private final RvSession session;
+
+        public SessionListenerDelegate(RvSession session) {
+            this.session = session;
+            sessionHandler = null;
+        }
+
+        public void handleRv(RecvRvEvent event) {
+            if (sessionHandler == null) {
+                CapabilityBlock cap = event.getRvCommand().getCapabilityBlock();
+                CapabilityHandler handler = getAimConnection().getCapabilityManager()
+                        .getCapabilityHandler(cap);
+                if (handler instanceof RendezvousCapabilityHandler) {
+                    RendezvousCapabilityHandler rhandler = (RendezvousCapabilityHandler) handler;
+                    sessionHandler = rhandler
+                            .handleSession(IcbmService.this, session);
+                } else {
+                    LOGGER.warning("Rendezvous for " + cap
+                            + " ignored because the handler, " + handler
+                            + ", does not support rendezvous");
+                    session.removeListener(this);
+                    return;
+                }
+            }
+            this.sessionHandler.handleRv(event);
+        }
+
+        public void handleSnacResponse(RvSnacResponseEvent event) {
+            if (sessionHandler == null) {
+                LOGGER.warning("Got SNAC response in RV processor "
+                        + "listener, but no handler has been registered "
+                        + "yet: " + event);
+            } else {
+                sessionHandler.handleSnacResponse(event);
+            }
+        }
     }
 }

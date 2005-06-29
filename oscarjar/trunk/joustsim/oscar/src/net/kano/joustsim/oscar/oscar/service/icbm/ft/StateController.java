@@ -31,22 +31,51 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-import net.kano.joustsim.Screenname;
+import net.kano.joscar.CopyOnWriteArrayList;
 
-import java.util.Date;
+abstract class StateController {
+    private CopyOnWriteArrayList<ControllerListener> listeners
+            = new CopyOnWriteArrayList<ControllerListener>();
+    private StateInfo endState = null;
 
-//TODO: typing state should be cleared when receiving a message
-public class TypingInfo extends ConversationEventInfo {
-    private final int typingState;
+    public abstract void start(FileTransferManager.FileTransfer transfer,
+            StateController last);
 
-    public TypingInfo(Screenname from, Screenname to, Date date, int typingState) {
-        super(from, to, date);
-        this.typingState = typingState;
+    public void addControllerListener(ControllerListener listener) {
+        listeners.addIfAbsent(listener);
     }
 
-    public int getTypingState() {
-        return typingState;
+    public void removeControllerListener(ControllerListener listener) {
+        listeners.remove(listener);
+    }
+
+
+    protected void fireSucceeded(StateInfo stateInfo) {
+        assert !Thread.holdsLock(this);
+
+        endState = stateInfo;
+        for (ControllerListener listener : listeners) {
+            listener.handleControllerSucceeded(this, stateInfo);
+        }
+    }
+
+    protected void fireFailed(final Exception e) {
+        assert !Thread.holdsLock(this);
+
+        ExceptionStateInfo info = new ExceptionStateInfo(e);
+        endState = info;
+        for (ControllerListener listener : listeners) {
+            listener.handleControllerFailed(this, info);
+        }
+    }
+
+    public void cancel() {
+
+    }
+
+    public StateInfo getEndState() {
+        return endState;
     }
 }

@@ -31,22 +31,26 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm;
+package net.kano.joustsim.oscar.oscar.service.icbm.secureim;
 
+import net.kano.joscar.snaccmd.icbm.RecvImIcbm;
+import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.Screenname;
 
-import java.util.Date;
+/**
+ * This class should not be used from outside the library itself.
+ */
+@Deprecated
+public final class InternalSecureTools {
+    private InternalSecureTools() { }
 
-//TODO: typing state should be cleared when receiving a message
-public class TypingInfo extends ConversationEventInfo {
-    private final int typingState;
 
-    public TypingInfo(Screenname from, Screenname to, Date date, int typingState) {
-        super(from, to, date);
-        this.typingState = typingState;
+    public static EncryptedAimMessage getEncryptedAimMessageInstance(RecvImIcbm icbm) {
+        return EncryptedAimMessage.getInstance(icbm);
     }
 
-    public int getTypingState() {
-        return typingState;
+    public static SecureAimConversation newSecureAimConversation(
+            AimConnection aimConnection, Screenname sn) {
+        return new SecureAimConversation(aimConnection, sn);
     }
 }

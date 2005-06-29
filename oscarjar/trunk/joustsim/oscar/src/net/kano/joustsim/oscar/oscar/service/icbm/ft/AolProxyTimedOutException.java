@@ -31,22 +31,10 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-import net.kano.joustsim.Screenname;
+import java.io.IOException;
 
-import java.util.Date;
-
-//TODO: typing state should be cleared when receiving a message
-public class TypingInfo extends ConversationEventInfo {
-    private final int typingState;
-
-    public TypingInfo(Screenname from, Screenname to, Date date, int typingState) {
-        super(from, to, date);
-        this.typingState = typingState;
-    }
-
-    public int getTypingState() {
-        return typingState;
-    }
+public class AolProxyTimedOutException extends IOException {
+    public AolProxyTimedOutException() {super("Proxy timed out");}
 }

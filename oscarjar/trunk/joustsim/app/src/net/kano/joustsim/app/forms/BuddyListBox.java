@@ -41,6 +41,8 @@ import net.kano.joustsim.oscar.oscar.service.ssi.Group;
 import net.kano.joustsim.oscar.oscar.service.ssi.MutableBuddy;
 import net.kano.joustsim.oscar.oscar.service.ssi.MutableBuddyList;
 import net.kano.joustsim.oscar.oscar.service.ssi.MutableGroup;
+import net.kano.joustsim.oscar.oscar.service.icbm.ImConversation;
+import net.kano.joustsim.Screenname;
 
 import javax.swing.AbstractAction;
 import javax.swing.JButton;
@@ -54,11 +56,8 @@ import javax.swing.tree.DefaultTreeCellEditor;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.TreePath;
 import java.awt.BorderLayout;
-import java.awt.datatransfer.DataFlavor;
 import java.awt.event.ActionEvent;
-import java.util.ArrayList;
 import java.util.EventObject;
-import java.util.List;
 
 public class BuddyListBox extends JPanel {
     private JButton infoButton;
@@ -69,9 +68,7 @@ public class BuddyListBox extends JPanel {
     private BuddyListModel model;
     private JPopupMenu menu = new JPopupMenu();
     private MutableBuddyList buddyList;
-    private static final DataFlavor FLAVOR_GROUPS = new DataFlavor(List.class, "Buddy Group");
-    private static final DataFlavor FLAVOR_BUDDIES = new DataFlavor(List.class, "Buddy");
-
+    private GuiSession guiSession;
 
     {
         setLayout(new BorderLayout());
@@ -160,21 +157,30 @@ public class BuddyListBox extends JPanel {
             }
         });
         buddyTree.setInvokesStopCellEditing(true);
+        imButton.setAction(new ImAction());
     }
 
-    private List<Group> getSelectedGroups() {
-        List<Group> holders = new ArrayList<Group>();
-        for (TreePath path : buddyTree.getSelectionPaths()) {
-            Object obj = path.getLastPathComponent();
-            if (obj instanceof BuddyListModel.GroupHolder) {
-                BuddyListModel.GroupHolder holder = (BuddyListModel.GroupHolder) obj;
-                holders.add(holder.getGroup());
+    private class ImAction extends AbstractAction {
+        {
+            putValue(NAME, "IM");
+        }
+
+        public void actionPerformed(ActionEvent e) {
+            TreePath path = buddyTree.getSelectionPath();
+            if (path == null) return;
+            Object selected = path.getLastPathComponent();
+            if (selected instanceof BuddyListModel.BuddyHolder) {
+                BuddyListModel.BuddyHolder buddyHolder = (BuddyListModel.BuddyHolder) selected;
+                Screenname sn = buddyHolder.getBuddy().getScreenname();
+                ImConversation conv = guiSession.getAimConnection().getIcbmService()
+                        .getImConversation(sn);
+                conv.open();
             }
         }
-        return holders;
     }
 
     public void updateSession(GuiSession guiSession) {
+        this.guiSession = guiSession;
         buddyList = guiSession.getAimConnection().getSsiService().getBuddyList();
         model = new BuddyListModel(buddyList);
         buddyTree.setModel(model);

@@ -31,22 +31,19 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm;
+package net.kano.joustsim.oscar.oscar.service.ssi;
 
-import net.kano.joustsim.Screenname;
+import java.util.List;
+import java.util.Collection;
 
-import java.util.Date;
+public interface MutableGroup extends Group {
+    void rename(String newName);
 
-//TODO: typing state should be cleared when receiving a message
-public class TypingInfo extends ConversationEventInfo {
-    private final int typingState;
+    void addBuddy(String screenname);
 
-    public TypingInfo(Screenname from, Screenname to, Date date, int typingState) {
-        super(from, to, date);
-        this.typingState = typingState;
-    }
+    void copyBuddies(Collection<? extends Buddy> buddies);
 
-    public int getTypingState() {
-        return typingState;
-    }
+    void deleteBuddy(Buddy buddy);
+
+    void deleteBuddies(List<Buddy> ingroup);
 }

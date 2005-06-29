@@ -31,22 +31,25 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-import net.kano.joustsim.Screenname;
+import java.io.InputStream;
+import java.io.OutputStream;
 
-import java.util.Date;
+public class Stream extends StateInfo {
+    private InputStream inputStream;
+    private OutputStream outputStream;
 
-//TODO: typing state should be cleared when receiving a message
-public class TypingInfo extends ConversationEventInfo {
-    private final int typingState;
-
-    public TypingInfo(Screenname from, Screenname to, Date date, int typingState) {
-        super(from, to, date);
-        this.typingState = typingState;
+    public Stream(InputStream in, OutputStream outputStream) {
+        this.inputStream = in;
+        this.outputStream = outputStream;
     }
 
-    public int getTypingState() {
-        return typingState;
+    public InputStream getInputStream() {
+        return inputStream;
+    }
+
+    public OutputStream getOutputStream() {
+        return outputStream;
     }
 }

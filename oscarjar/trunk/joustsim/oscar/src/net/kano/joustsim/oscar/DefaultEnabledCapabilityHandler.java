@@ -31,22 +31,22 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm;
+package net.kano.joustsim.oscar;
 
-import net.kano.joustsim.Screenname;
-
-import java.util.Date;
-
-//TODO: typing state should be cleared when receiving a message
-public class TypingInfo extends ConversationEventInfo {
-    private final int typingState;
-
-    public TypingInfo(Screenname from, Screenname to, Date date, int typingState) {
-        super(from, to, date);
-        this.typingState = typingState;
+public class DefaultEnabledCapabilityHandler implements CapabilityHandler {
+    public void handleAdded(CapabilityManager manager) {
     }
 
-    public int getTypingState() {
-        return typingState;
+    public void handleRemoved(CapabilityManager manager) {
+    }
+
+    public boolean isEnabled() {
+        return true;
+    }
+
+    public void addCapabilityListener(CapabilityListener listener) {
+    }
+
+    public void removeCapabilityListener(CapabilityListener listener) {
     }
 }

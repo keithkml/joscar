@@ -31,22 +31,34 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-import net.kano.joustsim.Screenname;
+import net.kano.joscar.rvcmd.RvConnectionInfo;
 
-import java.util.Date;
+import java.net.InetAddress;
+import java.io.IOException;
 
-//TODO: typing state should be cleared when receiving a message
-public class TypingInfo extends ConversationEventInfo {
-    private final int typingState;
+class SimpleConnectingController extends AbstractConnectingController {
+    private OutgoingConnectionType type;
 
-    public TypingInfo(Screenname from, Screenname to, Date date, int typingState) {
-        super(from, to, date);
-        this.typingState = typingState;
+    public SimpleConnectingController(OutgoingConnectionType type) {
+        this.type = type;
     }
 
-    public int getTypingState() {
-        return typingState;
+    protected InetAddress getIpAddress() throws IOException {
+        RvConnectionInfo connectionInfo = getConnectionInfo();
+//        assert !connectionInfo.isProxied();
+
+        InetAddress ip;
+        if (type == OutgoingConnectionType.EXTERNAL) {
+            ip = connectionInfo.getExternalIP();
+        } else if (type == OutgoingConnectionType.INTERNAL) {
+            ip = connectionInfo.getInternalIP();
+        } else {
+            throw new IllegalStateException(
+                    "invalid OutgoingConnectionType " + type);
+        }
+        return ip;
     }
+
 }

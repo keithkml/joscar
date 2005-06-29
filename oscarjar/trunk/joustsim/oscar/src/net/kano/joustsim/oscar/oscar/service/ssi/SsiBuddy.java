@@ -31,22 +31,56 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm;
+package net.kano.joustsim.oscar.oscar.service.ssi;
 
-import net.kano.joustsim.Screenname;
+import net.kano.joscar.ssiitem.BuddyItem;
+import net.kano.joscar.snaccmd.ssi.ModifyItemsCmd;
 
-import java.util.Date;
-
-//TODO: typing state should be cleared when receiving a message
-public class TypingInfo extends ConversationEventInfo {
-    private final int typingState;
-
-    public TypingInfo(Screenname from, Screenname to, Date date, int typingState) {
-        super(from, to, date);
-        this.typingState = typingState;
+class SsiBuddy extends SimpleBuddy implements MutableBuddy {
+    public SsiBuddy(SsiBuddyList list, BuddyItem item) {
+        super(list, item);
     }
 
-    public int getTypingState() {
-        return typingState;
+    public void changeAlias(String alias) {
+        BuddyItem item = getItemCopy();
+        item.setAlias(alias);
+        sendItemModification(item);
+    }
+
+    public void changeBuddyComment(String comment) {
+        BuddyItem item = getItemCopy();
+        item.setComment(comment);
+        sendItemModification(item);
+    }
+
+    public void changeAlertEventMask(int alertEventMask) {
+        BuddyItem item = getItemCopy();
+        item.setAlertWhenMask(alertEventMask);
+        sendItemModification(item);
+    }
+
+    public void changeAlertActionMask(int alertActionMask) {
+        BuddyItem item = getItemCopy();
+        item.setAlertActionMask(alertActionMask);
+        sendItemModification(item);
+    }
+
+    public void changeAlertSound(String alertSound) {
+        BuddyItem item = getItemCopy();
+        item.setAlertSound(alertSound);
+        sendItemModification(item);
+    }
+
+    private BuddyItem getItemCopy() {
+        return new BuddyItem(getItem());
+    }
+
+    private void sendItemModification(BuddyItem item) {
+        SsiService ssiService = getBuddyList().getSsiService();
+        ssiService.sendSsiModification(new ModifyItemsCmd(item.toSsiItem()));
+    }
+
+    public SsiBuddyList getBuddyList() {
+        return (SsiBuddyList) super.getBuddyList();
     }
 }
