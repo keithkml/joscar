@@ -96,6 +96,6 @@ public class RvSnacResponseEvent extends SnacPacketEvent {
     public String toString() {
         return "RvSnacResponseEvent: "
                 + "rvProcessor=" + rvProcessor
-                + ", rvSession=" + rvSession;
+                + ", rvSession=" + rvSession + " - " + super.toString();
     }
 }

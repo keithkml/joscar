@@ -57,11 +57,13 @@ public final class JoscarTools {
     public static final int JOSCAR_VERSION_PATCH = 4;
     public static final ReleaseType JOSCAR_VERSION_RELTYPE = ReleaseType.TYPE_CVS;
 
-    /** A version string, like "1.2.3 alpha". */
+    /** A version string, like "1.2.3-alpha". */
     private static final String VERSION_STRING
             = JOSCAR_VERSION_MAJOR + "."
             + JOSCAR_VERSION_MINOR + "."
-            + JOSCAR_VERSION_PATCH;
+            + JOSCAR_VERSION_PATCH
+            + (JOSCAR_VERSION_RELTYPE != ReleaseType.TYPE_RELEASE ?
+            "-" + JOSCAR_VERSION_RELTYPE.getSuffix() : "");
 
     /**
      * Ensures that this class is never instantiated.
@@ -78,11 +80,13 @@ public final class JoscarTools {
      * @see #JOSCAR_VERSION_MINOR
      * @see #JOSCAR_VERSION_PATCH
      */
-    public static String getVersionString() { return VERSION_STRING; }
+    public static String getVersionString() {
+        return VERSION_STRING;
+    }
 
     public static final class ReleaseType {
         public static final ReleaseType TYPE_CVS
-                = new ReleaseType("pre-alpha (CVS)");
+                = new ReleaseType("pre-alpha (CVS)", "cvs");
         public static final ReleaseType TYPE_ALPHA
                 = new ReleaseType("alpha");
         public static final ReleaseType TYPE_BETA
@@ -91,11 +95,21 @@ public final class JoscarTools {
                 = new ReleaseType("release");
 
         private final String name;
+        private final String suffix;
 
         private ReleaseType(String name) {
+            this(name, name);
+        }
+
+        public ReleaseType(String name, String suffix) {
             this.name = name;
+            this.suffix = suffix;
         }
 
         public String toString() { return name; }
+
+        public String getSuffix() {
+            return suffix == null ? name : suffix;
+        }
     }
 }
