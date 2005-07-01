@@ -43,6 +43,7 @@ import net.kano.joscar.tlv.MutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
 import net.kano.joscar.tlv.TlvTools;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -75,7 +76,7 @@ public class RootItem extends AbstractItemObj {
     private static final int TYPE_GROUPIDS = 0x00c8;
 
     /** A list of the ID's of the groups in the buddy list. */
-    private int[] groupids;
+    private @Nullable int[] groupids;
 
     /**
      * Creates a new root group item object generated from the data in the given
@@ -116,7 +117,7 @@ public class RootItem extends AbstractItemObj {
      * @param other a root group item object to copy
      */
     public RootItem(RootItem other) {
-        this(other.groupids == null ? null : (int[]) other.groupids.clone(),
+        this(other.groupids == null ? null : other.groupids.clone(),
                 other.copyExtraTlvs());
     }
 
@@ -147,7 +148,7 @@ public class RootItem extends AbstractItemObj {
     public RootItem(int[] groupids, TlvChain extraTlvs) {
         super(extraTlvs);
 
-        this.groupids = (int[]) (groupids == null ? null : groupids.clone());
+        this.groupids = groupids == null ? null : groupids.clone();
     }
 
     /**
@@ -160,8 +161,8 @@ public class RootItem extends AbstractItemObj {
      *         <code>null</code> if this item contains no master group list
      *         field
      */
-    public synchronized final int[] getGroupids() {
-        return (int[]) groupids.clone();
+    public synchronized final @Nullable int[] getGroupids() {
+        return groupids == null ? null : groupids.clone();
     }
 
     /**
@@ -170,8 +171,8 @@ public class RootItem extends AbstractItemObj {
      * @param groupids a list of the group ID's of the groups on the buddy list,
      *        in the order they should appear to the user
      */
-    public synchronized final void setGroupids(int[] groupids) {
-        this.groupids = (groupids == null ? null : (int[]) groupids.clone());
+    public synchronized final void setGroupids(@Nullable int[] groupids) {
+        this.groupids = (groupids == null ? null : groupids.clone());
     }
 
     public synchronized SsiItem toSsiItem() {

@@ -40,12 +40,10 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.OscarTools;
 import net.kano.joscar.StringBlock;
-import net.kano.joscar.tlv.TlvChain;
-import net.kano.joscar.tlv.ImmutableTlvChain;
-import net.kano.joscar.tlv.DefaultMutableTlvChain;
-import net.kano.joscar.tlv.TlvTools;
-import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.snaccmd.CapabilityBlock;
+import net.kano.joscar.tlv.Tlv;
+import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.TlvTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -164,6 +162,10 @@ public class RvProxyInitRecvCmd extends RvProxyCmd {
      * @return the ICBM message ID "cookie" value sent in this command
      */
     public final long getIcbmMessageId() { return icbmMessageId; }
+
+    public CapabilityBlock getCapabilityBlock() {
+        return capabilityBlock;
+    }
 
     /**
      * Returns the "port" value sent in this command. As of this writing, the

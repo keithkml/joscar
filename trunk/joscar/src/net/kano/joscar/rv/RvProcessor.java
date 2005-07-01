@@ -845,7 +845,7 @@ public class RvProcessor {
         }
 
         public void sendRv(RvCommand command) {
-            sendRv(command, 0);
+            sendRv(command, getRvSessionId());
         }
 
         public void sendRv(RvCommand command, long icbmMessageId) {
