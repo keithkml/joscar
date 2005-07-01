@@ -45,7 +45,7 @@ import java.util.zip.Checksum;
  */
 public final class FileTransferChecksum implements Checksum {
     /** The checksum of an empty set of data. */
-    private static final long CHECKSUM_INIT = 0xffff0000L;
+    public static final long CHECKSUM_EMPTY = 0xffff0000L;
 
     /** The checksum value. */
     private long checksum;
@@ -87,7 +87,7 @@ public final class FileTransferChecksum implements Checksum {
         check = ((check & 0x0000ffff) + (check >> 16));
         check = ((check & 0x0000ffff) + (check >> 16));
 
-        checksum = check << 16 & 0xffffffff;
+        checksum = check << 16 & 0xffffffffL;
         assert checksum >= 0;
     }
 
@@ -97,7 +97,7 @@ public final class FileTransferChecksum implements Checksum {
     }
 
     public void reset() {
-        checksum = CHECKSUM_INIT;
+        checksum = CHECKSUM_EMPTY;
         assert checksum >= 0;
     }
 

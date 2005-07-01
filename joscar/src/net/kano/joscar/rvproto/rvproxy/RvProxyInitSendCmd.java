@@ -40,6 +40,10 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.OscarTools;
 import net.kano.joscar.StringBlock;
+import net.kano.joscar.snaccmd.CapabilityBlock;
+import net.kano.joscar.tlv.Tlv;
+import net.kano.joscar.tlv.TlvChain;
+import net.kano.joscar.tlv.TlvTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -51,10 +55,13 @@ import java.io.OutputStream;
  * @rvproxy.src client
  */
 public class RvProxyInitSendCmd extends RvProxyCmd {
+    private static final int TYPE_CAP = 0x0001;
+
     /** The sending client's screenname. */
     private final String sn;
     /** An ICBM message ID "cookie" to send in this command. */
     private final long icbmMessageId;
+    private final CapabilityBlock capabilityBlock;
 
     /**
      * Reads an RV proxy connection initialization command from the given
@@ -76,9 +83,18 @@ public class RvProxyInitSendCmd extends RvProxyCmd {
 
             icbmMessageId = BinaryTools.getLong(rest, 0);
 
+            ByteBlock tlvBlock = rest.subBlock(8);
+            TlvChain chain = TlvTools.readChain(tlvBlock);
+            Tlv capTlv = chain.getFirstTlv(TYPE_CAP);
+            if (capTlv != null) {
+                capabilityBlock = new CapabilityBlock(capTlv.getData());
+            } else {
+                capabilityBlock = null;
+            }
         } else {
             sn = null;
             icbmMessageId = 0;
+            capabilityBlock = null;
         }
     }
 
@@ -92,12 +108,28 @@ public class RvProxyInitSendCmd extends RvProxyCmd {
      *        command sent to request the associated proxied connection
      */
     public RvProxyInitSendCmd(String sn, long icbmMessageId) {
+        this(sn, icbmMessageId, null);
+    }
+
+    /**
+     * Creates a new outgoing RV proxy initialization command with the given
+     * initiating screenname and ICBM message ID "cookie."
+     *
+     * @param sn the screenname of the user initializing this connection (that
+     *        is, your client's screenname)
+     * @param icbmMessageId the ICBM message ID of the rendezvous request
+     *        command sent to request the associated proxied connection
+     * @param block a capability block corresponding to the type of rendezvous
+     *        connection being made over the proxy
+     */
+    public RvProxyInitSendCmd(String sn, long icbmMessageId, CapabilityBlock block) {
         super(RvProxyPacket.CMDTYPE_INIT_SEND);
 
         DefensiveTools.checkNull(sn, "sn");
 
         this.sn = sn;
         this.icbmMessageId = icbmMessageId;
+        this.capabilityBlock = block;
     }
 
     /**
@@ -120,11 +152,18 @@ public class RvProxyInitSendCmd extends RvProxyCmd {
      */
     public final long getIcbmMessageId() { return icbmMessageId; }
 
+    public CapabilityBlock getCapabilityBlock() {
+        return capabilityBlock;
+    }
+
     public void writeCommandData(OutputStream out) throws IOException {
         if (sn != null) {
             OscarTools.writeScreenname(out, sn);
 
             BinaryTools.writeLong(out, icbmMessageId);
+            if (capabilityBlock != null) {
+                new Tlv(TYPE_CAP, capabilityBlock.getBlock()).write(out);
+            }
         }
     }
 

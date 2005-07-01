@@ -43,6 +43,7 @@ import net.kano.joscar.tlv.MutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
 import net.kano.joscar.tlv.TlvTools;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -185,7 +186,7 @@ public class GroupItem extends AbstractItemObj {
      *         <code>null</code> if this group item does not contain a child
      *         buddy field
      */
-    public synchronized final int[] getBuddies() {
+    public synchronized final @Nullable int[] getBuddies() {
         return buddies == null ? null : buddies.clone();
     }
 
@@ -198,7 +199,7 @@ public class GroupItem extends AbstractItemObj {
      * @param buddies a list of the ID's of the buddies in this group, or
      *        <code>null</code> to erase this group's child buddy list
      */
-    public synchronized final void setBuddies(int[] buddies) {
+    public synchronized final void setBuddies(@Nullable int[] buddies) {
         this.buddies = DefensiveTools.getSafeMinArrayCopy(buddies, "buddies", 0);
     }
 

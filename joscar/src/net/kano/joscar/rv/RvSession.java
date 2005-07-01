@@ -105,6 +105,7 @@ public interface RvSession {
     /**
      * Sends the given RV command to the user with whom this session exists,
      * with an ICBM message ID of <code>0</code>.
+     * TODO: it isn't 0 anymore
      * <br>
      * <br>
      * Note that calling this method will have <i>no effect</i> if the
