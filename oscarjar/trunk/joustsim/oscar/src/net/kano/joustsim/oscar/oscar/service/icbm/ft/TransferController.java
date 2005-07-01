@@ -33,32 +33,44 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-import net.kano.joscar.rvcmd.RvConnectionInfo;
-
-import java.net.InetAddress;
 import java.io.IOException;
 
-class SimpleConnectingController extends AbstractConnectingController {
-    private OutgoingConnectionType type;
+public abstract class TransferController extends StateController {
+    private boolean stop = false;
 
-    public SimpleConnectingController(OutgoingConnectionType type) {
-        this.type = type;
-    }
+    public void start(final FileTransfer transfer,
+            StateController last) {
+        StateInfo endState = last.getEndState();
+        if (endState instanceof Stream) {
+            final Stream stream = (Stream) endState;
+            Thread receiveThread = new Thread(new Runnable() {
+                public void run() {
+                    try {
+                        transferInThread(stream, (FileTransferImpl) transfer);
 
-    protected InetAddress getIpAddress() throws IOException {
-        RvConnectionInfo connectionInfo = getConnectionInfo();
-//        assert !connectionInfo.isProxied();
-
-        InetAddress ip;
-        if (type == OutgoingConnectionType.EXTERNAL) {
-            ip = connectionInfo.getExternalIP();
-        } else if (type == OutgoingConnectionType.INTERNAL) {
-            ip = connectionInfo.getInternalIP();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        fireFailed(e);
+                        return;
+                    }
+                }
+            });
+            receiveThread.start();
         } else {
-            throw new IllegalStateException(
-                    "invalid OutgoingConnectionType " + type);
+            throw new IllegalArgumentException("I don't know how to deal with "
+                    + "previous end state " + endState);
         }
-        return ip;
     }
 
+    public synchronized void stop() {
+        stop = true;
+    }
+
+    protected synchronized boolean shouldStop() {
+        return stop;
+    }
+
+    protected abstract void transferInThread(Stream stream,
+            FileTransferImpl transfer)
+            throws IOException;
 }

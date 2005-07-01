@@ -42,7 +42,10 @@ import net.kano.joustsim.oscar.oscar.service.ssi.MutableBuddy;
 import net.kano.joustsim.oscar.oscar.service.ssi.MutableBuddyList;
 import net.kano.joustsim.oscar.oscar.service.ssi.MutableGroup;
 import net.kano.joustsim.oscar.oscar.service.icbm.ImConversation;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferManager;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.OutgoingFileTransfer;
 import net.kano.joustsim.Screenname;
+import net.kano.joscar.rvcmd.InvitationMessage;
 
 import javax.swing.AbstractAction;
 import javax.swing.JButton;
@@ -50,6 +53,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JTree;
+import javax.swing.JFileChooser;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
 import javax.swing.tree.DefaultTreeCellEditor;
@@ -58,6 +62,7 @@ import javax.swing.tree.TreePath;
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.util.EventObject;
+import java.util.Arrays;
 
 public class BuddyListBox extends JPanel {
     private JButton infoButton;
@@ -69,6 +74,7 @@ public class BuddyListBox extends JPanel {
     private JPopupMenu menu = new JPopupMenu();
     private MutableBuddyList buddyList;
     private GuiSession guiSession;
+    private JButton sendFileButton;
 
     {
         setLayout(new BorderLayout());
@@ -158,6 +164,42 @@ public class BuddyListBox extends JPanel {
         });
         buddyTree.setInvokesStopCellEditing(true);
         imButton.setAction(new ImAction());
+        sendFileButton.setAction(new AbstractAction() {
+            {
+                putValue(NAME, "Send File");
+            }
+
+            public void actionPerformed(ActionEvent e) {
+                Screenname sn = getSelectedScreenname();
+                if (sn != null) {
+                    FileTransferManager mgr = guiSession.getAimConnection().getIcbmService()
+                            .getFileTransferManager();
+                    OutgoingFileTransfer transfer = mgr.createOutgoingFileTransfer(sn);
+                    JFileChooser chooser = new JFileChooser();
+                    chooser.setApproveButtonText("Send");
+                    chooser.setDialogTitle("Send Files");
+                    chooser.setMultiSelectionEnabled(true);
+                    int result = chooser.showOpenDialog(BuddyListBox.this);
+                    if (result == JFileChooser.APPROVE_OPTION) {
+                        transfer.setFiles(Arrays.asList(chooser.getSelectedFiles()));
+                        transfer.makeRequest(new InvitationMessage("Here's a file!"));
+                    }
+                }
+            }
+        });
+    }
+
+    private Screenname getSelectedScreenname() {
+        Screenname sn = null;
+        TreePath path = buddyTree.getSelectionPath();
+        if (path != null) {
+            Object selected = path.getLastPathComponent();
+            if (selected instanceof BuddyListModel.BuddyHolder) {
+                BuddyListModel.BuddyHolder buddyHolder = (BuddyListModel.BuddyHolder) selected;
+                sn = buddyHolder.getBuddy().getScreenname();
+            }
+        }
+        return sn;
     }
 
     private class ImAction extends AbstractAction {
@@ -166,13 +208,10 @@ public class BuddyListBox extends JPanel {
         }
 
         public void actionPerformed(ActionEvent e) {
-            TreePath path = buddyTree.getSelectionPath();
-            if (path == null) return;
-            Object selected = path.getLastPathComponent();
-            if (selected instanceof BuddyListModel.BuddyHolder) {
-                BuddyListModel.BuddyHolder buddyHolder = (BuddyListModel.BuddyHolder) selected;
-                Screenname sn = buddyHolder.getBuddy().getScreenname();
-                ImConversation conv = guiSession.getAimConnection().getIcbmService()
+            Screenname sn = getSelectedScreenname();
+            if (sn != null) {
+                ImConversation conv = guiSession.getAimConnection()
+                        .getIcbmService()
                         .getImConversation(sn);
                 conv.open();
             }

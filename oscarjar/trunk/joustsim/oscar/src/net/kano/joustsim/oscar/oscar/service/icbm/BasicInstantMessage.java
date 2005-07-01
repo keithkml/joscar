@@ -58,7 +58,8 @@ public class BasicInstantMessage extends SimpleMessage {
         return new BasicInstantMessage(msg, ar, aimexp);
     }
 
-    private static String extractAimExpressionName(Collection<? extends ExtraInfoBlock> aimexpInfo) {
+    private static String extractAimExpressionName(
+            Collection<? extends ExtraInfoBlock> aimexpInfo) {
         if (aimexpInfo == null) return null;
 
         String aimexp = null;

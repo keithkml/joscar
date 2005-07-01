@@ -36,7 +36,7 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public class Stream extends StateInfo {
+class Stream extends StateInfo {
     private InputStream inputStream;
     private OutputStream outputStream;
 

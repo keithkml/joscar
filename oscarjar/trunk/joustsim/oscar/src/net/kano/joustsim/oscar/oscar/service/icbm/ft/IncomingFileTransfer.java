@@ -33,3 +33,16 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
+import net.kano.joscar.rvcmd.RvConnectionInfo;
+
+public interface IncomingFileTransfer extends FileTransfer {
+    RvConnectionInfo getOriginalRemoteHostInfo();
+
+    void accept() throws IllegalStateException;
+
+    boolean isAccepted();
+
+    boolean isDeclined();
+
+    void decline() throws IllegalStateException;
+}

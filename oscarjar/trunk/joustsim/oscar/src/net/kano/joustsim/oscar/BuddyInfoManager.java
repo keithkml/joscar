@@ -182,6 +182,7 @@ public class BuddyInfoManager {
     private void handleBuddyStatusUpdate(Screenname buddy, FullUserInfo info) {
         BuddyInfo buddyInfo = getBuddyInfoInstance(buddy);
 
+        buddyInfo.setOnline(true);
         Date onSince = info.getOnSince();
         if (onSince != null) buddyInfo.setOnlineSince(onSince);
 

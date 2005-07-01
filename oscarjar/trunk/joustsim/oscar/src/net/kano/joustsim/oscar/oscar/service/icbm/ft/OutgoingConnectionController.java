@@ -33,51 +33,32 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-import net.kano.joscar.CopyOnWriteArrayList;
+import net.kano.joscar.rvcmd.RvConnectionInfo;
 
-abstract class StateController {
-    private CopyOnWriteArrayList<ControllerListener> listeners
-            = new CopyOnWriteArrayList<ControllerListener>();
-    private StateInfo endState = null;
+import java.net.InetAddress;
+import java.io.IOException;
 
-    public abstract void start(FileTransfer transfer,
-            StateController last);
+class OutgoingConnectionController extends AbstractOutgoingConnectionController {
+    private OutgoingConnectionType type;
 
-    public void addControllerListener(ControllerListener listener) {
-        listeners.addIfAbsent(listener);
+    public OutgoingConnectionController(OutgoingConnectionType type) {
+        this.type = type;
     }
 
-    public void removeControllerListener(ControllerListener listener) {
-        listeners.remove(listener);
-    }
+    protected InetAddress getIpAddress() throws IOException {
+        RvConnectionInfo connectionInfo = getConnectionInfo();
+//        assert !connectionInfo.isProxied();
 
-
-    protected void fireSucceeded(StateInfo stateInfo) {
-        assert !Thread.holdsLock(this);
-
-        endState = stateInfo;
-        for (ControllerListener listener : listeners) {
-            listener.handleControllerSucceeded(this, stateInfo);
+        InetAddress ip;
+        if (type == OutgoingConnectionType.EXTERNAL) {
+            ip = connectionInfo.getExternalIP();
+        } else if (type == OutgoingConnectionType.INTERNAL) {
+            ip = connectionInfo.getInternalIP();
+        } else {
+            throw new IllegalStateException(
+                    "invalid OutgoingConnectionType " + type);
         }
+        return ip;
     }
 
-    protected void fireFailed(final Exception e) {
-        assert !Thread.holdsLock(this);
-
-        ExceptionStateInfo info = new ExceptionStateInfo(e);
-        endState = info;
-        for (ControllerListener listener : listeners) {
-            listener.handleControllerFailed(this, info);
-        }
-    }
-
-    public void cancel() {
-
-    }
-
-    public StateInfo getEndState() {
-        return endState;
-    }
-
-    public abstract void stop();
 }

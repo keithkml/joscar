@@ -33,6 +33,7 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
+import net.kano.joscar.rvcmd.sendfile.FileSendAcceptRvCmd;
 import net.kano.joscar.rvproto.rvproxy.RvProxyAckCmd;
 import net.kano.joscar.rvproto.rvproxy.RvProxyCmd;
 import net.kano.joscar.rvproto.rvproxy.RvProxyInitRecvCmd;
@@ -40,27 +41,43 @@ import net.kano.joscar.rvproto.rvproxy.RvProxyPacket;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joustsim.oscar.AimConnection;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.ByteArrayOutputStream;
 import java.net.InetAddress;
 
-public class ConnectToProxyController extends AbstractProxyConnectionController {
+class ConnectToProxyController extends AbstractProxyConnectionController {
+    private final ConnectionType type;
+
+    public enum ConnectionType { REQUEST, ACK }
+
+    ConnectToProxyController(ConnectionType type) {
+        this.type = type;
+    }
+
+    protected void initializeBeforeStarting() throws IOException {
+        super.initializeBeforeStarting();
+        if (type == ConnectionType.ACK) {
+            System.out.println("sending accept");
+            getFileTransfer().getRvSession().sendRv(new FileSendAcceptRvCmd());
+        }
+    }
+
     protected void handleAck(RvProxyAckCmd ackCmd) throws IOException {
     }
 
     protected void initializeProxy() throws IOException {
         OutputStream out = getStream().getOutputStream();
 
-        FileTransferManager ftManager = getFileTransfer().getFileTransferManager();
+        FileTransferImpl transfer = getFileTransfer();
+        FileTransferManager ftManager = transfer.getFileTransferManager();
         AimConnection connection = ftManager.getIcbmService().getAimConnection();
-        Long messageId = getFileTransfer().getTransferProperty(
-                FileTransferManager.KEY_REQUEST_ID);
-        int port = getConnectionInfo().getPort();
+        int port = transfer.getTransferProperty(FileTransferImpl.KEY_CONN_INFO).getPort();
         String mysn = connection.getScreenname().getNormal();
 //        String otherSn = getFileTransfer().getRvSession().getScreenname();
         RvProxyCmd initCmd = new RvProxyInitRecvCmd(
-                mysn, messageId, port, CapabilityBlock.BLOCK_FILE_SEND);
+                mysn, transfer.getRvSession().getRvSessionId(), port,
+                CapabilityBlock.BLOCK_FILE_SEND);
         RvProxyPacket packet = new RvProxyPacket(initCmd);
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
         packet.write(bout);

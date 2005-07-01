@@ -33,8 +33,5 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-public class TinyTestProgram {
-    public static void main(String[] args) {
-
-    }
+public abstract class FileTransferEvent {
 }

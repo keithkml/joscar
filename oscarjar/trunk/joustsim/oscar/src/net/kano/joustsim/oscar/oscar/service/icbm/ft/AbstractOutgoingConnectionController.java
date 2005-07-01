@@ -33,51 +33,21 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-import net.kano.joscar.CopyOnWriteArrayList;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.Socket;
 
-abstract class StateController {
-    private CopyOnWriteArrayList<ControllerListener> listeners
-            = new CopyOnWriteArrayList<ControllerListener>();
-    private StateInfo endState = null;
+public abstract class AbstractOutgoingConnectionController 
+        extends AbstractConnectionController {
 
-    public abstract void start(FileTransfer transfer,
-            StateController last);
-
-    public void addControllerListener(ControllerListener listener) {
-        listeners.addIfAbsent(listener);
-    }
-
-    public void removeControllerListener(ControllerListener listener) {
-        listeners.remove(listener);
-    }
-
-
-    protected void fireSucceeded(StateInfo stateInfo) {
-        assert !Thread.holdsLock(this);
-
-        endState = stateInfo;
-        for (ControllerListener listener : listeners) {
-            listener.handleControllerSucceeded(this, stateInfo);
+    protected Socket createSocket() throws IOException {
+        InetAddress ip = getIpAddress();
+        if (ip == null) {
+            throw new IllegalStateException("no IP address");
         }
+        return new Socket(ip, getConnectionInfo().getPort());
     }
 
-    protected void fireFailed(final Exception e) {
-        assert !Thread.holdsLock(this);
+    protected abstract InetAddress getIpAddress() throws IOException;
 
-        ExceptionStateInfo info = new ExceptionStateInfo(e);
-        endState = info;
-        for (ControllerListener listener : listeners) {
-            listener.handleControllerFailed(this, info);
-        }
-    }
-
-    public void cancel() {
-
-    }
-
-    public StateInfo getEndState() {
-        return endState;
-    }
-
-    public abstract void stop();
 }

@@ -33,49 +33,34 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-import net.kano.joscar.rvproto.rvproxy.DefaultRvProxyCmdFactory;
-import net.kano.joscar.rvproto.rvproxy.RvProxyAckCmd;
+import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joscar.rvproto.rvproxy.RvProxyCmd;
-import net.kano.joscar.rvproto.rvproxy.RvProxyCmdFactory;
-import net.kano.joscar.rvproto.rvproxy.RvProxyErrorCmd;
+import net.kano.joscar.rvproto.rvproxy.RvProxyInitSendCmd;
 import net.kano.joscar.rvproto.rvproxy.RvProxyPacket;
-import net.kano.joscar.rvproto.rvproxy.RvProxyReadyCmd;
+import net.kano.joscar.snaccmd.CapabilityBlock;
 
+import java.net.InetAddress;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.ByteArrayOutputStream;
 
-public abstract class AbstractProxyConnectionController
-        extends AbstractOutgoingConnectionController {
-    protected void initializeConnectionInThread() throws IOException {
-        Stream stream = getStream();
-        InputStream in = stream.getInputStream();
-
-        initializeProxy();
-        RvProxyCmdFactory factory = new DefaultRvProxyCmdFactory();
-        while (true) {
-            RvProxyPacket packet = RvProxyPacket.readPacket(in);
-            RvProxyCmd cmd = factory.getRvProxyCmd(packet);
-            if (cmd instanceof RvProxyAckCmd) {
-                RvProxyAckCmd ackCmd = (RvProxyAckCmd) cmd;
-                handleAck(ackCmd);
-
-            } else if (cmd instanceof RvProxyErrorCmd) {
-                RvProxyErrorCmd proxyErrorCmd = (RvProxyErrorCmd) cmd;
-                int code = proxyErrorCmd.getErrorCode();
-                if (code == RvProxyErrorCmd.ERRORCODE_TIMEOUT) {
-                    throw new AolProxyTimedOutException();
-                } else {
-                    throw new UnknownAolProxyErrorException(code);
-                }
-
-            } else if (cmd instanceof RvProxyReadyCmd) {
-                fireConnected();
-                break;
-            }
-        }
+public abstract class InitiateProxyController extends AbstractProxyConnectionController {
+    protected InetAddress getIpAddress() throws IOException {
+        return InetAddress.getByName("ars.oscar.aol.com");
     }
 
-    protected abstract void handleAck(RvProxyAckCmd ackCmd) throws IOException;
-
-    protected abstract void initializeProxy() throws IOException;
+    protected void initializeProxy() throws IOException {
+        OutputStream out = getStream().getOutputStream();
+        FileTransferImpl transfer = getFileTransfer();
+        FileTransferManager ftManager = transfer.getFileTransferManager();
+        AimConnection connection = ftManager.getIcbmService().getAimConnection();
+        RvProxyCmd initCmd = new RvProxyInitSendCmd(
+                connection.getScreenname().getNormal(),
+                transfer.getRvSession().getRvSessionId(),
+                CapabilityBlock.BLOCK_FILE_SEND);
+        RvProxyPacket packet = new RvProxyPacket(initCmd);
+        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        packet.write(bout);
+        bout.writeTo(out);
+    }
 }

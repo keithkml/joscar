@@ -35,5 +35,5 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
 public interface FileTransferManagerListener {
     void handleNewIncomingFileTransfer(FileTransferManager manager,
-            FileTransferManager.FileTransfer transfer);
+            IncomingFileTransfer transfer);
 }

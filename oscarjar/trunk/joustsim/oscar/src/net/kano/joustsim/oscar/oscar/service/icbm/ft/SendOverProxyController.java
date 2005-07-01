@@ -33,49 +33,26 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-import net.kano.joscar.rvproto.rvproxy.DefaultRvProxyCmdFactory;
 import net.kano.joscar.rvproto.rvproxy.RvProxyAckCmd;
-import net.kano.joscar.rvproto.rvproxy.RvProxyCmd;
-import net.kano.joscar.rvproto.rvproxy.RvProxyCmdFactory;
-import net.kano.joscar.rvproto.rvproxy.RvProxyErrorCmd;
-import net.kano.joscar.rvproto.rvproxy.RvProxyPacket;
-import net.kano.joscar.rvproto.rvproxy.RvProxyReadyCmd;
+import net.kano.joscar.rvcmd.RvConnectionInfo;
+import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.util.Random;
 
-public abstract class AbstractProxyConnectionController
-        extends AbstractOutgoingConnectionController {
-    protected void initializeConnectionInThread() throws IOException {
-        Stream stream = getStream();
-        InputStream in = stream.getInputStream();
-
-        initializeProxy();
-        RvProxyCmdFactory factory = new DefaultRvProxyCmdFactory();
-        while (true) {
-            RvProxyPacket packet = RvProxyPacket.readPacket(in);
-            RvProxyCmd cmd = factory.getRvProxyCmd(packet);
-            if (cmd instanceof RvProxyAckCmd) {
-                RvProxyAckCmd ackCmd = (RvProxyAckCmd) cmd;
-                handleAck(ackCmd);
-
-            } else if (cmd instanceof RvProxyErrorCmd) {
-                RvProxyErrorCmd proxyErrorCmd = (RvProxyErrorCmd) cmd;
-                int code = proxyErrorCmd.getErrorCode();
-                if (code == RvProxyErrorCmd.ERRORCODE_TIMEOUT) {
-                    throw new AolProxyTimedOutException();
-                } else {
-                    throw new UnknownAolProxyErrorException(code);
-                }
-
-            } else if (cmd instanceof RvProxyReadyCmd) {
-                fireConnected();
-                break;
-            }
-        }
+class SendOverProxyController
+        extends InitiateProxyController {
+    protected void handleAck(RvProxyAckCmd ackCmd) throws IOException {
+        FileTransferImpl transfer = getFileTransfer();
+        int proxyPort = ackCmd.getProxyPort();
+        System.out.println("proxy port: 0x" + Integer.toHexString(proxyPort));
+        RvConnectionInfo connInfo = RvConnectionInfo.createForOutgoingProxiedRequest(
+                ackCmd.getProxyIpAddress(), proxyPort);
+        FileSendReqRvCmd req = new FileSendReqRvCmd(transfer.getInvitationMessage(),
+                connInfo, transfer.getFileInfo());
+        Random random = new Random();
+        long msgid = FileTransferTools.getRandomIcbmId(random);
+        transfer.putTransferProperty(FileTransferImpl.KEY_CONN_INFO, connInfo);
+        transfer.getRvSession().sendRv(req/*, msgid*/);
     }
-
-    protected abstract void handleAck(RvProxyAckCmd ackCmd) throws IOException;
-
-    protected abstract void initializeProxy() throws IOException;
 }

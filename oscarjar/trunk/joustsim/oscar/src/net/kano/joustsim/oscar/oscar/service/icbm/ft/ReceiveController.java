@@ -33,58 +33,43 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-import net.kano.joscar.rvproto.ft.FileTransferChecksum;
+import static net.kano.joscar.rvproto.ft.FileTransferHeader.HEADERTYPE_ACK;
+import static net.kano.joscar.rvproto.ft.FileTransferHeader.HEADERTYPE_RESUME_ACK;
+import static net.kano.joscar.rvproto.ft.FileTransferHeader.HEADERTYPE_RESUME_SENDHEADER;
 import net.kano.joscar.rvproto.ft.FileTransferHeader;
-import static net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferManager.KEY_REQUEST_ID;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.List;
 
-class ReceiveFileController extends StateController {
-    public void start(final FileTransferManager.FileTransfer transfer,
-            StateController last) {
-        StateInfo endState = last.getEndState();
-        if (endState instanceof Stream) {
-            final Stream stream = (Stream) endState;
-            Thread receiveThread = new Thread(new Runnable() {
-                public void run() {
-                    try {
-                        receiveInThread(stream, transfer);
-
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                        fireFailed(e);
-                        return;
-                    }
-                }
-            });
-            receiveThread.start();
-        }
-    }
-
-    private void receiveInThread(final Stream stream,
-            final FileTransferManager.FileTransfer transfer)
-            throws IOException {
+class ReceiveController extends TransferController {
+    protected void transferInThread(final Stream stream,
+            final FileTransferImpl transfer) throws IOException {
         InputStream socketIn = stream.getInputStream();
 
-        long icbmId = transfer.getTransferProperty(KEY_REQUEST_ID);
-        for (;;) {
-            FileTransferHeader sendheader = FileTransferHeader.readHeader(socketIn);
+        IncomingFileTransferImpl itransfer = (IncomingFileTransferImpl) transfer;
+        long icbmId = itransfer.getRvSession().getRvSessionId();
+        boolean good = false;
+        for (; !shouldStop() ;) {
+            FileTransferHeader sendheader = FileTransferHeader
+                    .readHeader(socketIn);
 
             if (sendheader == null) break;
 
             List<String> parts = sendheader.getFilename().getSegments();
             String filename;
-            if (parts.size() > 0) filename = parts.get(parts.size()-1);
-            else filename = transfer.getRvSession().getScreenname() + " download";
+            if (parts.size() > 0) {
+                filename = parts.get(parts.size() - 1);
+            } else {
+                filename = itransfer.getRvSession().getScreenname()
+                        + " download";
+            }
 
             File file = new File(filename);
             boolean resume = file.exists();
@@ -94,19 +79,23 @@ class ReceiveFileController extends StateController {
             OutputStream socketOut = stream.getOutputStream();
             long toDownload;
             if (resume) {
-                FileTransferHeader outHeader = new FileTransferHeader(sendheader);
-                outHeader.setIcbmMessageId(icbmId);
+                FileTransferHeader outHeader = new FileTransferHeader(
+                        sendheader);
                 outHeader.setHeaderType(FileTransferHeader.HEADERTYPE_RESUME);
                 outHeader.setIcbmMessageId(icbmId);
                 long len = raf.length();
                 outHeader.setBytesReceived(len);
-                outHeader.setReceivedChecksum(getChecksum(fileChannel, 0, len));
+                outHeader.setReceivedChecksum(FileTransferTools.getChecksum(
+                        fileChannel, 0, len));
+                outHeader.setCompression(0);
+                outHeader.setEncryption(0);
                 outHeader.write(socketOut);
 
-                FileTransferHeader resumeResponse = FileTransferHeader.readHeader(socketIn);
-                System.out.println("got resume response: " + resumeResponse);
+                FileTransferHeader resumeResponse = FileTransferHeader
+                        .readHeader(socketIn);
+                if (resumeResponse == null) break;
                 assert resumeResponse.getHeaderType()
-                        == FileTransferHeader.HEADERTYPE_RESUME_SENDHEADER
+                        == HEADERTYPE_RESUME_SENDHEADER
                         : resumeResponse.getHeaderType();
                 long bytesReceived = resumeResponse.getBytesReceived();
                 assert bytesReceived <= len : "sender is trying to trick us: "
@@ -118,28 +107,32 @@ class ReceiveFileController extends StateController {
                 raf.setLength(bytesReceived);
                 toDownload = resumeResponse.getFileSize()
                         - bytesReceived;
-                FileTransferHeader finalResponse = new FileTransferHeader(resumeResponse);
-                finalResponse.setHeaderType(FileTransferHeader.HEADERTYPE_RESUME_ACK);
+                FileTransferHeader finalResponse = new FileTransferHeader(
+                        resumeResponse);
+                finalResponse.setHeaderType(HEADERTYPE_RESUME_ACK);
                 finalResponse.write(socketOut);
             } else {
-                FileTransferHeader outHeader = new FileTransferHeader(sendheader);
+                FileTransferHeader outHeader = new FileTransferHeader(
+                        sendheader);
                 outHeader.setIcbmMessageId(icbmId);
                 raf.setLength(0);
-                outHeader.setHeaderType(FileTransferHeader.HEADERTYPE_ACK);
+                outHeader.setHeaderType(HEADERTYPE_ACK);
                 outHeader.setBytesReceived(0);
                 outHeader.setReceivedChecksum(0);
+                outHeader.setCompression(0);
+                outHeader.setEncryption(0);
+                outHeader.setFlags(0);
                 outHeader.write(socketOut);
                 toDownload = sendheader.getFileSize();
             }
 
             long startedAt = fileChannel.position();
-            int downloaded = downloadFile(socketIn, fileChannel, startedAt, toDownload);
-            if (downloaded != toDownload) {
-                fireFailed(new IOException("Could not complete download"));
-                return;
-            }
+            int downloaded = downloadFile(socketIn, fileChannel, startedAt,
+                    toDownload);
+            if (downloaded != toDownload) break;
 
-            long calculatedSum = getChecksum(fileChannel, 0, startedAt + downloaded);
+            long calculatedSum = FileTransferTools.getChecksum(fileChannel, 0,
+                    startedAt + downloaded);
 
             fileChannel.close();
             raf.close();
@@ -153,18 +146,22 @@ class ReceiveFileController extends StateController {
             if (doneHeader.getFilesLeft() == 0) {
                 doneHeader.setPartsLeft(doneHeader.getPartsLeft() - 1);
             }
-            //TODO: does startedat go here? should it be removed?
             doneHeader.setBytesReceived(startedAt + downloaded);
             doneHeader.setReceivedChecksum(calculatedSum);
             doneHeader.write(socketOut);
-            if (doneHeader.getFilesLeft() == 0 && doneHeader.getPartsLeft() == 0) {
+            if (doneHeader.getFilesLeft() == 0
+                    && doneHeader.getPartsLeft() == 0) {
+                good = true;
                 break;
             }
         }
 
-
-        fireSucceeded(new StateInfo() {
-        });
+        if (good) {
+            fireSucceeded(new StateInfo() {
+            });
+        } else {
+            fireFailed(new UnknownTransferErrorException());
+        }
     }
 
     private int downloadFile(InputStream socketIn, FileChannel fileChannel,
@@ -184,31 +181,4 @@ class ReceiveFileController extends StateController {
         return downloaded;
     }
 
-    private long getChecksum(FileChannel fileChannel, long offset, long length)
-            throws IOException {
-        long oldPos = fileChannel.position();
-        try {
-            FileTransferChecksum summer = new FileTransferChecksum();
-            ByteBuffer buffer = ByteBuffer.allocate(1024);
-            fileChannel.position(offset);
-            long remaining = length;
-            while (remaining > 0) {
-                buffer.rewind();
-                buffer.limit((int) Math.min(remaining, buffer.capacity()));
-                int count = fileChannel.read(buffer);
-                if (count == -1) break;
-                buffer.flip();
-                remaining -= buffer.limit();
-                summer.update(buffer.array(), buffer.arrayOffset(), buffer.limit());
-            }
-            if (remaining > 0) {
-                throw new IOException("could not get checksum for entire file; "
-                        + remaining + " failed of " + length);
-            }
-
-            return summer.getValue();
-        } finally {
-            fileChannel.position(oldPos);
-        }
-    }
 }

@@ -33,49 +33,26 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-import net.kano.joscar.rv.RvSession;
-import net.kano.joscar.rvcmd.RvConnectionInfo;
-import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
-import net.kano.joscar.rvproto.rvproxy.RvProxyAckCmd;
-import net.kano.joscar.rvproto.rvproxy.RvProxyCmd;
-import net.kano.joscar.rvproto.rvproxy.RvProxyInitSendCmd;
-import net.kano.joustsim.oscar.AimConnection;
-
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.util.Random;
 
-/**
- * 1. connect to ars.oscar.aol.com:5190
- * 2. find ip of server
- * 3. send rv
- */
-class ProxyRedirectController extends AbstractProxyConnectionController {
-    private Random random = new Random();
+public abstract class PassiveConnectionController extends AbstractConnectionController {
+    private ServerSocket serverSocket;
 
-    protected InetAddress getIpAddress() throws IOException {
-        return InetAddress.getByName("ars.oscar.aol.com");
+    protected void initializeBeforeStarting() throws IOException {
+        serverSocket = new ServerSocket(0);
+        sendRequest();
     }
 
-    protected void handleAck(RvProxyAckCmd ackCmd) throws IOException {
-        Inet4Address addr = ackCmd.getProxyIpAddress();
-        int port = ackCmd.getProxyPort();
-
-        long msgId = random.nextInt(5000);
-        RvSession rvSession = getFileTransfer().getRvSession();
-        rvSession.sendRv(new FileSendReqRvCmd(
-                RvConnectionInfo.createForOutgoingProxiedRequest(addr, port)),
-                msgId);
-        OutputStream out = getStream().getOutputStream();
-        FileTransferManager ftManager = getFileTransfer().getFileTransferManager();
-        AimConnection connection = ftManager.getIcbmService().getAimConnection();
-        RvProxyCmd initCmd = new RvProxyInitSendCmd(
-                connection.getScreenname().getNormal(), msgId);
-        initCmd.writeCommandData(out);
+    protected ServerSocket getServerSocket() {
+        return serverSocket;
     }
 
-    protected void initializeProxy() throws IOException {
+    protected abstract void sendRequest() throws IOException;
+
+    protected Socket createSocket() throws IOException {
+        Socket socket = serverSocket.accept();
+        return socket;
     }
 }

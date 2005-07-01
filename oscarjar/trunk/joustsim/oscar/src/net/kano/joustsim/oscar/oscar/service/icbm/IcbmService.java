@@ -62,6 +62,7 @@ import net.kano.joscar.snaccmd.icbm.RecvTypingNotification;
 import net.kano.joscar.snaccmd.icbm.SendImIcbm;
 import net.kano.joscar.snaccmd.icbm.SendTypingNotification;
 import net.kano.joscar.snaccmd.icbm.SetParamInfoCmd;
+import net.kano.joscar.snaccmd.icbm.RvCommand;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.oscar.BuddyInfo;
@@ -280,8 +281,10 @@ public class IcbmService extends Service {
 
     private class DelegatingRvProcessorListener implements RvProcessorListener {
         public void handleNewSession(NewRvSessionEvent event) {
-            final RvSession session = event.getSession();
-            session.addListener(new SessionListenerDelegate(session));
+            if (event.getSessionType() == NewRvSessionEvent.TYPE_INCOMING) {
+                final RvSession session = event.getSession();
+                session.addListener(new SessionListenerDelegate(session));
+            }
         }
 
     }
@@ -296,11 +299,17 @@ public class IcbmService extends Service {
 
         public void handleRv(RecvRvEvent event) {
             if (sessionHandler == null) {
-                CapabilityBlock cap = event.getRvCommand().getCapabilityBlock();
+                RvCommand rvCommand = event.getRvCommand();
+                if (rvCommand == null) {
+                    System.out.println("unknown rv command");
+                    return;
+                }
+                CapabilityBlock cap = rvCommand.getCapabilityBlock();
                 CapabilityHandler handler = getAimConnection().getCapabilityManager()
                         .getCapabilityHandler(cap);
                 if (handler instanceof RendezvousCapabilityHandler) {
-                    RendezvousCapabilityHandler rhandler = (RendezvousCapabilityHandler) handler;
+                    RendezvousCapabilityHandler rhandler
+                            = (RendezvousCapabilityHandler) handler;
                     sessionHandler = rhandler
                             .handleSession(IcbmService.this, session);
                 } else {

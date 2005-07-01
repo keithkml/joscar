@@ -33,3 +33,21 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
+import net.kano.joscar.rvcmd.InvitationMessage;
+import net.kano.joscar.rvcmd.sendfile.FileSendBlock;
+
+public interface FileTransfer {
+    FileSendBlock getFileInfo();
+
+    InvitationMessage getInvitationMessage();
+
+    FileTransferManager getFileTransferManager();
+
+    void addTransferListener(FileTransferListener listener);
+
+    void removeTransferListener(FileTransferListener listener);
+
+    enum State {
+        WAITING, CONNECTING, TRANSFERRING, FAILED, FINISHED 
+    }
+}

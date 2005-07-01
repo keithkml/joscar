@@ -36,40 +36,36 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joscar.DefensiveTools;
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.Socket;
-import java.util.TimerTask;
 import java.util.Timer;
+import java.util.TimerTask;
+import java.net.Socket;
+import java.io.IOException;
 
-public abstract class AbstractConnectingController extends StateController {
+abstract class AbstractConnectionController extends StateController {
     private RvConnectionInfo connectionInfo;
     private Stream stream;
-    private FileTransferManager.FileTransfer fileTransfer;
+    private FileTransferImpl fileTransfer;
     private Socket socket;
+    private Thread thread;
 
-    private long getConnectionTimeoutMs() {
+    private long getConnectionTimeoutMillis() {
         return 10000;
     }
 
-    public RvConnectionInfo getConnectionInfo() {
-        return connectionInfo;
-    }
+    public RvConnectionInfo getConnectionInfo() { return connectionInfo; }
 
-    protected Stream getStream() {
-        return stream;
-    }
+    protected Stream getStream() { return stream; }
 
-    public FileTransferManager.FileTransfer getFileTransfer() {
+    public FileTransferImpl getFileTransfer() {
         return fileTransfer;
     }
 
-    public void start(final FileTransferManager.FileTransfer transfer,
+    public void start(final FileTransfer transfer,
             StateController last) {
         DefensiveTools.checkNull(transfer, "transfer");
 
-        this.fileTransfer = transfer;
-        connectionInfo = fileTransfer.getRemoteConnectionInfo();
+        this.fileTransfer = (FileTransferImpl) transfer;
+        connectionInfo = fileTransfer.getTransferProperty(FileTransferImpl.KEY_CONN_INFO);
 
         try {
             initializeBeforeStarting();
@@ -78,7 +74,7 @@ public abstract class AbstractConnectingController extends StateController {
             return;
         }
 
-        final Thread thread = new Thread(new Runnable() {
+        thread = new Thread(new Runnable() {
             public void run() {
                 try {
                     openConnectionInThread();
@@ -94,15 +90,17 @@ public abstract class AbstractConnectingController extends StateController {
                 thread.interrupt();
             }
         };
-        timer.schedule(task, getConnectionTimeoutMs());
+        timer.schedule(task, getConnectionTimeoutMillis());
         thread.start();
     }
 
-    public Socket getSocket() {
-        return socket;
+    public void stop() {
+        thread.interrupt();
     }
 
-    protected void initializeBeforeStarting() {
+    public Socket getSocket() { return socket; }
+
+    protected void initializeBeforeStarting() throws IOException {
 
     }
 
@@ -115,28 +113,20 @@ public abstract class AbstractConnectingController extends StateController {
             return;
         }
         try {
-            initializeConnection();
+            initializeConnectionInThread();
         } catch (IOException e) {
             e.printStackTrace();
         }
 
     }
 
-    protected Socket createSocket() throws IOException {
-        InetAddress ip = getIpAddress();
-        if (ip == null) {
-            throw new IllegalStateException("no IP address");
-        }
-        return new Socket(ip, connectionInfo.getPort());
-    }
+    protected abstract Socket createSocket() throws IOException;
 
     protected void fireConnected() {
         fireSucceeded(stream);
     }
 
-    protected abstract InetAddress getIpAddress() throws IOException;
-
-    protected void initializeConnection() throws IOException {
+    protected void initializeConnectionInThread() throws IOException {
         fireConnected();
     }
 }

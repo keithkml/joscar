@@ -33,51 +33,18 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-import net.kano.joscar.CopyOnWriteArrayList;
+import net.kano.joscar.rvcmd.RvConnectionInfo;
+import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
 
-abstract class StateController {
-    private CopyOnWriteArrayList<ControllerListener> listeners
-            = new CopyOnWriteArrayList<ControllerListener>();
-    private StateInfo endState = null;
+import java.io.IOException;
+import java.net.InetAddress;
 
-    public abstract void start(FileTransfer transfer,
-            StateController last);
-
-    public void addControllerListener(ControllerListener listener) {
-        listeners.addIfAbsent(listener);
+class ReverseConnectionController extends PassiveConnectionController {
+    protected void sendRequest() throws IOException {
+        RvConnectionInfo connInfo = RvConnectionInfo
+                .createForOutgoingRequest(InetAddress.getLocalHost(),
+                        getServerSocket().getLocalPort());
+        getFileTransfer().getRvSession().sendRv(new FileSendReqRvCmd(
+                connInfo));
     }
-
-    public void removeControllerListener(ControllerListener listener) {
-        listeners.remove(listener);
-    }
-
-
-    protected void fireSucceeded(StateInfo stateInfo) {
-        assert !Thread.holdsLock(this);
-
-        endState = stateInfo;
-        for (ControllerListener listener : listeners) {
-            listener.handleControllerSucceeded(this, stateInfo);
-        }
-    }
-
-    protected void fireFailed(final Exception e) {
-        assert !Thread.holdsLock(this);
-
-        ExceptionStateInfo info = new ExceptionStateInfo(e);
-        endState = info;
-        for (ControllerListener listener : listeners) {
-            listener.handleControllerFailed(this, info);
-        }
-    }
-
-    public void cancel() {
-
-    }
-
-    public StateInfo getEndState() {
-        return endState;
-    }
-
-    public abstract void stop();
 }

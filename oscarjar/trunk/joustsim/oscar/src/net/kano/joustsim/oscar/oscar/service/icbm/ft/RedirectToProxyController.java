@@ -33,49 +33,38 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-import net.kano.joscar.rvproto.rvproxy.DefaultRvProxyCmdFactory;
+import net.kano.joscar.rv.RvSession;
+import net.kano.joscar.rvcmd.RvConnectionInfo;
+import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
 import net.kano.joscar.rvproto.rvproxy.RvProxyAckCmd;
-import net.kano.joscar.rvproto.rvproxy.RvProxyCmd;
-import net.kano.joscar.rvproto.rvproxy.RvProxyCmdFactory;
-import net.kano.joscar.rvproto.rvproxy.RvProxyErrorCmd;
-import net.kano.joscar.rvproto.rvproxy.RvProxyPacket;
-import net.kano.joscar.rvproto.rvproxy.RvProxyReadyCmd;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.net.Inet4Address;
+import java.util.Random;
 
-public abstract class AbstractProxyConnectionController
-        extends AbstractOutgoingConnectionController {
-    protected void initializeConnectionInThread() throws IOException {
-        Stream stream = getStream();
-        InputStream in = stream.getInputStream();
-
-        initializeProxy();
-        RvProxyCmdFactory factory = new DefaultRvProxyCmdFactory();
-        while (true) {
-            RvProxyPacket packet = RvProxyPacket.readPacket(in);
-            RvProxyCmd cmd = factory.getRvProxyCmd(packet);
-            if (cmd instanceof RvProxyAckCmd) {
-                RvProxyAckCmd ackCmd = (RvProxyAckCmd) cmd;
-                handleAck(ackCmd);
-
-            } else if (cmd instanceof RvProxyErrorCmd) {
-                RvProxyErrorCmd proxyErrorCmd = (RvProxyErrorCmd) cmd;
-                int code = proxyErrorCmd.getErrorCode();
-                if (code == RvProxyErrorCmd.ERRORCODE_TIMEOUT) {
-                    throw new AolProxyTimedOutException();
-                } else {
-                    throw new UnknownAolProxyErrorException(code);
-                }
-
-            } else if (cmd instanceof RvProxyReadyCmd) {
-                fireConnected();
-                break;
-            }
-        }
+/**
+ * 1. connect to ars.oscar.aol.com:5190
+ * 2. find ip of server
+ * 3. send rv
+ */
+class RedirectToProxyController extends InitiateProxyController {
+    protected void initializeProxy() throws IOException {
+        Random random = new Random();
+        long rand = FileTransferTools.getRandomIcbmId(random);
+//        getFileTransfer().putTransferProperty(FileTransferImpl.KEY_PROXY_REQUEST_ID, rand);
+        super.initializeProxy();
     }
 
-    protected abstract void handleAck(RvProxyAckCmd ackCmd) throws IOException;
+    protected void handleAck(RvProxyAckCmd ackCmd) throws IOException {
+        Inet4Address addr = ackCmd.getProxyIpAddress();
+        int port = ackCmd.getProxyPort();
 
-    protected abstract void initializeProxy() throws IOException;
+        FileTransferImpl transfer = getFileTransfer();
+        RvSession rvSession = transfer.getRvSession();
+        RvConnectionInfo connInfo = RvConnectionInfo
+                .createForOutgoingProxiedRequest(addr, port);
+        transfer.putTransferProperty(FileTransferImpl.KEY_CONN_INFO, connInfo);
+        rvSession.sendRv(new FileSendReqRvCmd(connInfo));
+
+    }
 }
