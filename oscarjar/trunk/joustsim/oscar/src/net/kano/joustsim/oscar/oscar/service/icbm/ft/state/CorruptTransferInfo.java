@@ -31,12 +31,18 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm.ft;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft.state;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferredFileInfo;
 
-public interface FileTransferListener {
-    void handleEventWithStateChange(FileTransfer transfer, FileTransferState state,
-            FileTransferEvent event);
-    void handleEvent(FileTransfer transfer, FileTransferEvent event);
+public class CorruptTransferInfo extends FailedStateInfo {
+    private TransferredFileInfo info;
+
+    public CorruptTransferInfo(TransferredFileInfo info) {
+        this.info = info;
+    }
+
+    public TransferredFileInfo getInfo() {
+        return info;
+    }
 }

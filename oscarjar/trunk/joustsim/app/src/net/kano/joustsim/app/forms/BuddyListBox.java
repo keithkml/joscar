@@ -44,6 +44,7 @@ import net.kano.joustsim.oscar.oscar.service.ssi.MutableGroup;
 import net.kano.joustsim.oscar.oscar.service.icbm.ImConversation;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferManager;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.OutgoingFileTransfer;
+import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.Screenname;
 import net.kano.joscar.rvcmd.InvitationMessage;
 
@@ -172,7 +173,8 @@ public class BuddyListBox extends JPanel {
             public void actionPerformed(ActionEvent e) {
                 Screenname sn = getSelectedScreenname();
                 if (sn != null) {
-                    FileTransferManager mgr = guiSession.getAimConnection().getIcbmService()
+                    AimConnection conn = guiSession.getAimConnection();
+                    FileTransferManager mgr = conn.getIcbmService()
                             .getFileTransferManager();
                     OutgoingFileTransfer transfer = mgr.createOutgoingFileTransfer(sn);
                     JFileChooser chooser = new JFileChooser();
@@ -202,6 +204,13 @@ public class BuddyListBox extends JPanel {
         return sn;
     }
 
+    public void updateSession(GuiSession guiSession) {
+        this.guiSession = guiSession;
+        buddyList = guiSession.getAimConnection().getSsiService().getBuddyList();
+        model = new BuddyListModel(buddyList);
+        buddyTree.setModel(model);
+    }
+
     private class ImAction extends AbstractAction {
         {
             putValue(NAME, "IM");
@@ -216,13 +225,6 @@ public class BuddyListBox extends JPanel {
                 conv.open();
             }
         }
-    }
-
-    public void updateSession(GuiSession guiSession) {
-        this.guiSession = guiSession;
-        buddyList = guiSession.getAimConnection().getSsiService().getBuddyList();
-        model = new BuddyListModel(buddyList);
-        buddyTree.setModel(model);
     }
 
     private class AddGroupAction extends AbstractAction {

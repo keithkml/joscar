@@ -31,12 +31,30 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm.ft;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
+import java.io.File;
 
-public interface FileTransferListener {
-    void handleEventWithStateChange(FileTransfer transfer, FileTransferState state,
-            FileTransferEvent event);
-    void handleEvent(FileTransfer transfer, FileTransferEvent event);
+public class TransferredFileInfo {
+    private File file;
+    private long fileSize;
+    private long resumedAt;
+
+    public TransferredFileInfo(File file, long fileSize, long resumedAt) {
+        this.file = file;
+        this.fileSize = fileSize;
+        this.resumedAt = resumedAt;
+    }
+
+    public File getFile() {
+        return file;
+    }
+
+    public long getFileSize() {
+        return fileSize;
+    }
+
+    public long getResumedAt() {
+        return resumedAt;
+    }
 }

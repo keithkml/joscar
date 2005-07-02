@@ -40,22 +40,31 @@ import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joscar.rvcmd.sendfile.FileSendAcceptRvCmd;
 import net.kano.joscar.rvcmd.sendfile.FileSendRejectRvCmd;
 import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.OutgoingConnectionController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectToProxyController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.RedirectConnectionController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ReceiveController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.RedirectToProxyController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
 
-class IncomingFileTransferImpl extends FileTransferImpl implements
-        IncomingFileTransfer {
+public class IncomingFileTransferImpl extends FileTransferImpl
+        implements IncomingFileTransfer {
     private static final Logger LOGGER = Logger
             .getLogger(IncomingFileTransferImpl.class.getName());
 
     private OutgoingConnectionController externalController
-            = new OutgoingConnectionController(OutgoingConnectionType.EXTERNAL);
+            = new OutgoingConnectionController(ConnectionType.INTERNET);
     private OutgoingConnectionController internalController
-            = new OutgoingConnectionController(OutgoingConnectionType.INTERNAL);
-    private ReverseConnectionController reverseConnectionController
-            = new ReverseConnectionController();
+            = new OutgoingConnectionController(ConnectionType.LAN);
+    private RedirectConnectionController redirectConnectionController
+            = new RedirectConnectionController();
     private ConnectToProxyController proxyController
             = new ConnectToProxyController(ConnectToProxyController.ConnectionType.ACK);
     private StateController proxyReverseController = new RedirectToProxyController();
@@ -107,7 +116,7 @@ class IncomingFileTransferImpl extends FileTransferImpl implements
                 internalController,
                 externalController,
                 proxyController,
-                reverseConnectionController,
+                redirectConnectionController,
                 proxyReverseController
         );
         startStateController(connControllers.get(0));
@@ -124,13 +133,13 @@ class IncomingFileTransferImpl extends FileTransferImpl implements
         getRvSession().sendRv(new FileSendRejectRvCmd(REJECTCODE_CANCELLED));
     }
 
-    protected StateController getNextStateController() {
+    public StateController getNextStateController() {
         StateController oldController = getStateController();
         StateInfo oldState = oldController.getEndState();
-        if (oldState instanceof Stream) {
+        if (oldState instanceof SuccessfulStateInfo) {
             return changeStateToReceiver(oldController);
 
-        } else if (oldState instanceof ExceptionStateInfo) {
+        } else if (oldState instanceof FailedStateInfo) {
             return changeStateFromError(oldController, oldState);
 
         } else {
@@ -211,7 +220,6 @@ class IncomingFileTransferImpl extends FileTransferImpl implements
                 RvConnectionInfo connInfo = reqCmd.getConnInfo();
                 setOriginalRemoteHostInfo(connInfo);
                 putTransferProperty(KEY_CONN_INFO, connInfo);
-                //TODO: set transfer state to OPENED
 
             } else {
                 LOGGER.info("Got rendezvous of unknown type in incoming "

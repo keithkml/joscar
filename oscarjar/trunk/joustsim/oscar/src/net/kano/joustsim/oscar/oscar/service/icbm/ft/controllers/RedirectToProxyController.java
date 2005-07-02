@@ -31,12 +31,36 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm.ft;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
+import net.kano.joscar.rv.RvSession;
+import net.kano.joscar.rvcmd.RvConnectionInfo;
+import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
+import net.kano.joscar.rvproto.rvproxy.RvProxyAckCmd;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.InitiateProxyController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferImpl;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.TransferPropertyHolder;
 
-public interface FileTransferListener {
-    void handleEventWithStateChange(FileTransfer transfer, FileTransferState state,
-            FileTransferEvent event);
-    void handleEvent(FileTransfer transfer, FileTransferEvent event);
+import java.io.IOException;
+import java.net.Inet4Address;
+
+/**
+ * 1. connect to ars.oscar.aol.com:5190
+ * 2. find ip of server
+ * 3. send rv
+ */
+public class RedirectToProxyController extends InitiateProxyController {
+    protected void handleAck(RvProxyAckCmd ackCmd) throws IOException {
+        Inet4Address addr = ackCmd.getProxyIpAddress();
+        int port = ackCmd.getProxyPort();
+
+        FileTransferImpl transfer = getFileTransfer();
+        RvSession rvSession = transfer.getRvSession();
+        RvConnectionInfo connInfo = RvConnectionInfo
+                .createForOutgoingProxiedRequest(addr, port);
+        transfer.putTransferProperty(TransferPropertyHolder.KEY_CONN_INFO, connInfo);
+        transfer.putTransferProperty(TransferPropertyHolder.KEY_REDIRECTED, true);
+        rvSession.sendRv(new FileSendReqRvCmd(connInfo));
+
+    }
 }

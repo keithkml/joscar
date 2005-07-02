@@ -31,12 +31,16 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm.ft;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft.state;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
+public class ConnectionTimedOutInfo extends FailedStateInfo {
+    private final long timeout;
 
-public interface FileTransferListener {
-    void handleEventWithStateChange(FileTransfer transfer, FileTransferState state,
-            FileTransferEvent event);
-    void handleEvent(FileTransfer transfer, FileTransferEvent event);
+    public ConnectionTimedOutInfo(long timeout) {
+        this.timeout = timeout;
+    }
+
+    public long getTimeout() {
+        return timeout;
+    }
 }

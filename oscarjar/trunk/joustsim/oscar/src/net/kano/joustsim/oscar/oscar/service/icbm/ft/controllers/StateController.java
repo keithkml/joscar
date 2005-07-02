@@ -31,12 +31,58 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm.ft;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
+import net.kano.joscar.CopyOnWriteArrayList;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransfer;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
 
-public interface FileTransferListener {
-    void handleEventWithStateChange(FileTransfer transfer, FileTransferState state,
-            FileTransferEvent event);
-    void handleEvent(FileTransfer transfer, FileTransferEvent event);
+public abstract class StateController {
+    private CopyOnWriteArrayList<ControllerListener> listeners
+            = new CopyOnWriteArrayList<ControllerListener>();
+    private StateInfo endState = null;
+
+    public abstract void start(FileTransfer transfer,
+            StateController last);
+
+    public void addControllerListener(ControllerListener listener) {
+        listeners.addIfAbsent(listener);
+    }
+
+    public void removeControllerListener(ControllerListener listener) {
+        listeners.remove(listener);
+    }
+
+
+    protected void fireSucceeded(StateInfo stateInfo) {
+        assert !Thread.holdsLock(this);
+
+        fireEvent(stateInfo);
+    }
+
+    protected void fireFailed(final Exception e) {
+        assert !Thread.holdsLock(this);
+
+        fireFailed(new ExceptionStateInfo(e));
+    }
+
+    protected void fireFailed(final FailedStateInfo e) {
+        fireEvent(e);
+    }
+
+    private void fireEvent(StateInfo e) {
+        assert !Thread.holdsLock(this);
+
+        synchronized(this) {
+            endState = e;
+        }
+        for (ControllerListener listener : listeners) {
+            listener.handleControllerFailed(this, e);
+        }
+    }
+
+    public synchronized StateInfo getEndState() { return endState; }
+
+    public abstract void stop();
 }

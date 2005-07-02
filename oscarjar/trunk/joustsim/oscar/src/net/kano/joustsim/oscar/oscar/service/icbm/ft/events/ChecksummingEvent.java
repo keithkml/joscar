@@ -31,12 +31,26 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm.ft;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.Checksummer;
 
-public interface FileTransferListener {
-    void handleEventWithStateChange(FileTransfer transfer, FileTransferState state,
-            FileTransferEvent event);
-    void handleEvent(FileTransfer transfer, FileTransferEvent event);
+import java.io.File;
+
+public class ChecksummingEvent extends FileTransferEvent {
+    private File file;
+    private Checksummer checksummer;
+
+    public ChecksummingEvent(File file, Checksummer summer) {
+        this.file = file;
+        checksummer = summer;
+    }
+
+    public File getFile() {
+        return file;
+    }
+
+    public Checksummer getChecksummer() {
+        return checksummer;
+    }
 }

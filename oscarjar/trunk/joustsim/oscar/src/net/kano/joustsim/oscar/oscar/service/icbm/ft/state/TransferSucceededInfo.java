@@ -31,12 +31,19 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm.ft;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft.state;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
+import net.kano.joscar.DefensiveTools;
 
-public interface FileTransferListener {
-    void handleEventWithStateChange(FileTransfer transfer, FileTransferState state,
-            FileTransferEvent event);
-    void handleEvent(FileTransfer transfer, FileTransferEvent event);
+import java.io.File;
+import java.util.List;
+
+public class TransferSucceededInfo extends SuccessfulStateInfo {
+    private final List<File> files;
+
+    public TransferSucceededInfo(List<File> files) {
+        this.files = DefensiveTools.getUnmodifiableCopy(files);
+    }
+
+    public List<File> getFiles() { return files; }
 }

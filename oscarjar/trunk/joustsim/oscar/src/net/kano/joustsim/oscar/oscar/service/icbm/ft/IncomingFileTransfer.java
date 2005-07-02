@@ -40,9 +40,9 @@ public interface IncomingFileTransfer extends FileTransfer {
 
     void accept() throws IllegalStateException;
 
+    void decline() throws IllegalStateException;
+
     boolean isAccepted();
 
     boolean isDeclined();
-
-    void decline() throws IllegalStateException;
 }

@@ -31,12 +31,18 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm.ft;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft.state;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
+import java.net.InetAddress;
 
-public interface FileTransferListener {
-    void handleEventWithStateChange(FileTransfer transfer, FileTransferState state,
-            FileTransferEvent event);
-    void handleEvent(FileTransfer transfer, FileTransferEvent event);
+public class InvalidAolProxyAddressInfo extends FailedStateInfo {
+    private InetAddress inet6Address;
+
+    public InvalidAolProxyAddressInfo(InetAddress inet6Address) {
+        this.inet6Address = inet6Address;
+    }
+
+    public InetAddress getInet6Address() {
+        return inet6Address;
+    }
 }

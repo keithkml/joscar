@@ -31,12 +31,13 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm.ft;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
 
-public interface FileTransferListener {
-    void handleEventWithStateChange(FileTransfer transfer, FileTransferState state,
-            FileTransferEvent event);
-    void handleEvent(FileTransfer transfer, FileTransferEvent event);
+public interface ControllerListener {
+    void handleControllerSucceeded(StateController controller, StateInfo info);
+
+    void handleControllerFailed(StateController controller, StateInfo info);
 }

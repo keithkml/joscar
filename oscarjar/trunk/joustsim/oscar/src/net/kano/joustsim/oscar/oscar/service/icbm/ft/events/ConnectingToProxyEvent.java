@@ -31,12 +31,24 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm.ft;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
+import java.net.InetAddress;
 
-public interface FileTransferListener {
-    void handleEventWithStateChange(FileTransfer transfer, FileTransferState state,
-            FileTransferEvent event);
-    void handleEvent(FileTransfer transfer, FileTransferEvent event);
+public class ConnectingToProxyEvent extends FileTransferEvent {
+    private InetAddress proxyAddress;
+    private int port;
+
+    public ConnectingToProxyEvent(InetAddress outAddr, int outPort) {
+        proxyAddress = outAddr;
+        port = outPort;
+    }
+
+    public InetAddress getProxyAddress() {
+        return proxyAddress;
+    }
+
+    public int getPort() {
+        return port;
+    }
 }

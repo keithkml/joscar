@@ -31,12 +31,49 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm.ft;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
+import net.kano.joscar.rvcmd.RvConnectionInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.WaitingForConnectionEvent;
 
-public interface FileTransferListener {
-    void handleEventWithStateChange(FileTransfer transfer, FileTransferState state,
-            FileTransferEvent event);
-    void handleEvent(FileTransfer transfer, FileTransferEvent event);
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
+
+public abstract class PassiveConnectionController extends AbstractConnectionController {
+    private ServerSocket serverSocket;
+    private RvConnectionInfo connInfo;
+
+    protected void initializeBeforeStarting() throws IOException {
+        serverSocket = new ServerSocket(0);
+        sendRequest();
+    }
+
+    protected ServerSocket getServerSocket() {
+        return serverSocket;
+    }
+
+    protected abstract void sendRequest() throws IOException;
+
+    protected Socket createSocket() throws IOException {
+        setConnectingState();
+        Socket socket = serverSocket.accept();
+        return socket;
+    }
+
+    protected void setResolvingState() {
+    }
+
+    protected void setConnectingState() {
+        getFileTransfer().getEventPost().fireEvent(
+                new WaitingForConnectionEvent(connInfo.getInternalIP(), connInfo.getPort()));
+    }
+
+    protected RvConnectionInfo getConnInfo() {
+        return connInfo;
+    }
+
+    protected void setConnInfo(RvConnectionInfo connInfo) {
+        this.connInfo = connInfo;
+    }
 }

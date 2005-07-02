@@ -31,12 +31,50 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm.ft;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
+import net.kano.joscar.rvcmd.RvConnectionInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.ConnectionType;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectingEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
 
-public interface FileTransferListener {
-    void handleEventWithStateChange(FileTransfer transfer, FileTransferState state,
-            FileTransferEvent event);
-    void handleEvent(FileTransfer transfer, FileTransferEvent event);
+import java.net.InetAddress;
+
+public class OutgoingConnectionController extends AbstractOutgoingConnectionController {
+    private ConnectionType type;
+
+    public OutgoingConnectionController(ConnectionType type) {
+        this.type = type;
+    }
+
+    protected InetAddress getIpAddress() {
+        RvConnectionInfo connectionInfo = getConnectionInfo();
+//        assert !connectionInfo.isProxied();
+
+        InetAddress ip;
+        if (type == ConnectionType.INTERNET) {
+            ip = connectionInfo.getExternalIP();
+        } else if (type == ConnectionType.LAN) {
+            ip = connectionInfo.getInternalIP();
+        } else {
+            throw new IllegalStateException(
+                    "invalid OutgoingConnectionType " + type);
+        }
+        return ip;
+    }
+
+    protected int getConnectionPort() {
+        return getConnectionInfo().getPort();
+    }
+
+    protected void setResolvingState() {
+    }
+
+    protected void setConnectingState() {
+        InetAddress ipAddress = getIpAddress();
+        int outPort = getConnectionInfo().getPort();
+        ConnectionType type = OutgoingConnectionController.this.type;
+        EventPost eventPost = getFileTransfer().getEventPost();
+        eventPost.fireEvent(new ConnectingEvent(type, ipAddress, outPort));
+    }
 }

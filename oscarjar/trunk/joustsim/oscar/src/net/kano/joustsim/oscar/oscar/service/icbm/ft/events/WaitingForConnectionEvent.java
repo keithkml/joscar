@@ -31,12 +31,24 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm.ft;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
+import java.net.InetAddress;
 
-public interface FileTransferListener {
-    void handleEventWithStateChange(FileTransfer transfer, FileTransferState state,
-            FileTransferEvent event);
-    void handleEvent(FileTransfer transfer, FileTransferEvent event);
+public class WaitingForConnectionEvent extends FileTransferEvent {
+    private InetAddress listeningOn;
+    private int port;
+
+    public WaitingForConnectionEvent(InetAddress listeningOn, int port) {
+        this.listeningOn = listeningOn;
+        this.port = port;
+    }
+
+    public InetAddress getListeningOn() {
+        return listeningOn;
+    }
+
+    public int getPort() {
+        return port;
+    }
 }

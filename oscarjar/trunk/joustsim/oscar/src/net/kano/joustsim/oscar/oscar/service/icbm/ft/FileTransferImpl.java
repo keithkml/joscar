@@ -38,22 +38,32 @@ import net.kano.joscar.rv.RecvRvEvent;
 import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rv.RvSnacResponseEvent;
 import net.kano.joscar.rvcmd.InvitationMessage;
-import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joscar.rvcmd.sendfile.FileSendAcceptRvCmd;
 import net.kano.joscar.rvcmd.sendfile.FileSendBlock;
 import net.kano.joscar.rvcmd.sendfile.FileSendRejectRvCmd;
 import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
 import net.kano.joscar.snaccmd.icbm.RvCommand;
 import net.kano.joustsim.oscar.oscar.service.icbm.RendezvousSessionHandler;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ControllerListener;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectedEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectingEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectingToProxyEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ResolvingProxyEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.WaitingForConnectionEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferringFileEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileCompleteEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
 
-abstract class FileTransferImpl implements FileTransfer {
-    static final Key<Boolean> KEY_PROXY_REDIRECTED = new Key<Boolean>("PROXY_REDIRECTED");
-    static final Key<Boolean> KEY_NORMAL_REDIRECTED = new Key<Boolean>("NORMAL_REDIRECTED");
-    static final Key<RvConnectionInfo> KEY_CONN_INFO = new Key<RvConnectionInfo>("CONN_INFO");
+public abstract class FileTransferImpl
+        implements FileTransfer, TransferPropertyHolder,
+        RvSessionBasedTransfer, StateBasedTransfer, CachedTimerHolder {
 
     private FileSendBlock fileInfo;
     private InvitationMessage message;
@@ -67,12 +77,55 @@ abstract class FileTransferImpl implements FileTransfer {
 
     private CopyOnWriteArrayList<FileTransferListener> listeners
             = new CopyOnWriteArrayList<FileTransferListener>();
+    private FileTransferState state = FileTransferState.WAITING;
+    private boolean cancelled = false;
+    private EventPost eventPost = new EventPost() {
+        public void fireEvent(FileTransferEvent event) {
+            boolean fireState;
+            FileTransferState newState = null;
+            synchronized (FileTransferImpl.this) {
+                if (event instanceof ConnectingEvent
+                        || event instanceof ConnectingToProxyEvent
+                        || event instanceof ResolvingProxyEvent
+                        || event instanceof WaitingForConnectionEvent) {
+                    newState = FileTransferState.CONNECTING;
+
+                } else if (event instanceof ConnectedEvent) {
+                    newState = FileTransferState.CONNECTED;
+
+                } else if (event instanceof TransferringFileEvent
+                        || event instanceof FileCompleteEvent) {
+                    newState = FileTransferState.TRANSFERRING;
+                }
+                if (newState != null && newState != state) {
+                    fireState = true;
+                    state = newState;
+                } else {
+                    fireState = false;
+                }
+            }
+            if (fireState) {
+                for (FileTransferListener listener : listeners) {
+                    listener.handleEventWithStateChange(FileTransferImpl.this,
+                            newState, event);
+                }
+            } else {
+                for (FileTransferListener listener : listeners) {
+                    listener.handleEvent(FileTransferImpl.this, event);
+                }
+            }
+        }
+    };
 
     protected FileTransferImpl(FileTransferManager fileTransferManager,
             RvSession session) {
         this.fileTransferManager = fileTransferManager;
         this.session = session;
         rvSessionHandler = createSessionHandler();
+    }
+
+    public synchronized FileTransferState getState() {
+        return state;
     }
 
     protected abstract FtRvSessionHandler createSessionHandler();
@@ -85,71 +138,78 @@ abstract class FileTransferImpl implements FileTransfer {
         this.fileInfo = fileInfo;
     }
 
-    protected Timer getTimer() { return timer; }
+    public Timer getTimer() { return timer; }
 
     public synchronized FileSendBlock getFileInfo() { return fileInfo; }
 
     public synchronized InvitationMessage getInvitationMessage() { return message; }
 
     protected void startStateController(final StateController controller) {
-        StateController oldController = this.controller;
-        if (oldController != null) {
-            throw new IllegalStateException("Cannot start state controller: "
-                    + "controller is already set to " + oldController);
-        }
-        StateController last = null;
-        changeStateController(controller, last);
+//        StateController oldController = this.controller;
+//        if (oldController != null) {
+//            throw new IllegalStateException("Cannot start state controller: "
+//                    + "controller is already set to " + oldController);
+//        }
+        changeStateController(controller);
     }
 
     protected void changeStateController(final StateController controller) {
-        changeStateController(controller, this.controller);
-    }
+        StateController last;
+        synchronized (this) {
+            if (cancelled) return;
+            last = this.controller;
+            this.controller = controller;
+            controller.addControllerListener(new ControllerListener() {
+                public void handleControllerSucceeded(StateController c,
+                        StateInfo info) {
+                    goNext();
+                }
 
-    private void changeStateController(final StateController controller,
-            StateController last) {
+                public void handleControllerFailed(StateController c,
+                        StateInfo info) {
+                    goNext();
+                }
+
+                private void goNext() {
+                    controller.removeControllerListener(this);
+                    changeStateController(getNextStateController());
+                }
+            });
+        }
         if (last != null) last.stop();
-        this.controller = controller;
-        controller.addControllerListener(new ControllerListener() {
-            public void handleControllerSucceeded(StateController c,
-                    StateInfo info) {
-                goNext();
-            }
-
-            public void handleControllerFailed(StateController c,
-                    StateInfo info) {
-                goNext();
-            }
-
-            private void goNext() {
-                controller.removeControllerListener(this);
-                changeStateController(getNextStateController(), controller);
-            }
-        });
         controller.start(this, last);
     }
 
-    protected StateController getStateController() { return controller; }
-
-    protected abstract StateController getNextStateController();
+    public synchronized StateController getStateController() { return controller; }
 
     protected RendezvousSessionHandler getRvSessionHandler() {
         return rvSessionHandler;
     }
 
-    protected RvSession getRvSession() {
+    public RvSession getRvSession() {
         return session;
     }
 
-    synchronized <V> void putTransferProperty(Key<V> key, V value) {
+    public synchronized <V> void putTransferProperty(Key<V> key, V value) {
         transferProperties.put(key, value);
     }
 
-    synchronized <V> V getTransferProperty(Key<V> key) {
+    public synchronized <V> V getTransferProperty(Key<V> key) {
         return (V) transferProperties.get(key);
     }
 
     public FileTransferManager getFileTransferManager() {
         return fileTransferManager;
+    }
+
+    public void cancel() {
+        StateController controller;
+        synchronized(this) {
+            if (cancelled) return;
+            cancelled = true;
+            controller = this.controller;
+        }
+        controller.stop();
     }
 
     public void addTransferListener(FileTransferListener listener) {
@@ -160,13 +220,13 @@ abstract class FileTransferImpl implements FileTransfer {
         listeners.remove(listener);
     }
 
-    protected void fireEvent(FileTransferEvent event) {
-        for (FileTransferListener listener : listeners) {
-            listener.handleEvent(this, event);
-        }
+    public EventPost getEventPost() {
+        return eventPost;
     }
 
-    protected abstract class FtRvSessionHandler implements RendezvousSessionHandler {
+
+    protected abstract class FtRvSessionHandler
+            implements RendezvousSessionHandler {
         public final void handleRv(RecvRvEvent event) {
             RvCommand cmd = event.getRvCommand();
             if (cmd instanceof FileSendReqRvCmd) {
@@ -200,15 +260,4 @@ abstract class FileTransferImpl implements FileTransfer {
         }
     }
 
-    static class Key<V> {
-        private final String name;
-
-        public Key(String name) {
-            this.name = name;
-        }
-
-        public String getName() {
-            return name;
-        }
-    }
 }

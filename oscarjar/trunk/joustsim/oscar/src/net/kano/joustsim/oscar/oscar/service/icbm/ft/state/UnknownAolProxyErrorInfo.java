@@ -31,12 +31,16 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm.ft;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft.state;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
+public class UnknownAolProxyErrorInfo extends FailedStateInfo {
+    private int errorCode;
 
-public interface FileTransferListener {
-    void handleEventWithStateChange(FileTransfer transfer, FileTransferState state,
-            FileTransferEvent event);
-    void handleEvent(FileTransfer transfer, FileTransferEvent event);
+    public UnknownAolProxyErrorInfo(int errorCode) {
+        this.errorCode = errorCode;
+    }
+
+    public int getErrorCode() {
+        return errorCode;
+    }
 }

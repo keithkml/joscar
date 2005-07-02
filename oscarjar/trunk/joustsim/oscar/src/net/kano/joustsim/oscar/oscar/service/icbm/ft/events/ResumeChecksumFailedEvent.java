@@ -31,12 +31,18 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm.ft;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
+import java.io.File;
 
-public interface FileTransferListener {
-    void handleEventWithStateChange(FileTransfer transfer, FileTransferState state,
-            FileTransferEvent event);
-    void handleEvent(FileTransfer transfer, FileTransferEvent event);
+public class ResumeChecksumFailedEvent extends FileTransferEvent {
+    private final File file;
+
+    public ResumeChecksumFailedEvent(File file) {
+        this.file = file;
+    }
+
+    public File getFile() {
+        return file;
+    }
 }

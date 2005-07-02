@@ -31,12 +31,20 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm.ft;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.ProgressStatusOwner;
 
-public interface FileTransferListener {
-    void handleEventWithStateChange(FileTransfer transfer, FileTransferState state,
-            FileTransferEvent event);
-    void handleEvent(FileTransfer transfer, FileTransferEvent event);
+public class TransferringFileEvent extends FileTransferEvent {
+    private final TransferredFileInfo info;
+    private final ProgressStatusOwner owner;
+
+    public TransferringFileEvent(TransferredFileInfo info, ProgressStatusOwner owner) {
+        this.info = info;
+        this.owner = owner;
+    }
+
+    public TransferredFileInfo getFileInfo() { return info; }
+
+    public ProgressStatusOwner getStatusOwner() { return owner; }
 }

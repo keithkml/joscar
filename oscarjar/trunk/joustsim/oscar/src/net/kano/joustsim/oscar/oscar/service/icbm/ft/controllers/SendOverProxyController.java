@@ -31,12 +31,33 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm.ft;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
+import net.kano.joscar.rvproto.rvproxy.RvProxyAckCmd;
+import net.kano.joscar.rvcmd.RvConnectionInfo;
+import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.InitiateProxyController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferImpl;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferTools;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.TransferPropertyHolder;
 
-public interface FileTransferListener {
-    void handleEventWithStateChange(FileTransfer transfer, FileTransferState state,
-            FileTransferEvent event);
-    void handleEvent(FileTransfer transfer, FileTransferEvent event);
+import java.io.IOException;
+import java.util.Random;
+
+public class SendOverProxyController
+        extends InitiateProxyController {
+    protected void handleAck(RvProxyAckCmd ackCmd) throws IOException {
+        FileTransferImpl transfer = getFileTransfer();
+        int proxyPort = ackCmd.getProxyPort();
+        System.out.println("proxy port: 0x" + Integer.toHexString(proxyPort));
+        RvConnectionInfo connInfo = RvConnectionInfo.createForOutgoingProxiedRequest(
+                ackCmd.getProxyIpAddress(), proxyPort);
+        FileSendReqRvCmd req = new FileSendReqRvCmd(transfer.getInvitationMessage(),
+                connInfo, transfer.getFileInfo());
+        Random random = new Random();
+        long msgid = FileTransferTools.getRandomIcbmId(random);
+        transfer.putTransferProperty(TransferPropertyHolder.KEY_CONN_INFO, connInfo);
+        transfer.getRvSession().sendRv(req/*, msgid*/);
+    }
+
 }

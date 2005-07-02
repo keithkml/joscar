@@ -55,13 +55,13 @@ public class FileTransferManager {
                 new FileTransferCapabilityHandler());
     }
 
-    IcbmService getIcbmService() {
+    public IcbmService getIcbmService() {
         return service;
     }
 
     public OutgoingFileTransfer createOutgoingFileTransfer(Screenname sn) {
         RvSession session = service.getRvProcessor().createRvSession(sn.getFormatted());
-        OutgoingFileTransfer outgoingFileTransfer = new OutgoingFileTransfer(this,
+        OutgoingFileTransferImpl outgoingFileTransfer = new OutgoingFileTransferImpl(this,
                 session);
         session.addListener(outgoingFileTransfer.getRvSessionHandler());
         return outgoingFileTransfer;

@@ -31,12 +31,25 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm.ft;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft.state;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
+import java.io.InputStream;
+import java.io.OutputStream;
 
-public interface FileTransferListener {
-    void handleEventWithStateChange(FileTransfer transfer, FileTransferState state,
-            FileTransferEvent event);
-    void handleEvent(FileTransfer transfer, FileTransferEvent event);
+public class StreamInfo extends SuccessfulStateInfo {
+    private InputStream inputStream;
+    private OutputStream outputStream;
+
+    public StreamInfo(InputStream in, OutputStream outputStream) {
+        this.inputStream = in;
+        this.outputStream = outputStream;
+    }
+
+    public InputStream getInputStream() {
+        return inputStream;
+    }
+
+    public OutputStream getOutputStream() {
+        return outputStream;
+    }
 }

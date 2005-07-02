@@ -31,12 +31,25 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm.ft;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
+import net.kano.joscar.rvcmd.RvConnectionInfo;
+import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.PassiveConnectionController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferImpl;
 
-public interface FileTransferListener {
-    void handleEventWithStateChange(FileTransfer transfer, FileTransferState state,
-            FileTransferEvent event);
-    void handleEvent(FileTransfer transfer, FileTransferEvent event);
+import java.io.IOException;
+import java.net.InetAddress;
+
+public class RedirectConnectionController extends PassiveConnectionController {
+
+    protected void sendRequest() throws IOException {
+        RvConnectionInfo connInfo = RvConnectionInfo
+                .createForOutgoingRequest(InetAddress.getLocalHost(),
+                        getServerSocket().getLocalPort());
+        setConnInfo(connInfo);
+        getFileTransfer().putTransferProperty(FileTransferImpl.KEY_REDIRECTED, true);
+        getFileTransfer().getRvSession().sendRv(new FileSendReqRvCmd(connInfo));
+    }
+
 }

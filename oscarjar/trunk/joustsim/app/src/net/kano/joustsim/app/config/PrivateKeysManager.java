@@ -460,13 +460,13 @@ public final class PrivateKeysManager extends DefaultFileBasedResource
         }
 
         private String[] loadPossibleAliases(KeyStore ks) throws KeyStoreException {
-            List aliases = new ArrayList();
-            Enumeration alenum = ks.aliases();
+            List<String> aliases = new ArrayList<String>();
+            Enumeration<String> alenum = ks.aliases();
             while (alenum.hasMoreElements()) {
-                String alias = (String) alenum.nextElement();
+                String alias = alenum.nextElement();
                 aliases.add(alias);
             }
-            return (String[]) aliases.toArray(new String[aliases.size()]);
+            return aliases.toArray(new String[aliases.size()]);
         }
 
         private KeyPair loadKeys(KeyStore ks, String alias, char[] passChars)

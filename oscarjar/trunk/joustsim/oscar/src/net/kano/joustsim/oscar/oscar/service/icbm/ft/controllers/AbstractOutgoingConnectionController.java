@@ -31,12 +31,30 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm.ft;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.AbstractConnectionController;
 
-public interface FileTransferListener {
-    void handleEventWithStateChange(FileTransfer transfer, FileTransferState state,
-            FileTransferEvent event);
-    void handleEvent(FileTransfer transfer, FileTransferEvent event);
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.Socket;
+
+public abstract class AbstractOutgoingConnectionController
+        extends AbstractConnectionController {
+
+    protected Socket createSocket() throws IOException {
+        setResolvingState();
+        InetAddress ip = getIpAddress();
+        if (ip == null) {
+            throw new IllegalStateException("no IP address");
+        }
+        setConnectingState();
+        return new Socket(ip, getConnectionPort());
+    }
+
+    protected abstract int getConnectionPort();
+
+
+    protected abstract InetAddress getIpAddress() throws IOException;
+
 }

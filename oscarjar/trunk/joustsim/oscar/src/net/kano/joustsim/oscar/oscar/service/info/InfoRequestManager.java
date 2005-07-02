@@ -97,7 +97,7 @@ public abstract class InfoRequestManager {
         DefensiveTools.checkNull(sn, "sn");
 
         Set<InfoResponseListener> set = listenerMap.remove(sn);
-        if (set == null) return (Set<InfoResponseListener>) Collections.EMPTY_SET;
+        if (set == null) return Collections.EMPTY_SET;
         else return set;
     }
 
