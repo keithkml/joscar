@@ -186,8 +186,8 @@ public class InfoService extends Service {
             this.awayMessage = awayMessage;
         }
         sendSnac(new SetInfoCmd(new InfoData(
-                awayMessage == null ? InfoData.NOT_AWAY : awayMessage,
-                null, null, null)));
+                null, awayMessage == null ? InfoData.NOT_AWAY : awayMessage,
+                null, null)));
     }
 
     public synchronized String getCurrentUserProfile() {

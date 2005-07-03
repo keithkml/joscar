@@ -39,6 +39,8 @@ import net.kano.joscar.DefensiveTools;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.app.GuiSession;
 import net.kano.joustsim.oscar.AimConnection;
+import net.kano.joustsim.oscar.oscar.service.info.InfoService;
+import net.kano.joustsim.oscar.oscar.service.bos.MainBosService;
 
 import javax.swing.AbstractAction;
 import javax.swing.ImageIcon;
@@ -50,6 +52,7 @@ import javax.swing.JProgressBar;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
+import javax.swing.JOptionPane;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.event.ActionEvent;
@@ -58,6 +61,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.text.NumberFormat;
+import java.util.Date;
 
 public class DummyOnlineWindow extends JFrame {
     private JPanel mainPanel;
@@ -80,6 +84,8 @@ public class DummyOnlineWindow extends JFrame {
         }
     });
     private BuddyListBox buddyListBox;
+    private JButton awayButton;
+    private JButton idleButton;
 
     {
         getContentPane().add(mainPanel);
@@ -118,6 +124,42 @@ public class DummyOnlineWindow extends JFrame {
 
         setIconImage(new ImageIcon(getClass().getClassLoader()
                 .getResource("icons/buddy-list-tiny.png")).getImage());
+        awayButton.setAction(new AbstractAction() {
+            {
+                putValue(NAME, "Away");
+            }
+            public void actionPerformed(ActionEvent e) {
+                String msg = JOptionPane.showInputDialog(DummyOnlineWindow.this,
+                        "Away message (leave empty to set un-away):",
+                        "doing something cool");
+
+                if (msg == null) return;
+                InfoService infoService = conn.getInfoService();
+                if (msg.equals("")) {
+                    infoService.setAwayMessage(null);
+                } else {
+                    infoService.setAwayMessage(msg);
+                }
+            }
+        });
+        idleButton.setAction(new AbstractAction() {
+            {
+                putValue(NAME, "Idle");
+            }
+            public void actionPerformed(ActionEvent e) {
+                String msg = JOptionPane.showInputDialog(DummyOnlineWindow.this,
+                        "Idle time, in minutes (0 for un-idle):");
+
+                if (msg == null) return;
+                int mins = Integer.parseInt(msg);
+                MainBosService infoService = conn.getBosService();
+                if (mins == 0) {
+                    infoService.setUnidle();
+                } else {
+                    infoService.setIdleSince(new Date(System.currentTimeMillis()-(mins*60*1000)));
+                }
+            }
+        });
     }
 
     private void updateMemoryUse() {
