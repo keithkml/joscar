@@ -42,9 +42,9 @@
   </target>
   
   <target name="build-oscar-jar-classes">
-    <javac srcdir="common/src" source="1.4" destdir="${common.bin}"
+    <javac srcdir="common/src" source="1.5" destdir="${common.bin}"
       classpath="lib/*.jar" />
-    <javac srcdir="oscar/src" source="1.4" destdir="${oscar.bin}">
+    <javac srcdir="oscar/src" source="1.5" destdir="${oscar.bin}">
       <classpath>
         <path path="${common.bin}" />
         <path path="lib/joscar-0.9.3-patched.jar" />
