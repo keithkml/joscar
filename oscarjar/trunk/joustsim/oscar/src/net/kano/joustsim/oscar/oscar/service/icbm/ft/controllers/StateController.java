@@ -35,10 +35,18 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransfer;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailureEventInfo;
+
+import java.util.logging.Logger;
 
 public abstract class StateController {
+    private static final Logger LOGGER = Logger
+            .getLogger(StateController.class.getName());
+
     private CopyOnWriteArrayList<ControllerListener> listeners
             = new CopyOnWriteArrayList<ControllerListener>();
     private StateInfo endState = null;
@@ -64,21 +72,46 @@ public abstract class StateController {
     protected void fireFailed(final Exception e) {
         assert !Thread.holdsLock(this);
 
-        fireFailed(new ExceptionStateInfo(e));
+        fireEvent(new ExceptionStateInfo(e));
     }
 
-    protected void fireFailed(final FailedStateInfo e) {
-        fireEvent(e);
+    protected void fireFailed(final FileTransferEvent e) {
+        fireEvent(new FailureEventInfo(e));
+        //TODO: fire event here? or delegate responsibility to the FileTransfer itself?
     }
 
     private void fireEvent(StateInfo e) {
         assert !Thread.holdsLock(this);
 
+        boolean succeeded = e instanceof SuccessfulStateInfo;
+        boolean failed = e instanceof FailedStateInfo;
+        if (!succeeded && !failed) {
+            throw new IllegalArgumentException("invalid state " + e
+                    + ": it must be either SuccessfulStateInfo or "
+                    + "FailedStateInfo");
+        }
+
         synchronized(this) {
+            if (endState != null) {
+                LOGGER.info("State controller " + getClass().getName()
+                        + " tried to set new end state " + e + "  but it was "
+                        + "already" + endState);
+                return;
+            }
             endState = e;
         }
-        for (ControllerListener listener : listeners) {
-            listener.handleControllerFailed(this, e);
+        if (succeeded) {
+            SuccessfulStateInfo successfulStateInfo = (SuccessfulStateInfo) e;
+
+            for (ControllerListener listener : listeners) {
+                listener.handleControllerSucceeded(this, successfulStateInfo);
+            }
+        } else {
+            FailedStateInfo failedStateInfo = (FailedStateInfo) e;
+
+            for (ControllerListener listener : listeners) {
+                listener.handleControllerFailed(this, failedStateInfo);
+            }
         }
     }
 

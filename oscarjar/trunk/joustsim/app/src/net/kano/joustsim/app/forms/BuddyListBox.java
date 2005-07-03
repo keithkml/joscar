@@ -64,6 +64,7 @@ import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.util.EventObject;
 import java.util.Arrays;
+import java.io.File;
 
 public class BuddyListBox extends JPanel {
     private JButton infoButton;
@@ -183,7 +184,12 @@ public class BuddyListBox extends JPanel {
                     chooser.setMultiSelectionEnabled(true);
                     int result = chooser.showOpenDialog(BuddyListBox.this);
                     if (result == JFileChooser.APPROVE_OPTION) {
-                        transfer.setFiles(Arrays.asList(chooser.getSelectedFiles()));
+                        File[] files = chooser.getSelectedFiles();
+                        if (files.length > 1) {
+                            transfer.setFiles("Folder", Arrays.asList(files));
+                        } else {
+                            transfer.setFile(files[0]);
+                        }
                         transfer.makeRequest(new InvitationMessage("Here's a file!"));
                     }
                 }

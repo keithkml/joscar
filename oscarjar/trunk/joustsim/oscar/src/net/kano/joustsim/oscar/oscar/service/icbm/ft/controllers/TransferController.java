@@ -38,10 +38,9 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransfer;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferTools;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.TransferPropertyHolder;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectedEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.ConnectionTimedOutInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectionTimedOutEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
 
 import java.io.IOException;
 import java.util.Timer;
@@ -63,7 +62,7 @@ public abstract class TransferController extends StateController {
             StateController last) {
         this.transfer = transfer;
         StateInfo endState = last.getEndState();
-        if (endState instanceof SuccessfulStateInfo) {
+        if (endState instanceof StreamInfo) {
             final StreamInfo stream = (StreamInfo) endState;
             receiveThread = new Thread(new Runnable() {
                 public void run() {
@@ -93,7 +92,7 @@ public abstract class TransferController extends StateController {
                     }
                     if (timedout) {
                         interruptThread();
-                        fireFailed(new ConnectionTimedOutInfo(timeout));
+                        fireFailed(new ConnectionTimedOutEvent(timeout));
                     }
                 }
             }, timeout);

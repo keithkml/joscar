@@ -31,13 +31,16 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
+public class CorruptTransferEvent extends FileTransferEvent {
+    private TransferredFileInfo info;
 
-public interface ControllerListener {
-    void handleControllerSucceeded(StateController controller, SuccessfulStateInfo info);
+    public CorruptTransferEvent(TransferredFileInfo info) {
+        this.info = info;
+    }
 
-    void handleControllerFailed(StateController controller, FailedStateInfo info);
+    public TransferredFileInfo getInfo() {
+        return info;
+    }
 }

@@ -44,7 +44,7 @@
   <target name="build-oscar-jar-classes">
     <javac srcdir="common/src" source="1.5" destdir="${common.bin}"
       classpath="lib/*.jar" />
-    <javac srcdir="oscar/src" source="1.5" destdir="${oscar.bin}">
+    <javac srcdir="oscar/src" source="1.5" destdir="${oscar.bin}" debug="true">
       <classpath>
         <path path="${common.bin}" />
         <path path="lib/joscar-0.9.4-cvs-bin.jar" />

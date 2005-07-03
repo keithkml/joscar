@@ -54,10 +54,10 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileCompleteEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ResumeChecksumFailedEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferredFileInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferringFileEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.CorruptTransferInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.CorruptTransferEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.TransferSucceededInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.UnknownTransferErrorInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownTransferErrorEvent;
 
 import java.io.File;
 import java.io.IOException;
@@ -83,6 +83,7 @@ public class SendController extends TransferController {
         long totalSize = 0;
         Map<RandomAccessFile,File> lastmods = new IdentityHashMap<RandomAccessFile, File>();
         Map<RandomAccessFile,Long> lengths = new IdentityHashMap<RandomAccessFile, Long>();
+        Map<File, String> names = otransfer.getNameMappings();
         try {
             for (File file : files) {
                 RandomAccessFile raf = null;
@@ -118,7 +119,7 @@ public class SendController extends TransferController {
 
                 FileTransferHeader sendheader = new FileTransferHeader();
                 sendheader.setDefaults();
-                sendheader.setFilename(new SegmentedFilename(file.getName()));
+                sendheader.setFilename(new SegmentedFilename(getName(names, file)));
                 sendheader.setHeaderType(FileTransferHeader.HEADERTYPE_SENDHEADER);
                 sendheader.setChecksum(fileChecksum);
                 sendheader.setReceivedChecksum(FileTransferChecksum.CHECKSUM_EMPTY);
@@ -201,7 +202,7 @@ public class SendController extends TransferController {
                 if (receivedHeader == null) break;
                 if (receivedHeader.getBytesReceived() != len
                         || receivedHeader.getChecksum() != fileChecksum) {
-                    fireFailed(new CorruptTransferInfo(info));
+                    fireFailed(new CorruptTransferEvent(info));
                     break;
                 }
                 eventPost.fireEvent(new FileCompleteEvent(info));
@@ -210,7 +211,7 @@ public class SendController extends TransferController {
             if (succeeded == rafs.size()) {
                 fireSucceeded(new TransferSucceededInfo(files));
             } else {
-                fireFailed(new UnknownTransferErrorInfo());
+                fireFailed(new UnknownTransferErrorEvent());
             }
         } finally {
             for (RandomAccessFile file : rafs) {
@@ -220,6 +221,12 @@ public class SendController extends TransferController {
                 }
             }
         }
+    }
+
+    private static String getName(Map<File, String> names, File file) {
+        String name = names.get(file);
+        if (name == null) return file.getName();
+        else return name;
     }
 
     private static class Sender implements ProgressStatusOwner {

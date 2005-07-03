@@ -40,17 +40,17 @@ import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joscar.rvcmd.sendfile.FileSendAcceptRvCmd;
 import net.kano.joscar.rvcmd.sendfile.FileSendRejectRvCmd;
 import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.OutgoingConnectionController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectToProxyController;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.RedirectConnectionController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.OutgoingConnectionController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ReceiveController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.RedirectConnectionController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.RedirectToProxyController;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -102,6 +102,16 @@ public class IncomingFileTransferImpl extends FileTransferImpl
         return declined;
     }
 
+    private boolean alwaysRedirect = false;
+
+    public synchronized boolean isAlwaysRedirect() {
+        return alwaysRedirect;
+    }
+
+    public synchronized void setAlwaysRedirect(boolean alwaysRedirect) {
+        this.alwaysRedirect = alwaysRedirect;
+    }
+
     public void accept() throws IllegalStateException {
         synchronized(this) {
             if (declined) {
@@ -109,17 +119,24 @@ public class IncomingFileTransferImpl extends FileTransferImpl
             }
             if (accepted) return;
             accepted = true;
-        }
-        getRvSession().sendRv(new FileSendAcceptRvCmd());
 
-        connControllers = Arrays.asList(
-                internalController,
-                externalController,
-                proxyController,
-                redirectConnectionController,
-                proxyReverseController
-        );
+            connControllers = new ArrayList<StateController>();
+            boolean onlyUsingProxy = isOnlyUsingProxy();
+            if (!isAlwaysRedirect() && !onlyUsingProxy) {
+                connControllers.add(internalController);
+                connControllers.add(externalController);
+            }
+            if (isProxyRequestTrusted()) {
+                connControllers.add(proxyController);
+            }
+            if (!onlyUsingProxy) {
+                connControllers.add(redirectConnectionController);
+            }
+            connControllers.add(proxyReverseController);
+        }
+
         startStateController(connControllers.get(0));
+        getRvSession().sendRv(new FileSendAcceptRvCmd());
     }
 
     public void decline() throws IllegalStateException {
@@ -137,18 +154,17 @@ public class IncomingFileTransferImpl extends FileTransferImpl
         StateController oldController = getStateController();
         StateInfo oldState = oldController.getEndState();
         if (oldState instanceof SuccessfulStateInfo) {
-            return changeStateToReceiver(oldController);
+            return getReceiverState(oldController);
 
         } else if (oldState instanceof FailedStateInfo) {
-            return changeStateFromError(oldController, oldState);
+            return getNextStateFromError(oldController, oldState);
 
         } else {
             throw new IllegalStateException("unknown state " + oldState);
         }
     }
 
-    private StateController changeStateToReceiver(
-            StateController oldController) {
+    private StateController getReceiverState(StateController oldController) {
         if (connControllers.contains(oldController)) {
             return new ReceiveController();
         } else {
@@ -156,7 +172,7 @@ public class IncomingFileTransferImpl extends FileTransferImpl
         }
     }
 
-    private StateController changeStateFromError(StateController oldController,
+    private StateController getNextStateFromError(StateController oldController,
             StateInfo oldState) {
         int oldIndex = connControllers.indexOf(oldController);
         if (oldIndex == -1) {

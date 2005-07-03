@@ -31,18 +31,9 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm.ft.state;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
-import java.net.InetAddress;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
 
-public class ProxyRedirectDisallowedInfo extends FailedStateInfo {
-    private InetAddress proxyIP;
-
-    public ProxyRedirectDisallowedInfo(InetAddress proxyIP) {
-        this.proxyIP = proxyIP;
-    }
-
-    public InetAddress getProxyIP() {
-        return proxyIP;
-    }
+public class AolProxyTimedOutInfo extends FileTransferEvent {
 }

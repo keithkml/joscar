@@ -51,4 +51,13 @@ public interface FileTransfer {
     void removeTransferListener(FileTransferListener listener);
 
     EventPost getEventPost();
+
+    boolean isProxyRequestTrusted();
+
+    void setProxyRequestTrusted(boolean trusted);
+
+    boolean isOnlyUsingProxy();
+
+    void setOnlyUsingProxy(boolean onlyUsingProxy);
+
 }

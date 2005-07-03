@@ -31,7 +31,18 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm.ft.state;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
-public class UnknownTransferErrorInfo extends FailedStateInfo {
+import java.net.InetAddress;
+
+public class ProxyRedirectDisallowedEvent extends FileTransferEvent {
+    private InetAddress proxyIP;
+
+    public ProxyRedirectDisallowedEvent(InetAddress proxyIP) {
+        this.proxyIP = proxyIP;
+    }
+
+    public InetAddress getProxyIP() {
+        return proxyIP;
+    }
 }

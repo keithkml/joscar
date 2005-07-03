@@ -33,16 +33,16 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.state;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferredFileInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
 
-public class CorruptTransferInfo extends FailedStateInfo {
-    private TransferredFileInfo info;
+public class FailureEventInfo extends FailedStateInfo {
+    private FileTransferEvent event;
 
-    public CorruptTransferInfo(TransferredFileInfo info) {
-        this.info = info;
+    public FailureEventInfo(FileTransferEvent event) {
+        this.event = event;
     }
 
-    public TransferredFileInfo getInfo() {
-        return info;
+    public FileTransferEvent getEvent() {
+        return event;
     }
 }

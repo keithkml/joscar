@@ -31,7 +31,16 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm.ft.state;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
-public class AolProxyTimedOutInfo extends FailedStateInfo {
+public class UnknownAolProxyErrorEvent extends FileTransferEvent {
+    private int errorCode;
+
+    public UnknownAolProxyErrorEvent(int errorCode) {
+        this.errorCode = errorCode;
+    }
+
+    public int getErrorCode() {
+        return errorCode;
+    }
 }

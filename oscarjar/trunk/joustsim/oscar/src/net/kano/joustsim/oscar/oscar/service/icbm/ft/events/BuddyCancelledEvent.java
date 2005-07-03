@@ -31,12 +31,12 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm.ft.state;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
-public class BuddyCancelledInfo extends FailedStateInfo {
+public class BuddyCancelledEvent extends FileTransferEvent {
     private final int code;
 
-    public BuddyCancelledInfo(int code) {this.code = code;}
+    public BuddyCancelledEvent(int code) {this.code = code;}
 
     public int getRejectionCode() { return code; }
 }

@@ -33,6 +33,8 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
+import static net.kano.joscar.rvcmd.sendfile.FileSendBlock.SENDTYPE_SINGLEFILE;
+import static net.kano.joscar.rvcmd.sendfile.FileSendBlock.SENDTYPE_DIR;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.rv.RecvRvEvent;
 import net.kano.joscar.rv.RvSession;
@@ -56,6 +58,9 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Collections;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.logging.Logger;
 
 public class OutgoingFileTransferImpl extends FileTransferImpl
@@ -77,29 +82,11 @@ public class OutgoingFileTransferImpl extends FileTransferImpl
             = new ConnectToProxyController(ConnectToProxyController.ConnectionType.ACK);
 
     private List<File> files = new ArrayList<File>();
+    private String folderName;
 
     OutgoingFileTransferImpl(FileTransferManager fileTransferManager,
             RvSession session) {
         super(fileTransferManager, session);
-    }
-
-    private boolean onlyUsingProxy = false;
-    private boolean trustingProxyRedirects = false;
-
-    public boolean isTrustingProxyRedirects() {
-        return trustingProxyRedirects;
-    }
-
-    public void setTrustProxyRedirects(boolean trustingProxyRedirects) {
-        this.trustingProxyRedirects = trustingProxyRedirects;
-    }
-
-    public synchronized boolean isOnlyUsingProxy() {
-        return onlyUsingProxy;
-    }
-
-    public synchronized void setOnlyUsingProxy(boolean onlyUsingProxy) {
-        this.onlyUsingProxy = onlyUsingProxy;
     }
 
     public void makeRequest(InvitationMessage msg) {
@@ -113,12 +100,43 @@ public class OutgoingFileTransferImpl extends FileTransferImpl
         startStateController(controller);
     }
 
+    private Map<File,String> nameMappings = new HashMap<File, String>();
+
+    public synchronized Map<File, String> getNameMappings() {
+        return Collections.unmodifiableMap(new HashMap<File, String>(nameMappings));
+    }
+
+    public synchronized void mapName(File file, String name) {
+        DefensiveTools.checkNull(file, "file");
+
+        nameMappings.put(file, name);
+    }
+
+    public synchronized String getFolderName() { return folderName; }
+
     public synchronized List<File> getFiles() {
         return DefensiveTools.getUnmodifiableCopy(files);
     }
 
-    public synchronized void setFiles(List<File> files) {
+    public synchronized void setFile(File file) {
+        DefensiveTools.checkNull(file, "file");
+
+        this.folderName = null;
+        this.files = Collections.singletonList(file);
+    }
+
+    public synchronized void setFiles(String folderName, List<File> files) {
+        DefensiveTools.checkNull(folderName, "folderName");
+        DefensiveTools.checkNullElements(files, "files");
+
+        this.folderName = folderName;
         this.files = DefensiveTools.getUnmodifiableCopy(files);
+    }
+
+    public synchronized String getMappedName(File file) {
+        String name = nameMappings.get(file);
+        if (name == null) return file.getName();
+        else return name;
     }
 
     public FileSendBlock getFileInfo() {
@@ -127,9 +145,8 @@ public class OutgoingFileTransferImpl extends FileTransferImpl
         for (File file : files) totalSize += file.length();
         int numFiles = files.size();
         boolean folderMode = numFiles > 1;
-        int sendType = folderMode ? FileSendBlock.SENDTYPE_DIR
-                : FileSendBlock.SENDTYPE_SINGLEFILE;
-        String filename = folderMode ? "Folder" : files.get(0).getName();
+        int sendType = folderMode ? SENDTYPE_DIR : SENDTYPE_SINGLEFILE;
+        String filename = folderMode ? getFolderName() : getMappedName(files.get(0));
         return new FileSendBlock(sendType, filename, numFiles, totalSize);
     }
 
@@ -176,7 +193,7 @@ public class OutgoingFileTransferImpl extends FileTransferImpl
                     boolean good;
                     boolean proxied = connInfo.isProxied();
                     if (isOnlyUsingProxy()) {
-                        if (proxied && !isTrustingProxyRedirects()) {
+                        if (proxied && !isProxyRequestTrusted()) {
                             //TODO: fail
 //                            getEventPost().fireStateChange(FileTransferState.FAILED,
 //                                    new ProxyRedirectDisallowedEvent(connInfo.getProxyIP()));

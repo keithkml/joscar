@@ -55,7 +55,8 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ResolvingProxyEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.WaitingForConnectionEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferringFileEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileCompleteEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -75,7 +76,7 @@ public abstract class FileTransferImpl
             = new HashMap<Key<?>, Object>();
     private FileTransferManager fileTransferManager;
 
-    private CopyOnWriteArrayList<FileTransferListener> listeners
+    private final CopyOnWriteArrayList<FileTransferListener> listeners
             = new CopyOnWriteArrayList<FileTransferListener>();
     private FileTransferState state = FileTransferState.WAITING;
     private boolean cancelled = false;
@@ -116,6 +117,24 @@ public abstract class FileTransferImpl
             }
         }
     };
+    private boolean onlyUsingProxy = false;
+    private boolean proxyRequestTrusted = false;
+    private ControllerListener controllerListener = new ControllerListener() {
+        public void handleControllerSucceeded(StateController c,
+                SuccessfulStateInfo info) {
+            goNext(c);
+        }
+
+        public void handleControllerFailed(StateController c,
+                FailedStateInfo info) {
+            goNext(c);
+        }
+
+        private void goNext(StateController c) {
+            c.removeControllerListener(this);
+            changeStateControllerFrom(c);
+        }
+    };
 
     protected FileTransferImpl(FileTransferManager fileTransferManager,
             RvSession session) {
@@ -153,31 +172,40 @@ public abstract class FileTransferImpl
         changeStateController(controller);
     }
 
-    protected void changeStateController(final StateController controller) {
+    protected void changeStateController(StateController controller) {
         StateController last;
         synchronized (this) {
             if (cancelled) return;
-            last = this.controller;
-            this.controller = controller;
-            controller.addControllerListener(new ControllerListener() {
-                public void handleControllerSucceeded(StateController c,
-                        StateInfo info) {
-                    goNext();
-                }
-
-                public void handleControllerFailed(StateController c,
-                        StateInfo info) {
-                    goNext();
-                }
-
-                private void goNext() {
-                    controller.removeControllerListener(this);
-                    changeStateController(getNextStateController());
-                }
-            });
+            last = storeNextController(controller);
         }
         if (last != null) last.stop();
         controller.start(this, last);
+    }
+    protected void changeStateControllerFrom(StateController controller) {
+        boolean good;
+        StateController next;
+        synchronized (this) {
+            if (cancelled) return;
+            if (this.controller != controller) {
+                good = false;
+                next = null;
+            } else {
+                good = true;
+                next = getNextStateController();
+                storeNextController(next);
+            }
+        }
+        controller.stop();
+        if (good) {
+            next.start(this, controller);
+        }
+    }
+
+    private synchronized StateController storeNextController(StateController controller) {
+        StateController last = this.controller;
+        this.controller = controller;
+        controller.addControllerListener(controllerListener);
+        return last;
     }
 
     public synchronized StateController getStateController() { return controller; }
@@ -222,6 +250,22 @@ public abstract class FileTransferImpl
 
     public EventPost getEventPost() {
         return eventPost;
+    }
+
+    public synchronized boolean isProxyRequestTrusted() {
+        return proxyRequestTrusted;
+    }
+
+    public synchronized void setProxyRequestTrusted(boolean trustingProxyRedirects) {
+        this.proxyRequestTrusted = trustingProxyRedirects;
+    }
+
+    public synchronized boolean isOnlyUsingProxy() {
+        return onlyUsingProxy;
+    }
+
+    public synchronized void setOnlyUsingProxy(boolean onlyUsingProxy) {
+        this.onlyUsingProxy = onlyUsingProxy;
     }
 
 

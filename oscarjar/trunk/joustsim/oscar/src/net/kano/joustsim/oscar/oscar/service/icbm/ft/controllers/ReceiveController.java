@@ -33,6 +33,8 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
+import static net.kano.joscar.rvproto.ft.FileTransferHeader.HEADERTYPE_RESUME;
+import static net.kano.joscar.rvproto.ft.FileTransferHeader.HEADERTYPE_SENDHEADER;
 import net.kano.joscar.rvproto.ft.FileTransferHeader;
 import static net.kano.joscar.rvproto.ft.FileTransferHeader.HEADERTYPE_ACK;
 import static net.kano.joscar.rvproto.ft.FileTransferHeader.HEADERTYPE_RESUME_ACK;
@@ -46,8 +48,8 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.TransferPropertyHolder;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.TransferSucceededInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferredFileInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.CorruptTransferInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.UnknownTransferErrorInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.CorruptTransferEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownTransferErrorEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ChecksummingEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileCompleteEvent;
@@ -83,7 +85,7 @@ public class ReceiveController extends TransferController {
                     .readHeader(socketIn);
 
             if (sendheader == null) break;
-            assert sendheader.getHeaderType() == FileTransferHeader.HEADERTYPE_SENDHEADER;
+            assert sendheader.getHeaderType() == HEADERTYPE_SENDHEADER;
             long desiredChecksum = sendheader.getChecksum();
             if (!redirected) {
                 if (sendheader.getIcbmMessageId() != icbmId) {
@@ -112,7 +114,7 @@ public class ReceiveController extends TransferController {
             if (attemptResume) {
                 FileTransferHeader outHeader = new FileTransferHeader(
                         sendheader);
-                outHeader.setHeaderType(FileTransferHeader.HEADERTYPE_RESUME);
+                outHeader.setHeaderType(HEADERTYPE_RESUME);
                 outHeader.setIcbmMessageId(icbmId);
                 long len = raf.length();
                 outHeader.setBytesReceived(len);
@@ -195,7 +197,7 @@ public class ReceiveController extends TransferController {
                 doneHeader.write(socketOut);
             } finally {
                 if (failed) {
-                    fireFailed(new CorruptTransferInfo(info));
+                    fireFailed(new CorruptTransferEvent(info));
                     break;
                 }
             }
@@ -209,7 +211,7 @@ public class ReceiveController extends TransferController {
         if (good) {
             fireSucceeded(new TransferSucceededInfo(files));
         } else {
-            fireFailed(new UnknownTransferErrorInfo());
+            fireFailed(new UnknownTransferErrorEvent());
         }
     }
 

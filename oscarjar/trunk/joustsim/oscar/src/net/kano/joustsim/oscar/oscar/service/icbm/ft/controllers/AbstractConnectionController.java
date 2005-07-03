@@ -33,19 +33,18 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
-import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joscar.DefensiveTools;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.ConnectionTimedOutInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferImpl;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransfer;
+import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FailureEventException;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransfer;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferImpl;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectionTimedOutEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
 
+import java.io.IOException;
+import java.net.Socket;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.net.Socket;
-import java.io.IOException;
 
 public abstract class AbstractConnectionController extends StateController {
     private RvConnectionInfo connectionInfo;
@@ -119,7 +118,7 @@ public abstract class AbstractConnectionController extends StateController {
                 boolean succeeded = setShouldSuppressIfNotSet();
                 if (succeeded) {
                     thread.interrupt();
-                    fireFailed(new ConnectionTimedOutInfo(timeout));
+                    fireFailed(new ConnectionTimedOutEvent(timeout));
                 }
             }
         };
