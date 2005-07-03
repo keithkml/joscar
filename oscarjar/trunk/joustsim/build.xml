@@ -47,12 +47,22 @@
     <javac srcdir="oscar/src" source="1.5" destdir="${oscar.bin}">
       <classpath>
         <path path="${common.bin}" />
-        <path path="lib/joscar-0.9.3-patched.jar" />
+        <path path="lib/joscar-0.9.4-cvs-bin.jar" />
       </classpath>
     </javac>
   </target>
-  
-  <target name="build-oscar-jar" depends="build-oscar-jar-classes">
+
+  <target name="clean">
+    <delete>
+      <fileset dir="dist" file="oscar.jar" />
+      <fileset dir="${oscar.bin}" includes="*" />
+      <fileset dir="${common.bin}" includes="*" />
+      <fileset dir="${aolrtf.bin}" includes="*" />
+      <fileset dir="${app.bin}" includes="*" />
+    </delete>
+  </target>
+
+  <target name="build-oscar-jar" depends="clean, build-oscar-jar-classes">
     <delete file="dist/oscar.jar" />
     <jar file="dist/oscar.jar">
       <fileset dir="${oscar.bin}"  includes="**/*.class" />
