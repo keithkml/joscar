@@ -53,4 +53,11 @@ public class ChecksummingEvent extends FileTransferEvent {
     public Checksummer getChecksummer() {
         return checksummer;
     }
+
+
+    public String toString() {
+        return "ChecksummingEvent: " +
+                "file=" + file +
+                "";
+    }
 }

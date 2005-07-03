@@ -43,4 +43,10 @@ public class UnknownAolProxyErrorEvent extends FileTransferEvent {
     public int getErrorCode() {
         return errorCode;
     }
+
+    public String toString() {
+        return "UnknownAolProxyErrorEvent: " +
+                "errorCode=0x" + Integer.toHexString(errorCode) +
+                "";
+    }
 }

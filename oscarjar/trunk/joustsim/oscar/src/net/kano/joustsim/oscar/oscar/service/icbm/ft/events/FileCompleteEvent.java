@@ -39,4 +39,10 @@ public class FileCompleteEvent extends FileTransferEvent {
     public FileCompleteEvent(TransferredFileInfo info) {this.info = info;}
 
     public TransferredFileInfo getFileInfo() { return info; }
+
+    public String toString() {
+        return "FileCompleteEvent: " +
+                "info=" + info +
+                "";
+    }
 }

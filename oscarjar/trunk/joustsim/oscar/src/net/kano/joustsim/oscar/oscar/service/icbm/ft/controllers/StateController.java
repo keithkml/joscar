@@ -72,6 +72,9 @@ public abstract class StateController {
     protected void fireFailed(final Exception e) {
         assert !Thread.holdsLock(this);
 
+        System.err.println("Error in " + getClass().getName() + ":");
+        e.printStackTrace();
+
         fireEvent(new ExceptionStateInfo(e));
     }
 

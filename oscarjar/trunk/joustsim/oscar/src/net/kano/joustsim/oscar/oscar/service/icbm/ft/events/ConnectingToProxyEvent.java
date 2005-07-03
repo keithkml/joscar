@@ -51,4 +51,11 @@ public class ConnectingToProxyEvent extends FileTransferEvent {
     public int getPort() {
         return port;
     }
+
+    public String toString() {
+        return "ConnectingToProxyEvent: " +
+                "proxyAddress=" + proxyAddress +
+                ", port=" + port +
+                "";
+    }
 }

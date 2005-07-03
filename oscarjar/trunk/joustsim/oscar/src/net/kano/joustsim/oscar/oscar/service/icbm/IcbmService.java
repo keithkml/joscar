@@ -310,8 +310,14 @@ public class IcbmService extends Service {
                 if (handler instanceof RendezvousCapabilityHandler) {
                     RendezvousCapabilityHandler rhandler
                             = (RendezvousCapabilityHandler) handler;
-                    sessionHandler = rhandler
+                    RendezvousSessionHandler sessionHandler = rhandler
                             .handleSession(IcbmService.this, session);
+                    if (sessionHandler == null) {
+                        throw new IllegalStateException(
+                                "RendezvousCapabilityHandler " + rhandler
+                                        + " did not return session handler for " + session);
+                    }
+                    this.sessionHandler = sessionHandler;
                 } else {
                     LOGGER.warning("Rendezvous for " + cap
                             + " ignored because the handler, " + handler

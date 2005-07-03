@@ -295,6 +295,10 @@ public class GuiSession {
         imBoxes.clear();
     }
 
+    public DummyOnlineWindow getDummyOnlineWindow() {
+        return dummyOnlineWindow;
+    }
+
     private class ConnStateListener implements StateListener {
         public void handleStateChange(StateEvent event) {
             AimConnection conn = event.getAimConnection();

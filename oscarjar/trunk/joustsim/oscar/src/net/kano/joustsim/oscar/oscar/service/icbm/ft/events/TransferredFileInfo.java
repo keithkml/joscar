@@ -57,4 +57,11 @@ public class TransferredFileInfo {
     public long getResumedAt() {
         return resumedAt;
     }
+
+    public String toString() {
+        return "TransferredFileInfo: " +
+                "resumedAt=" + resumedAt +
+                ", fileSize=" + fileSize +
+                ", file=" + file;
+    }
 }

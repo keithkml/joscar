@@ -45,4 +45,10 @@ public class ResumeChecksumFailedEvent extends FileTransferEvent {
     public File getFile() {
         return file;
     }
+
+    public String toString() {
+        return "ResumeChecksumFailedEvent: " +
+                "file=" + file +
+                "";
+    }
 }

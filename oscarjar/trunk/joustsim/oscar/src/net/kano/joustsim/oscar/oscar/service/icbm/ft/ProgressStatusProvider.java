@@ -33,10 +33,10 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-public interface ProgressStatusOwner {
+public interface ProgressStatusProvider {
     long getStartPosition();
 
     long getPosition();
 
-    long getEnd();
+    long getLength();
 }

@@ -42,7 +42,7 @@ import net.kano.joscar.rvproto.rvproxy.RvProxyPacket;
 import net.kano.joscar.rvproto.rvproxy.RvProxyReadyCmd;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FailureEventException;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.AolProxyTimedOutInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.AolProxyTimedOutEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownAolProxyErrorEvent;
 
 import java.io.IOException;
@@ -68,7 +68,7 @@ public abstract class AbstractProxyConnectionController
                 RvProxyErrorCmd proxyErrorCmd = (RvProxyErrorCmd) cmd;
                 int code = proxyErrorCmd.getErrorCode();
                 if (code == RvProxyErrorCmd.ERRORCODE_TIMEOUT) {
-                    fireFailed(new AolProxyTimedOutInfo());
+                    fireFailed(new AolProxyTimedOutEvent());
                 } else {
                     fireFailed(new UnknownAolProxyErrorEvent(code));
                 }

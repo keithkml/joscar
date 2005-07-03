@@ -35,7 +35,6 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
 import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.PassiveConnectionController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferImpl;
 
 import java.io.IOException;

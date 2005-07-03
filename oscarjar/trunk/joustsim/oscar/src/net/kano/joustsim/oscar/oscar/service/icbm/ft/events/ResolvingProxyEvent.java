@@ -43,4 +43,10 @@ public class ResolvingProxyEvent extends FileTransferEvent {
     public String getHost() {
         return host;
     }
+
+    public String toString() {
+        return "ResolvingProxyEvent: " +
+                "host='" + host + "'" +
+                "";
+    }
 }

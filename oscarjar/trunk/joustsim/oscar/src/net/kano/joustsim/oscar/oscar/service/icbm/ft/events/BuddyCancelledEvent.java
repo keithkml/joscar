@@ -39,4 +39,6 @@ public class BuddyCancelledEvent extends FileTransferEvent {
     public BuddyCancelledEvent(int code) {this.code = code;}
 
     public int getRejectionCode() { return code; }
+
+
 }

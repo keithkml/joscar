@@ -43,4 +43,10 @@ public class CorruptTransferEvent extends FileTransferEvent {
     public TransferredFileInfo getInfo() {
         return info;
     }
+
+    public String toString() {
+        return "CorruptTransferEvent: " +
+                "info=" + info +
+                "";
+    }
 }

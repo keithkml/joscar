@@ -39,7 +39,7 @@ import java.nio.channels.FileChannel;
 import java.nio.ByteBuffer;
 import java.io.IOException;
 
-public class Checksummer implements ProgressStatusOwner {
+public class Checksummer implements ProgressStatusProvider {
     private volatile long position = 0;
     private boolean summed = false;
 
@@ -107,5 +107,5 @@ public class Checksummer implements ProgressStatusOwner {
         return position;
     }
 
-    public long getEnd() { return end; }
+    public long getLength() { return end; }
 }

@@ -45,4 +45,10 @@ public class FailureEventInfo extends FailedStateInfo {
     public FileTransferEvent getEvent() {
         return event;
     }
+
+    public String toString() {
+        return "FailureEventInfo: " +
+                "event=" + event +
+                "";
+    }
 }

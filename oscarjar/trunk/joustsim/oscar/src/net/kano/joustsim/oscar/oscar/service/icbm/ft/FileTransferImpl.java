@@ -43,24 +43,27 @@ import net.kano.joscar.rvcmd.sendfile.FileSendBlock;
 import net.kano.joscar.rvcmd.sendfile.FileSendRejectRvCmd;
 import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
 import net.kano.joscar.snaccmd.icbm.RvCommand;
+import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.oscar.service.icbm.RendezvousSessionHandler;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ControllerListener;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectedEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectingEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectingToProxyEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ResolvingProxyEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.WaitingForConnectionEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferringFileEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileCompleteEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ResolvingProxyEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferringFileEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.WaitingForConnectionEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
+import java.util.Iterator;
+import java.util.List;
 import java.util.logging.Logger;
 
 public abstract class FileTransferImpl
@@ -116,26 +119,8 @@ public abstract class FileTransferImpl
     };
     private boolean done = false;
 
-    protected void fireEvent(FileTransferEvent event) {
-        assert !Thread.holdsLock(this);
-
-        for (FileTransferListener listener : listeners) {
-            listener.handleEvent(this, event);
-        }
-    }
-
-    protected void fireStateChange(FileTransferState newState,
-            FileTransferEvent event) {
-        assert !Thread.holdsLock(this);
-
-        for (FileTransferListener listener : listeners) {
-            listener.handleEventWithStateChange(this,
-                    newState, event);
-        }
-    }
-
     private boolean onlyUsingProxy = false;
-    private boolean proxyRequestTrusted = false;
+    private boolean proxyRequestTrusted = true;
     private ControllerListener controllerListener = new ControllerListener() {
         public void handleControllerSucceeded(StateController c,
                 SuccessfulStateInfo info) {
@@ -152,12 +137,31 @@ public abstract class FileTransferImpl
             changeStateControllerFrom(c);
         }
     };
+    private List<StateChangeEvent> eventQueue = new CopyOnWriteArrayList<StateChangeEvent>();
 
     protected FileTransferImpl(FileTransferManager fileTransferManager,
             RvSession session) {
         this.fileTransferManager = fileTransferManager;
         this.session = session;
         rvSessionHandler = createSessionHandler();
+    }
+
+    protected void fireEvent(FileTransferEvent event) {
+        assert !Thread.holdsLock(this);
+
+        for (FileTransferListener listener : listeners) {
+            listener.handleEvent(this, event);
+        }
+    }
+
+    protected void fireStateChange(FileTransferState newState,
+            FileTransferEvent event) {
+        assert !Thread.holdsLock(this);
+
+        for (FileTransferListener listener : listeners) {
+            listener.handleEventWithStateChange(this,
+                    newState, event);
+        }
     }
 
     public synchronized FileTransferState getState() {
@@ -203,6 +207,7 @@ public abstract class FileTransferImpl
         if (last != null) last.stop();
         controller.start(this, last);
     }
+
     protected void changeStateControllerFrom(StateController controller) {
         boolean good;
         StateController next;
@@ -218,6 +223,7 @@ public abstract class FileTransferImpl
                 storeNextController(next);
             }
         }
+        flushEventQueue();
         controller.stop();
         if (good && next != null) {
             next.start(this, controller);
@@ -295,6 +301,34 @@ public abstract class FileTransferImpl
         this.onlyUsingProxy = onlyUsingProxy;
     }
 
+    public Screenname getBuddyScreenname() {
+        return new Screenname(getRvSession().getScreenname());
+    }
+
+    protected synchronized void queueEvent(FileTransferEvent event) {
+        eventQueue.add(new StateChangeEvent(null, event));
+    }
+
+    protected synchronized void queueStateChange(FileTransferState fileTransferState,
+            FileTransferEvent event) {
+        eventQueue.add(new StateChangeEvent(fileTransferState, event));
+    }
+
+    protected void flushEventQueue() {
+        assert !Thread.holdsLock(this);
+
+        Iterator<StateChangeEvent> it;
+        synchronized (this) {
+            it = eventQueue.iterator();
+            eventQueue.clear();
+        }
+        while (it.hasNext()) {
+            StateChangeEvent event = it.next();
+            if (event.getState() == null) fireEvent(event.getEvent());
+            else fireStateChange(event.getState(), event.getEvent());
+        }
+    }
+
 
     protected abstract class FtRvSessionHandler
             implements RendezvousSessionHandler {
@@ -331,4 +365,23 @@ public abstract class FileTransferImpl
         }
     }
 
+    protected static class StateChangeEvent {
+        private FileTransferState state;
+        private FileTransferEvent event;
+
+        public StateChangeEvent(FileTransferState state,
+                FileTransferEvent event) {
+
+            this.state = state;
+            this.event = event;
+        }
+
+        public FileTransferState getState() {
+            return state;
+        }
+
+        public FileTransferEvent getEvent() {
+            return event;
+        }
+    }
 }

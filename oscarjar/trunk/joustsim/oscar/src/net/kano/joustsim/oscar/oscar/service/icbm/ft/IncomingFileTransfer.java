@@ -35,6 +35,7 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
 import net.kano.joscar.rvcmd.RvConnectionInfo;
 
+//TODO: allow mapping of files
 public interface IncomingFileTransfer extends FileTransfer {
     RvConnectionInfo getOriginalRemoteHostInfo();
 

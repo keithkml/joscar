@@ -33,7 +33,5 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
-
-public class AolProxyTimedOutInfo extends FileTransferEvent {
+public class AolProxyTimedOutEvent extends FileTransferEvent {
 }

@@ -33,18 +33,27 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.ProgressStatusOwner;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.ProgressStatusProvider;
 
 public class TransferringFileEvent extends FileTransferEvent {
     private final TransferredFileInfo info;
-    private final ProgressStatusOwner owner;
+    private final ProgressStatusProvider provider;
 
-    public TransferringFileEvent(TransferredFileInfo info, ProgressStatusOwner owner) {
+    public TransferringFileEvent(TransferredFileInfo info, ProgressStatusProvider provider) {
         this.info = info;
-        this.owner = owner;
+        this.provider = provider;
     }
 
     public TransferredFileInfo getFileInfo() { return info; }
 
-    public ProgressStatusOwner getStatusOwner() { return owner; }
+    public ProgressStatusProvider getProgressProvider() { return provider; }
+
+
+    public String toString() {
+        return "TransferringFileEvent: " +
+                "info=" + info +
+                ", owner=" + provider +
+                ", fileInfo=" + getFileInfo() +
+                "";
+    }
 }

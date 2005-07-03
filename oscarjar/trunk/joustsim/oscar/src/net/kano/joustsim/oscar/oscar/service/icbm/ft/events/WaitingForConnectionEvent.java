@@ -51,4 +51,11 @@ public class WaitingForConnectionEvent extends FileTransferEvent {
     public int getPort() {
         return port;
     }
+
+    public String toString() {
+        return "WaitingForConnectionEvent: " +
+                "listeningOn=" + listeningOn +
+                ", port=" + port +
+                "";
+    }
 }

@@ -35,14 +35,13 @@
 
 package net.kano.joustsim.app;
 
+import net.kano.joscar.DefensiveTools;
 import net.kano.joustsim.Screenname;
-import net.kano.joustsim.app.JoustsimAimSession;
 import net.kano.joustsim.app.config.GlobalPrefs;
 import net.kano.joustsim.app.config.LocalPreferencesManager;
 import net.kano.joustsim.app.config.PrefTools;
-import net.kano.joustsim.oscar.AppSession;
 import net.kano.joustsim.oscar.AimSession;
-import net.kano.joscar.DefensiveTools;
+import net.kano.joustsim.oscar.AppSession;
 
 import java.io.File;
 import java.util.ArrayList;

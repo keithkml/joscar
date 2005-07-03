@@ -45,4 +45,11 @@ public class ProxyRedirectDisallowedEvent extends FileTransferEvent {
     public InetAddress getProxyIP() {
         return proxyIP;
     }
+
+
+    public String toString() {
+        return "ProxyRedirectDisallowedEvent: " +
+                "proxyIP=" + proxyIP +
+                "";
+    }
 }

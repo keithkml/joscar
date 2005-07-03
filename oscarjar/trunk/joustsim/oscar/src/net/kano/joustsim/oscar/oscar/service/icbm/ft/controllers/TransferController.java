@@ -46,6 +46,7 @@ import java.io.IOException;
 import java.util.Timer;
 import java.util.TimerTask;
 
+//TODO: allow pause, limit bandwidth
 public abstract class TransferController extends StateController {
     private boolean stop = false;
     private boolean connected = false;

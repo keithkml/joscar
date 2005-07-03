@@ -46,13 +46,13 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ReceiveControll
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.RedirectConnectionController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.RedirectToProxyController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferCompleteEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownErrorEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailureEventInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailureEventInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownErrorEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferCompleteEvent;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -141,6 +141,7 @@ public class IncomingFileTransferImpl extends FileTransferImpl
             controllers.add(proxyReverseController);
             connControllers = controllers;
             first = controllers.get(0);
+            lastConnController = first;
         }
 
         startStateController(first);
@@ -164,7 +165,7 @@ public class IncomingFileTransferImpl extends FileTransferImpl
         StateInfo oldState = oldController.getEndState();
         if (oldState instanceof SuccessfulStateInfo) {
             if (oldController == receiveController) {
-                fireStateChange(FileTransferState.FINISHED, new TransferCompleteEvent());
+                queueStateChange(FileTransferState.FINISHED, new TransferCompleteEvent());
                 return null;
             } else {
                 if (connControllers.contains(oldController)) {
@@ -198,7 +199,8 @@ public class IncomingFileTransferImpl extends FileTransferImpl
                             + "controller is not in connControllers: "
                             + lastConnController);
                 } else {
-                    if (oldConnIndex == connControllers.size()-1) {
+                    if (getState() == FileTransferState.TRANSFERRING
+                            || oldConnIndex == connControllers.size()-1) {
                         FileTransferEvent event;
                         if (isFailureEventInfo) {
                             FailureEventInfo failureEventInfo = (FailureEventInfo) oldState;
@@ -210,7 +212,7 @@ public class IncomingFileTransferImpl extends FileTransferImpl
                                     + "FailureEventInfo");
                             event = new UnknownErrorEvent();
                         }
-                        fireStateChange(FileTransferState.FAILED, event);
+                        queueStateChange(FileTransferState.FAILED, event);
                         return null;
 
                     } else {
@@ -238,11 +240,11 @@ public class IncomingFileTransferImpl extends FileTransferImpl
             // some connection failed
             if (oldIndex == connControllers.size()-1) {
                 // it's the last one. all connections failed.
-                fireStateChange(FileTransferState.FAILED,
+                queueStateChange(FileTransferState.FAILED,
                         isFailureEventInfo ? event : new UnknownErrorEvent());
                 return null;
             } else {
-                if (isFailureEventInfo) fireEvent(event);
+                if (isFailureEventInfo) queueEvent(event);
                 StateController nextController = connControllers.get(oldIndex + 1);
                 lastConnController = nextController;
                 return nextController;
@@ -270,6 +272,8 @@ public class IncomingFileTransferImpl extends FileTransferImpl
                 RvConnectionInfo connInfo = reqCmd.getConnInfo();
                 setOriginalRemoteHostInfo(connInfo);
                 putTransferProperty(KEY_CONN_INFO, connInfo);
+
+                getFileTransferManager().fireNewIncomingTransfer(IncomingFileTransferImpl.this);
 
             } else {
                 LOGGER.info("Got rendezvous of unknown type in incoming "

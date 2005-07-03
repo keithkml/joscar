@@ -157,14 +157,14 @@ public class OutgoingFileTransferImpl extends FileTransferImpl
         return new FileSendBlock(sendType, filename, numFiles, totalSize);
     }
 
-    public StateController getNextStateController() {
+    public synchronized StateController getNextStateController() {
         StateController oldController = getStateController();
         StateInfo endState = oldController.getEndState();
         if (endState instanceof SuccessfulStateInfo) {
             if (isConnectionController(oldController)) {
                 return sendController;
             } else if (oldController == sendController) {
-                fireStateChange(FileTransferState.FINISHED,
+                queueStateChange(FileTransferState.FINISHED,
                         new TransferCompleteEvent());
                 return null;
             } else {
@@ -179,14 +179,23 @@ public class OutgoingFileTransferImpl extends FileTransferImpl
 
                 event = failureEventInfo.getEvent();
             }
-            if (oldController == outgoingInternalController) {
-                if (event != null) fireEvent(event);
+            if (oldController == sendController) {
+                //TODO: retry send with other controllers
+//                if (getState() == FileTransferState.TRANSFERRING) {
+                    setFailed(event == null ? new UnknownErrorEvent() : event);
+//                } else {
+//
+//                }
+                return null;
+
+            } else if (oldController == outgoingInternalController) {
+                if (event != null) queueEvent(event);
                 return outgoingExternalController;
 
             } else if (oldController == sendPassivelyController
                     || oldController == outgoingExternalController
                     || oldController == connectToProxyController) {
-                if (event != null) fireEvent(event);
+                if (event != null) queueEvent(event);
                 return redirectToProxyController;
 
             } else if (oldController == redirectToProxyController) {
@@ -202,9 +211,9 @@ public class OutgoingFileTransferImpl extends FileTransferImpl
         }
     }
 
-    private void setFailed(FileTransferEvent event) {
+    private synchronized void setFailed(FileTransferEvent event) {
         cancel();
-        fireStateChange(FileTransferState.FAILED, event);
+        queueStateChange(FileTransferState.FAILED, event);
     }
 
     private boolean isConnectionController(StateController oldController) {

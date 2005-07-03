@@ -36,6 +36,7 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 import net.kano.joscar.rvcmd.InvitationMessage;
 import net.kano.joscar.rvcmd.sendfile.FileSendBlock;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
+import net.kano.joustsim.Screenname;
 
 public interface FileTransfer {
     FileSendBlock getFileInfo();
@@ -60,4 +61,5 @@ public interface FileTransfer {
 
     void setOnlyUsingProxy(boolean onlyUsingProxy);
 
+    Screenname getBuddyScreenname();
 }

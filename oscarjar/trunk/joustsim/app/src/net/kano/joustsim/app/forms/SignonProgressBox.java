@@ -221,28 +221,32 @@ public class SignonProgressBox extends JPanel implements SignonWindowBox {
                 else if (si.isDoing()) setIcon(workingIcon);
                 else setIcon(notStartedIcon);
 
-                State state = si.getState();
-                String text;
-                if (state == State.CONNECTINGAUTH) {
-                    text = "Connecting to authorization server";
-                } else if (state == State.AUTHORIZING) {
-                    text = "Sending username and password";
-                } else if (state == State.CONNECTING) {
-                    text = "Connecting to AIM server";
-                } else if (state == State.SIGNINGON) {
-                    text = "Signing on";
-                } else if (state == State.ONLINE) {
-                    text = "Online";
-                } else {
-                    text = "State: " + state;
-                }
-                setText(text);
+                setText(getTextFromState(si));
 
             } else {
                 return super.getListCellRendererComponent(list, value, index,
                         isSelected, cellHasFocus);
             }
             return this;
+        }
+
+        private String getTextFromState(ProgressListModel.StateInfo si) {
+            State state = si.getState();
+            String text;
+            if (state == State.CONNECTINGAUTH) {
+                text = "Connecting to authorization server";
+            } else if (state == State.AUTHORIZING) {
+                text = "Sending username and password";
+            } else if (state == State.CONNECTING) {
+                text = "Connecting to AIM server";
+            } else if (state == State.SIGNINGON) {
+                text = "Signing on";
+            } else if (state == State.ONLINE) {
+                text = "Online";
+            } else {
+                text = "State: " + state;
+            }
+            return text;
         }
     }
 }

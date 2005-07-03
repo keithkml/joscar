@@ -60,4 +60,12 @@ public class ConnectingEvent extends FileTransferEvent {
     public int getPort() {
         return port;
     }
+
+    public String toString() {
+        return "ConnectingEvent: " +
+                "connectionType=" + connectionType +
+                ", address=" + address +
+                ", port=" + port +
+                "";
+    }
 }

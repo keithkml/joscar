@@ -42,7 +42,7 @@ import static net.kano.joscar.rvproto.ft.FileTransferHeader.HEADERTYPE_RESUME_SE
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.Checksummer;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FailureEventException;
 import static net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferImpl.KEY_REDIRECTED;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.ProgressStatusOwner;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.ProgressStatusProvider;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvSessionBasedTransfer;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.TransferPropertyHolder;
@@ -87,7 +87,7 @@ public class ReceiveController extends TransferController {
             if (sendheader == null) break;
             assert sendheader.getHeaderType() == HEADERTYPE_SENDHEADER;
             long desiredChecksum = sendheader.getChecksum();
-            if (!redirected) {
+            if (redirected) {
                 if (sendheader.getIcbmMessageId() != icbmId) {
                     break;
                 }
@@ -215,7 +215,7 @@ public class ReceiveController extends TransferController {
         }
     }
 
-    private static class Receiver implements ProgressStatusOwner {
+    private static class Receiver implements ProgressStatusProvider {
         private final FileChannel fileChannel;
         private final long offset;
         private final long length;
@@ -251,7 +251,7 @@ public class ReceiveController extends TransferController {
             return position;
         }
 
-        public long getEnd() {
+        public long getLength() {
             return length;
         }
 

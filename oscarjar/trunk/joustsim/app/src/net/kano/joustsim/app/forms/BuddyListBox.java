@@ -190,6 +190,7 @@ public class BuddyListBox extends JPanel {
                         } else {
                             transfer.setFile(files[0]);
                         }
+                        guiSession.getDummyOnlineWindow().watchTransfer(transfer);
                         transfer.makeRequest(new InvitationMessage("Here's a file!"));
                     }
                 }

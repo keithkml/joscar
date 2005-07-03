@@ -43,4 +43,9 @@ public class ConnectionTimedOutEvent extends FileTransferEvent {
     public long getTimeout() {
         return timeout;
     }
+
+    public String toString() {
+        return "ConnectionTimedOutEvent: " +
+                "timeout=" + timeout/1000.0 + " seconds";
+    }
 }
