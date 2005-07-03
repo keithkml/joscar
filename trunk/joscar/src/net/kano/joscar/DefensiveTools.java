@@ -291,7 +291,7 @@ public final class DefensiveTools {
         return copy;
     }
 
-    private static void checkNullElements(List<?> list, String listName) {
+    public static void checkNullElements(List<?> list, String listName) {
         checkNullElements(list, listName, 0, list.size());
     }
 

@@ -100,7 +100,7 @@
           description="Compiles the joscar library only, outputting to the bin/ directory.">
     <mkdir dir="${joscar.bin}" />
     <javac srcdir="${joscar.src}" includes="net/kano/joscar/"
-           destdir="${joscar.bin}" source="1.4" />
+           destdir="${joscar.bin}" source="1.5" />
   </target>
 
   <target name="jar" depends="joscar,-version" 
@@ -161,7 +161,7 @@
              packagenames="net.kano.joscar, net.kano.joscar.*"
              destdir="${apidocs.home}"
              windowtitle="joscar API Documentation"
-             source="1.4"
+             source="1.5"
              author="true"
              version="true"
              splitindex="true"
