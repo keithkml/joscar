@@ -49,6 +49,10 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailureEventInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownErrorEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferCompleteEvent;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -59,16 +63,16 @@ public class IncomingFileTransferImpl extends FileTransferImpl
     private static final Logger LOGGER = Logger
             .getLogger(IncomingFileTransferImpl.class.getName());
 
-    private OutgoingConnectionController externalController
+    private final OutgoingConnectionController externalController
             = new OutgoingConnectionController(ConnectionType.INTERNET);
-    private OutgoingConnectionController internalController
+    private final OutgoingConnectionController internalController
             = new OutgoingConnectionController(ConnectionType.LAN);
-    private RedirectConnectionController redirectConnectionController
+    private final RedirectConnectionController redirectConnectionController
             = new RedirectConnectionController();
-    private ConnectToProxyController proxyController
+    private final ConnectToProxyController proxyController
             = new ConnectToProxyController(ConnectToProxyController.ConnectionType.ACK);
-    private StateController proxyReverseController = new RedirectToProxyController();
-    private ReceiveController transferController = new ReceiveController();
+    private final StateController proxyReverseController = new RedirectToProxyController();
+    private final ReceiveController receiveController = new ReceiveController();
 
     private RvConnectionInfo originalRemoteHostInfo;
 
@@ -113,29 +117,33 @@ public class IncomingFileTransferImpl extends FileTransferImpl
     }
 
     public void accept() throws IllegalStateException {
-        synchronized(this) {
+        StateController first;
+        synchronized (this) {
             if (declined) {
-                throw new IllegalStateException("transfer was already declined");
+                throw new IllegalStateException(
+                        "transfer was already declined");
             }
             if (accepted) return;
             accepted = true;
 
-            connControllers = new ArrayList<StateController>();
+            List<StateController> controllers = new ArrayList<StateController>();
             boolean onlyUsingProxy = isOnlyUsingProxy();
             if (!isAlwaysRedirect() && !onlyUsingProxy) {
-                connControllers.add(internalController);
-                connControllers.add(externalController);
+                controllers.add(internalController);
+                controllers.add(externalController);
             }
             if (isProxyRequestTrusted()) {
-                connControllers.add(proxyController);
+                controllers.add(proxyController);
             }
             if (!onlyUsingProxy) {
-                connControllers.add(redirectConnectionController);
+                controllers.add(redirectConnectionController);
             }
-            connControllers.add(proxyReverseController);
+            controllers.add(proxyReverseController);
+            connControllers = controllers;
+            first = controllers.get(0);
         }
 
-        startStateController(connControllers.get(0));
+        startStateController(first);
         getRvSession().sendRv(new FileSendAcceptRvCmd());
     }
 
@@ -146,16 +154,25 @@ public class IncomingFileTransferImpl extends FileTransferImpl
             }
             if (declined) return;
             declined = true;
+            cancel();
         }
         getRvSession().sendRv(new FileSendRejectRvCmd(REJECTCODE_CANCELLED));
     }
 
-    public StateController getNextStateController() {
+    public synchronized StateController getNextStateController() {
         StateController oldController = getStateController();
         StateInfo oldState = oldController.getEndState();
         if (oldState instanceof SuccessfulStateInfo) {
-            return getReceiverState(oldController);
-
+            if (oldController == receiveController) {
+                fireStateChange(FileTransferState.FINISHED, new TransferCompleteEvent());
+                return null;
+            } else {
+                if (connControllers.contains(oldController)) {
+                    return receiveController;
+                } else {
+                    throw new IllegalStateException("what state? " + oldController);
+                }
+            }
         } else if (oldState instanceof FailedStateInfo) {
             return getNextStateFromError(oldController, oldState);
 
@@ -164,19 +181,12 @@ public class IncomingFileTransferImpl extends FileTransferImpl
         }
     }
 
-    private StateController getReceiverState(StateController oldController) {
-        if (connControllers.contains(oldController)) {
-            return new ReceiveController();
-        } else {
-            throw new IllegalStateException("what state? " + oldController);
-        }
-    }
-
-    private StateController getNextStateFromError(StateController oldController,
-            StateInfo oldState) {
+    private synchronized StateController getNextStateFromError(
+            StateController oldController, StateInfo oldState) {
         int oldIndex = connControllers.indexOf(oldController);
+        boolean isFailureEventInfo = oldState instanceof FailureEventInfo;
         if (oldIndex == -1) {
-            if (oldController == transferController) {
+            if (oldController == receiveController) {
                 if (lastConnController == null) {
                     throw new IllegalArgumentException("receiver must "
                             + "have been called before connection was "
@@ -189,8 +199,20 @@ public class IncomingFileTransferImpl extends FileTransferImpl
                             + lastConnController);
                 } else {
                     if (oldConnIndex == connControllers.size()-1) {
-                        System.out.println("FAILED 2");
+                        FileTransferEvent event;
+                        if (isFailureEventInfo) {
+                            FailureEventInfo failureEventInfo = (FailureEventInfo) oldState;
+
+                            event = failureEventInfo.getEvent();
+                        } else {
+                            LOGGER.warning("receiver failed, but its end state "
+                                    + "was " + oldState + " which is not a "
+                                    + "FailureEventInfo");
+                            event = new UnknownErrorEvent();
+                        }
+                        fireStateChange(FileTransferState.FAILED, event);
                         return null;
+
                     } else {
                         StateController nextController
                                 = connControllers.get(oldConnIndex + 1);
@@ -199,17 +221,29 @@ public class IncomingFileTransferImpl extends FileTransferImpl
                     }
                 }
             } else {
-                throw new IllegalStateException("unknown old controller "
+                throw new IllegalStateException("unknown previous controller "
                         + oldController);
             }
 
         } else {
+            FileTransferEvent event;
+            if (isFailureEventInfo) {
+                FailureEventInfo failureEventInfo = (FailureEventInfo) oldState;
+
+                event = failureEventInfo.getEvent();
+            } else {
+                event = null;
+            }
+
+            // some connection failed
             if (oldIndex == connControllers.size()-1) {
-                // it's the last one
+                // it's the last one. all connections failed.
+                fireStateChange(FileTransferState.FAILED,
+                        isFailureEventInfo ? event : new UnknownErrorEvent());
                 return null;
             } else {
-                StateController nextController = connControllers.get(oldIndex
-                        + 1);
+                if (isFailureEventInfo) fireEvent(event);
+                StateController nextController = connControllers.get(oldIndex + 1);
                 lastConnController = nextController;
                 return nextController;
             }
@@ -243,4 +277,5 @@ public class IncomingFileTransferImpl extends FileTransferImpl
             }
         }
     }
+
 }

@@ -33,5 +33,5 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
-public class UnknownTransferErrorEvent extends FileTransferEvent {
+public class UnknownErrorEvent extends FileTransferEvent {
 }

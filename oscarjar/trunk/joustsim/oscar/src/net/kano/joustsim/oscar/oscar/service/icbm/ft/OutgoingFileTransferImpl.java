@@ -54,6 +54,12 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailureEventInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferCompleteEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownErrorEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.BuddyCancelledEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ProxyRedirectDisallowedEvent;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -68,23 +74,24 @@ public class OutgoingFileTransferImpl extends FileTransferImpl
     private static final Logger LOGGER = Logger
             .getLogger(OutgoingFileTransferImpl.class.getName());
 
-    private SendOverProxyController sendOverProxyController
+    private final SendOverProxyController sendOverProxyController
             = new SendOverProxyController();
-    private SendPassivelyController sendPassivelyController
+    private final SendPassivelyController sendPassivelyController
             = new SendPassivelyController();
-    private OutgoingConnectionController outgoingInternalController
+    private final OutgoingConnectionController outgoingInternalController
             = new OutgoingConnectionController(ConnectionType.LAN);
-    private OutgoingConnectionController outgoingExternalController
+    private final OutgoingConnectionController outgoingExternalController
             = new OutgoingConnectionController(ConnectionType.INTERNET);
-    private RedirectToProxyController redirectToProxyController
+    private final RedirectToProxyController redirectToProxyController
             = new RedirectToProxyController();
-    private ConnectToProxyController connectToProxyController
+    private final ConnectToProxyController connectToProxyController
             = new ConnectToProxyController(ConnectToProxyController.ConnectionType.ACK);
+    private SendController sendController = new SendController();
 
     private List<File> files = new ArrayList<File>();
     private String folderName;
 
-    OutgoingFileTransferImpl(FileTransferManager fileTransferManager,
+    public OutgoingFileTransferImpl(FileTransferManager fileTransferManager,
             RvSession session) {
         super(fileTransferManager, session);
     }
@@ -154,31 +161,66 @@ public class OutgoingFileTransferImpl extends FileTransferImpl
         StateController oldController = getStateController();
         StateInfo endState = oldController.getEndState();
         if (endState instanceof SuccessfulStateInfo) {
-            return new SendController();
+            if (isConnectionController(oldController)) {
+                return sendController;
+            } else if (oldController == sendController) {
+                fireStateChange(FileTransferState.FINISHED,
+                        new TransferCompleteEvent());
+                return null;
+            } else {
+                throw new IllegalStateException("unknown previous controller "
+                        + oldController);
+            }
 
         } else if (endState instanceof FailedStateInfo) {
+            FileTransferEvent event = null;
+            if (endState instanceof FailureEventInfo) {
+                FailureEventInfo failureEventInfo = (FailureEventInfo) endState;
+
+                event = failureEventInfo.getEvent();
+            }
             if (oldController == outgoingInternalController) {
+                if (event != null) fireEvent(event);
                 return outgoingExternalController;
+
             } else if (oldController == sendPassivelyController
                     || oldController == outgoingExternalController
                     || oldController == connectToProxyController) {
+                if (event != null) fireEvent(event);
                 return redirectToProxyController;
+
+            } else if (oldController == redirectToProxyController) {
+                setFailed(event == null ? new UnknownErrorEvent() : event);
+                return null;
+
             } else {
                 throw new IllegalStateException("unknown previous controller "
                         + oldController);
             }
         } else {
-            throw new IllegalStateException("unknown state " + endState);
+            throw new IllegalStateException("unknown previous state " + endState);
         }
+    }
+
+    private void setFailed(FileTransferEvent event) {
+        cancel();
+        fireStateChange(FileTransferState.FAILED, event);
+    }
+
+    private boolean isConnectionController(StateController oldController) {
+        return oldController == sendPassivelyController
+                || oldController == outgoingInternalController
+                || oldController == outgoingExternalController
+                || oldController == redirectToProxyController
+                || oldController == connectToProxyController
+                || oldController == sendOverProxyController;
     }
 
     protected FtRvSessionHandler createSessionHandler() {
         return new FtRvSessionHandler() {
             protected void handleIncomingReject(RecvRvEvent event,
                     FileSendRejectRvCmd rejectCmd) {
-                //TODO: fail
-//                getEventPost().fireStateChange(FileTransferState.FAILED,
-//                        new BuddyCancelledEvent(rejectCmd.getRejectCode()));
+                setFailed(new BuddyCancelledEvent(rejectCmd.getRejectCode()));
             }
 
             protected void handleIncomingAccept(RecvRvEvent event,
@@ -194,9 +236,7 @@ public class OutgoingFileTransferImpl extends FileTransferImpl
                     boolean proxied = connInfo.isProxied();
                     if (isOnlyUsingProxy()) {
                         if (proxied && !isProxyRequestTrusted()) {
-                            //TODO: fail
-//                            getEventPost().fireStateChange(FileTransferState.FAILED,
-//                                    new ProxyRedirectDisallowedEvent(connInfo.getProxyIP()));
+                            setFailed(new ProxyRedirectDisallowedEvent(connInfo.getProxyIP()));
                             good = false;
 
                         } else {

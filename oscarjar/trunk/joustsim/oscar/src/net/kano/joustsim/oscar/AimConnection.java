@@ -211,18 +211,22 @@ public class AimConnection {
     public synchronized StateInfo getStateInfo() { return stateInfo; }
 
     public void addStateListener(StateListener l) {
+        DefensiveTools.checkNull(l, "l");
         stateListeners.addIfAbsent(l);
     }
 
     public void removeStateListener(StateListener l) {
+        DefensiveTools.checkNull(l, "l");
         stateListeners.remove(l);
     }
     
     public void addOpenedServiceListener(OpenedServiceListener l) {
+        DefensiveTools.checkNull(l, "l");
         serviceListeners.addIfAbsent(l);
     }
 
     public void removeNewServiceListener(OpenedServiceListener l) {
+        DefensiveTools.checkNull(l, "l");
         serviceListeners.remove(l);
     }
 

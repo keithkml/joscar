@@ -57,7 +57,7 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferringFileEven
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.CorruptTransferEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.TransferSucceededInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownTransferErrorEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownErrorEvent;
 
 import java.io.File;
 import java.io.IOException;
@@ -211,7 +211,7 @@ public class SendController extends TransferController {
             if (succeeded == rafs.size()) {
                 fireSucceeded(new TransferSucceededInfo(files));
             } else {
-                fireFailed(new UnknownTransferErrorEvent());
+                fireFailed(new UnknownErrorEvent());
             }
         } finally {
             for (RandomAccessFile file : rafs) {
@@ -233,7 +233,7 @@ public class SendController extends TransferController {
         private final FileChannel fileChannel;
         private final long offset;
         private final long length;
-        private long position = -1;
+        private volatile long position = -1;
 
         public Sender(FileChannel fileChannel, long offset, long length) {
             this.fileChannel = fileChannel;
@@ -261,7 +261,7 @@ public class SendController extends TransferController {
             return offset;
         }
 
-        public synchronized long getPosition() {
+        public long getPosition() {
             return position;
         }
 
@@ -269,7 +269,7 @@ public class SendController extends TransferController {
             return length;
         }
 
-        public synchronized void setPosition(long position) {
+        public void setPosition(long position) {
             this.position = position;
         }
     }

@@ -40,22 +40,15 @@ import java.nio.ByteBuffer;
 import java.io.IOException;
 
 public class Checksummer implements ProgressStatusOwner {
-    private long position = 0;
+    private volatile long position = 0;
     private boolean summed = false;
-
-    private enum State { BEFORE, DURING, AFTER }
 
     private final FileChannel channel;
     private final long end;
-    private State state = State.BEFORE;
 
     public Checksummer(FileChannel channel, long length) {
         this.channel = channel;
         this.end = length;
-    }
-
-    private synchronized void setState(State state) {
-        this.state = state;
     }
 
     public long compute() throws IOException, IllegalStateException {
@@ -71,7 +64,6 @@ public class Checksummer implements ProgressStatusOwner {
             synchronized (this) {
                 origOffset = channel.position();
                 channel.position(0);
-                setState(State.DURING);
             }
             FileTransferChecksum summer = new FileTransferChecksum();
             ByteBuffer buffer = ByteBuffer.allocate(1024);
@@ -96,14 +88,14 @@ public class Checksummer implements ProgressStatusOwner {
 
         } finally {
             synchronized (this) {
-                setState(State.AFTER);
+                setPosition(end);
                 if (origOffset != -1) channel.position(origOffset);
             }
         }
         return sum;
     }
 
-    private synchronized void setPosition(long newPos) {
+    private void setPosition(long newPos) {
         position = newPos;
     }
 
@@ -111,13 +103,8 @@ public class Checksummer implements ProgressStatusOwner {
         return 0;
     }
 
-    public synchronized long getPosition() {
-        if (state == State.BEFORE || state == State.DURING) {
-            return position;
-        } else if (state == State.AFTER) {
-            return end;
-        }
-        throw new IllegalStateException("Unknown state " + state);
+    public long getPosition() {
+        return position;
     }
 
     public long getEnd() { return end; }

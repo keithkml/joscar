@@ -49,7 +49,7 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.TransferPropertyHolder;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.TransferSucceededInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferredFileInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.CorruptTransferEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownTransferErrorEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownErrorEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ChecksummingEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileCompleteEvent;
@@ -211,7 +211,7 @@ public class ReceiveController extends TransferController {
         if (good) {
             fireSucceeded(new TransferSucceededInfo(files));
         } else {
-            fireFailed(new UnknownTransferErrorEvent());
+            fireFailed(new UnknownErrorEvent());
         }
     }
 
@@ -219,7 +219,7 @@ public class ReceiveController extends TransferController {
         private final FileChannel fileChannel;
         private final long offset;
         private final long length;
-        private long position = -1;
+        private volatile long position = -1;
 
         public Receiver(FileChannel fileChannel, long offset, long length) {
             this.fileChannel = fileChannel;
@@ -247,7 +247,7 @@ public class ReceiveController extends TransferController {
             return offset;
         }
 
-        public synchronized long getPosition() {
+        public long getPosition() {
             return position;
         }
 
@@ -255,7 +255,7 @@ public class ReceiveController extends TransferController {
             return length;
         }
 
-        private synchronized void setPosition(long position) {
+        private void setPosition(long position) {
             this.position = position;
         }
     }

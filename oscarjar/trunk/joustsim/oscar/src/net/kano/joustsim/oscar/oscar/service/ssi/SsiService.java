@@ -217,7 +217,7 @@ public class SsiService extends Service {
             throw new IllegalArgumentException("groups all have id 0");
         }
         Set<Integer> idsForType = getIdsForType(type);
-        //TODO: include ids in group child lists
+        //TODO: include ids in group child lists when calculating used id's
         int nextid;
         do {
             nextid = random.nextInt(NUM_IDS);

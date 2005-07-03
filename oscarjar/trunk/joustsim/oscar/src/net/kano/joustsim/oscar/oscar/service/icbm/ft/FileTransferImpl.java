@@ -61,10 +61,13 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
+import java.util.logging.Logger;
 
 public abstract class FileTransferImpl
         implements FileTransfer, TransferPropertyHolder,
         RvSessionBasedTransfer, StateBasedTransfer, CachedTimerHolder {
+    private static final Logger LOGGER = Logger
+            .getLogger(FileTransferImpl.class.getName());
 
     private FileSendBlock fileInfo;
     private InvitationMessage message;
@@ -79,7 +82,6 @@ public abstract class FileTransferImpl
     private final CopyOnWriteArrayList<FileTransferListener> listeners
             = new CopyOnWriteArrayList<FileTransferListener>();
     private FileTransferState state = FileTransferState.WAITING;
-    private boolean cancelled = false;
     private EventPost eventPost = new EventPost() {
         public void fireEvent(FileTransferEvent event) {
             boolean fireState;
@@ -106,17 +108,32 @@ public abstract class FileTransferImpl
                 }
             }
             if (fireState) {
-                for (FileTransferListener listener : listeners) {
-                    listener.handleEventWithStateChange(FileTransferImpl.this,
-                            newState, event);
-                }
+                fireStateChange(newState, event);
             } else {
-                for (FileTransferListener listener : listeners) {
-                    listener.handleEvent(FileTransferImpl.this, event);
-                }
+                FileTransferImpl.this.fireEvent(event);
             }
         }
     };
+    private boolean done = false;
+
+    protected void fireEvent(FileTransferEvent event) {
+        assert !Thread.holdsLock(this);
+
+        for (FileTransferListener listener : listeners) {
+            listener.handleEvent(this, event);
+        }
+    }
+
+    protected void fireStateChange(FileTransferState newState,
+            FileTransferEvent event) {
+        assert !Thread.holdsLock(this);
+
+        for (FileTransferListener listener : listeners) {
+            listener.handleEventWithStateChange(this,
+                    newState, event);
+        }
+    }
+
     private boolean onlyUsingProxy = false;
     private boolean proxyRequestTrusted = false;
     private ControllerListener controllerListener = new ControllerListener() {
@@ -175,7 +192,12 @@ public abstract class FileTransferImpl
     protected void changeStateController(StateController controller) {
         StateController last;
         synchronized (this) {
-            if (cancelled) return;
+            if (done) {
+                LOGGER.warning("Someone tried changing state of " + this
+                        + " to " + controller + " but we are done so it is "
+                        + "being ignored");
+                return;
+            }
             last = storeNextController(controller);
         }
         if (last != null) last.stop();
@@ -185,7 +207,8 @@ public abstract class FileTransferImpl
         boolean good;
         StateController next;
         synchronized (this) {
-            if (cancelled) return;
+            if (done) return;
+
             if (this.controller != controller) {
                 good = false;
                 next = null;
@@ -196,7 +219,7 @@ public abstract class FileTransferImpl
             }
         }
         controller.stop();
-        if (good) {
+        if (good && next != null) {
             next.start(this, controller);
         }
     }
@@ -204,7 +227,11 @@ public abstract class FileTransferImpl
     private synchronized StateController storeNextController(StateController controller) {
         StateController last = this.controller;
         this.controller = controller;
-        controller.addControllerListener(controllerListener);
+        if (controller == null) {
+            done = true;
+        } else {
+            controller.addControllerListener(controllerListener);
+        }
         return last;
     }
 
@@ -233,8 +260,8 @@ public abstract class FileTransferImpl
     public void cancel() {
         StateController controller;
         synchronized(this) {
-            if (cancelled) return;
-            cancelled = true;
+            if (done) return;
+            done = true;
             controller = this.controller;
         }
         controller.stop();

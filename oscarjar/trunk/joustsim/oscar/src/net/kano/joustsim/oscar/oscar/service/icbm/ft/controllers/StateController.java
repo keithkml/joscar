@@ -77,7 +77,6 @@ public abstract class StateController {
 
     protected void fireFailed(final FileTransferEvent e) {
         fireEvent(new FailureEventInfo(e));
-        //TODO: fire event here? or delegate responsibility to the FileTransfer itself?
     }
 
     private void fireEvent(StateInfo e) {
