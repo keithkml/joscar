@@ -39,6 +39,7 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.ExtraInfoBlock;
+import net.kano.joscar.snaccmd.FullUserInfo;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
 import net.kano.joscar.tlv.TlvTools;
@@ -99,25 +100,30 @@ public class SetExtraInfoCmd extends ConnCommand {
         }
     }
 
+    public SetExtraInfoCmd(long icqstatus) {
+        this(icqstatus, null);
+    }
+
     public SetExtraInfoCmd(List<ExtraInfoBlock> blocks) {
         this(ICQSTATUS_NONE, blocks);
     }
 
     /**
      * Creates a new set-extra-info-blocks command containing the given extra
-     * information blocks and with the given ICQ status code.
+     * information blocks and with the given ICQ status code. The given status
+     * code should be one of the {@code ICQSTATUS_*} constants in
+     * {@link FullUserInfo}.
      *
      * @param icqstatus an ICQ availability status code
      * @param blocks a list of extra information blocks
      */
-    public SetExtraInfoCmd(int icqstatus, List<ExtraInfoBlock> blocks) {
+    public SetExtraInfoCmd(long icqstatus, List<ExtraInfoBlock> blocks) {
         super(CMD_SETEXTRAINFO);
 
         DefensiveTools.checkRange(icqstatus, "icqstatus", -1);
 
         this.icqstatus = icqstatus;
-        this.blocks = DefensiveTools.getSafeNonnullListCopy(
-                blocks, "blocks");
+        this.blocks = DefensiveTools.getSafeListCopy(blocks, "blocks");
     }
 
     /**

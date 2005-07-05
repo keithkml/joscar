@@ -132,11 +132,12 @@ public class FullUserInfo implements LiveWritable {
      */
     public static final long ICQSTATUS_AWAY = 0x00000001L;
 
+    public static final long ICQSTATUS_DEFAULT = 0x00000000L;
+
     /**
      * An ICQ status flag indicating that the user is free for chat.
      */
     public static final long ICQSTATUS_FFC = 0x00000020L;
-
 
     /**
      * Reads a user info block from the given data block, or returns

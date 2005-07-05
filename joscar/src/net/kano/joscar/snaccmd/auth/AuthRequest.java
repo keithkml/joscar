@@ -298,8 +298,6 @@ public class AuthRequest extends AuthCommand {
             new Tlv(TYPE_ENCPASS, encryptedPass).write(out);
         }
 
-        // right here WinAIM sends an empty 0x004c TLV, but it causes our MD5
-        // password hash to stop working :(
         if (hashedPass) new Tlv(TYPE_HASHEDPASS).write(out);
 
         // write the version TLV's

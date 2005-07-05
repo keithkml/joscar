@@ -47,7 +47,7 @@ public abstract class ConnCommand extends SnacCommand {
 
     /** A set of SNAC family information for this family. */
     public static final SnacFamilyInfo FAMILY_INFO
-            = new SnacFamilyInfo(FAMILY_CONN, 0x0004, 0x0110, 0x0801);
+            = new SnacFamilyInfo(FAMILY_CONN, 0x0004, 0x3110, 0x08e5);
 
     /** A command subtype for sending the client's SNAC family versions. */
     public static final int CMD_CLIENT_VERS = 0x0017;
