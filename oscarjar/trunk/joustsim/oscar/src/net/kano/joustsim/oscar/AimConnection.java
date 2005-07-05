@@ -51,8 +51,8 @@ import net.kano.joustsim.oscar.oscar.BasicConnection;
 import net.kano.joustsim.oscar.oscar.LoginConnection;
 import net.kano.joustsim.oscar.oscar.LoginServiceListener;
 import net.kano.joustsim.oscar.oscar.OscarConnListener;
-import net.kano.joustsim.oscar.oscar.OscarConnection;
 import net.kano.joustsim.oscar.oscar.OscarConnStateEvent;
+import net.kano.joustsim.oscar.oscar.OscarConnection;
 import net.kano.joustsim.oscar.oscar.loginstatus.LoginFailureInfo;
 import net.kano.joustsim.oscar.oscar.loginstatus.LoginSuccessInfo;
 import net.kano.joustsim.oscar.oscar.service.Service;
@@ -189,10 +189,30 @@ public class AimConnection {
         capabilityManager = new CapabilityManager(this);
         capabilityManager.setCapabilityHandler(CapabilityBlock.BLOCK_ENCRYPTION,
                 new SecurityEnabledHandler(this));
+//        capabilityManager.setCapabilityHandler(CapabilityBlock.BLOCK_SOMETHING,
+//                new DefaultEnabledCapabilityHandler());
         capabilityManager.setCapabilityHandler(CapabilityBlock.BLOCK_ICQCOMPATIBLE,
                 new DefaultEnabledCapabilityHandler());
         capabilityManager.setCapabilityHandler(CapabilityBlock.BLOCK_SHORTCAPS,
                 new DefaultEnabledCapabilityHandler());
+//        capabilityManager.setCapabilityHandler(
+//                ShortCapabilityBlock.getCapFromShortBytes(0x01, 0x05),
+//                new DefaultEnabledCapabilityHandler());
+//        capabilityManager.setCapabilityHandler(
+//                ShortCapabilityBlock.getCapFromShortBytes(0xf0, 0x04),
+//                new DefaultEnabledCapabilityHandler());
+//        capabilityManager.setCapabilityHandler(
+//                ShortCapabilityBlock.getCapFromShortBytes(0xf0, 0x05),
+//                new DefaultEnabledCapabilityHandler());
+//        capabilityManager.setCapabilityHandler(
+//                ShortCapabilityBlock.getCapFromShortBytes(0xf0, 0x08),
+//                new DefaultEnabledCapabilityHandler());
+//        capabilityManager.setCapabilityHandler(
+//                ShortCapabilityBlock.getCapFromShortBytes(0xf0, 0x07),
+//                new DefaultEnabledCapabilityHandler());
+//        capabilityManager.setCapabilityHandler(
+//                ShortCapabilityBlock.getCapFromShortBytes(0x01, 0x05),
+//                new DefaultEnabledCapabilityHandler());
 
         loginConn.addOscarListener(new LoginConnListener());
         loginConn.setServiceFactory(new LoginServiceFactory());

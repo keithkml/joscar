@@ -39,23 +39,30 @@ import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.oscar.oscar.OscarConnection;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.CopyOnWriteArrayList;
+import net.kano.joscar.ByteBlock;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.snac.SnacPacketEvent;
 import net.kano.joscar.snaccmd.CertificateInfo;
 import net.kano.joscar.snaccmd.ExtraInfoBlock;
 import net.kano.joscar.snaccmd.ExtraInfoData;
+import net.kano.joscar.snaccmd.FullUserInfo;
 import net.kano.joscar.snaccmd.conn.MyInfoRequest;
 import net.kano.joscar.snaccmd.conn.SetEncryptionInfoCmd;
 import net.kano.joscar.snaccmd.conn.SetIdleCmd;
 import net.kano.joscar.snaccmd.conn.YourInfoCmd;
+import net.kano.joscar.snaccmd.conn.SetExtraInfoCmd;
 
 import java.util.Date;
 import java.util.Arrays;
 import java.util.List;
 
+//TODO: many commands send back a YourInfoCmd. we should make this more MVC so setIdleSince does not write to a field, but an incoming YourInfoCmd does not
 public class MainBosService extends BosService {
-    private CopyOnWriteArrayList<MainBosServiceListener> listeners = new CopyOnWriteArrayList<MainBosServiceListener>();
+    private CopyOnWriteArrayList<MainBosServiceListener> listeners
+            = new CopyOnWriteArrayList<MainBosServiceListener>();
     private Date idleSince = null;
+    private boolean visibleStatus = true;
+    private String availMsg = null;
 
     public MainBosService(AimConnection aimConnection,
             OscarConnection oscarConnection) {
@@ -113,6 +120,27 @@ public class MainBosService extends BosService {
     }
 
     public synchronized Date getIdleSince() { return idleSince; }
+
+    public synchronized void setVisibleStatus(boolean visible) {
+        if (visibleStatus == visible) return;
+        this.visibleStatus = visible;
+        long flag = visibleStatus ? FullUserInfo.ICQSTATUS_DEFAULT
+                : FullUserInfo.ICQSTATUS_INVISIBLE;
+        sendSnac(new SetExtraInfoCmd(flag));
+    }
+
+    public synchronized void setStatusMessage(String msg) {
+        if (availMsg == null ? msg == null : availMsg.equals(msg)) return;
+        availMsg = msg;
+        String useMsg = availMsg == null ? "" : availMsg;
+        ExtraInfoBlock availBlock = new ExtraInfoBlock(ExtraInfoBlock.TYPE_AVAILMSG,
+                ExtraInfoData.getAvailableMessageBlock(useMsg));
+        sendSnac(new SetExtraInfoCmd(Arrays.asList(availBlock)));
+        ExtraInfoBlock secretBlock = new ExtraInfoBlock(0x0009,
+                new ExtraInfoData(ExtraInfoData.FLAG_AVAILMSG_PRESENT,
+                        ByteBlock.wrap(new byte[4])));
+        sendSnac(new SetExtraInfoCmd(Arrays.asList(secretBlock)));
+    }
 
     public void addMainBosServiceListener(MainBosServiceListener listener) {
         listeners.add(listener);

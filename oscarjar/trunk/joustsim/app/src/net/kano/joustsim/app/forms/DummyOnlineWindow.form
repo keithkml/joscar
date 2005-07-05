@@ -3,7 +3,7 @@
   <grid id="f920" binding="mainPanel" row-count="6" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="10" vgap="10">
     <margin top="5" left="5" bottom="5" right="5"/>
     <constraints>
-      <xy x="55" y="67" width="352" height="394"/>
+      <xy x="55" y="67" width="369" height="394"/>
       <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3"/>
     </constraints>
     <properties/>
@@ -11,7 +11,7 @@
     <children>
       <component id="ecc1d" class="javax.swing.JLabel" binding="onlineLabel">
         <constraints>
-          <xy x="108" y="7" width="136" height="16"/>
+          <xy x="116" y="7" width="136" height="16"/>
           <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0"/>
         </constraints>
         <properties>
@@ -21,7 +21,7 @@
       <grid id="19065" row-count="1" column-count="3" same-size-horizontally="false" same-size-vertically="false" hgap="10" vgap="10">
         <margin top="0" left="5" bottom="0" right="5"/>
         <constraints>
-          <xy x="5" y="35" width="342" height="57"/>
+          <xy x="5" y="35" width="359" height="57"/>
           <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="3"/>
         </constraints>
         <properties/>
@@ -38,7 +38,7 @@
           </component>
           <component id="27a36" class="javax.swing.JButton" binding="openButton">
             <constraints>
-              <xy x="256" y="22" width="75" height="29"/>
+              <xy x="273" y="22" width="75" height="29"/>
               <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="1" anchor="0" fill="1"/>
             </constraints>
             <properties>
@@ -47,7 +47,7 @@
           </component>
           <component id="770fc" class="javax.swing.JTextField" binding="snBox">
             <constraints>
-              <xy x="100" y="25" width="146" height="22"/>
+              <xy x="100" y="25" width="163" height="22"/>
               <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1">
                 <preferred-size width="90" height="-1"/>
               </grid>
@@ -59,7 +59,7 @@
       <grid id="facd5" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="5" vgap="5">
         <margin top="5" left="5" bottom="5" right="5"/>
         <constraints>
-          <xy x="5" y="302" width="342" height="67"/>
+          <xy x="5" y="302" width="359" height="67"/>
           <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="1" anchor="0" fill="3"/>
         </constraints>
         <properties/>
@@ -67,7 +67,7 @@
         <children>
           <component id="e3c6e" class="javax.swing.JButton" binding="disconnectButton">
             <constraints>
-              <xy x="203" y="27" width="99" height="29"/>
+              <xy x="216" y="27" width="99" height="29"/>
               <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="1" anchor="0" fill="0"/>
             </constraints>
             <properties>
@@ -76,7 +76,7 @@
           </component>
           <component id="e1dbc" class="javax.swing.JButton" binding="prefsButton">
             <constraints>
-              <xy x="40" y="27" width="100" height="29"/>
+              <xy x="44" y="27" width="100" height="29"/>
               <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="1" anchor="0" fill="0"/>
             </constraints>
             <properties>
@@ -120,15 +120,15 @@
       </grid>
       <component id="4061" class="net.kano.joustsim.app.forms.BuddyListBox" binding="buddyListBox">
         <constraints>
-          <xy x="5" y="102" width="342" height="123"/>
+          <xy x="5" y="102" width="359" height="123"/>
           <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="3"/>
         </constraints>
         <properties/>
       </component>
-      <grid id="90772" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+      <grid id="90772" row-count="1" column-count="4" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
         <margin top="0" left="0" bottom="0" right="0"/>
         <constraints>
-          <xy x="5" y="235" width="342" height="57"/>
+          <xy x="5" y="235" width="359" height="57"/>
           <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="2" hsize-policy="3" anchor="0" fill="3"/>
         </constraints>
         <properties/>
@@ -136,20 +136,38 @@
         <children>
           <component id="2b74d" class="javax.swing.JButton" binding="awayButton">
             <constraints>
-              <xy x="91" y="22" width="75" height="29"/>
+              <xy x="6" y="22" width="75" height="29"/>
               <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="1" anchor="0" fill="0"/>
             </constraints>
             <properties>
-              <text value="Away"/>
+              <text value="Away..."/>
             </properties>
           </component>
           <component id="929bc" class="javax.swing.JButton" binding="idleButton">
             <constraints>
-              <xy x="261" y="22" width="75" height="29"/>
+              <xy x="91" y="22" width="75" height="29"/>
               <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="1" anchor="0" fill="0"/>
             </constraints>
             <properties>
-              <text value="Idle"/>
+              <text value="Idle..."/>
+            </properties>
+          </component>
+          <component id="e573" class="javax.swing.JButton" binding="statusButton">
+            <constraints>
+              <xy x="176" y="22" width="79" height="29"/>
+              <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="1" anchor="0" fill="0"/>
+            </constraints>
+            <properties>
+              <text value="Status..."/>
+            </properties>
+          </component>
+          <component id="91cf3" class="javax.swing.JCheckBox" binding="visibleCheckbox">
+            <constraints>
+              <xy x="265" y="25" width="68" height="22"/>
+              <grid row="0" column="3" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0"/>
+            </constraints>
+            <properties>
+              <text value="Visible"/>
             </properties>
           </component>
         </children>

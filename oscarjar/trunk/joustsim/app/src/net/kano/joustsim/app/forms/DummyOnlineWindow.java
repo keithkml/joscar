@@ -58,8 +58,11 @@ import javax.swing.JProgressBar;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
+import javax.swing.JCheckBox;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.ChangeEvent;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -91,6 +94,8 @@ public class DummyOnlineWindow extends JFrame {
     private BuddyListBox buddyListBox;
     private JButton awayButton;
     private JButton idleButton;
+    private JButton statusButton;
+    private JCheckBox visibleCheckbox;
 
     {
         getContentPane().add(mainPanel);
@@ -157,12 +162,31 @@ public class DummyOnlineWindow extends JFrame {
 
                 if (msg == null) return;
                 int mins = Integer.parseInt(msg);
-                MainBosService infoService = conn.getBosService();
+                MainBosService service = conn.getBosService();
                 if (mins == 0) {
-                    infoService.setUnidle();
+                    service.setUnidle();
                 } else {
-                    infoService.setIdleSince(new Date(System.currentTimeMillis()-(mins*60*1000)));
+                    service.setIdleSince(new Date(System.currentTimeMillis()-(mins*60*1000)));
                 }
+            }
+        });
+        statusButton.setAction(new AbstractAction() {
+            {
+                putValue(NAME, "Status");
+            }
+
+            public void actionPerformed(ActionEvent e) {
+                String msg = JOptionPane.showInputDialog(DummyOnlineWindow.this,
+                        "Status message:");
+                if (msg == null) return;
+
+                conn.getBosService().setStatusMessage(msg);
+            }
+        });
+        visibleCheckbox.addChangeListener(new ChangeListener() {
+            public void stateChanged(ChangeEvent e) {
+                boolean visible = visibleCheckbox.isSelected();
+                conn.getBosService().setVisibleStatus(visible);
             }
         });
     }
