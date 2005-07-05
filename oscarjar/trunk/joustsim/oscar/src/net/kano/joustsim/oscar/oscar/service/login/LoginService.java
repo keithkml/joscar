@@ -75,10 +75,12 @@ public class LoginService extends Service {
             = new ClientVersionInfo(
         "AOL Instant Messenger, version 5.5.3415/WIN32",
                 -1, 5, 5, 0, 3415, 239);
+    public static final ClientVersionInfo VERSIONINFO_ICHAT
+            = new ClientVersionInfo("Apple iChat", 0x311a, 1, 0, 0, 0x0184, 0xc6);
 
     private final Screenname screenname;
     private final String password;
-    private ClientVersionInfo versionInfo = VERSIONINFO_DEFAULT;
+    private ClientVersionInfo versionInfo = VERSIONINFO_ICHAT;
 
     private CopyOnWriteArrayList<LoginServiceListener> listeners
             = new CopyOnWriteArrayList<LoginServiceListener>();
