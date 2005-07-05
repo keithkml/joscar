@@ -35,7 +35,6 @@
 
 package net.kano.joscardemo;
 
-import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.OscarTools;
 import net.kano.joscar.flap.FlapCommand;
@@ -103,7 +102,6 @@ import net.kano.joscardemo.security.SecureSessionException;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.text.DateFormat;
 import java.util.ArrayList;
@@ -392,18 +390,8 @@ public abstract class BasicConn extends AbstractFlapConn {
 //                    }
 
                     if (extraInfo.getType() == ExtraInfoBlock.TYPE_AVAILMSG) {
-                        ByteBlock msgBlock = data.getData();
-                        int len = BinaryTools.getUShort(msgBlock, 0);
-                        byte[] msgBytes = msgBlock.subBlock(2, len)
-                                .toByteArray();
+                        String msg = ExtraInfoData.readAvailableMessage(data);
 
-                        String msg;
-                        try {
-                            msg = new String(msgBytes, "UTF-8");
-                        } catch (UnsupportedEncodingException e1) {
-                            e1.printStackTrace();
-                            return;
-                        }
                         if (msg.length() > 0) {
                             System.out.println(info.getScreenname()
                                     + " availability: " + msg);

@@ -48,7 +48,7 @@ public abstract class LocCommand extends SnacCommand {
 
     /** A set of SNAC family information for this family. */
     public static final SnacFamilyInfo FAMILY_INFO
-            = new SnacFamilyInfo(FAMILY_LOC, 0x0001, 0x0110, 0x0801);
+            = new SnacFamilyInfo(FAMILY_LOC, 0x0001, 0x3110, 0x08e5);
 
     /** A command subtype for requesting location-related rights. */
     public static final int CMD_RIGHTS_REQ = 0x0002;
