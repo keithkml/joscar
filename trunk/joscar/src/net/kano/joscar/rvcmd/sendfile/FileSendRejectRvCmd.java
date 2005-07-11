@@ -63,4 +63,8 @@ public class FileSendRejectRvCmd extends AbstractRejectRvCmd {
     public FileSendRejectRvCmd(int rejectionCode) {
         super(CapabilityBlock.BLOCK_FILE_SEND, rejectionCode);
     }
+
+    public FileSendRejectRvCmd() {
+        this(REJECTCODE_CANCELLED);
+    }
 }
