@@ -31,8 +31,19 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm.ft;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft.state;
 
-public enum FileTransferState {
-    WAITING, PREPARING, CONNECTING, CONNECTED, TRANSFERRING, FAILED, FINISHED
+import java.io.File;
+import java.util.Map;
+import java.util.Collections;
+import java.util.HashMap;
+
+public class ComputedChecksumsInfo extends SuccessfulStateInfo {
+    private final Map<File, Long> checksums;
+
+    public ComputedChecksumsInfo(Map<File, Long> checksums) {
+        this.checksums = Collections.unmodifiableMap(new HashMap<File, Long>(checksums));
+    }
+
+    public Map<File, Long> getChecksums() { return checksums; }
 }

@@ -41,6 +41,7 @@ import net.kano.joscar.rvproto.rvproxy.RvProxyErrorCmd;
 import net.kano.joscar.rvproto.rvproxy.RvProxyPacket;
 import net.kano.joscar.rvproto.rvproxy.RvProxyReadyCmd;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FailureEventException;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.ConnectionType;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.AolProxyTimedOutEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownAolProxyErrorEvent;
@@ -50,6 +51,10 @@ import java.io.InputStream;
 
 public abstract class AbstractProxyConnectionController
         extends AbstractOutgoingConnectionController {
+    protected ConnectionType getConnectionType() {
+        return ConnectionType.PROXY;
+    }
+
     protected void initializeConnectionInThread()
             throws IOException, FailureEventException {
         StreamInfo stream = getStream();

@@ -46,9 +46,11 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ReceiveControll
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.RedirectConnectionController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.RedirectToProxyController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ManualTimeoutController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferCompleteEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownErrorEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.BuddyCancelledEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailureEventInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
@@ -58,6 +60,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
+//TODO: send rejection RV when we fail, if we haven't gotten one
 public class IncomingFileTransferImpl extends FileTransferImpl
         implements IncomingFileTransfer {
     private static final Logger LOGGER = Logger
@@ -70,8 +73,8 @@ public class IncomingFileTransferImpl extends FileTransferImpl
     private final RedirectConnectionController redirectConnectionController
             = new RedirectConnectionController();
     private final ConnectToProxyController proxyController
-            = new ConnectToProxyController(ConnectToProxyController.ConnectionType.ACK);
-    private final StateController proxyReverseController = new RedirectToProxyController();
+            = new ConnectToProxyController();
+    private final RedirectToProxyController proxyReverseController = new RedirectToProxyController();
     private final ReceiveController receiveController = new ReceiveController();
 
     private RvConnectionInfo originalRemoteHostInfo;
@@ -80,10 +83,13 @@ public class IncomingFileTransferImpl extends FileTransferImpl
     private StateController lastConnController = null;
     private boolean accepted = false;
     private boolean declined = false;
+    private FileMapper fileMapper;
 
     IncomingFileTransferImpl(FileTransferManager fileTransferManager,
             RvSession session) {
         super(fileTransferManager, session);
+
+        fileMapper = new DefaultFileMapper(getBuddyScreenname());
     }
 
     public synchronized RvConnectionInfo getOriginalRemoteHostInfo() {
@@ -104,6 +110,14 @@ public class IncomingFileTransferImpl extends FileTransferImpl
 
     public synchronized boolean isDeclined() {
         return declined;
+    }
+
+    public synchronized void setFileMapper(FileMapper mapper) {
+        fileMapper = mapper;
+    }
+
+    public synchronized FileMapper getFileMapper() {
+        return fileMapper;
     }
 
     private boolean alwaysRedirect = false;
@@ -255,12 +269,24 @@ public class IncomingFileTransferImpl extends FileTransferImpl
     private class IncomingFtpRvSessionHandler extends FtRvSessionHandler {
         protected void handleIncomingReject(RecvRvEvent event,
                 FileSendRejectRvCmd rejectCmd) {
-            System.out.println("incoming rejected");
+            setState(FileTransferState.FAILED,
+                    new BuddyCancelledEvent(rejectCmd.getRejectCode()));
         }
 
         protected void handleIncomingAccept(RecvRvEvent event,
                 FileSendAcceptRvCmd acceptCmd) {
-            System.out.println("incoming accepted??");
+            ManualTimeoutController mtc = null;
+            synchronized (this) {
+                StateController controller = getStateController();
+                if (controller == proxyReverseController
+                        || controller == redirectConnectionController) {
+                    if (controller instanceof ManualTimeoutController) {
+                        mtc = (ManualTimeoutController) controller;
+
+                    }
+                }
+            }
+            if (mtc != null) mtc.startTimeoutTimer();
         }
 
         protected void handleIncomingRequest(RecvRvEvent event,

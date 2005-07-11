@@ -37,7 +37,6 @@ import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
 import net.kano.joscar.rvproto.rvproxy.RvProxyAckCmd;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.InitiateProxyController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferImpl;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.TransferPropertyHolder;
 
@@ -49,7 +48,9 @@ import java.net.Inet4Address;
  * 2. find ip of server
  * 3. send rv
  */
-public class RedirectToProxyController extends InitiateProxyController {
+//TODO: timeout while connecting to proxy, but not while waiting
+public class RedirectToProxyController extends InitiateProxyController
+        implements ManualTimeoutController {
     protected void handleAck(RvProxyAckCmd ackCmd) throws IOException {
         Inet4Address addr = ackCmd.getProxyIpAddress();
         int port = ackCmd.getProxyPort();
@@ -62,5 +63,13 @@ public class RedirectToProxyController extends InitiateProxyController {
         transfer.putTransferProperty(TransferPropertyHolder.KEY_REDIRECTED, true);
         rvSession.sendRv(new FileSendReqRvCmd(connInfo));
 
+    }
+
+    protected boolean shouldStartTimerAutomatically() {
+        return false;
+    }
+
+    public void startTimeoutTimer() {
+        super.startTimer();
     }
 }

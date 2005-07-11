@@ -35,8 +35,8 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FailureEventException;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransfer;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferTools;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.TransferPropertyHolder;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferTools;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectedEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectionTimedOutEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
@@ -47,27 +47,76 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 //TODO: allow pause, limit bandwidth
+//TODO: allow setting whole-transfer pre-connection timeout
 public abstract class TransferController extends StateController {
-    private boolean stop = false;
+    private volatile boolean stop = false;
     private boolean connected = false;
     private Thread receiveThread;
     private boolean suppressErrors = false;
     private FileTransfer transfer;
-    private boolean transferring = false;
+    private long timeoutPaused = -1;
+    private long threadStarted = -1;
+    private long timeIgnored = 0;
+    private TimerTask latestTask = null;
+
+    protected synchronized void pauseTimeout() {
+        if (timeoutPaused != -1) return;
+        timeoutPaused = System.currentTimeMillis();
+        latestTask = null;
+    }
+
+    protected synchronized void resumeTimeout() {
+        long current = System.currentTimeMillis();
+        long pausedAt = timeoutPaused;
+        if (pausedAt == -1) return;
+        timeIgnored += (current - pausedAt);
+        timeoutPaused = -1;
+        makeTimerTask();
+    }
+
+    private synchronized void makeTimerTask() {
+        final long timeout = getTransferTimeoutMillis();
+        final long timeoutAt = threadStarted + timeout + timeIgnored;
+        Timer timer = FileTransferTools.getTimer(transfer);
+        TimerTask task = new TimerTask() {
+            public void run() {
+                boolean timedout = false;
+                synchronized (TransferController.this) {
+                    if (this != latestTask) return;
+                    if (!isConnected()) {
+                        stop = true;
+                        suppressErrors = true;
+                        timedout = true;
+                    }
+                }
+                if (timedout) {
+                    interruptThread();
+                    fireFailed(new ConnectionTimedOutEvent(timeout));
+                }
+            }
+        };
+        latestTask = task;
+        long currentTime = System.currentTimeMillis();
+        long delay = Math.max(0, timeoutAt - currentTime);
+        timer.schedule(task, delay);
+    }
 
     protected synchronized boolean shouldSuppressErrors() {
         return suppressErrors;
     }
 
-    public void start(final FileTransfer transfer,
-            StateController last) {
+    public void start(final FileTransfer transfer, StateController last) {
         this.transfer = transfer;
         StateInfo endState = last.getEndState();
         if (endState instanceof StreamInfo) {
             final StreamInfo stream = (StreamInfo) endState;
             receiveThread = new Thread(new Runnable() {
                 public void run() {
+                    synchronized(TransferController.this) {
+                        threadStarted = System.currentTimeMillis();
+                    }
                     try {
+                        makeTimerTask();
                         TransferPropertyHolder itransfer = (TransferPropertyHolder) transfer;
                         transferInThread(stream, itransfer);
 
@@ -78,43 +127,29 @@ public abstract class TransferController extends StateController {
                         return;
                     }
                 }
+
             });
-            final int timeout = getTransferTimeoutMillis();
-            Timer timer = FileTransferTools.getTimer(transfer);
-            timer.schedule(new TimerTask() {
-                public void run() {
-                    boolean timedout = false;
-                    synchronized(this) {
-                        if (!isConnected()) {
-                            stop = true;
-                            suppressErrors = true;
-                            timedout = true;
-                        }
-                    }
-                    if (timedout) {
-                        interruptThread();
-                        fireFailed(new ConnectionTimedOutEvent(timeout));
-                    }
-                }
-            }, timeout);
+
             receiveThread.start();
         } else {
             throw new IllegalArgumentException("I don't know how to deal with "
                     + "previous end state " + endState);
         }
     }
-
-    private void interruptThread() {receiveThread.interrupt();}
-
-    protected int getTransferTimeoutMillis() {
-        return 10000;
+    private void interruptThread() {
+        receiveThread.interrupt();
     }
 
-    public synchronized void stop() {
+    protected long getTransferTimeoutMillis() {
+        return transfer.getDefaultPerConnectionTimeout();
+    }
+
+    public void stop() {
         stop = true;
+        interruptThread();
     }
 
-    protected synchronized boolean shouldStop() {
+    protected boolean shouldStop() {
         return stop;
     }
 

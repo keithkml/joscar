@@ -33,4 +33,4 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-public enum ConnectionType { LAN, INTERNET }
+public enum ConnectionType { LAN, INTERNET, PROXY, INCOMING }

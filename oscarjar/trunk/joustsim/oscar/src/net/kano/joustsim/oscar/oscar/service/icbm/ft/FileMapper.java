@@ -33,6 +33,10 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-public enum FileTransferState {
-    WAITING, PREPARING, CONNECTING, CONNECTED, TRANSFERRING, FAILED, FINISHED
+import java.io.File;
+
+public interface FileMapper {
+    File getDestinationFile(String filename);
+
+    File getUnspecifiedFilename();
 }

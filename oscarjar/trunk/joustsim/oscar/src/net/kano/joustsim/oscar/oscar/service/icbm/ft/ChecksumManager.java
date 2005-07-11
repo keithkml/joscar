@@ -33,6 +33,9 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-public enum FileTransferState {
-    WAITING, PREPARING, CONNECTING, CONNECTED, TRANSFERRING, FAILED, FINISHED
+import java.io.File;
+import java.io.IOException;
+
+public interface ChecksumManager {
+    long getChecksum(File file) throws IOException;
 }

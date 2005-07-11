@@ -46,6 +46,8 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.ProgressStatusProvider;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvSessionBasedTransfer;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.TransferPropertyHolder;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.IncomingFileTransfer;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileMapper;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.TransferSucceededInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferredFileInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.CorruptTransferEvent;
@@ -74,9 +76,10 @@ public class ReceiveController extends TransferController {
         InputStream socketIn = stream.getInputStream();
 
         List<File> files = new ArrayList<File>();
-        RvSessionBasedTransfer itransfer = (RvSessionBasedTransfer) transfer;
+        RvSessionBasedTransfer rvTransfer = (RvSessionBasedTransfer) transfer;
         EventPost eventBasedTransfer = transfer.getEventPost();
-        long icbmId = itransfer.getRvSession().getRvSessionId();
+        IncomingFileTransfer itransfer = (IncomingFileTransfer) transfer;
+        long icbmId = rvTransfer.getRvSession().getRvSessionId();
         boolean good = false;
         boolean redirected = transfer.getTransferProperty(KEY_REDIRECTED)
                 == Boolean.TRUE;
@@ -96,14 +99,16 @@ public class ReceiveController extends TransferController {
 
             List<String> parts = sendheader.getFilename().getSegments();
             String filename;
+            File destFile;
+            FileMapper fileMapper = itransfer.getFileMapper();
             if (parts.size() > 0) {
                 filename = parts.get(parts.size() - 1);
+                destFile = fileMapper.getDestinationFile(filename);
             } else {
-                filename = itransfer.getRvSession().getScreenname()
-                        + " download";
+                destFile = fileMapper.getUnspecifiedFilename();
             }
 
-            File file = new File(filename);
+            File file = destFile;
             files.add(file);
             boolean attemptResume = file.exists();
             RandomAccessFile raf = new RandomAccessFile(file, "rw");
@@ -215,11 +220,11 @@ public class ReceiveController extends TransferController {
         }
     }
 
-    private static class Receiver implements ProgressStatusProvider {
+    private class Receiver implements ProgressStatusProvider {
         private final FileChannel fileChannel;
         private final long offset;
         private final long length;
-        private volatile long position = -1;
+        private volatile long position = 0;
 
         public Receiver(FileChannel fileChannel, long offset, long length) {
             this.fileChannel = fileChannel;
@@ -229,6 +234,7 @@ public class ReceiveController extends TransferController {
 
         public int downloadFile(InputStream socketIn) throws IOException {
             ReadableByteChannel inChannel = Channels.newChannel(socketIn);
+            setPosition(offset);
             int downloaded = 0;
             while (downloaded < length) {
                 long remaining = length - downloaded;
@@ -239,6 +245,7 @@ public class ReceiveController extends TransferController {
 
                 downloaded += transferred;
                 setPosition(offset + downloaded);
+                if (shouldStop()) break;
             }
             return downloaded;
         }

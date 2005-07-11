@@ -33,8 +33,6 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.AbstractConnectionController;
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;

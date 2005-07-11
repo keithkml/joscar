@@ -34,6 +34,7 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
 import net.kano.joscar.rvcmd.RvConnectionInfo;
+import net.kano.joscar.MiscTools;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.ConnectionType;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectingEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
@@ -43,7 +44,12 @@ import java.net.InetAddress;
 public class OutgoingConnectionController extends AbstractOutgoingConnectionController {
     private ConnectionType type;
 
-    public OutgoingConnectionController(ConnectionType type) {
+    public OutgoingConnectionController(ConnectionType type)
+            throws IllegalArgumentException {
+        if (type != ConnectionType.INTERNET && type != ConnectionType.LAN) {
+            throw new IllegalArgumentException("invalid type for "
+                    + MiscTools.getClassName(this) + ": " + type);
+        }
         this.type = type;
     }
 
@@ -68,6 +74,10 @@ public class OutgoingConnectionController extends AbstractOutgoingConnectionCont
     }
 
     protected void setResolvingState() {
+    }
+
+    protected ConnectionType getConnectionType() {
+        return type;
     }
 
     protected void setConnectingState() {

@@ -38,8 +38,10 @@ import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FailureEventException;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransfer;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferImpl;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.ConnectionType;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectionTimedOutEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.LocallyCancelledInfo;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -53,9 +55,12 @@ public abstract class AbstractConnectionController extends StateController {
     private Socket socket;
     private Thread thread;
     private boolean shouldSuppress = false;
+    private boolean timerStarted = false;
+
+    protected abstract ConnectionType getConnectionType();
 
     private long getConnectionTimeoutMillis() {
-        return 10000;
+        return fileTransfer.getPerConnectionTimeout(getConnectionType());
     }
 
     public RvConnectionInfo getConnectionInfo() { return connectionInfo; }
@@ -69,11 +74,6 @@ public abstract class AbstractConnectionController extends StateController {
     private synchronized void setShouldSuppress() {
         this.shouldSuppress = true;
     }
-
-    private synchronized boolean shouldSuppress() {
-        return shouldSuppress;
-    }
-
 
     private synchronized boolean setShouldSuppressIfNotSet() {
         if (shouldSuppress) {
@@ -111,6 +111,19 @@ public abstract class AbstractConnectionController extends StateController {
             }
         });
 
+        if (shouldStartTimerAutomatically()) startTimer();
+        thread.start();
+    }
+
+    protected boolean shouldStartTimerAutomatically() {
+        return true;
+    }
+
+    protected void startTimer() {
+        synchronized(this) {
+            if (timerStarted) return;
+            timerStarted = true;
+        }
         Timer timer = fileTransfer.getTimer();
         final long timeout = getConnectionTimeoutMillis();
         TimerTask task = new TimerTask() {
@@ -123,15 +136,14 @@ public abstract class AbstractConnectionController extends StateController {
             }
         };
         timer.schedule(task, timeout);
-        thread.start();
     }
 
     public void stop() {
         boolean succeeded = setShouldSuppressIfNotSet();
         if (succeeded) {
             thread.interrupt();
+            fireFailed(new LocallyCancelledInfo());
         }
-        thread.interrupt();
     }
 
     public Socket getSocket() { return socket; }
@@ -163,4 +175,5 @@ public abstract class AbstractConnectionController extends StateController {
             throws IOException, FailureEventException {
         fireConnected();
     }
+
 }

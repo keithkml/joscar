@@ -33,7 +33,5 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.state;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
-
 public abstract class SuccessfulStateInfo extends StateInfo {
 }

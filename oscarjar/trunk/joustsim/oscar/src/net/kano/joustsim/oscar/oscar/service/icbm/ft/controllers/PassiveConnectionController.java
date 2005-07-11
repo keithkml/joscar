@@ -35,12 +35,15 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
 import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.WaitingForConnectionEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-public abstract class PassiveConnectionController extends AbstractConnectionController {
+public abstract class PassiveConnectionController
+        extends AbstractConnectionController
+        implements ManualTimeoutController {
     private ServerSocket serverSocket;
     private RvConnectionInfo connInfo;
 
@@ -57,16 +60,16 @@ public abstract class PassiveConnectionController extends AbstractConnectionCont
 
     protected Socket createSocket() throws IOException {
         setConnectingState();
-        Socket socket = serverSocket.accept();
-        return socket;
+        return serverSocket.accept();
     }
 
     protected void setResolvingState() {
     }
 
     protected void setConnectingState() {
-        getFileTransfer().getEventPost().fireEvent(
-                new WaitingForConnectionEvent(connInfo.getInternalIP(), connInfo.getPort()));
+        EventPost post = getFileTransfer().getEventPost();
+        post.fireEvent(new WaitingForConnectionEvent(connInfo.getInternalIP(),
+                        connInfo.getPort()));
     }
 
     protected RvConnectionInfo getConnInfo() {
@@ -75,5 +78,13 @@ public abstract class PassiveConnectionController extends AbstractConnectionCont
 
     protected void setConnInfo(RvConnectionInfo connInfo) {
         this.connInfo = connInfo;
+    }
+
+    protected boolean shouldStartTimerAutomatically() {
+        return false;
+    }
+
+    public void startTimeoutTimer() {
+        super.startTimer();
     }
 }

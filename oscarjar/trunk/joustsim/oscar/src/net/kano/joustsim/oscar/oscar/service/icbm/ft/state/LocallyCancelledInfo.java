@@ -31,8 +31,6 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm.ft;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft.state;
 
-public enum FileTransferState {
-    WAITING, PREPARING, CONNECTING, CONNECTED, TRANSFERRING, FAILED, FINISHED
-}
+public class LocallyCancelledInfo extends FailedStateInfo { }

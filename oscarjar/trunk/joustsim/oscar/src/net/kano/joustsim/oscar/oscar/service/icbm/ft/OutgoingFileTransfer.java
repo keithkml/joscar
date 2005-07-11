@@ -9,17 +9,14 @@ import java.util.Map;
 public interface OutgoingFileTransfer extends FileTransfer {
     void makeRequest(InvitationMessage msg);
 
-    List<File> getFiles();
-
-    void setFiles(String folderName, List<File> files);
-
     void setFile(File file);
-
+    void setFiles(String folderName, List<File> files);
+    List<File> getFiles();
     String getFolderName();
 
     Map<File, String> getNameMappings();
-
     void mapName(File file, String name);
-
     String getMappedName(File file);
+
+    ChecksumManager getChecksumManager();
 }

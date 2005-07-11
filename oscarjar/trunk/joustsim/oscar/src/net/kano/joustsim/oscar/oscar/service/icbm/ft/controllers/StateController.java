@@ -82,6 +82,10 @@ public abstract class StateController {
         fireEvent(new FailureEventInfo(e));
     }
 
+    protected void fireFailed(final FailedStateInfo info) {
+        fireEvent(info);
+    }
+
     private void fireEvent(StateInfo e) {
         assert !Thread.holdsLock(this);
 

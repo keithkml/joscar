@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="us-ascii"?>
 
-<project name="Joust Secure IM Lite" default="compile">
+<project name="Joust Secure IM Lite" default="usage">
   <description> Joust Secure IM Lite build file </description>
 
   <property name="oscar.bin" value="oscar/bin"/>
@@ -14,7 +14,7 @@
   <property name="file.bigjar" value="jsim-full.jar"/>
   <property name="dir.lib" value="lib"/>
 
-  <target name="jar">
+  <target name="jar" depends="build-oscar-jar-classes" description="builds jsim.jar">
     <delete file="${file.jar}"/>
     <jar file="${file.jar}" manifest="etc/main-manifest.mf">
       <fileset dir="${aolrtf.bin}" includes="**/*.class"/>
@@ -27,7 +27,7 @@
       alias="signer" keypass="aimcrypto"/>
   </target>
 
-  <target name="bigjar">
+  <target name="bigjar" description="builds jsim-full.jar">
     <delete file="${file.bigjar}"/>
     <jar file="${file.bigjar}" manifest="etc/main-manifest.mf">
       <fileset dir="${aolrtf.bin}" includes="**/*.class"/>
@@ -41,28 +41,38 @@
       alias="signer" keypass="aimcrypto"/>
   </target>
   
-  <target name="build-oscar-jar-classes">
-    <javac srcdir="common/src" source="1.5" destdir="${common.bin}"
-      classpath="lib/*.jar" />
-    <javac srcdir="oscar/src" source="1.5" destdir="${oscar.bin}" debug="true">
-      <classpath>
-        <path path="${common.bin}" />
-        <path path="lib/joscar-0.9.4-cvs-bin.jar" />
-      </classpath>
+  <path id="path.compile">
+        <fileset dir="lib">
+            <include name="*.jar"/>
+        </fileset>
+  </path>
+
+  <target name="build-oscar-jar-classes" depends="clean" description="Compiles common">
+    <javac srcdir="common/src" source="1.5" destdir="${common.bin}">
+        <classpath refid="path.compile"/>
+    </javac>
+    <javac srcdir="oscar/src" source="1.5" destdir="${oscar.bin}" debug="true" >
+      <classpath refid="path.compile"/>
+      <classpath path="${common.bin}"/>
     </javac>
   </target>
 
-  <target name="clean">
-    <delete>
-      <fileset dir="dist" file="oscar.jar" />
-      <fileset dir="${oscar.bin}" includes="*" />
-      <fileset dir="${common.bin}" includes="*" />
-      <fileset dir="${aolrtf.bin}" includes="*" />
-      <fileset dir="${app.bin}" includes="*" />
-    </delete>
+  <target name="clean" description="Wipes compiled classes">
+      <mkdir dir="${oscar.bin}" />
+      <mkdir dir="${common.bin}" />
+      <mkdir dir="${aolrtf.bin}" />
+      <mkdir dir="${app.bin}" />
+      <mkdir dir="dist" />
+      <delete includeEmptyDirs="true">
+        <fileset dir="dist" file="oscar.jar" />
+        <fileset dir="${oscar.bin}" includes="*" />
+        <fileset dir="${common.bin}" includes="*" />
+        <fileset dir="${aolrtf.bin}" includes="*" />
+        <fileset dir="${app.bin}" includes="*" />
+      </delete>
   </target>
 
-  <target name="build-oscar-jar" depends="clean, build-oscar-jar-classes">
+  <target name="build-oscar-jar" depends="clean, build-oscar-jar-classes" description="builds oscar.jar">
     <delete file="dist/oscar.jar" />
     <jar file="dist/oscar.jar">
       <fileset dir="${oscar.bin}"  includes="**/*.class" />
@@ -70,12 +80,21 @@
     </jar>
   </target>
 
-  <target name="build-src-archive">
+  <target name="build-src-archive" description="Makes a tar of the tree">
     <delete file="dist/jsim-src-cvs.tar.bz2" />
     <tar compression="bzip2" destfile="dist/jsim-src-cvs.tar.bz2" basedir="."
       includes="aolrtf/src/** app/src/** etc/** common/src/** oscar/src/** res/** lib/*.jar build.xml"
       defaultexcludes="yes" >
     </tar>
   </target>
+
+    <!-- =====================   USAGE   ============================= -->
+    <target name="usage"
+        description="Describes targets">
+
+        <java classname="org.apache.tools.ant.Main">
+            <arg value="-projecthelp" />
+        </java>
+    </target>
 </project>
 

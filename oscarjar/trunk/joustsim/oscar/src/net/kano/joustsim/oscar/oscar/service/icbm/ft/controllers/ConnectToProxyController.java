@@ -49,20 +49,12 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetAddress;
 
-public class ConnectToProxyController extends AbstractProxyConnectionController {
-    private final ConnectionType type;
-
-    public enum ConnectionType { REQUEST, ACK }
-
-    public ConnectToProxyController(ConnectionType type) {
-        this.type = type;
-    }
-
+//TODO: timeout while connecting to proxy, but not while waiting
+public class ConnectToProxyController extends AbstractProxyConnectionController
+        implements ManualTimeoutController {
     protected void initializeBeforeStarting() throws IOException {
         super.initializeBeforeStarting();
-        if (type == ConnectionType.ACK) {
-            getFileTransfer().getRvSession().sendRv(new FileSendAcceptRvCmd());
-        }
+        getFileTransfer().getRvSession().sendRv(new FileSendAcceptRvCmd());
     }
 
     protected void setConnectingState() {
@@ -99,4 +91,11 @@ public class ConnectToProxyController extends AbstractProxyConnectionController 
         return getConnectionInfo().getProxyIP();
     }
 
+    protected boolean shouldStartTimerAutomatically() {
+        return false;
+    }
+
+    public void startTimeoutTimer() {
+        super.startTimer();
+    }
 }

@@ -31,8 +31,43 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm.ft;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
-public enum FileTransferState {
-    WAITING, PREPARING, CONNECTING, CONNECTED, TRANSFERRING, FAILED, FINISHED
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.Checksummer;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransfer;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.OutgoingFileTransfer;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ChecksummingEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.ComputedChecksumsInfo;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class ChecksumController extends StateController {
+    public void start(FileTransfer transfer, StateController last) {
+        try {
+            final Map<File, Long> checksums = new HashMap<File, Long>();
+            if (transfer instanceof OutgoingFileTransfer) {
+                OutgoingFileTransfer otransfer = (OutgoingFileTransfer) transfer;
+                List<File> files = otransfer.getFiles();
+                for (File file : files) {
+                    RandomAccessFile raf = new RandomAccessFile(file, "r");
+
+                    Checksummer summer = new Checksummer(raf.getChannel(), raf.length());
+                    otransfer.getEventPost().fireEvent(new ChecksummingEvent(file, summer));
+                    checksums.put(file, summer.compute());
+                }
+            }
+            fireSucceeded(new ComputedChecksumsInfo(checksums));
+        } catch (IOException e) {
+            fireFailed(e);
+        }
+    }
+
+    public void stop() {
+    }
+
 }

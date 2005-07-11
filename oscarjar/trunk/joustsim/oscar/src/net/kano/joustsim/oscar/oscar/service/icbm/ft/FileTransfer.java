@@ -39,27 +39,28 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
 import net.kano.joustsim.Screenname;
 
 public interface FileTransfer {
-    FileSendBlock getFileInfo();
-
-    InvitationMessage getInvitationMessage();
-
     FileTransferManager getFileTransferManager();
 
-    void cancel();
+    Screenname getBuddyScreenname();
+
+    FileSendBlock getFileInfo();
+    InvitationMessage getInvitationMessage();
+
+    boolean cancel();
 
     void addTransferListener(FileTransferListener listener);
-
     void removeTransferListener(FileTransferListener listener);
 
     EventPost getEventPost();
 
     boolean isProxyRequestTrusted();
-
     void setProxyRequestTrusted(boolean trusted);
 
     boolean isOnlyUsingProxy();
-
     void setOnlyUsingProxy(boolean onlyUsingProxy);
 
-    Screenname getBuddyScreenname();
+    void setDefaultPerConnectionTimeout(long millis);
+    void setPerConnectionTimeout(ConnectionType type, long millis);
+    long getDefaultPerConnectionTimeout();
+    long getPerConnectionTimeout(ConnectionType type);
 }

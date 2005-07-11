@@ -34,6 +34,7 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
 import net.kano.joscar.CopyOnWriteArrayList;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.rv.RecvRvEvent;
 import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rv.RvSnacResponseEvent;
@@ -53,17 +54,19 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectingToProxyEve
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileCompleteEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.LocallyCancelledEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ResolvingProxyEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferringFileEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.WaitingForConnectionEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ChecksummingEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
 
 import java.util.HashMap;
-import java.util.Map;
-import java.util.Timer;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Timer;
 import java.util.logging.Logger;
 
 public abstract class FileTransferImpl
@@ -85,38 +88,7 @@ public abstract class FileTransferImpl
     private final CopyOnWriteArrayList<FileTransferListener> listeners
             = new CopyOnWriteArrayList<FileTransferListener>();
     private FileTransferState state = FileTransferState.WAITING;
-    private EventPost eventPost = new EventPost() {
-        public void fireEvent(FileTransferEvent event) {
-            boolean fireState;
-            FileTransferState newState = null;
-            synchronized (FileTransferImpl.this) {
-                if (event instanceof ConnectingEvent
-                        || event instanceof ConnectingToProxyEvent
-                        || event instanceof ResolvingProxyEvent
-                        || event instanceof WaitingForConnectionEvent) {
-                    newState = FileTransferState.CONNECTING;
-
-                } else if (event instanceof ConnectedEvent) {
-                    newState = FileTransferState.CONNECTED;
-
-                } else if (event instanceof TransferringFileEvent
-                        || event instanceof FileCompleteEvent) {
-                    newState = FileTransferState.TRANSFERRING;
-                }
-                if (newState != null && newState != state) {
-                    fireState = true;
-                    state = newState;
-                } else {
-                    fireState = false;
-                }
-            }
-            if (fireState) {
-                fireStateChange(newState, event);
-            } else {
-                FileTransferImpl.this.fireEvent(event);
-            }
-        }
-    };
+    private EventPost eventPost = new EventPostImpl();
     private boolean done = false;
 
     private boolean onlyUsingProxy = false;
@@ -138,6 +110,12 @@ public abstract class FileTransferImpl
         }
     };
     private List<StateChangeEvent> eventQueue = new CopyOnWriteArrayList<StateChangeEvent>();
+    private long perConnectionTimeout = 10000;
+    private Map<ConnectionType, Long> timeouts = new HashMap<ConnectionType, Long>();
+
+    {
+        timeouts.put(ConnectionType.LAN, 2L);
+    }
 
     protected FileTransferImpl(FileTransferManager fileTransferManager,
             RvSession session) {
@@ -263,14 +241,32 @@ public abstract class FileTransferImpl
         return fileTransferManager;
     }
 
-    public void cancel() {
+    public boolean cancel() {
         StateController controller;
         synchronized(this) {
-            if (done) return;
+            if (done) return false;
             done = true;
             controller = this.controller;
         }
         controller.stop();
+        setState(FileTransferState.FAILED, new LocallyCancelledEvent());
+        return true;
+    }
+
+    //TODO: check for valid state changes
+    protected void setState(FileTransferState state, FileTransferEvent event) {
+        synchronized (this) {
+            if (done) return;
+
+            this.state = state;
+            if (state == FileTransferState.FAILED || state == FileTransferState.FINISHED) {
+                done = true;
+            }
+        }
+        if (state == FileTransferState.FAILED) {
+            getRvSession().sendRv(new FileSendRejectRvCmd());
+        }
+        fireStateChange(state, event);
     }
 
     public void addTransferListener(FileTransferListener listener) {
@@ -301,6 +297,26 @@ public abstract class FileTransferImpl
         this.onlyUsingProxy = onlyUsingProxy;
     }
 
+    public synchronized void setDefaultPerConnectionTimeout(long millis) {
+        perConnectionTimeout = millis;
+    }
+
+    public synchronized void setPerConnectionTimeout(ConnectionType type, long millis) {
+        timeouts.put(type, millis);
+    }
+
+    public synchronized long getDefaultPerConnectionTimeout() {
+        return perConnectionTimeout;
+    }
+
+    public synchronized long getPerConnectionTimeout(ConnectionType type) {
+        DefensiveTools.checkNull(type, "type");
+
+        Long timeout = timeouts.get(type);
+        if (timeout == null) return perConnectionTimeout;
+        else return timeout;
+    }
+
     public Screenname getBuddyScreenname() {
         return new Screenname(getRvSession().getScreenname());
     }
@@ -325,7 +341,7 @@ public abstract class FileTransferImpl
         while (it.hasNext()) {
             StateChangeEvent event = it.next();
             if (event.getState() == null) fireEvent(event.getEvent());
-            else fireStateChange(event.getState(), event.getEvent());
+            else setState(event.getState(), event.getEvent());
         }
     }
 
@@ -382,6 +398,44 @@ public abstract class FileTransferImpl
 
         public FileTransferEvent getEvent() {
             return event;
+        }
+    }
+
+    private class EventPostImpl implements EventPost {
+        public void fireEvent(FileTransferEvent event) {
+            boolean fireState;
+            FileTransferState newState = null;
+            synchronized (FileTransferImpl.this) {
+                FileTransferState oldState = state;
+                if (event instanceof ConnectingEvent
+                        || event instanceof ConnectingToProxyEvent
+                        || event instanceof ResolvingProxyEvent
+                        || event instanceof WaitingForConnectionEvent) {
+                    newState = FileTransferState.CONNECTING;
+
+                } else if (event instanceof ConnectedEvent) {
+                    newState = FileTransferState.CONNECTED;
+
+                } else if (event instanceof TransferringFileEvent
+                        || event instanceof FileCompleteEvent) {
+                    newState = FileTransferState.TRANSFERRING;
+
+                } else if (event instanceof ChecksummingEvent
+                        && oldState == FileTransferState.WAITING) {
+                    newState = FileTransferState.PREPARING;
+                }
+                if (!done && newState != null && newState != oldState) {
+                    fireState = true;
+                    state = newState;
+                } else {
+                    fireState = false;
+                }
+            }
+            if (fireState) {
+                fireStateChange(newState, event);
+            } else {
+                FileTransferImpl.this.fireEvent(event);
+            }
         }
     }
 }

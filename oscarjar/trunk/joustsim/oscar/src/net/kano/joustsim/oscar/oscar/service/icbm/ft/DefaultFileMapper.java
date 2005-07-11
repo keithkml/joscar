@@ -33,6 +33,32 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-public enum FileTransferState {
-    WAITING, PREPARING, CONNECTING, CONNECTED, TRANSFERRING, FAILED, FINISHED
+import net.kano.joustsim.Screenname;
+
+import java.io.File;
+
+public class DefaultFileMapper implements FileMapper {
+    private final Screenname screenname;
+    private final String userDir = System.getProperty("user.dir");
+
+    public DefaultFileMapper(Screenname screenname) {
+        this.screenname = screenname;
+    }
+
+    public File getDestinationFile(String filename) {
+        return new File(userDir, filename);
+    }
+
+    public File getUnspecifiedFilename() {
+        String numStr = "";
+        File file;
+        int tried = 2;
+        do {
+            String name = "File from " + screenname.getFormatted() + numStr;
+            file = new File(name);
+            numStr = "-" + tried;
+            tried++;
+        } while (tried < 100000 && file.exists());
+        return file;
+    }
 }

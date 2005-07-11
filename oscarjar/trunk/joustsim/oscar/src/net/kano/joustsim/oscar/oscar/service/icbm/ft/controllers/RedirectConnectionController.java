@@ -36,6 +36,7 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferImpl;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.ConnectionType;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -47,8 +48,12 @@ public class RedirectConnectionController extends PassiveConnectionController {
                 .createForOutgoingRequest(InetAddress.getLocalHost(),
                         getServerSocket().getLocalPort());
         setConnInfo(connInfo);
-        getFileTransfer().putTransferProperty(FileTransferImpl.KEY_REDIRECTED, true);
-        getFileTransfer().getRvSession().sendRv(new FileSendReqRvCmd(connInfo));
+        FileTransferImpl transfer = getFileTransfer();
+        transfer.putTransferProperty(FileTransferImpl.KEY_REDIRECTED, true);
+        transfer.getRvSession().sendRv(new FileSendReqRvCmd(connInfo));
     }
 
+    protected ConnectionType getConnectionType() {
+        return ConnectionType.INCOMING;
+    }
 }

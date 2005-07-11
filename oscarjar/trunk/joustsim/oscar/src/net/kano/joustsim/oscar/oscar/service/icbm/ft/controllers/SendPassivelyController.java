@@ -37,6 +37,7 @@ import net.kano.joscar.rvcmd.InvitationMessage;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferImpl;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.ConnectionType;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -52,5 +53,9 @@ public class SendPassivelyController extends PassiveConnectionController {
         FileSendReqRvCmd request = new FileSendReqRvCmd(msg,
                 connInfo, transfer.getFileInfo());
         transfer.getRvSession().sendRv(request);
+    }
+
+    protected ConnectionType getConnectionType() {
+        return ConnectionType.INCOMING;
     }
 }

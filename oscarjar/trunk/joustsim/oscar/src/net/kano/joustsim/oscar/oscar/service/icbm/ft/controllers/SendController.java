@@ -41,6 +41,7 @@ import static net.kano.joscar.rvproto.ft.FileTransferHeader.HEADERTYPE_ACK;
 import static net.kano.joscar.rvproto.ft.FileTransferHeader.HEADERTYPE_RESUME;
 import static net.kano.joscar.rvproto.ft.FileTransferHeader.HEADERTYPE_RESUME_ACK;
 import static net.kano.joscar.rvproto.ft.FileTransferHeader.HEADERTYPE_RESUME_SENDHEADER;
+import net.kano.joscar.rv.RvSession;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.Checksummer;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FailureEventException;
 import static net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferImpl.KEY_REDIRECTED;
@@ -72,6 +73,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
+//TODO: reverse lookup proxies and check for *.aol.com
 public class SendController extends TransferController {
     protected void transferInThread(StreamInfo stream, TransferPropertyHolder transfer)
             throws IOException, FailureEventException {
@@ -105,17 +107,17 @@ public class SendController extends TransferController {
             int fileCount = rafs.size();
             int left = fileCount + 1;
             OutputStream socketOut = stream.getOutputStream();
-            boolean redirected = transfer.getTransferProperty(KEY_REDIRECTED)
-                    == Boolean.TRUE;
+            Boolean redirectedBool = transfer.getTransferProperty(KEY_REDIRECTED);
+            boolean redirected = redirectedBool != null && redirectedBool == true;
             for (RandomAccessFile raf : rafs) {
                 left--;
                 File file = lastmods.get(raf);
                 FileChannel fileChannel = raf.getChannel();
 
                 long len = lengths.get(raf);
-                Checksummer summer = new Checksummer(fileChannel, len);
-                eventPost.fireEvent(new ChecksummingEvent(file, summer));
-                long fileChecksum = summer.compute();
+                pauseTimeout();
+                long fileChecksum = otransfer.getChecksumManager().getChecksum(file);
+                resumeTimeout();
 
                 FileTransferHeader sendheader = new FileTransferHeader();
                 sendheader.setDefaults();
@@ -134,9 +136,11 @@ public class SendController extends TransferController {
                 sendheader.setListNameOffset(28);
                 sendheader.setListSizeOffset(17);
                 sendheader.setTotalFileSize(totalSize);
+                RvSession rvSession = rvTransfer.getRvSession();
+                long rvSessionId = rvSession.getRvSessionId();
                 if (redirected) {
-                    sendheader.setIcbmMessageId(rvTransfer.getRvSession().getRvSessionId());
-                    rvTransfer.getRvSession().sendRv(new FileSendAcceptRvCmd());
+                    sendheader.setIcbmMessageId(rvSessionId);
+                    rvSession.sendRv(new FileSendAcceptRvCmd());
                 }
                 sendheader.write(socketOut);
 
@@ -145,7 +149,7 @@ public class SendController extends TransferController {
                 if (ack == null) break;
 
                 if (!redirected) {
-                    if (ack.getIcbmMessageId() != rvTransfer.getRvSession().getRvSessionId()) {
+                    if (ack.getIcbmMessageId() != rvSessionId) {
                         break;
                     }
                 }
@@ -229,7 +233,7 @@ public class SendController extends TransferController {
         else return name;
     }
 
-    private static class Sender implements ProgressStatusProvider {
+    private class Sender implements ProgressStatusProvider {
         private final FileChannel fileChannel;
         private final long offset;
         private final long length;
@@ -253,6 +257,7 @@ public class SendController extends TransferController {
 
                 uploaded += transferred;
                 setPosition(offset + uploaded);
+                if (shouldStop()) break;
             }
             return uploaded;
         }
