@@ -34,33 +34,36 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
 import net.kano.joscar.rvcmd.RvConnectionInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.WaitingForConnectionEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.WaitingForConnectionEvent;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.channels.ServerSocketChannel;
 
 public abstract class PassiveConnectionController
         extends AbstractConnectionController
         implements ManualTimeoutController {
-    private ServerSocket serverSocket;
+    private ServerSocketChannel serverSocket;
     private RvConnectionInfo connInfo;
 
     protected void initializeBeforeStarting() throws IOException {
-        serverSocket = new ServerSocket(0);
+        ServerSocketChannel chan = ServerSocketChannel.open();
+        serverSocket = chan;
+        chan.socket().bind(null);
         sendRequest();
     }
 
     protected ServerSocket getServerSocket() {
-        return serverSocket;
+        return serverSocket.socket();
     }
 
     protected abstract void sendRequest() throws IOException;
 
     protected Socket createSocket() throws IOException {
         setConnectingState();
-        return serverSocket.accept();
+        return serverSocket.accept().socket();
     }
 
     protected void setResolvingState() {

@@ -37,13 +37,10 @@ import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
 import net.kano.joscar.rvproto.rvproxy.RvProxyAckCmd;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferImpl;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferTools;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.TransferPropertyHolder;
 
 import java.io.IOException;
-import java.util.Random;
 
-//TODO: timeout when connecting to the proxy, but not while waiting
 public class SendOverProxyController
         extends InitiateProxyController
         implements ManualTimeoutController {
@@ -55,17 +52,7 @@ public class SendOverProxyController
                 ackCmd.getProxyIpAddress(), proxyPort);
         FileSendReqRvCmd req = new FileSendReqRvCmd(transfer.getInvitationMessage(),
                 connInfo, transfer.getFileInfo());
-        Random random = new Random();
-        long msgid = FileTransferTools.getRandomIcbmId(random);
         transfer.putTransferProperty(TransferPropertyHolder.KEY_CONN_INFO, connInfo);
-        transfer.getRvSession().sendRv(req/*, msgid*/);
-    }
-
-    protected boolean shouldStartTimerAutomatically() {
-        return false;
-    }
-
-    public void startTimeoutTimer() {
-        super.startTimer();
+        transfer.getRvSession().sendRv(req);
     }
 }

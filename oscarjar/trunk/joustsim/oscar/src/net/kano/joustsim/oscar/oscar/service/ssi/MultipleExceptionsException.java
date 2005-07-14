@@ -31,14 +31,19 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm.ft;
+package net.kano.joustsim.oscar.oscar.service.ssi;
 
-import net.kano.joscar.rvcmd.SegmentedFilename;
+import java.util.List;
 
-import java.io.File;
+public class MultipleExceptionsException extends RuntimeException {
+    private final List<Exception> exceptions;
 
-public interface FileMapper {
-    File getDestinationFile(SegmentedFilename filename);
+    public MultipleExceptionsException(List<Exception> exceptions) {
+        super(
+                "Multiple exceptions thrown; first is shown as cause ",
+                exceptions.get(0));
+        this.exceptions = exceptions;
+    }
 
-    File getUnspecifiedFilename();
+    List<Exception> getExceptions() { return exceptions; }
 }

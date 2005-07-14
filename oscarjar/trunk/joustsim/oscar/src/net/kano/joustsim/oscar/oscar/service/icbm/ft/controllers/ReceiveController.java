@@ -33,47 +33,54 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
-import static net.kano.joscar.rvproto.ft.FileTransferHeader.HEADERTYPE_RESUME;
-import static net.kano.joscar.rvproto.ft.FileTransferHeader.HEADERTYPE_SENDHEADER;
+import net.kano.joscar.rvcmd.SegmentedFilename;
 import net.kano.joscar.rvproto.ft.FileTransferHeader;
 import static net.kano.joscar.rvproto.ft.FileTransferHeader.HEADERTYPE_ACK;
+import static net.kano.joscar.rvproto.ft.FileTransferHeader.HEADERTYPE_RESUME;
 import static net.kano.joscar.rvproto.ft.FileTransferHeader.HEADERTYPE_RESUME_ACK;
 import static net.kano.joscar.rvproto.ft.FileTransferHeader.HEADERTYPE_RESUME_SENDHEADER;
+import static net.kano.joscar.rvproto.ft.FileTransferHeader.HEADERTYPE_SENDHEADER;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.Checksummer;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FailureEventException;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileMapper;
 import static net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferImpl.KEY_REDIRECTED;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.IncomingFileTransfer;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.ProgressStatusProvider;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvSessionBasedTransfer;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.TransferPropertyHolder;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.IncomingFileTransfer;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileMapper;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.TransferSucceededInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferredFileInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.CorruptTransferEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownErrorEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ChecksummingEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.CorruptTransferEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileCompleteEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ResumeChecksumFailedEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferredFileInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferringFileEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownErrorEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.TransferSucceededInfo;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
-import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
-import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.List;
 
+//TODO: look into resource forks
 public class ReceiveController extends TransferController {
     protected void transferInThread(final StreamInfo stream,
             final TransferPropertyHolder transfer)
             throws IOException, FailureEventException {
+        SocketChannel socketChan = stream.getSocketChannel();
+        socketChan.configureBlocking(true);
+
         InputStream socketIn = stream.getInputStream();
+        OutputStream socketOut = stream.getOutputStream();
 
         List<File> files = new ArrayList<File>();
         RvSessionBasedTransfer rvTransfer = (RvSessionBasedTransfer) transfer;
@@ -97,13 +104,12 @@ public class ReceiveController extends TransferController {
             }
             setConnected();
 
-            List<String> parts = sendheader.getFilename().getSegments();
-            String filename;
+            SegmentedFilename segName = sendheader.getFilename();
+            List<String> parts = segName.getSegments();
             File destFile;
             FileMapper fileMapper = itransfer.getFileMapper();
             if (parts.size() > 0) {
-                filename = parts.get(parts.size() - 1);
-                destFile = fileMapper.getDestinationFile(filename);
+                destFile = fileMapper.getDestinationFile(segName);
             } else {
                 destFile = fileMapper.getUnspecifiedFilename();
             }
@@ -114,7 +120,6 @@ public class ReceiveController extends TransferController {
             RandomAccessFile raf = new RandomAccessFile(file, "rw");
             FileChannel fileChannel = raf.getChannel();
 
-            OutputStream socketOut = stream.getOutputStream();
             long toDownload;
             if (attemptResume) {
                 FileTransferHeader outHeader = new FileTransferHeader(
@@ -171,7 +176,7 @@ public class ReceiveController extends TransferController {
             TransferredFileInfo info = new TransferredFileInfo(file,
                     startedAt + toDownload, startedAt);
             eventBasedTransfer.fireEvent(new TransferringFileEvent(info, receiver));
-            int downloaded = receiver.downloadFile(socketIn);
+            int downloaded = receiver.downloadFile(socketChan);
             if (downloaded != toDownload) break;
 
             Checksummer summer = new Checksummer(fileChannel,
@@ -232,22 +237,34 @@ public class ReceiveController extends TransferController {
             this.length = length;
         }
 
-        public int downloadFile(InputStream socketIn) throws IOException {
-            ReadableByteChannel inChannel = Channels.newChannel(socketIn);
-            setPosition(offset);
-            int downloaded = 0;
-            while (downloaded < length) {
-                long remaining = length - downloaded;
-                long transferred = fileChannel.transferFrom(inChannel,
-                        offset + downloaded, Math.min(1024, remaining));
+        public int downloadFile(SocketChannel socketIn) throws IOException {
+            Selector selector = Selector.open();
+            boolean wasBlocking = socketIn.isBlocking();
+            try {
+                if (wasBlocking) socketIn.configureBlocking(false);
+                socketIn.register(selector, SelectionKey.OP_READ);
 
-                if (transferred == 0 || transferred == -1) break;
+                setPosition(offset);
+                int downloaded = 0;
+                while (downloaded < length) {
+                    if (waitUntilUnpause()) continue;
 
-                downloaded += transferred;
-                setPosition(offset + downloaded);
-                if (shouldStop()) break;
+                    long remaining = length - downloaded;
+                    selector.select(50);
+                    long transferred = fileChannel.transferFrom(socketIn,
+                            offset + downloaded, Math.min(1024, remaining));
+
+                    if (transferred == 0 || transferred == -1) break;
+
+                    downloaded += transferred;
+                    setPosition(offset + downloaded);
+                    if (shouldStop()) break;
+                }
+                return downloaded;
+            } finally {
+                if (wasBlocking) socketIn.configureBlocking(true);
+                selector.close();
             }
-            return downloaded;
         }
 
         public long getStartPosition() {

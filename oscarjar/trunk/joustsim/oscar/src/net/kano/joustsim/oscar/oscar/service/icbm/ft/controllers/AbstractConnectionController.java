@@ -35,13 +35,13 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.ConnectionType;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FailureEventException;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransfer;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferImpl;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.ConnectionType;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectionTimedOutEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.LocallyCancelledInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -54,8 +54,8 @@ public abstract class AbstractConnectionController extends StateController {
     private FileTransferImpl fileTransfer;
     private Socket socket;
     private Thread thread;
-    private boolean shouldSuppress = false;
     private boolean timerStarted = false;
+    private boolean connected = false;
 
     protected abstract ConnectionType getConnectionType();
 
@@ -71,17 +71,8 @@ public abstract class AbstractConnectionController extends StateController {
         return fileTransfer;
     }
 
-    private synchronized void setShouldSuppress() {
-        this.shouldSuppress = true;
-    }
-
-    private synchronized boolean setShouldSuppressIfNotSet() {
-        if (shouldSuppress) {
-            return false;
-        } else {
-            setShouldSuppress();
-            return true;
-        }
+    protected synchronized void stopConnectionTimer() {
+        connected = true;
     }
 
     public void start(final FileTransfer transfer,
@@ -103,10 +94,7 @@ public abstract class AbstractConnectionController extends StateController {
                 try {
                     openConnectionInThread();
                 } catch (Exception e) {
-                    boolean succeeded = setShouldSuppressIfNotSet();
-                    if (succeeded) {
-                        fireFailed(e);
-                    }
+                    fireFailed(e);
                 }
             }
         });
@@ -127,23 +115,26 @@ public abstract class AbstractConnectionController extends StateController {
         Timer timer = fileTransfer.getTimer();
         final long timeout = getConnectionTimeoutMillis();
         TimerTask task = new TimerTask() {
+
             public void run() {
-                boolean succeeded = setShouldSuppressIfNotSet();
-                if (succeeded) {
+                boolean connected = isConnected();
+                if (!connected) {
                     thread.interrupt();
                     fireFailed(new ConnectionTimedOutEvent(timeout));
                 }
             }
+
         };
         timer.schedule(task, timeout);
     }
 
+    public synchronized boolean isConnected() {
+        return connected;
+    }
+
     public void stop() {
-        boolean succeeded = setShouldSuppressIfNotSet();
-        if (succeeded) {
-            thread.interrupt();
-            fireFailed(new LocallyCancelledInfo());
-        }
+        fireFailed(new LocallyCancelledInfo());
+        thread.interrupt();
     }
 
     public Socket getSocket() { return socket; }
@@ -155,7 +146,7 @@ public abstract class AbstractConnectionController extends StateController {
     protected void openConnectionInThread() {
         try {
             socket = createSocket();
-            stream = new StreamInfo(socket.getInputStream(), socket.getOutputStream());
+            stream = new StreamInfo(socket.getChannel());
             initializeConnectionInThread();
         } catch (Exception e) {
             fireFailed(e);

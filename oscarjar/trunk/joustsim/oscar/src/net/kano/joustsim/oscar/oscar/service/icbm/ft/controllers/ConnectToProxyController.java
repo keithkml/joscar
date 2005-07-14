@@ -49,7 +49,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetAddress;
 
-//TODO: timeout while connecting to proxy, but not while waiting
 public class ConnectToProxyController extends AbstractProxyConnectionController
         implements ManualTimeoutController {
     protected void initializeBeforeStarting() throws IOException {
@@ -89,13 +88,5 @@ public class ConnectToProxyController extends AbstractProxyConnectionController
 
     protected InetAddress getIpAddress() {
         return getConnectionInfo().getProxyIP();
-    }
-
-    protected boolean shouldStartTimerAutomatically() {
-        return false;
-    }
-
-    public void startTimeoutTimer() {
-        super.startTimer();
     }
 }

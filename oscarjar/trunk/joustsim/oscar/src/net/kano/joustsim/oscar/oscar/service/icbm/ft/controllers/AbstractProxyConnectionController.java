@@ -40,17 +40,28 @@ import net.kano.joscar.rvproto.rvproxy.RvProxyCmdFactory;
 import net.kano.joscar.rvproto.rvproxy.RvProxyErrorCmd;
 import net.kano.joscar.rvproto.rvproxy.RvProxyPacket;
 import net.kano.joscar.rvproto.rvproxy.RvProxyReadyCmd;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.FailureEventException;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.ConnectionType;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
+import static net.kano.joustsim.oscar.oscar.service.icbm.ft.ConnectionType.INCOMING;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.FailureEventException;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferImpl;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferTools;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.AolProxyTimedOutEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectionTimedOutEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownAolProxyErrorEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public abstract class AbstractProxyConnectionController
-        extends AbstractOutgoingConnectionController {
+        extends AbstractOutgoingConnectionController
+        implements ManualTimeoutController {
+
+    private boolean clientWantsTimer = false;
+    private boolean alreadyStartedTimer = false;
+
     protected ConnectionType getConnectionType() {
         return ConnectionType.PROXY;
     }
@@ -67,6 +78,9 @@ public abstract class AbstractProxyConnectionController
             RvProxyCmd cmd = factory.getRvProxyCmd(packet);
             if (cmd instanceof RvProxyAckCmd) {
                 RvProxyAckCmd ackCmd = (RvProxyAckCmd) cmd;
+                startTimerIfReady();
+                stopConnectionTimer();
+
                 handleAck(ackCmd);
 
             } else if (cmd instanceof RvProxyErrorCmd) {
@@ -85,6 +99,34 @@ public abstract class AbstractProxyConnectionController
             }
         }
     }
+
+    public synchronized final void startTimeoutTimer() {
+        if (!clientWantsTimer) {
+            clientWantsTimer = true;
+            startTimerIfReady();
+        }
+    }
+
+    private synchronized boolean startTimerIfReady() {
+        if (!clientWantsTimer || alreadyStartedTimer) return false;
+
+        alreadyStartedTimer = true;
+
+        FileTransferImpl transfer = getFileTransfer();
+        final long timeout = transfer.getPerConnectionTimeout(INCOMING);
+        Timer timer = FileTransferTools.getTimer(transfer);
+        timer.schedule(new TimerTask() {
+            public void run() {
+                fireFailed(new ConnectionTimedOutEvent(timeout));
+            }
+        }, timeout);
+        return true;
+    }
+
+    protected final boolean shouldStartTimerAutomatically() {
+        return true;
+    }
+
 
     protected int getConnectionPort() {
         return 5190;

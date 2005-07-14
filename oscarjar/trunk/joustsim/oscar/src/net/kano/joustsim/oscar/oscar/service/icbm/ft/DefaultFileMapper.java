@@ -34,6 +34,7 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
 import net.kano.joustsim.Screenname;
+import net.kano.joscar.rvcmd.SegmentedFilename;
 
 import java.io.File;
 
@@ -45,8 +46,8 @@ public class DefaultFileMapper implements FileMapper {
         this.screenname = screenname;
     }
 
-    public File getDestinationFile(String filename) {
-        return new File(userDir, filename);
+    public File getDestinationFile(SegmentedFilename filename) {
+        return new File(userDir, filename.toNativeFilename());
     }
 
     public File getUnspecifiedFilename() {

@@ -100,6 +100,8 @@ class SimpleBuddy implements Buddy {
     }
 
     public void detectChanges(BuddyState oldState, BuddyState newState) {
+        assert !Thread.holdsLock(this);
+
         Screenname oldSn = oldState.getScreenname();
         Screenname newSn = newState.getScreenname();
         if (!ChangeTools.areEqual(oldSn.getFormatted(), newSn.getFormatted())) {

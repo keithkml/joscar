@@ -36,6 +36,11 @@
 package net.kano.joustsim.oscar.oscar.service.ssi;
 
 import net.kano.joscar.MiscTools;
+import net.kano.joscar.ssiitem.SsiItemObjectFactory;
+import net.kano.joscar.ssiitem.DefaultSsiItemObjFactory;
+import net.kano.joscar.ssiitem.SsiItemObj;
+import net.kano.joscar.ssiitem.GroupItem;
+import net.kano.joscar.ssiitem.RootItem;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.snac.SnacPacketEvent;
 import net.kano.joscar.snac.SnacRequestListener;
@@ -66,6 +71,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.TreeSet;
+import java.util.ArrayList;
 
 public class SsiService extends Service {
     private SsiBuddyList buddyList = new SsiBuddyList(this);
@@ -104,7 +110,6 @@ public class SsiService extends Service {
                         SsiItem item = items.get(i);
                         if (result == SsiDataModResponse.RESULT_SUCCESS) {
                             if (create) {
-                                int n = 0x8859;
                                 itemCreated(item);
                             } else if (modify) {
                                 itemModified(item);
@@ -147,9 +152,16 @@ public class SsiService extends Service {
         if (snac == null) {
             System.out.println("- packet: " + snacPacketEvent.getSnacPacket());
         }
+        final List<Exception> exceptions = new ArrayList<Exception>();
         if (snac instanceof SsiDataCmd) {
             SsiDataCmd ssiDataCmd = (SsiDataCmd) snac;
-            for (SsiItem item : ssiDataCmd.getItems()) itemCreated(item);
+            for (SsiItem item : ssiDataCmd.getItems()) {
+                try {
+                    itemCreated(item);
+                } catch (Exception e) {
+                    exceptions.add(e);
+                }
+            }
 
             if ((snac.getFlag2() & SnacCommand.SNACFLAG2_MORECOMING) == 0) {
                 sendSnac(new ActivateSsiCmd());
@@ -158,19 +170,40 @@ public class SsiService extends Service {
         } else if (snac instanceof CreateItemsCmd) {
             CreateItemsCmd createItemsCmd = (CreateItemsCmd) snac;
             for (SsiItem ssiItem : createItemsCmd.getItems()) {
-                //TODO: handle exceptions individually while adding ssi items
-                itemCreated(ssiItem);
+                try {
+                    itemCreated(ssiItem);
+                } catch (Exception e) {
+                    exceptions.add(e);
+                }
             }
         } else if (snac instanceof ModifyItemsCmd) {
             ModifyItemsCmd modifyItemsCmd = (ModifyItemsCmd) snac;
             for (SsiItem ssiItem : modifyItemsCmd.getItems()) {
-                itemModified(ssiItem);
+                try {
+                    itemModified(ssiItem);
+                } catch (Exception e) {
+                    exceptions.add(e);
+                }
             }
         } else if (snac instanceof DeleteItemsCmd) {
             DeleteItemsCmd deleteItemsCmd = (DeleteItemsCmd) snac;
             for (SsiItem ssiItem : deleteItemsCmd.getItems()) {
-                itemDeleted(ssiItem);
+                try {
+                    itemDeleted(ssiItem);
+                } catch (Exception e) {
+                    exceptions.add(e);
+                }
             }
+        }
+        if (exceptions.size() == 1) {
+            Exception exception = exceptions.get(0);
+            if (exception instanceof RuntimeException) {
+                throw (RuntimeException) exception;
+            } else {
+                throw new IllegalStateException(exception);
+            }
+        } else if (!exceptions.isEmpty()) {
+            throw new MultipleExceptionsException(exceptions);
         }
     }
 
@@ -182,28 +215,35 @@ public class SsiService extends Service {
 
     public void itemCreated(SsiItem item) {
         ItemId id = new ItemId(item);
-        SsiItem old = items.get(id);
-        if (old != null) {
-            throw new IllegalArgumentException("item " + id + " already exists "
-                    + "as " + old + ", tried to add as " + item);
+        synchronized(this) {
+            SsiItem old = items.get(id);
+            if (old != null) {
+                throw new IllegalArgumentException("item " + id + " already exists "
+                        + "as " + old + ", tried to add as " + item);
+            }
+            items.put(id, item);
         }
-        items.put(id, item);
         buddyList.handleItemCreated(item);
     }
 
     public void itemModified(SsiItem item) {
         ItemId id = new ItemId(item);
-        SsiItem oldItem = items.get(id);
-        if (oldItem == null) {
-            throw new IllegalArgumentException("item does not exist: " + id
-                    + " - " + item);
+        synchronized (this) {
+            SsiItem oldItem = items.get(id);
+            if (oldItem == null) {
+                throw new IllegalArgumentException("item does not exist: " + id
+                        + " - " + item);
+            }
+            items.put(id, item);
         }
-        items.put(id, item);
         buddyList.handleItemModified(item);
     }
 
     public void itemDeleted(SsiItem item) {
-        SsiItem removed = items.remove(new ItemId(item));
+        SsiItem removed;
+        synchronized (this) {
+            removed = items.remove(new ItemId(item));
+        }
         if (removed == null) {
             throw new IllegalArgumentException("no such item " + item);
         }
@@ -212,12 +252,14 @@ public class SsiService extends Service {
 
     private Random random = new Random();
 
-    int getUniqueItemId(int type, int parent) {
+    synchronized int getUniqueItemId(int type, int parent) {
         if (type == SsiItem.TYPE_GROUP) {
             throw new IllegalArgumentException("groups all have id 0");
         }
         Set<Integer> idsForType = getIdsForType(type);
-        //TODO: include ids in group child lists when calculating used id's
+        if (type == SsiItem.TYPE_BUDDY) {
+            addUsedBuddyIdsInGroup(idsForType, parent);
+        }
         int nextid;
         do {
             nextid = random.nextInt(NUM_IDS);
@@ -225,19 +267,64 @@ public class SsiService extends Service {
         return nextid;
     }
 
-    private Set<Integer> getIdsForType(int type) {
+    private synchronized void addUsedBuddyIdsInGroup(Set<Integer> idsForType,
+            int parent) {
+        for (Map.Entry<ItemId,SsiItem> id : items.entrySet()) {
+            ItemId key = id.getKey();
+            if (key.getType() == SsiItem.TYPE_GROUP
+                    && key.getParent() == parent) {
+                SsiItemObjectFactory objFactory = new DefaultSsiItemObjFactory();
+                SsiItemObj itemObj = objFactory.getItemObj(id.getValue());
+                if (itemObj instanceof GroupItem) {
+                    GroupItem groupItem = (GroupItem) itemObj;
+                    for (int bid : groupItem.getBuddies()) {
+                        idsForType.add(bid);
+                    }
+                }
+            }
+        }
+    }
+
+    private synchronized void addUsedGroupIdsInRoot(Set<Integer> idsForType) {
+        for (Map.Entry<ItemId,SsiItem> id : items.entrySet()) {
+            ItemId key = id.getKey();
+            if (key.getType() == SsiItem.TYPE_GROUP
+                    && key.getParent() == 0) {
+                SsiItemObjectFactory objFactory = new DefaultSsiItemObjFactory();
+                SsiItemObj itemObj = objFactory.getItemObj(id.getValue());
+                if (itemObj instanceof RootItem) {
+                    RootItem groupItem = (RootItem) itemObj;
+                    for (int bid : groupItem.getGroupids()) {
+                        idsForType.add(bid);
+                    }
+                }
+            }
+        }
+    }
+
+    private synchronized Set<Integer> getIdsForType(int type) {
         Set<Integer> idsForType = new HashSet<Integer>(items.size());
         for (ItemId id : items.keySet()) {
             if (id.getType() == type) idsForType.add(id.getId());
         }
         return idsForType;
     }
+    private synchronized Set<Integer> getPossiblyUsedGroupIds() {
+        Set<Integer> idsForType = new HashSet<Integer>(items.size());
+        for (ItemId id : items.keySet()) {
+            if (id.getType() == SsiItem.TYPE_GROUP) idsForType.add(id.getParent());
+        }
+        return idsForType;
+    }
 
-    int getUniqueGroupId() {
+    //TODO: test new unique group id and buddy id methodo
+    synchronized int getUniqueGroupId() {
+        Set<Integer> groupIds = getPossiblyUsedGroupIds();
+        addUsedGroupIdsInRoot(groupIds);
         int nextid;
         do {
             nextid = random.nextInt(NUM_IDS);
-        } while (items.containsKey(new ItemId(SsiItem.TYPE_GROUP, nextid, 0)));
+        } while (groupIds.contains(nextid));
         return nextid;
     }
 
@@ -306,4 +393,5 @@ public class SsiService extends Service {
                     "}";
         }
     }
+
 }

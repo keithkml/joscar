@@ -36,6 +36,8 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.InetSocketAddress;
+import java.nio.channels.SocketChannel;
 
 public abstract class AbstractOutgoingConnectionController
         extends AbstractConnectionController {
@@ -47,7 +49,7 @@ public abstract class AbstractOutgoingConnectionController
             throw new IllegalStateException("no IP address");
         }
         setConnectingState();
-        return new Socket(ip, getConnectionPort());
+        return SocketChannel.open(new InetSocketAddress(ip, getConnectionPort())).socket();
     }
 
     protected abstract int getConnectionPort();

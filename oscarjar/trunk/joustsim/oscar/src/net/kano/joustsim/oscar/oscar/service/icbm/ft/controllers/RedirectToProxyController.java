@@ -48,7 +48,6 @@ import java.net.Inet4Address;
  * 2. find ip of server
  * 3. send rv
  */
-//TODO: timeout while connecting to proxy, but not while waiting
 public class RedirectToProxyController extends InitiateProxyController
         implements ManualTimeoutController {
     protected void handleAck(RvProxyAckCmd ackCmd) throws IOException {
@@ -63,13 +62,5 @@ public class RedirectToProxyController extends InitiateProxyController
         transfer.putTransferProperty(TransferPropertyHolder.KEY_REDIRECTED, true);
         rvSession.sendRv(new FileSendReqRvCmd(connInfo));
 
-    }
-
-    protected boolean shouldStartTimerAutomatically() {
-        return false;
-    }
-
-    public void startTimeoutTimer() {
-        super.startTimer();
     }
 }

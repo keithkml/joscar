@@ -46,8 +46,7 @@ import java.io.IOException;
 import java.util.Timer;
 import java.util.TimerTask;
 
-//TODO: allow pause, limit bandwidth
-//TODO: allow setting whole-transfer pre-connection timeout
+//TODO: allow limiting bandwidth
 public abstract class TransferController extends StateController {
     private volatile boolean stop = false;
     private boolean connected = false;
@@ -58,6 +57,9 @@ public abstract class TransferController extends StateController {
     private long threadStarted = -1;
     private long timeIgnored = 0;
     private TimerTask latestTask = null;
+
+    private final Object pauseLock = new Object();
+    private volatile boolean paused = false;
 
     protected synchronized void pauseTimeout() {
         if (timeoutPaused != -1) return;
@@ -124,7 +126,6 @@ public abstract class TransferController extends StateController {
                         if (!shouldSuppressErrors()) {
                             fireFailed(e);
                         }
-                        return;
                     }
                 }
 
@@ -169,4 +170,41 @@ public abstract class TransferController extends StateController {
             TransferPropertyHolder transfer)
             throws IOException, FailureEventException;
 
+    public void pauseTransfer() {
+        setPaused(true);
+    }
+
+    public void unpauseTransfer() {
+        setPaused(false);
+    }
+
+    private void setPaused(boolean newPaused) {
+        synchronized(pauseLock) {
+            paused = newPaused;
+            pauseLock.notifyAll();
+        }
+    }
+
+    protected Object getPauseLock() {
+        return pauseLock;
+    }
+
+    protected boolean isPaused() {
+        return paused;
+    }
+
+    protected boolean waitUntilUnpause() {
+        if (isPaused()) {
+            Object pauseLock = getPauseLock();
+            synchronized(pauseLock) {
+                try {
+                    pauseLock.wait(5000);
+                } catch (InterruptedException ignored) {
+                }
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
 }

@@ -33,6 +33,7 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
+import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rvcmd.SegmentedFilename;
 import net.kano.joscar.rvcmd.sendfile.FileSendAcceptRvCmd;
 import net.kano.joscar.rvproto.ft.FileTransferChecksum;
@@ -41,7 +42,6 @@ import static net.kano.joscar.rvproto.ft.FileTransferHeader.HEADERTYPE_ACK;
 import static net.kano.joscar.rvproto.ft.FileTransferHeader.HEADERTYPE_RESUME;
 import static net.kano.joscar.rvproto.ft.FileTransferHeader.HEADERTYPE_RESUME_ACK;
 import static net.kano.joscar.rvproto.ft.FileTransferHeader.HEADERTYPE_RESUME_SENDHEADER;
-import net.kano.joscar.rv.RvSession;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.Checksummer;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FailureEventException;
 import static net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferImpl.KEY_REDIRECTED;
@@ -50,15 +50,15 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.ProgressStatusProvider;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvSessionBasedTransfer;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.TransferPropertyHolder;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ChecksummingEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.CorruptTransferEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileCompleteEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ResumeChecksumFailedEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferredFileInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferringFileEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.CorruptTransferEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownErrorEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.TransferSucceededInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownErrorEvent;
 
 import java.io.File;
 import java.io.IOException;
@@ -67,13 +67,15 @@ import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
-import java.nio.channels.WritableByteChannel;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
-//TODO: reverse lookup proxies and check for *.aol.com
+//TOLATER: reverse lookup proxies and check for *.aol.com
 public class SendController extends TransferController {
     protected void transferInThread(StreamInfo stream, TransferPropertyHolder transfer)
             throws IOException, FailureEventException {
@@ -106,7 +108,10 @@ public class SendController extends TransferController {
             int succeeded = 0;
             int fileCount = rafs.size();
             int left = fileCount + 1;
-            OutputStream socketOut = stream.getOutputStream();
+            SocketChannel socketChan = stream.getSocketChannel();
+            socketChan.configureBlocking(true);
+            InputStream socketIn = Channels.newInputStream(socketChan);
+            OutputStream socketOut = Channels.newOutputStream(socketChan);
             Boolean redirectedBool = transfer.getTransferProperty(KEY_REDIRECTED);
             boolean redirected = redirectedBool != null && redirectedBool == true;
             for (RandomAccessFile raf : rafs) {
@@ -144,8 +149,7 @@ public class SendController extends TransferController {
                 }
                 sendheader.write(socketOut);
 
-                InputStream in = stream.getInputStream();
-                FileTransferHeader ack = FileTransferHeader.readHeader(in);
+                FileTransferHeader ack = FileTransferHeader.readHeader(socketIn);
                 if (ack == null) break;
 
                 if (!redirected) {
@@ -179,7 +183,7 @@ public class SendController extends TransferController {
                     resumeSend.setHeaderType(HEADERTYPE_RESUME_SENDHEADER);
                     resumeSend.write(socketOut);
 
-                    FileTransferHeader resumeAck = FileTransferHeader.readHeader(in);
+                    FileTransferHeader resumeAck = FileTransferHeader.readHeader(socketIn);
                     if (resumeAck.getHeaderType() != HEADERTYPE_RESUME_ACK) {
                         break;
                     }
@@ -196,13 +200,13 @@ public class SendController extends TransferController {
                 Sender sender = new Sender(fileChannel, startAt, len);
                 TransferredFileInfo info = new TransferredFileInfo(file, len, startAt);
                 eventPost.fireEvent(new TransferringFileEvent(info, sender));
-                int sent = sender.sendFile(socketOut);
+                int sent = sender.sendFile(socketChan);
 
                 fileChannel.close();
                 raf.close();
                 if (sent != toSend) break;
 
-                FileTransferHeader receivedHeader = FileTransferHeader.readHeader(in);
+                FileTransferHeader receivedHeader = FileTransferHeader.readHeader(socketIn);
                 if (receivedHeader == null) break;
                 if (receivedHeader.getBytesReceived() != len
                         || receivedHeader.getChecksum() != fileChecksum) {
@@ -245,21 +249,35 @@ public class SendController extends TransferController {
             this.length = length;
         }
 
-        public int sendFile(OutputStream out) throws IOException {
-            WritableByteChannel outChannel = Channels.newChannel(out);
-            int uploaded = 0;
-            while (uploaded < length) {
-                long remaining = length - uploaded;
-                long transferred = fileChannel.transferTo(offset + uploaded,
-                        Math.min(1024, remaining), outChannel);
+        public int sendFile(SocketChannel out) throws IOException {
+            Selector selector = Selector.open();
+            boolean wasBlocking = out.isBlocking();
+            try {
+                out.register(selector, SelectionKey.OP_WRITE);
+                if (wasBlocking) out.configureBlocking(false);
 
-                if (transferred == 0 || transferred == -1) break;
+                int uploaded = 0;
+                while (uploaded < length) {
+                    //TODO: fire paused event
+                    if (waitUntilUnpause()) continue;
 
-                uploaded += transferred;
-                setPosition(offset + uploaded);
-                if (shouldStop()) break;
+                    long remaining = length - uploaded;
+                    selector.select(50);
+                    long transferred = fileChannel.transferTo(offset + uploaded,
+                            Math.min(1024, remaining), out);
+
+                    if (transferred == 0 || transferred == -1) break;
+
+                    uploaded += transferred;
+                    setPosition(offset + uploaded);
+                    if (shouldStop()) break;
+                }
+                return uploaded;
+
+            } finally {
+                if (wasBlocking) out.configureBlocking(true);
+                selector.close();
             }
-            return uploaded;
         }
 
         public long getStartPosition() {
@@ -278,5 +296,4 @@ public class SendController extends TransferController {
             this.position = position;
         }
     }
-
 }

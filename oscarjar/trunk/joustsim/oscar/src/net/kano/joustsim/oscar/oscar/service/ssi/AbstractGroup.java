@@ -42,7 +42,6 @@ import java.util.Set;
 import java.util.HashSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-//TODO: add thread.holdslock checks before listener calls
 abstract class AbstractGroup implements Group {
     private final SimpleBuddyList buddyList;
     private CopyOnWriteArrayList<GroupListener> listeners

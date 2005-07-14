@@ -35,21 +35,25 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft.state;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.channels.SocketChannel;
+import java.nio.channels.Channels;
 
 public class StreamInfo extends SuccessfulStateInfo {
-    private InputStream inputStream;
-    private OutputStream outputStream;
+    private SocketChannel socketChannel;
 
-    public StreamInfo(InputStream in, OutputStream outputStream) {
-        this.inputStream = in;
-        this.outputStream = outputStream;
+    public StreamInfo(SocketChannel channel) {
+        socketChannel = channel;
+    }
+
+    public SocketChannel getSocketChannel() {
+        return socketChannel;
     }
 
     public InputStream getInputStream() {
-        return inputStream;
+        return Channels.newInputStream(getSocketChannel());
     }
 
     public OutputStream getOutputStream() {
-        return outputStream;
+        return Channels.newOutputStream(getSocketChannel());
     }
 }
