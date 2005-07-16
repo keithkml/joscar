@@ -61,6 +61,7 @@ public class PermissionList {
             = new CopyOnWriteArrayList<PermissionListListener>();
     private List<DenyItem> denyItems = new ArrayList<DenyItem>();
 
+
     public void handleItemCreated(SsiItem item) {
         handleItemObjCreated(factory.getItemObj(item));
     }
@@ -156,21 +157,26 @@ public class PermissionList {
             Set<Screenname> newBlocked) {
         ChangeTools.detectChanges(oldBlocked, newBlocked,
                 new DetectedChangeListener<Screenname>() {
-            public void itemAdded(Collection<? extends Screenname> oldItems,
-                    Collection<? extends Screenname> newItems, Screenname item) {
-                fireBuddyBlocked(item);
-            }
+                    public void itemAdded(
+                            Collection<? extends Screenname> oldItems,
+                            Collection<? extends Screenname> newItems,
+                            Screenname item) {
+                        fireBuddyBlocked(item);
+                    }
 
-            public void itemRemoved(Collection<? extends Screenname> oldItems,
-                    Collection<? extends Screenname> newItems, Screenname item) {
-                fireBuddyUnblocked(item);
-            }
+                    public void itemRemoved(
+                            Collection<? extends Screenname> oldItems,
+                            Collection<? extends Screenname> newItems,
+                            Screenname item) {
+                        fireBuddyUnblocked(item);
+                    }
 
-            public void itemsReordered(Collection<? extends Screenname> oldItems,
-                    Collection<? extends Screenname> newItems) {
-                // who cares
-            }
-        });
+                    public void itemsReordered(
+                            Collection<? extends Screenname> oldItems,
+                            Collection<? extends Screenname> newItems) {
+                        // who cares
+                    }
+                });
     }
 
     private void fireBuddyBlocked(Screenname item) {
@@ -189,11 +195,15 @@ public class PermissionList {
         }
     }
 
-    public synchronized @Nullable PrivacyMode getPrivacyMode() {
+    public synchronized
+    @Nullable
+    PrivacyMode getPrivacyMode() {
         return getPrivacyModeFromItem(getPrivacyItem());
     }
 
-    private synchronized @Nullable PrivacyItem getPrivacyItem() {
+    private synchronized
+    @Nullable
+    PrivacyItem getPrivacyItem() {
         return privacyItems.isEmpty() ? null : privacyItems.last();
     }
 
@@ -219,12 +229,23 @@ public class PermissionList {
     }
 
     private PrivacyMode getPrivacyModeFromCode(int code) {
-        if (code == PrivacyItem.MODE_ALLOW_ALL) return PrivacyMode.ALLOW_ALL;
-        else if (code == PrivacyItem.MODE_ALLOW_PERMITS) return PrivacyMode.ALLOW_ALLOWED;
-        else if (code == PrivacyItem.MODE_BLOCK_ALL) return PrivacyMode.BLOCK_ALL;
-        else if (code == PrivacyItem.MODE_BLOCK_DENIES) return PrivacyMode.BLOCK_BLOCKED;
-        else if (code == PrivacyItem.MODE_ALLOW_BUDDIES) return PrivacyMode.ALLOW_BUDDIES;
-        else return null;
+        if (code == PrivacyItem.MODE_ALLOW_ALL) {
+            return PrivacyMode.ALLOW_ALL;
+        } else if (code == PrivacyItem
+                .MODE_ALLOW_PERMITS) {
+            return PrivacyMode.ALLOW_ALLOWED;
+        } else if (code == PrivacyItem
+                .MODE_BLOCK_ALL) {
+            return PrivacyMode.BLOCK_ALL;
+        } else if (code == PrivacyItem
+                .MODE_BLOCK_DENIES) {
+            return PrivacyMode.BLOCK_BLOCKED;
+        } else if (code == PrivacyItem
+                .MODE_ALLOW_BUDDIES) {
+            return PrivacyMode.ALLOW_BUDDIES;
+        } else {
+            return null;
+        }
     }
 
     public synchronized Set<Screenname> getBlockedBuddies() {
@@ -239,10 +260,19 @@ public class PermissionList {
 
 
     private void removePrivacyItemWithId(int id) {
-        for (Iterator<PrivacyItem> it = privacyItems.iterator(); it.hasNext();) {
+        for (Iterator<PrivacyItem> it = privacyItems.iterator();
+                it.hasNext();) {
             PrivacyItem otherItem = it.next();
             if (otherItem.getId() == id) it.remove();
         }
+    }
+
+    public void addPermissionListListener(PermissionListListener listener) {
+        listeners.addIfAbsent(listener);
+    }
+
+    public void removePermissionListListener(PermissionListListener listener) {
+        listeners.remove(listener);
     }
 
     public enum PrivacyMode {
