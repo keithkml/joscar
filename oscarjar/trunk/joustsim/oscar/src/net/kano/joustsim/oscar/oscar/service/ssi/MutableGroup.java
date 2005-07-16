@@ -34,14 +34,9 @@
 package net.kano.joustsim.oscar.oscar.service.ssi;
 
 import java.util.List;
-import java.util.Collection;
 
-public interface MutableGroup extends Group {
+public interface MutableGroup extends Group, AddMutableGroup {
     void rename(String newName);
-
-    void addBuddy(String screenname);
-
-    void copyBuddies(Collection<? extends Buddy> buddies);
 
     void deleteBuddy(Buddy buddy);
 

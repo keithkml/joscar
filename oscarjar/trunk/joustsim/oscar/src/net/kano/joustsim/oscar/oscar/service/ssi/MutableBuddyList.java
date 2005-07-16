@@ -38,7 +38,7 @@ import java.util.Collection;
 public interface MutableBuddyList extends BuddyList {
     void addGroup(String name);
 
-    void moveBuddies(Collection<? extends Buddy> buddies, MutableGroup group);
+    void moveBuddies(Collection<? extends Buddy> buddies, AddMutableGroup group);
 
     void deleteGroupAndBuddies(Group group);
 }

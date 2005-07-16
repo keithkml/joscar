@@ -108,7 +108,7 @@ class SsiBuddyList extends SimpleBuddyList implements MutableBuddyList {
         });
     }
 
-    public void moveBuddies(Collection<? extends Buddy> buddies, MutableGroup group) {
+    public void moveBuddies(Collection<? extends Buddy> buddies, AddMutableGroup group) {
         Map<Group,List<Buddy>> group2buddy = new HashMap<Group, List<Buddy>>();
         for (Buddy buddy : buddies) {
             for (Group parent : getGroups()) {

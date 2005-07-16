@@ -37,10 +37,15 @@ import net.kano.joustsim.Screenname;
 
 public interface PermissionListListener {
     void handlePrivacyModeChange(PermissionList list,
-            PermissionList.PrivacyMode oldMode,
-            PermissionList.PrivacyMode newMode);
+            PrivacyMode oldMode,
+            PrivacyMode newMode);
 
     void handleBuddyBlocked(PermissionList list, Screenname sn);
 
     void handleBuddyUnblocked(PermissionList list, Screenname sn);
+
+    void handleBuddyAllowed(PermissionList list, Screenname sn);
+
+    void handleBuddyRemovedFromAllowList(PermissionList list,
+            Screenname sn);
 }

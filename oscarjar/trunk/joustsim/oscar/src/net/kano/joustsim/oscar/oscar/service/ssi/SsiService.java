@@ -73,16 +73,21 @@ import java.util.Set;
 import java.util.HashSet;
 import java.util.TreeSet;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.logging.Logger;
 
 public class SsiService extends Service {
     private static final Logger LOGGER = Logger
             .getLogger(SsiService.class.getName());
 
-    private SsiBuddyList buddyList = new SsiBuddyList(this);
     private boolean requestedList = false;
     private static final int NUM_IDS = 0x7fff+1;
-    private PermissionList permissionList = new PermissionList();
+
+    private SsiBuddyList buddyList = new SsiBuddyList(this);
+    private SsiPermissionList permissionList = new SsiPermissionList(this);
+    private Map<Integer, Collection<Integer>> prospectiveIds
+            = new HashMap<Integer, Collection<Integer>>();
+    private Collection<Integer> prospectiveGroupIds = new ArrayList<Integer>();
 
     public SsiService(AimConnection aimConnection,
             OscarConnection oscarConnection) {
@@ -247,6 +252,15 @@ public class SsiService extends Service {
         do {
             nextid = random.nextInt(NUM_IDS);
         } while (idsForType.contains(nextid));
+
+        // we don't want to return the same unique ID twice, even if it's never
+        // used
+        Collection<Integer> ids = prospectiveIds.get(type);
+        if (ids == null) {
+            ids = new ArrayList<Integer>(10);
+            prospectiveIds.put(type, ids);
+        }
+        ids.add(nextid);
         return nextid;
     }
 
@@ -290,6 +304,7 @@ public class SsiService extends Service {
         for (ItemId id : items.keySet()) {
             if (id.getType() == type) idsForType.add(id.getId());
         }
+        idsForType.addAll(prospectiveIds.get(type));
         return idsForType;
     }
     private synchronized Set<Integer> getPossiblyUsedGroupIds() {
@@ -297,6 +312,7 @@ public class SsiService extends Service {
         for (ItemId id : items.keySet()) {
             if (id.getType() == SsiItem.TYPE_GROUP) idsForType.add(id.getParent());
         }
+        idsForType.addAll(prospectiveGroupIds);
         return idsForType;
     }
 
@@ -308,6 +324,11 @@ public class SsiService extends Service {
         do {
             nextid = random.nextInt(NUM_IDS);
         } while (groupIds.contains(nextid));
+
+        // we don't want to return the same group ID twice, even if it's not
+        // used yet
+        prospectiveGroupIds.add(nextid);
+
         return nextid;
     }
 

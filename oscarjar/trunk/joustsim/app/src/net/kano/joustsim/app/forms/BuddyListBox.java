@@ -41,6 +41,7 @@ import net.kano.joustsim.oscar.oscar.service.ssi.Group;
 import net.kano.joustsim.oscar.oscar.service.ssi.MutableBuddy;
 import net.kano.joustsim.oscar.oscar.service.ssi.MutableBuddyList;
 import net.kano.joustsim.oscar.oscar.service.ssi.MutableGroup;
+import net.kano.joustsim.oscar.oscar.service.ssi.AddMutableGroup;
 import net.kano.joustsim.oscar.oscar.service.icbm.ImConversation;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferManager;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.OutgoingFileTransfer;
@@ -96,7 +97,7 @@ public class BuddyListBox extends JPanel {
                     BuddyListModel.GroupHolder holder = (BuddyListModel.GroupHolder) item;
                     Group group = holder.getGroup();
                     if (group instanceof MutableGroup) {
-                        MutableGroup mutableGroup = (MutableGroup) group;
+                        AddMutableGroup mutableGroup = (AddMutableGroup) group;
                         menu.add(new AddBuddyAction(mutableGroup));
                     }
                     menu.addSeparator();
@@ -105,14 +106,7 @@ public class BuddyListBox extends JPanel {
                     if (group instanceof MutableGroup) {
                         final MutableGroup mutableGroup = (MutableGroup) group;
 
-                        menu.add(new AbstractAction() {
-                            {
-                                putValue(NAME, "Rename group");
-                            }
-                            public void actionPerformed(ActionEvent e) {
-                                buddyTree.startEditingAtPath(model.getPathToGroup(mutableGroup));
-                            }
-                        });
+                        menu.add(new RenameGroupAction(mutableGroup));
                     }
                     menu.add(new RemoveGroupAction(group));
 
@@ -261,13 +255,13 @@ public class BuddyListBox extends JPanel {
         }
     }
     private class AddBuddyAction extends AbstractAction {
-        private final MutableGroup group;
+        private final AddMutableGroup group;
 
         {
             putValue(NAME, "Add Buddy");
         }
 
-        public AddBuddyAction(MutableGroup group) {
+        public AddBuddyAction(AddMutableGroup group) {
             this.group = group;
         }
 
@@ -326,6 +320,19 @@ public class BuddyListBox extends JPanel {
             String name = JOptionPane
                     .showInputDialog(BuddyListBox.this, "Buddy Comment:", buddy.getBuddyComment());
             if (name != null) buddy.changeBuddyComment(name);
+        }
+    }
+
+    private class RenameGroupAction extends AbstractAction {
+        private final MutableGroup mutableGroup;
+
+        public RenameGroupAction(MutableGroup mutableGroup) {
+            this.mutableGroup = mutableGroup;
+            putValue(NAME, "Rename group");
+        }
+
+        public void actionPerformed(ActionEvent e) {
+            buddyTree.startEditingAtPath(model.getPathToGroup(mutableGroup));
         }
     }
 }
