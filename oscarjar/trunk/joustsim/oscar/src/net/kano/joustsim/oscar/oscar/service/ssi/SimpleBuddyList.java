@@ -50,6 +50,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.LinkedHashMap;
+import java.util.Collection;
 
 /*
  * SEMANTICS:
@@ -476,31 +477,38 @@ public class SimpleBuddyList implements BuddyList {
             this.newState = newState;
         }
 
-        public void itemAdded(List<? extends Group> oldItems, List<? extends Group> newItems,
+        public void itemAdded(Collection<? extends Group> oldItems, Collection<? extends Group> newItems,
                 Group item) {
             assert !Thread.holdsLock(this);
 
+            List<Group> oldItemsCopy = DefensiveTools.getUnmodifiableCopy(oldItems);
+            List<Group> newItemsCopy = DefensiveTools.getUnmodifiableCopy(newItems);
             for (BuddyListLayoutListener listener : listeners) {
-                listener.groupAdded(SimpleBuddyList.this, oldItems, newItems, item,
+                listener.groupAdded(SimpleBuddyList.this, oldItemsCopy, newItemsCopy, item,
                         newState.getBuddies(item));
             }
         }
 
-        public void itemRemoved(List<? extends Group> oldItems, List<? extends Group> newItems,
+        public void itemRemoved(Collection<? extends Group> oldItems,
+                Collection<? extends Group> newItems,
                 Group item) {
             assert !Thread.holdsLock(this);
 
+            List<Group> oldItemsCopy = DefensiveTools.getUnmodifiableCopy(oldItems);
+            List<Group> newItemsCopy = DefensiveTools.getUnmodifiableCopy(newItems);
             for (BuddyListLayoutListener listener : listeners) {
-                listener.groupRemoved(SimpleBuddyList.this, oldItems, newItems, item);
+                listener.groupRemoved(SimpleBuddyList.this, oldItemsCopy, newItemsCopy, item);
             }
         }
 
-        public void itemsReordered(List<? extends Group> oldItems,
-                List<? extends Group> newItems) {
+        public void itemsReordered(Collection<? extends Group> oldItems,
+                Collection<? extends Group> newItems) {
             assert !Thread.holdsLock(this);
 
+            List<Group> oldItemsCopy = DefensiveTools.getUnmodifiableCopy(oldItems);
+            List<Group> newItemsCopy = DefensiveTools.getUnmodifiableCopy(newItems);
             for (BuddyListLayoutListener listener : listeners) {
-                listener.groupsReordered(SimpleBuddyList.this, oldItems, newItems);
+                listener.groupsReordered(SimpleBuddyList.this, oldItemsCopy, newItemsCopy);
             }
         }
     }
@@ -512,34 +520,43 @@ public class SimpleBuddyList implements BuddyList {
             this.group = group;
         }
 
-        public void itemAdded(List<? extends SimpleBuddy> oldItems, List<? extends SimpleBuddy> newItems,
+        public void itemAdded(Collection<? extends SimpleBuddy> oldItems, Collection<? extends SimpleBuddy> newItems,
                 SimpleBuddy item) {
             assert !Thread.holdsLock(this);
 
+            List<SimpleBuddy> oldItemsCopy = DefensiveTools.getUnmodifiableCopy(oldItems);
+            List<SimpleBuddy> newItemsCopy = DefensiveTools.getUnmodifiableCopy(newItems);
+
             for (BuddyListLayoutListener listener : listeners) {
-                listener.buddyAdded(SimpleBuddyList.this, group, oldItems, newItems,
+                listener.buddyAdded(SimpleBuddyList.this, group, oldItemsCopy, newItemsCopy,
                         item);
             }
         }
 
-        public void itemRemoved(List<? extends SimpleBuddy> oldItems,
-                List<? extends SimpleBuddy> newItems,
+        public void itemRemoved(Collection<? extends SimpleBuddy> oldItems,
+                Collection<? extends SimpleBuddy> newItems,
                 SimpleBuddy item) {
             assert !Thread.holdsLock(this);
 
+            List<SimpleBuddy> oldItemsCopy = DefensiveTools.getUnmodifiableCopy(oldItems);
+            List<SimpleBuddy> newItemsCopy = DefensiveTools.getUnmodifiableCopy(newItems);
+
             for (BuddyListLayoutListener listener : listeners) {
-                listener.buddyRemoved(SimpleBuddyList.this, group, oldItems, newItems,
-                        item);
+                listener.buddyRemoved(SimpleBuddyList.this, group, oldItemsCopy,
+                        newItemsCopy, item);
             }
         }
 
-        public void itemsReordered(List<? extends SimpleBuddy> oldItems,
-                List<? extends SimpleBuddy> newItems) {
+        public void itemsReordered(Collection<? extends SimpleBuddy> oldItems,
+                Collection<? extends SimpleBuddy> newItems) {
             assert !Thread.holdsLock(this);
 
+            List<SimpleBuddy> oldItemsCopy = DefensiveTools.getUnmodifiableCopy(oldItems);
+            List<SimpleBuddy> newItemsCopy = DefensiveTools.getUnmodifiableCopy(newItems);
+
             for (BuddyListLayoutListener listener : listeners) {
-                listener.buddiesReordered(SimpleBuddyList.this, group, oldItems,
-                        newItems);
+                listener.buddiesReordered(SimpleBuddyList.this, group, oldItemsCopy,
+                        newItemsCopy);
             }
         }
     }

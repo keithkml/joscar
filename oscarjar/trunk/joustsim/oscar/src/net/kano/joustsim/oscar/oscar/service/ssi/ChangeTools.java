@@ -35,13 +35,14 @@ package net.kano.joustsim.oscar.oscar.service.ssi;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Collection;
 
 public final class ChangeTools {
     private ChangeTools() { }
 
 
-    public static <E> void detectChanges(List<? extends E> oldItems,
-            List<? extends E> newItems, DetectedChangeListener<? super E> listener) {
+    public static <E> void detectChanges(Collection<? extends E> oldItems,
+            Collection<? extends E> newItems, DetectedChangeListener<? super E> listener) {
 //        List<Group> oldGroups = new ArrayList<Group>(
 //                saved.getBuddies().keySet());
 //        List<Group> newGroups = groups;

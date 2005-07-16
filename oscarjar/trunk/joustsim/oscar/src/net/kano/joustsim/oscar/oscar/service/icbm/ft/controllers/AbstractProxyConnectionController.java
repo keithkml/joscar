@@ -55,6 +55,7 @@ import java.io.InputStream;
 import java.util.Timer;
 import java.util.TimerTask;
 
+//TODO: make sure we only connect to the proxy when the user accepts - the proxy will time out if the user waits too long
 public abstract class AbstractProxyConnectionController
         extends AbstractOutgoingConnectionController
         implements ManualTimeoutController {

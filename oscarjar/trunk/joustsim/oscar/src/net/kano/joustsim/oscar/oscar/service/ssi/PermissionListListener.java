@@ -33,18 +33,14 @@
 
 package net.kano.joustsim.oscar.oscar.service.ssi;
 
-import net.kano.joscar.DefensiveTools;
+import net.kano.joustsim.Screenname;
 
-import java.util.List;
+public interface PermissionListListener {
+    void handlePrivacyModeChange(PermissionList list,
+            PermissionList.PrivacyMode oldMode,
+            PermissionList.PrivacyMode newMode);
 
-public class MultipleExceptionsException extends RuntimeException {
-    private final List<Exception> exceptions;
+    void handleBuddyBlocked(PermissionList list, Screenname sn);
 
-    public MultipleExceptionsException(List<Exception> exceptions) {
-        super("Multiple exceptions thrown; first is shown as cause ",
-                exceptions.get(0));
-        this.exceptions = DefensiveTools.getUnmodifiableCopy(exceptions);
-    }
-
-    List<Exception> getExceptions() { return exceptions; }
+    void handleBuddyUnblocked(PermissionList list, Screenname sn);
 }
