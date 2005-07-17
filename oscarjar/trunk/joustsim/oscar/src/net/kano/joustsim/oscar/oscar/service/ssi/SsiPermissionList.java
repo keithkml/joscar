@@ -51,7 +51,6 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.SortedSet;
@@ -124,16 +123,16 @@ class SsiPermissionList implements PermissionList {
     private synchronized void handleItemActuallyModified(SsiItemObj itemObj) {
         if (itemObj instanceof PrivacyItem) {
             final PrivacyItem pitem = (PrivacyItem) itemObj;
-            removePrivacyItemWithId(pitem.getId());
+            SsiTools.removeItemsWithId(privacyItems, pitem.getId());
             privacyItems.add(pitem);
 
         } else if (itemObj instanceof DenyItem) {
             final DenyItem denyItem = (DenyItem) itemObj;
-            removeDenyItemWithId(denyItem.getId());
+            SsiTools.removeItemsWithId(denyItems, denyItem.getId());
             denyItems.add(denyItem);
         } else if (itemObj instanceof PermitItem) {
             PermitItem permitItem = (PermitItem) itemObj;
-            removeAllowItemWithId(permitItem.getId());
+            SsiTools.removeItemsWithId(permitItems, permitItem.getId());
             permitItems.add(permitItem);
         }
     }
@@ -141,12 +140,12 @@ class SsiPermissionList implements PermissionList {
     private synchronized void handleItemActuallyDeleted(SsiItemObj itemObj) {
         if (itemObj instanceof PrivacyItem) {
             PrivacyItem privacyItem = (PrivacyItem) itemObj;
-            removePrivacyItemWithId(privacyItem.getId());
+            SsiTools.removeItemsWithId(privacyItems, privacyItem.getId());
 
         } else if (itemObj instanceof DenyItem) {
             DenyItem denyItem = (DenyItem) itemObj;
 
-            removeDenyItemWithId(denyItem.getId());
+            SsiTools.removeItemsWithId(denyItems, denyItem.getId());
         }
     }
 
@@ -171,22 +170,6 @@ class SsiPermissionList implements PermissionList {
         updatePrivacyItem(oldItem, newTopItem);
         updateBlockedBuddies(oldBlocked, newBlocked);
         updateAllowedBuddies(oldAllowed, newAllowed);
-    }
-
-    private synchronized void removeAllowItemWithId(int id) {
-        for (Iterator<PermitItem> it = permitItems.iterator();
-                it.hasNext();) {
-            PermitItem permitItem = it.next();
-            if (permitItem.getId() == id) it.remove();
-        }
-    }
-
-    private synchronized void removeDenyItemWithId(int id) {
-        for (Iterator<DenyItem> it = denyItems.iterator();
-                it.hasNext();) {
-            DenyItem denyItem = it.next();
-            if (denyItem.getId() == id) it.remove();
-        }
     }
 
     private void updateBlockedBuddies(Set<Screenname> oldBlocked,
@@ -348,14 +331,6 @@ class SsiPermissionList implements PermissionList {
         if (mode == PrivacyMode.BLOCK_ALL) return PrivacyItem.MODE_BLOCK_ALL;
         if (mode == PrivacyMode.BLOCK_BLOCKED) return PrivacyItem.MODE_BLOCK_DENIES;
         throw new IllegalStateException("invalid privacy mode " + mode);
-    }
-
-    private void removePrivacyItemWithId(int id) {
-        for (Iterator<PrivacyItem> it = privacyItems.iterator();
-                it.hasNext();) {
-            PrivacyItem otherItem = it.next();
-            if (otherItem.getId() == id) it.remove();
-        }
     }
 
     public void addPermissionListListener(PermissionListListener listener) {

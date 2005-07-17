@@ -85,7 +85,7 @@ public class SsiService extends Service {
 
     private SsiBuddyList buddyList = new SsiBuddyList(this);
     private SsiPermissionList permissionList = new SsiPermissionList(this);
-    private ServerStoredSettings settings = new ServerStoredSettings(this);
+    private SsiServerStoredSettings settings = new SsiServerStoredSettings(this);
 
     private Map<Integer, Collection<Integer>> prospectiveIds
             = new HashMap<Integer, Collection<Integer>>();
@@ -134,7 +134,14 @@ public class SsiService extends Service {
         final List<Exception> exceptions = new ArrayList<Exception>();
         if (snac instanceof SsiDataCmd) {
             SsiDataCmd ssiDataCmd = (SsiDataCmd) snac;
-            for (SsiItem item : ssiDataCmd.getItems()) {
+            List<SsiItem> items = ssiDataCmd.getItems();
+            boolean done = (snac.getFlag2() & SnacCommand.SNACFLAG2_MORECOMING) == 0;
+            if (done) {
+                LOGGER.fine("Got final buddy list packet: " + items.size() + " items");
+            } else {
+                LOGGER.fine("Got buddy list part: " + items.size() + " items");
+            }
+            for (SsiItem item : items) {
                 try {
                     itemCreated(item);
                 } catch (Exception e) {
@@ -142,10 +149,11 @@ public class SsiService extends Service {
                 }
             }
 
-            if ((snac.getFlag2() & SnacCommand.SNACFLAG2_MORECOMING) == 0) {
+            if (done) {
                 sendSnac(new ActivateSsiCmd());
                 setReady();
             }
+
         } else if (snac instanceof CreateItemsCmd) {
             CreateItemsCmd createItemsCmd = (CreateItemsCmd) snac;
             for (SsiItem ssiItem : createItemsCmd.getItems()) {
@@ -155,6 +163,7 @@ public class SsiService extends Service {
                     exceptions.add(e);
                 }
             }
+
         } else if (snac instanceof ModifyItemsCmd) {
             ModifyItemsCmd modifyItemsCmd = (ModifyItemsCmd) snac;
             for (SsiItem ssiItem : modifyItemsCmd.getItems()) {
@@ -164,6 +173,7 @@ public class SsiService extends Service {
                     exceptions.add(e);
                 }
             }
+
         } else if (snac instanceof DeleteItemsCmd) {
             DeleteItemsCmd deleteItemsCmd = (DeleteItemsCmd) snac;
             for (SsiItem ssiItem : deleteItemsCmd.getItems()) {
@@ -181,6 +191,7 @@ public class SsiService extends Service {
             } else {
                 throw new IllegalStateException(exception);
             }
+
         } else if (!exceptions.isEmpty()) {
             throw new MultipleExceptionsException(exceptions);
         }
@@ -243,6 +254,7 @@ public class SsiService extends Service {
         settings.handleItemDeleted(item);
     }
 
+    /** That's so random */
     private Random random = new Random();
 
     synchronized int getUniqueItemId(int type, int parent) {
@@ -339,6 +351,10 @@ public class SsiService extends Service {
 
     public PermissionList getPermissionList() {
         return permissionList;
+    }
+
+    public ServerStoredSettings getServerStoredSettings() {
+        return settings;
     }
 
     public void sendSsiModification(ItemsCmd cmd,

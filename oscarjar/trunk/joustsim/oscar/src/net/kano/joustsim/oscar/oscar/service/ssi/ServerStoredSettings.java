@@ -33,34 +33,20 @@
 
 package net.kano.joustsim.oscar.oscar.service.ssi;
 
-import net.kano.joscar.snaccmd.ssi.SsiItem;
-import net.kano.joscar.ssiitem.DefaultSsiItemObjFactory;
-import net.kano.joscar.ssiitem.PrivacyItem;
-import net.kano.joscar.ssiitem.SsiItemObj;
-import net.kano.joscar.ssiitem.SsiItemObjectFactory;
+public interface ServerStoredSettings {
+    boolean isMobileDeviceShown();
 
-public class ServerStoredSettings {
-    private SsiService ssiService;
+    boolean isIdleTimeShown();
 
-    private SsiItemObjectFactory factory = new DefaultSsiItemObjFactory();
+    boolean isTypingShown();
 
-    public ServerStoredSettings(SsiService ssiService) {
-        this.ssiService = ssiService;
-    }
+    void changeMobileDeviceShown(boolean shown);
 
-    public void handleItemCreated(SsiItem item) {
-        SsiItemObj itemObj = factory.getItemObj(item);
-        if (itemObj instanceof PrivacyItem) {
-            PrivacyItem privacyItem = (PrivacyItem) itemObj;
+    void changeIdleTimeShown(boolean shown);
 
-        }
-    }
+    void changeTypingShown(boolean shown);
 
-    public void handleItemModified(SsiItem item) {
+    void addListener(ServerStoredSettingsListener listener);
 
-    }
-
-    public void handleItemDeleted(SsiItem item) {
-        
-    }
+    void removeListener(ServerStoredSettingsListener listener);
 }
