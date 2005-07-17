@@ -1,0 +1,49 @@
+<html>
+<body>
+Provides a default implementation of the RV commands used in initializing and
+communicating over an encrypted IM session via the SecureIM protocol created by
+the developers of <a href="http://trillian.cc" title="The website of the
+Trillian IM client">Trillian</a>, an IM client for Windows.
+<br>
+<br>
+Trillian SecureIM consists of Blowfish encryption with a symmetric 128-bit key
+negotiated using a Diffie-Hellman key exchange protocol.
+
+<h2> About the protocol </h2>
+Not enough arguments are passed between two clients to satisfy a true
+Diffie-Hellman key exchange. In Diffie-Hellman, there are three variables
+normally transmitted by one client, and one sent back by the other. The Trillian
+Encryption protocol only transmits two from the client and one from the other.
+<p>
+It appears that the missing variable is <code>g</code>, the "generator" or
+"exponent base," as it is called. This value appears to always be
+<code>5</code>.
+<p>
+Normally, a Diffie-Hellman key exchange is <code>512</code> or
+<code>1024</code> bits. Trillian SecureIM keys contain only 128 bits.
+<p>
+The normal sequence of commands in a Trillian Secure IM connection is as
+follows:
+<ul>
+<li> A: {@link net.kano.joscar.rvcmd.trillcrypt.TrillianCryptReqRvCmd} to
+request a session </li>
+<li> B: {@link net.kano.joscar.rvcmd.trillcrypt.TrillianCryptAcceptRvCmd} to
+accept a session </li>
+<li> A: {@link net.kano.joscar.rvcmd.trillcrypt.TrillianCryptBeginRvCmd} to
+begin the session <br> </li>
+<li> A and B: {@link net.kano.joscar.rvcmd.trillcrypt.TrillianCryptMsgRvCmd}s
+containing message text <br> </li>
+<li> A or B: {@link net.kano.joscar.rvcmd.trillcrypt.TrillianCryptCloseRvCmd}
+to close the connection </li>
+</ul>
+For a working sample implementation of Trillian SecureIM using joscar, see the
+<code>TrillianEncSession</code> class in the joscar demo source distribution. As
+of this writing, this file is located in
+<code>demo/src/net/kano/joscardemo/rv/TrillianEncSession.java</code> in the
+joscar source distribution.
+<p>
+For more details on the protocol, see <a href="http://joust.kano.net/wiki/oscar/">
+
+@see net.kano.joscar.snaccmd.CapabilityBlock#BLOCK_TRILLIANCRYPT
+</body>
+</html>

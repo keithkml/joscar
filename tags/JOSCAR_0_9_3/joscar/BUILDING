@@ -1,0 +1,49 @@
+BUILDING - joscar 0.9.3
+AOL Instant Messenger protocol library for Java
+(C) 2002-2004 The Joust Project
+
+--------------------------------------------------------------------------------
+
+joscar includes a build.xml file for use with the Apache Project's ant build
+utility.  For instructions on using ant, please see the ant web site
+(http://ant.apache.org/).
+
+The following targets are defined in build.xml:
+
+   - joscar:  Builds joscar binaries.
+
+   - jar:  Builds a jar file containing (only) joscar binaries.
+
+   - test:  Builds and runs JUnit tests in tests/.
+
+   - demo:  Builds JoscarTester binaries and places them in demo/.
+
+   - run-demo:  Builds the JoscarTester demo and runs it.
+
+   - javadoc:  Generates HTML documentation from the joscar source.
+
+   - clean:  Cleans binaries, documentation, demo, and other "junk" from the
+     tree. Note that this target deletes several directories and should be 
+     used with caution.
+
+
+In addition, the following targets are available for producing a distribution
+release directory:
+
+   - dist-src:  Copies the Java source files in the source directory to
+     joscar-<version>/src.
+
+   - dist-doc:  Copies all files in the docs/ directory to
+     joscar-<version>/docs/.
+
+   - dist-package:  Creates tar/gz, tar/bz2, and zip files with the contents 
+     of joscar-<version>/.
+
+   - dist:  Deletes any previous joscar-<version> directory, then performs the
+     above three steps.
+
+   - dist-clean:  Deletes joscar-<version>/ and any packaged zip/tar files
+     with the same name.
+
+--------------------------------------------------------------------------------
+

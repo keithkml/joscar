@@ -1,0 +1,12 @@
+UPDATING - joscar 0.9.3
+AOL Instant Messenger protocol library for Java
+(C) 2002-2004 The Joust Project
+
+--------------------------------------------------------------------------------
+
+The latest joscar source is always available via CVS.  Here's how to fetch it:
+
+$ cvs -d:pserver:anonymous@cvs.sf.net:/cvsroot/joustim login
+$ cvs -z3 -d:pserver:anonymous@cvs.sf.net:/cvsroot/joustim co joscar
+
+--------------------------------------------------------------------------------
