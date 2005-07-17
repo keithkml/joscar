@@ -55,7 +55,7 @@ import net.kano.joscar.tlv.TlvTools;
  * server with a {@link net.kano.joscar.snaccmd.ssi.ModifyItemsCmd
  * ModifyItemsCmd}.
  */
-public class PrivacyItem extends AbstractItemObj {
+public class PrivacyItem extends AbstractItemObj implements SsiItemObjectWithId {
     /**
      * A privacy mode under which the {@linkplain DenyItem block list} is
      * ignored and thus no users are blocked.

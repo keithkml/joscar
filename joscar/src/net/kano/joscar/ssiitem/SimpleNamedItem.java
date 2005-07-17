@@ -46,7 +46,7 @@ import net.kano.joscar.tlv.TlvTools;
  * the root group (group <code>0x0000</code>). These are {@link PermitItem} and
  * {@link DenyItem}.
  */
-public abstract class SimpleNamedItem extends AbstractItemObj {
+public abstract class SimpleNamedItem extends AbstractItemObj implements SsiItemObjectWithId {
     /** The parent ID to use in simple named items. */
     private static final int PARENTID_DEFAULT = 0;
 

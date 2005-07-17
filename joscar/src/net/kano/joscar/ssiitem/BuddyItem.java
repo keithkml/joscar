@@ -56,7 +56,7 @@ import net.kano.joscar.tlv.TlvTools;
  * server with a {@link net.kano.joscar.snaccmd.ssi.ModifyItemsCmd
  * ModifyItemsCmd}.
  */
-public class BuddyItem extends AbstractItemObj {
+public class BuddyItem extends AbstractItemObj implements SsiItemObjectWithId {
     /**
      * An alert action flag indicating that a window should be popped up when
      * the buddy alert is activated.
