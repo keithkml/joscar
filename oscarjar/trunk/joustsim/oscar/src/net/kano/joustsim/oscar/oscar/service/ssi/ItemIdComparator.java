@@ -33,28 +33,16 @@
 
 package net.kano.joustsim.oscar.oscar.service.ssi;
 
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Collections;
+import net.kano.joscar.ssiitem.SsiItemObjectWithId;
 
-public class SyntheticGroup extends AbstractGroup {
-    private String name = "Synthetic group";
+import java.util.Comparator;
 
-    public SyntheticGroup(SimpleBuddyList buddyList) {
-        super(buddyList);
-    }
-
-    protected List<SimpleBuddy> getSortedBuddies() {
-        List<SimpleBuddy> list = new ArrayList<SimpleBuddy>(getBuddies());
-        Collections.sort(list, SimpleBuddyList.COMPARATOR_SN);
-        return list;
-    }
-
-    protected synchronized void setName(String name) {
-        this.name = name;
-    }
-
-    public synchronized String getName() {
-        return name;
+class ItemIdComparator implements Comparator<SsiItemObjectWithId> {
+    public int compare(SsiItemObjectWithId o1, SsiItemObjectWithId o2) {
+        int id2 = o2.getId();
+        int id1 = o1.getId();
+        if (id1 < id2) return -1;
+        if (id1 > id2) return 1;
+        return 0;
     }
 }

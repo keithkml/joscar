@@ -38,8 +38,6 @@ import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joustsim.Screenname;
 
-//TODO: item objects are mutable. we shouldn't make them public, or we should clone them
-
 class SimpleBuddy implements Buddy {
     private final SimpleBuddyList buddyList;
 

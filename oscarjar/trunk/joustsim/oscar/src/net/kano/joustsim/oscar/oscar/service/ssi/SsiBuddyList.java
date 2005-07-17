@@ -54,9 +54,15 @@ import java.util.Set;
 
 class SsiBuddyList extends SimpleBuddyList implements MutableBuddyList {
     private final SsiService service;
+    private final SsiSyntheticGroup syntheticGroup;
 
     protected SsiBuddyList(SsiService service) {
         this.service = service;
+        syntheticGroup = new SsiSyntheticGroup(service, this);
+    }
+
+    protected SyntheticGroup getSyntheticGroup() {
+        return syntheticGroup;
     }
 
     protected SimpleBuddy createBuddy(BuddyItem buddyItem) {

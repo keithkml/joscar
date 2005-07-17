@@ -33,28 +33,33 @@
 
 package net.kano.joustsim.oscar.oscar.service.ssi;
 
+import net.kano.joscar.snaccmd.ssi.SsiItem;
+import net.kano.joscar.ssiitem.BuddyItem;
+
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Collections;
 
-public class SyntheticGroup extends AbstractGroup {
-    private String name = "Synthetic group";
-
-    public SyntheticGroup(SimpleBuddyList buddyList) {
-        super(buddyList);
+public final class SsiTools {
+    private SsiTools() { }
+    
+    public static List<SsiItem> getBuddiesToDelete(List<Buddy> ingroup) {
+        List<SsiItem> items = new ArrayList<SsiItem>();
+        for (Buddy buddy : ingroup) {
+            if (!(buddy instanceof SimpleBuddy)) {
+                throw new IllegalArgumentException("can't delete buddy " + buddy
+                        + " : wrong type");
+            }
+            SimpleBuddy simpleBuddy = (SimpleBuddy) buddy;
+            final BuddyItem item = simpleBuddy.getItem();
+            SsiItem ssiItem = item.toSsiItem();
+            items.add(ssiItem);
+        }
+        return items;
     }
 
-    protected List<SimpleBuddy> getSortedBuddies() {
-        List<SimpleBuddy> list = new ArrayList<SimpleBuddy>(getBuddies());
-        Collections.sort(list, SimpleBuddyList.COMPARATOR_SN);
-        return list;
-    }
-
-    protected synchronized void setName(String name) {
-        this.name = name;
-    }
-
-    public synchronized String getName() {
-        return name;
+    public static List<Integer> getIdsForItems(List<SsiItem> items) {
+        final List<Integer> ids = new ArrayList<Integer>();
+        for (SsiItem ssiItem : items) ids.add(ssiItem.getId());
+        return ids;
     }
 }

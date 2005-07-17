@@ -33,28 +33,39 @@
 
 package net.kano.joustsim.oscar.oscar.service.ssi;
 
+import net.kano.joscar.snaccmd.ssi.DeleteItemsCmd;
+import net.kano.joscar.snaccmd.ssi.SsiItem;
+
+import java.util.Arrays;
 import java.util.List;
-import java.util.ArrayList;
-import java.util.Collections;
 
-public class SyntheticGroup extends AbstractGroup {
-    private String name = "Synthetic group";
+class SsiSyntheticGroup extends SyntheticGroup
+        implements RenameMutableGroup, DeleteMutableGroup {
+    private final SsiService ssiService;
 
-    public SyntheticGroup(SimpleBuddyList buddyList) {
+    protected SsiSyntheticGroup(SsiService ssiService, SimpleBuddyList buddyList) {
         super(buddyList);
+        this.ssiService = ssiService;
     }
 
-    protected List<SimpleBuddy> getSortedBuddies() {
-        List<SimpleBuddy> list = new ArrayList<SimpleBuddy>(getBuddies());
-        Collections.sort(list, SimpleBuddyList.COMPARATOR_SN);
-        return list;
+    public void rename(String newName) {
+        String oldName;
+        synchronized (this) {
+            oldName = getName();
+            setName(newName);
+        }
+        for (GroupListener listener : getListeners()) {
+            listener.groupNameChanged(this, oldName, newName);
+        }
     }
 
-    protected synchronized void setName(String name) {
-        this.name = name;
+    public void deleteBuddy(Buddy buddy) {
+        deleteBuddies(Arrays.asList(buddy));
     }
 
-    public synchronized String getName() {
-        return name;
+    public void deleteBuddies(List<Buddy> ingroup) {
+        List<SsiItem> items = SsiTools.getBuddiesToDelete(ingroup);
+
+        ssiService.sendSsiModification(new DeleteItemsCmd(items));
     }
 }

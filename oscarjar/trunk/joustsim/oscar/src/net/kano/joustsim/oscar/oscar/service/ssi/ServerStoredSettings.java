@@ -33,28 +33,34 @@
 
 package net.kano.joustsim.oscar.oscar.service.ssi;
 
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Collections;
+import net.kano.joscar.snaccmd.ssi.SsiItem;
+import net.kano.joscar.ssiitem.DefaultSsiItemObjFactory;
+import net.kano.joscar.ssiitem.PrivacyItem;
+import net.kano.joscar.ssiitem.SsiItemObj;
+import net.kano.joscar.ssiitem.SsiItemObjectFactory;
 
-public class SyntheticGroup extends AbstractGroup {
-    private String name = "Synthetic group";
+public class ServerStoredSettings {
+    private SsiService ssiService;
 
-    public SyntheticGroup(SimpleBuddyList buddyList) {
-        super(buddyList);
+    private SsiItemObjectFactory factory = new DefaultSsiItemObjFactory();
+
+    public ServerStoredSettings(SsiService ssiService) {
+        this.ssiService = ssiService;
     }
 
-    protected List<SimpleBuddy> getSortedBuddies() {
-        List<SimpleBuddy> list = new ArrayList<SimpleBuddy>(getBuddies());
-        Collections.sort(list, SimpleBuddyList.COMPARATOR_SN);
-        return list;
+    public void handleItemCreated(SsiItem item) {
+        SsiItemObj itemObj = factory.getItemObj(item);
+        if (itemObj instanceof PrivacyItem) {
+            PrivacyItem privacyItem = (PrivacyItem) itemObj;
+
+        }
     }
 
-    protected synchronized void setName(String name) {
-        this.name = name;
+    public void handleItemModified(SsiItem item) {
+
     }
 
-    public synchronized String getName() {
-        return name;
+    public void handleItemDeleted(SsiItem item) {
+        
     }
 }

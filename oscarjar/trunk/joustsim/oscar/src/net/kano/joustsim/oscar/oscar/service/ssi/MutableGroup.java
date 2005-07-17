@@ -33,12 +33,6 @@
 
 package net.kano.joustsim.oscar.oscar.service.ssi;
 
-import java.util.List;
-
-public interface MutableGroup extends Group, AddMutableGroup {
-    void rename(String newName);
-
-    void deleteBuddy(Buddy buddy);
-
-    void deleteBuddies(List<Buddy> ingroup);
+public interface MutableGroup extends AddMutableGroup, DeleteMutableGroup,
+        RenameMutableGroup {
 }

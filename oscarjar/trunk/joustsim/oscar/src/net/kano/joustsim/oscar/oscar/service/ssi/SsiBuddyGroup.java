@@ -103,8 +103,7 @@ class SsiBuddyGroup extends SimpleBuddyGroup implements MutableGroup {
 
     private void addBuddies(List<SsiItem> items) {
         SsiService service = getSsiService();
-        final List<Integer> ids = new ArrayList<Integer>();
-        for (SsiItem item : items) ids.add(item.getId());
+        final List<Integer> ids = SsiTools.getIdsForItems(items);
         CreateItemsCmd cmd1 = new CreateItemsCmd(items);
         service.sendSsiModification(cmd1, new SnacRequestAdapter() {
             public void handleResponse(SnacResponseEvent e) {
@@ -155,19 +154,9 @@ class SsiBuddyGroup extends SimpleBuddyGroup implements MutableGroup {
     }
 
     public void deleteBuddies(List<Buddy> ingroup) {
-        List<SsiItem> items = new ArrayList<SsiItem>();
-        final List<Integer> ids = new ArrayList<Integer>();
-        for (Buddy buddy : ingroup) {
-            if (!(buddy instanceof SimpleBuddy)) {
-                throw new IllegalArgumentException("can't delete buddy " + buddy
-                        + " : wrong type");
-            }
-            SimpleBuddy simpleBuddy = (SimpleBuddy) buddy;
-            final BuddyItem item = simpleBuddy.getItem();
-            SsiItem ssiItem = item.toSsiItem();
-            ids.add(ssiItem.getId());
-            items.add(ssiItem);
-        }
+        List<SsiItem> items = SsiTools.getBuddiesToDelete(ingroup);
+        final List<Integer> ids = SsiTools.getIdsForItems(items);
+
         DeleteItemsCmd deleteCmd = new DeleteItemsCmd(items);
         SsiService service = getSsiService();
         service.sendSsiModification(deleteCmd, new SnacRequestAdapter() {

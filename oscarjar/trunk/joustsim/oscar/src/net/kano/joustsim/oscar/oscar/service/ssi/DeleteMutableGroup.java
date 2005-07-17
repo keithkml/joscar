@@ -34,27 +34,9 @@
 package net.kano.joustsim.oscar.oscar.service.ssi;
 
 import java.util.List;
-import java.util.ArrayList;
-import java.util.Collections;
 
-public class SyntheticGroup extends AbstractGroup {
-    private String name = "Synthetic group";
+public interface DeleteMutableGroup extends Group {
+    void deleteBuddy(Buddy buddy);
 
-    public SyntheticGroup(SimpleBuddyList buddyList) {
-        super(buddyList);
-    }
-
-    protected List<SimpleBuddy> getSortedBuddies() {
-        List<SimpleBuddy> list = new ArrayList<SimpleBuddy>(getBuddies());
-        Collections.sort(list, SimpleBuddyList.COMPARATOR_SN);
-        return list;
-    }
-
-    protected synchronized void setName(String name) {
-        this.name = name;
-    }
-
-    public synchronized String getName() {
-        return name;
-    }
+    void deleteBuddies(List<Buddy> ingroup);
 }

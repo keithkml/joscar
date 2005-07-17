@@ -61,7 +61,7 @@ import java.util.Collection;
  *
  */
 
-public class SimpleBuddyList implements BuddyList {
+class SimpleBuddyList implements BuddyList {
     public static final Comparator<SimpleBuddy> COMPARATOR_SN
             = new Comparator<SimpleBuddy>() {
         public int compare(SimpleBuddy o1, SimpleBuddy o2) {
@@ -73,16 +73,16 @@ public class SimpleBuddyList implements BuddyList {
     private static final Comparator<Group> COMPARATOR_GROUPNAME
             = new Comparator<Group>() {
         public int compare(Group o1, Group o2) {
-            if (o1 instanceof SyntheticGroup) return 1;
-            if (o2 instanceof SyntheticGroup) return -1;
+            if (o1 instanceof SsiSyntheticGroup) return 1;
+            if (o2 instanceof SsiSyntheticGroup) return -1;
             return o1.getName().compareToIgnoreCase(o2.getName());
         }
     };
 
     private List<AbstractGroup> groups = new ArrayList<AbstractGroup>();
-    private SyntheticGroup syntheticGroup = new SyntheticGroup(this);
+    private final SyntheticGroup syntheticGroup = new SyntheticGroup(this);
 
-    private SsiItemObjectFactory factory = new DefaultSsiItemObjFactory();
+    private final SsiItemObjectFactory factory = new DefaultSsiItemObjFactory();
     private RootItem rootItem = null;
 
     private CopyOnWriteArrayList<BuddyListLayoutListener> listeners
@@ -92,7 +92,7 @@ public class SimpleBuddyList implements BuddyList {
         return syntheticGroup;
     }
 
-    protected RootItem getRootItem() {
+    protected synchronized RootItem getRootItem() {
         return rootItem;
     }
 
@@ -171,7 +171,7 @@ public class SimpleBuddyList implements BuddyList {
         }
     }
 
-    private void handleItemCreated(SsiItemObj item) {
+    private synchronized void handleItemCreated(SsiItemObj item) {
         if (item instanceof RootItem) {
             RootItem rootItem = (RootItem) item;
             // a root item was added.
@@ -235,7 +235,7 @@ public class SimpleBuddyList implements BuddyList {
         return new SimpleBuddyGroup(this, groupItem);
     }
 
-    private Runnable handleItemModified(SsiItemObj newItem) {
+    private synchronized Runnable handleItemModified(SsiItemObj newItem) {
         if (newItem instanceof RootItem) {
             RootItem rootItem = (RootItem) newItem;
             // root item changed.
@@ -326,7 +326,7 @@ public class SimpleBuddyList implements BuddyList {
         }
     }
 
-    private void sortGroups() {
+    private synchronized void sortGroups() {
         List<AbstractGroup> oldGroups = groups;
         List<AbstractGroup> newGroups = new ArrayList<AbstractGroup>();
         RootItem rootItem = this.rootItem;
@@ -363,7 +363,7 @@ public class SimpleBuddyList implements BuddyList {
         groups = newGroups;
     }
 
-    private SimpleBuddyGroup getGroup(int groupId) {
+    private synchronized SimpleBuddyGroup getGroup(int groupId) {
         for (AbstractGroup group : groups) {
             if (group instanceof SimpleBuddyGroup) {
                 SimpleBuddyGroup buddyGroup = (SimpleBuddyGroup) group;
@@ -477,9 +477,10 @@ public class SimpleBuddyList implements BuddyList {
             this.newState = newState;
         }
 
-        public void itemAdded(Collection<? extends Group> oldItems, Collection<? extends Group> newItems,
+        public void itemAdded(Collection<? extends Group> oldItems,
+                Collection<? extends Group> newItems,
                 Group item) {
-            assert !Thread.holdsLock(this);
+            assert !Thread.holdsLock(SimpleBuddyList.this);
 
             List<Group> oldItemsCopy = DefensiveTools.getUnmodifiableCopy(oldItems);
             List<Group> newItemsCopy = DefensiveTools.getUnmodifiableCopy(newItems);
@@ -492,7 +493,7 @@ public class SimpleBuddyList implements BuddyList {
         public void itemRemoved(Collection<? extends Group> oldItems,
                 Collection<? extends Group> newItems,
                 Group item) {
-            assert !Thread.holdsLock(this);
+            assert !Thread.holdsLock(SimpleBuddyList.this);
 
             List<Group> oldItemsCopy = DefensiveTools.getUnmodifiableCopy(oldItems);
             List<Group> newItemsCopy = DefensiveTools.getUnmodifiableCopy(newItems);
@@ -503,7 +504,7 @@ public class SimpleBuddyList implements BuddyList {
 
         public void itemsReordered(Collection<? extends Group> oldItems,
                 Collection<? extends Group> newItems) {
-            assert !Thread.holdsLock(this);
+            assert !Thread.holdsLock(SimpleBuddyList.this);
 
             List<Group> oldItemsCopy = DefensiveTools.getUnmodifiableCopy(oldItems);
             List<Group> newItemsCopy = DefensiveTools.getUnmodifiableCopy(newItems);
@@ -520,9 +521,10 @@ public class SimpleBuddyList implements BuddyList {
             this.group = group;
         }
 
-        public void itemAdded(Collection<? extends SimpleBuddy> oldItems, Collection<? extends SimpleBuddy> newItems,
+        public void itemAdded(Collection<? extends SimpleBuddy> oldItems,
+                Collection<? extends SimpleBuddy> newItems,
                 SimpleBuddy item) {
-            assert !Thread.holdsLock(this);
+            assert !Thread.holdsLock(SimpleBuddyList.this);
 
             List<SimpleBuddy> oldItemsCopy = DefensiveTools.getUnmodifiableCopy(oldItems);
             List<SimpleBuddy> newItemsCopy = DefensiveTools.getUnmodifiableCopy(newItems);
@@ -536,7 +538,7 @@ public class SimpleBuddyList implements BuddyList {
         public void itemRemoved(Collection<? extends SimpleBuddy> oldItems,
                 Collection<? extends SimpleBuddy> newItems,
                 SimpleBuddy item) {
-            assert !Thread.holdsLock(this);
+            assert !Thread.holdsLock(SimpleBuddyList.this);
 
             List<SimpleBuddy> oldItemsCopy = DefensiveTools.getUnmodifiableCopy(oldItems);
             List<SimpleBuddy> newItemsCopy = DefensiveTools.getUnmodifiableCopy(newItems);
@@ -549,7 +551,7 @@ public class SimpleBuddyList implements BuddyList {
 
         public void itemsReordered(Collection<? extends SimpleBuddy> oldItems,
                 Collection<? extends SimpleBuddy> newItems) {
-            assert !Thread.holdsLock(this);
+            assert !Thread.holdsLock(SimpleBuddyList.this);
 
             List<SimpleBuddy> oldItemsCopy = DefensiveTools.getUnmodifiableCopy(oldItems);
             List<SimpleBuddy> newItemsCopy = DefensiveTools.getUnmodifiableCopy(newItems);

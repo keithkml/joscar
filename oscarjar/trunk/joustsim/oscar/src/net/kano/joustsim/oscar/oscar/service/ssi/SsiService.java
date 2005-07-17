@@ -85,6 +85,8 @@ public class SsiService extends Service {
 
     private SsiBuddyList buddyList = new SsiBuddyList(this);
     private SsiPermissionList permissionList = new SsiPermissionList(this);
+    private ServerStoredSettings settings = new ServerStoredSettings(this);
+
     private Map<Integer, Collection<Integer>> prospectiveIds
             = new HashMap<Integer, Collection<Integer>>();
     private Collection<Integer> prospectiveGroupIds = new ArrayList<Integer>();
@@ -204,6 +206,7 @@ public class SsiService extends Service {
         }
         buddyList.handleItemCreated(item);
         permissionList.handleItemCreated(item);
+        settings.handleItemCreated(item);
     }
 
     public void itemModified(SsiItem item) {
@@ -221,6 +224,7 @@ public class SsiService extends Service {
         }
         buddyList.handleItemModified(item);
         permissionList.handleItemModified(item);
+        settings.handleItemModified(item);
     }
 
     public void itemDeleted(SsiItem item) {
@@ -236,6 +240,7 @@ public class SsiService extends Service {
         LOGGER.fine("(Actual deleted: " + removed + ")");
         buddyList.handleItemDeleted(item);
         permissionList.handleItemDeleted(item);
+        settings.handleItemDeleted(item);
     }
 
     private Random random = new Random();
