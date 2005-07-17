@@ -49,7 +49,7 @@ import net.kano.joscar.tlv.TlvChain;
  * server with a {@link net.kano.joscar.snaccmd.ssi.ModifyItemsCmd
  * ModifyItemsCmd}.
  */
-public class PermitItem extends SimpleNamedItem {
+public class PermitItem extends SimpleNamedItem implements SsiItemObjectWithId {
     /**
      * Creates a new allowed user item object generated from the data in the
      * given SSI item.

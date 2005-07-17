@@ -58,7 +58,7 @@ import net.kano.joscar.tlv.TlvTools;
  * server with a {@link net.kano.joscar.snaccmd.ssi.ModifyItemsCmd
  * ModifyItemsCmd}.
  */
-public class IconItem extends AbstractItemObj {
+public class IconItem extends AbstractItemObj implements SsiItemObjectWithId {
     /** A default name for a buddy icon item. */
     public static final String NAME_DEFAULT = "1";
     /**

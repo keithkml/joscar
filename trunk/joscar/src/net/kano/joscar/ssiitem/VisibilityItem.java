@@ -55,7 +55,7 @@ import net.kano.joscar.tlv.TlvTools;
  * server with a {@link net.kano.joscar.snaccmd.ssi.ModifyItemsCmd
  * ModifyItemsCmd}.
  */
-public class VisibilityItem extends AbstractItemObj {
+public class VisibilityItem extends AbstractItemObj implements SsiItemObjectWithId {
     /**
      * A visibility settings flag indicating that the user's idle time should be
      * visible to other AIM users.
