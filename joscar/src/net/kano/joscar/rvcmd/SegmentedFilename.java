@@ -211,6 +211,8 @@ public final class SegmentedFilename {
 
         boolean first = true;
         for (String part : parts) {
+            if (part.length() == 0) continue;
+
             if (first) first = false;
             else buffer.append(sep);
 
@@ -222,9 +224,11 @@ public final class SegmentedFilename {
 
     /**
      * Converts this segmented filename to a string, separating segments in the
-     * returned string with the system's native file separator.
+     * returned string with the system's native file separator. This method will
+     * always return a relative filename (that is, a filename which does not
+     * start with a "/" or a "\").
      *
-     * @return a <code>String</code> containing the filename as a native
+     * @return a <code>String</code> containing the filename as a relative native
      *         filename
      */
     public final String toNativeFilename() {
@@ -245,7 +249,7 @@ public final class SegmentedFilename {
 
     public int hashCode() {
         int code = 0;
-        for (String part : parts) code ^= part.hashCode();
+        for (String part : parts) code += 29 * part.hashCode();
 
         return code;
     }
