@@ -40,6 +40,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 
 /**
  * A set of utilities for ensuring the validity (and non-<code>null</code>ness)
@@ -276,7 +278,7 @@ public final class DefensiveTools {
         for (int i = 0; i < safeResults.length; i++) {
             if (safeResults[i] < min) {
                 throw new IllegalArgumentException(name + " elements must " +
-                        "be >= " + min + " (" + name + "[" + i + "] is " 
+                        "be >= " + min + " (" + name + "[" + i + "] is "
                         + safeResults[i] + ")");
             }
         }
@@ -318,5 +320,11 @@ public final class DefensiveTools {
     @SuppressWarnings("unchecked")
     public static <E> List<E> emptyList() {
         return Collections.EMPTY_LIST;
+    }
+
+
+
+    public static <E> Set<E> getUnmodifiableSetCopy(Collection<? extends E> oldItems) {
+        return Collections.unmodifiableSet(new HashSet<E>(oldItems));
     }
 }
