@@ -104,7 +104,7 @@ public final class DefensiveTools {
      * @throws IllegalArgumentException if the given value is less than the
      *         given minimum
      */
-    public static void checkRange(long val, String name, int min)
+    public static void checkRange(long val, String name, long min)
             throws IllegalArgumentException {
         if (val < min) {
             throw new IllegalArgumentException(name + " (" + val + ") must " +
