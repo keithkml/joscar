@@ -31,22 +31,14 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm;
+package net.kano.joustsim.oscar.oscar.service.icon;
 
 import net.kano.joustsim.Screenname;
+import net.kano.joscar.ByteBlock;
 
-import java.util.Date;
+public interface IconRequestHandler {
+    void addIconRequestListener(IconRequestListener listener);
+    void removeIconRequestListener(IconRequestListener listener);
 
-//TODO: typing state should be cleared when receiving a message
-public class TypingInfo extends ConversationEventInfo {
-    private final TypingState typingState;
-
-    public TypingInfo(Screenname from, Screenname to, Date date, TypingState typingState) {
-        super(from, to, date);
-        this.typingState = typingState;
-    }
-
-    public TypingState getTypingState() {
-        return typingState;
-    }
+    void requestIcon(Screenname sn, ByteBlock hash);
 }

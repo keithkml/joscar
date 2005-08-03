@@ -39,7 +39,6 @@ import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.MiscTools;
 import net.kano.joscar.flap.FlapCommand;
-import net.kano.joscar.flap.FlapPacketEvent;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.snac.SnacPacketEvent;
 import net.kano.joscar.snac.SnacRequest;
@@ -53,12 +52,14 @@ import net.kano.joustsim.oscar.oscar.OscarConnection;
 import java.util.logging.Logger;
 
 public abstract class Service {
-    private static final Logger logger = Logger.getLogger(Service.class.getName());
+    private static final Logger logger
+            = Logger.getLogger(Service.class.getName());
 
     private AimConnection aimConnection;
     private final OscarConnection oscarConnection;
     private final int family;
-    private CopyOnWriteArrayList<ServiceListener> listeners = new CopyOnWriteArrayList<ServiceListener>();
+    private CopyOnWriteArrayList<ServiceListener> listeners
+            = new CopyOnWriteArrayList<ServiceListener>();
     private boolean ready = false;
     private boolean finished = false;
 
@@ -105,38 +106,41 @@ public abstract class Service {
         listeners.remove(l);
     }
 
-    public synchronized boolean isReady() { return ready; }
+    public synchronized final boolean isReady() { return ready; }
 
-    public synchronized boolean isFinished() { return finished; }
+    public synchronized final boolean isFinished() { return finished; }
 
-    protected void sendFlap(FlapCommand flap) {
+    protected final void sendFlap(FlapCommand flap) {
         oscarConnection.sendFlap(flap);
     }
 
-    protected void sendDirectedSnac(SnacCommand snac) {
+    /**
+     * Automatically sends snac through the correct service
+     */
+    protected final void sendDirectedSnac(SnacCommand snac) {
         aimConnection.sendSnac(snac);
     }
 
-    public void sendSnac(SnacCommand snac) {
+    public final void sendSnac(SnacCommand snac) {
         DefensiveTools.checkNull(snac, "snac");
 
         oscarConnection.sendSnac(snac);
     }
 
-    public void sendSnacRequest(SnacRequest request) {
+    public final void sendSnacRequest(SnacRequest request) {
         DefensiveTools.checkNull(request, "request");
 
         oscarConnection.sendSnacRequest(request);
     }
 
-    public void sendSnacRequest(SnacCommand cmd, SnacRequestListener listener) {
+    public final void sendSnacRequest(SnacCommand cmd, SnacRequestListener listener) {
         DefensiveTools.checkNull(cmd, "cmd");
         DefensiveTools.checkNull(listener, "listener");
 
         oscarConnection.sendSnacRequest(cmd, listener);
     }
 
-    protected void setReady() {
+    protected final void setReady() {
         logger.finer(MiscTools.getClassName(this) + " is ready");
 
         synchronized(this) {
@@ -144,11 +148,11 @@ public abstract class Service {
             ready = true;
         }
         for (ServiceListener l : listeners) {
-            l.ready(this);
+            l.handleServiceReady(this);
         }
     }
 
-    protected void setFinished() {
+    protected final void setFinished() {
         logger.finer(MiscTools.getClassName(this) + " is finished");
 
         synchronized(this) {
@@ -156,15 +160,19 @@ public abstract class Service {
             finished = true;
         }
         for (ServiceListener l : listeners) {
-            l.finished(this);
+            l.handleServiceFinished(this);
         }
     }
 
     public void connected() { }
 
-    public void disconnected() { }
+    public final void disconnected() {
+        finishUp();
+        setFinished();
+    }
 
-    public void handleFlapPacket(FlapPacketEvent flapPacketEvent) {
+    protected void finishUp() {
+
     }
 
     public void handleSnacPacket(SnacPacketEvent snacPacketEvent) {

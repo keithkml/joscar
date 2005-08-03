@@ -57,14 +57,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
-public class BosService extends Service {
+public abstract class BosService extends Service {
     private static final Logger logger = Logger.getLogger(BosService.class.getName());
 
     private List<SnacFamilyInfo> snacFamilyInfos = null;
 
     private RateMonitor rateMonitor;
 
-    public BosService(AimConnection aimConnection,
+    protected BosService(AimConnection aimConnection,
             OscarConnection oscarConnection) {
         super(aimConnection, oscarConnection, ConnCommand.FAMILY_CONN);
 

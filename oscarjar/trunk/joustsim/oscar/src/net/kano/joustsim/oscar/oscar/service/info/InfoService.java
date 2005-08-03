@@ -160,7 +160,7 @@ public class InfoService extends Service {
         setReady();
     }
 
-    public void disconnected() {
+    protected void finishUp() {
         capabilityManager.removeCapabilityListener(capListener);
     }
 

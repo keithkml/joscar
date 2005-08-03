@@ -45,10 +45,13 @@ import java.util.List;
 import java.util.Map;
 
 public class SnacManager {
-    protected final Map<Integer,List<BasicConnection>> conns = new HashMap<Integer, List<BasicConnection>>();
+    protected final Map<Integer, List<BasicConnection>> conns
+            = new HashMap<Integer, List<BasicConnection>>();
     protected final PendingSnacMgr pendingSnacs = new PendingSnacMgr();
-    protected final List<PendingSnacListener> listeners = new ArrayList<PendingSnacListener>();
-    protected final Map<BasicConnection,int[]> supportedFamilies = new IdentityHashMap<BasicConnection, int[]>();
+    protected final List<PendingSnacListener> listeners
+            = new ArrayList<PendingSnacListener>();
+    protected final Map<BasicConnection, int[]> supportedFamilies
+            = new IdentityHashMap<BasicConnection, int[]>();
 
     public SnacManager() { }
 
@@ -61,13 +64,11 @@ public class SnacManager {
         supportedFamilies.put(conn, families);
 
         for (int familyCode : families) {
-            Integer family = familyCode;
-
-            List<BasicConnection> handlers = conns.get(family);
+            List<BasicConnection> handlers = conns.get(familyCode);
 
             if (handlers == null) {
                 handlers = new LinkedList<BasicConnection>();
-                conns.put(family, handlers);
+                conns.put((Integer)familyCode, handlers);
             }
 
             if (!handlers.contains(conn)) handlers.add(conn);
@@ -103,9 +104,7 @@ public class SnacManager {
     }
 
     public BasicConnection getConn(int familyCode) {
-        Integer family = familyCode;
-
-        List<BasicConnection> handlers = conns.get(family);
+        List<BasicConnection> handlers = conns.get(familyCode);
 
         if (handlers == null || handlers.size() == 0) return null;
 

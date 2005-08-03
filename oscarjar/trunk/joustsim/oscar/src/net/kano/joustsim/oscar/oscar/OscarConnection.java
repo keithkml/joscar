@@ -46,6 +46,7 @@ import net.kano.joscar.flap.FlapProcessor;
 import net.kano.joscar.flapcmd.CloseFlapCmd;
 import net.kano.joscar.flapcmd.DefaultFlapCmdFactory;
 import net.kano.joscar.flapcmd.SnacCommand;
+import net.kano.joscar.flapcmd.FlapErrorCmd;
 import net.kano.joscar.net.ClientConn;
 import net.kano.joscar.net.ClientConnEvent;
 import net.kano.joscar.net.ClientConnListener;
@@ -59,6 +60,7 @@ import net.kano.joscar.snac.SnacRequestListener;
 import net.kano.joscar.snac.SnacResponseEvent;
 import net.kano.joscar.snac.SnacResponseListener;
 import net.kano.joscar.snaccmd.DefaultClientFactoryList;
+import net.kano.joscar.snaccmd.error.SnacError;
 import net.kano.joustsim.oscar.oscar.service.Service;
 import net.kano.joustsim.oscar.oscar.service.ServiceEvent;
 import net.kano.joustsim.oscar.oscar.service.ServiceFactory;
@@ -73,7 +75,8 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 public class OscarConnection {
-    private static final Logger logger = Logger.getLogger(OscarConnection.class.getName());
+    private static final Logger logger
+            = Logger.getLogger(OscarConnection.class.getName());
 
     private final ClientFlapConn conn;
     private final String host;
@@ -94,6 +97,12 @@ public class OscarConnection {
     private int lastCloseCode = -1;
     private List<ServiceEvent> eventLog = new ArrayList<ServiceEvent>();
 
+    private CopyOnWriteArrayList<ServiceListener> globalServiceListeners
+            = new CopyOnWriteArrayList<ServiceListener>();
+
+    private Set<Service> unready = new HashSet<Service>();
+    private Set<Service> unfinished = new HashSet<Service>();
+
     public OscarConnection(String host, int port) {
         DefensiveTools.checkNull(host, "host");
         DefensiveTools.checkRange(port, "port", 0);
@@ -113,11 +122,21 @@ public class OscarConnection {
 
         flapProcessor.addPacketListener(new FlapPacketListener() {
             public void handleFlapPacket(FlapPacketEvent flapPacketEvent) {
+                FlapCommand flapCommand = flapPacketEvent.getFlapCommand();
+                if (flapCommand instanceof FlapErrorCmd) {
+                    FlapErrorCmd flapErrorCmd = (FlapErrorCmd) flapCommand;
+                    logger.warning("Received FLAP error packet: " + flapErrorCmd);
+                }
                 OscarConnection.this.handleFlapPacket(flapPacketEvent);
             }
         });
         snacProcessor.addPacketListener(new SnacPacketListener() {
             public void handleSnacPacket(SnacPacketEvent snacPacketEvent) {
+                SnacCommand snacCommand = snacPacketEvent.getSnacCommand();
+                if (snacCommand instanceof SnacError) {
+                    SnacError snacError = (SnacError) snacCommand;
+                    logger.warning("Received SNAC error packet: " + snacError);
+                }
                 OscarConnection.this.handleSnacPacket(snacPacketEvent);
             }
         });
@@ -320,11 +339,9 @@ public class OscarConnection {
             int[] families = snacFamilies.clone();
             Arrays.sort(families);
             this.snacFamilies = families;
-            int[] sorted = families;
-            Arrays.sort(sorted);
 
             services = new ArrayList<Service>(snacFamilies.length);
-            for (int family : sorted) {
+            for (int family : families) {
                 Service service = serviceFactory.getService(this, family);
 
                 if (service == null) {
@@ -354,11 +371,11 @@ public class OscarConnection {
         boolean disconnected = isDisconnected();
         for (Service service : services) {
             service.addServiceListener(new ServiceListener() {
-                public void ready(Service service) {
+                public void handleServiceReady(Service service) {
                     serviceReady(service);
                 }
 
-                public void finished(Service service) {
+                public void handleServiceFinished(Service service) {
                     serviceFinished(service);
                 }
             });
@@ -371,9 +388,6 @@ public class OscarConnection {
         registeredSnacFamilies();
     }
 
-    private CopyOnWriteArrayList<ServiceListener> globalServiceListeners
-            = new CopyOnWriteArrayList<ServiceListener>();
-
     public void addGlobalServiceListener(ServiceListener l) {
         globalServiceListeners.addIfAbsent(l);
     }
@@ -381,9 +395,6 @@ public class OscarConnection {
     public void removeGlobalServiceListener(ServiceListener l) {
         globalServiceListeners.remove(l);
     }
-
-    private Set<Service> unready = new HashSet<Service>();
-    private Set<Service> unfinished = new HashSet<Service>();
 
     private void serviceReady(Service service) {
         boolean allReady;
@@ -394,7 +405,7 @@ public class OscarConnection {
             allReady = unready.isEmpty();
         }
         for (ServiceListener sl : globalServiceListeners) {
-            sl.ready(service);
+            sl.handleServiceReady(service);
         }
         if (allReady) {
             logger.finer("All services are ready");
@@ -414,7 +425,7 @@ public class OscarConnection {
             allFinished = unfinished.isEmpty();
         }
         for (ServiceListener sl : globalServiceListeners) {
-            sl.finished(service);
+            sl.handleServiceFinished(service);
         }
         if (allFinished) {
             disconnect();
@@ -451,7 +462,7 @@ public class OscarConnection {
     public synchronized <E extends ServiceEvent> List<E> getServiceEvents(Class<E> cls) {
         List<E> matches = new ArrayList<E>();
         for (ServiceEvent event : eventLog) {
-            if (cls.isInstance(event)) matches.add((E) event);
+            if (cls.isInstance(event)) matches.add(cls.cast(event));
         }
         return matches;
     }

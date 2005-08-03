@@ -36,9 +36,6 @@
 package net.kano.joustsim.oscar.oscar.service;
 
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.snaccmd.auth.AuthCommand;
-import net.kano.joscar.snaccmd.conn.ConnCommand;
-import net.kano.joscar.snaccmd.icbm.IcbmCommand;
 
 import java.util.List;
 import java.util.Map;
@@ -59,17 +56,5 @@ public final class ServiceManager {
 
     public synchronized List<Service> getServices() {
         return DefensiveTools.getUnmodifiableCopy(services.values());
-    }
-
-    public Service getBosService() {
-        return getService(ConnCommand.FAMILY_CONN);
-    }
-
-    public Service getLoginService() {
-        return getService(AuthCommand.FAMILY_AUTH);
-    }
-
-    public Service getIcbmService() {
-        return getService(IcbmCommand.FAMILY_ICBM);
     }
 }

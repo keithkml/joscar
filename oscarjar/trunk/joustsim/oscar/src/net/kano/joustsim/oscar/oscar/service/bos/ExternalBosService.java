@@ -31,22 +31,14 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm;
+package net.kano.joustsim.oscar.oscar.service.bos;
 
-import net.kano.joustsim.Screenname;
+import net.kano.joustsim.oscar.AimConnection;
+import net.kano.joustsim.oscar.oscar.OscarConnection;
 
-import java.util.Date;
-
-//TODO: typing state should be cleared when receiving a message
-public class TypingInfo extends ConversationEventInfo {
-    private final TypingState typingState;
-
-    public TypingInfo(Screenname from, Screenname to, Date date, TypingState typingState) {
-        super(from, to, date);
-        this.typingState = typingState;
-    }
-
-    public TypingState getTypingState() {
-        return typingState;
+public class ExternalBosService extends BosService {
+    public ExternalBosService(AimConnection aimConnection,
+            OscarConnection oscarConnection) {
+        super(aimConnection, oscarConnection);
     }
 }

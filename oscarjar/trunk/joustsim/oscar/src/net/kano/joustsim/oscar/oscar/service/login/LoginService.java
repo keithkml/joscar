@@ -161,7 +161,7 @@ public class LoginService extends Service {
         sendSnac(new KeyRequest(screenname.getFormatted()));
     }
 
-    public void disconnected() {
+    protected void finishUp() {
         if (!getNotified()) {
             loginFailed(new DisconnectedFailureInfo(getAimConnection().wantedDisconnect()));
         }

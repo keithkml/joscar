@@ -134,13 +134,13 @@ public class SsiService extends Service {
         final List<Exception> exceptions = new ArrayList<Exception>();
         if (snac instanceof SsiDataCmd) {
             SsiDataCmd ssiDataCmd = (SsiDataCmd) snac;
-            List<SsiItem> items = ssiDataCmd.getItems();
             boolean done = (snac.getFlag2() & SnacCommand.SNACFLAG2_MORECOMING) == 0;
             if (done) {
                 LOGGER.fine("Got final buddy list packet: " + items.size() + " items");
             } else {
                 LOGGER.fine("Got buddy list part: " + items.size() + " items");
             }
+            List<SsiItem> items = ssiDataCmd.getItems();
             for (SsiItem item : items) {
                 try {
                     itemCreated(item);

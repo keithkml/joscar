@@ -35,6 +35,7 @@
 
 package net.kano.joustsim.oscar;
 
+import net.kano.joscar.ByteBlock;
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacCommand;
@@ -56,8 +57,13 @@ import net.kano.joustsim.oscar.oscar.OscarConnection;
 import net.kano.joustsim.oscar.oscar.loginstatus.LoginFailureInfo;
 import net.kano.joustsim.oscar.oscar.loginstatus.LoginSuccessInfo;
 import net.kano.joustsim.oscar.oscar.service.Service;
+import net.kano.joustsim.oscar.oscar.service.ServiceArbiter;
+import net.kano.joustsim.oscar.oscar.service.ServiceArbiterFactory;
 import net.kano.joustsim.oscar.oscar.service.ServiceFactory;
+import net.kano.joustsim.oscar.oscar.service.DefaultServiceArbiterFactory;
+import net.kano.joustsim.oscar.oscar.service.bos.ExternalBosService;
 import net.kano.joustsim.oscar.oscar.service.bos.MainBosService;
+import net.kano.joustsim.oscar.oscar.service.bos.OpenedExternalServiceListener;
 import net.kano.joustsim.oscar.oscar.service.buddy.BuddyService;
 import net.kano.joustsim.oscar.oscar.service.icbm.IcbmService;
 import net.kano.joustsim.oscar.oscar.service.info.BuddyTrustAdapter;
@@ -74,12 +80,15 @@ import net.kano.joustsim.trust.TrustedCertificatesTracker;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 
+//TODO: time out waiting for services
 public class AimConnection {
-    private static final Logger logger
+    private static final Logger LOGGER
             = Logger.getLogger(AimConnection.class.getName());
 
     private final AppSession appSession;
@@ -91,7 +100,8 @@ public class AimConnection {
     private final LoginConnection loginConn;
     private BasicConnection mainConn = null;
 
-    private Map<Integer,List<Service>> snacfamilies = new HashMap<Integer, List<Service>>();
+    private Map<Integer,List<Service>> snacfamilies
+            = new HashMap<Integer, List<Service>>();
 
     private boolean triedConnecting = false;
     private State state = State.NOTCONNECTED;
@@ -110,6 +120,9 @@ public class AimConnection {
     private final TrustPreferences localPrefs;
     private final BuddyTrustManager buddyTrustManager;
     private final CapabilityManager capabilityManager;
+
+    private final Map<Integer, ServiceArbiter<?>> externalServices
+            = new HashMap<Integer, ServiceArbiter<?>>();
 
     public AimConnection(Screenname screenname, String password) {
         this(new AimConnectionProperties(screenname, password));
@@ -158,7 +171,7 @@ public class AimConnection {
             certMgr = prefs.getCertificateTrustManager();
             signerMgr = prefs.getSignerTrustManager();
         } else {
-            logger.fine("Warning: this AIM connection's certificate and signer "
+            LOGGER.fine("Warning: this AIM connection's certificate and signer "
                     + "managers will not be set because the trust manager is "
                     + "null");
             certMgr = null;
@@ -245,7 +258,7 @@ public class AimConnection {
         serviceListeners.addIfAbsent(l);
     }
 
-    public void removeNewServiceListener(OpenedServiceListener l) {
+    public void removeOpenedServiceListener(OpenedServiceListener l) {
         DefensiveTools.checkNull(l, "l");
         serviceListeners.remove(l);
     }
@@ -254,16 +267,15 @@ public class AimConnection {
         return triedConnecting;
     }
 
-    public void connect() throws IllegalStateException {
+    public boolean connect() {
         synchronized(this) {
-            if (triedConnecting) {
-                throw new IllegalStateException("already connected");
-            }
+            if (triedConnecting) return false;
             triedConnecting = true;
         }
         loginConn.connect();
         setState(State.NOTCONNECTED, State.CONNECTINGAUTH,
                 new AuthorizingStateInfo(loginConn));
+        return true;
     }
 
     public void disconnect() {
@@ -271,8 +283,43 @@ public class AimConnection {
     }
 
     public void disconnect(boolean onPurpose) {
-        wantedDisconnect = onPurpose;
+        synchronized (this) {
+            wantedDisconnect = onPurpose;
+        }
         closeConnections();
+    }
+
+    private Set<Integer> wantedServices = new HashSet<Integer>();
+    private ServiceArbiterFactory arbiterFactory
+            = new DefaultServiceArbiterFactory();
+
+    public void openService(int service) {
+        synchronized(this) {
+            boolean added = wantedServices.add(service);
+            if (!added) return;
+        }
+        ServiceArbiter<? extends Service> arbiter
+                = arbiterFactory.getInstance(service);
+        if (arbiter == null) {
+            throw new IllegalArgumentException("no arbiter for service "
+                    + service);
+        }
+        externalServices.put(service, arbiter);
+        requestService(service, arbiter);
+    }
+
+    private <S extends Service> void requestService(int service,
+            final ServiceArbiter<S> arbiter) {
+        getBosService().requestService(service, new OpenedExternalServiceListener() {
+            public void handleExternalService(MainBosService service,
+                    int serviceFamily, String host, int port,
+                    ByteBlock flapCookie) {
+                BasicConnection conn = new BasicConnection(host, port);
+                conn.setServiceFactory(new ExternalServiceFactory<S>(
+                        serviceFamily, arbiter));
+                conn.setCookie(flapCookie);
+            }
+        });
     }
 
     public synchronized Service getService(int family) {
@@ -281,38 +328,32 @@ public class AimConnection {
     }
 
     public LoginService getLoginService() {
-        Service service = getService(AuthCommand.FAMILY_AUTH);
-        if (service instanceof LoginService) return (LoginService) service;
-        else return null;
+        return getServiceOfType(AuthCommand.FAMILY_AUTH, LoginService.class);
     }
 
     public MainBosService getBosService() {
-        Service service = getService(ConnCommand.FAMILY_CONN);
-        if (service instanceof MainBosService) return (MainBosService) service;
-        else return null;
+        return getServiceOfType(ConnCommand.FAMILY_CONN, MainBosService.class);
     }
 
     public IcbmService getIcbmService() {
-        Service service = getService(IcbmCommand.FAMILY_ICBM);
-        if (service instanceof IcbmService) return (IcbmService) service;
-        else return null;
+        return getServiceOfType(IcbmCommand.FAMILY_ICBM, IcbmService.class);
     }
 
     public BuddyService getBuddyService() {
-        Service service = getService(BuddyCommand.FAMILY_BUDDY);
-        if (service instanceof BuddyService) return (BuddyService) service;
-        else return null;
+        return getServiceOfType(BuddyCommand.FAMILY_BUDDY, BuddyService.class);
     }
 
     public InfoService getInfoService() {
-        Service service = getService(LocCommand.FAMILY_LOC);
-        if (service instanceof InfoService) return (InfoService) service;
-        else return null;
+        return getServiceOfType(LocCommand.FAMILY_LOC, InfoService.class);
     }
 
     public SsiService getSsiService() {
-        Service service = getService(SsiCommand.FAMILY_SSI);
-        if (service instanceof SsiService) return (SsiService) service;
+        return getServiceOfType(SsiCommand.FAMILY_SSI, SsiService.class);
+    }
+
+    private <E extends Service> E getServiceOfType(int fam, Class<E> cls) {
+        Service service = getService(fam);
+        if (cls.isInstance(service)) return cls.cast(service);
         else return null;
     }
 
@@ -325,7 +366,7 @@ public class AimConnection {
         DefensiveTools.checkNull(state, "state");
         DefensiveTools.checkNull(info, "info");
 
-        logger.fine("New state: " + state + " - " + info);
+        LOGGER.fine("New state: " + state + " - " + info);
 
         State oldState;
         StateInfo oldStateInfo;
@@ -334,7 +375,7 @@ public class AimConnection {
             oldStateInfo = this.stateInfo;
 
             if (expectedOld != null && oldState != expectedOld) {
-                logger.warning("Tried converting state " + expectedOld + " to "
+                LOGGER.warning("Tried converting state " + expectedOld + " to "
                         + state + ", but was in " + oldState);
                 return false;
             }
@@ -369,13 +410,12 @@ public class AimConnection {
     }
 
     private void internalDisconnected() {
-        setState(null, State.DISCONNECTED, new DisconnectedStateInfo(wantedDisconnect));
+        DisconnectedStateInfo stateInfo = new DisconnectedStateInfo(wantedDisconnect());
+        setState(null, State.DISCONNECTED, stateInfo);
         closeConnections();
     }
 
     private synchronized void closeConnections() {
-        assert Thread.holdsLock(this);
-
         //TODO: close all related OSCAR connections here
         loginConn.disconnect();
         BasicConnection mainConn = this.mainConn;
@@ -392,7 +432,7 @@ public class AimConnection {
                     services.add(service);
                     added.add(service);
                 } else {
-                    logger.finer("Could not find service handler for family 0x"
+                    LOGGER.finer("Could not find service handler for family 0x"
                             + Integer.toHexString(family));
                 }
             }
@@ -443,7 +483,7 @@ public class AimConnection {
         return buddyInfoTracker;
     }
 
-    public boolean wantedDisconnect() { return wantedDisconnect; }
+    public synchronized boolean wantedDisconnect() { return wantedDisconnect; }
 
     private class LoginServiceFactory implements ServiceFactory {
         public Service getService(OscarConnection conn, int family) {
@@ -522,7 +562,7 @@ public class AimConnection {
 
             // I don't know why this could happen
             if (getState() == State.CONNECTING) {
-                logger.finer("State was CONNECTING, but now we're ONLINE. The "
+                LOGGER.finer("State was CONNECTING, but now we're ONLINE. The "
                         + "state should've been SIGNINGON.");
                 setState(State.CONNECTING, State.SIGNINGON,
                         new SigningOnStateInfo());
@@ -548,4 +588,25 @@ public class AimConnection {
         }
     }
 
+    private class ExternalServiceFactory<S extends Service> implements ServiceFactory {
+        private final int serviceFamily;
+        private final ServiceArbiter<S> arbiter;
+
+        public ExternalServiceFactory(int serviceFamily, ServiceArbiter<S> arbiter) {
+            this.serviceFamily = serviceFamily;
+            this.arbiter = arbiter;
+        }
+
+        public Service getService(OscarConnection conn, int family) {
+            if (family == ConnCommand.FAMILY_CONN) {
+                return new ExternalBosService(AimConnection.this, conn);
+            } else if (family == serviceFamily) {
+                return arbiter.createService(AimConnection.this, conn);
+            } else {
+                LOGGER.warning("external service " + serviceFamily
+                        + " wants to open service " + family);
+                return null;
+            }
+        }
+    }
 }

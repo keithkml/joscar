@@ -36,7 +36,7 @@
 package net.kano.joustsim.oscar.oscar.service.icbm;
 
 import net.kano.joscar.CopyOnWriteArrayList;
-import net.kano.joscar.rvcmd.DefaultRvCommandFactory;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.rv.NewRvSessionEvent;
 import net.kano.joscar.rv.RecvRvEvent;
@@ -45,6 +45,7 @@ import net.kano.joscar.rv.RvProcessorListener;
 import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rv.RvSessionListener;
 import net.kano.joscar.rv.RvSnacResponseEvent;
+import net.kano.joscar.rvcmd.DefaultRvCommandFactory;
 import net.kano.joscar.snac.SnacPacketEvent;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.FullUserInfo;
@@ -59,10 +60,11 @@ import net.kano.joscar.snaccmd.icbm.ParamInfoCmd;
 import net.kano.joscar.snaccmd.icbm.ParamInfoRequest;
 import net.kano.joscar.snaccmd.icbm.RecvImIcbm;
 import net.kano.joscar.snaccmd.icbm.RecvTypingNotification;
+import net.kano.joscar.snaccmd.icbm.RvCommand;
 import net.kano.joscar.snaccmd.icbm.SendImIcbm;
 import net.kano.joscar.snaccmd.icbm.SendTypingNotification;
 import net.kano.joscar.snaccmd.icbm.SetParamInfoCmd;
-import net.kano.joscar.snaccmd.icbm.RvCommand;
+import net.kano.joscar.snaccmd.icbm.TypingCmd;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.oscar.BuddyInfo;
@@ -70,17 +72,20 @@ import net.kano.joustsim.oscar.BuddyInfoManager;
 import net.kano.joustsim.oscar.CapabilityHandler;
 import net.kano.joustsim.oscar.oscar.OscarConnection;
 import net.kano.joustsim.oscar.oscar.service.Service;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferManager;
 import net.kano.joustsim.oscar.oscar.service.icbm.secureim.EncryptedAimMessage;
 import net.kano.joustsim.oscar.oscar.service.icbm.secureim.EncryptedAimMessageInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.secureim.InternalSecureTools;
 import net.kano.joustsim.oscar.oscar.service.icbm.secureim.SecureAimConversation;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferManager;
 import net.kano.joustsim.trust.BuddyCertificateInfo;
+import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class IcbmService extends Service {
@@ -212,8 +217,19 @@ public class IcbmService extends Service {
     private void handleTypingNotification(RecvTypingNotification typnot) {
         Screenname sender = new Screenname(typnot.getScreenname());
         Conversation conv = getImConversation(sender);
-        conv.handleIncomingEvent(new TypingInfo(sender, getScreenname(),
-                new Date(), typnot.getTypingState()));
+        TypingState typingState = getTypingState(typnot.getTypingState());
+        if (typingState != null) {
+            conv.handleIncomingEvent(new TypingInfo(sender, getScreenname(),
+                    new Date(), typingState));
+        }
+    }
+
+    private @Nullable TypingState getTypingState(int typingState) {
+        if (typingState == TypingCmd.STATE_TYPING) return TypingState.TYPING;
+        if (typingState == TypingCmd.STATE_NO_TEXT) return TypingState.NO_TEXT;
+        if (typingState == TypingCmd.STATE_PAUSED) return TypingState.PAUSED;
+        LOGGER.log(Level.WARNING, "Unknown typing state " + typingState);
+        return null;
     }
 
     private Map<Screenname,SecureAimConversation> secureAimConvs
@@ -275,8 +291,17 @@ public class IcbmService extends Service {
                 false, null, null, true));
     }
 
-    void sendTypingStatus(Screenname buddy, int typingState) {
-        sendSnac(new SendTypingNotification(buddy.getFormatted(), typingState));
+    void sendTypingStatus(Screenname buddy, TypingState typingState) {
+        DefensiveTools.checkNull(typingState, "typingState");
+
+        sendSnac(new SendTypingNotification(buddy.getFormatted(), getTypingStateCode(typingState)));
+    }
+
+    private int getTypingStateCode(@NotNull TypingState typingState) {
+        if (typingState == TypingState.TYPING) return TypingCmd.STATE_TYPING;
+        if (typingState == TypingState.PAUSED) return TypingCmd.STATE_PAUSED;
+        if (typingState == TypingState.NO_TEXT) return TypingCmd.STATE_NO_TEXT;
+        throw new IllegalArgumentException("no code for typing state " + typingState);
     }
 
     private class DelegatingRvProcessorListener implements RvProcessorListener {

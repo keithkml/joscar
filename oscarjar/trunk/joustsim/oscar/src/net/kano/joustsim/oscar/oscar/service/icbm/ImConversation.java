@@ -77,7 +77,7 @@ public class ImConversation extends Conversation {
         }
     }
 
-    public void setTypingState(int typingState) {
+    public void setTypingState(TypingState typingState) {
         conn.getIcbmService().sendTypingStatus(getBuddy(), typingState);
         fireOutgoingEvent(new TypingInfo(conn.getScreenname(), getBuddy(),
                 new Date(), typingState));

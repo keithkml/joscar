@@ -35,29 +35,37 @@
 
 package net.kano.joustsim.oscar.oscar.service.bos;
 
-import net.kano.joustsim.oscar.AimConnection;
-import net.kano.joustsim.oscar.oscar.OscarConnection;
-import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.CopyOnWriteArrayList;
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.snac.SnacPacketEvent;
+import net.kano.joscar.snac.SnacRequestAdapter;
+import net.kano.joscar.snac.SnacResponseEvent;
 import net.kano.joscar.snaccmd.CertificateInfo;
 import net.kano.joscar.snaccmd.ExtraInfoBlock;
 import net.kano.joscar.snaccmd.ExtraInfoData;
 import net.kano.joscar.snaccmd.FullUserInfo;
 import net.kano.joscar.snaccmd.conn.MyInfoRequest;
+import net.kano.joscar.snaccmd.conn.ServiceRequest;
 import net.kano.joscar.snaccmd.conn.SetEncryptionInfoCmd;
+import net.kano.joscar.snaccmd.conn.SetExtraInfoCmd;
 import net.kano.joscar.snaccmd.conn.SetIdleCmd;
 import net.kano.joscar.snaccmd.conn.YourInfoCmd;
-import net.kano.joscar.snaccmd.conn.SetExtraInfoCmd;
+import net.kano.joscar.snaccmd.conn.ServiceRedirect;
+import net.kano.joustsim.oscar.AimConnection;
+import net.kano.joustsim.oscar.oscar.OscarConnection;
 
-import java.util.Date;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
+import java.util.logging.Logger;
 
 //TODO: many commands send back a YourInfoCmd. we should make this more MVC so setIdleSince does not write to a field, but an incoming YourInfoCmd does not
 public class MainBosService extends BosService {
+    private static final Logger LOGGER = Logger
+            .getLogger(MainBosService.class.getName());
+
     private CopyOnWriteArrayList<MainBosServiceListener> listeners
             = new CopyOnWriteArrayList<MainBosServiceListener>();
     private Date idleSince = null;
@@ -148,5 +156,26 @@ public class MainBosService extends BosService {
 
     public void removeMainBosServiceListener(MainBosServiceListener listener) {
         listeners.remove(listener);
+    }
+
+    public void requestService(final int service,
+            final OpenedExternalServiceListener listener) {
+        sendSnacRequest(new ServiceRequest(service), new SnacRequestAdapter() {
+            public void handleResponse(SnacResponseEvent e) {
+                SnacCommand cmd = e.getSnacCommand();
+                if (cmd instanceof ServiceRedirect) {
+                    ServiceRedirect redirect = (ServiceRedirect) cmd;
+                    int returnedFamily = redirect.getSnacFamily();
+                    if (service != returnedFamily) {
+                        LOGGER.warning("server returned service "
+                                + returnedFamily + " when we requested " + service);
+                    }
+                    listener.handleExternalService(MainBosService.this,
+                            service, redirect.getRedirectHost(),
+                            redirect.getRedirectPort(),
+                            redirect.getCookie());
+                }
+            }
+        });
     }
 }

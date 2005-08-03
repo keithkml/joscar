@@ -31,22 +31,17 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm;
+package net.kano.joustsim.oscar.oscar.service;
 
-import net.kano.joustsim.Screenname;
+import net.kano.joscar.snaccmd.icon.IconCommand;
+import net.kano.joustsim.oscar.oscar.service.icon.IconServiceArbiter;
 
-import java.util.Date;
-
-//TODO: typing state should be cleared when receiving a message
-public class TypingInfo extends ConversationEventInfo {
-    private final TypingState typingState;
-
-    public TypingInfo(Screenname from, Screenname to, Date date, TypingState typingState) {
-        super(from, to, date);
-        this.typingState = typingState;
-    }
-
-    public TypingState getTypingState() {
-        return typingState;
+public class DefaultServiceArbiterFactory implements ServiceArbiterFactory {
+    public ServiceArbiter<? extends Service> getInstance(int family) {
+        if (family == IconCommand.FAMILY_ICON) {
+            return new IconServiceArbiter();
+        } else {
+            return null;
+        }
     }
 }

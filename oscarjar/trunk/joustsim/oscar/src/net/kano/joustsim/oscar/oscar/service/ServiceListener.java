@@ -36,6 +36,6 @@
 package net.kano.joustsim.oscar.oscar.service;
 
 public interface ServiceListener {
-    void ready(Service service);
-    void finished(Service service);
+    void handleServiceReady(Service service);
+    void handleServiceFinished(Service service);
 }

@@ -33,20 +33,5 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm;
 
-import net.kano.joustsim.Screenname;
+public enum TypingState { TYPING, NO_TEXT, PAUSED }
 
-import java.util.Date;
-
-//TODO: typing state should be cleared when receiving a message
-public class TypingInfo extends ConversationEventInfo {
-    private final TypingState typingState;
-
-    public TypingInfo(Screenname from, Screenname to, Date date, TypingState typingState) {
-        super(from, to, date);
-        this.typingState = typingState;
-    }
-
-    public TypingState getTypingState() {
-        return typingState;
-    }
-}
