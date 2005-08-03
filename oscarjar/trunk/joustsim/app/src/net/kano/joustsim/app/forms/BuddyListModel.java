@@ -38,7 +38,7 @@ import net.kano.joustsim.oscar.oscar.service.ssi.Buddy;
 import net.kano.joustsim.oscar.oscar.service.ssi.BuddyList;
 import net.kano.joustsim.oscar.oscar.service.ssi.BuddyListLayoutListener;
 import net.kano.joustsim.oscar.oscar.service.ssi.Group;
-import net.kano.joustsim.oscar.oscar.service.ssi.MutableGroup;
+import net.kano.joustsim.oscar.oscar.service.ssi.RenameMutableGroup;
 
 import javax.swing.event.TreeModelEvent;
 import javax.swing.event.TreeModelListener;
@@ -224,8 +224,8 @@ public class BuddyListModel implements TreeModel {
         if (len == 2) {
             GroupHolder holder = (GroupHolder) objs[1];
             Group group = holder.getGroup();
-            if (group instanceof MutableGroup) {
-                MutableGroup mutableGroup = (MutableGroup) group;
+            if (group instanceof RenameMutableGroup) {
+                RenameMutableGroup mutableGroup = (RenameMutableGroup) group;
                 mutableGroup.rename(newName);
             }
         }
@@ -249,7 +249,7 @@ public class BuddyListModel implements TreeModel {
         listeners.remove(l);
     }
 
-    public TreePath getPathToGroup(final MutableGroup mutableGroup) {
+    public TreePath getPathToGroup(Group mutableGroup) {
         return new TreePath(new Object[] { getRoot(), getGroupHolder(mutableGroup) });
     }
 
