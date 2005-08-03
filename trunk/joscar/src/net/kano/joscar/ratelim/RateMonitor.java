@@ -54,6 +54,7 @@ import net.kano.joscar.snac.SnacResponseListener;
 import net.kano.joscar.snaccmd.conn.RateChange;
 import net.kano.joscar.snaccmd.conn.RateClassInfo;
 import net.kano.joscar.snaccmd.conn.RateInfoCmd;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -143,6 +144,9 @@ System.out.println("Current IM rate average: "
  * </pre>
  */
 public class RateMonitor {
+    private static final java.util.logging.Logger LOGGER = java.util.logging
+            .Logger.getLogger(RateMonitor.class.getName());
+
     /**
      * An error type indicating that an exception occurred when calling a
      * rate listener method. The error info object for an error of this type
@@ -401,8 +405,15 @@ public class RateMonitor {
         DefensiveTools.checkRange(changeCode, "changeCode", 0);
         DefensiveTools.checkNull(rateInfo, "rateInfo");
 
-        RateClassMonitor monitor = getMonitor(rateInfo.getRateClass());
+        int rateClass = rateInfo.getRateClass();
+        RateClassMonitor monitor = getMonitor(rateClass);
 
+        if (monitor == null) {
+            LOGGER.warning("updateRateClass called with unknown rate class "
+                    + rateClass + ": changeCode=" + changeCode + " - "
+                    + rateInfo);
+            return;
+        }
         monitor.updateRateInfo(changeCode, rateInfo);
 
         synchronized(listenerEventLock) {
@@ -510,7 +521,7 @@ public class RateMonitor {
      * @return the rate class monitor associated with the given rate class ID
      *         number
      */
-    private synchronized RateClassMonitor getMonitor(int rateClass) {
+    private synchronized @Nullable RateClassMonitor getMonitor(int rateClass) {
         return classToMonitor.get(rateClass);
     }
 
