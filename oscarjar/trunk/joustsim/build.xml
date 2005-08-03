@@ -72,7 +72,8 @@
       </delete>
   </target>
 
-  <target name="build-oscar-jar" depends="clean, build-oscar-jar-classes" description="builds oscar.jar">
+  <target name="build-oscar-jar" depends="clean, build-oscar-jar-classes"
+          description="builds oscar.jar">
     <delete file="dist/oscar.jar" />
     <jar file="dist/oscar.jar">
       <fileset dir="${oscar.bin}"  includes="**/*.class" />
