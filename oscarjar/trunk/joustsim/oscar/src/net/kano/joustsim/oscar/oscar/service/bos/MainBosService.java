@@ -170,7 +170,7 @@ public class MainBosService extends BosService {
                         LOGGER.warning("server returned service "
                                 + returnedFamily + " when we requested " + service);
                     }
-                    listener.handleExternalService(MainBosService.this,
+                    listener.handleServiceRedirect(MainBosService.this,
                             service, redirect.getRedirectHost(),
                             redirect.getRedirectPort(),
                             redirect.getCookie());

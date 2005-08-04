@@ -33,18 +33,18 @@
 
 package net.kano.joustsim.oscar.oscar.service.icon;
 
+import net.kano.joscar.ByteBlock;
+import net.kano.joscar.CopyOnWriteArrayList;
+import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.oscar.oscar.OscarConnection;
 import net.kano.joustsim.oscar.oscar.service.ServiceArbiter;
 import net.kano.joustsim.oscar.oscar.service.ServiceListener;
 import net.kano.joustsim.oscar.oscar.service.Service;
-import net.kano.joustsim.Screenname;
-import net.kano.joscar.ByteBlock;
-import net.kano.joscar.CopyOnWriteArrayList;
 
-import java.util.List;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 public class IconServiceArbiter
@@ -59,6 +59,43 @@ public class IconServiceArbiter
 
     public void handleOpenedService(AimConnection conn,
             final IconService service) {
+
+    }
+
+    private CopyOnWriteArrayList<IconRequestListener> listeners
+            = new CopyOnWriteArrayList<IconRequestListener>();
+
+    public void addIconRequestListener(IconRequestListener listener) {
+        listeners.addIfAbsent(listener);
+    }
+
+    public void removeIconRequestListener(IconRequestListener listener) {
+        listeners.remove(listener);
+    }
+
+    public void requestIcon(Screenname screenname, ByteBlock iconHash) {
+        IconService service;
+        synchronized (this) {
+            requestedIconInfos.add(new RequestedIconInfo(screenname, iconHash));
+            service = currentService;
+        }
+        service.requestIcon(screenname, iconHash);
+    }
+
+    private void dequeueRequests(IconService service) {
+        List<RequestedIconInfo> infos;
+        synchronized (this) {
+            infos = new ArrayList<RequestedIconInfo>(requestedIconInfos);
+        }
+        for (RequestedIconInfo info : infos) {
+            service.requestIcon(info.getScreenname(),
+                    info.getIconHash());
+        }
+    }
+
+    public IconService createService(AimConnection aimConnection,
+            OscarConnection conn) {
+        final IconService service = new IconService(aimConnection, conn);
         service.addIconRequestListener(new IconRequestListener() {
             public void buddyIconCleared(IconService service,
                     Screenname screenname) {
@@ -99,42 +136,7 @@ public class IconServiceArbiter
                 }
             }
         });
-    }
-
-    private CopyOnWriteArrayList<IconRequestListener> listeners
-            = new CopyOnWriteArrayList<IconRequestListener>();
-
-    public void addIconRequestListener(IconRequestListener listener) {
-        listeners.addIfAbsent(listener);
-    }
-
-    public void removeIconRequestListener(IconRequestListener listener) {
-        listeners.remove(listener);
-    }
-
-    public void requestIcon(Screenname screenname, ByteBlock iconHash) {
-        IconService service;
-        synchronized (this) {
-            requestedIconInfos.add(new RequestedIconInfo(screenname, iconHash));
-            service = currentService;
-        }
-        service.requestIcon(screenname, iconHash);
-    }
-
-    private void dequeueRequests(IconService service) {
-        List<RequestedIconInfo> infos;
-        synchronized (this) {
-            infos = new ArrayList<RequestedIconInfo>(requestedIconInfos);
-        }
-        for (RequestedIconInfo info : infos) {
-            service.requestIcon(info.getScreenname(),
-                    info.getIconHash());
-        }
-    }
-
-    public IconService createService(AimConnection aimConnection,
-            OscarConnection conn) {
-        return new IconService(aimConnection, conn);
+        return service;
     }
 
     private static class RequestedIconInfo {

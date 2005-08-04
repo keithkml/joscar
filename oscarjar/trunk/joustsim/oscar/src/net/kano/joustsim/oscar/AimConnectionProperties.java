@@ -89,4 +89,14 @@ public class AimConnectionProperties {
                 && screenname != null
                 && password != null;
     }
+
+
+    public String toString() {
+        return "AimConnectionProperties{" +
+                "loginHost='" + loginHost + "'" +
+                ", loginPort=" + loginPort +
+                ", screenname=" + screenname +
+                ", password='" + password + "'" +
+                "}";
+    }
 }

@@ -50,7 +50,7 @@ public class BasicConnection extends OscarConnection {
     }
 
     protected void beforeConnect() {
-        if (cookie == null) {
+        if (getCookie() == null) {
             throw new IllegalStateException("You must set a cookie for a "
                     + "BasicConnection to connect");
         }
@@ -66,18 +66,16 @@ public class BasicConnection extends OscarConnection {
     }
 
     protected void connected() {
-        sendFlap(new LoginFlapCmd(cookie));
+        sendFlap(new LoginFlapCmd(getCookie()));
     }
 
     protected void handleSnacPacket(SnacPacketEvent snacPacketEvent) {
-
         SnacCommand snac = snacPacketEvent.getSnacCommand();
 
         if (snac instanceof ServerReadyCmd) {
             ServerReadyCmd src = (ServerReadyCmd) snac;
-            int[] families = src.getSnacFamilies();
 
-            setSnacFamilies(families);
+            setSnacFamilies(src.getSnacFamilies());
         }
         // we call this last in case it was a ServerReadyCmd, and we want it to
         // be processed by the BosService

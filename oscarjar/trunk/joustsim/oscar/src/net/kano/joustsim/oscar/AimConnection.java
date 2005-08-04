@@ -56,11 +56,11 @@ import net.kano.joustsim.oscar.oscar.OscarConnStateEvent;
 import net.kano.joustsim.oscar.oscar.OscarConnection;
 import net.kano.joustsim.oscar.oscar.loginstatus.LoginFailureInfo;
 import net.kano.joustsim.oscar.oscar.loginstatus.LoginSuccessInfo;
+import net.kano.joustsim.oscar.oscar.service.DefaultServiceArbiterFactory;
 import net.kano.joustsim.oscar.oscar.service.Service;
 import net.kano.joustsim.oscar.oscar.service.ServiceArbiter;
 import net.kano.joustsim.oscar.oscar.service.ServiceArbiterFactory;
 import net.kano.joustsim.oscar.oscar.service.ServiceFactory;
-import net.kano.joustsim.oscar.oscar.service.DefaultServiceArbiterFactory;
 import net.kano.joustsim.oscar.oscar.service.bos.ExternalBosService;
 import net.kano.joustsim.oscar.oscar.service.bos.MainBosService;
 import net.kano.joustsim.oscar.oscar.service.bos.OpenedExternalServiceListener;
@@ -86,7 +86,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 
-//TODO: time out waiting for services
+//TODO: time out waiting for all services to be ready, to ensure connection comes up eventually
+//TODO: finish service arbitration:
+//  - convert openService() into a real API
+//  - become aware of all service arbiters on startup, so we can connect to the
+//    ones that want to be kept alive at all times
+//    - we also want the user to be able to call getIconArbiter() at any time
+//      without initializing it -- maybe allow arbiter to tell AimConnection to
+//      keep itself alive / awaken itself?
 public class AimConnection {
     private static final Logger LOGGER
             = Logger.getLogger(AimConnection.class.getName());
@@ -121,8 +128,12 @@ public class AimConnection {
     private final BuddyTrustManager buddyTrustManager;
     private final CapabilityManager capabilityManager;
 
-    private final Map<Integer, ServiceArbiter<?>> externalServices
-            = new HashMap<Integer, ServiceArbiter<?>>();
+    private Set<Integer> wantedServices = new HashSet<Integer>();
+    private ServiceArbiterFactory arbiterFactory
+            = new DefaultServiceArbiterFactory();
+
+    private final Map<Integer, ServiceArbiter<? extends Service>> externalServices
+            = new HashMap<Integer, ServiceArbiter<? extends Service>>();
 
     public AimConnection(Screenname screenname, String password) {
         this(new AimConnectionProperties(screenname, password));
@@ -150,7 +161,7 @@ public class AimConnection {
 
         if (!props.isComplete()) {
             throw new IllegalArgumentException("connection properties are "
-                    + "incomplete (props.isComplete() == false)");
+                    + "incomplete (props.isComplete() == false): " + props);
         }
 
         this.appSession = aimSession.getAppSession();
@@ -170,8 +181,9 @@ public class AimConnection {
         if (prefs != null) {
             certMgr = prefs.getCertificateTrustManager();
             signerMgr = prefs.getSignerTrustManager();
+
         } else {
-            LOGGER.fine("Warning: this AIM connection's certificate and signer "
+            LOGGER.warning("Warning: this AIM connection's certificate and signer "
                     + "managers will not be set because the trust manager is "
                     + "null");
             certMgr = null;
@@ -184,48 +196,28 @@ public class AimConnection {
         buddyTrustManager = new BuddyTrustManager(this);
         buddyTrustManager.addBuddyTrustListener(new BuddyTrustAdapter() {
             public void buddyTrusted(BuddyTrustEvent event) {
-                System.out.println("* " + event.getBuddy() + " is trusted");
+                LOGGER.fine("* " + event.getBuddy() + " is trusted");
             }
 
             public void buddyTrustRevoked(BuddyTrustEvent event) {
-                System.out.println("* " + event.getBuddy() + " is no longer trusted");
+                LOGGER.fine("* " + event.getBuddy() + " is no longer trusted");
             }
 
             public void gotTrustedCertificateChange(BuddyTrustEvent event) {
-                System.out.println("* " + event.getBuddy() + " has a trusted certificate");
+                LOGGER.fine("* " + event.getBuddy() + " has a trusted certificate");
             }
 
             public void gotUntrustedCertificateChange(BuddyTrustEvent event) {
-                System.out.println("* " + event.getBuddy() + " has an untrusted certificate");
+                LOGGER.fine("* " + event.getBuddy() + " has an untrusted certificate");
             }
         });
         capabilityManager = new CapabilityManager(this);
         capabilityManager.setCapabilityHandler(CapabilityBlock.BLOCK_ENCRYPTION,
                 new SecurityEnabledHandler(this));
-//        capabilityManager.setCapabilityHandler(CapabilityBlock.BLOCK_SOMETHING,
-//                new DefaultEnabledCapabilityHandler());
         capabilityManager.setCapabilityHandler(CapabilityBlock.BLOCK_ICQCOMPATIBLE,
                 new DefaultEnabledCapabilityHandler());
         capabilityManager.setCapabilityHandler(CapabilityBlock.BLOCK_SHORTCAPS,
                 new DefaultEnabledCapabilityHandler());
-//        capabilityManager.setCapabilityHandler(
-//                ShortCapabilityBlock.getCapFromShortBytes(0x01, 0x05),
-//                new DefaultEnabledCapabilityHandler());
-//        capabilityManager.setCapabilityHandler(
-//                ShortCapabilityBlock.getCapFromShortBytes(0xf0, 0x04),
-//                new DefaultEnabledCapabilityHandler());
-//        capabilityManager.setCapabilityHandler(
-//                ShortCapabilityBlock.getCapFromShortBytes(0xf0, 0x05),
-//                new DefaultEnabledCapabilityHandler());
-//        capabilityManager.setCapabilityHandler(
-//                ShortCapabilityBlock.getCapFromShortBytes(0xf0, 0x08),
-//                new DefaultEnabledCapabilityHandler());
-//        capabilityManager.setCapabilityHandler(
-//                ShortCapabilityBlock.getCapFromShortBytes(0xf0, 0x07),
-//                new DefaultEnabledCapabilityHandler());
-//        capabilityManager.setCapabilityHandler(
-//                ShortCapabilityBlock.getCapFromShortBytes(0x01, 0x05),
-//                new DefaultEnabledCapabilityHandler());
 
         loginConn.addOscarListener(new LoginConnListener());
         loginConn.setServiceFactory(new LoginServiceFactory());
@@ -267,11 +259,14 @@ public class AimConnection {
         return triedConnecting;
     }
 
+    private synchronized boolean setTriedConnecting() {
+        if (triedConnecting) return false;
+        triedConnecting = true;
+        return true;
+    }
+
     public boolean connect() {
-        synchronized(this) {
-            if (triedConnecting) return false;
-            triedConnecting = true;
-        }
+        setTriedConnecting();
         loginConn.connect();
         setState(State.NOTCONNECTED, State.CONNECTINGAUTH,
                 new AuthorizingStateInfo(loginConn));
@@ -282,42 +277,59 @@ public class AimConnection {
         disconnect(true);
     }
 
-    public void disconnect(boolean onPurpose) {
-        synchronized (this) {
-            wantedDisconnect = onPurpose;
-        }
+    public synchronized void disconnect(boolean onPurpose) {
+        wantedDisconnect = onPurpose;
         closeConnections();
     }
 
-    private Set<Integer> wantedServices = new HashSet<Integer>();
-    private ServiceArbiterFactory arbiterFactory
-            = new DefaultServiceArbiterFactory();
+    public synchronized boolean wantedDisconnect() { return wantedDisconnect; }
 
     public void openService(int service) {
-        synchronized(this) {
-            boolean added = wantedServices.add(service);
-            if (!added) return;
-        }
+        if (!addWantedService(service)) return;
+
         ServiceArbiter<? extends Service> arbiter
                 = arbiterFactory.getInstance(service);
         if (arbiter == null) {
             throw new IllegalArgumentException("no arbiter for service "
                     + service);
         }
-        externalServices.put(service, arbiter);
+        storeExternalService(service, arbiter);
         requestService(service, arbiter);
+    }
+
+    private synchronized void storeExternalService(int service,
+            ServiceArbiter<? extends Service> arbiter) {
+        externalServices.put(service, arbiter);
+    }
+
+    private synchronized boolean addWantedService(int service) {
+        return wantedServices.add(service);
+    }
+
+    private void refreshService(int family) {
+        ServiceArbiter<? extends Service> arbiter;
+        synchronized (this) {
+            arbiter = externalServices.get(family);
+        }
+        requestService(family, arbiter);
     }
 
     private <S extends Service> void requestService(int service,
             final ServiceArbiter<S> arbiter) {
         getBosService().requestService(service, new OpenedExternalServiceListener() {
-            public void handleExternalService(MainBosService service,
-                    int serviceFamily, String host, int port,
+            public void handleServiceRedirect(MainBosService service,
+                    final int serviceFamily, String host, int port,
                     ByteBlock flapCookie) {
+                //TODO: add timeout for external service to be ready
+                //        ^-- should it be a global thing in OscarConnection,
+                //            or what?
                 BasicConnection conn = new BasicConnection(host, port);
                 conn.setServiceFactory(new ExternalServiceFactory<S>(
                         serviceFamily, arbiter));
                 conn.setCookie(flapCookie);
+                conn.addOscarListener(new ExternalServiceConnListener(
+                        serviceFamily));
+                conn.connect();
             }
         });
     }
@@ -394,24 +406,29 @@ public class AimConnection {
     }
 
     private void connectBos(LoginSuccessInfo info) {
-        synchronized(this) {
-            if (state != State.AUTHORIZING) {
-                throw new IllegalStateException("tried to connect to BOS "
-                        + "server in state " + state);
-            }
-            mainConn = new BasicConnection(info.getServer(), info.getPort());
-            mainConn.setCookie(info.getCookie());
-            mainConn.addOscarListener(new MainBosConnListener());
-            mainConn.setServiceFactory(new BasicServiceFactory());
-            mainConn.connect();
-        }
+        BasicConnection mainConn = prepareMainConn(info);
+        mainConn.connect();
         setState(State.AUTHORIZING, State.CONNECTING,
                 new ConnectingStateInfo(info));
     }
 
+    private synchronized BasicConnection prepareMainConn(LoginSuccessInfo info) {
+        BasicConnection mainConn;
+        if (state != State.AUTHORIZING) {
+            throw new IllegalStateException("tried to connect to BOS "
+                    + "server in state " + state);
+        }
+        mainConn = new BasicConnection(info.getServer(), info.getPort());
+        mainConn.setCookie(info.getCookie());
+        mainConn.addOscarListener(new MainBosConnListener());
+        mainConn.setServiceFactory(new BasicServiceFactory());
+        this.mainConn = mainConn;
+        return mainConn;
+    }
+
     private void internalDisconnected() {
-        DisconnectedStateInfo stateInfo = new DisconnectedStateInfo(wantedDisconnect());
-        setState(null, State.DISCONNECTED, stateInfo);
+        setState(null, State.DISCONNECTED,
+                new DisconnectedStateInfo(wantedDisconnect()));
         closeConnections();
     }
 
@@ -428,12 +445,12 @@ public class AimConnection {
             for (int family : conn.getSnacFamilies()) {
                 List<Service> services = getServiceList(family);
                 Service service = conn.getService(family);
-                if (service != null) {
-                    services.add(service);
-                    added.add(service);
-                } else {
+                if (service == null) {
                     LOGGER.finer("Could not find service handler for family 0x"
                             + Integer.toHexString(family));
+                } else {
+                    services.add(service);
+                    added.add(service);
                 }
             }
         }
@@ -482,8 +499,6 @@ public class AimConnection {
     public BuddyInfoTracker getBuddyInfoTracker() {
         return buddyInfoTracker;
     }
-
-    public synchronized boolean wantedDisconnect() { return wantedDisconnect; }
 
     private class LoginServiceFactory implements ServiceFactory {
         public Service getService(OscarConnection conn, int family) {
@@ -607,6 +622,28 @@ public class AimConnection {
                         + " wants to open service " + family);
                 return null;
             }
+        }
+    }
+
+    private class ExternalServiceConnListener implements OscarConnListener {
+        private final int serviceFamily;
+
+        public ExternalServiceConnListener(int serviceFamily) {this.serviceFamily = serviceFamily;}
+
+        public void registeredSnacFamilies(OscarConnection conn) {
+        }
+
+        public void connStateChanged(OscarConnection conn,
+                OscarConnStateEvent event) {
+            ClientConn.State state = event.getClientConnEvent().getNewState();
+            if (state == ClientConn.STATE_FAILED
+                    || state == ClientConn.STATE_NOT_CONNECTED) {
+                conn.removeOscarListener(this);
+                refreshService(serviceFamily);
+            }
+        }
+
+        public void allFamiliesReady(OscarConnection conn) {
         }
     }
 }

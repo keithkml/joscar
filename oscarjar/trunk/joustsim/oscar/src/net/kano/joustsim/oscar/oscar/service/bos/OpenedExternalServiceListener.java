@@ -36,6 +36,6 @@ package net.kano.joustsim.oscar.oscar.service.bos;
 import net.kano.joscar.ByteBlock;
 
 public interface OpenedExternalServiceListener {
-    void handleExternalService(MainBosService service, int serviceFamily,
+    void handleServiceRedirect(MainBosService service, int serviceFamily,
             String host, int port, ByteBlock flapCookie);
 }
