@@ -160,6 +160,7 @@ public final class ExtraInfoData implements Writable {
         return new ExtraInfoData(FLAG_AVAILMSG_PRESENT, ByteBlock.wrap(bout.toByteArray()));
     }
 
+    //TODO: make readAvailMessage deal with encoding
     public static String readAvailableMessage(ExtraInfoData data) {
         ByteBlock msgBlock = data.getData();
         int len = BinaryTools.getUShort(msgBlock, 0);
