@@ -306,7 +306,8 @@ public final class DefensiveTools {
         return Collections.unmodifiableList(collection);
     }
 
-    public static <E> List<E> getSafeListCopy(Collection<E> list, String listName) {
+    public static <E> List<E> getSafeListCopy(Collection<? extends E> list,
+            String listName) {
         if (list == null) return null;
         List<E> copy = getUnmodifiableCopy(list);
         checkNullElements(copy, listName);

@@ -78,7 +78,7 @@ public class SendImIcbm extends AbstractImIcbm implements SendIcbm {
 
         DefensiveTools.checkNull(packet, "packet");
 
-        ByteBlock snacData = packet.getData();
+        ByteBlock snacData = getChannelData();
 
         StringBlock snInfo = OscarTools.readScreenname(snacData);
         sn = snInfo.getString();

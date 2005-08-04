@@ -44,6 +44,7 @@ import net.kano.joscar.snac.CmdType;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
+import java.util.Collection;
 
 /**
  * A data structure containing rate limiting information for a specific "class"
@@ -221,7 +222,7 @@ public class RateClassInfo implements Writable {
      *
      * @param commands the SNAC commands included in this rate class
      */
-    synchronized void setCommands(List<CmdType> commands) {
+    synchronized void setCommands(Collection<? extends CmdType> commands) {
         this.commands = DefensiveTools.getSafeListCopy(commands, "commands");
     }
 
@@ -258,6 +259,27 @@ public class RateClassInfo implements Writable {
         this.disconnectAvg = disconnectAvg;
         this.currentAvg = currentAvg;
         this.max = max;
+    }
+
+    /**
+     * Creates a new rate class information block with the given properties.
+     * See {@linkplain RateClassInfo above} for details on what these mean.
+     *
+     * @param rateClass the rate class ID that this block describes
+     * @param windowSize the "window size"
+     * @param clearAvg the "not rate limited anymore" average
+     * @param warnAvg the "warned" average
+     * @param limitedAvg the "rate limited" average
+     * @param disconnectAvg the "disconnected" average
+     * @param currentAvg the current average
+     * @param max the maximum rate average
+     */
+    public RateClassInfo(int rateClass, long windowSize, long clearAvg,
+            long warnAvg, long limitedAvg, long disconnectAvg, long currentAvg,
+            long max, Collection<? extends CmdType> cmds) {
+        this(rateClass, windowSize, clearAvg, warnAvg, limitedAvg,
+                disconnectAvg, currentAvg, max);
+        setCommands(cmds);
     }
 
     /**

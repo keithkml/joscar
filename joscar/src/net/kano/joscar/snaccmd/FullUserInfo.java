@@ -846,6 +846,7 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
         if (extraTlvs != null) chain.addAll(extraTlvs);
 
         // whew.
+        //TODO: write ushort length before writing tlvs??
         chain.write(out);
     }
 

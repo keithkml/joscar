@@ -44,7 +44,6 @@ import net.kano.joscar.snaccmd.WarningLevel;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.regex.Pattern;
 
 /**
  * A data structure containing various settings related to instant messaging.
