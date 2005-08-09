@@ -155,6 +155,8 @@ public class UpdateAdvisory extends ConnCommand {
         if (message != null) {
             Tlv.getStringInstance(TYPE_MESSAGE, message).write(out);
         }
+        Tlv.getUShortInstance(0x0002, 0x0015).write(out);
+        Tlv.getUShortInstance(0x0003, 0x04b0).write(out);
     }
 
     public String toString() {

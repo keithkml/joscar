@@ -181,6 +181,12 @@ public class RateClassInfo implements Writable {
     /** The maximum rate average. */
     private final long max;
 
+    /** The last time */
+    private final long lastTime;
+
+    /** The current state */
+    private final int currentState;
+
     /** The commands in this rate class. */
     private List<CmdType> commands = null;
 
@@ -215,6 +221,17 @@ public class RateClassInfo implements Writable {
         disconnectAvg = BinaryTools.getUInt  (block, 18);
         currentAvg    = BinaryTools.getUInt  (block, 22);
         max           = BinaryTools.getUInt  (block, 26);
+        if (block.getLength() >= 34) {
+            lastTime      = BinaryTools.getUInt  (block, 30);
+            if (block.getLength() >= 35) {
+                currentState  = BinaryTools.getUByte (block, 34);
+            } else {
+                currentState = 0;
+            }
+        } else {
+            lastTime = 0;
+            currentState = 0;
+        }
     }
 
     /**
@@ -224,6 +241,32 @@ public class RateClassInfo implements Writable {
      */
     synchronized void setCommands(Collection<? extends CmdType> commands) {
         this.commands = DefensiveTools.getSafeListCopy(commands, "commands");
+    }
+
+    public RateClassInfo(int rateClass, long windowSize, long clearAvg,
+            long warnAvg, long limitedAvg, long disconnectAvg, long currentAvg,
+            long max, long lastTime, int currentState) {
+        DefensiveTools.checkRange(rateClass, "rateClass", 0);
+        DefensiveTools.checkRange(windowSize, "windowSize", 0);
+        DefensiveTools.checkRange(clearAvg, "clearAvg", 0);
+        DefensiveTools.checkRange(warnAvg, "warnAvg", 0);
+        DefensiveTools.checkRange(limitedAvg, "limitedAvg", 0);
+        DefensiveTools.checkRange(disconnectAvg, "disconnectAvg", 0);
+        DefensiveTools.checkRange(currentAvg, "currentAvg", 0);
+        DefensiveTools.checkRange(max, "max", 0);
+        DefensiveTools.checkRange(max, "lastTime", 0);
+        DefensiveTools.checkRange(max, "currentState", 0);
+
+        this.rateClass = rateClass;
+        this.windowSize = windowSize;
+        this.clearAvg = clearAvg;
+        this.warnAvg = warnAvg;
+        this.limitedAvg = limitedAvg;
+        this.disconnectAvg = disconnectAvg;
+        this.currentAvg = currentAvg;
+        this.max = max;
+        this.lastTime = lastTime;
+        this.currentState = currentState;
     }
 
     /**
@@ -242,23 +285,8 @@ public class RateClassInfo implements Writable {
     public RateClassInfo(int rateClass, long windowSize, long clearAvg,
             long warnAvg, long limitedAvg, long disconnectAvg, long currentAvg,
             long max) {
-        DefensiveTools.checkRange(rateClass, "rateClass", 0);
-        DefensiveTools.checkRange(windowSize, "windowSize", 0);
-        DefensiveTools.checkRange(clearAvg, "clearAvg", 0);
-        DefensiveTools.checkRange(warnAvg, "warnAvg", 0);
-        DefensiveTools.checkRange(limitedAvg, "limitedAvg", 0);
-        DefensiveTools.checkRange(disconnectAvg, "disconnectAvg", 0);
-        DefensiveTools.checkRange(currentAvg, "currentAvg", 0);
-        DefensiveTools.checkRange(max, "max", 0);
-
-        this.rateClass = rateClass;
-        this.windowSize = windowSize;
-        this.clearAvg = clearAvg;
-        this.warnAvg = warnAvg;
-        this.limitedAvg = limitedAvg;
-        this.disconnectAvg = disconnectAvg;
-        this.currentAvg = currentAvg;
-        this.max = max;
+        this(rateClass, windowSize, clearAvg, warnAvg, limitedAvg,
+                disconnectAvg, currentAvg, max, 0, 0);
     }
 
     /**
@@ -279,6 +307,14 @@ public class RateClassInfo implements Writable {
             long max, Collection<? extends CmdType> cmds) {
         this(rateClass, windowSize, clearAvg, warnAvg, limitedAvg,
                 disconnectAvg, currentAvg, max);
+        setCommands(cmds);
+    }
+    public RateClassInfo(int rateClass, long windowSize, long clearAvg,
+            long warnAvg, long limitedAvg, long disconnectAvg, long currentAvg,
+            long max, long lastTime, int currentState,
+            Collection<? extends CmdType> cmds) {
+        this(rateClass, windowSize, clearAvg, warnAvg, limitedAvg,
+                disconnectAvg, currentAvg, max, lastTime, currentState);
         setCommands(cmds);
     }
 
@@ -363,6 +399,14 @@ public class RateClassInfo implements Writable {
         return max;
     }
 
+    public int getCurrentState() {
+        return currentState;
+    }
+
+    public long getLastTime() {
+        return lastTime;
+    }
+
     /**
      * Returns the commands included in this rate class, or <code>null</code>
      * if they were not sent (as in a <code>RateChange</code>).
@@ -386,6 +430,8 @@ public class RateClassInfo implements Writable {
         BinaryTools.writeUInt(out, disconnectAvg);
         BinaryTools.writeUInt(out, currentAvg);
         BinaryTools.writeUInt(out, max);
+        BinaryTools.writeUInt(out, lastTime);
+        BinaryTools.writeUByte(out, currentState);
     }
 
     public synchronized String toString() {
@@ -397,6 +443,8 @@ public class RateClassInfo implements Writable {
                 ", limitedAvg=" + limitedAvg +
                 ", disconnectAvg=" + disconnectAvg +
                 ", max=" + max +
+                ", lastTime=" + lastTime +
+                ", currentState=" + currentState +
                 ", families: "
                 + (commands == null ? "none" : "" + commands.size());
     }

@@ -780,7 +780,7 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
 
         if (warningLevel == null) return;
 
-        BinaryTools.writeUShort(out, warningLevel.getX10Value());
+        BinaryTools.writeUByte(out, warningLevel.getX10Value());
 
         MutableTlvChain chain = TlvTools.createMutableChain();
 

@@ -142,9 +142,15 @@ public class RateInfoCmd extends ConnCommand {
                 info.write(out);
             }
             for (RateClassInfo info1 : infos) {
-                for (CmdType family1 : info1.getCommands()) {
-                    BinaryTools.writeUShort(out, family1.getFamily());
-                    BinaryTools.writeUShort(out, family1.getCommand());
+                BinaryTools.writeUShort(out, info1.getRateClass());
+                if (info1.getCommands() == null) {
+                    BinaryTools.writeUShort(out, 0);
+                } else {
+                    BinaryTools.writeUShort(out, info1.getCommands().size());
+                    for (CmdType family1 : info1.getCommands()) {
+                        BinaryTools.writeUShort(out, family1.getFamily());
+                        BinaryTools.writeUShort(out, family1.getCommand());
+                    }
                 }
             }
         }
