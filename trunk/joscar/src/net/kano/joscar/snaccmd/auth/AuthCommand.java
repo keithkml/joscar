@@ -45,6 +45,10 @@ public abstract class AuthCommand extends SnacCommand {
     /** This family's SNAC family code. */
     public static final int FAMILY_AUTH   = 0x0017;
 
+    /** A SNAC family information object for this family. */
+    public static final SnacFamilyInfo FAMILY_INFO
+            = new SnacFamilyInfo(FAMILY_AUTH, 0x0001, 0x0110, 0x0801);
+
     /** The command subtype for requesting an authorization key. */
     public static final int CMD_KEY_REQ   = 0x0006;
     /** The command subtype for requesting authorization (login). */
@@ -54,10 +58,6 @@ public abstract class AuthCommand extends SnacCommand {
     public static final int CMD_KEY_RESP  = 0x0007;
     /** The command subtype for an authorization attempt response. */
     public static final int CMD_AUTH_RESP = 0x0003;
-
-    /** A SNAC family information object for this family. */
-    public static final SnacFamilyInfo FAMILY_INFO
-            = new SnacFamilyInfo(FAMILY_AUTH, 0x0001, 0x0110, 0x0801);
 
     /**
      * Creates a new SNAC command in this family with the given command subtype.

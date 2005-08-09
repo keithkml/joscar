@@ -36,20 +36,21 @@
 package net.kano.joscar.snaccmd;
 
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.snaccmd.acct.AcctCommand;
-import net.kano.joscar.snaccmd.auth.AuthCommand;
-import net.kano.joscar.snaccmd.buddy.BuddyCommand;
-import net.kano.joscar.snaccmd.chat.ChatCommand;
-import net.kano.joscar.snaccmd.conn.ConnCommand;
+import net.kano.joscar.JoscarDefaults;
 import net.kano.joscar.snaccmd.conn.SnacFamilyInfo;
-import net.kano.joscar.snaccmd.icbm.IcbmCommand;
-import net.kano.joscar.snaccmd.icon.IconCommand;
-import net.kano.joscar.snaccmd.invite.InviteCommand;
-import net.kano.joscar.snaccmd.loc.LocCommand;
+import net.kano.joscar.snaccmd.conn.ConnCommand;
 import net.kano.joscar.snaccmd.popup.PopupCommand;
-import net.kano.joscar.snaccmd.rooms.RoomCommand;
 import net.kano.joscar.snaccmd.search.SearchCommand;
 import net.kano.joscar.snaccmd.ssi.SsiCommand;
+import net.kano.joscar.snaccmd.auth.AuthCommand;
+import net.kano.joscar.snaccmd.loc.LocCommand;
+import net.kano.joscar.snaccmd.chat.ChatCommand;
+import net.kano.joscar.snaccmd.invite.InviteCommand;
+import net.kano.joscar.snaccmd.icbm.IcbmCommand;
+import net.kano.joscar.snaccmd.acct.AcctCommand;
+import net.kano.joscar.snaccmd.rooms.RoomCommand;
+import net.kano.joscar.snaccmd.icon.IconCommand;
+import net.kano.joscar.snaccmd.buddy.BuddyCommand;
 
 import java.util.HashMap;
 import java.util.LinkedList;

@@ -45,7 +45,6 @@ import net.kano.joscar.snaccmd.conn.SnacFamilyInfo;
 public abstract class IconCommand extends SnacCommand {
     /** The SNAC family code for the icon family. */
     public static final int FAMILY_ICON = 0x0010;
-
     /** A set of SNAC family information for this family. */
     public static final SnacFamilyInfo FAMILY_INFO
             = new SnacFamilyInfo(FAMILY_ICON, 0x0001, 0x0010, 0x0801);
