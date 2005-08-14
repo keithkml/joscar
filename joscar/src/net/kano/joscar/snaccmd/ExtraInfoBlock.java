@@ -219,6 +219,28 @@ public final class ExtraInfoBlock implements Writable {
         if (extraData != null) extraData.write(out);
     }
 
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        final ExtraInfoBlock that = (ExtraInfoBlock) o;
+
+        if (type != that.type) return false;
+        if (extraData != null ? !extraData.equals(that.extraData)
+                : that.extraData != null) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public int hashCode() {
+        int result;
+        result = type;
+        result = 29 * result + (extraData != null ? extraData.hashCode() : 0);
+        return result;
+    }
+
     public String toString() {
         return "ExtraInfoBlock: type=0x" + Long.toHexString(type) + " ("
                 + MiscTools.findIntField(ExtraInfoBlock.class, type,
