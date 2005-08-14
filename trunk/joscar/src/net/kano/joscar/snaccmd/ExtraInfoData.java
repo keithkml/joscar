@@ -46,6 +46,8 @@ import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.io.ByteArrayOutputStream;
 
+import org.jetbrains.annotations.NotNull;
+
 /**
  * A data structure used to hold data in {@link ExtraInfoBlock}s, containing
  * a set of flags and a block of data.
@@ -148,7 +150,7 @@ public final class ExtraInfoData implements Writable {
             new byte[] { 0x02, 0x01, (byte) 0xd2, 0x04, 0x72 });
 
     //TODO: provide extra info block objects to automate this
-    public static ExtraInfoData getAvailableMessageBlock(String message) {
+    public static @NotNull ExtraInfoData getAvailableMessageBlock(@NotNull String message) {
         ByteArrayOutputStream bout = new ByteArrayOutputStream(message.length() + 10);
         try {
             byte[] bytes = message.getBytes("UTF-8");
@@ -161,7 +163,7 @@ public final class ExtraInfoData implements Writable {
     }
 
     //TODO: make readAvailMessage deal with encoding
-    public static String readAvailableMessage(ExtraInfoData data) {
+    public static @NotNull String readAvailableMessage(ExtraInfoData data) {
         ByteBlock msgBlock = data.getData();
         int len = BinaryTools.getUShort(msgBlock, 0);
         byte[] msgBytes = msgBlock.subBlock(2, len)
@@ -294,6 +296,28 @@ public final class ExtraInfoData implements Writable {
             BinaryTools.writeUByte(out, data.getLength());
             data.write(out);
         }
+    }
+
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        final ExtraInfoData that = (ExtraInfoData) o;
+
+        if (flags != that.flags) return false;
+        if (data != null ? !data.equals(that.data)
+                : that.data != null) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public int hashCode() {
+        int result;
+        result = flags;
+        result = 29 * result + (data != null ? data.hashCode() : 0);
+        return result;
     }
 
     public String toString() {
