@@ -35,11 +35,11 @@
 
 package net.kano.joustsim.oscar;
 
+import net.kano.joscar.DefensiveTools;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.oscar.service.info.BuddyTrustManager;
 import net.kano.joustsim.oscar.oscar.service.info.InfoService;
 import net.kano.joustsim.trust.BuddyCertificateInfo;
-import net.kano.joscar.DefensiveTools;
 
 import java.beans.PropertyChangeEvent;
 import java.util.HashMap;
@@ -66,6 +66,7 @@ public class BuddyInfoTracker {
         buddyInfoMgr.addGlobalBuddyInfoListener(new GlobalBuddyInfoListener() {
             public void newBuddyInfo(BuddyInfoManager manager, Screenname buddy,
                     BuddyInfo info) {
+                //TODO: what does this do? does this mean the first change isn't picked up?
             }
 
             public void buddyInfoChanged(BuddyInfoManager manager,
@@ -111,9 +112,8 @@ public class BuddyInfoTracker {
 
         boolean startTracking = false;
         boolean added;
-        Set<BuddyInfoTrackerListener> btrackers;
         synchronized (this) {
-            btrackers = trackers.get(buddy);
+            Set<BuddyInfoTrackerListener> btrackers = trackers.get(buddy);
             if (btrackers == null) {
                 btrackers = new HashSet<BuddyInfoTrackerListener>();
                 trackers.put(buddy, btrackers);

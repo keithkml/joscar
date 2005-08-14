@@ -208,7 +208,7 @@ public class OutgoingFileTransferImpl extends FileTransferImpl
                 event = failureEventInfo.getEvent();
             }
             if (oldController == sendController) {
-                //TODO: retry send with other controllers
+                //TODO: important for release: retry send with other controllers
 //                if (getState() == FileTransferState.TRANSFERRING) {
                     setFailed(event == null ? new UnknownErrorEvent() : event);
 //                } else {

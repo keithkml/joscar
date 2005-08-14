@@ -45,6 +45,7 @@ import net.kano.joscar.snaccmd.auth.AuthCommand;
 import net.kano.joscar.snaccmd.buddy.BuddyCommand;
 import net.kano.joscar.snaccmd.conn.ConnCommand;
 import net.kano.joscar.snaccmd.icbm.IcbmCommand;
+import net.kano.joscar.snaccmd.icon.IconCommand;
 import net.kano.joscar.snaccmd.loc.LocCommand;
 import net.kano.joscar.snaccmd.ssi.SsiCommand;
 import net.kano.joustsim.Screenname;
@@ -61,11 +62,14 @@ import net.kano.joustsim.oscar.oscar.service.Service;
 import net.kano.joustsim.oscar.oscar.service.ServiceArbiter;
 import net.kano.joustsim.oscar.oscar.service.ServiceArbiterFactory;
 import net.kano.joustsim.oscar.oscar.service.ServiceFactory;
+import net.kano.joustsim.oscar.oscar.service.ServiceListener;
+import net.kano.joustsim.oscar.oscar.service.ServiceArbitrationManager;
 import net.kano.joustsim.oscar.oscar.service.bos.ExternalBosService;
 import net.kano.joustsim.oscar.oscar.service.bos.MainBosService;
 import net.kano.joustsim.oscar.oscar.service.bos.OpenedExternalServiceListener;
 import net.kano.joustsim.oscar.oscar.service.buddy.BuddyService;
 import net.kano.joustsim.oscar.oscar.service.icbm.IcbmService;
+import net.kano.joustsim.oscar.oscar.service.icon.IconServiceArbiter;
 import net.kano.joustsim.oscar.oscar.service.info.BuddyTrustAdapter;
 import net.kano.joustsim.oscar.oscar.service.info.BuddyTrustEvent;
 import net.kano.joustsim.oscar.oscar.service.info.BuddyTrustManager;
@@ -77,23 +81,16 @@ import net.kano.joustsim.trust.CertificateTrustManager;
 import net.kano.joustsim.trust.SignerTrustManager;
 import net.kano.joustsim.trust.TrustPreferences;
 import net.kano.joustsim.trust.TrustedCertificatesTracker;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.logging.Logger;
 
 //TODO: time out waiting for all services to be ready, to ensure connection comes up eventually
-//TODO: finish service arbitration:
-//  - convert openService() into a real API
-//  - become aware of all service arbiters on startup, so we can connect to the
-//    ones that want to be kept alive at all times
-//    - we also want the user to be able to call getIconArbiter() at any time
-//      without initializing it -- maybe allow arbiter to tell AimConnection to
-//      keep itself alive / awaken itself?
 public class AimConnection {
     private static final Logger LOGGER
             = Logger.getLogger(AimConnection.class.getName());
@@ -122,18 +119,29 @@ public class AimConnection {
 
     private final BuddyInfoManager buddyInfoManager;
     private final BuddyInfoTracker buddyInfoTracker;
+    private final BuddyIconTracker buddyIconTracker;
     private final CertificateInfoTrustManager certificateInfoTrustManager;
     private final TrustedCertificatesTracker trustedCertificatesTracker;
     private final TrustPreferences localPrefs;
     private final BuddyTrustManager buddyTrustManager;
     private final CapabilityManager capabilityManager;
 
-    private Set<Integer> wantedServices = new HashSet<Integer>();
     private ServiceArbiterFactory arbiterFactory
             = new DefaultServiceArbiterFactory();
 
+    private final Object externalServicesLock = new Object();
     private final Map<Integer, ServiceArbiter<? extends Service>> externalServices
             = new HashMap<Integer, ServiceArbiter<? extends Service>>();
+    private Map<ServiceArbiter<? extends Service>,OscarConnection> externalConnections
+            = new HashMap<ServiceArbiter<? extends Service>, OscarConnection>();
+    private ServiceArbitrationManager arbitrationManager = new ServiceArbitrationManager() {
+        public void openService(ServiceArbiter<? extends Service> arbiter) {
+            int family = arbiter.getSnacFamily();
+            if (getServiceArbiter(family) == arbiter) {
+                requestService(family, arbiter);
+            }
+        }
+    };
 
     public AimConnection(Screenname screenname, String password) {
         this(new AimConnectionProperties(screenname, password));
@@ -171,6 +179,7 @@ public class AimConnection {
 
         this.buddyInfoManager = new BuddyInfoManager(this);
         this.buddyInfoTracker = new BuddyInfoTracker(this);
+        this.buddyIconTracker = new BuddyIconTracker(this);
         this.loginConn = new LoginConnection(props.getLoginHost(),
                 props.getLoginPort());
         this.password = props.getPassword();
@@ -183,9 +192,9 @@ public class AimConnection {
             signerMgr = prefs.getSignerTrustManager();
 
         } else {
-            LOGGER.warning("Warning: this AIM connection's certificate and signer "
-                    + "managers will not be set because the trust manager is "
-                    + "null");
+            LOGGER.warning("Warning: this AIM connection's certificate "
+                    + "and signer managers will not be set because the trust "
+                    + "manager is null");
             certMgr = null;
             signerMgr = null;
         }
@@ -230,6 +239,32 @@ public class AimConnection {
     public final Screenname getScreenname() { return screenname; }
 
     public BuddyInfoManager getBuddyInfoManager() { return buddyInfoManager; }
+
+    public BuddyIconTracker getBuddyIconTracker() { return buddyIconTracker; }
+
+    public CertificateInfoTrustManager getCertificateInfoTrustManager() {
+        return certificateInfoTrustManager;
+    }
+
+    public TrustedCertificatesTracker getTrustedCertificatesTracker() {
+        return trustedCertificatesTracker;
+    }
+
+    public TrustPreferences getLocalPrefs() {
+        return localPrefs;
+    }
+
+    public BuddyTrustManager getBuddyTrustManager() {
+        return buddyTrustManager;
+    }
+
+    public CapabilityManager getCapabilityManager() {
+        return capabilityManager;
+    }
+
+    public BuddyInfoTracker getBuddyInfoTracker() {
+        return buddyInfoTracker;
+    }
 
     public synchronized State getState() { return state; }
 
@@ -284,57 +319,78 @@ public class AimConnection {
 
     public synchronized boolean wantedDisconnect() { return wantedDisconnect; }
 
-    public void openService(int service) {
-        if (!addWantedService(service)) return;
-
-        ServiceArbiter<? extends Service> arbiter
-                = arbiterFactory.getInstance(service);
-        if (arbiter == null) {
-            throw new IllegalArgumentException("no arbiter for service "
-                    + service);
-        }
-        storeExternalService(service, arbiter);
-        requestService(service, arbiter);
-    }
-
-    private synchronized void storeExternalService(int service,
-            ServiceArbiter<? extends Service> arbiter) {
-        externalServices.put(service, arbiter);
-    }
-
-    private synchronized boolean addWantedService(int service) {
-        return wantedServices.add(service);
-    }
-
-    private void refreshService(int family) {
+    public @Nullable ServiceArbiter<? extends Service> getServiceArbiter(
+            int service) {
         ServiceArbiter<? extends Service> arbiter;
-        synchronized (this) {
+        synchronized (externalServicesLock) {
+            arbiter = externalServices.get(service);
+            if (arbiter != null) return arbiter;
+
+            // NOTE: this calls an external method from within a lock!
+            LOGGER.finer("Creating arbiter for service " + service);
+            arbiter = arbiterFactory.getInstance(arbitrationManager, service);
+            LOGGER.fine("Created arbiter for service " + service + ": " + arbiter);
+            if (arbiter == null) {
+                return null;
+            }
+            externalServices.put(service, arbiter);
+        }
+        requestService(service, arbiter);
+        return arbiter;
+    }
+
+    public IconServiceArbiter getIconServiceArbiter() {
+        ServiceArbiter<?> arbiter = getServiceArbiter(IconCommand.FAMILY_ICON);
+        if (arbiter instanceof IconServiceArbiter) {
+            return (IconServiceArbiter) arbiter;
+        } else {
+            return null;
+        }
+    }
+
+    private void refreshServiceIfNecessary(int family) {
+        ServiceArbiter<? extends Service> arbiter;
+        synchronized (externalServicesLock) {
             arbiter = externalServices.get(family);
         }
+        if (arbiter == null || !arbiter.shouldKeepAlive()) return;
         requestService(family, arbiter);
     }
 
     private <S extends Service> void requestService(int service,
             final ServiceArbiter<S> arbiter) {
-        getBosService().requestService(service, new OpenedExternalServiceListener() {
-            public void handleServiceRedirect(MainBosService service,
-                    final int serviceFamily, String host, int port,
-                    ByteBlock flapCookie) {
-                //TODO: add timeout for external service to be ready
-                //        ^-- should it be a global thing in OscarConnection,
-                //            or what?
-                BasicConnection conn = new BasicConnection(host, port);
-                conn.setServiceFactory(new ExternalServiceFactory<S>(
-                        serviceFamily, arbiter));
-                conn.setCookie(flapCookie);
-                conn.addOscarListener(new ExternalServiceConnListener(
-                        serviceFamily));
-                conn.connect();
-            }
-        });
+        LOGGER.info("Requesting external service " + service + " for "
+                + arbiter);
+        MainBosService bosService = getBosService();
+        bosService.requestService(service,
+                new ArbitratedExternalServiceListener<S>(arbiter));
     }
 
-    public synchronized Service getService(int family) {
+    private synchronized void clearExternalConnection(OscarConnection conn,
+            ServiceArbiter<? extends Service> arbiter) {
+        if (getExternalConnection(arbiter) == conn) {
+            externalConnections.remove(arbiter);
+        }
+    }
+
+    private synchronized OscarConnection getExternalConnection(
+            ServiceArbiter<? extends Service> arbiter) {
+        return externalConnections.get(arbiter);
+    }
+
+//    private synchronized OscarConnection getExternalConnection(
+//            int family) {
+//        ServiceArbiter<? extends Service> arbiter = getServiceArbiter(family);
+//        if (arbiter == null) return null;
+//        return externalConnections.get(arbiter);
+//    }
+
+    private synchronized void storeExternalConnection(BasicConnection conn,
+            ServiceArbiter<? extends Service> arbiter) {
+        externalConnections.put(arbiter, conn);
+    }
+
+    public @Nullable synchronized Service getService(int family) {
         List<Service> list = getServiceListIfExists(family);
         return list == null ? null : list.get(0);
     }
@@ -363,15 +419,26 @@ public class AimConnection {
         return getServiceOfType(SsiCommand.FAMILY_SSI, SsiService.class);
     }
 
-    private <E extends Service> E getServiceOfType(int fam, Class<E> cls) {
+    private @Nullable <E extends Service> E getServiceOfType(int fam, Class<E> cls) {
         Service service = getService(fam);
-        if (cls.isInstance(service)) return cls.cast(service);
-        else return null;
+        if (cls.isInstance(service)) {
+            return cls.cast(service);
+        } else {
+            return null;
+        }
     }
 
     public void sendSnac(SnacCommand snac) {
-        Service service = getService(snac.getFamily());
-        service.sendSnac(snac);
+        int family = snac.getFamily();
+        Service service = getService(family);
+        if (service == null) {
+            ServiceArbiter<?> arbiter = getServiceArbiter(family);
+            if (arbiter != null) {
+
+            }
+        } else {
+            service.sendSnac(snac);
+        }
     }
 
     private boolean setState(State expectedOld, State state, StateInfo info) {
@@ -413,12 +480,12 @@ public class AimConnection {
     }
 
     private synchronized BasicConnection prepareMainConn(LoginSuccessInfo info) {
-        BasicConnection mainConn;
         if (state != State.AUTHORIZING) {
             throw new IllegalStateException("tried to connect to BOS "
                     + "server in state " + state);
         }
-        mainConn = new BasicConnection(info.getServer(), info.getPort());
+        BasicConnection mainConn = new BasicConnection(info.getServer(),
+                info.getPort());
         mainConn.setCookie(info.getCookie());
         mainConn.addOscarListener(new MainBosConnListener());
         mainConn.setServiceFactory(new BasicServiceFactory());
@@ -430,12 +497,19 @@ public class AimConnection {
         setState(null, State.DISCONNECTED,
                 new DisconnectedStateInfo(wantedDisconnect()));
         closeConnections();
+        List<Service> services = DefensiveTools.getUnmodifiable(
+                getLocalServices());
+        for (OpenedServiceListener listener : serviceListeners) {
+            listener.closedServices(this, services);
+        }
     }
 
     private synchronized void closeConnections() {
-        //TODO: close all related OSCAR connections here
         loginConn.disconnect();
         BasicConnection mainConn = this.mainConn;
+        for (OscarConnection conn : externalConnections.values()) {
+            conn.disconnect();
+        }
         if (mainConn != null) mainConn.disconnect();
     }
 
@@ -476,28 +550,13 @@ public class AimConnection {
         return list == null || list.isEmpty() ? null : list;
     }
 
-    public CertificateInfoTrustManager getCertificateInfoTrustManager() {
-        return certificateInfoTrustManager;
-    }
-
-    public TrustedCertificatesTracker getTrustedCertificatesTracker() {
-        return trustedCertificatesTracker;
-    }
-
-    public TrustPreferences getLocalPrefs() {
-        return localPrefs;
-    }
-
-    public BuddyTrustManager getBuddyTrustManager() {
-        return buddyTrustManager;
-    }
-
-    public CapabilityManager getCapabilityManager() {
-        return capabilityManager;
-    }
-
-    public BuddyInfoTracker getBuddyInfoTracker() {
-        return buddyInfoTracker;
+    private synchronized List<Service> getLocalServices() {
+        List<Service> list = new ArrayList<Service>();
+        for (Map.Entry<Integer, List<Service>> entry : snacfamilies
+                .entrySet()) {
+            list.addAll(entry.getValue());
+        }
+        return list;
     }
 
     private class LoginServiceFactory implements ServiceFactory {
@@ -603,7 +662,8 @@ public class AimConnection {
         }
     }
 
-    private class ExternalServiceFactory<S extends Service> implements ServiceFactory {
+    private class ExternalServiceFactory<S extends Service>
+            implements ServiceFactory {
         private final int serviceFamily;
         private final ServiceArbiter<S> arbiter;
 
@@ -615,20 +675,28 @@ public class AimConnection {
         public Service getService(OscarConnection conn, int family) {
             if (family == ConnCommand.FAMILY_CONN) {
                 return new ExternalBosService(AimConnection.this, conn);
+
             } else if (family == serviceFamily) {
                 return arbiter.createService(AimConnection.this, conn);
+
             } else {
-                LOGGER.warning("external service " + serviceFamily
+                LOGGER.warning("External service " + serviceFamily
                         + " wants to open service " + family);
                 return null;
             }
         }
     }
 
-    private class ExternalServiceConnListener implements OscarConnListener {
+    private class ExternalServiceConnListener<S extends Service>
+            implements OscarConnListener {
         private final int serviceFamily;
+        private final ServiceArbiter<S> arbiter;
 
-        public ExternalServiceConnListener(int serviceFamily) {this.serviceFamily = serviceFamily;}
+        public ExternalServiceConnListener(int serviceFamily,
+                ServiceArbiter<S> arbiter) {
+            this.arbiter = arbiter;
+            this.serviceFamily = serviceFamily;
+        }
 
         public void registeredSnacFamilies(OscarConnection conn) {
         }
@@ -638,12 +706,62 @@ public class AimConnection {
             ClientConn.State state = event.getClientConnEvent().getNewState();
             if (state == ClientConn.STATE_FAILED
                     || state == ClientConn.STATE_NOT_CONNECTED) {
+                LOGGER.info("External service connection died for service "
+                        + serviceFamily + " ( " + arbiter + ")");
                 conn.removeOscarListener(this);
-                refreshService(serviceFamily);
+                clearExternalConnection(conn, arbiter);
+                refreshServiceIfNecessary(serviceFamily);
             }
         }
 
         public void allFamiliesReady(OscarConnection conn) {
+        }
+    }
+
+    private class DispatchingServiceListener implements ServiceListener {
+        public void handleServiceReady(Service service) {
+            for (OpenedServiceListener listener : serviceListeners) {
+                listener.openedServices(AimConnection.this,
+                        Collections.singleton(service));
+            }
+        }
+
+        public void handleServiceFinished(Service service) {
+            for (OpenedServiceListener listener : serviceListeners) {
+                listener.closedServices(AimConnection.this,
+                        Collections.singleton(service));
+            }
+        }
+    }
+
+    private class ArbitratedExternalServiceListener<S extends Service> implements
+            OpenedExternalServiceListener {
+        private final ServiceArbiter<S> arbiter;
+
+        public ArbitratedExternalServiceListener(ServiceArbiter<S> arbiter) {
+            this.arbiter = arbiter;
+        }
+
+        public void handleServiceRedirect(final MainBosService service,
+                final int serviceFamily, String host, int port,
+                ByteBlock flapCookie) {
+            //TODO: add timeout for external service to be ready
+            //        ^-- should it be a global thing in OscarConnection,
+            //            or what?
+            int usePort;
+            if (port <= 0) usePort = 5190;
+            else usePort = port;
+            LOGGER.fine("Connecting to " + host + ":" + port + " for external "
+                    + "service " + serviceFamily);
+            BasicConnection conn = new BasicConnection(host, usePort);
+            conn.setServiceFactory(new ExternalServiceFactory<S>(
+                    serviceFamily, arbiter));
+            conn.setCookie(flapCookie);
+            conn.addGlobalServiceListener(new DispatchingServiceListener());
+            conn.addOscarListener(new ExternalServiceConnListener<S>(
+                    serviceFamily, arbiter));
+            storeExternalConnection(conn, arbiter);
+            conn.connect();
         }
     }
 }

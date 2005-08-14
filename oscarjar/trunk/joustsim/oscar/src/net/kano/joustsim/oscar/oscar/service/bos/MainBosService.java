@@ -174,6 +174,8 @@ public class MainBosService extends BosService {
                             service, redirect.getRedirectHost(),
                             redirect.getRedirectPort(),
                             redirect.getCookie());
+                } else {
+                    LOGGER.warning("unexpected response to service request: " + cmd);
                 }
             }
         });

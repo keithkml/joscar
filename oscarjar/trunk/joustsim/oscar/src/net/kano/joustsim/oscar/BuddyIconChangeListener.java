@@ -31,18 +31,14 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service;
+package net.kano.joustsim.oscar;
 
-import net.kano.joscar.snaccmd.icon.IconCommand;
-import net.kano.joustsim.oscar.oscar.service.icon.IconServiceArbiter;
+import net.kano.joustsim.Screenname;
+import net.kano.joscar.ByteBlock;
+import org.jetbrains.annotations.Nullable;
 
-public class DefaultServiceArbiterFactory implements ServiceArbiterFactory {
-    public ServiceArbiter<? extends Service> getInstance(
-            ServiceArbitrationManager manager, int family) {
-        if (family == IconCommand.FAMILY_ICON) {
-            return new IconServiceArbiter(manager);
-        } else {
-            return null;
-        }
-    }
+public interface BuddyIconChangeListener {
+    void buddyIconChanged(BuddyIconTracker tracker,
+            Screenname screenname, @Nullable ByteBlock iconData);
+    void buddyIconPending(BuddyIconTracker tracker, Screenname screenname);
 }

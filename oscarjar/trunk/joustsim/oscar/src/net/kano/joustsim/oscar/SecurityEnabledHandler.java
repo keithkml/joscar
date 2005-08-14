@@ -51,7 +51,7 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.List;
+import java.util.Collection;
 
 public class SecurityEnabledHandler implements CapabilityHandler {
     private static final Logger logger
@@ -69,8 +69,13 @@ public class SecurityEnabledHandler implements CapabilityHandler {
 
         this.conn = conn;
         conn.addOpenedServiceListener(new OpenedServiceListener() {
-            public void openedServices(AimConnection conn, List<Service> services) {
+            public void openedServices(AimConnection conn,
+                    Collection<? extends Service> services) {
                 bindToInfoService();
+            }
+
+            public void closedServices(AimConnection conn,
+                    Collection<? extends Service> services) {
             }
         });
         TrustPreferences trustPrefs = conn.getAimSession().getTrustPreferences();
@@ -94,11 +99,8 @@ public class SecurityEnabledHandler implements CapabilityHandler {
     }
 
     private void bindToInfoService() {
-        InfoService infoService;
         synchronized(this) {
             if (boundInfoService) return;
-            infoService = conn.getInfoService();
-            if (infoService == null) return;
             boundInfoService = true;
         }
 
@@ -155,8 +157,7 @@ public class SecurityEnabledHandler implements CapabilityHandler {
             }
 
         } else {
-        byte[] encSigning;
-        byte[] encEncrypting;
+            byte[] encSigning;
             try {
                 encSigning = signing.getEncoded();
             } catch (CertificateEncodingException e1) {
@@ -164,6 +165,7 @@ public class SecurityEnabledHandler implements CapabilityHandler {
                         + "certificate to upload to server", e1);
                 return null;
             }
+            byte[] encEncrypting;
             try {
                 encEncrypting = encrypting.getEncoded();
             } catch (CertificateEncodingException e1) {

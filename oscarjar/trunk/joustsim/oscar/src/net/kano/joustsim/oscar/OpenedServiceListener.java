@@ -37,8 +37,9 @@ package net.kano.joustsim.oscar;
 
 import net.kano.joustsim.oscar.oscar.service.Service;
 
-import java.util.List;
+import java.util.Collection;
 
 public interface OpenedServiceListener {
-    void openedServices(AimConnection conn, List<Service> services);
+    void openedServices(AimConnection conn, Collection<? extends Service> services);
+    void closedServices(AimConnection conn, Collection<? extends Service> services);
 }

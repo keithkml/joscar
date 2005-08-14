@@ -35,17 +35,21 @@
 
 package net.kano.joustsim.oscar;
 
+import net.kano.joscar.ByteBlock;
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.DirInfo;
+import net.kano.joscar.snaccmd.ExtraInfoBlock;
 import net.kano.joscar.snaccmd.icbm.OldIconHashInfo;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.trust.BuddyCertificateInfo;
+import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 
 import java.beans.PropertyChangeSupport;
-import java.util.Date;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 
 public final class BuddyInfo {
@@ -58,12 +62,15 @@ public final class BuddyInfo {
     public static final String PROP_IDLE_SINCE = "idleSince";
     public static final String PROP_WARNING_LEVEL = "warningLevel";
     public static final String PROP_AWAY_MESSAGE = "awayMessage";
+    public static final String PROP_STATUS_MESSAGE = "statusMessage";
     public static final String PROP_USER_PROFILE = "userProfile";
     public static final String PROP_OLD_ICON_INFO = "oldIconInfo";
     public static final String PROP_LAST_AIM_EXPRESSION = "lastAimExpression";
     public static final String PROP_SUPPORTS_TYPING_NOTIFICATIONS
             = "supportsTypingNotifications";
     public static final String PROP_WANTS_OUR_ICON = "wantsOurIcon";
+    public static final String PROP_ICON_HASH = "iconHash";
+    public static final String PROP_ICON_DATA = "iconData";
 
     private final Screenname screenname;
 
@@ -77,6 +84,9 @@ public final class BuddyInfo {
     private int warningLevel = -1;
     private String awayMessage = null;
     private String userProfile = null;
+    private String statusMessage = null;
+    private ExtraInfoBlock iconHash = null;
+    private ByteBlock iconData = null;
 
     // icbm info
     private OldIconHashInfo oldIconInfo = null;
@@ -104,7 +114,7 @@ public final class BuddyInfo {
         listeners.remove(l);
     }
 
-    public Screenname getScreenname() { return screenname; }
+    public @NotNull Screenname getScreenname() { return screenname; }
 
     void setCertificateInfo(BuddyCertificateInfo certificateInfo) {
         BuddyCertificateInfo old;
@@ -115,7 +125,7 @@ public final class BuddyInfo {
         fireObjectChange(PROP_CERTIFICATE_INFO, old, certificateInfo);
     }
 
-    public synchronized BuddyCertificateInfo getCertificateInfo() {
+    public synchronized @Nullable BuddyCertificateInfo getCertificateInfo() {
         return certificateInfo;
     }
 
@@ -139,7 +149,9 @@ public final class BuddyInfo {
         fireObjectChange(PROP_DIRECTORY_INFO, old, directoryInfo);
     }
 
-    public synchronized DirInfo getDirectoryInfo() { return directoryInfo; }
+    public synchronized @Nullable DirInfo getDirectoryInfo() {
+        return directoryInfo;
+    }
 
     void setOnlineSince(Date onlineSince) {
         Date old;
@@ -150,7 +162,7 @@ public final class BuddyInfo {
         fireObjectChange(PROP_ONLINE_SINCE, old, onlineSince);
     }
 
-    public synchronized Date getOnlineSince() { return onlineSince; }
+    public synchronized @Nullable Date getOnlineSince() { return onlineSince; }
 
     void setAway(boolean away) {
         boolean old;
@@ -164,7 +176,8 @@ public final class BuddyInfo {
     public synchronized boolean isAway() { return away; }
 
     void setCapabilities(Collection<CapabilityBlock> capabilities) {
-        List<CapabilityBlock> cloned = DefensiveTools.getSafeNonnullListCopy(capabilities, "capabilities");
+        List<CapabilityBlock> cloned = DefensiveTools.getSafeNonnullListCopy(
+                capabilities, "capabilities");
         List<CapabilityBlock> old;
         synchronized (this) {
             old = this.capabilities;
@@ -173,7 +186,8 @@ public final class BuddyInfo {
         pcs.firePropertyChange(PROP_CAPABILITIES, old, capabilities);
     }
 
-    public synchronized List<CapabilityBlock> getCapabilities() {
+    @SuppressWarnings({"ReturnOfCollectionOrArrayField"})
+    public synchronized @NotNull List<CapabilityBlock> getCapabilities() {
         return capabilities;
     }
 
@@ -184,6 +198,32 @@ public final class BuddyInfo {
             this.idleSince = idleSince;
         }
         fireObjectChange(PROP_IDLE_SINCE, old, idleSince);
+    }
+
+    void setIconHash(ExtraInfoBlock iconHash) {
+        ExtraInfoBlock old;
+        synchronized(this) {
+            old = this.iconHash;
+            this.iconHash = iconHash;
+        }
+        fireObjectChange(PROP_ICON_HASH, old, iconHash);
+    }
+
+    public synchronized @Nullable ExtraInfoBlock getIconHash() {
+        return iconHash;
+    }
+
+    void setIconData(ByteBlock iconData) {
+        ByteBlock old;
+        synchronized(this) {
+            old = this.iconData;
+            this.iconData = iconData;
+        }
+        fireObjectChange(PROP_ICON_DATA, old, iconData);
+    }
+
+    public synchronized @Nullable ByteBlock getIconData() {
+        return iconData;
     }
 
     public synchronized Date getIdleSince() { return idleSince; }
@@ -208,7 +248,18 @@ public final class BuddyInfo {
         fireObjectChange(PROP_AWAY_MESSAGE, old, awayMessage);
     }
 
-    public synchronized String getAwayMessage() { return awayMessage; }
+    public synchronized @Nullable String getAwayMessage() { return awayMessage; }
+
+    void setStatusMessage(String statusMessage) {
+        String old;
+        synchronized (this) {
+            old = this.statusMessage;
+            this.statusMessage = statusMessage;
+        }
+        fireObjectChange(PROP_STATUS_MESSAGE, old, statusMessage);
+    }
+
+    public synchronized @Nullable String getStatusMessage() { return statusMessage; }
 
     void setUserProfile(String userProfile) {
         String old;
@@ -219,7 +270,7 @@ public final class BuddyInfo {
         fireObjectChange(PROP_USER_PROFILE, old, userProfile);
     }
 
-    public synchronized String getUserProfile() { return userProfile; }
+    public synchronized @Nullable String getUserProfile() { return userProfile; }
 
     void setOldIconInfo(OldIconHashInfo oldIconInfo) {
         OldIconHashInfo old;
@@ -230,7 +281,7 @@ public final class BuddyInfo {
         fireObjectChange(PROP_OLD_ICON_INFO, old, oldIconInfo);
     }
 
-    public synchronized OldIconHashInfo getOldIconInfo() { return oldIconInfo; }
+    public synchronized @Nullable OldIconHashInfo getOldIconInfo() { return oldIconInfo; }
 
     void setLastAimExpression(String lastAimExpression) {
         String old;
@@ -241,7 +292,7 @@ public final class BuddyInfo {
         fireObjectChange(PROP_LAST_AIM_EXPRESSION, old, lastAimExpression);
     }
 
-    public synchronized String getLastAimExpression() {
+    public synchronized @Nullable String getLastAimExpression() {
         return lastAimExpression;
     }
 

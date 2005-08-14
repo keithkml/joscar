@@ -35,39 +35,49 @@
 
 package net.kano.joustsim.app.forms;
 
+import net.kano.joscar.ByteBlock;
+import net.kano.joscar.snaccmd.ExtraInfoBlock;
+import net.kano.joscar.rvcmd.InvitationMessage;
+import net.kano.joustsim.Screenname;
 import net.kano.joustsim.app.GuiSession;
-import net.kano.joustsim.oscar.oscar.service.ssi.Buddy;
-import net.kano.joustsim.oscar.oscar.service.ssi.Group;
-import net.kano.joustsim.oscar.oscar.service.ssi.MutableBuddy;
-import net.kano.joustsim.oscar.oscar.service.ssi.MutableBuddyList;
-import net.kano.joustsim.oscar.oscar.service.ssi.MutableGroup;
-import net.kano.joustsim.oscar.oscar.service.ssi.AddMutableGroup;
-import net.kano.joustsim.oscar.oscar.service.ssi.RenameMutableGroup;
-import net.kano.joustsim.oscar.oscar.service.ssi.DeleteMutableGroup;
+import net.kano.joustsim.oscar.AimConnection;
+import net.kano.joustsim.oscar.BuddyInfo;
+import net.kano.joustsim.oscar.BuddyInfoManager;
 import net.kano.joustsim.oscar.oscar.service.icbm.ImConversation;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferManager;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.OutgoingFileTransfer;
-import net.kano.joustsim.oscar.AimConnection;
-import net.kano.joustsim.Screenname;
-import net.kano.joscar.rvcmd.InvitationMessage;
+import net.kano.joustsim.oscar.oscar.service.ssi.AddMutableGroup;
+import net.kano.joustsim.oscar.oscar.service.ssi.Buddy;
+import net.kano.joustsim.oscar.oscar.service.ssi.DeleteMutableGroup;
+import net.kano.joustsim.oscar.oscar.service.ssi.Group;
+import net.kano.joustsim.oscar.oscar.service.ssi.MutableBuddy;
+import net.kano.joustsim.oscar.oscar.service.ssi.MutableBuddyList;
+import net.kano.joustsim.oscar.oscar.service.ssi.RenameMutableGroup;
 
+import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JTree;
-import javax.swing.JFileChooser;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
 import javax.swing.tree.DefaultTreeCellEditor;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.TreePath;
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.event.ActionEvent;
-import java.util.EventObject;
-import java.util.Arrays;
+import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.EventObject;
+import java.util.HashMap;
+import java.util.Map;
 
 public class BuddyListBox extends JPanel {
     private JButton infoButton;
@@ -80,6 +90,8 @@ public class BuddyListBox extends JPanel {
     private MutableBuddyList buddyList;
     private GuiSession guiSession;
     private JButton sendFileButton;
+    private Map<ExtraInfoBlock, BufferedImage> imagesCache
+            = new HashMap<ExtraInfoBlock, BufferedImage>();
 
     {
         setLayout(new BorderLayout());
@@ -155,7 +167,42 @@ public class BuddyListBox extends JPanel {
         });
         buddyTree.setComponentPopupMenu(menu);
         buddyTree.setEditable(true);
-        DefaultTreeCellRenderer renderer = new DefaultTreeCellRenderer();
+        DefaultTreeCellRenderer renderer = new DefaultTreeCellRenderer() {
+            public Component getTreeCellRendererComponent(JTree tree, Object value,
+                    boolean sel, boolean expanded, boolean leaf, int row,
+                    boolean hasFocus) {
+                assert super.getTreeCellRendererComponent(tree, value, sel, expanded,
+                        leaf, row, hasFocus) == this;
+                if (value instanceof BuddyListModel.BuddyHolder) {
+                    BuddyListModel.BuddyHolder buddyHolder = (BuddyListModel.BuddyHolder) value;
+                    AimConnection conn = guiSession.getAimConnection();
+                    Screenname sn = buddyHolder.getBuddy().getScreenname();
+                    BuddyInfoManager infoManager = conn.getBuddyInfoManager();
+                    BuddyInfo buddyInfo = infoManager.getBuddyInfo(sn);
+                    ExtraInfoBlock hash = buddyInfo.getIconHash();
+                    BufferedImage img = imagesCache.get(hash);
+                    if (img == null) {
+                        ByteBlock iconData = buddyInfo.getIconData();
+                        if (iconData != null) {
+
+                            try {
+                                img = ImageIO.read(
+                                        ByteBlock.createInputStream(iconData));
+                                imagesCache.put(hash, img);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                    if (img != null) {
+                        setIcon(new ImageIcon(img));
+                    } else {
+                        setIcon(null);
+                    }
+                }
+                return this;
+            }
+        };
         buddyTree.setCellRenderer(renderer);
         buddyTree.setCellEditor(new DefaultTreeCellEditor(buddyTree, renderer) {
             public boolean isCellEditable(EventObject event) {

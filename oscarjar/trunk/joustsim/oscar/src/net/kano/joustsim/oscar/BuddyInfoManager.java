@@ -52,6 +52,8 @@ import net.kano.joscar.snaccmd.DirInfo;
 import net.kano.joscar.snaccmd.FullUserInfo;
 import net.kano.joscar.snaccmd.ShortCapabilityBlock;
 import net.kano.joscar.snaccmd.WarningLevel;
+import net.kano.joscar.snaccmd.ExtraInfoBlock;
+import net.kano.joscar.snaccmd.ExtraInfoData;
 
 import java.beans.PropertyChangeEvent;
 import java.util.Date;
@@ -59,6 +61,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Set;
 
 public class BuddyInfoManager {
     private final AimConnection conn;
@@ -88,13 +92,22 @@ public class BuddyInfoManager {
 
         this.conn = conn;
         conn.addOpenedServiceListener(new OpenedServiceListener() {
-            public void openedServices(AimConnection conn, List<Service> services) {
+            public void openedServices(AimConnection conn,
+                    Collection<? extends Service> services) {
                 initBuddyService();
                 initInfoService();
+            }
+
+            public void closedServices(AimConnection conn,
+                    Collection<? extends Service> services) {
             }
         });
         initBuddyService();
         initInfoService();
+    }
+
+    public AimConnection getAimConnection() {
+        return conn;
     }
 
     private synchronized void cacheCertInfo(BuddyCertificateInfo certInfo) {
@@ -195,7 +208,8 @@ public class BuddyInfoManager {
             int numLong = caps == null ? 0 : caps.size();
             int numShort = shortCaps == null ? 0 : shortCaps.size();
 
-            List<CapabilityBlock> blocks = new ArrayList<CapabilityBlock>(numLong + numShort);
+            List<CapabilityBlock> blocks = new ArrayList<CapabilityBlock>(
+                    numLong + numShort);
             if (caps != null) {
                 blocks.addAll(caps);
             }
@@ -204,13 +218,14 @@ public class BuddyInfoManager {
                     blocks.add(shortCap.toCapabilityBlock());
                 }
             }
-            buddyInfo.setCapabilities(caps);
+            buddyInfo.setCapabilities(blocks);
         }
 
         ByteBlock certHash = info.getCertInfoHash();
         if (certHash != null) {
             if (certHash.getLength() == 0) certHash = null;
-            buddyInfo.setCertificateInfo(getAppropriateCertificateInfo(buddy, certHash));
+            buddyInfo.setCertificateInfo(
+                    getAppropriateCertificateInfo(buddy, certHash));
         }
 
         int idleMins = info.getIdleMins();
@@ -229,6 +244,24 @@ public class BuddyInfoManager {
             int rounder = (x10 % 10) >= 5 ? 1 : 0;
             int warningLevel = (x10 / 10) + rounder;
             buddyInfo.setWarningLevel(warningLevel);
+        }
+
+        List<ExtraInfoBlock> extraBlocks = info.getExtraInfoBlocks();
+        if (extraBlocks != null) {
+            for (ExtraInfoBlock block : extraBlocks) {
+                int type = block.getType();
+                ExtraInfoData data = block.getExtraData();
+                if (type == ExtraInfoBlock.TYPE_ICONHASH) {
+//                    if ((data.getFlags() & ExtraInfoData.FLAG_HASH_PRESENT) != 0) {
+                        buddyInfo.setIconHash(block);
+//                    } else {
+//                        buddyInfo.setIconHash(null);
+//                    }
+                } else if (type == ExtraInfoBlock.TYPE_AVAILMSG) {
+                    String status = ExtraInfoData.readAvailableMessage(data);
+                    buddyInfo.setStatusMessage(status);
+                }
+            }
         }
 
         buddyInfo.receivedBuddyStatusUpdate();
@@ -286,5 +319,9 @@ public class BuddyInfoManager {
         for (GlobalBuddyInfoListener l : listeners) {
             l.receivedStatusUpdate(this, sn, info);
         }
+    }
+
+    public synchronized Set<BuddyInfo> getKnownBuddyInfos() {
+        return DefensiveTools.getUnmodifiableSetCopy(buddyInfos.values());
     }
 }

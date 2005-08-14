@@ -34,5 +34,6 @@
 package net.kano.joustsim.oscar.oscar.service;
 
 public interface ServiceArbiterFactory {
-    ServiceArbiter<? extends Service> getInstance(int family);
+    ServiceArbiter<? extends Service> getInstance(
+            ServiceArbitrationManager manager, int family);
 }

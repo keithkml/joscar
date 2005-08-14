@@ -321,7 +321,8 @@ public class SsiService extends Service {
         for (ItemId id : items.keySet()) {
             if (id.getType() == type) idsForType.add(id.getId());
         }
-        idsForType.addAll(prospectiveIds.get(type));
+        Collection<Integer> prospective = prospectiveIds.get(type);
+        if (prospective != null) idsForType.addAll(prospective);
         return idsForType;
     }
     private synchronized Set<Integer> getPossiblyUsedGroupIds() {

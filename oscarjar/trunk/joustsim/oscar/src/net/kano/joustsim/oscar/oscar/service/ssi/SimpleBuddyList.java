@@ -109,7 +109,7 @@ class SimpleBuddyList implements BuddyList {
         });
     }
 
-    public synchronized void handleItemModified(final SsiItem item) {
+    public void handleItemModified(final SsiItem item) {
         runAndRecordChanges(new Runnable() {
             public void run() {
                 SsiItemObj iobj = factory.getItemObj(item);
@@ -118,7 +118,7 @@ class SimpleBuddyList implements BuddyList {
         });
     }
 
-    public synchronized void handleItemDeleted(final SsiItem item) {
+    public void handleItemDeleted(final SsiItem item) {
         runAndRecordChanges(new Runnable() {
             public void run() {
                 handleItemActuallyDeleted(item);

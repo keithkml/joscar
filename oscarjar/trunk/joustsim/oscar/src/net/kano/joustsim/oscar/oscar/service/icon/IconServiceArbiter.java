@@ -35,12 +35,15 @@ package net.kano.joustsim.oscar.oscar.service.icon;
 
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.CopyOnWriteArrayList;
+import net.kano.joscar.snaccmd.icon.IconCommand;
+import net.kano.joscar.snaccmd.ExtraInfoBlock;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.oscar.oscar.OscarConnection;
 import net.kano.joustsim.oscar.oscar.service.ServiceArbiter;
 import net.kano.joustsim.oscar.oscar.service.ServiceListener;
 import net.kano.joustsim.oscar.oscar.service.Service;
+import net.kano.joustsim.oscar.oscar.service.ServiceArbitrationManager;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -52,18 +55,21 @@ public class IconServiceArbiter
     private Set<RequestedIconInfo> requestedIconInfos
             = new LinkedHashSet<RequestedIconInfo>();
     private IconService currentService = null;
-
-    public boolean shouldAlwaysKeepAlive() {
-        return true;
-    }
-
-    public void handleOpenedService(AimConnection conn,
-            final IconService service) {
-
-    }
-
     private CopyOnWriteArrayList<IconRequestListener> listeners
             = new CopyOnWriteArrayList<IconRequestListener>();
+    private ServiceArbitrationManager manager;
+
+    public IconServiceArbiter(ServiceArbitrationManager manager) {
+        this.manager = manager;
+    }
+
+    public int getSnacFamily() {
+        return IconCommand.FAMILY_ICON;
+    }
+
+    public boolean shouldKeepAlive() {
+        return !requestedIconInfos.isEmpty();
+    }
 
     public void addIconRequestListener(IconRequestListener listener) {
         listeners.addIfAbsent(listener);
@@ -74,12 +80,21 @@ public class IconServiceArbiter
     }
 
     public void requestIcon(Screenname screenname, ByteBlock iconHash) {
+        //TODO: implement other requestIcon in IconServiceArbiter
+        throw new IllegalArgumentException("");
+    }
+
+    public void requestIcon(Screenname sn, ExtraInfoBlock hashBlock) {
         IconService service;
         synchronized (this) {
-            requestedIconInfos.add(new RequestedIconInfo(screenname, iconHash));
+            requestedIconInfos.add(new RequestedIconInfo(sn, hashBlock));
             service = currentService;
         }
-        service.requestIcon(screenname, iconHash);
+        if (service == null) {
+            manager.openService(this);
+        } else {
+            service.requestIcon(sn, hashBlock);
+        }
     }
 
     private void dequeueRequests(IconService service) {
@@ -109,7 +124,7 @@ public class IconServiceArbiter
             }
 
             public void buddyIconUpdated(IconService service,
-                    Screenname screenname, ByteBlock hash, ByteBlock iconData) {
+                    Screenname screenname, ExtraInfoBlock hash, ByteBlock iconData) {
                 synchronized(IconServiceArbiter.this) {
                     requestedIconInfos.remove(
                             new RequestedIconInfo(screenname, hash));
@@ -141,15 +156,14 @@ public class IconServiceArbiter
 
     private static class RequestedIconInfo {
         private final Screenname screenname;
-        private final ByteBlock iconHash;
+        private final ExtraInfoBlock iconHash;
 
-        public RequestedIconInfo(Screenname screenname, ByteBlock iconHash
-        ) {
+        public RequestedIconInfo(Screenname screenname, ExtraInfoBlock iconHash) {
             this.iconHash = iconHash;
             this.screenname = screenname;
         }
 
-        public ByteBlock getIconHash() {
+        public ExtraInfoBlock getIconHash() {
             return iconHash;
         }
 

@@ -35,10 +35,12 @@ package net.kano.joustsim.oscar.oscar.service.icon;
 
 import net.kano.joustsim.Screenname;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.snaccmd.ExtraInfoBlock;
 
 public interface IconRequestHandler {
     void addIconRequestListener(IconRequestListener listener);
     void removeIconRequestListener(IconRequestListener listener);
 
     void requestIcon(Screenname sn, ByteBlock hash);
+    void requestIcon(Screenname sn, ExtraInfoBlock hashBlock);
 }

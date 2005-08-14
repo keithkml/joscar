@@ -37,7 +37,7 @@ import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.oscar.oscar.OscarConnection;
 
 public interface ServiceArbiter<S extends Service> {
-    boolean shouldAlwaysKeepAlive();
-
+    int getSnacFamily();
+    boolean shouldKeepAlive();
     S createService(AimConnection aimConnection, OscarConnection conn);
 }

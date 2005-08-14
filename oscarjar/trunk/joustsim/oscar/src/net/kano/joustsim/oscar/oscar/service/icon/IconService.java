@@ -82,18 +82,16 @@ public class IconService extends Service implements IconRequestHandler {
                     ExtraInfoData data = iconInfo.getExtraData();
                     ByteBlock hash = data.getData();
                     Screenname sn = new Screenname(iconDataCmd.getScreenname());
-                    if (hash.equals(ExtraInfoData.HASH_SPECIAL)) {
+                    if ((data.getFlags() & ExtraInfoData.FLAG_HASH_PRESENT) == 0
+                            && hash.equals(ExtraInfoData.HASH_SPECIAL)) {
                         for (IconRequestListener listener : listeners) {
                             listener.buddyIconCleared(IconService.this, sn);
                         }
-                    } else if (hash.getLength() == 16) {
+                    } else {
                         for (IconRequestListener listener : listeners) {
                             listener.buddyIconUpdated(IconService.this, sn, 
-                                    hash, iconDataCmd.getIconData());
+                                    iconInfo, iconDataCmd.getIconData());
                         }
-                    } else {
-                        LOGGER.warning("Received unknown icon data response "
-                                + "for " + sn + ": " + hash);
                     }
                 }
             }
@@ -109,9 +107,13 @@ public class IconService extends Service implements IconRequestHandler {
     }
 
     public void requestIcon(Screenname sn, ByteBlock hash) {
-        sendSnac(new IconRequest(sn.getFormatted(),
-                new ExtraInfoBlock(TYPE_ICONHASH,
-                        new ExtraInfoData(ExtraInfoData.FLAG_HASH_PRESENT,
-                                hash))));
+        ExtraInfoBlock block = new ExtraInfoBlock(TYPE_ICONHASH,
+                new ExtraInfoData(ExtraInfoData.FLAG_HASH_PRESENT,
+                        hash));
+        requestIcon(sn, block);
+    }
+
+    public void requestIcon(Screenname sn, ExtraInfoBlock block) {
+        sendSnac(new IconRequest(sn.getFormatted(), block));
     }
 }

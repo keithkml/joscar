@@ -36,7 +36,8 @@
 package net.kano.joustsim.oscar.oscar.service;
 
 import net.kano.joustsim.oscar.oscar.OscarConnection;
+import org.jetbrains.annotations.Nullable;
 
 public interface ServiceFactory {
-    Service getService(OscarConnection conn, int family);
+    @Nullable Service getService(OscarConnection conn, int family);
 }

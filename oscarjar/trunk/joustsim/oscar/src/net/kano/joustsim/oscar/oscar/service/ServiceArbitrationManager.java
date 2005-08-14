@@ -33,16 +33,6 @@
 
 package net.kano.joustsim.oscar.oscar.service;
 
-import net.kano.joscar.snaccmd.icon.IconCommand;
-import net.kano.joustsim.oscar.oscar.service.icon.IconServiceArbiter;
-
-public class DefaultServiceArbiterFactory implements ServiceArbiterFactory {
-    public ServiceArbiter<? extends Service> getInstance(
-            ServiceArbitrationManager manager, int family) {
-        if (family == IconCommand.FAMILY_ICON) {
-            return new IconServiceArbiter(manager);
-        } else {
-            return null;
-        }
-    }
+public interface ServiceArbitrationManager {
+    void openService(ServiceArbiter<? extends Service> arbiter);
 }
