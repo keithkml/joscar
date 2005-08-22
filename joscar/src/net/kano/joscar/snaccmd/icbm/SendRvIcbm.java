@@ -139,6 +139,7 @@ public class SendRvIcbm extends AbstractRvIcbm implements SendIcbm {
 
     public String toString() {
         return "SendRvIcbm to " + sn + ": <" + getCapability() + ">, status="
-                + getRvStatus() + ", sessid=" + getRvSessionId();
+                + getRvStatus() + ", sessid=" + getRvSessionId() + " -- "
+                + super.toString();
     }
 }
