@@ -35,8 +35,8 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.Socket;
 import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.nio.channels.SocketChannel;
 
 public abstract class AbstractOutgoingConnectionController
@@ -56,5 +56,4 @@ public abstract class AbstractOutgoingConnectionController
 
 
     protected abstract InetAddress getIpAddress() throws IOException;
-
 }

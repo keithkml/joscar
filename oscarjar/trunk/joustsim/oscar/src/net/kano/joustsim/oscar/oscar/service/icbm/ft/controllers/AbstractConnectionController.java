@@ -81,6 +81,7 @@ public abstract class AbstractConnectionController extends StateController {
 
         this.fileTransfer = (FileTransferImpl) transfer;
         connectionInfo = fileTransfer.getTransferProperty(FileTransferImpl.KEY_CONN_INFO);
+        checkConnectionInfo();
 
         try {
             initializeBeforeStarting();
@@ -101,6 +102,10 @@ public abstract class AbstractConnectionController extends StateController {
 
         if (shouldStartTimerAutomatically()) startTimer();
         thread.start();
+    }
+
+    protected void checkConnectionInfo() throws IllegalStateException {
+
     }
 
     protected boolean shouldStartTimerAutomatically() {

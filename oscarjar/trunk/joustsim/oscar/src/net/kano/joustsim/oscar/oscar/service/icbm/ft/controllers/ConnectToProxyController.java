@@ -34,11 +34,13 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
 import net.kano.joscar.rvcmd.sendfile.FileSendAcceptRvCmd;
+import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joscar.rvproto.rvproxy.RvProxyAckCmd;
 import net.kano.joscar.rvproto.rvproxy.RvProxyCmd;
 import net.kano.joscar.rvproto.rvproxy.RvProxyInitRecvCmd;
 import net.kano.joscar.rvproto.rvproxy.RvProxyPacket;
 import net.kano.joscar.snaccmd.CapabilityBlock;
+import net.kano.joscar.MiscTools;
 import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferImpl;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferManager;
@@ -87,6 +89,19 @@ public class ConnectToProxyController extends AbstractProxyConnectionController
     }
 
     protected InetAddress getIpAddress() {
-        return getConnectionInfo().getProxyIP();
+        RvConnectionInfo connInfo = getConnectionInfo();
+        InetAddress proxyIp = connInfo.getProxyIP();
+        if (proxyIp == null) {
+            throw new IllegalStateException(MiscTools.getClassName(this)
+                    + " has invalid connection info: " + connInfo);
+        }
+        return proxyIp;
+    }
+
+    protected void checkConnectionInfo() throws IllegalStateException {
+        if (getIpAddress() == null) {
+            throw new IllegalStateException("illegal connection info for "
+                    + MiscTools.getClassName(this) + ": " + getConnectionInfo());
+        }
     }
 }

@@ -209,6 +209,7 @@ public abstract class FileTransferImpl
     }
 
     private synchronized StateController storeNextController(StateController controller) {
+        LOGGER.info("Transfer " + this + " changing to state controller " + controller);
         StateController last = this.controller;
         this.controller = controller;
         if (controller == null) {
@@ -230,6 +231,8 @@ public abstract class FileTransferImpl
     }
 
     public synchronized <V> void putTransferProperty(Key<V> key, V value) {
+        LOGGER.fine("Transfer property " + key + " set to " + value + " for "
+                + this);
         transferProperties.put(key, value);
     }
 
@@ -259,7 +262,8 @@ public abstract class FileTransferImpl
             if (done) return;
 
             this.state = state;
-            if (state == FileTransferState.FAILED || state == FileTransferState.FINISHED) {
+            if (state == FileTransferState.FAILED
+                    || state == FileTransferState.FINISHED) {
                 done = true;
             }
         }

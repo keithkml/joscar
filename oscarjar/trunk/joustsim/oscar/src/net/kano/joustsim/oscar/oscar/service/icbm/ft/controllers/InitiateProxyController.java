@@ -37,6 +37,7 @@ import net.kano.joscar.rvproto.rvproxy.RvProxyCmd;
 import net.kano.joscar.rvproto.rvproxy.RvProxyInitSendCmd;
 import net.kano.joscar.rvproto.rvproxy.RvProxyPacket;
 import net.kano.joscar.snaccmd.CapabilityBlock;
+import net.kano.joscar.MiscTools;
 import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferImpl;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferManager;
@@ -57,6 +58,7 @@ public abstract class InitiateProxyController extends AbstractProxyConnectionCon
         }
         return proxyAddr;
     }
+
 
     private String getProxyHost() {
         return "ars.oscar.aol.com";

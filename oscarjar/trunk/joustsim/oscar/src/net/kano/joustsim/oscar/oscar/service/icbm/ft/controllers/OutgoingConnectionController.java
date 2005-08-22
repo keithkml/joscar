@@ -69,6 +69,14 @@ public class OutgoingConnectionController extends AbstractOutgoingConnectionCont
         return ip;
     }
 
+    protected void checkConnectionInfo() throws IllegalStateException {
+        if (getIpAddress() == null) {
+            throw new IllegalStateException(MiscTools.getClassName(this) + " ("
+                    + type + ") has invalid connection info: "
+                    + getConnectionInfo());
+        }
+    }
+
     protected int getConnectionPort() {
         return getConnectionInfo().getPort();
     }
