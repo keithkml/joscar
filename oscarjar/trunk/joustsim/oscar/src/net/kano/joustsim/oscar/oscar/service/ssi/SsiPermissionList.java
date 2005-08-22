@@ -59,7 +59,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Collections;
 
-class SsiPermissionList implements PermissionList {
+class SsiPermissionList implements PermissionList, SsiItemChangeListener {
     private SsiItemObjectFactory factory = new DefaultSsiItemObjFactory();
 
     private SortedSet<PrivacyItem> privacyItems
@@ -77,6 +77,7 @@ class SsiPermissionList implements PermissionList {
 
     public SsiPermissionList(SsiService ssiService) {
         this.ssiService = ssiService;
+        ssiService.addItemChangeListener(this);
     }
 
     public void handleItemCreated(final SsiItem item) {

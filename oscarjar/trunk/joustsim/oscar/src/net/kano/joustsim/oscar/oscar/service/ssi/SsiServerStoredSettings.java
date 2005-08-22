@@ -48,7 +48,7 @@ import net.kano.joscar.CopyOnWriteArrayList;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-public class SsiServerStoredSettings implements ServerStoredSettings {
+public class SsiServerStoredSettings implements ServerStoredSettings, SsiItemChangeListener {
     private SsiService ssiService;
     private CopyOnWriteArrayList<ServerStoredSettingsListener> listeners
             = new CopyOnWriteArrayList<ServerStoredSettingsListener>();
@@ -61,6 +61,7 @@ public class SsiServerStoredSettings implements ServerStoredSettings {
 
     public SsiServerStoredSettings(SsiService ssiService) {
         this.ssiService = ssiService;
+        ssiService.addItemChangeListener(this);
     }
 
     public void handleItemCreated(final SsiItem item) {

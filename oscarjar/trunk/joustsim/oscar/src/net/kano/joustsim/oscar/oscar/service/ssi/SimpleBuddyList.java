@@ -61,7 +61,7 @@ import java.util.Collection;
  *
  */
 
-class SimpleBuddyList implements BuddyList {
+class SimpleBuddyList implements BuddyList, SsiItemChangeListener {
     public static final Comparator<SimpleBuddy> COMPARATOR_SN
             = new Comparator<SimpleBuddy>() {
         public int compare(SimpleBuddy o1, SimpleBuddy o2) {

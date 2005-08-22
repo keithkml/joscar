@@ -59,6 +59,7 @@ class SsiBuddyList extends SimpleBuddyList implements MutableBuddyList {
     protected SsiBuddyList(SsiService service) {
         this.service = service;
         syntheticGroup = new SsiSyntheticGroup(service, this);
+        service.addItemChangeListener(this);
     }
 
     protected SyntheticGroup getSyntheticGroup() {
