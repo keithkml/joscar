@@ -35,11 +35,16 @@
 
 package net.kano.joustsim.app.forms;
 
+import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.FileWritable;
 import net.kano.joscar.rvcmd.sendfile.FileSendBlock;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.app.GuiSession;
 import net.kano.joustsim.oscar.AimConnection;
+import net.kano.joustsim.oscar.BuddyInfo;
+import net.kano.joustsim.oscar.BuddyInfoChangeListener;
+import net.kano.joustsim.oscar.MyBuddyIconManager;
 import net.kano.joustsim.oscar.oscar.service.bos.MainBosService;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransfer;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferManager;
@@ -47,9 +52,12 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferManagerListener
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.IncomingFileTransfer;
 import net.kano.joustsim.oscar.oscar.service.info.InfoService;
 
+import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -58,17 +66,23 @@ import javax.swing.JProgressBar;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
-import javax.swing.JCheckBox;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.event.ChangeListener;
-import javax.swing.event.ChangeEvent;
+import javax.swing.filechooser.FileFilter;
+import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.io.File;
+import java.io.IOException;
 import java.text.NumberFormat;
+import java.util.Arrays;
 import java.util.Date;
 
 public class DummyOnlineWindow extends JFrame {
@@ -96,6 +110,8 @@ public class DummyOnlineWindow extends JFrame {
     private JButton idleButton;
     private JButton statusButton;
     private JCheckBox visibleCheckbox;
+    private JButton changeIconButton;
+    private JLabel myIconLabel;
 
     {
         getContentPane().add(mainPanel);
@@ -189,6 +205,65 @@ public class DummyOnlineWindow extends JFrame {
                 conn.getBosService().setVisibleStatus(visible);
             }
         });
+        changeIconButton.setAction(new AbstractAction() {
+            {
+                putValue(NAME, "Change...");
+            }
+
+            private JLabel accessory = new JLabel();
+            private JFileChooser chooser = new JFileChooser();
+            {
+                chooser.setAcceptAllFileFilterUsed(true);
+                chooser.setApproveButtonText("Choose");
+                chooser.setDialogTitle("Choose Buddy Icon");
+                chooser.setAccessory(accessory);
+                chooser.addChoosableFileFilter(new FileFilter() {
+                    public boolean accept(File f) {
+                        if (f.isDirectory()) return true;
+
+                        String name = f.getName();
+                        int dot = name.lastIndexOf('.');
+                        if (dot == -1) return false;
+                        String ext = name.substring(dot + 1).toLowerCase();
+                        return Arrays.asList("png", "jpg", "gif").contains(ext);
+                    }
+
+                    public String getDescription() {
+                        return "Image files (*.png, *.jpg, *.gif)";
+                    }
+                });
+                accessory.setSize(50, 50);
+                chooser.addPropertyChangeListener(new PropertyChangeListener() {
+                    public void propertyChange(PropertyChangeEvent evt) {
+                        Image icon = getSelectedImage();
+                        accessory.setIcon(icon == null ? null : new ImageIcon(icon));
+                    }
+                });
+            }
+
+            private Image getSelectedImage() {
+                File file = chooser.getSelectedFile();
+                Image icon = null;
+                if (file != null) {
+                    try {
+                        icon = ImageIO.read(file);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                return icon;
+            }
+
+            public void actionPerformed(ActionEvent e) {
+                int result = chooser.showOpenDialog(DummyOnlineWindow.this);
+                if (result == JFileChooser.APPROVE_OPTION) {
+                    MyBuddyIconManager mgr = guiSession.getAimConnection().getMyBuddyIconManager();
+                    FileWritable writable = new FileWritable(
+                            chooser.getSelectedFile().getAbsolutePath());
+                    mgr.requestSetIcon(ByteBlock.createByteBlock(writable));
+                }
+            }
+        });
     }
 
     private void updateMemoryUse() {
@@ -243,7 +318,21 @@ public class DummyOnlineWindow extends JFrame {
                     transfer.decline();
                 }
             }
+        });
+        BuddyInfo myInfo = conn.getBuddyInfoManager()
+                .getBuddyInfo(conn.getScreenname());
+        myInfo.addPropertyListener(new BuddyInfoChangeListener() {
+            public void receivedBuddyStatusUpdate(BuddyInfo info) {
+            }
 
+            public void propertyChange(PropertyChangeEvent evt) {
+                String propertyName = evt.getPropertyName();
+                if (propertyName.equals(BuddyInfo.PROP_ICON_DATA)) {
+                    ByteBlock data = (ByteBlock) evt.getNewValue();
+                    ImageIcon image = new ImageIcon(data.toByteArray());
+                    myIconLabel.setIcon(image);
+                }
+            }
         });
     }
 
@@ -282,7 +371,7 @@ public class DummyOnlineWindow extends JFrame {
         public DisconnectAction() {
             super("Disconnect");
 
-            putValue(MNEMONIC_KEY, new Integer(KeyEvent.VK_D));
+            putValue(MNEMONIC_KEY, KeyEvent.VK_D);
             putValue(SHORT_DESCRIPTION, "Disconnect from AIM");
         }
 

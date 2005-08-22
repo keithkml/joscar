@@ -42,15 +42,9 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import java.io.File;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.security.Security;
-import java.text.DateFormat;
-import java.util.Date;
 import java.util.logging.ConsoleHandler;
-import java.util.logging.Formatter;
 import java.util.logging.Level;
-import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 public final class JoustSIM {
@@ -61,28 +55,10 @@ public final class JoustSIM {
 
     public static void main(String[] args) {
         System.out.println("starting");
-        Logger logger = Logger.getLogger("net.kano.joustsim");
+        Logger logger = Logger.getLogger("net.kano");
         logger.setLevel(Level.FINE);
         ConsoleHandler handler = new ConsoleHandler();
-        handler.setFormatter(new Formatter() {
-            private final DateFormat formatter
-                    = DateFormat.getTimeInstance(DateFormat.SHORT);
-            public String format(LogRecord record) {
-                String clname = record.getSourceClassName();
-                String shname = clname.substring(clname.lastIndexOf('.') + 1);
-                Throwable thrown = record.getThrown();
-                StringWriter sw = null;
-                if (thrown != null) {
-                    sw = new StringWriter();
-                    thrown.printStackTrace(new PrintWriter(sw));
-                }
-                return "[" + formatter.format(new Date(record.getMillis()))
-                        + " " + record.getLevel() + "] "
-                        + shname + ": "
-                        + record.getMessage() + (sw == null ? ""
-                        : sw.getBuffer().toString()) + "\n";
-            }
-        });
+        handler.setFormatter(new CoolFormatter());
         handler.setLevel(Level.ALL);
         logger.addHandler(handler);
 
@@ -135,4 +111,5 @@ public final class JoustSIM {
         guiSession.open();
         System.out.println("initialized gui session");
     }
+
 }

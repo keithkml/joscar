@@ -36,8 +36,8 @@
 package net.kano.joustsim.app.forms;
 
 import net.kano.joscar.ByteBlock;
-import net.kano.joscar.snaccmd.ExtraInfoBlock;
 import net.kano.joscar.rvcmd.InvitationMessage;
+import net.kano.joscar.snaccmd.ExtraInfoData;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.app.GuiSession;
 import net.kano.joustsim.oscar.AimConnection;
@@ -90,8 +90,8 @@ public class BuddyListBox extends JPanel {
     private MutableBuddyList buddyList;
     private GuiSession guiSession;
     private JButton sendFileButton;
-    private Map<ExtraInfoBlock, BufferedImage> imagesCache
-            = new HashMap<ExtraInfoBlock, BufferedImage>();
+    private Map<ExtraInfoData, BufferedImage> imagesCache
+            = new HashMap<ExtraInfoData, BufferedImage>();
 
     {
         setLayout(new BorderLayout());
@@ -179,7 +179,7 @@ public class BuddyListBox extends JPanel {
                     Screenname sn = buddyHolder.getBuddy().getScreenname();
                     BuddyInfoManager infoManager = conn.getBuddyInfoManager();
                     BuddyInfo buddyInfo = infoManager.getBuddyInfo(sn);
-                    ExtraInfoBlock hash = buddyInfo.getIconHash();
+                    ExtraInfoData hash = buddyInfo.getIconHash();
                     BufferedImage img = imagesCache.get(hash);
                     if (img == null) {
                         ByteBlock iconData = buddyInfo.getIconData();
