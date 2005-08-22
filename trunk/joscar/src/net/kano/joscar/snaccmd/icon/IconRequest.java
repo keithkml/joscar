@@ -42,9 +42,11 @@ import net.kano.joscar.OscarTools;
 import net.kano.joscar.StringBlock;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.ExtraInfoBlock;
+import net.kano.joscar.snaccmd.ExtraInfoData;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.logging.Logger;
 
 /**
  * A SNAC command sent to request another user's buddy icon. Normally
@@ -56,6 +58,9 @@ import java.io.OutputStream;
  * @see IconDataCmd
  */
 public class IconRequest extends IconCommand {
+    private static final Logger LOGGER = Logger
+            .getLogger(IconRequest.class.getName());
+
     /**
      * A default value for the "icon request code" sent in an
      * <code>IconRequest</code>.
@@ -67,7 +72,7 @@ public class IconRequest extends IconCommand {
     /** Some sort of request code. */
     private final int code;
     /** The icon data whose corresponding icon is being requested. */
-    private final ExtraInfoBlock iconInfo;
+    private final ExtraInfoData iconInfo;
 
     /**
      * Generates a new icon request command from the given incoming SNAC packet.
@@ -91,7 +96,14 @@ public class IconRequest extends IconCommand {
 
         ByteBlock iconBlock = rest.subBlock(1);
 
-        iconInfo = ExtraInfoBlock.readExtraInfoBlock(iconBlock);
+        ExtraInfoBlock block = ExtraInfoBlock.readExtraInfoBlock(iconBlock);
+        if (block.getType() != ExtraInfoBlock.TYPE_ICONHASH) {
+            iconInfo = block.getExtraData();
+        } else {
+            LOGGER.warning("Got strange icon block code in icon request: "
+                    + block);
+            iconInfo = null;
+        }
     }
 
     /**
@@ -103,7 +115,7 @@ public class IconRequest extends IconCommand {
      * @param iconInfo the icon information block whose corresponding icon is
      *        being requested
      */
-    public IconRequest(String sn, ExtraInfoBlock iconInfo) {
+    public IconRequest(String sn, ExtraInfoData iconInfo) {
         this(sn, CODE_DEFAULT, iconInfo);
     }
 
@@ -116,7 +128,7 @@ public class IconRequest extends IconCommand {
      * @param iconInfo the icon information block whose corresponding icon is
      *        being requested
      */
-    public IconRequest(String sn, int code, ExtraInfoBlock iconInfo) {
+    public IconRequest(String sn, int code, ExtraInfoData iconInfo) {
         super(CMD_ICON_REQ);
 
         DefensiveTools.checkNull(sn, "sn");
@@ -153,14 +165,14 @@ public class IconRequest extends IconCommand {
      *
      * @return an icon information block describing the icon being requested
      */
-    public final ExtraInfoBlock getIconInfo() {
+    public final ExtraInfoData getIconInfo() {
         return iconInfo;
     }
 
     public void writeData(OutputStream out) throws IOException {
         OscarTools.writeScreenname(out, sn);
         BinaryTools.writeUByte(out, code);
-        iconInfo.write(out);
+        new ExtraInfoBlock(ExtraInfoBlock.TYPE_ICONHASH, iconInfo).write(out);
     }
 
     public String toString() {
