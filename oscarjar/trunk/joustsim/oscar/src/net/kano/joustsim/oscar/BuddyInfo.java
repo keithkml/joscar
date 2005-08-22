@@ -40,12 +40,12 @@ import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.DirInfo;
-import net.kano.joscar.snaccmd.ExtraInfoBlock;
+import net.kano.joscar.snaccmd.ExtraInfoData;
 import net.kano.joscar.snaccmd.icbm.OldIconHashInfo;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.trust.BuddyCertificateInfo;
-import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.beans.PropertyChangeSupport;
 import java.util.Collection;
@@ -71,6 +71,9 @@ public final class BuddyInfo {
     public static final String PROP_WANTS_OUR_ICON = "wantsOurIcon";
     public static final String PROP_ICON_HASH = "iconHash";
     public static final String PROP_ICON_DATA = "iconData";
+    public static final String PROP_MOBILE = "mobile";
+    public static final String PROP_ROBOT = "robot";
+    public static final String PROP_AOL_USER = "aolUser";
 
     private final Screenname screenname;
 
@@ -85,8 +88,12 @@ public final class BuddyInfo {
     private String awayMessage = null;
     private String userProfile = null;
     private String statusMessage = null;
-    private ExtraInfoBlock iconHash = null;
+    private ExtraInfoData iconHash = null;
     private ByteBlock iconData = null;
+    private boolean mobile = false;
+    private boolean robot = false;
+    private boolean aolUser = false;
+
 
     // icbm info
     private OldIconHashInfo oldIconInfo = null;
@@ -200,8 +207,8 @@ public final class BuddyInfo {
         fireObjectChange(PROP_IDLE_SINCE, old, idleSince);
     }
 
-    void setIconHash(ExtraInfoBlock iconHash) {
-        ExtraInfoBlock old;
+    void setIconHash(ExtraInfoData iconHash) {
+        ExtraInfoData old;
         synchronized(this) {
             old = this.iconHash;
             this.iconHash = iconHash;
@@ -209,7 +216,7 @@ public final class BuddyInfo {
         fireObjectChange(PROP_ICON_HASH, old, iconHash);
     }
 
-    public synchronized @Nullable ExtraInfoBlock getIconHash() {
+    public synchronized @Nullable ExtraInfoData getIconHash() {
         return iconHash;
     }
 
@@ -320,6 +327,39 @@ public final class BuddyInfo {
     }
 
     public synchronized boolean wantsOurIcon() { return wantsOurIcon; }
+
+    void setMobile(boolean mobile) {
+        boolean old;
+        synchronized (this) {
+            old = this.mobile;
+            this.mobile = mobile;
+        }
+        pcs.firePropertyChange(PROP_MOBILE, old, mobile);
+    }
+
+    public synchronized boolean isMobile() { return mobile; }
+
+    void setRobot(boolean robot) {
+        boolean old;
+        synchronized (this) {
+            old = this.robot;
+            this.robot = robot;
+        }
+        pcs.firePropertyChange(PROP_ROBOT, old, robot);
+    }
+
+    public synchronized boolean isRobot() { return robot; }
+
+    void setAolUser(boolean aolUser) {
+        boolean old;
+        synchronized (this) {
+            old = this.aolUser;
+            this.aolUser = aolUser;
+        }
+        pcs.firePropertyChange(PROP_AOL_USER, old, aolUser);
+    }
+
+    public synchronized boolean isAolUser() { return aolUser; }
 
     void receivedBuddyStatusUpdate() {
         assert !Thread.holdsLock(this);

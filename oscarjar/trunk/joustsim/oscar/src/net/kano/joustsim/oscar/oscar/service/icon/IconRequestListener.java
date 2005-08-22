@@ -33,13 +33,13 @@
 
 package net.kano.joustsim.oscar.oscar.service.icon;
 
-import net.kano.joustsim.Screenname;
 import net.kano.joscar.ByteBlock;
-import net.kano.joscar.snaccmd.ExtraInfoBlock;
+import net.kano.joscar.snaccmd.ExtraInfoData;
+import net.kano.joustsim.Screenname;
 
 public interface IconRequestListener {
     void buddyIconCleared(IconService service, Screenname screenname);
 
     void buddyIconUpdated(IconService service, Screenname screenname,
-            ExtraInfoBlock hash, ByteBlock iconData);
+            ExtraInfoData hash, ByteBlock iconData);
 }

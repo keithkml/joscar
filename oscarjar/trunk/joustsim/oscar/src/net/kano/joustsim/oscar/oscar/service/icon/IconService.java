@@ -33,26 +33,31 @@
 
 package net.kano.joustsim.oscar.oscar.service.icon;
 
-import static net.kano.joscar.snaccmd.ExtraInfoBlock.TYPE_ICONHASH;
-import net.kano.joustsim.oscar.oscar.service.Service;
-import net.kano.joustsim.oscar.oscar.OscarConnection;
-import net.kano.joustsim.oscar.AimConnection;
-import net.kano.joustsim.Screenname;
+import net.kano.joscar.ByteBlock;
+import net.kano.joscar.CopyOnWriteArrayList;
+import net.kano.joscar.Writable;
+import net.kano.joscar.flapcmd.SnacCommand;
+import net.kano.joscar.snac.ClientSnacProcessor;
+import net.kano.joscar.snac.SnacRequestAdapter;
+import net.kano.joscar.snac.SnacResponseEvent;
+import net.kano.joscar.snac.SnacResponseListener;
+import net.kano.joscar.snaccmd.ExtraInfoBlock;
+import net.kano.joscar.snaccmd.ExtraInfoData;
 import net.kano.joscar.snaccmd.conn.SnacFamilyInfo;
+import net.kano.joscar.snaccmd.error.SnacError;
 import net.kano.joscar.snaccmd.icon.IconCommand;
 import net.kano.joscar.snaccmd.icon.IconDataCmd;
 import net.kano.joscar.snaccmd.icon.IconRequest;
-import net.kano.joscar.snaccmd.ExtraInfoData;
-import net.kano.joscar.snaccmd.ExtraInfoBlock;
-import net.kano.joscar.ByteBlock;
-import net.kano.joscar.CopyOnWriteArrayList;
-import net.kano.joscar.flapcmd.SnacCommand;
-import net.kano.joscar.snac.SnacResponseListener;
-import net.kano.joscar.snac.SnacResponseEvent;
-import net.kano.joscar.snac.ClientSnacProcessor;
+import net.kano.joscar.snaccmd.icon.UploadIconAck;
+import net.kano.joscar.snaccmd.icon.UploadIconCmd;
+import net.kano.joustsim.Screenname;
+import net.kano.joustsim.oscar.AimConnection;
+import net.kano.joustsim.oscar.oscar.OscarConnection;
+import net.kano.joustsim.oscar.oscar.service.Service;
 
 import java.util.logging.Logger;
 
+//TODO: allow exception handler to see contents of packets, so we can hunt down new packets through logs
 public class IconService extends Service implements IconRequestHandler {
     private static final Logger LOGGER = Logger
             .getLogger(IconService.class.getName());
@@ -90,7 +95,7 @@ public class IconService extends Service implements IconRequestHandler {
                     } else {
                         for (IconRequestListener listener : listeners) {
                             listener.buddyIconUpdated(IconService.this, sn, 
-                                    iconInfo, iconDataCmd.getIconData());
+                                    data, iconDataCmd.getIconData());
                         }
                     }
                 }
@@ -106,14 +111,44 @@ public class IconService extends Service implements IconRequestHandler {
         setReady();
     }
 
-    public void requestIcon(Screenname sn, ByteBlock hash) {
-        ExtraInfoBlock block = new ExtraInfoBlock(TYPE_ICONHASH,
-                new ExtraInfoData(ExtraInfoData.FLAG_HASH_PRESENT,
-                        hash));
-        requestIcon(sn, block);
+//    public void requestIcon(Screenname sn, ByteBlock hash) {
+//        ExtraInfoBlock block = new ExtraInfoBlock(TYPE_ICONHASH,
+//                new ExtraInfoData(ExtraInfoData.FLAG_HASH_PRESENT,
+//                        hash));
+//        requestIcon(sn, block);
+//    }
+
+    public void requestIcon(Screenname sn, ExtraInfoData block) {
+        sendSnac(new IconRequest(sn.getFormatted(), block));
     }
 
-    public void requestIcon(Screenname sn, ExtraInfoBlock block) {
-        sendSnac(new IconRequest(sn.getFormatted(), block));
+    public void setMyIcon(Writable data) {
+        setMyIcon(data, null);
+    }
+
+    //TODO: rename to uploadIcon
+    public void setMyIcon(final Writable data, final IconSetListener listener) {
+        sendSnacRequest(new UploadIconCmd(data), new SnacRequestAdapter() {
+            public void handleResponse(SnacResponseEvent e) {
+                SnacCommand cmd = e.getSnacCommand();
+                if (cmd instanceof UploadIconAck) {
+                    UploadIconAck iconAck = (UploadIconAck) cmd;
+                    if (iconAck.getCode() != UploadIconAck.CODE_DEFAULT) {
+                        LOGGER.fine("Got unknown code from UploadIconAck: "
+                                + iconAck);
+                    }
+                    ExtraInfoBlock iconInfo = iconAck.getIconInfo();
+                    if (iconInfo == null) {
+                        LOGGER.finer("Got icon ack with no iconInfo: "
+                                + iconAck);
+                    }
+                    if (listener != null) {
+                        listener.handleIconSet(IconService.this, data, true);
+                    }
+                } else if (cmd instanceof SnacError) {
+                    listener.handleIconSet(IconService.this, data, false);
+                }
+            }
+        });
     }
 }

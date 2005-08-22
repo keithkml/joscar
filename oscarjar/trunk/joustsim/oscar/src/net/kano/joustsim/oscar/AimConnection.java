@@ -120,11 +120,14 @@ public class AimConnection {
     private final BuddyInfoManager buddyInfoManager;
     private final BuddyInfoTracker buddyInfoTracker;
     private final BuddyIconTracker buddyIconTracker;
+    private final MyBuddyIconManager myBuddyIconManager;
+
     private final CertificateInfoTrustManager certificateInfoTrustManager;
     private final TrustedCertificatesTracker trustedCertificatesTracker;
-    private final TrustPreferences localPrefs;
     private final BuddyTrustManager buddyTrustManager;
     private final CapabilityManager capabilityManager;
+
+    private final TrustPreferences localPrefs;
 
     private ServiceArbiterFactory arbiterFactory
             = new DefaultServiceArbiterFactory();
@@ -180,6 +183,7 @@ public class AimConnection {
         this.buddyInfoManager = new BuddyInfoManager(this);
         this.buddyInfoTracker = new BuddyInfoTracker(this);
         this.buddyIconTracker = new BuddyIconTracker(this);
+        this.myBuddyIconManager = new MyBuddyIconManager(this);
         this.loginConn = new LoginConnection(props.getLoginHost(),
                 props.getLoginPort());
         this.password = props.getPassword();
@@ -241,6 +245,10 @@ public class AimConnection {
     public BuddyInfoManager getBuddyInfoManager() { return buddyInfoManager; }
 
     public BuddyIconTracker getBuddyIconTracker() { return buddyIconTracker; }
+
+    public MyBuddyIconManager getMyBuddyIconManager() {
+        return myBuddyIconManager;
+    }
 
     public CertificateInfoTrustManager getCertificateInfoTrustManager() {
         return certificateInfoTrustManager;
@@ -335,6 +343,7 @@ public class AimConnection {
             }
             externalServices.put(service, arbiter);
         }
+        //TODO: set up queue for requesting service, to prevent multiple simultaneous requests and to allow for timeout and retry
         requestService(service, arbiter);
         return arbiter;
     }
@@ -749,8 +758,11 @@ public class AimConnection {
             //        ^-- should it be a global thing in OscarConnection,
             //            or what?
             int usePort;
-            if (port <= 0) usePort = 5190;
-            else usePort = port;
+            if (port <= 0) {
+                usePort = 5190;
+            } else {
+                usePort = port;
+            }
             LOGGER.fine("Connecting to " + host + ":" + port + " for external "
                     + "service " + serviceFamily);
             BasicConnection conn = new BasicConnection(host, usePort);

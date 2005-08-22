@@ -46,15 +46,18 @@ import net.kano.joscar.snaccmd.CertificateInfo;
 import net.kano.joscar.snaccmd.ExtraInfoBlock;
 import net.kano.joscar.snaccmd.ExtraInfoData;
 import net.kano.joscar.snaccmd.FullUserInfo;
+import net.kano.joscar.snaccmd.conn.ExtraInfoAck;
 import net.kano.joscar.snaccmd.conn.MyInfoRequest;
+import net.kano.joscar.snaccmd.conn.ServiceRedirect;
 import net.kano.joscar.snaccmd.conn.ServiceRequest;
 import net.kano.joscar.snaccmd.conn.SetEncryptionInfoCmd;
 import net.kano.joscar.snaccmd.conn.SetExtraInfoCmd;
 import net.kano.joscar.snaccmd.conn.SetIdleCmd;
 import net.kano.joscar.snaccmd.conn.YourInfoCmd;
-import net.kano.joscar.snaccmd.conn.ServiceRedirect;
 import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.oscar.oscar.OscarConnection;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.Date;
@@ -98,13 +101,19 @@ public class MainBosService extends BosService {
             for (MainBosServiceListener listener : listeners) {
                 listener.handleYourInfo(this, yic.getUserInfo());
             }
+        } else if (snac instanceof ExtraInfoAck) {
+            //TODO: write myiconmanager to upload and download our icon when necessary
+            ExtraInfoAck ack = (ExtraInfoAck) snac;
+            for (MainBosServiceListener listener : listeners) {
+                listener.handleYourExtraInfo(ack.getExtraInfos());
+            }
         }
 
         super.handleSnacPacket(snacPacketEvent);
     }
 
 
-    public void setIdleSince(Date at) throws IllegalArgumentException {
+    public void setIdleSince(@NotNull Date at) throws IllegalArgumentException {
         DefensiveTools.checkNull(at, "at");
 
         long idlems = System.currentTimeMillis() - at.getTime();
@@ -137,7 +146,7 @@ public class MainBosService extends BosService {
         sendSnac(new SetExtraInfoCmd(flag));
     }
 
-    public synchronized void setStatusMessage(String msg) {
+    public synchronized void setStatusMessage(@Nullable String msg) {
         if (availMsg == null ? msg == null : availMsg.equals(msg)) return;
         availMsg = msg;
         String useMsg = availMsg == null ? "" : availMsg;

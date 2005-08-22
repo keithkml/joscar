@@ -35,15 +35,16 @@ package net.kano.joustsim.oscar.oscar.service.icon;
 
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.CopyOnWriteArrayList;
+import net.kano.joscar.Writable;
+import net.kano.joscar.snaccmd.ExtraInfoData;
 import net.kano.joscar.snaccmd.icon.IconCommand;
-import net.kano.joscar.snaccmd.ExtraInfoBlock;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.oscar.oscar.OscarConnection;
-import net.kano.joustsim.oscar.oscar.service.ServiceArbiter;
-import net.kano.joustsim.oscar.oscar.service.ServiceListener;
 import net.kano.joustsim.oscar.oscar.service.Service;
+import net.kano.joustsim.oscar.oscar.service.ServiceArbiter;
 import net.kano.joustsim.oscar.oscar.service.ServiceArbitrationManager;
+import net.kano.joustsim.oscar.oscar.service.ServiceListener;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -58,6 +59,7 @@ public class IconServiceArbiter
     private CopyOnWriteArrayList<IconRequestListener> listeners
             = new CopyOnWriteArrayList<IconRequestListener>();
     private ServiceArbitrationManager manager;
+    private Writable iconToSet = null;
 
     public IconServiceArbiter(ServiceArbitrationManager manager) {
         this.manager = manager;
@@ -67,7 +69,7 @@ public class IconServiceArbiter
         return IconCommand.FAMILY_ICON;
     }
 
-    public boolean shouldKeepAlive() {
+    public synchronized boolean shouldKeepAlive() {
         return !requestedIconInfos.isEmpty();
     }
 
@@ -79,12 +81,7 @@ public class IconServiceArbiter
         listeners.remove(listener);
     }
 
-    public void requestIcon(Screenname screenname, ByteBlock iconHash) {
-        //TODO: implement other requestIcon in IconServiceArbiter
-        throw new IllegalArgumentException("");
-    }
-
-    public void requestIcon(Screenname sn, ExtraInfoBlock hashBlock) {
+    public void requestIcon(Screenname sn, ExtraInfoData hashBlock) {
         IconService service;
         synchronized (this) {
             requestedIconInfos.add(new RequestedIconInfo(sn, hashBlock));
@@ -97,15 +94,48 @@ public class IconServiceArbiter
         }
     }
 
+    public void setMyIcon(Writable data) {
+        IconService service;
+        synchronized (this) {
+            iconToSet = data;
+            service = currentService;
+        }
+
+        if (service == null) {
+            manager.openService(this);
+        } else {
+            requestIconChange(service, data);
+        }
+    }
+
     private void dequeueRequests(IconService service) {
         List<RequestedIconInfo> infos;
+        Writable icon;
         synchronized (this) {
             infos = new ArrayList<RequestedIconInfo>(requestedIconInfos);
+            icon = iconToSet;
         }
         for (RequestedIconInfo info : infos) {
             service.requestIcon(info.getScreenname(),
                     info.getIconHash());
         }
+        if (icon != null) {
+            requestIconChange(service, icon);
+        }
+    }
+
+    //TODO: rename uploadIcon
+    private void requestIconChange(IconService service, Writable icon) {
+        service.setMyIcon(icon, new IconSetListener() {
+            public void handleIconSet(IconService service, Writable data,
+                    boolean succeeded) {
+                synchronized(this) {
+                    if (data == iconToSet) {
+                        iconToSet = null;
+                    }
+                }
+            }
+        });
     }
 
     public IconService createService(AimConnection aimConnection,
@@ -124,7 +154,7 @@ public class IconServiceArbiter
             }
 
             public void buddyIconUpdated(IconService service,
-                    Screenname screenname, ExtraInfoBlock hash, ByteBlock iconData) {
+                    Screenname screenname, ExtraInfoData hash, ByteBlock iconData) {
                 synchronized(IconServiceArbiter.this) {
                     requestedIconInfos.remove(
                             new RequestedIconInfo(screenname, hash));
@@ -156,14 +186,14 @@ public class IconServiceArbiter
 
     private static class RequestedIconInfo {
         private final Screenname screenname;
-        private final ExtraInfoBlock iconHash;
+        private final ExtraInfoData iconHash;
 
-        public RequestedIconInfo(Screenname screenname, ExtraInfoBlock iconHash) {
+        public RequestedIconInfo(Screenname screenname, ExtraInfoData iconHash) {
             this.iconHash = iconHash;
             this.screenname = screenname;
         }
 
-        public ExtraInfoBlock getIconHash() {
+        public ExtraInfoData getIconHash() {
             return iconHash;
         }
 
@@ -184,8 +214,7 @@ public class IconServiceArbiter
         }
 
         public int hashCode() {
-            int result;
-            result = screenname.hashCode();
+            int result = screenname.hashCode();
             result = 29 * result + iconHash.hashCode();
             return result;
         }

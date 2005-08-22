@@ -34,14 +34,7 @@
 package net.kano.joustsim.oscar.oscar.service.icon;
 
 import net.kano.joscar.Writable;
-import net.kano.joscar.snaccmd.ExtraInfoData;
-import net.kano.joustsim.Screenname;
 
-public interface IconRequestHandler {
-    void addIconRequestListener(IconRequestListener listener);
-    void removeIconRequestListener(IconRequestListener listener);
-
-    void requestIcon(Screenname sn, ExtraInfoData hashBlock);
-
-    void setMyIcon(Writable data);
+public interface IconSetListener {
+    void handleIconSet(IconService service, Writable data, boolean succeeded);
 }

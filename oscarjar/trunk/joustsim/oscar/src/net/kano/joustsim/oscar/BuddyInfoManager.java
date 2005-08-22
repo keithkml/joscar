@@ -37,6 +37,8 @@ package net.kano.joustsim.oscar;
 
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.oscar.service.Service;
+import net.kano.joustsim.oscar.oscar.service.bos.MainBosService;
+import net.kano.joustsim.oscar.oscar.service.bos.MainBosServiceListener;
 import net.kano.joustsim.oscar.oscar.service.buddy.BuddyService;
 import net.kano.joustsim.oscar.oscar.service.buddy.BuddyServiceListener;
 import net.kano.joustsim.oscar.oscar.service.info.BuddyHashHolder;
@@ -65,14 +67,15 @@ import java.util.Collection;
 import java.util.Set;
 
 public class BuddyInfoManager {
+    //TODO: handle yourextrainfo to get our own info blocks
     private final AimConnection conn;
     private Map<Screenname,BuddyInfo> buddyInfos = new HashMap<Screenname, BuddyInfo>();
     private Map<BuddyHashHolder,BuddyCertificateInfo> cachedCertInfos
             = new HashMap<BuddyHashHolder, BuddyCertificateInfo>();
 
-
     private boolean initedBuddyService = false;
     private boolean initedInfoService = false;
+    private boolean initedBosService = false;
 
     private CopyOnWriteArrayList<GlobalBuddyInfoListener> listeners
             = new CopyOnWriteArrayList<GlobalBuddyInfoListener>();
@@ -96,6 +99,7 @@ public class BuddyInfoManager {
                     Collection<? extends Service> services) {
                 initBuddyService();
                 initInfoService();
+                initBosService();
             }
 
             public void closedServices(AimConnection conn,
@@ -184,6 +188,28 @@ public class BuddyInfoManager {
         });
     }
 
+    private void initBosService() {
+        MainBosService boService = conn.getBosService();
+        if (boService == null) return;
+
+        synchronized(this) {
+            if (initedBosService) return;
+            initedBosService = true;
+        }
+
+        boService.addMainBosServiceListener(new MainBosServiceListener() {
+            public void handleYourInfo(MainBosService service, FullUserInfo userInfo) {
+                handleBuddyStatusUpdate(conn.getScreenname(), userInfo);
+            }
+
+            public void handleYourExtraInfo(List<ExtraInfoBlock> extraInfos) {
+                if (extraInfos != null) {
+                    handleExtraInfoBlocks(conn.getScreenname(), extraInfos);
+                }
+            }
+        });
+    }
+
     public void addGlobalBuddyInfoListener(GlobalBuddyInfoListener l) {
         listeners.addIfAbsent(l);
     }
@@ -248,23 +274,34 @@ public class BuddyInfoManager {
 
         List<ExtraInfoBlock> extraBlocks = info.getExtraInfoBlocks();
         if (extraBlocks != null) {
-            for (ExtraInfoBlock block : extraBlocks) {
-                int type = block.getType();
-                ExtraInfoData data = block.getExtraData();
-                if (type == ExtraInfoBlock.TYPE_ICONHASH) {
+            handleExtraInfoBlocks(buddy, extraBlocks);
+        }
+
+        int flags = info.getFlags();
+        buddyInfo.setMobile((flags & FullUserInfo.MASK_WIRELESS) != 0);
+        buddyInfo.setRobot((flags & FullUserInfo.MASK_AB) != 0);
+        buddyInfo.setAolUser((flags & FullUserInfo.MASK_AOL) != 0);
+
+        buddyInfo.receivedBuddyStatusUpdate();
+    }
+
+    private void handleExtraInfoBlocks(Screenname buddy,
+            List<ExtraInfoBlock> extraBlocks) {
+        BuddyInfo buddyInfo = getBuddyInfo(buddy);
+        for (ExtraInfoBlock block : extraBlocks) {
+            int type = block.getType();
+            ExtraInfoData data = block.getExtraData();
+            if (type == ExtraInfoBlock.TYPE_ICONHASH) {
 //                    if ((data.getFlags() & ExtraInfoData.FLAG_HASH_PRESENT) != 0) {
-                        buddyInfo.setIconHash(block);
+                    buddyInfo.setIconHash(block.getExtraData());
 //                    } else {
 //                        buddyInfo.setIconHash(null);
 //                    }
-                } else if (type == ExtraInfoBlock.TYPE_AVAILMSG) {
-                    String status = ExtraInfoData.readAvailableMessage(data);
-                    buddyInfo.setStatusMessage(status);
-                }
+            } else if (type == ExtraInfoBlock.TYPE_AVAILMSG) {
+                String status = ExtraInfoData.readAvailableMessage(data);
+                buddyInfo.setStatusMessage(status);
             }
         }
-
-        buddyInfo.receivedBuddyStatusUpdate();
     }
 
     private synchronized BuddyCertificateInfo getAppropriateCertificateInfo(

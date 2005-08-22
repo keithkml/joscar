@@ -52,7 +52,6 @@ public class BuddyInfoTracker {
     private final BuddyInfoManager buddyInfoMgr;
     private final BuddyTrustManager buddyTrustManager;
 
-    private Set globalTrackers = new HashSet();
     private Map<Screenname,Set<BuddyInfoTrackerListener>> trackers
             = new HashMap<Screenname, Set<BuddyInfoTrackerListener>>();
 

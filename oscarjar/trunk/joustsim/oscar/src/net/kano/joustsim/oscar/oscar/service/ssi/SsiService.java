@@ -36,6 +36,7 @@
 package net.kano.joustsim.oscar.oscar.service.ssi;
 
 import net.kano.joscar.MiscTools;
+import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.ssiitem.SsiItemObjectFactory;
 import net.kano.joscar.ssiitem.DefaultSsiItemObjFactory;
 import net.kano.joscar.ssiitem.SsiItemObj;
@@ -75,21 +76,25 @@ import java.util.TreeSet;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 
 public class SsiService extends Service {
     private static final Logger LOGGER = Logger
             .getLogger(SsiService.class.getName());
 
     private boolean requestedList = false;
-    private static final int NUM_IDS = 0x7fff+1;
-
-    private SsiBuddyList buddyList = new SsiBuddyList(this);
-    private SsiPermissionList permissionList = new SsiPermissionList(this);
-    private SsiServerStoredSettings settings = new SsiServerStoredSettings(this);
+    private static final int NUM_IDS = 0x7fff + 1;
 
     private Map<Integer, Collection<Integer>> prospectiveIds
             = new HashMap<Integer, Collection<Integer>>();
     private Collection<Integer> prospectiveGroupIds = new ArrayList<Integer>();
+    private CopyOnWriteArrayList<SsiItemChangeListener> listeners
+            = new CopyOnWriteArrayList<SsiItemChangeListener>();
+
+    private SsiBuddyList buddyList = new SsiBuddyList(this);
+    private SsiPermissionList permissionList = new SsiPermissionList(this);
+    private SsiServerStoredSettings settings = new SsiServerStoredSettings(this);
+    private MyBuddyIconItemManager buddyIconItemManager = new MyBuddyIconItemManager(this);
 
     public SsiService(AimConnection aimConnection,
             OscarConnection oscarConnection) {
@@ -104,7 +109,8 @@ public class SsiService extends Service {
         OscarConnection oscarConnection = getOscarConnection();
         ClientSnacProcessor snacProcessor = oscarConnection.getSnacProcessor();
         snacProcessor.addGlobalResponseListener(new ItemsChangeListener());
-        boolean serverReady = !oscarConnection.getServiceEvents(ServerReadyEvent.class)
+        boolean serverReady = !oscarConnection
+                .getServiceEvents(ServerReadyEvent.class)
                 .isEmpty();
         if (serverReady) requestList();
     }
@@ -115,7 +121,7 @@ public class SsiService extends Service {
     }
 
     private void requestList() {
-        synchronized(this) {
+        synchronized (this) {
             if (requestedList) return;
             requestedList = true;
         }
@@ -134,9 +140,11 @@ public class SsiService extends Service {
         final List<Exception> exceptions = new ArrayList<Exception>();
         if (snac instanceof SsiDataCmd) {
             SsiDataCmd ssiDataCmd = (SsiDataCmd) snac;
-            boolean done = (snac.getFlag2() & SnacCommand.SNACFLAG2_MORECOMING) == 0;
+            boolean done = (snac.getFlag2() & SnacCommand.SNACFLAG2_MORECOMING)
+                    == 0;
             if (done) {
-                LOGGER.fine("Got final buddy list packet: " + items.size() + " items");
+                LOGGER.fine("Got final buddy list packet: " + items.size()
+                        + " items");
             } else {
                 LOGGER.fine("Got buddy list part: " + items.size() + " items");
             }
@@ -203,24 +211,30 @@ public class SsiService extends Service {
 
     private Map<ItemId, SsiItem> items = new HashMap<ItemId, SsiItem>();
 
-    public void itemCreated(SsiItem item) {
+    private void itemCreated(SsiItem item) {
         LOGGER.fine("Item created: " + item);
 
         ItemId id = new ItemId(item);
-        synchronized(this) {
+        synchronized (this) {
             SsiItem old = items.get(id);
             if (old != null) {
-                throw new IllegalArgumentException("item " + id + " already exists "
-                        + "as " + old + ", tried to add as " + item);
+                throw new IllegalArgumentException(
+                        "item " + id + " already exists "
+                                + "as " + old + ", tried to add as " + item);
             }
             items.put(id, item);
         }
-        buddyList.handleItemCreated(item);
-        permissionList.handleItemCreated(item);
-        settings.handleItemCreated(item);
+        for (SsiItemChangeListener listener : listeners) {
+            try {
+                listener.handleItemCreated(item);
+            } catch (Exception e) {
+                LOGGER.log(Level.SEVERE, "Exception thrown by SSI listener "
+                        + listener, e);
+            }
+        }
     }
 
-    public void itemModified(SsiItem item) {
+    private void itemModified(SsiItem item) {
         LOGGER.fine("Item modified: " + item);
 
         ItemId id = new ItemId(item);
@@ -233,12 +247,17 @@ public class SsiService extends Service {
             LOGGER.fine("(Old item: " + oldItem + ")");
             items.put(id, item);
         }
-        buddyList.handleItemModified(item);
-        permissionList.handleItemModified(item);
-        settings.handleItemModified(item);
+        for (SsiItemChangeListener listener : listeners) {
+            try {
+                listener.handleItemCreated(item);
+            } catch (Exception e) {
+                LOGGER.log(Level.SEVERE, "Exception thrown by SSI listener "
+                        + listener, e);
+            }
+        }
     }
 
-    public void itemDeleted(SsiItem item) {
+    private void itemDeleted(SsiItem item) {
         LOGGER.fine("Item deleted: " + item);
 
         SsiItem removed;
@@ -249,9 +268,15 @@ public class SsiService extends Service {
             throw new IllegalArgumentException("no such item " + item);
         }
         LOGGER.fine("(Actual deleted: " + removed + ")");
-        buddyList.handleItemDeleted(item);
-        permissionList.handleItemDeleted(item);
-        settings.handleItemDeleted(item);
+
+        for (SsiItemChangeListener listener : listeners) {
+            try {
+                listener.handleItemCreated(item);
+            } catch (Exception e) {
+                LOGGER.log(Level.SEVERE, "Exception thrown by SSI listener "
+                        + listener, e);
+            }
+        }
     }
 
     /** That's so random */
@@ -283,7 +308,7 @@ public class SsiService extends Service {
 
     private synchronized void addUsedBuddyIdsInGroup(Set<Integer> idsForType,
             int parent) {
-        for (Map.Entry<ItemId,SsiItem> id : items.entrySet()) {
+        for (Map.Entry<ItemId, SsiItem> id : items.entrySet()) {
             ItemId key = id.getKey();
             if (key.getType() == SsiItem.TYPE_GROUP
                     && key.getParent() == parent) {
@@ -300,7 +325,7 @@ public class SsiService extends Service {
     }
 
     private synchronized void addUsedGroupIdsInRoot(Set<Integer> idsForType) {
-        for (Map.Entry<ItemId,SsiItem> id : items.entrySet()) {
+        for (Map.Entry<ItemId, SsiItem> id : items.entrySet()) {
             ItemId key = id.getKey();
             if (key.getType() == SsiItem.TYPE_GROUP
                     && key.getParent() == 0) {
@@ -325,10 +350,14 @@ public class SsiService extends Service {
         if (prospective != null) idsForType.addAll(prospective);
         return idsForType;
     }
+
     private synchronized Set<Integer> getPossiblyUsedGroupIds() {
         Set<Integer> idsForType = new HashSet<Integer>(items.size());
         for (ItemId id : items.keySet()) {
-            if (id.getType() == SsiItem.TYPE_GROUP) idsForType.add(id.getParent());
+            if (id.getType() == SsiItem.TYPE_GROUP) {
+                idsForType
+                        .add(id.getParent());
+            }
         }
         idsForType.addAll(prospectiveGroupIds);
         return idsForType;
@@ -358,6 +387,10 @@ public class SsiService extends Service {
         return settings;
     }
 
+    public MyBuddyIconItemManager getBuddyIconItemManager() {
+        return buddyIconItemManager;
+    }
+
     public void sendSsiModification(ItemsCmd cmd,
             SnacRequestListener listener) {
         sendSnacRequest(cmd, listener);
@@ -365,6 +398,14 @@ public class SsiService extends Service {
 
     public void sendSsiModification(ItemsCmd cmd) {
         sendSnac(cmd);
+    }
+
+    public void addItemChangeListener(SsiItemChangeListener listener) {
+        listeners.addIfAbsent(listener);
+    }
+
+    public void removeListener(SsiItemChangeListener listener) {
+        listeners.remove(listener);
     }
 
     private static class ItemId {
@@ -416,7 +457,8 @@ public class SsiService extends Service {
 
         public String toString() {
             return "ItemId{" +
-                    "type=" + MiscTools.findIntField(SsiItem.class, type, "TYPE_.*") +
+                    "type="
+                    + MiscTools.findIntField(SsiItem.class, type, "TYPE_.*") +
                     ", parent=0x" + Integer.toHexString(parent) +
                     ", id=0x" + Integer.toHexString(id) +
                     "}";
@@ -426,7 +468,8 @@ public class SsiService extends Service {
     private class ItemsChangeListener implements SnacResponseListener {
         public void handleResponse(SnacResponseEvent e) {
             if (e.getSnacCommand() instanceof SsiDataModResponse) {
-                SsiDataModResponse dataModResponse = (SsiDataModResponse) e.getSnacCommand();
+                SsiDataModResponse dataModResponse = (SsiDataModResponse) e
+                        .getSnacCommand();
                 SnacCommand origCmd = e.getRequest().getCommand();
                 boolean create = origCmd instanceof CreateItemsCmd;
                 boolean modify = origCmd instanceof ModifyItemsCmd;
@@ -457,14 +500,16 @@ public class SsiService extends Service {
                         int id = item.getId();
                         Set<Integer> possible = new TreeSet<Integer>(
                                 getIdsForType(item.getItemType()));
-                        LOGGER.warning("ID taken for " + className + " of " + item);
+                        LOGGER.warning(
+                                "ID taken for " + className + " of " + item);
                         LOGGER.warning("ID: " + id + " of possible ID's: "
                                 + possible);
 
                     } else {
-                        LOGGER.warning("SSI error 0x" + Integer.toHexString(result)
-                                + " for " + className
-                                + " of " + item);
+                        LOGGER.warning(
+                                "SSI error 0x" + Integer.toHexString(result)
+                                        + " for " + className
+                                        + " of " + item);
                     }
                 }
             }

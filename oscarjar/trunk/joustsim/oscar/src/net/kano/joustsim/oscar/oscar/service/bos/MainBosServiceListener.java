@@ -33,8 +33,13 @@
 
 package net.kano.joustsim.oscar.oscar.service.bos;
 
+import net.kano.joscar.snaccmd.ExtraInfoBlock;
 import net.kano.joscar.snaccmd.FullUserInfo;
+
+import java.util.List;
 
 public interface MainBosServiceListener {
     void handleYourInfo(MainBosService service, FullUserInfo userInfo);
+
+    void handleYourExtraInfo(List<ExtraInfoBlock> extraInfos);
 }
