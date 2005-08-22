@@ -67,7 +67,6 @@ import java.util.Collection;
 import java.util.Set;
 
 public class BuddyInfoManager {
-    //TODO: handle yourextrainfo to get our own info blocks
     private final AimConnection conn;
     private Map<Screenname,BuddyInfo> buddyInfos = new HashMap<Screenname, BuddyInfo>();
     private Map<BuddyHashHolder,BuddyCertificateInfo> cachedCertInfos

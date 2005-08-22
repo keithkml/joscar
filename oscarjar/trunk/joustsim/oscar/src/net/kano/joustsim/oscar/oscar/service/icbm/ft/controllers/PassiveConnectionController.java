@@ -49,6 +49,9 @@ public abstract class PassiveConnectionController
     private RvConnectionInfo connInfo;
 
     protected void initializeBeforeStarting() throws IOException {
+        //TODO: use proxy
+//        getFileTransfer().getProxy().
+
         ServerSocketChannel chan = ServerSocketChannel.open();
         serverSocket = chan;
         chan.socket().bind(null);

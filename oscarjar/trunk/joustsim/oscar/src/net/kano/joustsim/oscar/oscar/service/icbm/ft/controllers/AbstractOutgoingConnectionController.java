@@ -49,6 +49,7 @@ public abstract class AbstractOutgoingConnectionController
             throw new IllegalStateException("no IP address");
         }
         setConnectingState();
+        //TODO: use proxy
         return SocketChannel.open(new InetSocketAddress(ip, getConnectionPort())).socket();
     }
 

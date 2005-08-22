@@ -61,6 +61,7 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.WaitingForConnection
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ChecksummingEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
+import net.kano.joustsim.oscar.proxy.AimProxy;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -112,6 +113,7 @@ public abstract class FileTransferImpl
     private List<StateChangeEvent> eventQueue = new CopyOnWriteArrayList<StateChangeEvent>();
     private long perConnectionTimeout = 10000;
     private Map<ConnectionType, Long> timeouts = new HashMap<ConnectionType, Long>();
+    private AimProxy proxy = null ;
 
     {
         timeouts.put(ConnectionType.LAN, 2L);
@@ -347,6 +349,10 @@ public abstract class FileTransferImpl
             if (event.getState() == null) fireEvent(event.getEvent());
             else setState(event.getState(), event.getEvent());
         }
+    }
+
+    public AimProxy getProxy() {
+        return proxy;
     }
 
 

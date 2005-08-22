@@ -96,7 +96,7 @@ public class MyBuddyIconManager {
                             + "icon for " + hash + " but we don't "
                             + "want icon data");
                 } else {
-                    conn.getIconServiceArbiter().setMyIcon(wantedIconData);
+                    conn.getIconServiceArbiter().uploadIcon(wantedIconData);
                 }
             }
         } else {

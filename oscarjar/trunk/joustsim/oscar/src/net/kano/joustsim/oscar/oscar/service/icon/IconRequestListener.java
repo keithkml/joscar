@@ -38,7 +38,8 @@ import net.kano.joscar.snaccmd.ExtraInfoData;
 import net.kano.joustsim.Screenname;
 
 public interface IconRequestListener {
-    void buddyIconCleared(IconService service, Screenname screenname);
+    void buddyIconCleared(IconService service, Screenname screenname,
+            ExtraInfoData data);
 
     void buddyIconUpdated(IconService service, Screenname screenname,
             ExtraInfoData hash, ByteBlock iconData);

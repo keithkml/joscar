@@ -61,9 +61,9 @@ import net.kano.joustsim.oscar.oscar.service.DefaultServiceArbiterFactory;
 import net.kano.joustsim.oscar.oscar.service.Service;
 import net.kano.joustsim.oscar.oscar.service.ServiceArbiter;
 import net.kano.joustsim.oscar.oscar.service.ServiceArbiterFactory;
+import net.kano.joustsim.oscar.oscar.service.ServiceArbitrationManager;
 import net.kano.joustsim.oscar.oscar.service.ServiceFactory;
 import net.kano.joustsim.oscar.oscar.service.ServiceListener;
-import net.kano.joustsim.oscar.oscar.service.ServiceArbitrationManager;
 import net.kano.joustsim.oscar.oscar.service.bos.ExternalBosService;
 import net.kano.joustsim.oscar.oscar.service.bos.MainBosService;
 import net.kano.joustsim.oscar.oscar.service.bos.OpenedExternalServiceListener;
@@ -86,8 +86,13 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.logging.Logger;
 
 //TODO: time out waiting for all services to be ready, to ensure connection comes up eventually
@@ -234,6 +239,48 @@ public class AimConnection {
 
         loginConn.addOscarListener(new LoginConnListener());
         loginConn.setServiceFactory(new LoginServiceFactory());
+
+        Timer timer = new Timer("External OSCAR connection timeout watcher", true);
+        timer.scheduleAtFixedRate(new TimerTask() {
+            public void run() {
+                LOGGER.finer("Checking for stale service requests");
+                //TODO: use configurable connection timeout
+                Set<Integer> retry = new HashSet<Integer>();
+                synchronized (this) {
+                    long time = System.currentTimeMillis();
+                    Set<Map.Entry<Integer, ServiceRequestInfo>> entries = pendingServiceRequests
+                            .entrySet();
+                    if (entries.isEmpty()) {
+                        LOGGER.finer("No pending service requests!");
+                    }
+                    for (Iterator<Map.Entry<Integer,ServiceRequestInfo>> it
+                            = entries.iterator();
+                            it.hasNext();) {
+                        Map.Entry<Integer,ServiceRequestInfo> entry = it.next();
+
+                        ServiceRequestInfo request = entry.getValue();
+                        long diff = time - request.getStartTime();
+                        if (diff > 10000) {
+                            LOGGER.info("External service for arbiter "
+                                    + request.getArbiter() + "(0x"
+                                    + Integer.toHexString(request.getFamily())
+                                    + ") timed out after "
+                                    + ((int) diff/1000.0) + "s; retrying");
+                            retry.add(entry.getKey());
+                            request.cancel();
+                            it.remove();
+                        } else {
+                            LOGGER.fine("Service request for "
+                                    + request.getArbiter() + " still has "
+                                    + (10000-diff) + "ms before timing out");
+                        }
+                    }
+                }
+                for (int service : retry) {
+                    requestService(service, getServiceArbiter(service));
+                }
+            }
+        }, 5000, 5000);
     }
 
     public final AppSession getAppSession() { return appSession; }
@@ -343,7 +390,6 @@ public class AimConnection {
             }
             externalServices.put(service, arbiter);
         }
-        //TODO: set up queue for requesting service, to prevent multiple simultaneous requests and to allow for timeout and retry
         requestService(service, arbiter);
         return arbiter;
     }
@@ -362,17 +408,97 @@ public class AimConnection {
         synchronized (externalServicesLock) {
             arbiter = externalServices.get(family);
         }
-        if (arbiter == null || !arbiter.shouldKeepAlive()) return;
+        if (arbiter == null) {
+            LOGGER.warning("Someone requested refresh of 0x"
+                    + Integer.toHexString(family) + " but there's no arbiter");
+            return;
+        } else if (!arbiter.shouldKeepAlive()) {
+            LOGGER.info("Someone requested a refresh of 0x"
+                    + Integer.toHexString(family) + " but the arbiter "
+                    + arbiter + " says it doesn't want to live");
+            return;
+        }
         requestService(family, arbiter);
     }
 
+    private Map<Integer, ServiceRequestInfo> pendingServiceRequests
+            = new HashMap<Integer, ServiceRequestInfo>();
+
+    private static class ServiceRequestInfo<S extends Service> {
+        private long startTime = System.currentTimeMillis();
+        private int family;
+        private ServiceArbiter<S> arbiter;
+        private BasicConnection connection = null;
+        private boolean canceled = false;
+
+        public ServiceRequestInfo(int family, ServiceArbiter<S> arbiter) {
+            this.family = family;
+            this.arbiter = arbiter;
+        }
+
+        public long getStartTime() {
+            return startTime;
+        }
+
+        public ServiceArbiter<S> getArbiter() {
+            return arbiter;
+        }
+
+        public synchronized BasicConnection getConnection() {
+            return connection;
+        }
+
+        public synchronized void setConnection(BasicConnection connection) {
+            this.connection = connection;
+        }
+
+        public void cancel() {
+            canceled = true;
+            BasicConnection connection = getConnection();
+            if (connection != null) connection.disconnect();
+        }
+
+        public int getFamily() {
+            return family;
+        }
+
+        public boolean isCanceled() {
+            return canceled;
+        }
+    }
+
     private <S extends Service> void requestService(int service,
-            final ServiceArbiter<S> arbiter) {
+            ServiceArbiter<S> arbiter) {
+        ServiceRequestInfo<S> request;
+        synchronized (this) {
+            if (pendingServiceRequests.containsKey(service)) return;
+            if (externalConnections.containsKey(arbiter)) {
+                LOGGER.finer("Someone requested 0x"
+                        + Integer.toHexString(service) + " but there's "
+                        + "already an external connection: "
+                        + externalConnections.get(arbiter));
+                return;
+            }
+            request = new ServiceRequestInfo<S>(service, arbiter);
+            pendingServiceRequests.put(service, request);
+        }
         LOGGER.info("Requesting external service " + service + " for "
                 + arbiter);
         MainBosService bosService = getBosService();
         bosService.requestService(service,
-                new ArbitratedExternalServiceListener<S>(arbiter));
+                new ArbitratedExternalServiceListener<S>(request));
+    }
+
+    private synchronized <S extends Service> boolean clearRequest(
+            ServiceRequestInfo<S> request) {
+        boolean removed = pendingServiceRequests.values().remove(request);
+        if (removed) {
+            LOGGER.info("Request " + request + " cleared");
+        } else {
+            LOGGER.info("Request " + request + " was not cleared because it is "
+                    + "obsolete");
+        }
+        return removed;
     }
 
     private synchronized void clearExternalConnection(OscarConnection conn,
@@ -394,9 +520,11 @@ public class AimConnection {
 //        return externalConnections.get(arbiter);
 //    }
 
-    private synchronized void storeExternalConnection(BasicConnection conn,
-            ServiceArbiter<? extends Service> arbiter) {
-        externalConnections.put(arbiter, conn);
+    private synchronized boolean storeExternalConnection(BasicConnection conn,
+            ServiceRequestInfo<? extends Service> request) {
+        if (!clearRequest(request)) return false;
+        externalConnections.put(request.getArbiter(), conn);
+        return true;
     }
 
     public @Nullable synchronized Service getService(int family) {
@@ -699,11 +827,11 @@ public class AimConnection {
     private class ExternalServiceConnListener<S extends Service>
             implements OscarConnListener {
         private final int serviceFamily;
-        private final ServiceArbiter<S> arbiter;
+        private final ServiceRequestInfo<S> request;
 
         public ExternalServiceConnListener(int serviceFamily,
-                ServiceArbiter<S> arbiter) {
-            this.arbiter = arbiter;
+                ServiceRequestInfo<S> arbiter) {
+            this.request = arbiter;
             this.serviceFamily = serviceFamily;
         }
 
@@ -716,9 +844,9 @@ public class AimConnection {
             if (state == ClientConn.STATE_FAILED
                     || state == ClientConn.STATE_NOT_CONNECTED) {
                 LOGGER.info("External service connection died for service "
-                        + serviceFamily + " ( " + arbiter + ")");
+                        + serviceFamily + " ( " + request + ")");
                 conn.removeOscarListener(this);
-                clearExternalConnection(conn, arbiter);
+                clearExternalConnection(conn, request.getArbiter());
                 refreshServiceIfNecessary(serviceFamily);
             }
         }
@@ -745,35 +873,31 @@ public class AimConnection {
 
     private class ArbitratedExternalServiceListener<S extends Service> implements
             OpenedExternalServiceListener {
-        private final ServiceArbiter<S> arbiter;
+        private final ServiceRequestInfo<S> request;
 
-        public ArbitratedExternalServiceListener(ServiceArbiter<S> arbiter) {
-            this.arbiter = arbiter;
+        public ArbitratedExternalServiceListener(ServiceRequestInfo<S> request) {
+            this.request = request;
         }
 
         public void handleServiceRedirect(final MainBosService service,
                 final int serviceFamily, String host, int port,
                 ByteBlock flapCookie) {
-            //TODO: add timeout for external service to be ready
-            //        ^-- should it be a global thing in OscarConnection,
-            //            or what?
             int usePort;
-            if (port <= 0) {
-                usePort = 5190;
-            } else {
-                usePort = port;
-            }
+            if (port <= 0) usePort = 5190;
+            else usePort = port;
+
             LOGGER.fine("Connecting to " + host + ":" + port + " for external "
                     + "service " + serviceFamily);
             BasicConnection conn = new BasicConnection(host, usePort);
             conn.setServiceFactory(new ExternalServiceFactory<S>(
-                    serviceFamily, arbiter));
+                    serviceFamily, request.getArbiter()));
             conn.setCookie(flapCookie);
             conn.addGlobalServiceListener(new DispatchingServiceListener());
             conn.addOscarListener(new ExternalServiceConnListener<S>(
-                    serviceFamily, arbiter));
-            storeExternalConnection(conn, arbiter);
-            conn.connect();
+                    serviceFamily, request));
+            if (storeExternalConnection(conn, request)) {
+                conn.connect();
+            }
         }
     }
 }

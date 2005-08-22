@@ -102,7 +102,6 @@ public class MainBosService extends BosService {
                 listener.handleYourInfo(this, yic.getUserInfo());
             }
         } else if (snac instanceof ExtraInfoAck) {
-            //TODO: write myiconmanager to upload and download our icon when necessary
             ExtraInfoAck ack = (ExtraInfoAck) snac;
             for (MainBosServiceListener listener : listeners) {
                 listener.handleYourExtraInfo(ack.getExtraInfos());

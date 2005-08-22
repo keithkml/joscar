@@ -31,17 +31,7 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icon;
+package net.kano.joustsim.oscar.proxy;
 
-import net.kano.joscar.Writable;
-import net.kano.joscar.snaccmd.ExtraInfoData;
-import net.kano.joustsim.Screenname;
-
-public interface IconRequestHandler {
-    void addIconRequestListener(IconRequestListener listener);
-    void removeIconRequestListener(IconRequestListener listener);
-
-    void requestIcon(Screenname sn, ExtraInfoData hashBlock);
-
-    void uploadIcon(Writable data);
+public interface AimProxy {
 }

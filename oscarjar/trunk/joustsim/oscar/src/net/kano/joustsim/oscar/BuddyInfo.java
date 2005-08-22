@@ -378,4 +378,18 @@ public final class BuddyInfo {
             Object oldval, Object newval) {
         if (oldval != newval) pcs.firePropertyChange(property, oldval, newval);
     }
+
+    boolean setIconDataIfHashMatches(ExtraInfoData hash, ByteBlock iconData) {
+        ByteBlock old;
+        synchronized (this) {
+            ExtraInfoData curHash = getIconHash();
+            if (!(curHash == null ? hash == null : curHash.equals(hash))) {
+                return false;
+            }
+            old = this.iconData;
+            this.iconData = iconData;
+        }
+        pcs.firePropertyChange(PROP_ICON_DATA, old, iconData);
+        return true;
+    }
 }

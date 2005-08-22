@@ -90,7 +90,7 @@ public class IconService extends Service implements IconRequestHandler {
                     if ((data.getFlags() & ExtraInfoData.FLAG_HASH_PRESENT) == 0
                             && hash.equals(ExtraInfoData.HASH_SPECIAL)) {
                         for (IconRequestListener listener : listeners) {
-                            listener.buddyIconCleared(IconService.this, sn);
+                            listener.buddyIconCleared(IconService.this, sn, data);
                         }
                     } else {
                         for (IconRequestListener listener : listeners) {
@@ -122,12 +122,11 @@ public class IconService extends Service implements IconRequestHandler {
         sendSnac(new IconRequest(sn.getFormatted(), block));
     }
 
-    public void setMyIcon(Writable data) {
-        setMyIcon(data, null);
+    public void uploadIcon(Writable data) {
+        uploadIcon(data, null);
     }
 
-    //TODO: rename to uploadIcon
-    public void setMyIcon(final Writable data, final IconSetListener listener) {
+    public void uploadIcon(final Writable data, final IconSetListener listener) {
         sendSnacRequest(new UploadIconCmd(data), new SnacRequestAdapter() {
             public void handleResponse(SnacResponseEvent e) {
                 SnacCommand cmd = e.getSnacCommand();

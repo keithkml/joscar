@@ -50,9 +50,13 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Logger;
 
 public class IconServiceArbiter
         implements ServiceArbiter<IconService>, IconRequestHandler {
+    private static final Logger LOGGER = Logger
+            .getLogger(IconServiceArbiter.class.getName());
+
     private Set<RequestedIconInfo> requestedIconInfos
             = new LinkedHashSet<RequestedIconInfo>();
     private IconService currentService = null;
@@ -70,7 +74,7 @@ public class IconServiceArbiter
     }
 
     public synchronized boolean shouldKeepAlive() {
-        return !requestedIconInfos.isEmpty();
+        return !requestedIconInfos.isEmpty() || iconToSet != null;
     }
 
     public void addIconRequestListener(IconRequestListener listener) {
@@ -88,13 +92,14 @@ public class IconServiceArbiter
             service = currentService;
         }
         if (service == null) {
+            LOGGER.finer("Icon service is down; requesting for it to be opened");
             manager.openService(this);
         } else {
             service.requestIcon(sn, hashBlock);
         }
     }
 
-    public void setMyIcon(Writable data) {
+    public void uploadIcon(Writable data) {
         IconService service;
         synchronized (this) {
             iconToSet = data;
@@ -104,7 +109,7 @@ public class IconServiceArbiter
         if (service == null) {
             manager.openService(this);
         } else {
-            requestIconChange(service, data);
+            uploadIcon(service, data);
         }
     }
 
@@ -120,13 +125,12 @@ public class IconServiceArbiter
                     info.getIconHash());
         }
         if (icon != null) {
-            requestIconChange(service, icon);
+            uploadIcon(service, icon);
         }
     }
 
-    //TODO: rename uploadIcon
-    private void requestIconChange(IconService service, Writable icon) {
-        service.setMyIcon(icon, new IconSetListener() {
+    private void uploadIcon(IconService service, Writable icon) {
+        service.uploadIcon(icon, new IconSetListener() {
             public void handleIconSet(IconService service, Writable data,
                     boolean succeeded) {
                 synchronized(this) {
@@ -143,13 +147,13 @@ public class IconServiceArbiter
         final IconService service = new IconService(aimConnection, conn);
         service.addIconRequestListener(new IconRequestListener() {
             public void buddyIconCleared(IconService service,
-                    Screenname screenname) {
+                    Screenname screenname, ExtraInfoData data) {
 //                synchronized(IconServiceArbiter.this) {
 //                    if (service == currentService) {
 //                    }
 //                }
                 for (IconRequestListener listener : listeners) {
-                    listener.buddyIconCleared(service, screenname);
+                    listener.buddyIconCleared(service, screenname, data);
                 }
             }
 

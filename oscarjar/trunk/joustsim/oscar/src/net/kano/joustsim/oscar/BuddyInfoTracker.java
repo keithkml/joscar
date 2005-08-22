@@ -65,7 +65,6 @@ public class BuddyInfoTracker {
         buddyInfoMgr.addGlobalBuddyInfoListener(new GlobalBuddyInfoListener() {
             public void newBuddyInfo(BuddyInfoManager manager, Screenname buddy,
                     BuddyInfo info) {
-                //TODO: what does this do? does this mean the first change isn't picked up?
             }
 
             public void buddyInfoChanged(BuddyInfoManager manager,
