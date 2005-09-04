@@ -316,8 +316,11 @@ public class SsiService extends Service {
                 SsiItemObj itemObj = objFactory.getItemObj(id.getValue());
                 if (itemObj instanceof GroupItem) {
                     GroupItem groupItem = (GroupItem) itemObj;
-                    for (int bid : groupItem.getBuddies()) {
-                        idsForType.add(bid);
+                    int[] buddies = groupItem.getBuddies();
+                    if (buddies != null) {
+                        for (int bid : buddies) {
+                            idsForType.add(bid);
+                        }
                     }
                 }
             }
@@ -333,8 +336,11 @@ public class SsiService extends Service {
                 SsiItemObj itemObj = objFactory.getItemObj(id.getValue());
                 if (itemObj instanceof RootItem) {
                     RootItem groupItem = (RootItem) itemObj;
-                    for (int bid : groupItem.getGroupids()) {
-                        idsForType.add(bid);
+                    int[] groupids = groupItem.getGroupids();
+                    if (groupids != null) {
+                        for (int bid : groupids) {
+                            idsForType.add(bid);
+                        }
                     }
                 }
             }
