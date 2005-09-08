@@ -34,6 +34,7 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
 import net.kano.joscar.CopyOnWriteArrayList;
+import net.kano.joscar.MiscTools;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransfer;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
@@ -124,4 +125,8 @@ public abstract class StateController {
     public synchronized StateInfo getEndState() { return endState; }
 
     public abstract void stop();
+
+    public String toString() {
+        return MiscTools.getClassName(this);
+    }
 }

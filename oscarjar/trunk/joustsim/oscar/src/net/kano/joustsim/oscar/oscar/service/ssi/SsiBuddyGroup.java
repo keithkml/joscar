@@ -47,8 +47,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.logging.Logger;
 
 class SsiBuddyGroup extends SimpleBuddyGroup implements MutableGroup {
+    private static final Logger LOGGER = Logger
+            .getLogger(SsiBuddyGroup.class.getName());
+
     public SsiBuddyGroup(SsiBuddyList list, GroupItem item) {
         super(list, item);
     }
@@ -67,7 +71,7 @@ class SsiBuddyGroup extends SimpleBuddyGroup implements MutableGroup {
     public void addBuddy(String screenname) {
         SsiService service = getSsiService();
         int parentid = getItem().getId();
-        final int id = service.getUniqueItemId(SsiItem.TYPE_BUDDY, parentid);
+        int id = service.getUniqueItemId(SsiItem.TYPE_BUDDY, parentid);
         addBuddies(Arrays.asList(new BuddyItem(screenname,
                 parentid, id).toSsiItem()));
     }
@@ -104,29 +108,41 @@ class SsiBuddyGroup extends SimpleBuddyGroup implements MutableGroup {
     private void addBuddies(List<SsiItem> items) {
         SsiService service = getSsiService();
         final List<Integer> ids = SsiTools.getIdsForItems(items);
-        CreateItemsCmd cmd1 = new CreateItemsCmd(items);
-        service.sendSsiModification(cmd1, new SnacRequestAdapter() {
+        LOGGER.fine("Adding buddies " + items + " - ID's: " + ids);
+        CreateItemsCmd cmd = new CreateItemsCmd(items);
+        service.sendSsiModification(cmd, new SnacRequestAdapter() {
             public void handleResponse(SnacResponseEvent e) {
                 if (e.getSnacCommand() instanceof SsiDataModResponse) {
                     SsiDataModResponse dataModResponse
                             = (SsiDataModResponse) e.getSnacCommand();
-                    int result = dataModResponse.getResults()[0];
+                    int[] results = dataModResponse.getResults();
+                    if (results.length != 1) {
+                        LOGGER.warning("Got multiple results for addBuddies: "
+                                + results);
+                    }
+                    int result = results[0];
+                    LOGGER.fine("Got SSI response: " + result);
                     if (result == SsiDataModResponse.RESULT_SUCCESS) {
                         addBuddiesToGroup(ids);
                     }
                 }
             }
 
-            private boolean addBuddiesToGroup(List<Integer> idsOrig) {
-                List<Integer> result = new ArrayList<Integer>();
+            private boolean addBuddiesToGroup(List<Integer> toAdd) {
                 GroupItem item = getItem();
+                LOGGER.fine("Adding buddies to group " + item + ": " + toAdd);
+                List<Integer> result = new ArrayList<Integer>();
                 int[] oldIds = item.getBuddies();
                 if (oldIds != null) {
                     for (int id : oldIds) result.add(id);
                 }
+                assert oldIds == null || result.size() == oldIds.length;
+                LOGGER.finer("Old ID list: " + oldIds);
 
-                List<Integer> ids = new ArrayList<Integer>(idsOrig);
+                // add all toAdd ID's which are not already in result
+                List<Integer> ids = new ArrayList<Integer>(toAdd);
                 ids.removeAll(result);
+                LOGGER.finer("Actually adding " + ids);
                 result.addAll(ids);
 
                 int[] newIds = new int[result.size()];
@@ -139,15 +155,17 @@ class SsiBuddyGroup extends SimpleBuddyGroup implements MutableGroup {
 
                 GroupItem newGroupItem = new GroupItem(item);
                 newGroupItem.setBuddies(newIds);
+                LOGGER.fine("New group item: " + newGroupItem);
                 ModifyItemsCmd cmd = new ModifyItemsCmd(newGroupItem.toSsiItem());
-                SsiService service = getSsiService();
-                service.sendSsiModification(cmd);
+                getSsiService().sendSsiModification(cmd);
                 return true;
             }
         });
     }
 
-    private SsiService getSsiService() {return getBuddyList().getSsiService();}
+    private SsiService getSsiService() {
+        return getBuddyList().getSsiService();
+    }
 
     public void deleteBuddy(Buddy buddy) {
         deleteBuddies(Arrays.asList(buddy));
@@ -156,6 +174,7 @@ class SsiBuddyGroup extends SimpleBuddyGroup implements MutableGroup {
     public void deleteBuddies(List<Buddy> ingroup) {
         List<SsiItem> items = SsiTools.getBuddiesToDelete(ingroup);
         final List<Integer> ids = SsiTools.getIdsForItems(items);
+        assert SsiTools.isOnlyBuddies(items);
 
         DeleteItemsCmd deleteCmd = new DeleteItemsCmd(items);
         SsiService service = getSsiService();
@@ -198,4 +217,5 @@ class SsiBuddyGroup extends SimpleBuddyGroup implements MutableGroup {
             }
         });
     }
+
 }

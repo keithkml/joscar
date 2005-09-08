@@ -35,6 +35,7 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.MiscTools;
 import net.kano.joscar.rv.RecvRvEvent;
 import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rv.RvSnacResponseEvent;
@@ -319,8 +320,11 @@ public abstract class FileTransferImpl
         DefensiveTools.checkNull(type, "type");
 
         Long timeout = timeouts.get(type);
-        if (timeout == null) return perConnectionTimeout;
-        else return timeout;
+        if (timeout == null) {
+            return perConnectionTimeout;
+        } else {
+            return timeout;
+        }
     }
 
     public Screenname getBuddyScreenname() {
@@ -346,8 +350,11 @@ public abstract class FileTransferImpl
         }
         while (it.hasNext()) {
             StateChangeEvent event = it.next();
-            if (event.getState() == null) fireEvent(event.getEvent());
-            else setState(event.getState(), event.getEvent());
+            if (event.getState() == null) {
+                fireEvent(event.getEvent());
+            } else {
+                setState(event.getState(), event.getEvent());
+            }
         }
     }
 
@@ -355,6 +362,10 @@ public abstract class FileTransferImpl
         return proxy;
     }
 
+    public String toString() {
+        return MiscTools.getClassName(this) + "(" + getState() + ") with "
+                + getBuddyScreenname() + " of " + getFileInfo();
+    }
 
     protected abstract class FtRvSessionHandler
             implements RendezvousSessionHandler {

@@ -74,9 +74,13 @@ import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 //TOLATER: reverse lookup proxies and check for *.aol.com
 public class SendController extends TransferController {
+    private static final Logger LOGGER = Logger
+            .getLogger(SendController.class.getName());
+
     protected void transferInThread(StreamInfo stream, TransferPropertyHolder transfer)
             throws IOException, FailureEventException {
         OutgoingFileTransfer otransfer = (OutgoingFileTransfer) transfer;
@@ -84,11 +88,11 @@ public class SendController extends TransferController {
         EventPost eventPost = transfer.getEventPost();
         List<File> files = otransfer.getFiles();
         List<RandomAccessFile> rafs = new ArrayList<RandomAccessFile>(files.size());
-        long totalSize = 0;
-        Map<RandomAccessFile,File> lastmods = new IdentityHashMap<RandomAccessFile, File>();
-        Map<RandomAccessFile,Long> lengths = new IdentityHashMap<RandomAccessFile, Long>();
         Map<File, String> names = otransfer.getNameMappings();
         try {
+            Map<RandomAccessFile, Long> lengths = new IdentityHashMap<RandomAccessFile, Long>();
+            Map<RandomAccessFile, File> lastmods = new IdentityHashMap<RandomAccessFile, File>();
+            long totalSize = 0;
             for (File file : files) {
                 RandomAccessFile raf = null;
                 boolean okay = false;
@@ -105,11 +109,11 @@ public class SendController extends TransferController {
                 lengths.put(raf, length);
             }
 
-            int succeeded = 0;
             int fileCount = rafs.size();
             int left = fileCount + 1;
             SocketChannel socketChan = stream.getSocketChannel();
             socketChan.configureBlocking(true);
+            int succeeded = 0;
             InputStream socketIn = Channels.newInputStream(socketChan);
             OutputStream socketOut = Channels.newOutputStream(socketChan);
             Boolean redirectedBool = transfer.getTransferProperty(KEY_REDIRECTED);
@@ -144,6 +148,9 @@ public class SendController extends TransferController {
                 RvSession rvSession = rvTransfer.getRvSession();
                 long rvSessionId = rvSession.getRvSessionId();
                 if (redirected) {
+                    LOGGER.fine("Transfer with " + rvSession.getScreenname()
+                            + " was redirected, so I'm sending an accept "
+                            + "command");
                     sendheader.setIcbmMessageId(rvSessionId);
                     rvSession.sendRv(new FileSendAcceptRvCmd());
                 }
@@ -164,7 +171,7 @@ public class SendController extends TransferController {
                 int headerType = ack.getHeaderType();
                 if (headerType == HEADERTYPE_RESUME) {
                     long attemptStartAt = ack.getBytesReceived();
-                    final long attemptChecksum = ack.getReceivedChecksum();
+                    long attemptChecksum = ack.getReceivedChecksum();
                     Checksummer rsummer = new Checksummer(fileChannel, attemptStartAt);
                     eventPost.fireEvent(new ChecksummingEvent(file, rsummer));
                     long oursum = rsummer.compute();
@@ -253,8 +260,8 @@ public class SendController extends TransferController {
             Selector selector = Selector.open();
             boolean wasBlocking = out.isBlocking();
             try {
-                out.register(selector, SelectionKey.OP_WRITE);
                 if (wasBlocking) out.configureBlocking(false);
+                out.register(selector, SelectionKey.OP_WRITE);
 
                 int uploaded = 0;
                 while (uploaded < length) {

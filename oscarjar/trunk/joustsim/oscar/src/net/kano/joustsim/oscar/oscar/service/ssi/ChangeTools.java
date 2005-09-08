@@ -40,32 +40,29 @@ import java.util.Collection;
 public final class ChangeTools {
     private ChangeTools() { }
 
-
     public static <E> void detectChanges(Collection<? extends E> oldItems,
             Collection<? extends E> newItems, DetectedChangeListener<? super E> listener) {
-//        List<Group> oldGroups = new ArrayList<Group>(
-//                saved.getBuddies().keySet());
-//        List<Group> newGroups = groups;
         if (oldItems.equals(newItems)) return;
+
         if (!oldItems.containsAll(newItems)) {
             // there are some added groups
-            List<E> addedGroups = new ArrayList<E>(
+            List<E> addedItems = new ArrayList<E>(
                     newItems);
-            addedGroups.removeAll(oldItems);
-            assert !addedGroups.isEmpty();
+            addedItems.removeAll(oldItems);
+            assert !addedItems.isEmpty();
 
-            for (E group : addedGroups) {
+            for (E group : addedItems) {
                 listener.itemAdded(oldItems, newItems, group);
             }
         }
         if (!newItems.containsAll(oldItems)) {
-            // some groups were removed
-            List<E> removedGroups = new ArrayList<E>(
+            // some items were removed
+            List<E> removedItems = new ArrayList<E>(
                     oldItems);
-            removedGroups.removeAll(newItems);
-            assert !removedGroups.isEmpty();
+            removedItems.removeAll(newItems);
+            assert !removedItems.isEmpty();
 
-            for (E group : removedGroups) {
+            for (E group : removedItems) {
                 listener.itemRemoved(oldItems, newItems, group);
             }
         }
@@ -75,7 +72,7 @@ public final class ChangeTools {
         List<E> newIntersection = new ArrayList<E>(newItems);
         newIntersection.retainAll(oldItems);
         if (!oldIntersection.equals(newIntersection)) {
-            // some buddies were re-ordered
+            // some items were re-ordered
             listener.itemsReordered(oldItems, newItems);
         }
     }

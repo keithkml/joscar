@@ -156,10 +156,14 @@ class SsiBuddyList extends SimpleBuddyList implements MutableBuddyList {
                 items.add(simpleBuddy.getItem().toSsiItem());
             }
         }
+        assert SsiTools.isOnlyBuddies(items);
+
         final Integer groupid;
         if (group instanceof SimpleBuddyGroup) {
             SimpleBuddyGroup buddyGroup = (SimpleBuddyGroup) group;
             SsiItem groupItem = buddyGroup.getItem().toSsiItem();
+            assert groupItem.getId() == 0
+                    && groupItem.getItemType() == SsiItem.TYPE_GROUP;
             items.add(groupItem);
             groupid = groupItem.getParentId();
         } else {
@@ -187,8 +191,8 @@ class SsiBuddyList extends SimpleBuddyList implements MutableBuddyList {
                 int[] newIds;
                 if (oldIds != null) {
                     int total = 0;
-                    for (int i = 0; i < oldIds.length; i++) {
-                        if (oldIds[i] == groupid) total++;
+                    for (int oldId : oldIds) {
+                        if (oldId == groupid) total++;
                     }
                     if (total == 0) return false;
 

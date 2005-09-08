@@ -33,8 +33,6 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-import static net.kano.joscar.rvcmd.sendfile.FileSendBlock.SENDTYPE_SINGLEFILE;
-import static net.kano.joscar.rvcmd.sendfile.FileSendBlock.SENDTYPE_DIR;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.rv.RecvRvEvent;
 import net.kano.joscar.rv.RvSession;
@@ -42,37 +40,39 @@ import net.kano.joscar.rvcmd.InvitationMessage;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joscar.rvcmd.sendfile.FileSendAcceptRvCmd;
 import net.kano.joscar.rvcmd.sendfile.FileSendBlock;
+import static net.kano.joscar.rvcmd.sendfile.FileSendBlock.SENDTYPE_DIR;
+import static net.kano.joscar.rvcmd.sendfile.FileSendBlock.SENDTYPE_SINGLEFILE;
 import net.kano.joscar.rvcmd.sendfile.FileSendRejectRvCmd;
 import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectToProxyController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ChecksumController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectToProxyForOutgoingController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ManualTimeoutController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.OutgoingConnectionController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.RedirectToProxyController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendOverProxyController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendPassivelyController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ChecksumController;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ManualTimeoutController;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailureEventInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.ComputedChecksumsInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferCompleteEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownErrorEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.BuddyCancelledEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ProxyRedirectDisallowedEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ChecksummingEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ProxyRedirectDisallowedEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferCompleteEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownErrorEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.ComputedChecksumsInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailureEventInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
 
 import java.io.File;
-import java.io.RandomAccessFile;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Collections;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 public class OutgoingFileTransferImpl extends FileTransferImpl
@@ -91,8 +91,8 @@ public class OutgoingFileTransferImpl extends FileTransferImpl
             = new OutgoingConnectionController(ConnectionType.INTERNET);
     private final RedirectToProxyController redirectToProxyController
             = new RedirectToProxyController();
-    private final ConnectToProxyController connectToProxyController
-            = new ConnectToProxyController();
+    private final ConnectToProxyForOutgoingController connectToProxyController
+            = new ConnectToProxyForOutgoingController();
     private SendController sendController = new SendController();
 
     private List<File> files = new ArrayList<File>();
@@ -282,6 +282,9 @@ public class OutgoingFileTransferImpl extends FileTransferImpl
                 int reqType = reqCmd.getRequestType();
                 RvConnectionInfo connInfo = reqCmd.getConnInfo();
                 if (reqType == FileSendReqRvCmd.REQTYPE_REDIRECT) {
+                    //TODO: proxied?
+                    LOGGER.fine("Received redirect packet: " + reqCmd
+                            + " - to " + connInfo);
                     boolean good;
                     boolean proxied = connInfo.isProxied();
                     if (isOnlyUsingProxy()) {
@@ -299,15 +302,18 @@ public class OutgoingFileTransferImpl extends FileTransferImpl
                     }
                     if (good) {
                         putTransferProperty(KEY_CONN_INFO, connInfo);
+                        LOGGER.fine("Storing connection info for redirect: " + connInfo);
                         putTransferProperty(KEY_REDIRECTED, true);
                         if (proxied) {
+                            LOGGER.finer("Changing to proxy connect controller");
                             changeStateController(connectToProxyController);
                         } else {
+                            LOGGER.finer("Changing to normal connect controller");
                             changeStateController(outgoingInternalController);
                         }
                     }
                 } else {
-                    LOGGER.info("got unknown file transfer request type in "
+                    LOGGER.warning("got unknown file transfer request type in "
                             + "outgoing transfer: " + reqType);
                 }
             }

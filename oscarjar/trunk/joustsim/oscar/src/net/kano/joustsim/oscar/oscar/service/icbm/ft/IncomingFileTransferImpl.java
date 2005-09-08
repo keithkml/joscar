@@ -40,7 +40,7 @@ import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joscar.rvcmd.sendfile.FileSendAcceptRvCmd;
 import net.kano.joscar.rvcmd.sendfile.FileSendRejectRvCmd;
 import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectToProxyController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectToProxyForIncomingController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.OutgoingConnectionController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ReceiveController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.RedirectConnectionController;
@@ -72,8 +72,8 @@ public class IncomingFileTransferImpl extends FileTransferImpl
             = new OutgoingConnectionController(ConnectionType.LAN);
     private final RedirectConnectionController redirectConnectionController
             = new RedirectConnectionController();
-    private final ConnectToProxyController proxyController
-            = new ConnectToProxyController();
+    private final ConnectToProxyForIncomingController proxyController
+            = new ConnectToProxyForIncomingController();
     private final RedirectToProxyController proxyReverseController = new RedirectToProxyController();
     private final ReceiveController receiveController = new ReceiveController();
 
@@ -159,6 +159,8 @@ public class IncomingFileTransferImpl extends FileTransferImpl
         }
 
         startStateController(first);
+        LOGGER.fine("Sending file transfer accept command to "
+                + getBuddyScreenname());
         getRvSession().sendRv(new FileSendAcceptRvCmd());
     }
 

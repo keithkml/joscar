@@ -132,24 +132,29 @@ public class SsiService extends Service {
     public void handleSnacPacket(SnacPacketEvent snacPacketEvent) {
         SnacCommand snac = snacPacketEvent.getSnacCommand();
 
-        System.out.println("got ssi snac in " + MiscTools.getClassName(this)
-                + ": " + snac);
+        LOGGER.fine("Got SSI packet: " + snac);
         if (snac == null) {
-            System.out.println("- packet: " + snacPacketEvent.getSnacPacket());
+            LOGGER.fine("Packet: " + snacPacketEvent.getSnacPacket());
         }
-        final List<Exception> exceptions = new ArrayList<Exception>();
+        List<Exception> exceptions = new ArrayList<Exception>();
         if (snac instanceof SsiDataCmd) {
             SsiDataCmd ssiDataCmd = (SsiDataCmd) snac;
             boolean done = (snac.getFlag2() & SnacCommand.SNACFLAG2_MORECOMING)
                     == 0;
-            if (done) {
-                LOGGER.fine("Got final buddy list packet: " + items.size()
-                        + " items");
-            } else {
-                LOGGER.fine("Got buddy list part: " + items.size() + " items");
+            if (LOGGER.isLoggable(Level.FINE)) {
+                synchronized(this) {
+                    if (done) {
+                        LOGGER.fine("Got final buddy list packet: "
+                                + items.size() + " items");
+                    } else {
+                        LOGGER.fine("Got buddy list part: " + items.size()
+                                + " items");
+                    }
+                }
             }
             List<SsiItem> items = ssiDataCmd.getItems();
             for (SsiItem item : items) {
+                LOGGER.finer("Buddy list item: " + item);
                 try {
                     itemCreated(item);
                 } catch (Exception e) {
@@ -165,6 +170,7 @@ public class SsiService extends Service {
         } else if (snac instanceof CreateItemsCmd) {
             CreateItemsCmd createItemsCmd = (CreateItemsCmd) snac;
             for (SsiItem ssiItem : createItemsCmd.getItems()) {
+                LOGGER.fine("Item created by other client: " + ssiItem);
                 try {
                     itemCreated(ssiItem);
                 } catch (Exception e) {
@@ -175,6 +181,7 @@ public class SsiService extends Service {
         } else if (snac instanceof ModifyItemsCmd) {
             ModifyItemsCmd modifyItemsCmd = (ModifyItemsCmd) snac;
             for (SsiItem ssiItem : modifyItemsCmd.getItems()) {
+                LOGGER.fine("Item modified by other client: " + ssiItem);
                 try {
                     itemModified(ssiItem);
                 } catch (Exception e) {
@@ -185,6 +192,7 @@ public class SsiService extends Service {
         } else if (snac instanceof DeleteItemsCmd) {
             DeleteItemsCmd deleteItemsCmd = (DeleteItemsCmd) snac;
             for (SsiItem ssiItem : deleteItemsCmd.getItems()) {
+                LOGGER.fine("Item deleted by other client: " + ssiItem);
                 try {
                     itemDeleted(ssiItem);
                 } catch (Exception e) {
@@ -201,6 +209,10 @@ public class SsiService extends Service {
             }
 
         } else if (!exceptions.isEmpty()) {
+            for (Exception exception : exceptions) {
+                LOGGER.log(Level.WARNING,
+                        "Exception while processing SSI packets", exception);
+            }
             throw new MultipleExceptionsException(exceptions);
         }
     }
@@ -249,7 +261,7 @@ public class SsiService extends Service {
         }
         for (SsiItemChangeListener listener : listeners) {
             try {
-                listener.handleItemCreated(item);
+                listener.handleItemModified(item);
             } catch (Exception e) {
                 LOGGER.log(Level.SEVERE, "Exception thrown by SSI listener "
                         + listener, e);
@@ -271,7 +283,7 @@ public class SsiService extends Service {
 
         for (SsiItemChangeListener listener : listeners) {
             try {
-                listener.handleItemCreated(item);
+                listener.handleItemDeleted(item);
             } catch (Exception e) {
                 LOGGER.log(Level.SEVERE, "Exception thrown by SSI listener "
                         + listener, e);
@@ -361,8 +373,7 @@ public class SsiService extends Service {
         Set<Integer> idsForType = new HashSet<Integer>(items.size());
         for (ItemId id : items.keySet()) {
             if (id.getType() == SsiItem.TYPE_GROUP) {
-                idsForType
-                        .add(id.getParent());
+                idsForType.add(id.getParent());
             }
         }
         idsForType.addAll(prospectiveGroupIds);
@@ -445,7 +456,7 @@ public class SsiService extends Service {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            final ItemId itemId = (ItemId) o;
+            ItemId itemId = (ItemId) o;
 
             if (id != itemId.id) return false;
             if (parent != itemId.parent) return false;
@@ -454,8 +465,7 @@ public class SsiService extends Service {
         }
 
         public int hashCode() {
-            int result;
-            result = type;
+            int result = type;
             result = 29 * result + parent;
             result = 29 * result + id;
             return result;
@@ -506,8 +516,8 @@ public class SsiService extends Service {
                         int id = item.getId();
                         Set<Integer> possible = new TreeSet<Integer>(
                                 getIdsForType(item.getItemType()));
-                        LOGGER.warning(
-                                "ID taken for " + className + " of " + item);
+                        LOGGER.warning("ID taken for " + className + " of "
+                                + item);
                         LOGGER.warning("ID: " + id + " of possible ID's: "
                                 + possible);
 

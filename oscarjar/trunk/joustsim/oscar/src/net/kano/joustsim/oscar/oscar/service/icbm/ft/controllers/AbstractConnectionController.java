@@ -75,12 +75,12 @@ public abstract class AbstractConnectionController extends StateController {
         connected = true;
     }
 
-    public void start(final FileTransfer transfer,
-            StateController last) {
+    public void start(FileTransfer transfer, StateController last) {
         DefensiveTools.checkNull(transfer, "transfer");
 
         this.fileTransfer = (FileTransferImpl) transfer;
-        connectionInfo = fileTransfer.getTransferProperty(FileTransferImpl.KEY_CONN_INFO);
+        connectionInfo = fileTransfer.getTransferProperty(
+                FileTransferImpl.KEY_CONN_INFO);
         checkConnectionInfo();
 
         try {
