@@ -208,6 +208,7 @@ public class RoomResponse extends RoomCommand {
      *
      * @return the room information block sent in this response
      */
+    //TODO: what fields does it normally contain?
     public final FullRoomInfo getRoomInfo() {
         return roomInfo;
     }

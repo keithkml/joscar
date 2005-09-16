@@ -76,7 +76,8 @@ public class SnacFamilyInfoFactory {
     private SnacFamilyInfoFactory() { }
 
     /** A map of SNAC family codes to their version informations. */
-    private static final Map<Integer,SnacFamilyInfo> families = new HashMap<Integer, SnacFamilyInfo>();
+    private static final Map<Integer,SnacFamilyInfo> families
+            = new HashMap<Integer, SnacFamilyInfo>();
 
     /*
     From WinAIM 5.2 beta or so:

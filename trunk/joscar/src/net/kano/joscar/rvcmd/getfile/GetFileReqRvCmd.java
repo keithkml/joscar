@@ -48,7 +48,6 @@ import net.kano.joscar.tlv.TlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.regex.Pattern;
 
 /**
  * A rendezvous command used to request browsing another user's files via a
@@ -196,13 +195,13 @@ public class GetFileReqRvCmd extends AbstractRequestRvCmd {
      *        <code>0</code> (for none)
      */
     public GetFileReqRvCmd(RvConnectionInfo connInfo, long flags) {
-        this(REQTYPE_INITIALREQUEST, connInfo, CHARSET_DEFAULT, CODE_DEFAULT,
+        this(REQINDEX_FIRST, connInfo, CHARSET_DEFAULT, CODE_DEFAULT,
                 PROTOVERSION_DEFAULT, flags, EXTRABLOCK_DEFAULT);
     }
 
     /**
      * Creates a new outgoing Get File session request / redirect with the given
-     * request type and the given connection information block.
+     * request index and the given connection information block.
      * <br>
      * <br>
      * Using this constructor is equivalent to using {@link
@@ -211,7 +210,7 @@ public class GetFileReqRvCmd extends AbstractRequestRvCmd {
      * CHARSET_DEFAULT, CODE_DEFAULT, PROTOVERSION_DEFAULT, FLAG_EXPAND_DYNAMIC,
      * EXTRABLOCK_DEFAULT)}.
      *
-     * @param requestType a request type, like {@link #REQTYPE_REDIRECT}
+     * @param requestType a request index, like {@link #REQINDEX_FIRST}
      * @param connInfo a block of connection information to send in this command
      */
     public GetFileReqRvCmd(int requestType, RvConnectionInfo connInfo) {
@@ -223,7 +222,7 @@ public class GetFileReqRvCmd extends AbstractRequestRvCmd {
      * Creates a new outgoing Get File session request / redirect (depending on
      * <code>requestType</code>) with the given properties.
      *
-     * @param requestType a request type, like {@link #REQTYPE_INITIALREQUEST}
+     * @param requestIndex a request index, like {@link #REQINDEX_FIRST}
      * @param connInfo a block of connection information to use for the
      *        associated connection
      * @param charset the name of a charset (this value appears to be ignored
@@ -236,10 +235,10 @@ public class GetFileReqRvCmd extends AbstractRequestRvCmd {
      * @param extraBlock an "extra" block of data; normally {@link
      *        #EXTRABLOCK_DEFAULT}
      */
-    public GetFileReqRvCmd(int requestType, RvConnectionInfo connInfo,
+    public GetFileReqRvCmd(int requestIndex, RvConnectionInfo connInfo,
             String charset, int code, int protoVersion, long flags,
             ByteBlock extraBlock) {
-        super(CapabilityBlock.BLOCK_FILE_GET, requestType);
+        super(CapabilityBlock.BLOCK_FILE_GET, requestIndex);
 
         DefensiveTools.checkRange(code, "code", -1);
         DefensiveTools.checkRange(protoVersion, "protoVersion", -1);

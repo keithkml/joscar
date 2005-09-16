@@ -41,42 +41,44 @@ package net.kano.joscar.flap;
  */
 public interface VetoableFlapPacketListener {
     /**
-     * Tells the <code>FlapProcessor</code> to stop processing other vetoable
-     * and non-vetoable listeners, but to continue its own internal processing.
-     * <br>
-     * <br>
-     * Note that as of this writing there is no internal processing; until
-     * such processing exists this value is functionally equivalent to
-     * <code>STOP_PROCESSING_ALL</code>. It is suggested, however, to use this
-     * value instead of <code>STOP_PROCESSING_ALL</code> to allow for further
-     * expansion of <code>FlapProcessor</code>'s processing code.
+     * An enumeration of possible actions that a vetoing packet listener can
+     * trigger.
      */
-    Object STOP_PROCESSING_LISTENERS = new Object();
+    enum VetoResult {
+        /**
+         * Tells the <code>FlapProcessor</code> to stop processing other vetoable
+         * and non-vetoable listeners, but to continue its own internal processing.
+         * <br>
+         * <br>
+         * Note that as of this writing there is no internal processing; until
+         * such processing exists this value is functionally equivalent to
+         * <code>STOP_PROCESSING_ALL</code>. It is suggested, however, to use this
+         * value instead of <code>STOP_PROCESSING_ALL</code> to allow for further
+         * expansion of <code>FlapProcessor</code>'s processing code.
+         */
+        STOP_PROCESSING_LISTENERS,
 
-    /**
-     * Tells the <code>FlapProcessor</code> to continue processing as usual;
-     * that is, this value signifies that this packet has not been vetoed.
-     */
-    Object CONTINUE_PROCESSING = new Object();
+        /**
+         * Tells the <code>FlapProcessor</code> to continue processing as usual;
+         * that is, this value signifies that this packet has not been vetoed.
+         */
+        CONTINUE_PROCESSING,
 
-    /**
-     * Tells the <code>FlapProcessor</code> to halt all further processing of
-     * this command whatsoever. This value may or may not be actually honored
-     * in the future: currently this value is functionally equivalent to
-     * <code>STOP_PROCESSING_LISTENERS</code> as no fruther processing is done
-     * on FLAP packets by the <code>FlapProcessor</code>.
-     */
-    Object STOP_PROCESSING_ALL = new Object();
-
+        /**
+         * Tells the <code>FlapProcessor</code> to halt all further processing of
+         * this command whatsoever. This value may or may not be actually honored
+         * in the future: currently this value is functionally equivalent to
+         * <code>STOP_PROCESSING_LISTENERS</code> as no fruther processing is done
+         * on FLAP packets by the <code>FlapProcessor</code>.
+         */
+        STOP_PROCESSING_ALL,
+    }
     /**
      * Processes a single packet received by a <code>FlapProcessor</code>.
      *
-     * @param event an object containing information on the packet's receipt
+     * @param event information on the packet's receipt
      * @return an object representing what action should be taken by the
-     *         <code>FlapProcessor</code>; must be one of {@link
-     *         #CONTINUE_PROCESSING}, {@link #STOP_PROCESSING_LISTENERS}, and
-     *         {@link #STOP_PROCESSING_ALL} (see each's documentation for
-     *         details)
+     *         <code>FlapProcessor</code>
      */
-    Object handlePacket(FlapPacketEvent event);
+    VetoResult handlePacket(FlapPacketEvent event);
 }

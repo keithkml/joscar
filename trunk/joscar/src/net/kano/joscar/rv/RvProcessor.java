@@ -585,8 +585,8 @@ public class RvProcessor {
     private void processRv(SnacPacketEvent e) {
         RecvRvIcbm cmd = (RecvRvIcbm) e.getSnacCommand();
 
-        if (logger.logFineEnabled()) {
-            logger.logFine("Generating RV for <" + cmd.getCapability() + "> from "
+        if (logger.logFinerEnabled()) {
+            logger.logFiner("Generating RV for <" + cmd.getCapability() + "> from "
                     + cmd.getSenderInfo().getScreenname());
         }
 
@@ -603,8 +603,8 @@ public class RvProcessor {
             return;
         }
 
-        boolean logFiner = logger.logFinerEnabled();
-        if (logFiner) {
+        boolean logFine = logger.logFineEnabled();
+        if (logFine) {
             if (rvCommand == null) {
                 logger.logFiner("Couldn't generate RV command, data was:"
                         + cmd.getRvData());
@@ -619,9 +619,7 @@ public class RvProcessor {
         RecvRvEvent event = new RecvRvEvent(e, this, session, rvCommand);
         session.processRv(event);
 
-        if (logFiner) {
-            logger.logFiner("Done processing RV");
-        }
+        logger.logFiner("Done processing RV");
     }
 
     /**

@@ -71,27 +71,27 @@ public class DirectIMReqRvCmd extends AbstractRequestRvCmd {
 
     /**
      * Creates a new outgoing initial direct IM request. That is, an outgoing
-     * direct IM request RV command with a request type of {@link
-     * #REQTYPE_INITIALREQUEST}.
+     * direct IM request RV command with a request index of {@link
+     * #REQINDEX_FIRST}.
      *
      * @param connInfo a connection information block describing the connection
      *        to be made
      */
     public DirectIMReqRvCmd(RvConnectionInfo connInfo) {
-        this(REQTYPE_INITIALREQUEST, connInfo);
+        this(REQINDEX_FIRST, connInfo);
     }
 
     /**
      * Creates a new outgoing direct IM request / redirect (depending on the
      * value of <code>requestType</code>) with the given connection information.
      *
-     * @param requestType the "request type" for this command, like {@link
-     *        #REQTYPE_REDIRECT}
+     * @param requestIndex the "request index" for this command, like {@link
+     *        #REQINDEX_FIRST}
      * @param connInfo a connection information block describing the connection
      *        to be made
      */
-    public DirectIMReqRvCmd(int requestType, RvConnectionInfo connInfo) {
-        super(CapabilityBlock.BLOCK_DIRECTIM, requestType);
+    public DirectIMReqRvCmd(int requestIndex, RvConnectionInfo connInfo) {
+        super(CapabilityBlock.BLOCK_DIRECTIM, requestIndex);
 
         this.connInfo = connInfo;
     }

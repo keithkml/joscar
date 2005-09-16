@@ -56,14 +56,15 @@ import java.util.Locale;
 public class ChatMsg implements LiveWritable {
     /**
      * A default content encoding always used by the official AIM clients
-     * ({@value}).
+     * (<code>{@value}</code>).
      */
     public static final String CONTENTENCODING_DEFAULT = "binary";
     /**
-     * A default content type for "normal" (non-secure) chat rooms ({@value}).
+     * A default content type for "normal" (non-secure) chat rooms
+     * (<code>{@value}</code>).
      */
     public static final String CONTENTTYPE_DEFAULT = "text/x-aolrtf";
-    /** A default content type for secure chat rooms ({@value}). */
+    /** A default content type for secure chat rooms (<code>{@value}</code>). */
     public static final String CONTENTTYPE_SECURE = "application/pkcs7-mime";
 
     /**
