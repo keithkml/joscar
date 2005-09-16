@@ -35,6 +35,7 @@
 
 package net.kano.joustsim.app.config;
 
+import net.kano.joscar.DefensiveTools;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.app.config.exceptions.BadKeyPrefsException;
 import net.kano.joustsim.app.config.exceptions.BadKeysException;
@@ -44,7 +45,8 @@ import net.kano.joustsim.app.config.exceptions.WrongKeyTypesException;
 import net.kano.joustsim.trust.KeyPair;
 import net.kano.joustsim.trust.PrivateKeys;
 import net.kano.joustsim.trust.PrivateKeysPreferences;
-import net.kano.joscar.DefensiveTools;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
@@ -179,7 +181,7 @@ public final class PrivateKeysManager extends DefaultFileBasedResource
         return props;
     }
 
-    public PrivateKeys getKeysInfo() { return keysLoader.getKeysInfo(); }
+    public @Nullable PrivateKeys getKeysInfo() { return keysLoader.getKeysInfo(); }
 
     public synchronized void setCertificateFilename(String fn) {
         this.certificateFilename = fn;
@@ -284,7 +286,7 @@ public final class PrivateKeysManager extends DefaultFileBasedResource
         }
 
         public synchronized String[] getPossibleCertNames() {
-            return (String[]) possibleCertNames.clone();
+            return possibleCertNames.clone();
         }
 
         public synchronized boolean reloadIfNecessary() {
@@ -319,7 +321,9 @@ public final class PrivateKeysManager extends DefaultFileBasedResource
         private String loadedEncAlias = null;
         private boolean passwordValid = false;
 
-        public synchronized PrivateKeys getKeysInfo() { return keysInfo; }
+        public synchronized @Nullable PrivateKeys getKeysInfo() { 
+            return keysInfo;
+        }
 
         public synchronized String[] getPossibleAliases() {
             return possibleAliases == null
@@ -469,7 +473,8 @@ public final class PrivateKeysManager extends DefaultFileBasedResource
             return aliases.toArray(new String[aliases.size()]);
         }
 
-        private KeyPair loadKeys(KeyStore ks, String alias, char[] passChars)
+        private @NotNull KeyPair loadKeys(KeyStore ks, String alias,
+                char[] passChars)
                 throws KeyStoreException, NoSuchAliasException,
                 NoSuchAlgorithmException, UnrecoverableKeyException,
                 InsufficientKeysException, WrongKeyTypesException {

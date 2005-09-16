@@ -35,6 +35,8 @@
 
 package net.kano.joustsim.trust;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPrivateKey;
 
@@ -42,16 +44,17 @@ public class KeyPair {
     private final RSAPrivateKey privateKey;
     private final X509Certificate publicCertificate;
 
-    public KeyPair(RSAPrivateKey privateKey, X509Certificate publicCertificate) {
+    public KeyPair(@NotNull RSAPrivateKey privateKey, 
+            @NotNull X509Certificate publicCertificate) {
         this.privateKey = privateKey;
         this.publicCertificate = publicCertificate;
     }
 
-    public RSAPrivateKey getPrivateKey() {
+    public @NotNull RSAPrivateKey getPrivateKey() {
         return privateKey;
     }
 
-    public X509Certificate getPublicCertificate() {
+    public @NotNull X509Certificate getPublicCertificate() {
         return publicCertificate;
     }
 }

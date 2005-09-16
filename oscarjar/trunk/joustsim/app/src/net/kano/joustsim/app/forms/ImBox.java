@@ -407,10 +407,10 @@ public class ImBox extends JFrame {
 
         validBox = false;
         //TODO: "this window is no longer valid" won't be true with directim
-        convDoc.addInfoMessage(AolRtfString.readLine("This window is no longer "
-                + "active because your connection to AIM was closed."));
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
+                convDoc.addInfoMessage(AolRtfString.readLine("This window is no longer "
+                        + "active because your connection to AIM was closed."));
                 Color gray = UIManager.getColor("Panel.background");
                 convBox.getTextPane().setBackground(gray);
                 inputBox.setBackground(gray);

@@ -35,20 +35,23 @@
 
 package net.kano.joustsim.trust;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.security.cert.X509Certificate;
 
 public final class PrivateKeys implements CertificatePairHolder {
     private final KeyPair signingKeys;
     private final KeyPair encryptingKeys;
 
-    public PrivateKeys(KeyPair signingKeys, KeyPair encryptingKeys) {
+    public PrivateKeys(@NotNull KeyPair signingKeys,
+            @NotNull KeyPair encryptingKeys) {
         this.signingKeys = signingKeys;
         this.encryptingKeys = encryptingKeys;
     }
 
-    public KeyPair getSigningKeys() { return signingKeys; }
+    public @NotNull KeyPair getSigningKeys() { return signingKeys; }
 
-    public KeyPair getEncryptingKeys() { return encryptingKeys; }
+    public @NotNull KeyPair getEncryptingKeys() { return encryptingKeys; }
 
     public X509Certificate getSigningCertificate() {
         return signingKeys.getPublicCertificate();
