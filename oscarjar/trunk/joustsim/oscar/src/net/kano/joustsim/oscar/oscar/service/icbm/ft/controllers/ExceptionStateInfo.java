@@ -34,6 +34,7 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
+import net.kano.joscar.MiscTools;
 
 public class ExceptionStateInfo extends FailedStateInfo {
     private Exception exception;
@@ -43,4 +44,9 @@ public class ExceptionStateInfo extends FailedStateInfo {
     }
 
     public Exception getException() { return exception; }
+
+    public String toString() {
+        return MiscTools.getClassName(this) + ": "
+                + exception.getClass().getName() + ": " + exception.getMessage();
+    }
 }

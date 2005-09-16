@@ -39,6 +39,7 @@ import net.kano.joscar.snaccmd.ExtraInfoBlock;
 import net.kano.joscar.snaccmd.ExtraInfoData;
 import net.kano.joscar.snaccmd.FullUserInfo;
 import net.kano.joustsim.oscar.oscar.service.Service;
+import net.kano.joustsim.oscar.oscar.service.icon.IconServiceArbiter;
 import net.kano.joustsim.oscar.oscar.service.bos.MainBosService;
 import net.kano.joustsim.oscar.oscar.service.bos.MainBosServiceListener;
 
@@ -96,7 +97,11 @@ public class MyBuddyIconManager {
                             + "icon for " + hash + " but we don't "
                             + "want icon data");
                 } else {
-                    conn.getIconServiceArbiter().uploadIcon(wantedIconData);
+                    ExternalServiceManager externalServiceManager = conn
+                            .getExternalServiceManager();
+                    IconServiceArbiter iconServiceArbiter = externalServiceManager
+                            .getIconServiceArbiter();
+                    iconServiceArbiter.uploadIcon(wantedIconData);
                 }
             }
         } else {

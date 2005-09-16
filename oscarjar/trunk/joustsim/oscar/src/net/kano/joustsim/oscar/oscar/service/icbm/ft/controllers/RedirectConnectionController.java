@@ -50,7 +50,8 @@ public class RedirectConnectionController extends PassiveConnectionController {
         setConnInfo(connInfo);
         FileTransferImpl transfer = getFileTransfer();
         transfer.putTransferProperty(FileTransferImpl.KEY_REDIRECTED, true);
-        transfer.getRvSession().sendRv(new FileSendReqRvCmd(connInfo));
+        int newIndex = transfer.increaseRequestIndex();
+        transfer.getRvSession().sendRv(new FileSendReqRvCmd(connInfo, newIndex));
     }
 
     protected ConnectionType getConnectionType() {

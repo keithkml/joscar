@@ -39,6 +39,7 @@ import net.kano.joustsim.trust.CertificatePairHolder;
 import net.kano.joustsim.trust.KeyPair;
 import net.kano.joustsim.trust.PrivateKeys;
 import net.kano.joustsim.oscar.oscar.service.icbm.EmptyMessageException;
+import net.kano.joustsim.oscar.oscar.NoBuddyKeysException;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.OscarTools;
 import org.bouncycastle.cms.CMSEnvelopedData;

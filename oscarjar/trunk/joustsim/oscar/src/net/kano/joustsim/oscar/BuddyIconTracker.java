@@ -121,7 +121,7 @@ public class BuddyIconTracker {
             ByteBlock iconData = getIconDataForHash(newHash);
             if (iconData == null) {
                 IconServiceArbiter iconArbiter =
-                        conn.getIconServiceArbiter();
+                        conn.getExternalServiceManager().getIconServiceArbiter();
                 if (iconArbiter != null) {
                     LOGGER.info("Requesting buddy icon for " + buddy);
                     iconArbiter.addIconRequestListener(iconRequestListener);

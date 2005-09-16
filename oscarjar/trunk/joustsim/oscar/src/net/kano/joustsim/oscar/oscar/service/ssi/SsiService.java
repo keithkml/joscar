@@ -65,6 +65,7 @@ import net.kano.joustsim.oscar.oscar.OscarConnection;
 import net.kano.joustsim.oscar.oscar.service.Service;
 import net.kano.joustsim.oscar.oscar.service.ServiceEvent;
 import net.kano.joustsim.oscar.oscar.service.bos.ServerReadyEvent;
+import net.kano.joustsim.JavaTools;
 
 import java.util.HashMap;
 import java.util.List;
@@ -200,21 +201,7 @@ public class SsiService extends Service {
                 }
             }
         }
-        if (exceptions.size() == 1) {
-            Exception exception = exceptions.get(0);
-            if (exception instanceof RuntimeException) {
-                throw (RuntimeException) exception;
-            } else {
-                throw new IllegalStateException(exception);
-            }
-
-        } else if (!exceptions.isEmpty()) {
-            for (Exception exception : exceptions) {
-                LOGGER.log(Level.WARNING,
-                        "Exception while processing SSI packets", exception);
-            }
-            throw new MultipleExceptionsException(exceptions);
-        }
+        JavaTools.throwExceptions(exceptions, "Exception while processing SSI packets");
     }
 
     public MutableBuddyList getBuddyList() {

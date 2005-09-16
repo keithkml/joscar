@@ -31,29 +31,9 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
+package net.kano.joustsim.oscar.oscar.service.chatrooms;
 
-import net.kano.joscar.rvcmd.RvConnectionInfo;
-import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
-import net.kano.joscar.rvproto.rvproxy.RvProxyAckCmd;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferImpl;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.TransferPropertyHolder;
-
-import java.io.IOException;
-
-public class SendOverProxyController
-        extends InitiateProxyController
-        implements ManualTimeoutController {
-    protected void handleAck(RvProxyAckCmd ackCmd) throws IOException {
-        FileTransferImpl transfer = getFileTransfer();
-        int proxyPort = ackCmd.getProxyPort();
-        System.out.println("proxy port: 0x" + Integer.toHexString(proxyPort));
-        RvConnectionInfo connInfo = RvConnectionInfo.createForOutgoingProxiedRequest(
-                ackCmd.getProxyIpAddress(), proxyPort);
-        FileSendReqRvCmd req = new FileSendReqRvCmd(transfer.getInvitationMessage(),
-                connInfo, transfer.getFileInfo());
-        transfer.putTransferProperty(TransferPropertyHolder.KEY_CONN_INFO, connInfo);
-        transfer.putTransferProperty(TransferPropertyHolder.KEY_REDIRECTED, false);
-        transfer.getRvSession().sendRv(req);
-    }
+public enum InvalidInvitationReason {
+    NO_BUDDY_KEYS, NO_LOCAL_KEYS, CERT_NOT_YET_VALID, CERT_EXPIRED,
+    INVALID_SIGNATURE;
 }

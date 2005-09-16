@@ -34,9 +34,10 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
+import org.jetbrains.annotations.Nullable;
 
 public interface StateBasedTransfer {
     StateController getStateController();
 
-    StateController getNextStateController();
+    @Nullable StateController getNextStateController();
 }

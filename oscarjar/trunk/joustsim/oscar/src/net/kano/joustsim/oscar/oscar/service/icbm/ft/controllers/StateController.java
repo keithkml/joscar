@@ -43,6 +43,7 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailureEventInfo;
 
 import java.util.logging.Logger;
+import java.util.logging.Level;
 
 public abstract class StateController {
     private static final Logger LOGGER = Logger
@@ -107,6 +108,8 @@ public abstract class StateController {
             }
             endState = e;
         }
+        LOGGER.log(Level.FINE, "New state for " + getClass().getName() + ": " 
+                + e, new Throwable().fillInStackTrace());
         if (succeeded) {
             SuccessfulStateInfo successfulStateInfo = (SuccessfulStateInfo) e;
 
@@ -122,7 +125,7 @@ public abstract class StateController {
         }
     }
 
-    public synchronized StateInfo getEndState() { return endState; }
+    public synchronized StateInfo getEndStateInfo() { return endState; }
 
     public abstract void stop();
 

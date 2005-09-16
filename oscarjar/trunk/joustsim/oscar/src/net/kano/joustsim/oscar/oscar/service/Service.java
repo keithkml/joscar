@@ -80,7 +80,7 @@ public abstract class Service {
         return oscarConnection;
     }
 
-    public Screenname getScreenname() {
+    public final Screenname getScreenname() {
         return aimConnection.getScreenname();
     }
 

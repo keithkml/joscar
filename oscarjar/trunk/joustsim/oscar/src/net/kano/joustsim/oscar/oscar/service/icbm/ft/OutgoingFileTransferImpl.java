@@ -37,7 +37,6 @@ import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.rv.RecvRvEvent;
 import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rvcmd.InvitationMessage;
-import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joscar.rvcmd.sendfile.FileSendAcceptRvCmd;
 import net.kano.joscar.rvcmd.sendfile.FileSendBlock;
 import static net.kano.joscar.rvcmd.sendfile.FileSendBlock.SENDTYPE_DIR;
@@ -49,14 +48,13 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectToProxyF
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ManualTimeoutController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.OutgoingConnectionController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.RedirectToProxyController;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendFileController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendOverProxyController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendPassivelyController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.BuddyCancelledEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ChecksummingEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ProxyRedirectDisallowedEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferCompleteEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownErrorEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.ComputedChecksumsInfo;
@@ -80,7 +78,8 @@ public class OutgoingFileTransferImpl extends FileTransferImpl
     private static final Logger LOGGER = Logger
             .getLogger(OutgoingFileTransferImpl.class.getName());
 
-    private final ChecksumController checksumController = new ChecksumController();
+    private final ChecksumController checksumController
+            = new ChecksumController();
     private final SendOverProxyController sendOverProxyController
             = new SendOverProxyController();
     private final SendPassivelyController sendPassivelyController
@@ -93,7 +92,7 @@ public class OutgoingFileTransferImpl extends FileTransferImpl
             = new RedirectToProxyController();
     private final ConnectToProxyForOutgoingController connectToProxyController
             = new ConnectToProxyForOutgoingController();
-    private SendController sendController = new SendController();
+    private SendFileController sendController = new SendFileController();
 
     private List<File> files = new ArrayList<File>();
     private String folderName;
@@ -177,7 +176,7 @@ public class OutgoingFileTransferImpl extends FileTransferImpl
 
     public synchronized StateController getNextStateController() {
         StateController oldController = getStateController();
-        StateInfo endState = oldController.getEndState();
+        StateInfo endState = oldController.getEndStateInfo();
         if (endState instanceof SuccessfulStateInfo) {
             if (isConnectionController(oldController)) {
                 return sendController;
@@ -208,9 +207,10 @@ public class OutgoingFileTransferImpl extends FileTransferImpl
                 event = failureEventInfo.getEvent();
             }
             if (oldController == sendController) {
-                //TODO: important for release: retry send with other controllers
+                //TODO: retry send with other controllers like receiver does
 //                if (getState() == FileTransferState.TRANSFERRING) {
-                    setFailed(event == null ? new UnknownErrorEvent() : event);
+                    setState(FileTransferState.FAILED,
+                            event == null ? new UnknownErrorEvent() : event);
 //                } else {
 //
 //                }
@@ -227,7 +227,8 @@ public class OutgoingFileTransferImpl extends FileTransferImpl
                 return redirectToProxyController;
 
             } else if (oldController == redirectToProxyController) {
-                setFailed(event == null ? new UnknownErrorEvent() : event);
+                setState(FileTransferState.FAILED,
+                        event == null ? new UnknownErrorEvent() : event);
                 return null;
 
             } else {
@@ -239,10 +240,6 @@ public class OutgoingFileTransferImpl extends FileTransferImpl
         }
     }
 
-    private synchronized void setFailed(FileTransferEvent event) {
-        cancel();
-        queueStateChange(FileTransferState.FAILED, event);
-    }
 
     private boolean isConnectionController(StateController oldController) {
         return oldController == sendPassivelyController
@@ -257,7 +254,8 @@ public class OutgoingFileTransferImpl extends FileTransferImpl
         return new FtRvSessionHandler() {
             protected void handleIncomingReject(RecvRvEvent event,
                     FileSendRejectRvCmd rejectCmd) {
-                setFailed(new BuddyCancelledEvent(rejectCmd.getRejectCode()));
+                setState(FileTransferState.FAILED,
+                        new BuddyCancelledEvent(rejectCmd.getRejectCode()));
             }
 
             protected void handleIncomingAccept(RecvRvEvent event,
@@ -279,38 +277,13 @@ public class OutgoingFileTransferImpl extends FileTransferImpl
 
             protected void handleIncomingRequest(RecvRvEvent event,
                     FileSendReqRvCmd reqCmd) {
-                int reqType = reqCmd.getRequestType();
-                RvConnectionInfo connInfo = reqCmd.getConnInfo();
-                if (reqType == FileSendReqRvCmd.REQTYPE_REDIRECT) {
-                    //TODO: proxied?
-                    LOGGER.fine("Received redirect packet: " + reqCmd
-                            + " - to " + connInfo);
-                    boolean good;
-                    boolean proxied = connInfo.isProxied();
-                    if (isOnlyUsingProxy()) {
-                        if (proxied && !isProxyRequestTrusted()) {
-                            setFailed(new ProxyRedirectDisallowedEvent(
-                                    connInfo.getProxyIP()));
-                            good = false;
-
-                        } else {
-                            good = true;
-                        }
-
-                    } else {
-                        good = true;
-                    }
-                    if (good) {
-                        putTransferProperty(KEY_CONN_INFO, connInfo);
-                        LOGGER.fine("Storing connection info for redirect: " + connInfo);
-                        putTransferProperty(KEY_REDIRECTED, true);
-                        if (proxied) {
-                            LOGGER.finer("Changing to proxy connect controller");
-                            changeStateController(connectToProxyController);
-                        } else {
-                            LOGGER.finer("Changing to normal connect controller");
-                            changeStateController(outgoingInternalController);
-                        }
+                int reqType = reqCmd.getRequestIndex();
+                if (reqType > FileSendReqRvCmd.REQINDEX_FIRST) {
+                    HowToConnect how = processRedirect(reqCmd);
+                    if (how == HowToConnect.PROXY) {
+                        changeStateController(outgoingInternalController);
+                    } else if (how == HowToConnect.NORMAL) {
+                        changeStateController(connectToProxyController);
                     }
                 } else {
                     LOGGER.warning("got unknown file transfer request type in "

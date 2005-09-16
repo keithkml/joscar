@@ -42,7 +42,7 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
 import java.net.InetAddress;
 
 public class OutgoingConnectionController extends AbstractOutgoingConnectionController {
-    private ConnectionType type;
+    private final ConnectionType type;
 
     public OutgoingConnectionController(ConnectionType type)
             throws IllegalArgumentException {
@@ -84,7 +84,7 @@ public class OutgoingConnectionController extends AbstractOutgoingConnectionCont
     protected void setResolvingState() {
     }
 
-    protected ConnectionType getConnectionType() {
+    public ConnectionType getConnectionType() {
         return type;
     }
 

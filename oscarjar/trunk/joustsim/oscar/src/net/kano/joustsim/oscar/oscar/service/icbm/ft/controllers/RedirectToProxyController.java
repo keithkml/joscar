@@ -60,7 +60,7 @@ public class RedirectToProxyController extends InitiateProxyController
                 .createForOutgoingProxiedRequest(addr, port);
         transfer.putTransferProperty(TransferPropertyHolder.KEY_CONN_INFO, connInfo);
         transfer.putTransferProperty(TransferPropertyHolder.KEY_REDIRECTED, true);
-        rvSession.sendRv(new FileSendReqRvCmd(connInfo));
+        rvSession.sendRv(new FileSendReqRvCmd(connInfo, transfer.increaseRequestIndex()));
 
     }
 }

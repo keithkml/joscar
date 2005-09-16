@@ -46,6 +46,8 @@ import net.kano.joscar.snaccmd.CertificateInfo;
 import net.kano.joscar.snaccmd.ExtraInfoBlock;
 import net.kano.joscar.snaccmd.ExtraInfoData;
 import net.kano.joscar.snaccmd.FullUserInfo;
+import net.kano.joscar.snaccmd.MiniRoomInfo;
+import net.kano.joscar.snaccmd.chat.ChatCommand;
 import net.kano.joscar.snaccmd.conn.ExtraInfoAck;
 import net.kano.joscar.snaccmd.conn.MyInfoRequest;
 import net.kano.joscar.snaccmd.conn.ServiceRedirect;
@@ -64,7 +66,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.logging.Logger;
 
-//TODO: many commands send back a YourInfoCmd. we should make this more MVC so setIdleSince does not write to a field, but an incoming YourInfoCmd does not
+//TOLATER: many commands send back a YourInfoCmd. we should make this more MVC so setIdleSince does not write to a field, but an incoming YourInfoCmd does not
 public class MainBosService extends BosService {
     private static final Logger LOGGER = Logger
             .getLogger(MainBosService.class.getName());
@@ -166,26 +168,55 @@ public class MainBosService extends BosService {
         listeners.remove(listener);
     }
 
-    public void requestService(final int service,
-            final OpenedExternalServiceListener listener) {
-        sendSnacRequest(new ServiceRequest(service), new SnacRequestAdapter() {
-            public void handleResponse(SnacResponseEvent e) {
-                SnacCommand cmd = e.getSnacCommand();
-                if (cmd instanceof ServiceRedirect) {
-                    ServiceRedirect redirect = (ServiceRedirect) cmd;
-                    int returnedFamily = redirect.getSnacFamily();
-                    if (service != returnedFamily) {
-                        LOGGER.warning("server returned service "
-                                + returnedFamily + " when we requested " + service);
-                    }
-                    listener.handleServiceRedirect(MainBosService.this,
-                            service, redirect.getRedirectHost(),
-                            redirect.getRedirectPort(),
-                            redirect.getCookie());
-                } else {
-                    LOGGER.warning("unexpected response to service request: " + cmd);
+    public void requestService(int service,
+            OpenedExternalServiceListener listener) {
+        sendSnacRequest(new ServiceRequest(service),
+                new ServiceRequestResponseListener(listener));
+    }
+
+    public void requestChatService(final MiniRoomInfo miniRoomInfo,
+            final OpenedChatRoomServiceListener listener) {
+        OpenedExternalServiceListener internalListener
+                = new OpenedExternalServiceListener() {
+            public void handleServiceRedirect(MainBosService service,
+                    int serviceFamily, String host, int port,
+                    ByteBlock flapCookie) {
+                if (serviceFamily != ChatCommand.FAMILY_CHAT) {
+                    LOGGER.warning("server returned service "
+                            + serviceFamily + " when we requested " + service);
                 }
+                listener.handleChatRoomRedirect(service, miniRoomInfo, host,
+                        port, flapCookie);
             }
-        });
+        };
+        sendSnacRequest(new ServiceRequest(miniRoomInfo),
+                new ServiceRequestResponseListener(internalListener));
+    }
+
+    private class ServiceRequestResponseListener extends SnacRequestAdapter {
+        private final OpenedExternalServiceListener listener;
+
+        public ServiceRequestResponseListener(OpenedExternalServiceListener listener) {
+            this.listener = listener;
+        }
+
+        public void handleResponse(SnacResponseEvent e) {
+            SnacCommand cmd = e.getSnacCommand();
+            if (cmd instanceof ServiceRedirect) {
+                ServiceRedirect redirect = (ServiceRedirect) cmd;
+                int returnedFamily = redirect.getSnacFamily();
+//                if (service != returnedFamily) {
+//                    LOGGER.warning("server returned service "
+//                            + returnedFamily + " when we requested " + service);
+//                }
+                listener.handleServiceRedirect(MainBosService.this,
+                        returnedFamily, redirect.getRedirectHost(),
+                        redirect.getRedirectPort(),
+                        redirect.getCookie());
+            } else {
+                LOGGER.warning("unexpected response to service request: "
+                        + cmd);
+            }
+        }
     }
 }

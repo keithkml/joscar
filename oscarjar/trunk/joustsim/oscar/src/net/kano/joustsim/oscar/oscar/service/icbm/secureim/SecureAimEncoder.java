@@ -36,6 +36,7 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.secureim;
 
 import net.kano.joustsim.trust.CertificatePairHolder;
+import net.kano.joustsim.oscar.oscar.NoBuddyKeysException;
 import net.kano.joscar.EncodedStringInfo;
 import net.kano.joscar.MinimalEncoder;
 import org.bouncycastle.cms.CMSEnvelopedData;

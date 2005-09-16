@@ -54,11 +54,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.logging.Logger;
 
 //TODO: make sure we only connect to the proxy when the user accepts - the proxy will time out if the user waits too long
 public abstract class AbstractProxyConnectionController
         extends AbstractOutgoingConnectionController
         implements ManualTimeoutController {
+    private static final Logger LOGGER = Logger
+            .getLogger(AbstractProxyConnectionController.class.getName());
 
     private boolean clientWantsTimer = false;
     private boolean alreadyStartedTimer = false;
@@ -77,6 +80,7 @@ public abstract class AbstractProxyConnectionController
         while (true) {
             RvProxyPacket packet = RvProxyPacket.readPacket(in);
             RvProxyCmd cmd = factory.getRvProxyCmd(packet);
+            LOGGER.fine("Got proxy packet: " + (cmd == null ? packet : cmd));
             if (cmd instanceof RvProxyAckCmd) {
                 RvProxyAckCmd ackCmd = (RvProxyAckCmd) cmd;
                 startTimerIfReady();
@@ -97,6 +101,9 @@ public abstract class AbstractProxyConnectionController
             } else if (cmd instanceof RvProxyReadyCmd) {
                 fireConnected();
                 break;
+            } else {
+                LOGGER.warning("Got unknown RV proxy packet: " + packet + " ("
+                        + cmd + ")");
             }
         }
     }

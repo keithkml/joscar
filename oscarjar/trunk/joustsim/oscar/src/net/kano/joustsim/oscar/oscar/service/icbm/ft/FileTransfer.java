@@ -38,7 +38,7 @@ import net.kano.joscar.rvcmd.sendfile.FileSendBlock;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
 import net.kano.joustsim.Screenname;
 
-//TODO: add pause mechanism
+//TOLATER: add pause mechanism
 public interface FileTransfer {
     FileTransferManager getFileTransferManager();
 

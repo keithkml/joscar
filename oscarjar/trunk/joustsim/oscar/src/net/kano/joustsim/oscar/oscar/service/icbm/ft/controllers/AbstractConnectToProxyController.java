@@ -83,8 +83,12 @@ public abstract class AbstractConnectToProxyController
         bout.writeTo(out);
     }
 
-    protected InetAddress getIpAddress() {
+    protected InetAddress getIpAddress() throws IllegalStateException {
         RvConnectionInfo connInfo = getConnectionInfo();
+        if (!connInfo.isProxied()) {
+            throw new IllegalStateException("connection is not proxied: "
+                    + connInfo);
+        }
         InetAddress proxyIp = connInfo.getProxyIP();
         if (proxyIp == null) {
             throw new IllegalStateException(MiscTools.getClassName(this)

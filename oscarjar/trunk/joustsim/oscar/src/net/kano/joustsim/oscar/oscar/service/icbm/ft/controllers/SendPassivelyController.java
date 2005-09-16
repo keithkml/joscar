@@ -52,6 +52,7 @@ public class SendPassivelyController extends PassiveConnectionController {
         setConnInfo(connInfo);
         FileSendReqRvCmd request = new FileSendReqRvCmd(msg,
                 connInfo, transfer.getFileInfo());
+        //TODO: is this redirected?
         transfer.getRvSession().sendRv(request);
     }
 

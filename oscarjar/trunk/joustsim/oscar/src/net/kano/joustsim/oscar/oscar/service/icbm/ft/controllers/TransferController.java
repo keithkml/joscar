@@ -45,10 +45,14 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
 import java.io.IOException;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.logging.Logger;
 
-//TODO: allow limiting bandwidth
+//TOLATER: allow limiting bandwidth
 public abstract class TransferController extends StateController {
-    private volatile boolean stop = false;
+    private static final Logger LOGGER = Logger
+            .getLogger(TransferController.class.getName());
+
+    private volatile boolean failed = false;
     private boolean connected = false;
     private Thread receiveThread;
     private boolean suppressErrors = false;
@@ -62,12 +66,14 @@ public abstract class TransferController extends StateController {
     private volatile boolean paused = false;
 
     protected synchronized void pauseTimeout() {
+        LOGGER.info("File transfer timeout paused");
         if (timeoutPaused != -1) return;
         timeoutPaused = System.currentTimeMillis();
         latestTask = null;
     }
 
     protected synchronized void resumeTimeout() {
+        LOGGER.info("File transfer timeout resumed");
         long current = System.currentTimeMillis();
         long pausedAt = timeoutPaused;
         if (pausedAt == -1) return;
@@ -78,7 +84,7 @@ public abstract class TransferController extends StateController {
 
     private synchronized void makeTimerTask() {
         final long timeout = getTransferTimeoutMillis();
-        final long timeoutAt = threadStarted + timeout + timeIgnored;
+        long timeoutAt = threadStarted + timeout + timeIgnored;
         Timer timer = FileTransferTools.getTimer(transfer);
         TimerTask task = new TimerTask() {
             public void run() {
@@ -86,7 +92,7 @@ public abstract class TransferController extends StateController {
                 synchronized (TransferController.this) {
                     if (this != latestTask) return;
                     if (!isConnected()) {
-                        stop = true;
+                        failed = true;
                         suppressErrors = true;
                         timedout = true;
                     }
@@ -109,7 +115,7 @@ public abstract class TransferController extends StateController {
 
     public void start(final FileTransfer transfer, StateController last) {
         this.transfer = transfer;
-        StateInfo endState = last.getEndState();
+        StateInfo endState = last.getEndStateInfo();
         if (endState instanceof StreamInfo) {
             final StreamInfo stream = (StreamInfo) endState;
             receiveThread = new Thread(new Runnable() {
@@ -129,7 +135,7 @@ public abstract class TransferController extends StateController {
                     }
                 }
 
-            });
+            }, "File transfer thread");
 
             receiveThread.start();
         } else {
@@ -146,12 +152,13 @@ public abstract class TransferController extends StateController {
     }
 
     public void stop() {
-        stop = true;
+        LOGGER.info("Stopping transfer controller");
+        failed = true;
         interruptThread();
     }
 
     protected boolean shouldStop() {
-        return stop;
+        return failed;
     }
 
     protected void setConnected() {
@@ -159,6 +166,7 @@ public abstract class TransferController extends StateController {
             if (connected) return;
             connected = true;
         }
+        LOGGER.info("File transfer is now connected");
         transfer.getEventPost().fireEvent(new ConnectedEvent());
     }
 
@@ -193,6 +201,10 @@ public abstract class TransferController extends StateController {
         return paused;
     }
 
+    /**
+     * Returns true if it waited, false if not. If this method returns true
+     * it should be called again.
+     */
     protected boolean waitUntilUnpause() {
         if (isPaused()) {
             Object pauseLock = getPauseLock();

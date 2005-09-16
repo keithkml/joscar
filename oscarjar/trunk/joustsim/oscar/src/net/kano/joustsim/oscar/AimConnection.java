@@ -35,41 +35,25 @@
 
 package net.kano.joustsim.oscar;
 
-import net.kano.joscar.ByteBlock;
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacCommand;
-import net.kano.joscar.net.ClientConn;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.auth.AuthCommand;
 import net.kano.joscar.snaccmd.buddy.BuddyCommand;
 import net.kano.joscar.snaccmd.conn.ConnCommand;
 import net.kano.joscar.snaccmd.icbm.IcbmCommand;
-import net.kano.joscar.snaccmd.icon.IconCommand;
 import net.kano.joscar.snaccmd.loc.LocCommand;
+import net.kano.joscar.snaccmd.rooms.RoomCommand;
 import net.kano.joscar.snaccmd.ssi.SsiCommand;
 import net.kano.joustsim.Screenname;
-import net.kano.joustsim.oscar.oscar.BasicConnection;
-import net.kano.joustsim.oscar.oscar.LoginConnection;
-import net.kano.joustsim.oscar.oscar.LoginServiceListener;
-import net.kano.joustsim.oscar.oscar.OscarConnListener;
-import net.kano.joustsim.oscar.oscar.OscarConnStateEvent;
 import net.kano.joustsim.oscar.oscar.OscarConnection;
-import net.kano.joustsim.oscar.oscar.loginstatus.LoginFailureInfo;
-import net.kano.joustsim.oscar.oscar.loginstatus.LoginSuccessInfo;
-import net.kano.joustsim.oscar.oscar.service.DefaultServiceArbiterFactory;
 import net.kano.joustsim.oscar.oscar.service.Service;
 import net.kano.joustsim.oscar.oscar.service.ServiceArbiter;
-import net.kano.joustsim.oscar.oscar.service.ServiceArbiterFactory;
-import net.kano.joustsim.oscar.oscar.service.ServiceArbitrationManager;
-import net.kano.joustsim.oscar.oscar.service.ServiceFactory;
-import net.kano.joustsim.oscar.oscar.service.ServiceListener;
-import net.kano.joustsim.oscar.oscar.service.bos.ExternalBosService;
 import net.kano.joustsim.oscar.oscar.service.bos.MainBosService;
-import net.kano.joustsim.oscar.oscar.service.bos.OpenedExternalServiceListener;
 import net.kano.joustsim.oscar.oscar.service.buddy.BuddyService;
+import net.kano.joustsim.oscar.oscar.service.chatrooms.RoomManagerService;
 import net.kano.joustsim.oscar.oscar.service.icbm.IcbmService;
-import net.kano.joustsim.oscar.oscar.service.icon.IconServiceArbiter;
 import net.kano.joustsim.oscar.oscar.service.info.BuddyTrustAdapter;
 import net.kano.joustsim.oscar.oscar.service.info.BuddyTrustEvent;
 import net.kano.joustsim.oscar.oscar.service.info.BuddyTrustManager;
@@ -84,18 +68,13 @@ import net.kano.joustsim.trust.TrustedCertificatesTracker;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.logging.Logger;
 
 //TODO: time out waiting for all services to be ready, to ensure connection comes up eventually
+//TODO: factor unnecessarily visible public methods into AimConnectionServiceInterface
 public class AimConnection {
     private static final Logger LOGGER
             = Logger.getLogger(AimConnection.class.getName());
@@ -104,21 +83,11 @@ public class AimConnection {
     private final AimSession aimSession;
 
     private final Screenname screenname;
-    private String password;
-
-    private final LoginConnection loginConn;
-    private BasicConnection mainConn = null;
 
     private Map<Integer,List<Service>> snacfamilies
             = new HashMap<Integer, List<Service>>();
 
-    private boolean triedConnecting = false;
-    private State state = State.NOTCONNECTED;
-    private StateInfo stateInfo = NotConnectedStateInfo.getInstance();
-    private boolean wantedDisconnect = false;
 
-    private CopyOnWriteArrayList<StateListener> stateListeners
-            = new CopyOnWriteArrayList<StateListener>();
     private CopyOnWriteArrayList<OpenedServiceListener> serviceListeners
             = new CopyOnWriteArrayList<OpenedServiceListener>();
 
@@ -133,23 +102,8 @@ public class AimConnection {
     private final CapabilityManager capabilityManager;
 
     private final TrustPreferences localPrefs;
-
-    private ServiceArbiterFactory arbiterFactory
-            = new DefaultServiceArbiterFactory();
-
-    private final Object externalServicesLock = new Object();
-    private final Map<Integer, ServiceArbiter<? extends Service>> externalServices
-            = new HashMap<Integer, ServiceArbiter<? extends Service>>();
-    private Map<ServiceArbiter<? extends Service>,OscarConnection> externalConnections
-            = new HashMap<ServiceArbiter<? extends Service>, OscarConnection>();
-    private ServiceArbitrationManager arbitrationManager = new ServiceArbitrationManager() {
-        public void openService(ServiceArbiter<? extends Service> arbiter) {
-            int family = arbiter.getSnacFamily();
-            if (getServiceArbiter(family) == arbiter) {
-                requestService(family, arbiter);
-            }
-        }
-    };
+    private final ExternalServiceManager externalServiceMgr;
+    private ConnectionManager connectionManager;
 
     public AimConnection(Screenname screenname, String password) {
         this(new AimConnectionProperties(screenname, password));
@@ -185,15 +139,66 @@ public class AimConnection {
 
         this.screenname = sn;
 
+        this.localPrefs = prefs;
+
+
+        connectionManager = new ConnectionManager(this, props);
+        connectionManager.addStateListener(new StateListener() {
+            public void handleStateChange(StateEvent event) {
+                if (event.getNewState().isFinished()) {
+                    List<Service> services = DefensiveTools.getUnmodifiable(
+                            getLocalServices());
+                    for (OpenedServiceListener listener : serviceListeners) {
+                        listener.closedServices(AimConnection.this, services);
+                    }
+                }
+            }
+        });
+
         this.buddyInfoManager = new BuddyInfoManager(this);
         this.buddyInfoTracker = new BuddyInfoTracker(this);
         this.buddyIconTracker = new BuddyIconTracker(this);
         this.myBuddyIconManager = new MyBuddyIconManager(this);
-        this.loginConn = new LoginConnection(props.getLoginHost(),
-                props.getLoginPort());
-        this.password = props.getPassword();
-        this.localPrefs = prefs;
 
+        this.trustedCertificatesTracker = createTrustedCertificatesTracker(prefs);
+        this.certificateInfoTrustManager
+                = new CertificateInfoTrustManager(trustedCertificatesTracker);
+        this.buddyTrustManager = new BuddyTrustManager(this);
+        this.buddyTrustManager.addBuddyTrustListener(new BuddyTrustAdapter() {
+            public void buddyTrusted(BuddyTrustEvent event) {
+                LOGGER.fine(event.getBuddy() + " is trusted");
+            }
+
+            public void buddyTrustRevoked(BuddyTrustEvent event) {
+                LOGGER.fine(event.getBuddy() + " is no longer trusted");
+            }
+
+            public void gotTrustedCertificateChange(BuddyTrustEvent event) {
+                LOGGER.fine(event.getBuddy() + " has a trusted certificate");
+            }
+
+            public void gotUntrustedCertificateChange(BuddyTrustEvent event) {
+                LOGGER.fine(event.getBuddy() + " has an untrusted certificate");
+            }
+        });
+
+        this.capabilityManager = createCapabilityManager();
+        this.externalServiceMgr = new ExternalServiceManager(this);
+    }
+
+    private CapabilityManager createCapabilityManager() {
+        CapabilityManager mgr = new CapabilityManager(this);
+        mgr.setCapabilityHandler(CapabilityBlock.BLOCK_ENCRYPTION,
+                new SecurityEnabledHandler(this));
+        mgr.setCapabilityHandler(CapabilityBlock.BLOCK_ICQCOMPATIBLE,
+                new DefaultEnabledCapabilityHandler());
+        mgr.setCapabilityHandler(CapabilityBlock.BLOCK_SHORTCAPS,
+                new DefaultEnabledCapabilityHandler());
+        return mgr;
+    }
+
+    private TrustedCertificatesTracker createTrustedCertificatesTracker(
+            TrustPreferences prefs) {
         CertificateTrustManager certMgr;
         SignerTrustManager signerMgr;
         if (prefs != null) {
@@ -207,80 +212,7 @@ public class AimConnection {
             certMgr = null;
             signerMgr = null;
         }
-        trustedCertificatesTracker = new TrustedCertificatesTracker(certMgr,
-                signerMgr);
-        certificateInfoTrustManager
-                = new CertificateInfoTrustManager(trustedCertificatesTracker);
-        buddyTrustManager = new BuddyTrustManager(this);
-        buddyTrustManager.addBuddyTrustListener(new BuddyTrustAdapter() {
-            public void buddyTrusted(BuddyTrustEvent event) {
-                LOGGER.fine("* " + event.getBuddy() + " is trusted");
-            }
-
-            public void buddyTrustRevoked(BuddyTrustEvent event) {
-                LOGGER.fine("* " + event.getBuddy() + " is no longer trusted");
-            }
-
-            public void gotTrustedCertificateChange(BuddyTrustEvent event) {
-                LOGGER.fine("* " + event.getBuddy() + " has a trusted certificate");
-            }
-
-            public void gotUntrustedCertificateChange(BuddyTrustEvent event) {
-                LOGGER.fine("* " + event.getBuddy() + " has an untrusted certificate");
-            }
-        });
-        capabilityManager = new CapabilityManager(this);
-        capabilityManager.setCapabilityHandler(CapabilityBlock.BLOCK_ENCRYPTION,
-                new SecurityEnabledHandler(this));
-        capabilityManager.setCapabilityHandler(CapabilityBlock.BLOCK_ICQCOMPATIBLE,
-                new DefaultEnabledCapabilityHandler());
-        capabilityManager.setCapabilityHandler(CapabilityBlock.BLOCK_SHORTCAPS,
-                new DefaultEnabledCapabilityHandler());
-
-        loginConn.addOscarListener(new LoginConnListener());
-        loginConn.setServiceFactory(new LoginServiceFactory());
-
-        Timer timer = new Timer("External OSCAR connection timeout watcher", true);
-        timer.scheduleAtFixedRate(new TimerTask() {
-            public void run() {
-                LOGGER.finer("Checking for stale service requests");
-                //TODO: use configurable connection timeout
-                Set<Integer> retry = new HashSet<Integer>();
-                synchronized (this) {
-                    long time = System.currentTimeMillis();
-                    Set<Map.Entry<Integer, ServiceRequestInfo>> entries = pendingServiceRequests
-                            .entrySet();
-                    if (entries.isEmpty()) {
-                        LOGGER.finer("No pending service requests!");
-                    }
-                    for (Iterator<Map.Entry<Integer,ServiceRequestInfo>> it
-                            = entries.iterator();
-                            it.hasNext();) {
-                        Map.Entry<Integer,ServiceRequestInfo> entry = it.next();
-
-                        ServiceRequestInfo request = entry.getValue();
-                        long diff = time - request.getStartTime();
-                        if (diff > 10000) {
-                            LOGGER.info("External service for arbiter "
-                                    + request.getArbiter() + "(0x"
-                                    + Integer.toHexString(request.getFamily())
-                                    + ") timed out after "
-                                    + ((int) diff/1000.0) + "s; retrying");
-                            retry.add(entry.getKey());
-                            request.cancel();
-                            it.remove();
-                        } else {
-                            LOGGER.fine("Service request for "
-                                    + request.getArbiter() + " still has "
-                                    + (10000-diff) + "ms before timing out");
-                        }
-                    }
-                }
-                for (int service : retry) {
-                    requestService(service, getServiceArbiter(service));
-                }
-            }
-        }, 5000, 5000);
+        return new TrustedCertificatesTracker(certMgr, signerMgr);
     }
 
     public final AppSession getAppSession() { return appSession; }
@@ -305,9 +237,7 @@ public class AimConnection {
         return trustedCertificatesTracker;
     }
 
-    public TrustPreferences getLocalPrefs() {
-        return localPrefs;
-    }
+    public TrustPreferences getLocalPrefs() { return localPrefs; }
 
     public BuddyTrustManager getBuddyTrustManager() {
         return buddyTrustManager;
@@ -317,214 +247,14 @@ public class AimConnection {
         return capabilityManager;
     }
 
-    public BuddyInfoTracker getBuddyInfoTracker() {
-        return buddyInfoTracker;
-    }
+    public BuddyInfoTracker getBuddyInfoTracker() { return buddyInfoTracker; }
 
-    public synchronized State getState() { return state; }
-
-    public synchronized StateInfo getStateInfo() { return stateInfo; }
-
-    public void addStateListener(StateListener l) {
-        DefensiveTools.checkNull(l, "l");
-        stateListeners.addIfAbsent(l);
-    }
-
-    public void removeStateListener(StateListener l) {
-        DefensiveTools.checkNull(l, "l");
-        stateListeners.remove(l);
-    }
-    
     public void addOpenedServiceListener(OpenedServiceListener l) {
-        DefensiveTools.checkNull(l, "l");
         serviceListeners.addIfAbsent(l);
     }
 
     public void removeOpenedServiceListener(OpenedServiceListener l) {
-        DefensiveTools.checkNull(l, "l");
         serviceListeners.remove(l);
-    }
-
-    public synchronized boolean getTriedConnecting() {
-        return triedConnecting;
-    }
-
-    private synchronized boolean setTriedConnecting() {
-        if (triedConnecting) return false;
-        triedConnecting = true;
-        return true;
-    }
-
-    public boolean connect() {
-        setTriedConnecting();
-        loginConn.connect();
-        setState(State.NOTCONNECTED, State.CONNECTINGAUTH,
-                new AuthorizingStateInfo(loginConn));
-        return true;
-    }
-
-    public void disconnect() {
-        disconnect(true);
-    }
-
-    public synchronized void disconnect(boolean onPurpose) {
-        wantedDisconnect = onPurpose;
-        closeConnections();
-    }
-
-    public synchronized boolean wantedDisconnect() { return wantedDisconnect; }
-
-    public @Nullable ServiceArbiter<? extends Service> getServiceArbiter(
-            int service) {
-        ServiceArbiter<? extends Service> arbiter;
-        synchronized (externalServicesLock) {
-            arbiter = externalServices.get(service);
-            if (arbiter != null) return arbiter;
-
-            // NOTE: this calls an external method from within a lock!
-            LOGGER.finer("Creating arbiter for service " + service);
-            arbiter = arbiterFactory.getInstance(arbitrationManager, service);
-            LOGGER.fine("Created arbiter for service " + service + ": " + arbiter);
-            if (arbiter == null) {
-                return null;
-            }
-            externalServices.put(service, arbiter);
-        }
-        requestService(service, arbiter);
-        return arbiter;
-    }
-
-    public IconServiceArbiter getIconServiceArbiter() {
-        ServiceArbiter<?> arbiter = getServiceArbiter(IconCommand.FAMILY_ICON);
-        if (arbiter instanceof IconServiceArbiter) {
-            return (IconServiceArbiter) arbiter;
-        } else {
-            return null;
-        }
-    }
-
-    private void refreshServiceIfNecessary(int family) {
-        ServiceArbiter<? extends Service> arbiter;
-        synchronized (externalServicesLock) {
-            arbiter = externalServices.get(family);
-        }
-        if (arbiter == null) {
-            LOGGER.warning("Someone requested refresh of 0x"
-                    + Integer.toHexString(family) + " but there's no arbiter");
-            return;
-        } else if (!arbiter.shouldKeepAlive()) {
-            LOGGER.info("Someone requested a refresh of 0x"
-                    + Integer.toHexString(family) + " but the arbiter "
-                    + arbiter + " says it doesn't want to live");
-            return;
-        }
-        requestService(family, arbiter);
-    }
-
-    private Map<Integer, ServiceRequestInfo> pendingServiceRequests
-            = new HashMap<Integer, ServiceRequestInfo>();
-
-    private static class ServiceRequestInfo<S extends Service> {
-        private long startTime = System.currentTimeMillis();
-        private int family;
-        private ServiceArbiter<S> arbiter;
-        private BasicConnection connection = null;
-        private boolean canceled = false;
-
-        public ServiceRequestInfo(int family, ServiceArbiter<S> arbiter) {
-            this.family = family;
-            this.arbiter = arbiter;
-        }
-
-        public long getStartTime() {
-            return startTime;
-        }
-
-        public ServiceArbiter<S> getArbiter() {
-            return arbiter;
-        }
-
-        public synchronized BasicConnection getConnection() {
-            return connection;
-        }
-
-        public synchronized void setConnection(BasicConnection connection) {
-            this.connection = connection;
-        }
-
-        public void cancel() {
-            canceled = true;
-            BasicConnection connection = getConnection();
-            if (connection != null) connection.disconnect();
-        }
-
-        public int getFamily() {
-            return family;
-        }
-
-        public boolean isCanceled() {
-            return canceled;
-        }
-    }
-
-    private <S extends Service> void requestService(int service,
-            ServiceArbiter<S> arbiter) {
-        ServiceRequestInfo<S> request;
-        synchronized (this) {
-            if (pendingServiceRequests.containsKey(service)) return;
-            if (externalConnections.containsKey(arbiter)) {
-                LOGGER.finer("Someone requested 0x"
-                        + Integer.toHexString(service) + " but there's "
-                        + "already an external connection: "
-                        + externalConnections.get(arbiter));
-                return;
-            }
-            request = new ServiceRequestInfo<S>(service, arbiter);
-            pendingServiceRequests.put(service, request);
-        }
-        LOGGER.info("Requesting external service " + service + " for "
-                + arbiter);
-        MainBosService bosService = getBosService();
-        bosService.requestService(service,
-                new ArbitratedExternalServiceListener<S>(request));
-    }
-
-    private synchronized <S extends Service> boolean clearRequest(
-            ServiceRequestInfo<S> request) {
-        boolean removed = pendingServiceRequests.values().remove(request);
-        if (removed) {
-            LOGGER.info("Request " + request + " cleared");
-        } else {
-            LOGGER.info("Request " + request + " was not cleared because it is "
-                    + "obsolete");
-        }
-        return removed;
-    }
-
-    private synchronized void clearExternalConnection(OscarConnection conn,
-            ServiceArbiter<? extends Service> arbiter) {
-        if (getExternalConnection(arbiter) == conn) {
-            externalConnections.remove(arbiter);
-        }
-    }
-
-    private synchronized OscarConnection getExternalConnection(
-            ServiceArbiter<? extends Service> arbiter) {
-        return externalConnections.get(arbiter);
-    }
-
-//    private synchronized OscarConnection getExternalConnection(
-//            int family) {
-//        ServiceArbiter<? extends Service> arbiter = getServiceArbiter(family);
-//        if (arbiter == null) return null;
-//        return externalConnections.get(arbiter);
-//    }
-
-    private synchronized boolean storeExternalConnection(BasicConnection conn,
-            ServiceRequestInfo<? extends Service> request) {
-        if (!clearRequest(request)) return false;
-        externalConnections.put(request.getArbiter(), conn);
-        return true;
     }
 
     public @Nullable synchronized Service getService(int family) {
@@ -556,6 +286,10 @@ public class AimConnection {
         return getServiceOfType(SsiCommand.FAMILY_SSI, SsiService.class);
     }
 
+    public RoomManagerService getChatRoomManagerService() {
+        return getServiceOfType(RoomCommand.FAMILY_ROOM, RoomManagerService.class);
+    }
+
     private @Nullable <E extends Service> E getServiceOfType(int fam, Class<E> cls) {
         Service service = getService(fam);
         if (cls.isInstance(service)) {
@@ -569,88 +303,48 @@ public class AimConnection {
         int family = snac.getFamily();
         Service service = getService(family);
         if (service == null) {
-            ServiceArbiter<?> arbiter = getServiceArbiter(family);
+            ServiceArbiter<?> arbiter = externalServiceMgr.getServiceArbiter(family);
             if (arbiter != null) {
-
+                //TODO: what to do when sending snac to arbiter?
             }
         } else {
             service.sendSnac(snac);
         }
     }
 
-    private boolean setState(State expectedOld, State state, StateInfo info) {
-        DefensiveTools.checkNull(state, "state");
-        DefensiveTools.checkNull(info, "info");
-
-        LOGGER.fine("New state: " + state + " - " + info);
-
-        State oldState;
-        StateInfo oldStateInfo;
-        synchronized(this) {
-            oldState = this.state;
-            oldStateInfo = this.stateInfo;
-
-            if (expectedOld != null && oldState != expectedOld) {
-                LOGGER.warning("Tried converting state " + expectedOld + " to "
-                        + state + ", but was in " + oldState);
-                return false;
-            }
-
-            this.state = state;
-            this.stateInfo = info;
-        }
-
-        StateEvent event = new StateEvent(this, oldState, oldStateInfo, state,
-                info);
-
-        for (StateListener listener : stateListeners) {
-            listener.handleStateChange(event);
-        }
-        return true;
+    public ExternalServiceManager getExternalServiceManager() {
+        return externalServiceMgr;
     }
 
-    private void connectBos(LoginSuccessInfo info) {
-        BasicConnection mainConn = prepareMainConn(info);
-        mainConn.connect();
-        setState(State.AUTHORIZING, State.CONNECTING,
-                new ConnectingStateInfo(info));
+    public void addStateListener(StateListener l) {
+        connectionManager.addStateListener(l);
     }
 
-    private synchronized BasicConnection prepareMainConn(LoginSuccessInfo info) {
-        if (state != State.AUTHORIZING) {
-            throw new IllegalStateException("tried to connect to BOS "
-                    + "server in state " + state);
-        }
-        BasicConnection mainConn = new BasicConnection(info.getServer(),
-                info.getPort());
-        mainConn.setCookie(info.getCookie());
-        mainConn.addOscarListener(new MainBosConnListener());
-        mainConn.setServiceFactory(new BasicServiceFactory());
-        this.mainConn = mainConn;
-        return mainConn;
+    public void removeStateListener(StateListener l) {
+        connectionManager.removeStateListener(l);
     }
 
-    private void internalDisconnected() {
-        setState(null, State.DISCONNECTED,
-                new DisconnectedStateInfo(wantedDisconnect()));
-        closeConnections();
-        List<Service> services = DefensiveTools.getUnmodifiable(
-                getLocalServices());
-        for (OpenedServiceListener listener : serviceListeners) {
-            listener.closedServices(this, services);
-        }
+    public State getState() { return connectionManager.getState(); }
+
+    public StateInfo getStateInfo() { return connectionManager.getStateInfo(); }
+
+    public boolean connect() { return connectionManager.connect(); }
+
+    public boolean getTriedConnecting() {
+        return connectionManager.getTriedConnecting();
     }
 
-    private synchronized void closeConnections() {
-        loginConn.disconnect();
-        BasicConnection mainConn = this.mainConn;
-        for (OscarConnection conn : externalConnections.values()) {
-            conn.disconnect();
-        }
-        if (mainConn != null) mainConn.disconnect();
+    public void disconnect() { connectionManager.disconnect(); }
+
+    public void disconnect(boolean onPurpose) {
+        connectionManager.disconnect(onPurpose);
     }
 
-    private void recordSnacFamilies(OscarConnection conn) {
+    public boolean wantedDisconnect() {
+        return connectionManager.wantedDisconnect();
+    }
+
+    void recordSnacFamilies(OscarConnection conn) {
         List<Service> added = new ArrayList<Service>();
         synchronized(this) {
             for (int family : conn.getSnacFamilies()) {
@@ -694,210 +388,5 @@ public class AimConnection {
             list.addAll(entry.getValue());
         }
         return list;
-    }
-
-    private class LoginServiceFactory implements ServiceFactory {
-        public Service getService(OscarConnection conn, int family) {
-            if (family == AuthCommand.FAMILY_AUTH) {
-                return new LoginService(AimConnection.this, loginConn,
-                        screenname, password);
-
-            } else {
-                return null;
-            }
-        }
-    }
-
-    private class BasicServiceFactory implements ServiceFactory {
-        public Service getService(OscarConnection conn, int family) {
-            if (family == ConnCommand.FAMILY_CONN) {
-                return new MainBosService(AimConnection.this, conn);
-            } else if (family == IcbmCommand.FAMILY_ICBM) {
-                return new IcbmService(AimConnection.this, conn);
-            } else if (family == BuddyCommand.FAMILY_BUDDY) {
-                return new BuddyService(AimConnection.this, conn);
-            } else if (family == LocCommand.FAMILY_LOC) {
-                return new InfoService(AimConnection.this, conn);
-            } else if (family == SsiCommand.FAMILY_SSI) {
-                return new SsiService(AimConnection.this, conn);
-            } else {
-                System.out.println("no service for family " + family);
-                return null;
-            }
-        }
-    }
-
-    private class DefaultConnListener implements OscarConnListener {
-        public void registeredSnacFamilies(OscarConnection conn) {
-            recordSnacFamilies(conn);
-        }
-
-        public void connStateChanged(OscarConnection conn,
-                OscarConnStateEvent event) {
-        }
-
-        public void allFamiliesReady(OscarConnection conn) {
-        }
-    }
-
-    private class LoginConnListener extends DefaultConnListener {
-        public void registeredSnacFamilies(OscarConnection conn) {
-            super.registeredSnacFamilies(conn);
-
-            LoginService ls = loginConn.getLoginService();
-            ls.addLoginListener(new LoginProcessListener());
-        }
-
-        public void connStateChanged(OscarConnection conn, OscarConnStateEvent event) {
-            ClientConn.State state = event.getClientConnEvent().getNewState();
-            if (state == ClientConn.STATE_CONNECTED) {
-                setState(State.CONNECTINGAUTH, State.AUTHORIZING,
-                        new AuthorizingStateInfo(loginConn));
-            }
-        }
-    }
-
-    private class LoginProcessListener implements LoginServiceListener {
-        public void loginSucceeded(LoginSuccessInfo info) {
-            connectBos(info);
-        }
-
-        public void loginFailed(LoginFailureInfo info) {
-            setState(null, State.FAILED, new LoginFailureStateInfo(info));
-        }
-    }
-
-    private class MainBosConnListener extends DefaultConnListener {
-        public void allFamiliesReady(OscarConnection conn) {
-            super.allFamiliesReady(conn);
-
-            // I don't know why this could happen
-            if (getState() == State.CONNECTING) {
-                LOGGER.finer("State was CONNECTING, but now we're ONLINE. The "
-                        + "state should've been SIGNINGON.");
-                setState(State.CONNECTING, State.SIGNINGON,
-                        new SigningOnStateInfo());
-            }
-            setState(State.SIGNINGON, State.ONLINE, new OnlineStateInfo());
-        }
-
-        public void connStateChanged(OscarConnection conn,
-                OscarConnStateEvent event) {
-            ClientConn.State state = event.getClientConnEvent().getNewState();
-
-            if (state == ClientConn.STATE_FAILED) {
-                setState(null, State.FAILED, new ConnectionFailedStateInfo(
-                        conn.getHost(), conn.getPort()));
-
-            } else if (state == ClientConn.STATE_NOT_CONNECTED) {
-                internalDisconnected();
-
-            } else if (state == ClientConn.STATE_CONNECTED) {
-                setState(State.CONNECTING, State.SIGNINGON,
-                        new SigningOnStateInfo());
-            }
-        }
-    }
-
-    private class ExternalServiceFactory<S extends Service>
-            implements ServiceFactory {
-        private final int serviceFamily;
-        private final ServiceArbiter<S> arbiter;
-
-        public ExternalServiceFactory(int serviceFamily, ServiceArbiter<S> arbiter) {
-            this.serviceFamily = serviceFamily;
-            this.arbiter = arbiter;
-        }
-
-        public Service getService(OscarConnection conn, int family) {
-            if (family == ConnCommand.FAMILY_CONN) {
-                return new ExternalBosService(AimConnection.this, conn);
-
-            } else if (family == serviceFamily) {
-                return arbiter.createService(AimConnection.this, conn);
-
-            } else {
-                LOGGER.warning("External service " + serviceFamily
-                        + " wants to open service " + family);
-                return null;
-            }
-        }
-    }
-
-    private class ExternalServiceConnListener<S extends Service>
-            implements OscarConnListener {
-        private final int serviceFamily;
-        private final ServiceRequestInfo<S> request;
-
-        public ExternalServiceConnListener(int serviceFamily,
-                ServiceRequestInfo<S> arbiter) {
-            this.request = arbiter;
-            this.serviceFamily = serviceFamily;
-        }
-
-        public void registeredSnacFamilies(OscarConnection conn) {
-        }
-
-        public void connStateChanged(OscarConnection conn,
-                OscarConnStateEvent event) {
-            ClientConn.State state = event.getClientConnEvent().getNewState();
-            if (state == ClientConn.STATE_FAILED
-                    || state == ClientConn.STATE_NOT_CONNECTED) {
-                LOGGER.info("External service connection died for service "
-                        + serviceFamily + " ( " + request + ")");
-                conn.removeOscarListener(this);
-                clearExternalConnection(conn, request.getArbiter());
-                refreshServiceIfNecessary(serviceFamily);
-            }
-        }
-
-        public void allFamiliesReady(OscarConnection conn) {
-        }
-    }
-
-    private class DispatchingServiceListener implements ServiceListener {
-        public void handleServiceReady(Service service) {
-            for (OpenedServiceListener listener : serviceListeners) {
-                listener.openedServices(AimConnection.this,
-                        Collections.singleton(service));
-            }
-        }
-
-        public void handleServiceFinished(Service service) {
-            for (OpenedServiceListener listener : serviceListeners) {
-                listener.closedServices(AimConnection.this,
-                        Collections.singleton(service));
-            }
-        }
-    }
-
-    private class ArbitratedExternalServiceListener<S extends Service> implements
-            OpenedExternalServiceListener {
-        private final ServiceRequestInfo<S> request;
-
-        public ArbitratedExternalServiceListener(ServiceRequestInfo<S> request) {
-            this.request = request;
-        }
-
-        public void handleServiceRedirect(final MainBosService service,
-                final int serviceFamily, String host, int port,
-                ByteBlock flapCookie) {
-            int usePort;
-            if (port <= 0) usePort = 5190;
-            else usePort = port;
-
-            LOGGER.fine("Connecting to " + host + ":" + port + " for external "
-                    + "service " + serviceFamily);
-            BasicConnection conn = new BasicConnection(host, usePort);
-            conn.setServiceFactory(new ExternalServiceFactory<S>(
-                    serviceFamily, request.getArbiter()));
-            conn.setCookie(flapCookie);
-            conn.addGlobalServiceListener(new DispatchingServiceListener());
-            conn.addOscarListener(new ExternalServiceConnListener<S>(
-                    serviceFamily, request));
-            if (storeExternalConnection(conn, request)) {
-                conn.connect();
-            }
-        }
     }
 }

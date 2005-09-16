@@ -39,7 +39,7 @@ import java.nio.channels.FileChannel;
 import java.nio.ByteBuffer;
 import java.io.IOException;
 
-//TODO: allow pause checksumming
+//TOLATER: allow user to pause checksumming
 public class Checksummer implements ProgressStatusProvider {
     private volatile long position = 0;
     private boolean summed = false;

@@ -10,7 +10,7 @@ public interface TransferPropertyHolder extends FileTransfer {
 
     <V> V getTransferProperty(FileTransferImpl.Key<V> key);
 
-    static class Key<V> {
+    class Key<V> {
         private final String name;
 
         public Key(String name) {

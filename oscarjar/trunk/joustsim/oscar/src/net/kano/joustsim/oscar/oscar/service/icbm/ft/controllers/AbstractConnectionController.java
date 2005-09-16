@@ -42,13 +42,18 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferImpl;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectionTimedOutEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.LocallyCancelledInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
 
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.logging.Logger;
 
 public abstract class AbstractConnectionController extends StateController {
+    private static final Logger LOGGER = Logger
+            .getLogger(AbstractConnectionController.class.getName());
+
     private RvConnectionInfo connectionInfo;
     private StreamInfo stream;
     private FileTransferImpl fileTransfer;
@@ -77,13 +82,17 @@ public abstract class AbstractConnectionController extends StateController {
 
     public void start(FileTransfer transfer, StateController last) {
         DefensiveTools.checkNull(transfer, "transfer");
+        StateInfo endState = getEndStateInfo();
+        if (endState != null) {
+            throw new IllegalStateException("state is alreaday " + endState);
+        }
 
         this.fileTransfer = (FileTransferImpl) transfer;
         connectionInfo = fileTransfer.getTransferProperty(
                 FileTransferImpl.KEY_CONN_INFO);
-        checkConnectionInfo();
 
         try {
+            checkConnectionInfo();
             initializeBeforeStarting();
         } catch (Exception e) {
             fireFailed(e);
@@ -139,7 +148,7 @@ public abstract class AbstractConnectionController extends StateController {
 
     public void stop() {
         fireFailed(new LocallyCancelledInfo());
-        thread.interrupt();
+        if (thread != null) thread.interrupt();
     }
 
     public Socket getSocket() { return socket; }
@@ -150,8 +159,10 @@ public abstract class AbstractConnectionController extends StateController {
 
     protected void openConnectionInThread() {
         try {
+            LOGGER.fine(this + " opening socket");
             socket = createSocket();
             stream = new StreamInfo(socket.getChannel());
+            LOGGER.fine(this + " initializing connection in thread");
             initializeConnectionInThread();
         } catch (Exception e) {
             fireFailed(e);

@@ -35,6 +35,17 @@
 
 package net.kano.joustsim.oscar;
 
+import net.kano.joscar.ByteBlock;
+import net.kano.joscar.CopyOnWriteArrayList;
+import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.snaccmd.CapabilityBlock;
+import net.kano.joscar.snaccmd.CertificateInfo;
+import net.kano.joscar.snaccmd.DirInfo;
+import net.kano.joscar.snaccmd.ExtraInfoBlock;
+import net.kano.joscar.snaccmd.ExtraInfoData;
+import net.kano.joscar.snaccmd.FullUserInfo;
+import net.kano.joscar.snaccmd.ShortCapabilityBlock;
+import net.kano.joscar.snaccmd.WarningLevel;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.oscar.service.Service;
 import net.kano.joustsim.oscar.oscar.service.bos.MainBosService;
@@ -45,25 +56,15 @@ import net.kano.joustsim.oscar.oscar.service.info.BuddyHashHolder;
 import net.kano.joustsim.oscar.oscar.service.info.InfoService;
 import net.kano.joustsim.oscar.oscar.service.info.InfoServiceListener;
 import net.kano.joustsim.trust.BuddyCertificateInfo;
-import net.kano.joscar.ByteBlock;
-import net.kano.joscar.CopyOnWriteArrayList;
-import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.snaccmd.CapabilityBlock;
-import net.kano.joscar.snaccmd.CertificateInfo;
-import net.kano.joscar.snaccmd.DirInfo;
-import net.kano.joscar.snaccmd.FullUserInfo;
-import net.kano.joscar.snaccmd.ShortCapabilityBlock;
-import net.kano.joscar.snaccmd.WarningLevel;
-import net.kano.joscar.snaccmd.ExtraInfoBlock;
-import net.kano.joscar.snaccmd.ExtraInfoData;
+import org.jetbrains.annotations.NotNull;
 
 import java.beans.PropertyChangeEvent;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.List;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class BuddyInfoManager {
@@ -322,7 +323,7 @@ public class BuddyInfoManager {
         return cachedCertInfos.get(holder);
     }
 
-    private synchronized BuddyInfo getBuddyInfoInstance(Screenname buddy) {
+    private synchronized @NotNull BuddyInfo getBuddyInfoInstance(Screenname buddy) {
         BuddyInfo info = buddyInfos.get(buddy);
         if (info == null) {
             info = new BuddyInfo(buddy);
@@ -332,7 +333,7 @@ public class BuddyInfoManager {
         return info;
     }
 
-    public synchronized BuddyInfo getBuddyInfo(Screenname buddy) {
+    public synchronized @NotNull BuddyInfo getBuddyInfo(Screenname buddy) {
         return getBuddyInfoInstance(buddy);
     }
 

@@ -29,35 +29,25 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- *  File created by keith @ Jan 15, 2004
+ *  File created by keith @ Jan 29, 2004
  *
  */
 
-package net.kano.joustsim.oscar;
+package net.kano.joustsim.oscar.oscar;
 
-public final class State {
-    public static State NOTCONNECTED = new State("NOT_CONNECTED");
-    public static State CONNECTINGAUTH = new State("CONNECTINGAUTH");
-    public static State AUTHORIZING = new State("AUTHORIZING");
-    public static State CONNECTING = new State("CONNECTING");
-    public static State SIGNINGON = new State("SIGNINGON");
-    public static State FAILED = new State("FAILED");
-    public static State ONLINE = new State("ONLINE");
-    //TOLATER: implement PRE_ONLINE
-//    public static State PRE_ONLINE = new State("PRE_ONLINE");
-    public static State DISCONNECTED = new State("DISCONNECTED");
-
-    private final String name;
-
-    private State(String name) {
-        this.name = name;
+public class NoBuddyKeysException extends Exception {
+    public NoBuddyKeysException() {
     }
 
-    public String toString() {
-        return name;
+    public NoBuddyKeysException(String message) {
+        super(message);
     }
 
-    public boolean isFinished() {
-        return this == FAILED || this == DISCONNECTED;
+    public NoBuddyKeysException(Throwable cause) {
+        super(cause);
+    }
+
+    public NoBuddyKeysException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

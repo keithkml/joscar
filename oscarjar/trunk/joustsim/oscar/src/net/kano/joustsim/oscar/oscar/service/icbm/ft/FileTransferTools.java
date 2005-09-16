@@ -24,9 +24,9 @@ public class FileTransferTools {
 
     static long getChecksumRuinPosition(FileChannel fileChannel,
             long offset, long length) throws IOException {
-        FileTransferChecksum summer = new FileTransferChecksum();
         ByteBuffer buffer = ByteBuffer.allocate(1024);
         fileChannel.position(offset);
+        FileTransferChecksum summer = new FileTransferChecksum();
         long remaining = length;
         while (remaining > 0) {
             buffer.rewind();
@@ -54,7 +54,7 @@ public class FileTransferTools {
             CachedTimerHolder timerHolder = (CachedTimerHolder) transfer;
             return timerHolder.getTimer();
         } else {
-            return new Timer();
+            return new Timer("File transfer scheduler", true);
         }
     }
 }

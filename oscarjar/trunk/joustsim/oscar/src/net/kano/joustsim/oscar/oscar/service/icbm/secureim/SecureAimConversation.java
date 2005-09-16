@@ -52,6 +52,7 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ConversationException;
 import net.kano.joustsim.oscar.oscar.service.icbm.IcbmService;
 import net.kano.joustsim.oscar.oscar.service.icbm.InternalIcbmTools;
 import net.kano.joustsim.oscar.oscar.service.icbm.Message;
+import net.kano.joustsim.oscar.oscar.NoBuddyKeysException;
 import net.kano.joustsim.trust.BuddyCertificateInfo;
 import net.kano.joustsim.trust.PrivateKeys;
 import net.kano.joustsim.trust.PrivateKeysPreferences;
