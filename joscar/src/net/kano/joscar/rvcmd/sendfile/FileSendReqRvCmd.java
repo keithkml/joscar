@@ -84,8 +84,8 @@ public class FileSendReqRvCmd extends AbstractRequestRvCmd {
     /**
      * Creates a new outgoing initial file send request with the given message,
      * connection information, and file transfer information block. As an
-     * initial request, the created request's request type will be {@link
-     * #REQTYPE_INITIALREQUEST}.
+     * initial request, the created request's request index will be {@link
+     * #REQINDEX_FIRST}.
      * <br>
      * <br>
      * Using this constructor is equivalent to using {@link
@@ -103,7 +103,7 @@ public class FileSendReqRvCmd extends AbstractRequestRvCmd {
      */
     public FileSendReqRvCmd(InvitationMessage message,
             RvConnectionInfo connInfo, FileSendBlock fileInfo) {
-        this(REQTYPE_INITIALREQUEST, message, connInfo, fileInfo);
+        this(REQINDEX_FIRST, message, connInfo, fileInfo);
     }
 
     /**
@@ -119,15 +119,15 @@ public class FileSendReqRvCmd extends AbstractRequestRvCmd {
      * @param connInfo a block of connection information describing the
      *        connection to which a file send connection has been redirected
      */
-    public FileSendReqRvCmd(RvConnectionInfo connInfo) {
-        this(REQTYPE_REDIRECT, null, connInfo, null);
+    public FileSendReqRvCmd(RvConnectionInfo connInfo, int requestIndex) {
+        this(requestIndex, null, connInfo, null);
     }
 
     /**
      * Creates a new outgoing file send request command with the given
      * properties.
      *
-     * @param requestType a request type, like {@link #REQTYPE_INITIALREQUEST}
+     * @param requestIndex a request index, like {@link #REQINDEX_FIRST}
      * @param message an "invitation message," a message displayed to the user
      *        upon receiving this request, or <code>null</code> to not include
      *        an invitation message
@@ -136,9 +136,9 @@ public class FileSendReqRvCmd extends AbstractRequestRvCmd {
      *        information
      * @param fileInfo an object describing the file or files being sent
      */
-    public FileSendReqRvCmd(int requestType, InvitationMessage message,
+    public FileSendReqRvCmd(int requestIndex, InvitationMessage message,
             RvConnectionInfo connInfo, FileSendBlock fileInfo) {
-        super(CapabilityBlock.BLOCK_FILE_SEND, requestType);
+        super(CapabilityBlock.BLOCK_FILE_SEND, requestIndex);
 
         this.connInfo = connInfo;
         this.fileSendBlock = fileInfo;
@@ -182,7 +182,7 @@ public class FileSendReqRvCmd extends AbstractRequestRvCmd {
 
     public String toString() {
         return "FileSendReqRvCmd: " +
-                "reqType=" + getRequestType() +
+                "reqIndex=" + getRequestIndex() +
                 ", message='" + invMessage + "'" +
                 ", connInfo=" + connInfo +
                 ", fileSendBlock=" + fileSendBlock;

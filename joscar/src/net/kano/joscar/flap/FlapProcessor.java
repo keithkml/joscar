@@ -261,7 +261,7 @@ public class FlapProcessor extends ConnProcessor {
                         listener);
                 continue;
             }
-            if (result != VetoableFlapPacketListener.CONTINUE_PROCESSING) {
+            if (result != VetoableFlapPacketListener.VetoResult.CONTINUE_PROCESSING) {
                 if (logFiner) {
                     logger.logFiner("Flap packet listener vetoed further " +
                             "processing: " + listener);

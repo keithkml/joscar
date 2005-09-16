@@ -45,7 +45,6 @@ import net.kano.joscar.flapcmd.SnacPacket;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.regex.Pattern;
 
 /**
  * A SNAC command used by newer clients to request information about a buddy.

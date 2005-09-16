@@ -198,7 +198,7 @@ public abstract class AbstractSnacProcessor {
      */
     private VetoableFlapPacketListener flapPacketListener
             = new VetoableFlapPacketListener() {
-                public Object handlePacket(FlapPacketEvent e) {
+                public VetoResult handlePacket(FlapPacketEvent e) {
                     if (e.getFlapCommand() instanceof SnacFlapCmd) {
                         if (logger.logFinerEnabled()) {
                             logger.logFiner("SnacProcessor intercepted channel-2 snac "
@@ -207,9 +207,9 @@ public abstract class AbstractSnacProcessor {
 
                         processPacket(e);
 
-                        return STOP_PROCESSING_LISTENERS;
+                        return VetoResult.STOP_PROCESSING_LISTENERS;
                     } else {
-                        return CONTINUE_PROCESSING;
+                        return VetoResult.CONTINUE_PROCESSING;
                     }
                 }
             };
