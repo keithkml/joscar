@@ -44,7 +44,6 @@ import net.kano.joscar.snaccmd.buddy.BuddyCommand;
 import net.kano.joscar.snaccmd.conn.ConnCommand;
 import net.kano.joscar.snaccmd.icbm.IcbmCommand;
 import net.kano.joscar.snaccmd.loc.LocCommand;
-import net.kano.joscar.snaccmd.rooms.RoomCommand;
 import net.kano.joscar.snaccmd.ssi.SsiCommand;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.oscar.OscarConnection;
@@ -52,7 +51,6 @@ import net.kano.joustsim.oscar.oscar.service.Service;
 import net.kano.joustsim.oscar.oscar.service.ServiceArbiter;
 import net.kano.joustsim.oscar.oscar.service.bos.MainBosService;
 import net.kano.joustsim.oscar.oscar.service.buddy.BuddyService;
-import net.kano.joustsim.oscar.oscar.service.chatrooms.RoomManagerService;
 import net.kano.joustsim.oscar.oscar.service.icbm.IcbmService;
 import net.kano.joustsim.oscar.oscar.service.info.BuddyTrustAdapter;
 import net.kano.joustsim.oscar.oscar.service.info.BuddyTrustEvent;
@@ -284,10 +282,6 @@ public class AimConnection {
 
     public SsiService getSsiService() {
         return getServiceOfType(SsiCommand.FAMILY_SSI, SsiService.class);
-    }
-
-    public RoomManagerService getChatRoomManagerService() {
-        return getServiceOfType(RoomCommand.FAMILY_ROOM, RoomManagerService.class);
     }
 
     private @Nullable <E extends Service> E getServiceOfType(int fam, Class<E> cls) {
