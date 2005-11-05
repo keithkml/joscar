@@ -150,8 +150,9 @@ Thanks to Stephen Flynn for help implementing functionality to join chat rooms
 to which one had been invited.
 
 Thanks to Tim Dierks for a great deal of help figuring out and understanding
-the encrypted IM/file transfer/direct IM/chat rooms.
+the encrypted IM/file transfer/direct IM/chat rooms protocols.
 
+Thanks to Tal Liron for submitting a bunch of joscar-as-server fixes.
 
 If you have contributed to joscar and are not listed here, please forgive our
 oversight and send mail to <joscar@kano.net>.
