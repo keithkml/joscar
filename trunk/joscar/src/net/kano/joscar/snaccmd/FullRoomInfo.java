@@ -269,6 +269,8 @@ public final class FullRoomInfo
         }
     }
 
+    
+
     public String toString() {
         return "FullRoomInfo: " +
                 "exchange=" + exchange +
