@@ -143,7 +143,7 @@ public class BCSecureSession extends SecureSession {
         keystore = KeyStore.getInstance("PKCS12", "BC");
         keystore.load(new FileInputStream("certificate-info.p12"),
                 "pass".toCharArray());
-        String alias = (String) keystore.aliases().nextElement();
+        String alias = keystore.aliases().nextElement();
         pubCert = (X509Certificate) keystore.getCertificate(alias);
         privateKey = (PrivateKey) keystore.getKey(alias,
                 "pass".toCharArray());
@@ -163,15 +163,13 @@ public class BCSecureSession extends SecureSession {
 
     private byte[] signData(byte[] dataToSign) throws SecureSessionException {
         try {
-            byte[] signedData;
             CMSSignedDataGenerator sgen = new CMSSignedDataGenerator();
             sgen.addSigner(privateKey, pubCert,
                     CMSSignedDataGenerator.DIGEST_MD5);
             CMSSignedData csd = sgen.generate(
                     new CMSProcessableByteArray(dataToSign),
                     true, "BC");
-            signedData = csd.getEncoded();
-            return signedData;
+            return csd.getEncoded();
         } catch (Exception e) {
             throw new SecureSessionException(e);
         }
@@ -199,8 +197,7 @@ public class BCSecureSession extends SecureSession {
                 + "\r\n");
         osw.flush();
         bout.write(signedData);
-        byte[] dataToEncrypt = bout.toByteArray();
-        return dataToEncrypt;
+        return bout.toByteArray();
     }
 
     // IM's
@@ -272,7 +269,6 @@ public class BCSecureSession extends SecureSession {
     public ServerSocket createSSLServerSocket(final String sn)
             throws SecureSessionException {
         try {
-            ServerSocket socket;
             KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
             kmf.init(keystore, "pass".toCharArray());
             SSLContext context = SSLContext.getInstance("SSL");
@@ -296,8 +292,8 @@ public class BCSecureSession extends SecureSession {
                                 throws CertificateException {
                             System.out.println("checking trust for " + Arrays.asList(certs));
                             X509Certificate usercert = getCert(sn);
-                            for (int i = 0; i < certs.length; i++) {
-                                if (certs[i].equals(usercert)) return;
+                            for (X509Certificate cert : certs) {
+                                if (cert.equals(usercert)) return;
                             }
                             throw new CertificateException();
                         }
@@ -308,8 +304,7 @@ public class BCSecureSession extends SecureSession {
             SSLServerSocket sss = (SSLServerSocket)
                     factory.createServerSocket(7050);
             sss.setNeedClientAuth(true);
-            socket = sss;
-            return socket;
+            return sss;
         } catch (Exception e) {
             throw new SecureSessionException(e);
         }
@@ -355,8 +350,7 @@ public class BCSecureSession extends SecureSession {
 
                         public String chooseClientAlias(String[] strings, Principal[] principals,
                                 Socket socket) {
-                            String alias = xkm1.chooseClientAlias(strings, null, socket);
-                            return alias;
+                            return xkm1.chooseClientAlias(strings, null, socket);
                         }
                     }},
                     new TrustManager[]{new X509TrustManager() {
@@ -365,13 +359,11 @@ public class BCSecureSession extends SecureSession {
                         }
 
                         public void checkClientTrusted(X509Certificate[] certs,
-                                String string) throws CertificateException {
-                            return;
+                                String string) {
                         }
 
                         public void checkServerTrusted(X509Certificate[] certs,
-                                String string) throws CertificateException {
-                            return;
+                                String string) {
                         }
 
 //            private void checkTrusted(X509Certificate[] certs) {

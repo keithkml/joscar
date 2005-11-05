@@ -386,7 +386,7 @@ public class JoscarTester implements CmdLineListener, ServiceListener {
                 ChatMsg msg) {
             String msgStr = msg.getMessage();
             String ct = msg.getContentType();
-            if (msgStr == null && ct.equals("application/pkcs7-mime")) {
+            if (msgStr == null && ct.equals(ChatMsg.CONTENTTYPE_SECURE)) {
                 ByteBlock msgData = msg.getMessageData();
 
                 try {
