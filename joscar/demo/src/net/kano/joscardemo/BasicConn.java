@@ -163,8 +163,8 @@ public abstract class BasicConn extends AbstractFlapConn {
                 }
                 encSession.handleRv(event);
             } else if (cmd instanceof DirectIMReqRvCmd) {
-                if (((DirectIMReqRvCmd) cmd).getRequestType()
-                        == AbstractRequestRvCmd.REQTYPE_INITIALREQUEST) {
+                if (((DirectIMReqRvCmd) cmd).getRequestIndex()
+                        == AbstractRequestRvCmd.REQINDEX_FIRST) {
                     new DirectIMSession(tester.getScreenname(), session, event);
                 }
             } else if (cmd instanceof SendBuddyIconRvCmd) {
