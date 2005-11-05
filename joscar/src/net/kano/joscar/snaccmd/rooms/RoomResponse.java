@@ -105,10 +105,10 @@ public class RoomResponse extends RoomCommand {
 
         Tlv maxRoomTlv = chain.getLastTlv(TYPE_MAX_ROOMS);
 
-        if (maxRoomTlv != null) {
-            maxRooms = BinaryTools.getUByte(maxRoomTlv.getData(), 0);
-        } else {
+        if (maxRoomTlv == null) {
             maxRooms = -1;
+        } else {
+            maxRooms = BinaryTools.getUByte(maxRoomTlv.getData(), 0);
         }
 
         List<ExchangeInfo> exchangeList = new LinkedList<ExchangeInfo>();
@@ -127,12 +127,12 @@ public class RoomResponse extends RoomCommand {
 
         Tlv roomInfoTlv = chain.getLastTlv(TYPE_ROOM_INFO);
 
-        if (roomInfoTlv != null) {
+        if (roomInfoTlv == null) {
+            roomInfo = null;
+        } else {
             ByteBlock roomInfoBlock = roomInfoTlv.getData();
 
             roomInfo = FullRoomInfo.readRoomInfo(roomInfoBlock);
-        } else {
-            roomInfo = null;
         }
     }
 
@@ -208,7 +208,7 @@ public class RoomResponse extends RoomCommand {
      *
      * @return the room information block sent in this response
      */
-    //TODO: what fields does it normally contain?
+    //TODO: what fields does the fullroominfo normally contain? not all of them.
     public final FullRoomInfo getRoomInfo() {
         return roomInfo;
     }
