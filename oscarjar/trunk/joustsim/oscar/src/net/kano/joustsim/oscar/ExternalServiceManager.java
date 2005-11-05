@@ -35,9 +35,9 @@ package net.kano.joustsim.oscar;
 
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.net.ClientConn;
-import net.kano.joscar.snaccmd.MiniRoomInfo;
 import net.kano.joscar.snaccmd.conn.ConnCommand;
 import net.kano.joscar.snaccmd.icon.IconCommand;
+import net.kano.joscar.snaccmd.rooms.RoomCommand;
 import net.kano.joustsim.oscar.oscar.BasicConnection;
 import net.kano.joustsim.oscar.oscar.OscarConnListener;
 import net.kano.joustsim.oscar.oscar.OscarConnStateEvent;
@@ -52,15 +52,16 @@ import net.kano.joustsim.oscar.oscar.service.bos.ExternalBosService;
 import net.kano.joustsim.oscar.oscar.service.bos.MainBosService;
 import net.kano.joustsim.oscar.oscar.service.bos.OpenedExternalServiceListener;
 import net.kano.joustsim.oscar.oscar.service.icon.IconServiceArbiter;
+import net.kano.joustsim.oscar.oscar.service.chatrooms.RoomFinderServiceArbiter;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
-import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.Set;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.logging.Logger;
 
 public class ExternalServiceManager {
@@ -170,10 +171,18 @@ public class ExternalServiceManager {
     }
 
     public IconServiceArbiter getIconServiceArbiter() {
-        ServiceArbiter<?> arbiter = getServiceArbiter(IconCommand.FAMILY_ICON);
-        if (arbiter instanceof IconServiceArbiter) {
+        return getArbiter(IconCommand.FAMILY_ICON, IconServiceArbiter.class);
+    }
+
+    public RoomFinderServiceArbiter getChatRoomFinderServiceArbiter() {
+        return getArbiter(RoomCommand.FAMILY_ROOM, RoomFinderServiceArbiter.class);
+    }
+
+    private <A> A getArbiter(int family, Class<A> arbiterClass) {
+        ServiceArbiter<?> arbiter = getServiceArbiter(family);
+        if (arbiterClass.isInstance(arbiter)) {
             //noinspection unchecked
-            return (IconServiceArbiter) arbiter;
+            return arbiterClass.cast(arbiter);
         } else {
             return null;
         }
@@ -199,11 +208,6 @@ public class ExternalServiceManager {
 
     private Map<Integer, ServiceRequestInfo> pendingServiceRequests
             = new HashMap<Integer, ServiceRequestInfo>();
-
-    public void joinChatRoom(MiniRoomInfo info) {
-        //TODO: implement chat rooms
-//        getBosService().requestService(info, new );
-    }
 
     private static class ServiceRequestInfo<S extends Service> {
         private long startTime = System.currentTimeMillis();
