@@ -49,7 +49,6 @@ import java.beans.PropertyChangeEvent;
 import java.util.HashMap;
 import java.util.Map;
 
-//TODO: find out why paradigmmm and cheshirecatv2 are untrusted instead of unknown
 public class BuddyTrustManager {
     private final BuddyInfoManager buddyInfoManager;
 
