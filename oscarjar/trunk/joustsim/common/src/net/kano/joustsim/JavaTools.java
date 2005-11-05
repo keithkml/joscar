@@ -34,8 +34,12 @@
 package net.kano.joustsim;
 
 import java.util.List;
+import java.util.Collection;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.lang.reflect.Proxy;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
 
 public class JavaTools {
     private JavaTools() { }
@@ -60,5 +64,28 @@ public class JavaTools {
             }
             throw new MultipleExceptionsException(exceptions);
         }
+    }
+
+    public static <L> L getDelegatingProxy(
+            final Collection<? extends L> listeners,
+            Class<? extends L> cls) {
+        return cls.cast(Proxy.newProxyInstance(cls.getClassLoader(),
+                new Class<?>[]{cls},
+                new InvocationHandler() {
+                    public Object invoke(Object proxy, Method method,
+                            Object[] args)
+                            throws Throwable {
+                        if (!method.getReturnType().equals(Void.TYPE)) {
+                            throw new IllegalArgumentException(
+                                    "I can't delegate call to " + method
+                                            + ": it has non-void return "
+                                            + "type");
+                        }
+                        for (L l : listeners) {
+                            method.invoke(l, args);
+                        }
+                        return null;
+                    }
+                }));
     }
 }
