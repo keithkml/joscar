@@ -38,4 +38,6 @@ import net.kano.joscar.snaccmd.chat.ChatMsg;
 public interface ChatRoomMessageFactory {
     ChatMessage createMessage(ChatRoomService service, ChatRoomUser user,
             ChatMsg message);
+
+    ChatMsg encodeMessage(String message) throws EncodingException;
 }

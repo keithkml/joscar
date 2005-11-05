@@ -33,10 +33,10 @@
 
 package net.kano.joustsim.oscar.oscar.service.chatrooms;
 
-import net.kano.joscar.snaccmd.FullRoomInfo;
+import net.kano.joscar.snaccmd.MiniRoomInfo;
 import net.kano.joustsim.oscar.oscar.BasicConnection;
 
 public interface RoomManagerServiceListener {
     void handleNewChatRoom(RoomManagerService service,
-            FullRoomInfo roomInfo, BasicConnection connection);
+            MiniRoomInfo roomInfo, BasicConnection connection);
 }

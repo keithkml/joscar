@@ -36,27 +36,26 @@ package net.kano.joustsim.oscar.oscar.service.chatrooms;
 import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.CopyOnWriteArrayList;
-import net.kano.joscar.OscarTools;
 import net.kano.joscar.rv.RecvRvEvent;
 import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rv.RvSnacResponseEvent;
 import net.kano.joscar.rvcmd.chatinvite.ChatInvitationRvCmd;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.MiniRoomInfo;
-import net.kano.joscar.snaccmd.FullRoomInfo;
 import net.kano.joscar.snaccmd.icbm.RvCommand;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.AbstractCapabilityHandler;
 import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.oscar.BuddyInfoManager;
 import net.kano.joustsim.oscar.CapabilityManager;
-import net.kano.joustsim.oscar.oscar.NoBuddyKeysException;
 import net.kano.joustsim.oscar.oscar.BasicConnection;
+import net.kano.joustsim.oscar.oscar.NoBuddyKeysException;
+import net.kano.joustsim.oscar.oscar.OscarConnection;
+import net.kano.joustsim.oscar.oscar.service.Service;
+import net.kano.joustsim.oscar.oscar.service.ServiceListener;
 import net.kano.joustsim.oscar.oscar.service.icbm.IcbmService;
 import net.kano.joustsim.oscar.oscar.service.icbm.RendezvousCapabilityHandler;
 import net.kano.joustsim.oscar.oscar.service.icbm.RendezvousSessionHandler;
-import net.kano.joustsim.oscar.oscar.service.ServiceListener;
-import net.kano.joustsim.oscar.oscar.service.Service;
 import net.kano.joustsim.trust.BuddyCertificateInfo;
 import net.kano.joustsim.trust.KeyPair;
 import net.kano.joustsim.trust.PrivateKeys;
@@ -86,6 +85,8 @@ import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.X509Certificate;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.WeakHashMap;
 
 public class ChatRoomManager {
@@ -97,13 +98,17 @@ public class ChatRoomManager {
     private WeakHashMap<ChatInvitationImpl, Object> acceptedInvitations
             = new WeakHashMap<ChatInvitationImpl, Object>();
 
+    private Map<OscarConnection,ChatRoomSession> sessions
+            = new HashMap<OscarConnection, ChatRoomSession>();
+
     public ChatRoomManager(AimConnection conn) {
         this.aimConnection = conn;
         conn.getCapabilityManager().setCapabilityHandler(
                 CapabilityBlock.BLOCK_CHAT,
                 new ChatInvitationCapabilityHandler());
-        RoomManagerService service = conn.getChatRoomManagerService();
-        service.addRoomManagerServiceListener(new MyRoomManagerServiceListener());
+        RoomFinderServiceArbiter arbiter= conn.getExternalServiceManager()
+                .getChatRoomFinderServiceArbiter();
+        arbiter.addRoomManagerServiceListener(new MyRoomManagerServiceListener());
     }
 
     public AimConnection getAimConnection() {
@@ -118,29 +123,51 @@ public class ChatRoomManager {
         listeners.remove(listener);
     }
 
-    public void acceptInvitation(ChatInvitation inv)
+    public ChatRoomSession acceptInvitation(ChatInvitation inv)
             throws IllegalArgumentException {
         if (!(inv instanceof ChatInvitationImpl)) {
-            throw new IllegalArgumentException("The given chat invitation was "
-                    + "not received by this chat manager");
+            throw new IllegalArgumentException("Invitation was "
+                    + "not received by this chat manager: " + inv);
         }
         ChatInvitationImpl chatInvitation = (ChatInvitationImpl) inv;
         if (chatInvitation.getChatRoomManager() != this) {
-            throw new IllegalArgumentException("The given chat invitation was "
-                    + "not received by this chat manager");
+            throw new IllegalArgumentException("Invitation was "
+                    + "not received by this chat manager: " + inv);
         }
 
         if (!chatInvitation.isValid()) {
-            throw new IllegalArgumentException("The given chat invitation was "
-                    + "not a valid invitation");
+            throw new IllegalArgumentException("Chat invitation is not valid: "
+                    + inv);
         }
 
         synchronized (this) {
-            if (acceptedInvitations.containsKey(chatInvitation)) return;
+            if (acceptedInvitations.containsKey(chatInvitation)) {
+                //TODO: return the corresponding session
+                throw new InternalError();
+            }
             acceptedInvitations.put(chatInvitation, null);
         }
 
-        aimConnection.getExternalServiceManager().joinChatRoom(chatInvitation.getRoomInfo());
+        getChatArbiter().joinChatRoom(chatInvitation.getRoomInfo());
+        //TODO: return a session
+        throw new InternalError();
+    }
+
+    public ChatRoomSession joinRoom(String name) {
+        return joinRoom(4, name);
+    }
+
+    public ChatRoomSession joinRoom(int exchange, String name) {
+        RoomFinderServiceArbiter arbiter = getChatArbiter();
+        arbiter.joinChatRoom(exchange, name);
+
+        //TODO: return a session
+        throw new InternalError();
+    }
+
+    private RoomFinderServiceArbiter getChatArbiter() {
+        return aimConnection.getExternalServiceManager()
+                .getChatRoomFinderServiceArbiter();
     }
 
     private class ChatInvitationCapabilityHandler
@@ -166,10 +193,10 @@ public class ChatRoomManager {
                 ChatInvitationRvCmd invitation = (ChatInvitationRvCmd) cmd;
                 Screenname sn = new Screenname(
                         event.getRvSession().getScreenname());
-                ByteBlock securityInfo = invitation.getSecurityInfo();
                 SecretKey roomKey = null;
                 InvalidInvitationReason reason = null;
                 X509Certificate buddyCert = null;
+                ByteBlock securityInfo = invitation.getSecurityInfo();
                 if (securityInfo != null) {
                     try {
                         buddyCert = getBuddySigningCert(sn);
@@ -196,15 +223,18 @@ public class ChatRoomManager {
                 MiniRoomInfo roomInfo = invitation.getRoomInfo();
                 String msgString = invitation.getInvMessage().getMessage();
                 if (securityInfo == null) {
-                    ourInvitation = new ChatInvitationImpl(sn, roomInfo,
+                    ourInvitation = new ChatInvitationImpl(ChatRoomManager.this,
+                            sn, roomInfo,
                             msgString);
                 } else if (roomKey == null) {
-                    ourInvitation = new ChatInvitationImpl(sn, roomInfo, reason,
+                    ourInvitation = new ChatInvitationImpl(ChatRoomManager.this,
+                            sn, roomInfo, reason,
                             msgString);
 
                 } else {
                     assert buddyCert != null;
-                    ourInvitation = new ChatInvitationImpl(sn, roomInfo,
+                    ourInvitation = new ChatInvitationImpl(ChatRoomManager.this,
+                            sn, roomInfo,
                             buddyCert, roomKey, msgString);
                 }
 
@@ -305,125 +335,46 @@ public class ChatRoomManager {
         }
     }
 
-    private class ChatInvitationImpl implements ChatInvitation {
-        private Screenname screenname;
-        private MiniRoomInfo roomInfo;
-        private String message;
-        private SecretKey roomKey = null;
-        private InvalidInvitationReason invalidReason = null;
-        private X509Certificate buddySignature = null;
-        private final boolean secure;
-
-        public ChatInvitationImpl(Screenname screenname, MiniRoomInfo roomInfo,
-                String message) {
-            this(screenname, roomInfo, message, false);
-        }
-
-        private ChatInvitationImpl(Screenname screenname, MiniRoomInfo roomInfo,
-                String message, boolean secure) {
-            this.screenname = screenname;
-            this.roomInfo = roomInfo;
-            this.message = message;
-            this.secure = secure;
-        }
-
-        public ChatInvitationImpl(Screenname screenname, MiniRoomInfo roomInfo,
-                X509Certificate buddySignature, SecretKey roomKey,
-                String message) {
-            this(screenname, roomInfo, message, true);
-
-            this.roomKey = roomKey;
-            this.buddySignature = buddySignature;
-        }
-
-        public ChatInvitationImpl(Screenname screenname, MiniRoomInfo roomInfo,
-                InvalidInvitationReason reason, String message) {
-            this(screenname, roomInfo, message, true);
-            this.invalidReason = reason;
-        }
-
-        public Screenname getScreenname() {
-            return screenname;
-        }
-
-        public MiniRoomInfo getRoomInfo() {
-            return roomInfo;
-        }
-
-        public int getRoomExchange() {
-            return getRoomInfo().getExchange();
-        }
-
-        public String getRoomName() {
-            return OscarTools.getRoomNameFromCookie(getRoomInfo().getCookie());
-        }
-
-        public X509Certificate getBuddySignature() {
-            return buddySignature;
-        }
-
-        public SecretKey getRoomKey() {
-            return roomKey;
-        }
-
-        public String getMessage() {
-            return message;
-        }
-
-        public InvalidInvitationReason getInvalidReason() {
-            return invalidReason;
-        }
-
-        public ChatRoomManager getChatRoomManager() {
-            return ChatRoomManager.this;
-        }
-
-        public boolean isValid() {
-            return !isForSecureChatRoom() || roomKey != null;
-        }
-
-        public boolean isForSecureChatRoom() {
-            return secure;
-        }
-    }
-
     private class MyRoomManagerServiceListener implements
             RoomManagerServiceListener {
         public void handleNewChatRoom(RoomManagerService service,
-                final FullRoomInfo roomInfo, final BasicConnection connection) {
-            connection.addGlobalServiceListener(new MyServiceListener(roomInfo, connection));
+                MiniRoomInfo roomInfo, BasicConnection connection) {
+            ChatRoomSession session = new ChatRoomSession(aimConnection,
+                    connection, roomInfo);
+            sessions.put(connection, session);
+            connection.addGlobalServiceListener(new MyServiceListener(session));
         }
     }
 
     private class MyServiceListener implements ServiceListener {
-        private final FullRoomInfo roomInfo;
-        private final BasicConnection connection;
+        private ChatRoomSession session;
 
-        public MyServiceListener(FullRoomInfo roomInfo, BasicConnection connection) {
-            this.roomInfo = roomInfo;
-            this.connection = connection;
+        public MyServiceListener(ChatRoomSession session) {
+            this.session = session;
         }
 
         public void handleServiceReady(Service service) {
-            if (service instanceof ChatRoomService) {
-                ChatRoomService roomService = (ChatRoomService) service;
-                ChatRoom chatRoom = new ChatRoom(aimConnection, roomInfo, connection);
-                for (ChatInvitationImpl invitation : acceptedInvitations
-                        .keySet()) {
-                    MiniRoomInfo invInfo = invitation.getRoomInfo();
-                    if (invInfo.getExchange() == roomInfo.getExchange()
-                            && roomService.getRoomName().equals(invitation.getRoomName())) {
-                        chatRoom.setInvitation(invitation);
-                        roomService.setMessageFactory(
-                                new EncryptedChatRoomMessageFactory(
-                                        aimConnection, roomService,
-                                        invitation.getRoomKey()));
-                        break;
-                    }
+            if (!(service instanceof ChatRoomService)) return;
+
+            ChatRoomService roomService = (ChatRoomService) service;
+            for (ChatInvitationImpl invitation : acceptedInvitations.keySet()) {
+                MiniRoomInfo invInfo = invitation.getRoomInfo();
+                if (invInfo.getExchange() == session.getRoomInfo().getExchange()
+                        && roomService.getRoomName().equals(invitation.getRoomName())) {
+                    session.setInvitation(invitation);
+                    //TODO: find fullroominfo before joining room
+//                    String contentType = roomInfo.getContentType();
+//                    if (contentType.equals(ChatMsg.CONTENTTYPE_SECURE)) {
+//                        roomService.setMessageFactory(
+//                                new EncryptedChatRoomMessageFactory(
+//                                        aimConnection, roomService,
+//                                        invitation.getRoomKey()));
+//                    } else {
+//                        roomService.setMessageFactory(
+//                                new PlainChatRoomMessageFactory());
+//                    }
+                    break;
                 }
-                //TODO: create a ChatRoomSession class.
-                // give it its own states.
-                // automatically encode/decode messages like in Conversation.
             }
         }
 

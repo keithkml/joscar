@@ -35,13 +35,15 @@ package net.kano.joustsim.oscar.oscar.service.chatrooms;
 
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.OscarTools;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.snac.SnacPacketEvent;
-import net.kano.joscar.snaccmd.FullRoomInfo;
 import net.kano.joscar.snaccmd.FullUserInfo;
+import net.kano.joscar.snaccmd.MiniRoomInfo;
 import net.kano.joscar.snaccmd.chat.ChatCommand;
 import net.kano.joscar.snaccmd.chat.ChatMsg;
 import net.kano.joscar.snaccmd.chat.RecvChatMsgIcbm;
+import net.kano.joscar.snaccmd.chat.SendChatMsgIcbm;
 import net.kano.joscar.snaccmd.chat.UsersJoinedCmd;
 import net.kano.joscar.snaccmd.chat.UsersLeftCmd;
 import net.kano.joscar.snaccmd.conn.SnacFamilyInfo;
@@ -60,19 +62,20 @@ public class ChatRoomService extends Service {
     private Set<ChatRoomUser> users = new HashSet<ChatRoomUser>();
     private CopyOnWriteArrayList<ChatRoomServiceListener> listeners
             = new CopyOnWriteArrayList<ChatRoomServiceListener>();
-    private FullRoomInfo roomInfo;
+    private MiniRoomInfo roomInfo;
     private ChatRoomMessageFactory messageFactory;
+    private String roomName;
 
     public ChatRoomService(AimConnection aimConnection,
-            OscarConnection oscarConnection, FullRoomInfo roomInfo) {
+            OscarConnection oscarConnection,
+            MiniRoomInfo roomInfo) {
         super(aimConnection, oscarConnection,
                 ChatCommand.FAMILY_CHAT);
         this.roomInfo = roomInfo;
+        roomName = OscarTools.getRoomNameFromCookie(roomInfo.getCookie());
     }
 
-    public String getRoomName() {
-        return roomInfo.getRoomName();
-    }
+    public String getRoomName() { return roomName; }
 
     public SnacFamilyInfo getSnacFamilyInfo() {
         return ChatCommand.FAMILY_INFO;
@@ -178,4 +181,9 @@ public class ChatRoomService extends Service {
     void setMessageFactory(ChatRoomMessageFactory factory) {
         this.messageFactory = factory;
     }
+
+    public void sendMessage(String message) throws EncodingException {
+        sendSnac(new SendChatMsgIcbm(messageFactory.encodeMessage(message)));
+    }
+
 }

@@ -40,7 +40,6 @@ import net.kano.joscar.snac.SnacRequestAdapter;
 import net.kano.joscar.snac.SnacResponseEvent;
 import net.kano.joscar.snaccmd.FullRoomInfo;
 import net.kano.joscar.snaccmd.MiniRoomInfo;
-import net.kano.joscar.snaccmd.chat.ChatCommand;
 import net.kano.joscar.snaccmd.conn.ConnCommand;
 import net.kano.joscar.snaccmd.conn.SnacFamilyInfo;
 import net.kano.joscar.snaccmd.rooms.JoinRoomCmd;
@@ -95,15 +94,17 @@ public class RoomManagerService extends Service {
                 SnacCommand cmd = e.getSnacCommand();
                 if (cmd instanceof RoomResponse) {
                     RoomResponse response = (RoomResponse) cmd;
-                    MainBosService bosService = getAimConnection()
-                            .getBosService();
                     FullRoomInfo fullRoomInfo = response.getRoomInfo();
-                    MiniRoomInfo miniRoomInfo = new MiniRoomInfo(fullRoomInfo);
-                    bosService.requestChatService(miniRoomInfo,
-                            new MyOpenedChatRoomServiceListener(fullRoomInfo));
+                    joinChatRoom(new MiniRoomInfo(fullRoomInfo));
                 }
             }
         });
+    }
+
+    public void joinChatRoom(MiniRoomInfo roomInfo) {
+        getAimConnection().getBosService().requestChatService(
+                roomInfo,
+                new MyOpenedChatRoomServiceListener(roomInfo));
     }
 
     private CopyOnWriteArrayList<RoomManagerServiceListener> listeners
@@ -123,29 +124,30 @@ public class RoomManagerService extends Service {
     }
 
     private class ChatRoomServiceFactory implements ServiceFactory {
-        private FullRoomInfo roomInfo;
+        private MiniRoomInfo roomInfo;
 
-        public ChatRoomServiceFactory(FullRoomInfo roomInfo) {
+        public ChatRoomServiceFactory(MiniRoomInfo roomInfo) {
             this.roomInfo = roomInfo;
         }
 
         public Service getService(OscarConnection conn, int family) {
             if (family == ConnCommand.FAMILY_CONN) {
                 return new ExternalBosService(getAimConnection(), conn);
-            } else if (family == ChatCommand.FAMILY_CHAT) {
-                return new ChatRoomService(getAimConnection(), conn, roomInfo);
+            } else if (family == RoomCommand.FAMILY_ROOM) {
+                return new ChatRoomService(getAimConnection(), conn,
+                        roomInfo);
             } else {
                 return null;
             }
         }
     }
 
-    private class MyOpenedChatRoomServiceListener implements
-            OpenedChatRoomServiceListener {
-        private final FullRoomInfo fullRoomInfo;
+    private class MyOpenedChatRoomServiceListener
+            implements OpenedChatRoomServiceListener {
+        private final MiniRoomInfo roomInfo;
 
-        public MyOpenedChatRoomServiceListener(FullRoomInfo fullRoomInfo) {
-            this.fullRoomInfo = fullRoomInfo;
+        public MyOpenedChatRoomServiceListener(MiniRoomInfo fullRoomInfo) {
+            this.roomInfo = fullRoomInfo;
         }
 
         public void handleChatRoomRedirect(MainBosService service,
@@ -153,10 +155,10 @@ public class RoomManagerService extends Service {
                 ByteBlock flapCookie) {
             BasicConnection conn = new BasicConnection(host, port);
             conn.setCookie(flapCookie);
-            conn.setServiceFactory(new ChatRoomServiceFactory(fullRoomInfo));
+            conn.setServiceFactory(new ChatRoomServiceFactory(this.roomInfo));
             for (RoomManagerServiceListener listener : listeners) {
-                listener.handleNewChatRoom(RoomManagerService.this, 
-                        fullRoomInfo, conn);
+                listener.handleNewChatRoom(RoomManagerService.this,
+                        this.roomInfo, conn);
             }
             conn.connect();
         }

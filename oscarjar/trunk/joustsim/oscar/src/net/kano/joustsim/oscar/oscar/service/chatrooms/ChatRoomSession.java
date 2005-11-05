@@ -33,16 +33,44 @@
 
 package net.kano.joustsim.oscar.oscar.service.chatrooms;
 
-import net.kano.joscar.snaccmd.chat.ChatMsg;
+import net.kano.joscar.snaccmd.MiniRoomInfo;
+import net.kano.joustsim.oscar.AimConnection;
+import net.kano.joustsim.oscar.oscar.BasicConnection;
 
-public class PlainChatRoomMessageFactory implements ChatRoomMessageFactory {
-    public ChatMessage createMessage(ChatRoomService service, ChatRoomUser user,
-            ChatMsg message) {
-        return new ChatMessage(message.getMessageAsString());
+public class ChatRoomSession {
+    private AimConnection aimConnection;
+    private BasicConnection connection;
+    private ChatRoomService service;
+    private MiniRoomInfo roomInfo;
+    private ChatInvitation invitation;
+
+    public ChatRoomSession(AimConnection aimConnection,
+            BasicConnection connection, MiniRoomInfo roomInfo) {
+        this.aimConnection = aimConnection;
+        this.connection = connection;
+        this.roomInfo = roomInfo;
     }
 
-    public ChatMsg encodeMessage(String message) {
-        return new ChatMsg(message);
+    public void sendMessage(String msg) throws EncodingException {
+//        String contentType = roomInfo.getContentType();
+//        if (contentType.equals(ChatMsg.CONTENTTYPE_DEFAULT)) {
+//            service.sendMessage(msg);
+//        } else if (contentType.equals(ChatMsg.CONTENTTYPE_SECURE)) {
+//
+//        }
+        //TODO: send message
+        throw new InternalError();
     }
 
+    public void setInvitation(ChatInvitation invitation) {
+        this.invitation = invitation;
+    }
+
+    public ChatInvitation getInvitation() {
+        return invitation;
+    }
+
+    public MiniRoomInfo getRoomInfo() {
+        return roomInfo;
+    }
 }

@@ -33,16 +33,19 @@
 
 package net.kano.joustsim.oscar.oscar.service.chatrooms;
 
-import net.kano.joscar.snaccmd.chat.ChatMsg;
-
-public class PlainChatRoomMessageFactory implements ChatRoomMessageFactory {
-    public ChatMessage createMessage(ChatRoomService service, ChatRoomUser user,
-            ChatMsg message) {
-        return new ChatMessage(message.getMessageAsString());
+public class EncodingException extends Exception {
+    public EncodingException() {
     }
 
-    public ChatMsg encodeMessage(String message) {
-        return new ChatMsg(message);
+    public EncodingException(String message) {
+        super(message);
     }
 
+    public EncodingException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    public EncodingException(Throwable cause) {
+        super(cause);
+    }
 }
