@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="us-ascii"?>
 
-<project name="Joust Secure IM Lite" default="usage">
+<project name="Joust Secure IM Lite" default="build-oscar-jar">
   <description> Joust Secure IM Lite build file </description>
 
   <property name="oscar.bin" value="oscar/bin"/>
@@ -72,7 +72,7 @@
       </delete>
   </target>
 
-  <target name="build-oscar-jar" depends="clean, build-oscar-jar-classes"
+  <target name="build-oscar-jar" depends="build-oscar-jar-classes"
           description="builds oscar.jar">
     <delete file="dist/oscar.jar" />
     <jar file="dist/oscar.jar">
@@ -89,13 +89,6 @@
     </tar>
   </target>
 
-    <!-- =====================   USAGE   ============================= -->
-    <target name="usage"
-        description="Describes targets">
-
-        <java classname="org.apache.tools.ant.Main">
-            <arg value="-projecthelp" />
-        </java>
-    </target>
+  <target name="nightly" depends="build-oscar-jar, build-src-archive" />
 </project>
 
