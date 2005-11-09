@@ -44,6 +44,7 @@
   <property name="docs.dir" value="docs"/>
   <property name="apidocs.dir" value="${docs.dir}/api"/>
   <property name="tests.dir" value="tests"/>
+  <property name="dist" location="dist"/>
 
 
   <property name="joscar.src" location="${src.dir}"/>
@@ -87,10 +88,10 @@
 
     <joscar-version property="joscar.ver"/>
     <property name="fullpkg" value="${project}-${joscar.ver}"/>
-    <property name="dist.pkgname" value="${fullpkg}-src"/>
-    <property name="dist.extrasname" value="${project}-extras-${joscar.ver}"/>
-    <property name="dist.home" location="${fullpkg}"/>
-    <property name="distextras.dir" value="${fullpkg}"/>
+    <property name="dist.pkgname" value="${dist}/${fullpkg}-src"/>
+    <property name="dist.extrasname" value="${dist}/${project}-extras-${joscar.ver}"/>
+    <property name="dist.home" location="${dist}/${fullpkg}"/>
+    <property name="distextras.dir" value="${dist}/${fullpkg}"/>
     <property name="distextras.home" location="${distextras.dir}"/>
 
     <!-- <echo message="joscar is at version ${joscar.ver}" /> -->
@@ -110,8 +111,8 @@
 
   <target name="jar" depends="joscar,-version"
           description="Places joscar library classes in a jar file.">
-    <mkdir dir="${joscar.bin}"/>
-    <jar jarfile="${fullpkg}-bin.jar"
+    <mkdir dir="${dist}"/>
+    <jar jarfile="${dist}/${fullpkg}-bin.jar"
          basedir="${joscar.bin}"
          includes="net/kano/joscar/**/*.class"/>
   </target>
@@ -221,7 +222,7 @@
     <delete dir="${apidocs.home}"/>
     <delete dir="${taglets.bin}"/>
     <delete dir="${tasks.bin}"/>
-    <delete file="${fullpkg}-bin.jar"/>
+    <delete file="${dist}/${fullpkg}-bin.jar"/>
   </target>
 
 
@@ -315,11 +316,11 @@
   <target name="dist-package" depends="-version"
           description="Creates compressed bzip2, gzip, and zip archives of the
                        joscar-x.x.x distribution directory.">
-    <tar destfile="${dist.pkgname}.tar.gz" basedir="${basedir}"
+    <tar destfile="${dist.pkgname}.tar.gz" basedir="${dist}"
          longfile="gnu" compression="gzip" includes="${fullpkg}/"/>
-    <tar destfile="${dist.pkgname}.tar.bz2" basedir="${basedir}"
+    <tar destfile="${dist.pkgname}.tar.bz2" basedir="${dist}"
          longfile="gnu" compression="bzip2" includes="${fullpkg}/"/>
-    <zip destfile="${dist.pkgname}.zip" basedir="${basedir}"
+    <zip destfile="${dist.pkgname}.zip" basedir="${dist}"
          includes="${fullpkg}/"/>
   </target>
 
@@ -356,9 +357,9 @@
           depends="dist-extras-clean,dist-extras-src,dist-extras-package"
           description="Packages the joscar demo extras in compressed archives."/>
 
-  <target name="dist" depends="dist-clean,dist-src,dist-doc,dist-package"
+  <target name="dist" depends="jar,dist-clean,dist-src,dist-doc,dist-package"
           description="Packages joscar for a release in compressed archives." />
 
-  <target name="nightly" depends="dist, jar" />
+  <target name="nightly" depends="dist" />
 
 </project>
