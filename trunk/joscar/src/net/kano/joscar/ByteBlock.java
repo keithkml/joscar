@@ -504,10 +504,12 @@ public final class ByteBlock implements Writable, Serializable {
     public ByteBlock subBlock(int offset, int len)
             throws IndexOutOfBoundsException {
         if (offset < 0) {
-            throw new IndexOutOfBoundsException("offset (" + offset + ") < 0");
+            throw new IndexOutOfBoundsException("offset (" + offset
+                + ") must be >= 0");
         }
         if (len < 0) {
-            throw new IndexOutOfBoundsException("len (" + len + ") < 0");
+            throw new IndexOutOfBoundsException("len (" + len
+                + ") must be >= 0");
         }
         if (len + offset > this.len) {
             throw new IndexOutOfBoundsException("length + offset ("
