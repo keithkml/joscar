@@ -40,13 +40,12 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.MiscTools;
 import net.kano.joscar.Writable;
+import org.jetbrains.annotations.NotNull;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
-import java.io.ByteArrayOutputStream;
-
-import org.jetbrains.annotations.NotNull;
 
 /**
  * A data structure used to hold data in {@link ExtraInfoBlock}s, containing
@@ -149,7 +148,7 @@ public final class ExtraInfoData implements Writable {
     public static final ByteBlock HASH_SPECIAL = ByteBlock.wrap(
             new byte[] { 0x02, 0x01, (byte) 0xd2, 0x04, 0x72 });
 
-    //TODO: provide extra info block objects to automate this
+    //TOLATER: provide extra info block objects to automate this
     public static @NotNull ExtraInfoData getAvailableMessageBlock(@NotNull String message) {
         ByteArrayOutputStream bout = new ByteArrayOutputStream(message.length() + 10);
         try {
@@ -166,8 +165,8 @@ public final class ExtraInfoData implements Writable {
     public static @NotNull String readAvailableMessage(ExtraInfoData data) {
         ByteBlock msgBlock = data.getData();
         int len = BinaryTools.getUShort(msgBlock, 0);
-        byte[] msgBytes = msgBlock.subBlock(2, len)
-                .toByteArray();
+        if (len == -1) return "";
+        byte[] msgBytes = msgBlock.subBlock(2, len).toByteArray();
 
         try {
             return new String(msgBytes, "UTF-8");
