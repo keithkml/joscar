@@ -201,7 +201,5 @@ public class RateLimitingQueueMgr implements SnacQueueManager {
         return "RateLimitingQueueMgr: "
                 + "connMgrs=" + connMgrs.keySet();
     }
-
-
 }
 

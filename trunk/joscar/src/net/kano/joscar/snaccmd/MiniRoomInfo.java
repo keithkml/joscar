@@ -39,6 +39,7 @@ import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.LiveWritable;
+import net.kano.joscar.OscarTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -182,6 +183,13 @@ public final class MiniRoomInfo implements LiveWritable {
      */
     public final int getTotalSize() {
         return totalSize;
+    }
+
+    public boolean isSameRoom(MiniRoomInfo info) {
+        return getExchange() == info.getExchange()
+            && getInstance() == info.getInstance()
+            && OscarTools.getRoomNameFromCookie(getCookie())
+            .equals(OscarTools.getRoomNameFromCookie(info.getCookie()));
     }
 
     public void write(OutputStream out) throws IOException {
