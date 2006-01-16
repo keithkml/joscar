@@ -53,8 +53,7 @@ public abstract class StateController {
             = new CopyOnWriteArrayList<ControllerListener>();
     private StateInfo endState = null;
 
-    public abstract void start(RvConnection transfer,
-            StateController last);
+    public abstract void start(RvConnection transfer, StateController last);
 
     public void addControllerListener(ControllerListener listener) {
         listeners.addIfAbsent(listener);
@@ -63,7 +62,6 @@ public abstract class StateController {
     public void removeControllerListener(ControllerListener listener) {
         listeners.remove(listener);
     }
-
 
     protected void fireSucceeded(StateInfo stateInfo) {
         assert !Thread.holdsLock(this);
