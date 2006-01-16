@@ -35,7 +35,7 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
 import java.net.InetAddress;
 
-public class InvalidAolProxyAddressEvent extends FileTransferEvent {
+public class InvalidAolProxyAddressEvent extends RvConnectionEvent {
     private InetAddress invalidAddress;
 
     public InvalidAolProxyAddressEvent(InetAddress inet6Address) {

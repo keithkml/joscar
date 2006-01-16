@@ -33,16 +33,16 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 
 public class FailureEventException extends Exception {
-    private FileTransferEvent event;
+    private RvConnectionEvent event;
 
-    public FailureEventException(FileTransferEvent event) {
+    public FailureEventException(RvConnectionEvent event) {
         this.event = event;
     }
 
-    public FileTransferEvent getEvent() {
+    public RvConnectionEvent getEvent() {
         return event;
     }
 }

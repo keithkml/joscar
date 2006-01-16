@@ -33,14 +33,14 @@
 
 package net.kano.joustsim.oscar.oscar.service.chatrooms;
 
-import java.util.List;
+import java.util.Set;
 
 public interface ChatRoomServiceListener {
     void handleUsersJoined(ChatRoomService service,
-            List<ChatRoomUser> added);
+            Set<ChatRoomUser> added);
 
     void handleUsersLeft(ChatRoomService service,
-            List<ChatRoomUser> removed);
+            Set<ChatRoomUser> removed);
 
     void handleIncomingMessage(ChatRoomService service,
             ChatRoomUser user, ChatMessage message);

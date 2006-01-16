@@ -72,7 +72,7 @@ import net.kano.joustsim.oscar.BuddyInfoManager;
 import net.kano.joustsim.oscar.CapabilityHandler;
 import net.kano.joustsim.oscar.oscar.OscarConnection;
 import net.kano.joustsim.oscar.oscar.service.Service;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferManager;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionManager;
 import net.kano.joustsim.oscar.oscar.service.icbm.secureim.EncryptedAimMessage;
 import net.kano.joustsim.oscar.oscar.service.icbm.secureim.EncryptedAimMessageInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.secureim.InternalSecureTools;
@@ -91,7 +91,7 @@ import java.util.logging.Logger;
 public class IcbmService extends Service {
     private static final Logger LOGGER = Logger.getLogger(IcbmService.class.getName());
     private RvProcessor rvProcessor;
-    private FileTransferManager fileTransferManager = new FileTransferManager(this);
+    private RvConnectionManager rvConnectionManager = new RvConnectionManager(this);
 
     private CopyOnWriteArrayList<IcbmListener> listeners
             = new CopyOnWriteArrayList<IcbmListener>();
@@ -106,8 +106,8 @@ public class IcbmService extends Service {
         rvProcessor.addListener(new DelegatingRvProcessorListener());
     }
 
-    public FileTransferManager getFileTransferManager() {
-        return fileTransferManager;
+    public RvConnectionManager getFileTransferManager() {
+        return rvConnectionManager;
     }
 
     public void addIcbmListener(IcbmListener l) {

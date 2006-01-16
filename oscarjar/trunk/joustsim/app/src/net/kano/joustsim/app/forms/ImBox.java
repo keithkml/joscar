@@ -143,11 +143,11 @@ public class ImBox extends JFrame {
     private final AimConnection conn;
     private final Screenname buddy;
 
-    private Set convs = new HashSet();
+    private Set<Conversation> convs = new HashSet<Conversation>();
     private SendAction sendAction = new SendAction();
 
-    private Set alreadyAskedCerts = new HashSet();
-    private Map certInfoIds = new HashMap();
+    private Set<ByteBlock> alreadyAskedCerts = new HashSet<ByteBlock>();
+    private Map<ByteBlock,IconID> certInfoIds = new HashMap<ByteBlock, IconID>();
 
     private final ConversationListener conversationListener
             = new ConversationAdapter() {
@@ -428,7 +428,7 @@ public class ImBox extends JFrame {
     }
 
     private IconID[] getIconIdsForMessage(MessageInfo minfo) {
-        List ids = new ArrayList(5);
+        List<IconID> ids = new ArrayList<IconID>(5);
         if (minfo instanceof DecryptableAimMessageInfo
                 || minfo instanceof DecryptedAimMessageInfo) {
             MessageWithCertificateInfo info = (MessageWithCertificateInfo) minfo;
@@ -449,7 +449,7 @@ public class ImBox extends JFrame {
     public synchronized boolean isValidBox() { return validBox; }
 
     private IconID[] getIconIdsForOutgoingMessage(MessageInfo minfo) {
-        List ids = new ArrayList(5);
+        List<IconID> ids = new ArrayList<IconID>(5);
         if (minfo instanceof OutgoingSecureAimMessageInfo) {
             ids.add(outgoingSecureIconID);
             markInsecureMessages();
@@ -468,7 +468,7 @@ public class ImBox extends JFrame {
         if (certInfo == null) return null;
 
         ByteBlock hash = certInfo.getCertificateInfoHash();
-        IconID id = (IconID) certInfoIds.get(hash);
+        IconID id = certInfoIds.get(hash);
         if (id == null) {
             id = new IconID();
             certInfoIds.put(hash, id);
@@ -503,8 +503,8 @@ public class ImBox extends JFrame {
     }
 
     private synchronized void closeAllConversations() {
-        for (Iterator it = convs.iterator(); it.hasNext();) {
-            Conversation conversation = (Conversation) it.next();
+        for (Iterator<Conversation> it = convs.iterator(); it.hasNext();) {
+            Conversation conversation = it.next();
             conversation.close();
         }
     }

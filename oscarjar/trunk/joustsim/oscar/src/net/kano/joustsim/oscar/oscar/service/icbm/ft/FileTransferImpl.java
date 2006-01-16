@@ -33,496 +33,85 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-import net.kano.joscar.CopyOnWriteArrayList;
-import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.MiscTools;
 import net.kano.joscar.rv.RecvRvEvent;
 import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rv.RvSnacResponseEvent;
 import net.kano.joscar.rvcmd.InvitationMessage;
-import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joscar.rvcmd.sendfile.FileSendAcceptRvCmd;
 import net.kano.joscar.rvcmd.sendfile.FileSendBlock;
 import net.kano.joscar.rvcmd.sendfile.FileSendRejectRvCmd;
 import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
 import net.kano.joscar.snaccmd.icbm.RvCommand;
-import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.oscar.service.icbm.RendezvousSessionHandler;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ControllerListener;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectedEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectingEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectingToProxyEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileCompleteEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.LocallyCancelledEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ResolvingProxyEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferringFileEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.WaitingForConnectionEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ChecksummingEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ProxyRedirectDisallowedEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
-import net.kano.joustsim.oscar.proxy.AimProxy;
-
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Timer;
-import java.util.logging.Logger;
 
 public abstract class FileTransferImpl
-        implements FileTransfer, TransferPropertyHolder,
-        RvSessionBasedTransfer, StateBasedTransfer, CachedTimerHolder {
-    private static final Logger LOGGER = Logger
-            .getLogger(FileTransferImpl.class.getName());
+    extends RvConnectionImpl implements FileTransfer {
 
-    private FileSendBlock fileInfo;
-    private InvitationMessage message;
-    private Timer timer = new Timer("File transfer timer", true);
-    private RendezvousSessionHandler rvSessionHandler;
-    private RvSession session;
-    private StateController controller = null;
-    private Map<Key<?>,Object> transferProperties
-            = new HashMap<Key<?>, Object>();
-    private FileTransferManager fileTransferManager;
+  private FileSendBlock fileInfo;
+  private InvitationMessage message;
 
-    private final CopyOnWriteArrayList<FileTransferListener> listeners
-            = new CopyOnWriteArrayList<FileTransferListener>();
-    private FileTransferState state = FileTransferState.WAITING;
-    private EventPost eventPost = new EventPostImpl();
-    private boolean done = false;
+  protected FileTransferImpl(RvConnectionManager rvConnectionManager,
+                             RvSession session) {
+    setPerConnectionTimeout(ConnectionType.LAN, 2L);
+    proxyInfo = rvConnectionManager.getIcbmService().getAimConnection().getProxy();
+    this.rvConnectionManager = rvConnectionManager;
+    this.session = session;
+    rvSessionHandler = createSessionHandler();
+  }
 
-    private boolean onlyUsingProxy = false;
-    private boolean proxyRequestTrusted = true;
-    private ControllerListener controllerListener = new ControllerListener() {
-        public void handleControllerSucceeded(StateController c,
-                SuccessfulStateInfo info) {
-            goNext(c);
-        }
+  protected synchronized void setInvitationMessage(InvitationMessage message) {
+    this.message = message;
+  }
 
-        public void handleControllerFailed(StateController c,
-                FailedStateInfo info) {
-            goNext(c);
-        }
+  protected synchronized void setFileInfo(FileSendBlock fileInfo) {
+    this.fileInfo = fileInfo;
+  }
 
-        private void goNext(StateController c) {
-            c.removeControllerListener(this);
-            changeStateControllerFrom(c);
-        }
-    };
-    private List<StateChangeEvent> eventQueue = new CopyOnWriteArrayList<StateChangeEvent>();
-    private long perConnectionTimeout = 10000;
-    private Map<ConnectionType, Long> timeouts = new HashMap<ConnectionType, Long>();
+  public synchronized FileSendBlock getFileInfo() { return fileInfo; }
 
-    {
-        setPerConnectionTimeout(ConnectionType.LAN, 2L);
+  public synchronized InvitationMessage getInvitationMessage() {
+    return message;
+  }
+
+  public String toString() {
+    return MiscTools.getClassName(this) + " with "
+        + getBuddyScreenname() + " of " + getFileInfo().getFilename();
+  }
+
+  protected abstract class FtRvSessionHandler
+      implements RendezvousSessionHandler {
+    public final void handleRv(RecvRvEvent event) {
+      RvCommand cmd = event.getRvCommand();
+      if (cmd instanceof FileSendReqRvCmd) {
+        FileSendReqRvCmd reqCmd = (FileSendReqRvCmd) cmd;
+        handleIncomingRequest(event, reqCmd);
+
+      } else if (cmd instanceof FileSendAcceptRvCmd) {
+        FileSendAcceptRvCmd acceptCmd = (FileSendAcceptRvCmd) cmd;
+        handleIncomingAccept(event, acceptCmd);
+
+      } else if (cmd instanceof FileSendRejectRvCmd) {
+        FileSendRejectRvCmd rejectCmd = (FileSendRejectRvCmd) cmd;
+        handleIncomingReject(event, rejectCmd);
+      }
     }
 
-    private AimProxy proxy = null;
+    protected abstract void handleIncomingReject(RecvRvEvent event,
+                                                 FileSendRejectRvCmd rejectCmd);
 
-    private int requestIndex = 1;
+    protected abstract void handleIncomingAccept(RecvRvEvent event,
+                                                 FileSendAcceptRvCmd acceptCmd);
 
-    protected FileTransferImpl(FileTransferManager fileTransferManager,
-            RvSession session) {
-        this.fileTransferManager = fileTransferManager;
-        this.session = session;
-        rvSessionHandler = createSessionHandler();
+    protected abstract void handleIncomingRequest(RecvRvEvent event,
+                                                  FileSendReqRvCmd reqCmd);
+
+    public void handleSnacResponse(RvSnacResponseEvent event) {
     }
 
-    protected void fireEvent(FileTransferEvent event) {
-        assert !Thread.holdsLock(this);
-
-        for (FileTransferListener listener : listeners) {
-            listener.handleEvent(this, event);
-        }
+    protected RvConnection getFileTransfer() {
+      return FileTransferImpl.this;
     }
+  }
 
-    protected void fireStateChange(FileTransferState newState,
-            FileTransferEvent event) {
-        assert !Thread.holdsLock(this);
-
-        for (FileTransferListener listener : listeners) {
-            listener.handleEventWithStateChange(this,
-                    newState, event);
-        }
-    }
-
-    public synchronized FileTransferState getState() {
-        return state;
-    }
-
-    protected abstract FtRvSessionHandler createSessionHandler();
-
-    protected synchronized void setInvitationMessage(InvitationMessage message) {
-        this.message = message;
-    }
-
-    protected synchronized void setFileInfo(FileSendBlock fileInfo) {
-        this.fileInfo = fileInfo;
-    }
-
-    public Timer getTimer() { return timer; }
-
-    public synchronized FileSendBlock getFileInfo() { return fileInfo; }
-
-    public synchronized InvitationMessage getInvitationMessage() {
-        return message;
-    }
-
-    public synchronized int getRequestIndex() {
-        return requestIndex;
-    }
-
-    public synchronized int increaseRequestIndex() {
-        int requestIndex = this.requestIndex;
-        requestIndex = requestIndex + 1;
-        this.requestIndex = requestIndex;
-        return requestIndex;
-    }
-
-    public synchronized void setRequestIndex(int requestIndex) {
-        this.requestIndex = requestIndex;
-    }
-
-    protected void startStateController(StateController controller) {
-//        StateController oldController = this.controller;
-//        if (oldController != null) {
-//            throw new IllegalStateException("Cannot start state controller: "
-//                    + "controller is already set to " + oldController);
-//        }
-        changeStateController(controller);
-    }
-
-    protected void changeStateController(StateController controller) {
-        StateController last;
-        synchronized (this) {
-            if (done) {
-                LOGGER.warning("Someone tried changing state of " + this
-                        + " to " + controller + ", but we are done so it is "
-                        + "being ignored");
-                return;
-            }
-            last = storeNextController(controller);
-        }
-        if (last != null) last.stop();
-        controller.start(this, last);
-    }
-
-    protected void changeStateControllerFrom(StateController controller) {
-        LOGGER.finer("Changing state controller from " + controller);
-        boolean good;
-        StateController next;
-        synchronized (this) {
-            if (done) return;
-
-            if (this.controller == controller) {
-                good = true;
-                next = getNextStateController();
-                storeNextController(next);
-            } else {
-                good = false;
-                next = null;
-            }
-        }
-        flushEventQueue();
-        controller.stop();
-        if (good && next != null) {
-            next.start(this, controller);
-        }
-    }
-
-    private synchronized StateController storeNextController(StateController controller) {
-        LOGGER.info("Transfer " + this + " changing to state controller " + controller);
-        StateController last = this.controller;
-        this.controller = controller;
-        if (controller != null) {
-            controller.addControllerListener(controllerListener);
-        }
-        return last;
-    }
-
-    public synchronized StateController getStateController() { return controller; }
-
-    protected RendezvousSessionHandler getRvSessionHandler() {
-        return rvSessionHandler;
-    }
-
-    public RvSession getRvSession() {
-        return session;
-    }
-
-    public synchronized <V> void putTransferProperty(Key<V> key, V value) {
-        LOGGER.fine("Transfer property " + key + " set to " + value + " for "
-                + this);
-        transferProperties.put(key, value);
-    }
-
-    @SuppressWarnings({"unchecked"})
-    public synchronized <V> V getTransferProperty(Key<V> key) {
-        return (V) transferProperties.get(key);
-    }
-
-    public FileTransferManager getFileTransferManager() {
-        return fileTransferManager;
-    }
-
-    //TODO: automatically cancel when state is set to FAILED
-    public boolean cancel() {
-        setState(FileTransferState.FAILED, new LocallyCancelledEvent());
-        return true;
-    }
-
-    //TODO: check for valid state changes
-    protected boolean setState(FileTransferState state, FileTransferEvent event) {
-        StateController controller;
-        synchronized (this) {
-            if (done) return false;
-
-            this.state = state;
-            if (state == FileTransferState.FAILED
-                    || state == FileTransferState.FINISHED) {
-                done = true;
-            }
-            controller = this.controller;
-        }
-        if (state == FileTransferState.FAILED) {
-            getRvSession().sendRv(new FileSendRejectRvCmd());
-        }
-        if (controller != null && (state == FileTransferState.FAILED
-                || state == FileTransferState.FINISHED)) {
-            controller.stop();
-        }
-        fireStateChange(state, event);
-        return true;
-    }
-
-    public void addTransferListener(FileTransferListener listener) {
-        listeners.addIfAbsent(listener);
-    }
-
-    public void removeTransferListener(FileTransferListener listener) {
-        listeners.remove(listener);
-    }
-
-    public EventPost getEventPost() {
-        return eventPost;
-    }
-
-    public synchronized boolean isProxyRequestTrusted() {
-        return proxyRequestTrusted;
-    }
-
-    public synchronized void setProxyRequestTrusted(boolean trustingProxyRedirects) {
-        this.proxyRequestTrusted = trustingProxyRedirects;
-    }
-
-    public synchronized boolean isOnlyUsingProxy() {
-        return onlyUsingProxy;
-    }
-
-    public synchronized void setOnlyUsingProxy(boolean onlyUsingProxy) {
-        this.onlyUsingProxy = onlyUsingProxy;
-    }
-
-    public synchronized void setDefaultPerConnectionTimeout(long millis) {
-        perConnectionTimeout = millis;
-    }
-
-    public synchronized void setPerConnectionTimeout(ConnectionType type, long millis) {
-        timeouts.put(type, millis);
-    }
-
-    public synchronized long getDefaultPerConnectionTimeout() {
-        return perConnectionTimeout;
-    }
-
-    public synchronized long getPerConnectionTimeout(ConnectionType type) {
-        DefensiveTools.checkNull(type, "type");
-
-        Long timeout = timeouts.get(type);
-        if (timeout == null) {
-            return perConnectionTimeout;
-        } else {
-            return timeout;
-        }
-    }
-
-    public Screenname getBuddyScreenname() {
-        return new Screenname(getRvSession().getScreenname());
-    }
-
-    protected synchronized void queueEvent(FileTransferEvent event) {
-        eventQueue.add(new StateChangeEvent(null, event));
-    }
-
-    protected synchronized void queueStateChange(FileTransferState fileTransferState,
-            FileTransferEvent event) {
-        eventQueue.add(new StateChangeEvent(fileTransferState, event));
-    }
-
-    protected void flushEventQueue() {
-        assert !Thread.holdsLock(this);
-
-        Iterator<StateChangeEvent> it;
-        synchronized (this) {
-            it = eventQueue.iterator();
-            eventQueue.clear();
-        }
-        while (it.hasNext()) {
-            StateChangeEvent event = it.next();
-            if (event.getState() == null) {
-                fireEvent(event.getEvent());
-            } else {
-                setState(event.getState(), event.getEvent());
-            }
-        }
-    }
-
-    public AimProxy getProxy() {
-        return proxy;
-    }
-
-    public String toString() {
-        return MiscTools.getClassName(this) + " with "
-                + getBuddyScreenname() + " of " + getFileInfo().getFilename();
-    }
-
-    protected HowToConnect processRedirect(FileSendReqRvCmd reqCmd) {
-        setRequestIndex(reqCmd.getRequestIndex());
-        RvConnectionInfo connInfo = reqCmd.getConnInfo();
-        LOGGER.fine("Received redirect packet: " + reqCmd
-                + " - to " + connInfo);
-        FileTransferEvent error = getConnectError(connInfo);
-        HowToConnect how;
-        if (error == null) {
-            putTransferProperty(KEY_CONN_INFO, connInfo);
-            LOGGER.fine("Storing connection info for redirect: " + connInfo);
-            //TODO: replace KEY_REDIRECTED with KEY_DIRECTION which is enum IN or OUT or something
-            if (connInfo.isProxied()) {
-                LOGGER.finer("Deciding to change to proxy connect controller");
-                how = HowToConnect.PROXY;
-                putTransferProperty(KEY_REDIRECTED, false);
-            } else {
-                LOGGER.finer("Deciding to change to normal connect controller");
-                how = HowToConnect.NORMAL;
-                //TODO: is this redirected correct??
-                putTransferProperty(KEY_REDIRECTED, true);
-            }
-        } else {
-            //TODO: should we really fail when we get an invalid proxy redirect?
-            //      we could ignore it
-            setState(FileTransferState.FAILED, error);
-            how = HowToConnect.DONT;
-        }
-        return how;
-    }
-
-    protected final FileTransferEvent getConnectError(RvConnectionInfo connInfo) {
-        FileTransferEvent error = null;
-        if (isOnlyUsingProxy()) {
-            if (connInfo.isProxied() && !isProxyRequestTrusted()) {
-                error = new ProxyRedirectDisallowedEvent(
-                        connInfo.getProxyIP());
-            }
-        }
-        return error;
-    }
-
-    protected abstract class FtRvSessionHandler
-            implements RendezvousSessionHandler {
-        public final void handleRv(RecvRvEvent event) {
-            RvCommand cmd = event.getRvCommand();
-            if (cmd instanceof FileSendReqRvCmd) {
-                FileSendReqRvCmd reqCmd = (FileSendReqRvCmd) cmd;
-                handleIncomingRequest(event, reqCmd);
-
-            } else if (cmd instanceof FileSendAcceptRvCmd) {
-                FileSendAcceptRvCmd acceptCmd = (FileSendAcceptRvCmd) cmd;
-                handleIncomingAccept(event, acceptCmd);
-
-            } else if (cmd instanceof FileSendRejectRvCmd) {
-                FileSendRejectRvCmd rejectCmd = (FileSendRejectRvCmd) cmd;
-                handleIncomingReject(event, rejectCmd);
-            }
-        }
-
-        protected abstract void handleIncomingReject(RecvRvEvent event,
-                FileSendRejectRvCmd rejectCmd);
-
-        protected abstract void handleIncomingAccept(RecvRvEvent event,
-                FileSendAcceptRvCmd acceptCmd);
-
-        protected abstract void handleIncomingRequest(RecvRvEvent event,
-                FileSendReqRvCmd reqCmd);
-
-        public void handleSnacResponse(RvSnacResponseEvent event) {
-        }
-
-        protected FileTransfer getFileTransfer() {
-            return FileTransferImpl.this;
-        }
-    }
-
-    protected static class StateChangeEvent {
-        private FileTransferState state;
-        private FileTransferEvent event;
-
-        public StateChangeEvent(FileTransferState state,
-                FileTransferEvent event) {
-
-            this.state = state;
-            this.event = event;
-        }
-
-        public FileTransferState getState() {
-            return state;
-        }
-
-        public FileTransferEvent getEvent() {
-            return event;
-        }
-    }
-
-    private class EventPostImpl implements EventPost {
-        public void fireEvent(FileTransferEvent event) {
-            boolean fireState;
-            FileTransferState newState = null;
-            synchronized (FileTransferImpl.this) {
-                FileTransferState oldState = state;
-                if (event instanceof ConnectingEvent
-                        || event instanceof ConnectingToProxyEvent
-                        || event instanceof ResolvingProxyEvent
-                        || event instanceof WaitingForConnectionEvent) {
-                    newState = FileTransferState.CONNECTING;
-
-                } else if (event instanceof ConnectedEvent) {
-                    newState = FileTransferState.CONNECTED;
-
-                } else if (event instanceof TransferringFileEvent
-                        || event instanceof FileCompleteEvent) {
-                    newState = FileTransferState.TRANSFERRING;
-
-                } else if (event instanceof ChecksummingEvent
-                        && oldState == FileTransferState.WAITING) {
-                    newState = FileTransferState.PREPARING;
-                }
-                if (!done && newState != null && newState != oldState) {
-                    fireState = true;
-                    state = newState;
-                } else {
-                    fireState = false;
-                }
-            }
-            if (fireState) {
-                fireStateChange(newState, event);
-            } else {
-                FileTransferImpl.this.fireEvent(event);
-            }
-        }
-    }
-
-    protected static enum HowToConnect { DONT, PROXY, NORMAL }
 }

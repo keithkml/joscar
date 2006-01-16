@@ -35,7 +35,8 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectingToProxyEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferImpl;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferManager;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionManager;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionImpl;
 import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joscar.rvproto.rvproxy.RvProxyAckCmd;
 import net.kano.joscar.rvproto.rvproxy.RvProxyCmd;
@@ -56,7 +57,7 @@ public abstract class AbstractConnectToProxyController
     protected void setConnectingState() {
         int outPort = getConnectionPort();
         InetAddress outAddr = getIpAddress();
-        getFileTransfer().getEventPost().fireEvent(new ConnectingToProxyEvent(outAddr, outPort));
+        getRvConnection().getEventPost().fireEvent(new ConnectingToProxyEvent(outAddr, outPort));
     }
 
     protected void setResolvingState() {
@@ -68,14 +69,14 @@ public abstract class AbstractConnectToProxyController
     protected void initializeProxy() throws IOException {
         OutputStream out = getStream().getOutputStream();
 
-        FileTransferImpl transfer = getFileTransfer();
-        FileTransferManager ftManager = transfer.getFileTransferManager();
+        RvConnectionImpl conn = getRvConnection();
+        RvConnectionManager ftManager = conn.getRvConnectionManager();
         AimConnection connection = ftManager.getIcbmService().getAimConnection();
-        int port = transfer.getTransferProperty(FileTransferImpl.KEY_CONN_INFO).getPort();
+        int port = conn.getTransferProperty(FileTransferImpl.KEY_CONN_INFO).getPort();
         String mysn = connection.getScreenname().getNormal();
 //        String otherSn = getFileTransfer().getRvSession().getScreenname();
         RvProxyCmd initCmd = new RvProxyInitRecvCmd(
-                mysn, transfer.getRvSession().getRvSessionId(), port,
+                mysn, conn.getRvSession().getRvSessionId(), port,
                 CapabilityBlock.BLOCK_FILE_SEND);
         RvProxyPacket packet = new RvProxyPacket(initCmd);
         ByteArrayOutputStream bout = new ByteArrayOutputStream();

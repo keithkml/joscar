@@ -35,7 +35,7 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
 import java.net.InetAddress;
 
-public class ConnectingToProxyEvent extends FileTransferEvent {
+public class ConnectingToProxyEvent extends RvConnectionEvent {
     private InetAddress proxyAddress;
     private int port;
 

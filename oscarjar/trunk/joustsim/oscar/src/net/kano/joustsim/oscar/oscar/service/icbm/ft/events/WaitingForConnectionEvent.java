@@ -35,7 +35,7 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
 import java.net.InetAddress;
 
-public class WaitingForConnectionEvent extends FileTransferEvent {
+public class WaitingForConnectionEvent extends RvConnectionEvent {
     private InetAddress listeningOn;
     private int port;
 

@@ -41,58 +41,57 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
 
 import java.net.InetAddress;
 
-public class OutgoingConnectionController extends AbstractOutgoingConnectionController {
-    private final ConnectionType type;
+public class OutgoingConnectionController
+    extends AbstractOutgoingConnectionController {
+  private final ConnectionType type;
 
-    public OutgoingConnectionController(ConnectionType type)
-            throws IllegalArgumentException {
-        if (type != ConnectionType.INTERNET && type != ConnectionType.LAN) {
-            throw new IllegalArgumentException("invalid type for "
-                    + MiscTools.getClassName(this) + ": " + type);
-        }
-        this.type = type;
+  public OutgoingConnectionController(ConnectionType type)
+      throws IllegalArgumentException {
+    if (type != ConnectionType.INTERNET && type != ConnectionType.LAN) {
+      throw new IllegalArgumentException("invalid type for "
+          + MiscTools.getClassName(this) + ": " + type);
     }
+    this.type = type;
+  }
 
-    protected InetAddress getIpAddress() {
-        RvConnectionInfo connectionInfo = getConnectionInfo();
+  protected InetAddress getIpAddress() {
+    RvConnectionInfo connectionInfo = getConnectionInfo();
 //        assert !connectionInfo.isProxied();
 
-        InetAddress ip;
-        if (type == ConnectionType.INTERNET) {
-            ip = connectionInfo.getExternalIP();
-        } else if (type == ConnectionType.LAN) {
-            ip = connectionInfo.getInternalIP();
-        } else {
-            throw new IllegalStateException(
-                    "invalid OutgoingConnectionType " + type);
-        }
-        return ip;
+    InetAddress ip;
+    if (type == ConnectionType.INTERNET) {
+      ip = connectionInfo.getExternalIP();
+    } else if (type == ConnectionType.LAN) {
+      ip = connectionInfo.getInternalIP();
+    } else {
+      throw new IllegalStateException(
+          "invalid OutgoingConnectionType " + type);
     }
+    return ip;
+  }
 
-    protected void checkConnectionInfo() throws IllegalStateException {
-        if (getIpAddress() == null) {
-            throw new IllegalStateException(MiscTools.getClassName(this) + " ("
-                    + type + ") has invalid connection info: "
-                    + getConnectionInfo());
-        }
+  protected void checkConnectionInfo() throws IllegalStateException {
+    if (getIpAddress() == null) {
+      throw new IllegalStateException(MiscTools.getClassName(this) + " ("
+          + type + ") has invalid connection info: "
+          + getConnectionInfo());
     }
+  }
 
-    protected int getConnectionPort() {
-        return getConnectionInfo().getPort();
-    }
+  protected int getConnectionPort() {
+    return getConnectionInfo().getPort();
+  }
 
-    protected void setResolvingState() {
-    }
+  protected void setResolvingState() {
+  }
 
-    public ConnectionType getConnectionType() {
-        return type;
-    }
+  public ConnectionType getConnectionType() { return type; }
 
-    protected void setConnectingState() {
-        InetAddress ipAddress = getIpAddress();
-        int outPort = getConnectionInfo().getPort();
-        ConnectionType type = OutgoingConnectionController.this.type;
-        EventPost eventPost = getFileTransfer().getEventPost();
-        eventPost.fireEvent(new ConnectingEvent(type, ipAddress, outPort));
-    }
+  protected void setConnectingState() {
+    InetAddress ipAddress = getIpAddress();
+    int outPort = getConnectionInfo().getPort();
+    ConnectionType type = OutgoingConnectionController.this.type;
+    EventPost eventPost = getRvConnection().getEventPost();
+    eventPost.fireEvent(new ConnectingEvent(type, ipAddress, outPort));
+  }
 }

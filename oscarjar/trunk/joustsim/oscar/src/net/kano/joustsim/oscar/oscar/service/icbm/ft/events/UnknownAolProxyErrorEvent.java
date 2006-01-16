@@ -33,7 +33,7 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
-public class UnknownAolProxyErrorEvent extends FileTransferEvent {
+public class UnknownAolProxyErrorEvent extends RvConnectionEvent {
     private int errorCode;
 
     public UnknownAolProxyErrorEvent(int errorCode) {

@@ -36,5 +36,4 @@ package net.kano.joustsim.oscar.oscar.service.chatrooms;
 public interface ChatRoomManagerListener {
     void handleInvitation(ChatRoomManager chatRoomManager,
             ChatInvitation ourInvitation);
-
 }

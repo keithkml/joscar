@@ -31,7 +31,12 @@
  *
  */
 
-package net.kano.joustsim.oscar.proxy;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-public interface AimProxy {
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
+
+public interface RvConnectionEventListener {
+    void handleEventWithStateChange(RvConnection transfer, FileTransferState state,
+            RvConnectionEvent event);
+    void handleEvent(RvConnection transfer, RvConnectionEvent event);
 }

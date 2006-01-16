@@ -37,60 +37,58 @@ import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.WaitingForConnectionEvent;
 
+import javax.net.ServerSocketFactory;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.channels.ServerSocketChannel;
 
 public abstract class PassiveConnectionController
-        extends AbstractConnectionController
-        implements ManualTimeoutController {
-    private ServerSocketChannel serverSocket;
-    private RvConnectionInfo connInfo;
+    extends AbstractConnectionController
+    implements ManualTimeoutController {
+  private ServerSocket serverSocket;
+  private RvConnectionInfo connInfo;
 
-    protected void initializeBeforeStarting() throws IOException {
-        //TODO: use proxy
-//        getFileTransfer().getProxy().
+  protected void initializeBeforeStarting() throws IOException {
+    ServerSocketFactory ssf = getRvConnection().getProxy().getServerSocketFactory();
+    serverSocket = ssf == null ? ServerSocketChannel.open().socket() : ssf.createServerSocket();
+    serverSocket.bind(null);
+    sendRequest();
+  }
 
-        ServerSocketChannel chan = ServerSocketChannel.open();
-        serverSocket = chan;
-        chan.socket().bind(null);
-        sendRequest();
-    }
+  protected ServerSocket getServerSocket() {
+    return serverSocket;
+  }
 
-    protected ServerSocket getServerSocket() {
-        return serverSocket.socket();
-    }
+  protected abstract void sendRequest() throws IOException;
 
-    protected abstract void sendRequest() throws IOException;
+  protected Socket createSocket() throws IOException {
+    setConnectingState();
+    return getServerSocket().accept();
+  }
 
-    protected Socket createSocket() throws IOException {
-        setConnectingState();
-        return serverSocket.accept().socket();
-    }
+  protected void setResolvingState() {
+  }
 
-    protected void setResolvingState() {
-    }
+  protected void setConnectingState() {
+    EventPost post = getRvConnection().getEventPost();
+    post.fireEvent(new WaitingForConnectionEvent(connInfo.getInternalIP(),
+        connInfo.getPort()));
+  }
 
-    protected void setConnectingState() {
-        EventPost post = getFileTransfer().getEventPost();
-        post.fireEvent(new WaitingForConnectionEvent(connInfo.getInternalIP(),
-                        connInfo.getPort()));
-    }
+  protected RvConnectionInfo getConnInfo() {
+    return connInfo;
+  }
 
-    protected RvConnectionInfo getConnInfo() {
-        return connInfo;
-    }
+  protected void setConnInfo(RvConnectionInfo connInfo) {
+    this.connInfo = connInfo;
+  }
 
-    protected void setConnInfo(RvConnectionInfo connInfo) {
-        this.connInfo = connInfo;
-    }
+  protected boolean shouldStartTimerAutomatically() {
+    return false;
+  }
 
-    protected boolean shouldStartTimerAutomatically() {
-        return false;
-    }
-
-    public void startTimeoutTimer() {
-        super.startTimer();
-    }
+  public void startTimeoutTimer() {
+    super.startTimer();
+  }
 }

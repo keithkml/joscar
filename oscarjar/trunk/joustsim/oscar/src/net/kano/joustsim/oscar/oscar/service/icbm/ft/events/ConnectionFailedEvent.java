@@ -33,15 +33,15 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
-public class ConnectionFailedEvent extends FileTransferEvent {
-    private FileTransferEvent lastEvent;
+public class ConnectionFailedEvent extends RvConnectionEvent {
+    private RvConnectionEvent lastEvent;
 
-    public ConnectionFailedEvent(FileTransferEvent event) {
+    public ConnectionFailedEvent(RvConnectionEvent event) {
 
         this.lastEvent = event;
     }
 
-    public FileTransferEvent getLastEvent() {
+    public RvConnectionEvent getLastEvent() {
         return lastEvent;
     }
 }

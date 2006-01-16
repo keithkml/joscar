@@ -49,7 +49,7 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.RedirectToProxy
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.BuddyCancelledEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectionFailedEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferCompleteEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownErrorEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
@@ -73,9 +73,9 @@ public class IncomingFileTransferImpl extends FileTransferImpl
     private boolean declined = false;
     private FileMapper fileMapper;
 
-    IncomingFileTransferImpl(FileTransferManager fileTransferManager,
+    IncomingFileTransferImpl(RvConnectionManager rvConnectionManager,
             RvSession session) {
-        super(fileTransferManager, session);
+        super(rvConnectionManager, session);
 
         fileMapper = new DefaultFileMapper(getBuddyScreenname());
     }
@@ -189,7 +189,7 @@ public class IncomingFileTransferImpl extends FileTransferImpl
 
     private synchronized StateController getNextStateFromError(
             StateController oldController, StateInfo oldState) {
-        FileTransferEvent event;
+        RvConnectionEvent event;
         if (oldState instanceof FailureEventInfo) {
             FailureEventInfo failureEventInfo = (FailureEventInfo) oldState;
             event = failureEventInfo.getEvent();
@@ -257,7 +257,7 @@ public class IncomingFileTransferImpl extends FileTransferImpl
                 putTransferProperty(KEY_CONN_INFO, connInfo);
                 putTransferProperty(KEY_REDIRECTED, false);
 
-                FileTransferManager ftMgr = getFileTransferManager();
+                RvConnectionManager ftMgr = getRvConnectionManager();
                 ftMgr.fireNewIncomingTransfer(IncomingFileTransferImpl.this);
 
             } else if (index > FileSendReqRvCmd.REQINDEX_FIRST) {

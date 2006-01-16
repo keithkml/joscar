@@ -37,10 +37,9 @@ import net.kano.joscar.rvproto.rvproxy.RvProxyCmd;
 import net.kano.joscar.rvproto.rvproxy.RvProxyInitSendCmd;
 import net.kano.joscar.rvproto.rvproxy.RvProxyPacket;
 import net.kano.joscar.snaccmd.CapabilityBlock;
-import net.kano.joscar.MiscTools;
 import net.kano.joustsim.oscar.AimConnection;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferImpl;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferManager;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionImpl;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionManager;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectingToProxyEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ResolvingProxyEvent;
 
@@ -66,8 +65,8 @@ public abstract class InitiateProxyController extends AbstractProxyConnectionCon
 
     protected void initializeProxy() throws IOException {
         OutputStream out = getStream().getOutputStream();
-        FileTransferImpl transfer = getFileTransfer();
-        FileTransferManager ftManager = transfer.getFileTransferManager();
+        RvConnectionImpl transfer = getRvConnection();
+        RvConnectionManager ftManager = transfer.getRvConnectionManager();
         AimConnection connection = ftManager.getIcbmService().getAimConnection();
         RvProxyCmd initCmd = new RvProxyInitSendCmd(
                 connection.getScreenname().getNormal(),
@@ -80,12 +79,12 @@ public abstract class InitiateProxyController extends AbstractProxyConnectionCon
     }
 
     protected void setResolvingState() {
-        getFileTransfer().getEventPost().fireEvent(new ResolvingProxyEvent(getProxyHost()));
+        getRvConnection().getEventPost().fireEvent(new ResolvingProxyEvent(getProxyHost()));
     }
 
     protected void setConnectingState() {
         try {
-            getFileTransfer().getEventPost().fireEvent(new ConnectingToProxyEvent(getIpAddress(), getConnectionPort()));
+            getRvConnection().getEventPost().fireEvent(new ConnectingToProxyEvent(getIpAddress(), getConnectionPort()));
         } catch (IOException e) {
         }
     }

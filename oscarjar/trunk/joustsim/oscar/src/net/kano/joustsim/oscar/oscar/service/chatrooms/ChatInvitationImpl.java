@@ -33,97 +33,139 @@
 
 package net.kano.joustsim.oscar.oscar.service.chatrooms;
 
-import net.kano.joustsim.Screenname;
-import net.kano.joscar.snaccmd.MiniRoomInfo;
 import net.kano.joscar.OscarTools;
+import net.kano.joscar.rv.RvSession;
+import net.kano.joscar.snaccmd.FullRoomInfo;
+import net.kano.joustsim.Screenname;
 
 import javax.crypto.SecretKey;
 import java.security.cert.X509Certificate;
 
 class ChatInvitationImpl implements ChatInvitation {
-    private Screenname screenname;
-    private MiniRoomInfo roomInfo;
-    private String message;
-    private SecretKey roomKey = null;
-    private InvalidInvitationReason invalidReason = null;
-    private X509Certificate buddySignature = null;
-    private final boolean secure;
-    private ChatRoomManager chatRoomManager;
+  private final ChatRoomManager chatRoomManager;
+  private final RvSession session;
+  private final Screenname screenname;
+  private final FullRoomInfo roomInfo;
+  private final String message;
+  
+  private final boolean secure;
+  private SecretKey roomKey = null;
+  private X509Certificate buddySignature = null;
 
-    public ChatInvitationImpl(ChatRoomManager chatRoomManager,
-            Screenname screenname, MiniRoomInfo roomInfo,
-            String message) {
-        this(chatRoomManager, screenname, roomInfo, message, false);
-    }
+  private InvalidInvitationReason invalidReason = null;
+  private boolean rejected = false;
 
-    private ChatInvitationImpl(ChatRoomManager chatRoomManager,
-            Screenname screenname, MiniRoomInfo roomInfo,
-            String message, boolean secure) {
-        this.chatRoomManager = chatRoomManager;
-        this.screenname = screenname;
-        this.roomInfo = roomInfo;
-        this.message = message;
-        this.secure = secure;
-    }
+  public ChatInvitationImpl(ChatRoomManager chatRoomManager,
+      RvSession session, Screenname screenname, FullRoomInfo roomInfo,
+      String message) {
+    this(chatRoomManager, session, screenname, roomInfo, message, false);
+  }
 
-    public ChatInvitationImpl(ChatRoomManager chatRoomManager,
-            Screenname screenname, MiniRoomInfo roomInfo,
-            X509Certificate buddySignature, SecretKey roomKey,
-            String message) {
-        this(chatRoomManager, screenname, roomInfo, message, true);
+  private ChatInvitationImpl(ChatRoomManager chatRoomManager,
+      RvSession session, Screenname screenname, FullRoomInfo roomInfo,
+      String message, boolean secure) {
+    this.chatRoomManager = chatRoomManager;
+    this.screenname = screenname;
+    this.roomInfo = roomInfo;
+    this.message = message;
+    this.secure = secure;
+    this.session = session;
+  }
 
-        this.roomKey = roomKey;
-        this.buddySignature = buddySignature;
-    }
+  public ChatInvitationImpl(ChatRoomManager chatRoomManager,
+      RvSession session, Screenname screenname, FullRoomInfo roomInfo,
+      X509Certificate buddySignature, SecretKey roomKey,
+      String message) {
+    this(chatRoomManager, session, screenname, roomInfo, message, true);
 
-    public ChatInvitationImpl(ChatRoomManager chatRoomManager,
-            Screenname screenname, MiniRoomInfo roomInfo,
-            InvalidInvitationReason reason, String message) {
-        this(chatRoomManager, screenname, roomInfo, message, true);
-        this.invalidReason = reason;
-    }
+    this.roomKey = roomKey;
+    this.buddySignature = buddySignature;
+  }
 
-    public Screenname getScreenname() {
-        return screenname;
-    }
+  public ChatInvitationImpl(ChatRoomManager chatRoomManager,
+      RvSession session, Screenname screenname, FullRoomInfo roomInfo,
+      InvalidInvitationReason reason, String message) {
+    this(chatRoomManager, session, screenname, roomInfo, message, true);
+    this.invalidReason = reason;
+  }
 
-    public MiniRoomInfo getRoomInfo() {
-        return roomInfo;
-    }
+  public RvSession getSession() {
+    return session;
+  }
 
-    public int getRoomExchange() {
-        return getRoomInfo().getExchange();
-    }
+  public Screenname getScreenname() {
+    return screenname;
+  }
 
-    public String getRoomName() {
-        return OscarTools.getRoomNameFromCookie(getRoomInfo().getCookie());
-    }
+  public FullRoomInfo getRoomInfo() {
+    return roomInfo;
+  }
 
-    public X509Certificate getBuddySignature() {
-        return buddySignature;
-    }
+  public int getRoomExchange() {
+    return getRoomInfo().getExchange();
+  }
 
-    public SecretKey getRoomKey() {
-        return roomKey;
-    }
+  public String getRoomName() {
+    return OscarTools.getRoomNameFromCookie(getRoomInfo().getCookie());
+  }
 
-    public String getMessage() {
-        return message;
-    }
+  public X509Certificate getBuddySignature() {
+    return buddySignature;
+  }
 
-    public InvalidInvitationReason getInvalidReason() {
-        return invalidReason;
-    }
+  public SecretKey getRoomKey() {
+    return roomKey;
+  }
 
-    public ChatRoomManager getChatRoomManager() {
-        return chatRoomManager;
-    }
+  public String getMessage() {
+    return message;
+  }
 
-    public boolean isValid() {
-        return !isForSecureChatRoom() || roomKey != null;
-    }
+  public InvalidInvitationReason getInvalidReason() {
+    return invalidReason;
+  }
 
-    public boolean isForSecureChatRoom() {
-        return secure;
-    }
+  public ChatRoomManager getChatRoomManager() {
+    return chatRoomManager;
+  }
+
+  public boolean isValid() {
+    return !isForSecureChatRoom() || roomKey != null;
+  }
+
+  public boolean isForSecureChatRoom() {
+    return secure;
+  }
+
+  public ChatRoomSession accept() {
+    return chatRoomManager.acceptInvitation(this);
+  }
+
+  public void reject() {
+    chatRoomManager.rejectInvitation(this);
+  }
+
+  public String toString() {
+    return "ChatInvitationImpl{" +
+        "screenname=" + screenname +
+        ", roomInfo=" + roomInfo +
+        ", message='" + message + "'" +
+        ", secure=" + secure +
+        ", invalidReason=" + invalidReason +
+        "}";
+  }
+
+  public synchronized boolean setRejected() {
+    if (rejected) return false;
+    rejected = true;
+    return true;
+  }
+
+  public synchronized boolean isRejected() {
+    return rejected;
+  }
+
+  public boolean isAcceptable() {
+    return isValid() && !isRejected();
+  }
 }

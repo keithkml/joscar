@@ -39,21 +39,21 @@ import java.nio.channels.SocketChannel;
 import java.nio.channels.Channels;
 
 public class StreamInfo extends SuccessfulStateInfo {
-    private SocketChannel socketChannel;
+  private SocketChannel socketChannel;
 
-    public StreamInfo(SocketChannel channel) {
-        socketChannel = channel;
-    }
+  public StreamInfo(SocketChannel channel) {
+    socketChannel = channel;
+  }
 
-    public SocketChannel getSocketChannel() {
-        return socketChannel;
-    }
+  public SocketChannel getSocketChannel() {
+    return socketChannel;
+  }
 
-    public InputStream getInputStream() {
-        return Channels.newInputStream(getSocketChannel());
-    }
+  public InputStream getInputStream() {
+    return Channels.newInputStream(getSocketChannel());
+  }
 
-    public OutputStream getOutputStream() {
-        return Channels.newOutputStream(getSocketChannel());
-    }
+  public OutputStream getOutputStream() {
+    return Channels.newOutputStream(getSocketChannel());
+  }
 }

@@ -34,9 +34,9 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FailureEventException;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransfer;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.TransferPropertyHolder;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferTools;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnection;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionPropertyHolder;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectedEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectionTimedOutEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
@@ -56,7 +56,7 @@ public abstract class TransferController extends StateController {
     private boolean connected = false;
     private Thread receiveThread;
     private boolean suppressErrors = false;
-    private FileTransfer transfer;
+    private RvConnection transfer;
     private long timeoutPaused = -1;
     private long threadStarted = -1;
     private long timeIgnored = 0;
@@ -113,7 +113,7 @@ public abstract class TransferController extends StateController {
         return suppressErrors;
     }
 
-    public void start(final FileTransfer transfer, StateController last) {
+  public void start(final RvConnection transfer, StateController last) {
         this.transfer = transfer;
         StateInfo endState = last.getEndStateInfo();
         if (endState instanceof StreamInfo) {
@@ -125,7 +125,8 @@ public abstract class TransferController extends StateController {
                     }
                     try {
                         makeTimerTask();
-                        TransferPropertyHolder itransfer = (TransferPropertyHolder) transfer;
+                        RvConnectionPropertyHolder itransfer
+                            = (RvConnectionPropertyHolder) transfer;
                         transferInThread(stream, itransfer);
 
                     } catch (Exception e) {
@@ -175,7 +176,7 @@ public abstract class TransferController extends StateController {
     }
 
     protected abstract void transferInThread(StreamInfo stream,
-            TransferPropertyHolder transfer)
+            RvConnectionPropertyHolder transfer)
             throws IOException, FailureEventException;
 
     public void pauseTransfer() {

@@ -35,7 +35,7 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
 import java.net.InetAddress;
 
-public class ProxyRedirectDisallowedEvent extends FileTransferEvent {
+public class ProxyRedirectDisallowedEvent extends RvConnectionEvent {
     private InetAddress proxyIP;
 
     public ProxyRedirectDisallowedEvent(InetAddress proxyIP) {

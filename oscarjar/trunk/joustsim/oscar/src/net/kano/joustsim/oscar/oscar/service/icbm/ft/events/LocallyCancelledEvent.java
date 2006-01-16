@@ -33,4 +33,4 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
-public class LocallyCancelledEvent extends FileTransferEvent { }
+public class LocallyCancelledEvent extends RvConnectionEvent { }

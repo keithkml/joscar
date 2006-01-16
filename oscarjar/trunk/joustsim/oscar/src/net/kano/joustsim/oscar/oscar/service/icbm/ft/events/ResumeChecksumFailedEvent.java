@@ -35,7 +35,7 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
 import java.io.File;
 
-public class ResumeChecksumFailedEvent extends FileTransferEvent {
+public class ResumeChecksumFailedEvent extends RvConnectionEvent {
     private final File file;
 
     public ResumeChecksumFailedEvent(File file) {

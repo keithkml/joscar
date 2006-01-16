@@ -33,35 +33,9 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-import net.kano.joscar.rvcmd.InvitationMessage;
 import net.kano.joscar.rvcmd.sendfile.FileSendBlock;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
-import net.kano.joustsim.Screenname;
 
 //TOLATER: add pause mechanism
-public interface FileTransfer {
-    FileTransferManager getFileTransferManager();
-
-    Screenname getBuddyScreenname();
-
-    FileSendBlock getFileInfo();
-    InvitationMessage getInvitationMessage();
-
-    boolean cancel();
-
-    void addTransferListener(FileTransferListener listener);
-    void removeTransferListener(FileTransferListener listener);
-
-    EventPost getEventPost();
-
-    boolean isProxyRequestTrusted();
-    void setProxyRequestTrusted(boolean trusted);
-
-    boolean isOnlyUsingProxy();
-    void setOnlyUsingProxy(boolean onlyUsingProxy);
-
-    void setDefaultPerConnectionTimeout(long millis);
-    void setPerConnectionTimeout(ConnectionType type, long millis);
-    long getDefaultPerConnectionTimeout();
-    long getPerConnectionTimeout(ConnectionType type);
+public interface FileTransfer extends RvConnection {
+  FileSendBlock getFileInfo();
 }

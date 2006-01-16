@@ -43,8 +43,8 @@ import net.kano.joscar.rvproto.rvproxy.RvProxyReadyCmd;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.ConnectionType;
 import static net.kano.joustsim.oscar.oscar.service.icbm.ft.ConnectionType.INCOMING;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FailureEventException;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferImpl;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferTools;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnection;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.AolProxyTimedOutEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectionTimedOutEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownAolProxyErrorEvent;
@@ -120,7 +120,7 @@ public abstract class AbstractProxyConnectionController
 
         alreadyStartedTimer = true;
 
-        FileTransferImpl transfer = getFileTransfer();
+        RvConnection transfer = getRvConnection();
         final long timeout = transfer.getPerConnectionTimeout(INCOMING);
         Timer timer = FileTransferTools.getTimer(transfer);
         timer.schedule(new TimerTask() {

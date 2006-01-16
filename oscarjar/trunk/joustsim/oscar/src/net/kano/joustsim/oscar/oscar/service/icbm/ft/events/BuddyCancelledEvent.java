@@ -33,7 +33,7 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
-public class BuddyCancelledEvent extends FileTransferEvent {
+public class BuddyCancelledEvent extends RvConnectionEvent {
     private final int code;
 
     public BuddyCancelledEvent(int code) {this.code = code;}

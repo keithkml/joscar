@@ -31,8 +31,9 @@
  *
  */
 
-package net.kano.joustsim.oscar.proxy;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-public class SocksProxyAdapter implements AimProxy {
-//    private final Proxy proxy;
+public interface RvConnectionManagerListener {
+    void handleNewIncomingFileTransfer(RvConnectionManager manager,
+            IncomingFileTransfer transfer);
 }

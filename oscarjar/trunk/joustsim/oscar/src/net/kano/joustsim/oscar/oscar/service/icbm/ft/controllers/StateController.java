@@ -35,15 +35,15 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.MiscTools;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransfer;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnection;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailureEventInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailureEventInfo;
 
-import java.util.logging.Logger;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public abstract class StateController {
     private static final Logger LOGGER = Logger
@@ -53,7 +53,7 @@ public abstract class StateController {
             = new CopyOnWriteArrayList<ControllerListener>();
     private StateInfo endState = null;
 
-    public abstract void start(FileTransfer transfer,
+    public abstract void start(RvConnection transfer,
             StateController last);
 
     public void addControllerListener(ControllerListener listener) {
@@ -80,7 +80,7 @@ public abstract class StateController {
         fireEvent(new ExceptionStateInfo(e));
     }
 
-    protected void fireFailed(final FileTransferEvent e) {
+    protected void fireFailed(final RvConnectionEvent e) {
         fireEvent(new FailureEventInfo(e));
     }
 

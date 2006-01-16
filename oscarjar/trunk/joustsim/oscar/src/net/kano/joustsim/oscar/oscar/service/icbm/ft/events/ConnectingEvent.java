@@ -37,7 +37,7 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.ConnectionType;
 
 import java.net.InetAddress;
 
-public class ConnectingEvent extends FileTransferEvent {
+public class ConnectingEvent extends RvConnectionEvent {
     private ConnectionType connectionType;
     private InetAddress address;
     private int port;

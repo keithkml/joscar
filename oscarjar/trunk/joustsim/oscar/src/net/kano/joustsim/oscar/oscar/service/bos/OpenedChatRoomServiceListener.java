@@ -33,11 +33,11 @@
 
 package net.kano.joustsim.oscar.oscar.service.bos;
 
-import net.kano.joscar.snaccmd.MiniRoomInfo;
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.snaccmd.FullRoomInfo;
 
 public interface OpenedChatRoomServiceListener {
     void handleChatRoomRedirect(MainBosService service,
-            MiniRoomInfo roomInfo, String host, int port,
+            FullRoomInfo roomInfo, String host, int port,
             ByteBlock flapCookie);
 }

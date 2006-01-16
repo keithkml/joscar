@@ -54,7 +54,7 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendPassivelyCo
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.BuddyCancelledEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ChecksummingEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileTransferEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferCompleteEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownErrorEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.ComputedChecksumsInfo;
@@ -110,9 +110,9 @@ public class OutgoingFileTransferImpl extends FileTransferImpl
         }
     };
 
-    public OutgoingFileTransferImpl(FileTransferManager fileTransferManager,
+    public OutgoingFileTransferImpl(RvConnectionManager rvConnectionManager,
             RvSession session) {
-        super(fileTransferManager, session);
+        super(rvConnectionManager, session);
     }
 
     public void makeRequest(InvitationMessage msg) {
@@ -200,7 +200,7 @@ public class OutgoingFileTransferImpl extends FileTransferImpl
             }
 
         } else if (endState instanceof FailedStateInfo) {
-            FileTransferEvent event = null;
+            RvConnectionEvent event = null;
             if (endState instanceof FailureEventInfo) {
                 FailureEventInfo failureEventInfo = (FailureEventInfo) endState;
 

@@ -47,8 +47,8 @@ import net.kano.joustsim.oscar.BuddyInfoChangeListener;
 import net.kano.joustsim.oscar.MyBuddyIconManager;
 import net.kano.joustsim.oscar.oscar.service.bos.MainBosService;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransfer;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferManager;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferManagerListener;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionManager;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionManagerListener;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.IncomingFileTransfer;
 import net.kano.joustsim.oscar.oscar.service.info.InfoService;
 
@@ -301,9 +301,9 @@ public class DummyOnlineWindow extends JFrame {
                 updateButtons();
             }
         });
-        FileTransferManager ftm = conn.getIcbmService().getFileTransferManager();
-        ftm.addFileTransferListener(new FileTransferManagerListener() {
-            public void handleNewIncomingFileTransfer(FileTransferManager manager,
+        RvConnectionManager ftm = conn.getIcbmService().getFileTransferManager();
+        ftm.addFileTransferListener(new RvConnectionManagerListener() {
+            public void handleNewIncomingFileTransfer(RvConnectionManager manager,
                     IncomingFileTransfer transfer) {
                 FileSendBlock fileInfo = transfer.getFileInfo();
                 int choice = JOptionPane.showConfirmDialog(DummyOnlineWindow.this,

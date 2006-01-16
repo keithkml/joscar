@@ -2,7 +2,7 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
 import net.kano.joscar.rvcmd.RvConnectionInfo;
 
-public interface TransferPropertyHolder extends FileTransfer {
+public interface RvConnectionPropertyHolder extends FileTransfer {
     Key<Boolean> KEY_REDIRECTED = new Key<Boolean>("REDIRECTED");
     Key<RvConnectionInfo> KEY_CONN_INFO = new Key<RvConnectionInfo>("CONN_INFO");
 

@@ -72,7 +72,7 @@ public class LoginConnection extends OscarConnection {
     }
 
     protected void beforeConnect() {
-        setSnacFamilies(new int[] { AuthCommand.FAMILY_AUTH });
+        setSnacFamilies(AuthCommand.FAMILY_AUTH);
         int secs = getTimeout();
         timer.schedule(new TimerTask() {
             public void run() {

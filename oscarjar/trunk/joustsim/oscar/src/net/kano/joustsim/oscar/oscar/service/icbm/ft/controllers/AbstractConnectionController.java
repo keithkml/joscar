@@ -37,12 +37,13 @@ import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.ConnectionType;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FailureEventException;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransfer;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferImpl;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnection;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionImpl;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectionTimedOutEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.LocallyCancelledInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -56,7 +57,7 @@ public abstract class AbstractConnectionController extends StateController {
 
     private RvConnectionInfo connectionInfo;
     private StreamInfo stream;
-    private FileTransferImpl fileTransfer;
+    private RvConnectionImpl fileTransfer;
     private Socket socket;
     private Thread thread;
     private boolean timerStarted = false;
@@ -72,7 +73,7 @@ public abstract class AbstractConnectionController extends StateController {
 
     protected StreamInfo getStream() { return stream; }
 
-    public FileTransferImpl getFileTransfer() {
+    public RvConnectionImpl getRvConnection() {
         return fileTransfer;
     }
 
@@ -80,7 +81,7 @@ public abstract class AbstractConnectionController extends StateController {
         connected = true;
     }
 
-    public void start(FileTransfer transfer, StateController last) {
+    public void start(RvConnection transfer, StateController last) {
         DefensiveTools.checkNull(transfer, "transfer");
         StateInfo endState = getEndStateInfo();
         if (endState != null) {

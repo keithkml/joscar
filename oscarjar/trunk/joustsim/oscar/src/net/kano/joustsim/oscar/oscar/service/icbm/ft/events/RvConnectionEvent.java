@@ -33,5 +33,5 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
-public abstract class FileTransferEvent {
+public abstract class RvConnectionEvent {
 }

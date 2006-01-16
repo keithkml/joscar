@@ -44,7 +44,7 @@ import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.oscar.BuddyInfo;
 import net.kano.joustsim.oscar.BuddyInfoManager;
 import net.kano.joustsim.oscar.oscar.service.icbm.ImConversation;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferManager;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionManager;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.OutgoingFileTransfer;
 import net.kano.joustsim.oscar.oscar.service.ssi.AddMutableGroup;
 import net.kano.joustsim.oscar.oscar.service.ssi.Buddy;
@@ -227,7 +227,7 @@ public class BuddyListBox extends JPanel {
                 Screenname sn = getSelectedScreenname();
                 if (sn != null) {
                     AimConnection conn = guiSession.getAimConnection();
-                    FileTransferManager mgr = conn.getIcbmService()
+                    RvConnectionManager mgr = conn.getIcbmService()
                             .getFileTransferManager();
                     OutgoingFileTransfer transfer = mgr.createOutgoingFileTransfer(sn);
                     JFileChooser chooser = new JFileChooser();

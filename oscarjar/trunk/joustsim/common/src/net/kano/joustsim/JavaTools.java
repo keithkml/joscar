@@ -69,7 +69,7 @@ public class JavaTools {
     public static <L> L getDelegatingProxy(
             final Collection<? extends L> listeners,
             Class<? extends L> cls) {
-        return cls.cast(Proxy.newProxyInstance(cls.getClassLoader(),
+        return cast(cls, Proxy.newProxyInstance(cls.getClassLoader(),
                 new Class<?>[]{cls},
                 new InvocationHandler() {
                     public Object invoke(Object proxy, Method method,
@@ -88,4 +88,9 @@ public class JavaTools {
                     }
                 }));
     }
+
+  @SuppressWarnings({"unchecked"})
+  public static <E> E cast(Class<E> cls, Object o) {
+    return (E) o;
+  }
 }

@@ -47,7 +47,7 @@ public final class Screenname implements Comparable {
         DefensiveTools.checkNull(format, "format");
 
         this.format = format;
-        this.normal = net.kano.joscar.OscarTools.normalize(format);
+        this.normal = OscarTools.normalize(format);
         this.hashCode = normal.hashCode();
     }
 

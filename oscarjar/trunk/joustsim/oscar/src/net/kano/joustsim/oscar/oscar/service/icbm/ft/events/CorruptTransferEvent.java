@@ -33,7 +33,7 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
-public class CorruptTransferEvent extends FileTransferEvent {
+public class CorruptTransferEvent extends RvConnectionEvent {
     private TransferredFileInfo info;
 
     public CorruptTransferEvent(TransferredFileInfo info) {

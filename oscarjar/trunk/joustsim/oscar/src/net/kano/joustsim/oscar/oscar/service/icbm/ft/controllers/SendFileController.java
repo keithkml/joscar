@@ -47,8 +47,8 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.FailureEventException;
 import static net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferImpl.KEY_REDIRECTED;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.OutgoingFileTransfer;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.ProgressStatusProvider;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvSessionBasedTransfer;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.TransferPropertyHolder;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvSessionBasedConnection;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionPropertyHolder;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ChecksummingEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.CorruptTransferEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
@@ -81,10 +81,10 @@ public class SendFileController extends TransferController {
     private static final Logger LOGGER = Logger
             .getLogger(SendFileController.class.getName());
 
-    protected void transferInThread(StreamInfo stream, TransferPropertyHolder transfer)
+    protected void transferInThread(StreamInfo stream, RvConnectionPropertyHolder transfer)
             throws IOException, FailureEventException {
         OutgoingFileTransfer otransfer = (OutgoingFileTransfer) transfer;
-        RvSessionBasedTransfer rvTransfer = (RvSessionBasedTransfer) transfer;
+        RvSessionBasedConnection rvConnection = (RvSessionBasedConnection) transfer;
         EventPost eventPost = transfer.getEventPost();
         List<File> files = otransfer.getFiles();
         List<RandomAccessFile> rafs = new ArrayList<RandomAccessFile>(files.size());
@@ -145,7 +145,7 @@ public class SendFileController extends TransferController {
                 sendheader.setListNameOffset(28);
                 sendheader.setListSizeOffset(17);
                 sendheader.setTotalFileSize(totalSize);
-                RvSession rvSession = rvTransfer.getRvSession();
+                RvSession rvSession = rvConnection.getRvSession();
                 long rvSessionId = rvSession.getRvSessionId();
                 if (redirected) {
                     LOGGER.fine("Transfer with " + rvSession.getScreenname()

@@ -52,137 +52,137 @@ import net.kano.joustsim.oscar.oscar.OscarConnection;
 import java.util.logging.Logger;
 
 public abstract class Service {
-    private static final Logger logger
-            = Logger.getLogger(Service.class.getName());
+  private static final Logger logger
+      = Logger.getLogger(Service.class.getName());
 
-    private AimConnection aimConnection;
-    private final OscarConnection oscarConnection;
-    private final int family;
-    private CopyOnWriteArrayList<ServiceListener> listeners
-            = new CopyOnWriteArrayList<ServiceListener>();
-    private boolean ready = false;
-    private boolean finished = false;
+  private AimConnection aimConnection;
+  private final OscarConnection oscarConnection;
+  private final int family;
+  private CopyOnWriteArrayList<ServiceListener> listeners
+      = new CopyOnWriteArrayList<ServiceListener>();
+  private boolean ready = false;
+  private boolean finished = false;
 
-    protected Service(AimConnection aimConnection,
-            OscarConnection oscarConnection, int family) {
-        logger.fine("Created new " + getClass().getName());
+  protected Service(AimConnection aimConnection,
+      OscarConnection oscarConnection, int family) {
+    logger.fine("Created new " + getClass().getName());
 
-        this.aimConnection = aimConnection;
-        this.oscarConnection = oscarConnection;
-        this.family = family;
+    this.aimConnection = aimConnection;
+    this.oscarConnection = oscarConnection;
+    this.family = family;
+  }
+
+  public final AimConnection getAimConnection() {
+    return aimConnection;
+  }
+
+  public final OscarConnection getOscarConnection() {
+    return oscarConnection;
+  }
+
+  public final Screenname getScreenname() {
+    return aimConnection.getScreenname();
+  }
+
+  public final int getFamily() { return family; }
+
+  public abstract SnacFamilyInfo getSnacFamilyInfo();
+
+  public final int getFamilyVersion() {
+    return getSnacFamilyInfo().getVersion();
+  }
+
+  public final int getToolId() {
+    return getSnacFamilyInfo().getToolID();
+  }
+
+  public final int getToolVersion() {
+    return getSnacFamilyInfo().getToolVersion();
+  }
+
+  public void addServiceListener(ServiceListener l) {
+    listeners.addIfAbsent(l);
+  }
+
+  public void removeServiceListener(ServiceListener l) {
+    listeners.remove(l);
+  }
+
+  public synchronized final boolean isReady() { return ready; }
+
+  public synchronized final boolean isFinished() { return finished; }
+
+  protected final void sendFlap(FlapCommand flap) {
+    oscarConnection.sendFlap(flap);
+  }
+
+  /** Automatically sends snac through the correct service */
+  protected final void sendDirectedSnac(SnacCommand snac) {
+    aimConnection.sendSnac(snac);
+  }
+
+  public final void sendSnac(SnacCommand snac) {
+    DefensiveTools.checkNull(snac, "snac");
+
+    oscarConnection.sendSnac(snac);
+  }
+
+  public final void sendSnacRequest(SnacRequest request) {
+    DefensiveTools.checkNull(request, "request");
+
+    oscarConnection.sendSnacRequest(request);
+  }
+
+  public final void sendSnacRequest(SnacCommand cmd,
+      SnacRequestListener listener) {
+    DefensiveTools.checkNull(cmd, "cmd");
+    DefensiveTools.checkNull(listener, "listener");
+
+    oscarConnection.sendSnacRequest(cmd, listener);
+  }
+
+  protected final void setReady() {
+
+    synchronized (this) {
+      if (ready) return;
+      ready = true;
     }
+    logger.finer(MiscTools.getClassName(this) + " is ready");
+    
+    for (ServiceListener l : listeners) l.handleServiceReady(this);
+  }
 
-    public final AimConnection getAimConnection() {
-        return aimConnection;
+  protected final void setFinished() {
+    logger.finer(MiscTools.getClassName(this) + " is finished");
+
+    synchronized (this) {
+      if (finished) return;
+      finished = true;
     }
-
-    public final OscarConnection getOscarConnection() {
-        return oscarConnection;
+    for (ServiceListener l : listeners) {
+      l.handleServiceFinished(this);
     }
+  }
 
-    public final Screenname getScreenname() {
-        return aimConnection.getScreenname();
-    }
+  public void connected() { }
 
-    public final int getFamily() { return family; }
+  public final void disconnected() {
+    finishUp();
+    setFinished();
+  }
 
-    public abstract SnacFamilyInfo getSnacFamilyInfo();
+  protected void finishUp() {
 
-    public final int getFamilyVersion() {
-        return getSnacFamilyInfo().getVersion();
-    }
-    public final int getToolId() {
-        return getSnacFamilyInfo().getToolID();
-    }
-    public final int getToolVersion() {
-        return getSnacFamilyInfo().getToolVersion();
-    }
+  }
 
-    public void addServiceListener(ServiceListener l) {
-        listeners.addIfAbsent(l);
-    }
+  public void handleSnacPacket(SnacPacketEvent snacPacketEvent) {
+  }
 
-    public void removeServiceListener(ServiceListener l) {
-        listeners.remove(l);
-    }
+  public void handleSnacResponse(SnacResponseEvent snacResponseEvent) {
+    handleSnacPacket(snacResponseEvent);
+  }
 
-    public synchronized final boolean isReady() { return ready; }
+  public void handleEvent(ServiceEvent event) {
 
-    public synchronized final boolean isFinished() { return finished; }
-
-    protected final void sendFlap(FlapCommand flap) {
-        oscarConnection.sendFlap(flap);
-    }
-
-    /**
-     * Automatically sends snac through the correct service
-     */
-    protected final void sendDirectedSnac(SnacCommand snac) {
-        aimConnection.sendSnac(snac);
-    }
-
-    public final void sendSnac(SnacCommand snac) {
-        DefensiveTools.checkNull(snac, "snac");
-
-        oscarConnection.sendSnac(snac);
-    }
-
-    public final void sendSnacRequest(SnacRequest request) {
-        DefensiveTools.checkNull(request, "request");
-
-        oscarConnection.sendSnacRequest(request);
-    }
-
-    public final void sendSnacRequest(SnacCommand cmd, SnacRequestListener listener) {
-        DefensiveTools.checkNull(cmd, "cmd");
-        DefensiveTools.checkNull(listener, "listener");
-
-        oscarConnection.sendSnacRequest(cmd, listener);
-    }
-
-    protected final void setReady() {
-        logger.finer(MiscTools.getClassName(this) + " is ready");
-
-        synchronized(this) {
-            if (ready) return;
-            ready = true;
-        }
-        for (ServiceListener l : listeners) {
-            l.handleServiceReady(this);
-        }
-    }
-
-    protected final void setFinished() {
-        logger.finer(MiscTools.getClassName(this) + " is finished");
-
-        synchronized(this) {
-            if (finished) return;
-            finished = true;
-        }
-        for (ServiceListener l : listeners) {
-            l.handleServiceFinished(this);
-        }
-    }
-
-    public void connected() { }
-
-    public final void disconnected() {
-        finishUp();
-        setFinished();
-    }
-
-    protected void finishUp() {
-
-    }
-
-    public void handleSnacPacket(SnacPacketEvent snacPacketEvent) {
-    }
-
-    public void handleSnacResponse(SnacResponseEvent snacResponseEvent) {
-        handleSnacPacket(snacResponseEvent);
-    }
-
-    public void handleEvent(ServiceEvent event) {
-
-    }
+  }
 }

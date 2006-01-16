@@ -37,21 +37,18 @@ package net.kano.joustsim.oscar;
 
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.trust.TrustPreferences;
+import org.jetbrains.annotations.Nullable;
 
 public interface AimSession {
-    AppSession getAppSession();
+  AppSession getAppSession();
 
-    Screenname getScreenname();
+  Screenname getScreenname();
 
-    AimConnection openConnection(AimConnectionProperties props);
+  AimConnection openConnection(AimConnectionProperties props);
 
-    AimConnection getConnection();
+  AimConnection getConnection();
 
-    void closeConnection();
+  void closeConnection();
 
-    /**
-     * This may return <code>null</code>.
-     * @return
-     */
-    TrustPreferences getTrustPreferences();
+  @Nullable TrustPreferences getTrustPreferences();
 }

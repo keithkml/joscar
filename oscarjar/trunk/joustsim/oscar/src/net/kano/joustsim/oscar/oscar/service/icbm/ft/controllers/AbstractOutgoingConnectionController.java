@@ -33,28 +33,34 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
+import javax.net.SocketFactory;
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 
 public abstract class AbstractOutgoingConnectionController
-        extends AbstractConnectionController {
+    extends AbstractConnectionController {
 
-    protected Socket createSocket() throws IOException {
-        setResolvingState();
-        InetAddress ip = getIpAddress();
-        if (ip == null) {
-            throw new IllegalStateException("no IP address");
-        }
-        setConnectingState();
-        //TODO: use proxy
-        return SocketChannel.open(new InetSocketAddress(ip, getConnectionPort())).socket();
+  protected Socket createSocket() throws IOException {
+    setResolvingState();
+    InetAddress ip = getIpAddress();
+    if (ip == null) {
+      throw new IllegalStateException("no IP address");
     }
+    setConnectingState();
+    SocketFactory factory = getRvConnection().getProxy().getSocketFactory();
+    int port = getConnectionPort();
+    if (factory == null) {
+      return SocketChannel.open(new InetSocketAddress(ip, port)).socket();
+    } else {
+      return factory.createSocket(ip, port);
+    }
+  }
 
-    protected abstract int getConnectionPort();
+  protected abstract int getConnectionPort();
 
 
-    protected abstract InetAddress getIpAddress() throws IOException;
+  protected abstract InetAddress getIpAddress() throws IOException;
 }

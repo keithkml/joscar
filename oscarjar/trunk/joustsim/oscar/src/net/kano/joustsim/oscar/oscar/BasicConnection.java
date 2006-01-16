@@ -37,48 +37,52 @@ package net.kano.joustsim.oscar.oscar;
 
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.flapcmd.LoginFlapCmd;
 import net.kano.joscar.flapcmd.SnacCommand;
+import net.kano.joscar.flapcmd.LoginFlapCmd;
 import net.kano.joscar.snac.SnacPacketEvent;
 import net.kano.joscar.snaccmd.conn.ServerReadyCmd;
 
 public class BasicConnection extends OscarConnection {
-    private ByteBlock cookie = null;
+  private ByteBlock cookie = null;
 
-    public BasicConnection(String host, int port) {
-        super(host, port);
+  public BasicConnection(String host, int port) {
+    super(host, port);
+  }
+
+  protected void beforeConnect() {
+    if (getCookie() == null) {
+      throw new IllegalStateException("You must set a cookie for a "
+          + "BasicConnection to connect");
     }
+  }
 
-    protected void beforeConnect() {
-        if (getCookie() == null) {
-            throw new IllegalStateException("You must set a cookie for a "
-                    + "BasicConnection to connect");
-        }
+  public synchronized ByteBlock getCookie() { return cookie; }
+
+  public synchronized void setCookie(ByteBlock cookie) {
+    checkFieldModify();
+    DefensiveTools.checkNull(cookie, "cookie");
+
+    this.cookie = cookie;
+  }
+
+
+  protected void beforeServicesConnected() {
+    sendFlap(new LoginFlapCmd(getCookie()));
+  }
+
+  protected void handleSnacPacket(SnacPacketEvent snacPacketEvent) {
+    try {
+      SnacCommand snac = snacPacketEvent.getSnacCommand();
+
+      if (snac instanceof ServerReadyCmd) {
+        ServerReadyCmd src = (ServerReadyCmd) snac;
+
+        setSnacFamilies(src.getSnacFamilies());
+      }
+    } finally {
+      // we call this last in case it was a ServerReadyCmd, and we want it to
+      // be processed by the BosService
+      super.handleSnacPacket(snacPacketEvent);
     }
-    
-    public synchronized ByteBlock getCookie() { return cookie; }
-
-    public synchronized void setCookie(ByteBlock cookie) {
-        checkFieldModify();
-        DefensiveTools.checkNull(cookie, "cookie");
-
-        this.cookie = cookie;
-    }
-
-    protected void connected() {
-        sendFlap(new LoginFlapCmd(getCookie()));
-    }
-
-    protected void handleSnacPacket(SnacPacketEvent snacPacketEvent) {
-        SnacCommand snac = snacPacketEvent.getSnacCommand();
-
-        if (snac instanceof ServerReadyCmd) {
-            ServerReadyCmd src = (ServerReadyCmd) snac;
-
-            setSnacFamilies(src.getSnacFamilies());
-        }
-        // we call this last in case it was a ServerReadyCmd, and we want it to
-        // be processed by the BosService
-        super.handleSnacPacket(snacPacketEvent);
-    }
+  }
 }

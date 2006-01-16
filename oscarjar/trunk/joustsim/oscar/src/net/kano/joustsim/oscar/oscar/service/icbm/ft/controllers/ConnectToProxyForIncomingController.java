@@ -46,7 +46,7 @@ public class ConnectToProxyForIncomingController
 
     protected void initializeBeforeStarting() throws IOException {
         super.initializeBeforeStarting();
-        RvSession rvSession = getFileTransfer().getRvSession();
+        RvSession rvSession = getRvConnection().getRvSession();
         LOGGER.fine("Sending file transfer accept command to "
                 + rvSession.getScreenname());
         rvSession.sendRv(new FileSendAcceptRvCmd());

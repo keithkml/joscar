@@ -46,8 +46,8 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileMapper;
 import static net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferImpl.KEY_REDIRECTED;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.IncomingFileTransfer;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.ProgressStatusProvider;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvSessionBasedTransfer;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.TransferPropertyHolder;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvSessionBasedConnection;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionPropertyHolder;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ChecksummingEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.CorruptTransferEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
@@ -78,7 +78,7 @@ public class ReceiveFileController extends TransferController {
             .getLogger(ReceiveFileController.class.getName());
 
     protected void transferInThread(final StreamInfo stream,
-            final TransferPropertyHolder transfer)
+            final RvConnectionPropertyHolder transfer)
             throws IOException, FailureEventException {
         SocketChannel socketChan = stream.getSocketChannel();
         socketChan.configureBlocking(true);
@@ -87,10 +87,10 @@ public class ReceiveFileController extends TransferController {
         OutputStream socketOut = stream.getOutputStream();
 
         List<File> files = new ArrayList<File>();
-        RvSessionBasedTransfer rvTransfer = (RvSessionBasedTransfer) transfer;
+        RvSessionBasedConnection rvConnection = (RvSessionBasedConnection) transfer;
         EventPost eventBasedTransfer = transfer.getEventPost();
         IncomingFileTransfer itransfer = (IncomingFileTransfer) transfer;
-        long icbmId = rvTransfer.getRvSession().getRvSessionId();
+        long icbmId = rvConnection.getRvSession().getRvSessionId();
         boolean good = false;
         boolean redirected = transfer.getTransferProperty(KEY_REDIRECTED)
                 == Boolean.TRUE;

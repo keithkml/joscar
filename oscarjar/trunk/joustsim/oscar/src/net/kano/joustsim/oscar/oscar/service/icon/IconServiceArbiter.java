@@ -96,7 +96,7 @@ public class IconServiceArbiter extends AbstractServiceArbiter<IconService>
                     synchronized(this) {
                         UploadIconRequest req = getRequest(UploadIconRequest.class);
                         if (req != null && req.getIconData() == data) {
-                            clearRequest(req);
+                            removeRequest(req);
                         }
                     }
                 }

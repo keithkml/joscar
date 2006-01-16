@@ -35,7 +35,7 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.ProgressStatusProvider;
 
-public class TransferringFileEvent extends FileTransferEvent {
+public class TransferringFileEvent extends RvConnectionEvent {
     private final TransferredFileInfo info;
     private final ProgressStatusProvider provider;
 

@@ -37,7 +37,7 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.Checksummer;
 
 import java.io.File;
 
-public class ChecksummingEvent extends FileTransferEvent {
+public class ChecksummingEvent extends RvConnectionEvent {
     private File file;
     private Checksummer checksummer;
 

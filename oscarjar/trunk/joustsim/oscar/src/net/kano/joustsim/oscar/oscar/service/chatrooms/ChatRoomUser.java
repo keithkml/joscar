@@ -37,33 +37,37 @@ import net.kano.joustsim.Screenname;
 import net.kano.joscar.snaccmd.FullUserInfo;
 
 public class ChatRoomUser {
-    private Screenname screenname;
-    private FullUserInfo info;
+  private Screenname screenname;
+  private FullUserInfo info;
 
-    public ChatRoomUser(FullUserInfo info) {
-        this.screenname = new Screenname(info.getScreenname());
-        this.info = info;
-    }
+  public ChatRoomUser(FullUserInfo info) {
+    this.screenname = new Screenname(info.getScreenname());
+    this.info = info;
+  }
 
-    public Screenname getScreenname() {
-        return screenname;
-    }
+  public Screenname getScreenname() {
+    return screenname;
+  }
 
-    public FullUserInfo getInfo() {
-        return info;
-    }
+  public FullUserInfo getInfo() {
+    return info;
+  }
 
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
 
-        ChatRoomUser that = (ChatRoomUser) o;
+    ChatRoomUser that = (ChatRoomUser) o;
 
-        return screenname.equals(that.screenname);
+    return screenname.equals(that.screenname);
 
-    }
+  }
 
-    public int hashCode() {
-        return screenname.hashCode();
-    }
+  public int hashCode() {
+    return screenname.hashCode();
+  }
+
+  public String toString() {
+    return screenname.getFormatted();
+  }
 }

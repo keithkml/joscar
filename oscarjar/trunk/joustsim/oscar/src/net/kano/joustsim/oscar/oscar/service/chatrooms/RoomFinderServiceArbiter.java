@@ -34,111 +34,145 @@
 package net.kano.joustsim.oscar.oscar.service.chatrooms;
 
 import net.kano.joscar.CopyOnWriteArrayList;
-import net.kano.joscar.snaccmd.FullRoomInfo;
 import net.kano.joscar.snaccmd.MiniRoomInfo;
+import net.kano.joscar.snaccmd.FullRoomInfo;
 import net.kano.joscar.snaccmd.rooms.RoomCommand;
 import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.oscar.oscar.OscarConnection;
+import net.kano.joustsim.oscar.oscar.BasicConnection;
 import net.kano.joustsim.oscar.oscar.service.AbstractServiceArbiter;
 import net.kano.joustsim.oscar.oscar.service.ServiceArbiterRequest;
 import net.kano.joustsim.oscar.oscar.service.ServiceArbitrationManager;
 import net.kano.joustsim.JavaTools;
 
-public class RoomFinderServiceArbiter extends AbstractServiceArbiter<RoomManagerService> {
-    private CopyOnWriteArrayList<RoomManagerServiceListener> listeners
-            = new CopyOnWriteArrayList<RoomManagerServiceListener>();
-    private RoomManagerServiceListener delegatingListener
-            = JavaTools.getDelegatingProxy(listeners, RoomManagerServiceListener.class);
+public class RoomFinderServiceArbiter
+    extends AbstractServiceArbiter<RoomFinderService> {
+  private CopyOnWriteArrayList<RoomFinderServiceListener> listeners
+      = new CopyOnWriteArrayList<RoomFinderServiceListener>();
+  private RoomFinderServiceListener delegatingListener
+      = JavaTools.getDelegatingProxy(listeners, RoomFinderServiceListener.class);
 
-    public RoomFinderServiceArbiter(ServiceArbitrationManager manager) {
-        super(manager);
+  public RoomFinderServiceArbiter(ServiceArbitrationManager manager) {
+    super(manager);
+    listeners.add(new RoomFinderServiceListener() {
+      public void handleNewChatRoom(RoomFinderService service,
+          FullRoomInfo roomInfo, BasicConnection connection) {
+        removeRequest(new JoinRoomRequest(roomInfo.getExchange(),
+            roomInfo.getName()));
+      }
+
+      public void handleRoomInfo(RoomFinderService service, MiniRoomInfo mini,
+          FullRoomInfo info) {
+        removeRequest(new GetInfoRequest(mini));
+      }
+    });
+  }
+
+  public int getSnacFamily() {
+    return RoomCommand.FAMILY_ROOM;
+  }
+
+  protected void handleRequestsDequeuedEvent(RoomFinderService service) {
+  }
+
+  protected void processRequest(RoomFinderService service,
+      ServiceArbiterRequest request) {
+    //TODO: fire events
+    if (request instanceof JoinRoomRequest) {
+      JoinRoomRequest req = (JoinRoomRequest) request;
+      service.joinChatRoom(req.getExchange(), req.getRoomName());
+
+    } else if (request instanceof AcceptInvitationRequest) {
+      AcceptInvitationRequest invitationRequest
+          = (AcceptInvitationRequest) request;
+      service.joinChatRoom(invitationRequest.getRoomInfo());
+      
+    } else if (request instanceof GetInfoRequest) {
+      GetInfoRequest infoRequest = (GetInfoRequest) request;
+      service.requestRoomInfo(infoRequest.getRoomInfo());
+    }
+  }
+
+  protected RoomFinderService createServiceInstance(
+      AimConnection aimConnection, OscarConnection conn) {
+    RoomFinderService service = new RoomFinderService(aimConnection, conn);
+    service.addRoomManagerServiceListener(delegatingListener);
+    return service;
+  }
+
+  public void joinChatRoom(int exchange, String name) {
+    addRequest(new JoinRoomRequest(exchange, name));
+  }
+
+  public void joinChatRoom(FullRoomInfo roomInfo) {
+    addRequest(new AcceptInvitationRequest(roomInfo));
+  }
+
+  public void addRoomManagerServiceListener(RoomFinderServiceListener l) {
+    listeners.addIfAbsent(l);
+  }
+
+  public void removeRoomManagerServiceListener(RoomFinderServiceListener l) {
+    listeners.remove(l);
+  }
+
+  public void getRoomInfo(MiniRoomInfo roomInfo) {
+    addRequest(new GetInfoRequest(roomInfo));
+  }
+
+  private static class JoinRoomRequest implements ServiceArbiterRequest {
+    private final int exchange;
+    private final String roomName;
+
+    public JoinRoomRequest(int exchange, String name) {
+      this.exchange = exchange;
+      this.roomName = name;
     }
 
-    public int getSnacFamily() {
-        return RoomCommand.FAMILY_ROOM;
+    public int getExchange() { return exchange; }
+
+    public String getRoomName() { return roomName; }
+
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+
+      JoinRoomRequest that = (JoinRoomRequest) o;
+
+      if (exchange != that.exchange) return false;
+      if (!roomName.equals(that.roomName)) return false;
+
+      return true;
     }
 
-    protected void handleRequestsDequeuedEvent(RoomManagerService service) {
+    public int hashCode() {
+      int result = exchange;
+      result = 29 * result + roomName.hashCode();
+      return result;
+    }
+  }
+
+  private static class AcceptInvitationRequest
+      implements ServiceArbiterRequest {
+    private final FullRoomInfo roomInfo;
+
+    public AcceptInvitationRequest(FullRoomInfo roomInfo) {
+      this.roomInfo = roomInfo;
     }
 
-    protected void processRequest(RoomManagerService service,
-            ServiceArbiterRequest request) {
-        if (request instanceof JoinRoomRequest) {
-            JoinRoomRequest req = (JoinRoomRequest) request;
-            service.joinChatRoom(req.getExchange(), req.getRoomName());
+    public FullRoomInfo getRoomInfo() { return roomInfo; }
+  }
 
-        } else if (request instanceof AcceptInvitationRequest) {
-            AcceptInvitationRequest invitationRequest
-                    = (AcceptInvitationRequest) request;
-            service.joinChatRoom(invitationRequest.getRoomInfo());
-        }
+  private static class GetInfoRequest implements ServiceArbiterRequest {
+    private MiniRoomInfo roomInfo;
+
+    public GetInfoRequest(MiniRoomInfo roomInfo) {
+      this.roomInfo = roomInfo;
     }
 
-    protected RoomManagerService createServiceInstance(
-            AimConnection aimConnection, OscarConnection conn) {
-        RoomManagerService service = new RoomManagerService(aimConnection, conn);
-        service.addRoomManagerServiceListener(delegatingListener);
-        return service;
+    public MiniRoomInfo getRoomInfo() {
+      return roomInfo;
     }
+  }
 
-    public void joinChatRoom(int exchange, String name) {
-        addRequest(new JoinRoomRequest(exchange, name));
-    }
-
-    public void joinChatRoom(MiniRoomInfo roomInfo) {
-        addRequest(new AcceptInvitationRequest(roomInfo));
-    }
-
-    public void addRoomManagerServiceListener(
-            RoomManagerServiceListener l) {
-        listeners.addIfAbsent(l);
-    }
-
-    public void removeRoomManagerServiceListener(
-            RoomManagerServiceListener l) {
-        listeners.remove(l);
-    }
-
-    private static class JoinRoomRequest implements ServiceArbiterRequest {
-        private final int exchange;
-        private final String roomName;
-
-        public JoinRoomRequest(int exchange, String name) {
-            this.exchange = exchange;
-            this.roomName = name;
-        }
-
-        public int getExchange() { return exchange; }
-
-        public String getRoomName() { return roomName; }
-
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            final JoinRoomRequest that = (JoinRoomRequest) o;
-
-            if (exchange != that.exchange) return false;
-            if (!roomName.equals(that.roomName)) return false;
-
-            return true;
-        }
-
-        public int hashCode() {
-            int result;
-            result = exchange;
-            result = 29 * result + roomName.hashCode();
-            return result;
-        }
-    }
-
-    private static class AcceptInvitationRequest implements ServiceArbiterRequest {
-        private final MiniRoomInfo roomInfo;
-
-        public AcceptInvitationRequest(MiniRoomInfo roomInfo) {
-            this.roomInfo = roomInfo;
-        }
-
-        public MiniRoomInfo getRoomInfo() { return roomInfo; }
-    }
 }

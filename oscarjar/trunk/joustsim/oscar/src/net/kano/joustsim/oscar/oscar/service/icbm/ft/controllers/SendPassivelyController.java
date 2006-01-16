@@ -36,15 +36,15 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 import net.kano.joscar.rvcmd.InvitationMessage;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferImpl;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.ConnectionType;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionImpl;
 
 import java.io.IOException;
 import java.net.InetAddress;
 
 public class SendPassivelyController extends PassiveConnectionController {
     protected void sendRequest() throws IOException {
-        FileTransferImpl transfer = getFileTransfer();
+        RvConnectionImpl transfer = getRvConnection();
         InvitationMessage msg = transfer.getInvitationMessage();
         RvConnectionInfo connInfo = RvConnectionInfo
                 .createForOutgoingRequest(InetAddress.getLocalHost(),

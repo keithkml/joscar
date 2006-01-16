@@ -33,44 +33,164 @@
 
 package net.kano.joustsim.oscar.oscar.service.chatrooms;
 
+import net.kano.joscar.CopyOnWriteArrayList;
+import net.kano.joscar.rv.RvProcessor;
+import net.kano.joscar.rv.RvSession;
+import net.kano.joscar.rvcmd.chatinvite.ChatInvitationRvCmd;
+import net.kano.joscar.rvcmd.InvitationMessage;
+import net.kano.joscar.net.ClientConn;
+import net.kano.joscar.snaccmd.FullRoomInfo;
 import net.kano.joscar.snaccmd.MiniRoomInfo;
+import net.kano.joscar.snaccmd.chat.ChatCommand;
 import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.oscar.oscar.BasicConnection;
+import net.kano.joustsim.oscar.oscar.OscarConnListener;
+import net.kano.joustsim.oscar.oscar.OscarConnStateEvent;
+import net.kano.joustsim.oscar.oscar.OscarConnection;
+import net.kano.joustsim.oscar.oscar.service.Service;
+import net.kano.joustsim.Screenname;
+
+import java.util.Set;
+import java.util.Collections;
+import java.util.logging.Logger;
 
 public class ChatRoomSession {
-    private AimConnection aimConnection;
-    private BasicConnection connection;
-    private ChatRoomService service;
-    private MiniRoomInfo roomInfo;
-    private ChatInvitation invitation;
+  private static final Logger LOGGER = Logger
+      .getLogger(ChatRoomSession.class.getName());
 
-    public ChatRoomSession(AimConnection aimConnection,
-            BasicConnection connection, MiniRoomInfo roomInfo) {
-        this.aimConnection = aimConnection;
-        this.connection = connection;
-        this.roomInfo = roomInfo;
-    }
+  private AimConnection aimConnection;
+  private BasicConnection connection;
+  private ChatRoomService service;
+  private FullRoomInfo roomInfo;
+  private ChatInvitationImpl invitation;
+  private ChatSessionState state = ChatSessionState.INITIALIZING;
+  private CopyOnWriteArrayList<ChatRoomSessionListener> listeners
+      = new CopyOnWriteArrayList<ChatRoomSessionListener>();
 
-    public void sendMessage(String msg) throws EncodingException {
-//        String contentType = roomInfo.getContentType();
-//        if (contentType.equals(ChatMsg.CONTENTTYPE_DEFAULT)) {
-//            service.sendMessage(msg);
-//        } else if (contentType.equals(ChatMsg.CONTENTTYPE_SECURE)) {
-//
-//        }
-        //TODO: send message
-        throw new InternalError();
-    }
+  public ChatRoomSession(AimConnection aimConnection) {
+    this.aimConnection = aimConnection;
+  }
 
-    public void setInvitation(ChatInvitation invitation) {
-        this.invitation = invitation;
-    }
+  public AimConnection getAimConnection() {
+    return aimConnection;
+  }
 
-    public ChatInvitation getInvitation() {
-        return invitation;
-    }
+  void setRoomInfo(FullRoomInfo roomInfo) {
+    this.roomInfo = roomInfo;
+  }
 
-    public MiniRoomInfo getRoomInfo() {
-        return roomInfo;
+  public BasicConnection getConnection() {
+    return connection;
+  }
+
+  public void addListener(ChatRoomSessionListener listener) {
+    listeners.add(listener);
+  }
+
+  public void removeListener(ChatRoomSessionListener listener) {
+    listeners.remove(listener);
+  }
+
+  void setConnection(BasicConnection connection) {
+    connection.addOscarListener(new OscarConnListener() {
+      public void registeredSnacFamilies(OscarConnection conn) {
+      }
+
+      public void connStateChanged(OscarConnection conn,
+          OscarConnStateEvent event) {
+        ClientConn.State state = event.getClientConnEvent().getNewState();
+        if (state == ClientConn.STATE_FAILED) {
+          setState(ChatSessionState.FAILED);
+        } else if (state == ClientConn.STATE_NOT_CONNECTED) {
+          setState(ChatSessionState.CLOSED);
+        }
+      }
+
+      public void allFamiliesReady(OscarConnection conn) {
+        Service service = conn.getService(ChatCommand.FAMILY_CHAT);
+        if (!(service instanceof ChatRoomService)) {
+          LOGGER.severe("No chat service for chat connection " + conn + "! - "
+              + service);
+          conn.disconnect();
+
+        } else {
+          ChatRoomService chatService = (ChatRoomService) service;
+          chatService.addChatRoomListener(new ChatRoomServiceListener() {
+            public void handleUsersJoined(ChatRoomService service,
+                Set<ChatRoomUser> added) {
+              for (ChatRoomSessionListener l : listeners) {
+                l.handleUsersJoined(ChatRoomSession.this, added);
+              }
+            }
+
+            public void handleUsersLeft(ChatRoomService service,
+                Set<ChatRoomUser> removed) {
+              for (ChatRoomSessionListener l : listeners) {
+                l.handleUsersLeft(ChatRoomSession.this, removed);
+              }
+            }
+
+            public void handleIncomingMessage(ChatRoomService service,
+                ChatRoomUser user, ChatMessage message) {
+              for (ChatRoomSessionListener l : listeners) {
+                l.handleIncomingMessage(ChatRoomSession.this, user, message);
+              }
+            }
+          });
+          setState(ChatSessionState.INROOM);
+        }
+      }
+    });
+    this.connection = connection;
+  }
+
+  public void sendMessage(String msg) throws EncodingException {
+    service.sendMessage(msg);
+  }
+
+  void setInvitation(ChatInvitationImpl invitation) {
+    this.invitation = invitation;
+  }
+
+  public ChatInvitation getInvitation() {
+    return invitation;
+  }
+
+  ChatInvitationImpl getInvitationImpl() { return invitation; }
+
+  public FullRoomInfo getRoomInfo() {
+    return roomInfo;
+  }
+
+  void setService(ChatRoomService service) {
+    this.service = service;
+  }
+
+  public synchronized ChatSessionState getState() {
+    return state;
+  }
+
+  void setState(ChatSessionState state) {
+    ChatSessionState oldState;
+    synchronized (this) {
+      oldState = this.state;
+      if (state == oldState) return;
+      this.state = state;
     }
+    for (ChatRoomSessionListener listener : listeners) {
+      listener.handleStateChange(this, oldState, state);
+    }
+  }
+
+  public Set<ChatRoomUser> getUsers() {
+    if (service == null) return Collections.emptySet();
+    return service.getUsers();
+  }
+
+  public void invite(Screenname screenname, String message) {
+    RvProcessor rvProcessor = aimConnection.getIcbmService().getRvProcessor();
+    RvSession session = rvProcessor.createRvSession(screenname.getNormal());
+    session.sendRv(new ChatInvitationRvCmd(new MiniRoomInfo(roomInfo),
+        message == null ? null: new InvitationMessage(message)));
+  }
 }

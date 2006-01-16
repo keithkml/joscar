@@ -49,7 +49,7 @@ public class FileTransferTools {
         return random.nextLong();
     }
 
-    public static Timer getTimer(FileTransfer transfer) {
+    public static Timer getTimer(RvConnection transfer) {
         if (transfer instanceof CachedTimerHolder) {
             CachedTimerHolder timerHolder = (CachedTimerHolder) transfer;
             return timerHolder.getTimer();

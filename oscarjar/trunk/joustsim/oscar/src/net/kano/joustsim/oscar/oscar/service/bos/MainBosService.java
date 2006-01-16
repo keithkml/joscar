@@ -46,6 +46,7 @@ import net.kano.joscar.snaccmd.CertificateInfo;
 import net.kano.joscar.snaccmd.ExtraInfoBlock;
 import net.kano.joscar.snaccmd.ExtraInfoData;
 import net.kano.joscar.snaccmd.FullUserInfo;
+import net.kano.joscar.snaccmd.FullRoomInfo;
 import net.kano.joscar.snaccmd.MiniRoomInfo;
 import net.kano.joscar.snaccmd.chat.ChatCommand;
 import net.kano.joscar.snaccmd.conn.ExtraInfoAck;
@@ -67,156 +68,158 @@ import java.util.List;
 import java.util.logging.Logger;
 
 //TOLATER: many commands send back a YourInfoCmd. we should make this more MVC so setIdleSince does not write to a field, but an incoming YourInfoCmd does not
+
 public class MainBosService extends BosService {
-    private static final Logger LOGGER = Logger
-            .getLogger(MainBosService.class.getName());
+  private static final Logger LOGGER = Logger
+      .getLogger(MainBosService.class.getName());
 
-    private CopyOnWriteArrayList<MainBosServiceListener> listeners
-            = new CopyOnWriteArrayList<MainBosServiceListener>();
-    private Date idleSince = null;
-    private boolean visibleStatus = true;
-    private String availMsg = null;
+  private CopyOnWriteArrayList<MainBosServiceListener> listeners
+      = new CopyOnWriteArrayList<MainBosServiceListener>();
+  private Date idleSince = null;
+  private boolean visibleStatus = true;
+  private String availMsg = null;
 
-    public MainBosService(AimConnection aimConnection,
-            OscarConnection oscarConnection) {
-        super(aimConnection, oscarConnection);
+  public MainBosService(AimConnection aimConnection,
+      OscarConnection oscarConnection) {
+    super(aimConnection, oscarConnection);
+  }
+
+  protected void serverReady() {
+    List<ExtraInfoBlock> blocks = Arrays.asList(
+        new ExtraInfoBlock(ExtraInfoBlock.TYPE_CERTINFO_HASHA,
+            new ExtraInfoData(ExtraInfoData.FLAG_HASH_PRESENT,
+                CertificateInfo.HASHA_DEFAULT)),
+
+        new ExtraInfoBlock(ExtraInfoBlock.TYPE_CERTINFO_HASHB,
+            new ExtraInfoData(ExtraInfoData.FLAG_HASH_PRESENT,
+                CertificateInfo.HASHB_DEFAULT)));
+    sendSnac(new SetEncryptionInfoCmd(blocks));
+    sendSnac(new MyInfoRequest());
+  }
+
+  public void handleSnacPacket(SnacPacketEvent snacPacketEvent) {
+    SnacCommand snac = snacPacketEvent.getSnacCommand();
+
+    if (snac instanceof YourInfoCmd) {
+      YourInfoCmd yic = (YourInfoCmd) snac;
+      for (MainBosServiceListener listener : listeners) {
+        listener.handleYourInfo(this, yic.getUserInfo());
+      }
+    } else if (snac instanceof ExtraInfoAck) {
+      ExtraInfoAck ack = (ExtraInfoAck) snac;
+      for (MainBosServiceListener listener : listeners) {
+        listener.handleYourExtraInfo(ack.getExtraInfos());
+      }
     }
 
-    protected void serverReady() {
-        List<ExtraInfoBlock> blocks = Arrays.asList(
-                new ExtraInfoBlock(ExtraInfoBlock.TYPE_CERTINFO_HASHA,
-                        new ExtraInfoData(ExtraInfoData.FLAG_HASH_PRESENT,
-                                CertificateInfo.HASHA_DEFAULT)),
+    super.handleSnacPacket(snacPacketEvent);
+  }
 
-                new ExtraInfoBlock(ExtraInfoBlock.TYPE_CERTINFO_HASHB,
-                        new ExtraInfoData(ExtraInfoData.FLAG_HASH_PRESENT,
-                                CertificateInfo.HASHB_DEFAULT)));
-        sendSnac(new SetEncryptionInfoCmd(blocks));
-        sendSnac(new MyInfoRequest());
+
+  public void setIdleSince(@NotNull Date at) throws IllegalArgumentException {
+    DefensiveTools.checkNull(at, "at");
+
+    long idlems = System.currentTimeMillis() - at.getTime();
+    if (idlems < 0) {
+      throw new IllegalArgumentException("attempted to set idle time "
+          + "to " + at + ", which was " + idlems + "ms ago");
     }
+    long idleSecs = idlems / 1000;
 
-    public void handleSnacPacket(SnacPacketEvent snacPacketEvent) {
-        SnacCommand snac = snacPacketEvent.getSnacCommand();
+    setIdleSinceDate(at);
+    sendSnac(new SetIdleCmd(idleSecs));
+  }
 
-        if (snac instanceof YourInfoCmd) {
-            YourInfoCmd yic = (YourInfoCmd) snac;
-            for (MainBosServiceListener listener : listeners) {
-                listener.handleYourInfo(this, yic.getUserInfo());
-            }
-        } else if (snac instanceof ExtraInfoAck) {
-            ExtraInfoAck ack = (ExtraInfoAck) snac;
-            for (MainBosServiceListener listener : listeners) {
-                listener.handleYourExtraInfo(ack.getExtraInfos());
-            }
+  public void setUnidle() {
+    setIdleSinceDate(null);
+    sendSnac(new SetIdleCmd(0));
+  }
+
+  private synchronized void setIdleSinceDate(Date since) {
+    this.idleSince = since;
+  }
+
+  public synchronized Date getIdleSince() { return idleSince; }
+
+  public synchronized void setVisibleStatus(boolean visible) {
+    if (visibleStatus == visible) return;
+    this.visibleStatus = visible;
+    long flag = visibleStatus ? FullUserInfo.ICQSTATUS_DEFAULT
+        : FullUserInfo.ICQSTATUS_INVISIBLE;
+    sendSnac(new SetExtraInfoCmd(flag));
+  }
+
+  public synchronized void setStatusMessage(@Nullable String msg) {
+    if (availMsg == null ? msg == null : availMsg.equals(msg)) return;
+    availMsg = msg;
+    String useMsg = availMsg == null ? "" : availMsg;
+    ExtraInfoBlock availBlock = new ExtraInfoBlock(ExtraInfoBlock.TYPE_AVAILMSG,
+        ExtraInfoData.getAvailableMessageBlock(useMsg));
+    sendSnac(new SetExtraInfoCmd(Arrays.asList(availBlock)));
+    ExtraInfoBlock secret = new ExtraInfoBlock(0x0009,
+        new ExtraInfoData(ExtraInfoData.FLAG_AVAILMSG_PRESENT,
+            ByteBlock.wrap(new byte[4])));
+    sendSnac(new SetExtraInfoCmd(Arrays.asList(secret)));
+  }
+
+  public void addMainBosServiceListener(MainBosServiceListener listener) {
+    listeners.add(listener);
+  }
+
+  public void removeMainBosServiceListener(MainBosServiceListener listener) {
+    listeners.remove(listener);
+  }
+
+  public void requestService(int service,
+      OpenedExternalServiceListener listener) {
+    sendSnacRequest(new ServiceRequest(service),
+        new ServiceRequestResponseListener(listener));
+  }
+
+  public void requestChatService(final FullRoomInfo info,
+      final OpenedChatRoomServiceListener listener) {
+    OpenedExternalServiceListener internalListener
+        = new OpenedExternalServiceListener() {
+      public void handleServiceRedirect(MainBosService service,
+          int serviceFamily, String host, int port,
+          ByteBlock flapCookie) {
+        if (serviceFamily != ChatCommand.FAMILY_CHAT) {
+          LOGGER.warning("server returned service "
+              + serviceFamily + " when we requested " + service);
         }
+        listener.handleChatRoomRedirect(service, info, host,
+            port, flapCookie);
+      }
+    };
+    sendSnacRequest(new ServiceRequest(new MiniRoomInfo(info)),
+        new ServiceRequestResponseListener(internalListener));
+  }
 
-        super.handleSnacPacket(snacPacketEvent);
+  private class ServiceRequestResponseListener extends SnacRequestAdapter {
+    private final OpenedExternalServiceListener listener;
+
+    public ServiceRequestResponseListener(
+        OpenedExternalServiceListener listener) {
+      this.listener = listener;
     }
 
-
-    public void setIdleSince(@NotNull Date at) throws IllegalArgumentException {
-        DefensiveTools.checkNull(at, "at");
-
-        long idlems = System.currentTimeMillis() - at.getTime();
-        if (idlems < 0) {
-            throw new IllegalArgumentException("attempted to set idle time "
-                    + "to " + at + ", which was " + idlems + "ms ago");
-        }
-        long idleSecs = idlems / 1000;
-
-        setIdleSinceDate(at);
-        sendSnac(new SetIdleCmd(idleSecs));
-    }
-
-    public void setUnidle() {
-        setIdleSinceDate(null);
-        sendSnac(new SetIdleCmd(0));
-    }
-
-    private synchronized void setIdleSinceDate(Date since) {
-        this.idleSince = since;
-    }
-
-    public synchronized Date getIdleSince() { return idleSince; }
-
-    public synchronized void setVisibleStatus(boolean visible) {
-        if (visibleStatus == visible) return;
-        this.visibleStatus = visible;
-        long flag = visibleStatus ? FullUserInfo.ICQSTATUS_DEFAULT
-                : FullUserInfo.ICQSTATUS_INVISIBLE;
-        sendSnac(new SetExtraInfoCmd(flag));
-    }
-
-    public synchronized void setStatusMessage(@Nullable String msg) {
-        if (availMsg == null ? msg == null : availMsg.equals(msg)) return;
-        availMsg = msg;
-        String useMsg = availMsg == null ? "" : availMsg;
-        ExtraInfoBlock availBlock = new ExtraInfoBlock(ExtraInfoBlock.TYPE_AVAILMSG,
-                ExtraInfoData.getAvailableMessageBlock(useMsg));
-        sendSnac(new SetExtraInfoCmd(Arrays.asList(availBlock)));
-        ExtraInfoBlock secretBlock = new ExtraInfoBlock(0x0009,
-                new ExtraInfoData(ExtraInfoData.FLAG_AVAILMSG_PRESENT,
-                        ByteBlock.wrap(new byte[4])));
-        sendSnac(new SetExtraInfoCmd(Arrays.asList(secretBlock)));
-    }
-
-    public void addMainBosServiceListener(MainBosServiceListener listener) {
-        listeners.add(listener);
-    }
-
-    public void removeMainBosServiceListener(MainBosServiceListener listener) {
-        listeners.remove(listener);
-    }
-
-    public void requestService(int service,
-            OpenedExternalServiceListener listener) {
-        sendSnacRequest(new ServiceRequest(service),
-                new ServiceRequestResponseListener(listener));
-    }
-
-    public void requestChatService(final MiniRoomInfo miniRoomInfo,
-            final OpenedChatRoomServiceListener listener) {
-        OpenedExternalServiceListener internalListener
-                = new OpenedExternalServiceListener() {
-            public void handleServiceRedirect(MainBosService service,
-                    int serviceFamily, String host, int port,
-                    ByteBlock flapCookie) {
-                if (serviceFamily != ChatCommand.FAMILY_CHAT) {
-                    LOGGER.warning("server returned service "
-                            + serviceFamily + " when we requested " + service);
-                }
-                listener.handleChatRoomRedirect(service, miniRoomInfo, host,
-                        port, flapCookie);
-            }
-        };
-        sendSnacRequest(new ServiceRequest(miniRoomInfo),
-                new ServiceRequestResponseListener(internalListener));
-    }
-
-    private class ServiceRequestResponseListener extends SnacRequestAdapter {
-        private final OpenedExternalServiceListener listener;
-
-        public ServiceRequestResponseListener(OpenedExternalServiceListener listener) {
-            this.listener = listener;
-        }
-
-        public void handleResponse(SnacResponseEvent e) {
-            SnacCommand cmd = e.getSnacCommand();
-            if (cmd instanceof ServiceRedirect) {
-                ServiceRedirect redirect = (ServiceRedirect) cmd;
-                int returnedFamily = redirect.getSnacFamily();
+    public void handleResponse(SnacResponseEvent e) {
+      SnacCommand cmd = e.getSnacCommand();
+      if (cmd instanceof ServiceRedirect) {
+        ServiceRedirect redirect = (ServiceRedirect) cmd;
+        int returnedFamily = redirect.getSnacFamily();
 //                if (service != returnedFamily) {
 //                    LOGGER.warning("server returned service "
 //                            + returnedFamily + " when we requested " + service);
 //                }
-                listener.handleServiceRedirect(MainBosService.this,
-                        returnedFamily, redirect.getRedirectHost(),
-                        redirect.getRedirectPort(),
-                        redirect.getCookie());
-            } else {
-                LOGGER.warning("unexpected response to service request: "
-                        + cmd);
-            }
-        }
+        listener.handleServiceRedirect(MainBosService.this,
+            returnedFamily, redirect.getRedirectHost(),
+            redirect.getRedirectPort(),
+            redirect.getCookie());
+      } else {
+        LOGGER.warning("unexpected response to service request: "
+            + cmd);
+      }
     }
+  }
 }

@@ -35,121 +35,155 @@ package net.kano.joustsim.oscar.oscar.service;
 
 import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.oscar.oscar.OscarConnection;
+import net.kano.joustsim.oscar.oscar.OscarConnListener;
+import net.kano.joustsim.oscar.oscar.OscarConnStateEvent;
+import net.kano.joustsim.JavaTools;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.Iterator;
+import java.util.logging.Logger;
 
 public abstract class AbstractServiceArbiter<S extends Service>
-        implements ServiceArbiter<S> {
-    protected final ServiceArbitrationManager manager;
-    protected Set<ServiceArbiterRequest> requests
-            = new LinkedHashSet<ServiceArbiterRequest>();
-    protected S currentService = null;
+    implements ServiceArbiter<S> {
+  private static final Logger LOGGER = Logger
+      .getLogger(AbstractServiceArbiter.class.getName());
 
-    public AbstractServiceArbiter(ServiceArbitrationManager manager) {
-        this.manager = manager;
+  protected final ServiceArbitrationManager manager;
+  protected Set<ServiceArbiterRequest> requests
+      = new LinkedHashSet<ServiceArbiterRequest>();
+  protected S currentService = null;
+
+  public AbstractServiceArbiter(ServiceArbitrationManager manager) {
+    this.manager = manager;
+  }
+
+  public abstract int getSnacFamily();
+
+  public synchronized boolean shouldKeepAlive() {
+    return !requests.isEmpty();
+  }
+
+  private void dequeueRequests(S service) {
+    List<ServiceArbiterRequest> requests;
+    synchronized (this) {
+      requests = new ArrayList<ServiceArbiterRequest>(this.requests);
     }
-
-    public abstract int getSnacFamily();
-
-    public synchronized boolean shouldKeepAlive() {
-        return !requests.isEmpty();
+    for (ServiceArbiterRequest request : requests) {
+      processRequest(service, request);
     }
+    handleRequestsDequeuedEvent(service);
+  }
 
-    private void dequeueRequests(S service) {
-        List<ServiceArbiterRequest> requests;
-        synchronized (this) {
-            requests = new ArrayList<ServiceArbiterRequest>(this.requests);
+  protected abstract void handleRequestsDequeuedEvent(S service);
+
+  protected abstract void processRequest(S service,
+      ServiceArbiterRequest request);
+
+  public final S createService(AimConnection aimConnection,
+      OscarConnection conn) {
+    final S service = createServiceInstance(aimConnection, conn);
+    conn.addOscarListener(new OscarConnListener() {
+      public void registeredSnacFamilies(OscarConnection conn) {
+        System.out.println("registered snac families");
+      }
+
+      public void connStateChanged(OscarConnection conn,
+          OscarConnStateEvent event) {
+        System.out.println("Conn state changed for " + AbstractServiceArbiter.this + ": "
+            + event.getClientConnEvent().getNewState());
+      }
+
+      public void allFamiliesReady(OscarConnection conn) {
+        LOGGER.fine("Dequeueing requests upon connecting to " + service);
+        dequeueRequests(service);
+      }
+    });
+    service.addServiceListener(new ServiceListener() {
+      public void handleServiceReady(Service s) {
+        synchronized (AbstractServiceArbiter.this) {
+          currentService = service;
         }
-        for (ServiceArbiterRequest request : requests) {
-            processRequest(service, request);
+      }
+
+      public void handleServiceFinished(Service s) {
+        synchronized (AbstractServiceArbiter.this) {
+          if (currentService == service) {
+            currentService = null;
+          }
         }
-        handleRequestsDequeuedEvent(service);
-    }
+      }
+    });
+    return service;
+  }
 
-    protected abstract void handleRequestsDequeuedEvent(S service);
+  protected abstract S createServiceInstance(AimConnection aimConnection,
+      OscarConnection conn);
 
-    protected abstract void processRequest(S service,
-            ServiceArbiterRequest request);
+  protected final void addRequest(ServiceArbiterRequest req) {
+    addRequestImpl(req, null);
+  }
 
-    public final S createService(AimConnection aimConnection,
-            OscarConnection conn) {
-        final S service = createServiceInstance(aimConnection, conn);
-        service.addServiceListener(new ServiceListener() {
-            public void handleServiceReady(Service s) {
-                synchronized(AbstractServiceArbiter.this) {
-                    currentService = service;
-                }
-                dequeueRequests(service);
-            }
-
-            public void handleServiceFinished(Service s) {
-                synchronized(AbstractServiceArbiter.this) {
-                    if (currentService == service) {
-                        currentService = null;
-                    }
-                }
-            }
-        });
-        return service;
-    }
-
-    protected abstract S createServiceInstance(AimConnection aimConnection,
-            OscarConnection conn);
-
-    protected final void addRequest(ServiceArbiterRequest req) {
-        addRequestImpl(req, null);
-    }
-
-    private <R extends ServiceArbiterRequest> void addRequestImpl(R req,
-            @Nullable Class<R> unique) {
-        S service;
-        synchronized (this) {
-            if (unique != null) {
-                for (Iterator<ServiceArbiterRequest> it = requests
-                        .iterator(); it.hasNext();) {
-                    if (unique.isInstance(it.next())) it.remove();;
-                }
-            }
-            requests.add(req);
-            service = currentService;
+  private <R extends ServiceArbiterRequest> void addRequestImpl(R req,
+      @Nullable Class<R> unique) {
+    S service;
+    synchronized (this) {
+      if (unique != null) {
+        for (Iterator<ServiceArbiterRequest> it = requests
+            .iterator(); it.hasNext();) {
+          if (unique.isInstance(it.next())) it.remove();
+          ;
         }
-        if (service == null) {
-            manager.openService(this);
+      }
+      requests.add(req);
+      service = currentService;
+    }
+    if (service == null) {
+      manager.openService(this);
+    } else {
+      processRequest(service, req);
+    }
+  }
+
+  protected <R extends ServiceArbiterRequest> void addUniqueRequest(R req,
+      Class<R> unique) {
+    if (unique == null) {
+      throw new IllegalArgumentException("class cannot be null");
+    }
+    addRequestImpl(req, unique);
+  }
+
+  protected synchronized @Nullable <E> E getRequest(Class<E> cls) {
+    E found = null;
+    for (ServiceArbiterRequest request : requests) {
+      if (cls.isInstance(request)) {
+        if (found == null) {
+          found = JavaTools.cast(cls, request);
         } else {
-            processRequest(service, req);
+          throw new IllegalArgumentException("Multiple instances of "
+              + cls + " in requests: " + requests);
         }
+      }
     }
+    return found;
+  }
 
-    protected <R extends ServiceArbiterRequest> void addUniqueRequest(R req,
-            Class<R> unique) {
-        if (unique == null) {
-            throw new IllegalArgumentException("class cannot be null");
-        }
-        addRequestImpl(req, unique);
-    }
+  protected synchronized void removeRequest(ServiceArbiterRequest req) {
+    //noinspection StatementWithEmptyBody
+    while (requests.remove(req)) ;
+  }
 
-    protected synchronized @Nullable <E> E getRequest(Class<E> cls) {
-        E found = null;
-        for (ServiceArbiterRequest request : requests) {
-            if (cls.isInstance(request)) {
-                if (found == null) {
-                    found = cls.cast(request);
-                } else {
-                    throw new IllegalArgumentException("Multiple instances of "
-                            + cls + " in requests: " + requests);
-                }
-            }
-        }
-        return found;
+  protected synchronized void removeRequests(RequestProcessor processor) {
+    for (Iterator it = requests.iterator(); it.hasNext();) {
+      ServiceArbiterRequest request = (ServiceArbiterRequest) it.next();
+      if (processor.shouldRemove(request)) it.remove();
     }
+  }
 
-    protected synchronized void clearRequest(ServiceArbiterRequest req) {
-        //noinspection StatementWithEmptyBody
-        while (requests.remove(req));
-    }
+  protected interface RequestProcessor {
+    boolean shouldRemove(ServiceArbiterRequest request);
+  }
 }

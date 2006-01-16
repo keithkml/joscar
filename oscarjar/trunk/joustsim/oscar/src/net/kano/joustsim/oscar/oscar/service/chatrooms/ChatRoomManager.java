@@ -33,352 +33,436 @@
 
 package net.kano.joustsim.oscar.oscar.service.chatrooms;
 
-import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.CopyOnWriteArrayList;
+import net.kano.joscar.OscarTools;
 import net.kano.joscar.rv.RecvRvEvent;
 import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rv.RvSnacResponseEvent;
 import net.kano.joscar.rvcmd.chatinvite.ChatInvitationRvCmd;
+import net.kano.joscar.rvcmd.chatinvite.ChatInviteRejectRvCmd;
 import net.kano.joscar.snaccmd.CapabilityBlock;
+import net.kano.joscar.snaccmd.FullRoomInfo;
 import net.kano.joscar.snaccmd.MiniRoomInfo;
+import net.kano.joscar.snaccmd.chat.ChatMsg;
 import net.kano.joscar.snaccmd.icbm.RvCommand;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.AbstractCapabilityHandler;
 import net.kano.joustsim.oscar.AimConnection;
-import net.kano.joustsim.oscar.BuddyInfoManager;
 import net.kano.joustsim.oscar.CapabilityManager;
 import net.kano.joustsim.oscar.oscar.BasicConnection;
 import net.kano.joustsim.oscar.oscar.NoBuddyKeysException;
-import net.kano.joustsim.oscar.oscar.OscarConnection;
 import net.kano.joustsim.oscar.oscar.service.Service;
 import net.kano.joustsim.oscar.oscar.service.ServiceListener;
 import net.kano.joustsim.oscar.oscar.service.icbm.IcbmService;
 import net.kano.joustsim.oscar.oscar.service.icbm.RendezvousCapabilityHandler;
 import net.kano.joustsim.oscar.oscar.service.icbm.RendezvousSessionHandler;
-import net.kano.joustsim.trust.BuddyCertificateInfo;
-import net.kano.joustsim.trust.KeyPair;
-import net.kano.joustsim.trust.PrivateKeys;
-import net.kano.joustsim.trust.PrivateKeysPreferences;
-import org.bouncycastle.asn1.ASN1InputStream;
-import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.DERObjectIdentifier;
-import org.bouncycastle.asn1.cms.KeyTransRecipientInfo;
-import org.bouncycastle.cms.CMSException;
-import org.bouncycastle.cms.CMSProcessableByteArray;
-import org.bouncycastle.cms.CMSSignedData;
-import org.bouncycastle.cms.SignerInformation;
 import org.jetbrains.annotations.NotNull;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
-import java.io.IOException;
-import java.io.InputStream;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.X509Certificate;
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.WeakHashMap;
+import java.util.logging.Logger;
 
 public class ChatRoomManager {
-    private final AimConnection aimConnection;
+  private static final Logger LOGGER = Logger
+      .getLogger(ChatRoomManager.class.getName());
 
-    private CopyOnWriteArrayList<ChatRoomManagerListener> listeners
-            = new CopyOnWriteArrayList<ChatRoomManagerListener>();
+  private final AimConnection aimConnection;
 
-    private WeakHashMap<ChatInvitationImpl, Object> acceptedInvitations
-            = new WeakHashMap<ChatInvitationImpl, Object>();
+  private CopyOnWriteArrayList<ChatRoomManagerListener> listeners
+      = new CopyOnWriteArrayList<ChatRoomManagerListener>();
 
-    private Map<OscarConnection,ChatRoomSession> sessions
-            = new HashMap<OscarConnection, ChatRoomSession>();
+  private Map<RoomDescriptor, ChatRoomSession> sessions
+      = new HashMap<RoomDescriptor, ChatRoomSession>();
+  private static final int DEFAULT_EXCHANGE = 4;
 
-    public ChatRoomManager(AimConnection conn) {
-        this.aimConnection = conn;
-        conn.getCapabilityManager().setCapabilityHandler(
-                CapabilityBlock.BLOCK_CHAT,
-                new ChatInvitationCapabilityHandler());
-        RoomFinderServiceArbiter arbiter= conn.getExternalServiceManager()
-                .getChatRoomFinderServiceArbiter();
-        arbiter.addRoomManagerServiceListener(new MyRoomManagerServiceListener());
+  public ChatRoomManager(AimConnection conn) {
+    this.aimConnection = conn;
+    conn.getCapabilityManager().setCapabilityHandler(CapabilityBlock.BLOCK_CHAT,
+        new ChatInvitationCapabilityHandler());
+    RoomFinderServiceArbiter arbiter = conn.getExternalServiceManager()
+        .getChatRoomFinderServiceArbiter();
+    arbiter.addRoomManagerServiceListener(new MyRoomFinderServiceListener());
+  }
+
+  public AimConnection getAimConnection() {
+    return aimConnection;
+  }
+
+  public void addListener(ChatRoomManagerListener listener) {
+    listeners.addIfAbsent(listener);
+  }
+
+  public void removeListener(ChatRoomManagerListener listener) {
+    listeners.remove(listener);
+  }
+
+  void rejectInvitation(ChatInvitationImpl inv) {
+    ChatInvitationImpl invitation = ensureGoodInvitation(inv);
+    boolean wasRejected = !invitation.setRejected();
+    if (wasRejected) return;
+    invitation.getSession().sendRv(new ChatInviteRejectRvCmd());
+  }
+
+  ChatRoomSession acceptInvitation(ChatInvitationImpl inv)
+      throws IllegalArgumentException {
+    ChatInvitationImpl chatInvitation = ensureGoodInvitation(inv);
+
+    if (!chatInvitation.isAcceptable()) {
+      throw new IllegalArgumentException("Chat invitation is not valid: "
+          + inv);
     }
 
-    public AimConnection getAimConnection() {
-        return aimConnection;
+    ChatRoomSession session;
+    FullRoomInfo info = chatInvitation.getRoomInfo();
+    synchronized (this) {
+      RoomDescriptor descriptor = new RoomDescriptor(
+          chatInvitation.getRoomInfo());
+      session = sessions.get(descriptor);
+      if (session != null) return session;
+      session = new ChatRoomSession(aimConnection);
+      session.setRoomInfo(info);
+      session.setInvitation(chatInvitation);
+      sessions.put(descriptor, session);
     }
 
-    public void addListener(ChatRoomManagerListener listener) {
-        listeners.addIfAbsent(listener);
+    LOGGER.fine("Attempting to accept invitation to join " + info);
+    getChatArbiter().joinChatRoom(info);
+    return session;
+  }
+
+  private ChatInvitationImpl ensureGoodInvitation(ChatInvitation inv) {
+    if (!(inv instanceof ChatInvitationImpl)) {
+      throw new IllegalArgumentException("Invitation was "
+          + "not received by this chat manager: " + inv);
+    }
+    ChatInvitationImpl chatInvitation = (ChatInvitationImpl) inv;
+    if (chatInvitation.getChatRoomManager() != this) {
+      throw new IllegalArgumentException("Invitation was "
+          + "not received by this chat manager: " + inv);
+    }
+    return chatInvitation;
+  }
+
+  public ChatRoomSession joinRoom(String name) {
+    return joinRoom(DEFAULT_EXCHANGE, name);
+  }
+
+  public ChatRoomSession joinRoom(int exchange, String name) {
+    ChatRoomSession session;
+    synchronized (this) {
+      RoomDescriptor descriptor = new RoomDescriptor(exchange,
+          FullRoomInfo.INSTANCE_LAST, name);
+      session = sessions.get(descriptor);
+      if (session != null) return session;
+      session = new ChatRoomSession(aimConnection);
+      sessions.put(descriptor, session);
     }
 
-    public void removeListener(ChatRoomManagerListener listener) {
-        listeners.remove(listener);
+    RoomFinderServiceArbiter arbiter = getChatArbiter();
+    arbiter.joinChatRoom(exchange, name);
+
+    return session;
+  }
+
+  private RoomFinderServiceArbiter getChatArbiter() {
+    return aimConnection.getExternalServiceManager()
+        .getChatRoomFinderServiceArbiter();
+  }
+
+  private class ChatInvitationCapabilityHandler
+      extends AbstractCapabilityHandler
+      implements RendezvousCapabilityHandler {
+    public RendezvousSessionHandler handleSession(IcbmService service,
+        RvSession session) {
+      return new MyRendezvousSessionHandler(session);
     }
 
-    public ChatRoomSession acceptInvitation(ChatInvitation inv)
-            throws IllegalArgumentException {
-        if (!(inv instanceof ChatInvitationImpl)) {
-            throw new IllegalArgumentException("Invitation was "
-                    + "not received by this chat manager: " + inv);
-        }
-        ChatInvitationImpl chatInvitation = (ChatInvitationImpl) inv;
-        if (chatInvitation.getChatRoomManager() != this) {
-            throw new IllegalArgumentException("Invitation was "
-                    + "not received by this chat manager: " + inv);
-        }
-
-        if (!chatInvitation.isValid()) {
-            throw new IllegalArgumentException("Chat invitation is not valid: "
-                    + inv);
-        }
-
-        synchronized (this) {
-            if (acceptedInvitations.containsKey(chatInvitation)) {
-                //TODO: return the corresponding session
-                throw new InternalError();
-            }
-            acceptedInvitations.put(chatInvitation, null);
-        }
-
-        getChatArbiter().joinChatRoom(chatInvitation.getRoomInfo());
-        //TODO: return a session
-        throw new InternalError();
+    public void handleAdded(CapabilityManager manager) {
     }
 
-    public ChatRoomSession joinRoom(String name) {
-        return joinRoom(4, name);
+    public void handleRemoved(CapabilityManager manager) {
+    }
+  }
+
+  private static class InvitationRecord {
+    private Screenname inviter;
+    private int exchange;
+    private String roomName;
+    private int instance;
+
+    public InvitationRecord(Screenname screenname, int exchange,
+        String roomName,
+        int instance) {
+      this.inviter = screenname;
+      this.exchange = exchange;
+      this.roomName = roomName;
+      this.instance = instance;
     }
 
-    public ChatRoomSession joinRoom(int exchange, String name) {
-        RoomFinderServiceArbiter arbiter = getChatArbiter();
-        arbiter.joinChatRoom(exchange, name);
-
-        //TODO: return a session
-        throw new InternalError();
+    public Screenname getInviter() {
+      return inviter;
     }
 
-    private RoomFinderServiceArbiter getChatArbiter() {
-        return aimConnection.getExternalServiceManager()
-                .getChatRoomFinderServiceArbiter();
+    public int getExchange() {
+      return exchange;
     }
 
-    private class ChatInvitationCapabilityHandler
-            extends AbstractCapabilityHandler
-            implements RendezvousCapabilityHandler {
-        public RendezvousSessionHandler handleSession(IcbmService service,
-                RvSession session) {
-            return new MyRendezvousSessionHandler();
-        }
-
-        public void handleAdded(CapabilityManager manager) {
-        }
-
-        public void handleRemoved(CapabilityManager manager) {
-        }
+    public String getRoomName() {
+      return roomName;
     }
 
-    private class MyRendezvousSessionHandler
-            implements RendezvousSessionHandler {
-        public void handleRv(RecvRvEvent event) {
-            RvCommand cmd = event.getRvCommand();
-            if (cmd instanceof ChatInvitationRvCmd) {
-                ChatInvitationRvCmd invitation = (ChatInvitationRvCmd) cmd;
-                Screenname sn = new Screenname(
-                        event.getRvSession().getScreenname());
-                SecretKey roomKey = null;
-                InvalidInvitationReason reason = null;
-                X509Certificate buddyCert = null;
-                ByteBlock securityInfo = invitation.getSecurityInfo();
-                if (securityInfo != null) {
-                    try {
-                        buddyCert = getBuddySigningCert(sn);
-                        //noinspection ConstantConditions
-                        assert buddyCert != null;
-                    } catch (NoBuddyKeysException e) {
-                        reason = InvalidInvitationReason.NO_BUDDY_KEYS;
-                    }
-                    try {
-                        roomKey = extractChatKey(securityInfo, buddyCert);
-                        //noinspection ConstantConditions
-                        assert roomKey != null;
-                    } catch (NoPrivateKeyException e) {
-                        reason = InvalidInvitationReason.NO_LOCAL_KEYS;
-                    } catch (CertificateNotYetValidException e) {
-                        reason = InvalidInvitationReason.CERT_NOT_YET_VALID;
-                    } catch (CertificateExpiredException e) {
-                        reason = InvalidInvitationReason.CERT_EXPIRED;
-                    } catch (BadKeyException e) {
-                        reason = InvalidInvitationReason.INVALID_SIGNATURE;
-                    }
-                }
-                ChatInvitation ourInvitation;
-                MiniRoomInfo roomInfo = invitation.getRoomInfo();
-                String msgString = invitation.getInvMessage().getMessage();
-                if (securityInfo == null) {
-                    ourInvitation = new ChatInvitationImpl(ChatRoomManager.this,
-                            sn, roomInfo,
-                            msgString);
-                } else if (roomKey == null) {
-                    ourInvitation = new ChatInvitationImpl(ChatRoomManager.this,
-                            sn, roomInfo, reason,
-                            msgString);
-
-                } else {
-                    assert buddyCert != null;
-                    ourInvitation = new ChatInvitationImpl(ChatRoomManager.this,
-                            sn, roomInfo,
-                            buddyCert, roomKey, msgString);
-                }
-
-                for (ChatRoomManagerListener listener : listeners) {
-                    listener.handleInvitation(ChatRoomManager.this,
-                            ourInvitation);
-                }
-            }
-        }
-
-        public void handleSnacResponse(RvSnacResponseEvent event) {
-        }
-
-
-        private @NotNull SecretKey extractChatKey(ByteBlock data,
-                X509Certificate buddySigningCert)
-                throws NoPrivateKeyException, CertificateNotYetValidException,
-                CertificateExpiredException, BadKeyException {
-
-            KeyPair myEncryptingKeys = getMyEncryptingKeys();
-
-            try {
-                CMSSignedData csd
-                        = new CMSSignedData(ByteBlock.createInputStream(data));
-                Collection<SignerInformation> signers = csd.getSignerInfos()
-                        .getSigners();
-                for (SignerInformation signer : signers) {
-                    boolean verified;
-                    try {
-                        verified = signer.verify(buddySigningCert, "BC");
-                    } catch (CertificateExpiredException e) {
-                        throw e;
-                    } catch (CertificateNotYetValidException e) {
-                        throw e;
-                    }
-                    if (!verified) throw new BadKeyException();
-                }
-                CMSProcessableByteArray cpb
-                        = (CMSProcessableByteArray) csd.getSignedContent();
-                ByteBlock signedContent = ByteBlock
-                        .wrap((byte[]) cpb.getContent());
-                MiniRoomInfo mri = MiniRoomInfo.readMiniRoomInfo(signedContent);
-
-                ByteBlock rest = signedContent.subBlock(mri.getTotalSize());
-                int kdlen = BinaryTools.getUShort(rest, 0);
-                ByteBlock keyData = rest.subBlock(2, kdlen);
-
-                InputStream kdin = ByteBlock.createInputStream(keyData);
-                ASN1InputStream ain = new ASN1InputStream(kdin);
-                ASN1Sequence root = (ASN1Sequence) ain.readObject();
-                ASN1Sequence seq = (ASN1Sequence) root.getObjectAt(0);
-                KeyTransRecipientInfo ktr = KeyTransRecipientInfo
-                        .getInstance(seq);
-                DERObjectIdentifier keyoid
-                        = (DERObjectIdentifier) root.getObjectAt(1);
-
-                String encoid = ktr.getKeyEncryptionAlgorithm().getObjectId()
-                        .getId();
-                Cipher cipher = Cipher.getInstance(encoid, "BC");
-                cipher.init(Cipher.DECRYPT_MODE,
-                        myEncryptingKeys.getPrivateKey());
-
-                byte[] result = cipher
-                        .doFinal(ktr.getEncryptedKey().getOctets());
-                return new SecretKeySpec(result, keyoid.getId());
-
-            } catch (NoSuchProviderException e) {
-            } catch (BadPaddingException e) {
-            } catch (NoSuchAlgorithmException e) {
-            } catch (IOException e) {
-            } catch (IllegalBlockSizeException e) {
-            } catch (InvalidKeyException e) {
-            } catch (NoSuchPaddingException e) {
-            } catch (CMSException e) {
-            }
-            throw new BadKeyException();
-        }
-
-        private @NotNull KeyPair getMyEncryptingKeys()
-                throws NoPrivateKeyException {
-            PrivateKeysPreferences pkPrefs = aimConnection.getLocalPrefs()
-                    .getPrivateKeysPreferences();
-            PrivateKeys keysInfo = pkPrefs.getKeysInfo();
-            if (keysInfo == null) throw new NoPrivateKeyException();
-            return keysInfo.getEncryptingKeys();
-        }
-
-        private @NotNull X509Certificate getBuddySigningCert(Screenname sn)
-                throws
-                NoBuddyKeysException {
-            BuddyInfoManager infoMgr = aimConnection.getBuddyInfoManager();
-            BuddyCertificateInfo certInfo = infoMgr.getBuddyInfo(sn)
-                    .getCertificateInfo();
-            if (certInfo == null) throw new NoBuddyKeysException();
-            X509Certificate buddySigningCert = certInfo.getSigningCertificate();
-            if (buddySigningCert == null) throw new NoBuddyKeysException();
-            return buddySigningCert;
-        }
+    public int getInstance() {
+      return instance;
     }
 
-    private class MyRoomManagerServiceListener implements
-            RoomManagerServiceListener {
-        public void handleNewChatRoom(RoomManagerService service,
-                MiniRoomInfo roomInfo, BasicConnection connection) {
-            ChatRoomSession session = new ChatRoomSession(aimConnection,
-                    connection, roomInfo);
-            sessions.put(connection, session);
-            connection.addGlobalServiceListener(new MyServiceListener(session));
-        }
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+
+      final InvitationRecord that = (InvitationRecord) o;
+
+      if (exchange != that.exchange) return false;
+      if (instance != that.instance) return false;
+      if (!roomName.equals(that.roomName)) return false;
+      if (!inviter.equals(that.inviter)) return false;
+
+      return true;
     }
 
-    private class MyServiceListener implements ServiceListener {
-        private ChatRoomSession session;
-
-        public MyServiceListener(ChatRoomSession session) {
-            this.session = session;
-        }
-
-        public void handleServiceReady(Service service) {
-            if (!(service instanceof ChatRoomService)) return;
-
-            ChatRoomService roomService = (ChatRoomService) service;
-            for (ChatInvitationImpl invitation : acceptedInvitations.keySet()) {
-                MiniRoomInfo invInfo = invitation.getRoomInfo();
-                if (invInfo.getExchange() == session.getRoomInfo().getExchange()
-                        && roomService.getRoomName().equals(invitation.getRoomName())) {
-                    session.setInvitation(invitation);
-                    //TODO: find fullroominfo before joining room
-//                    String contentType = roomInfo.getContentType();
-//                    if (contentType.equals(ChatMsg.CONTENTTYPE_SECURE)) {
-//                        roomService.setMessageFactory(
-//                                new EncryptedChatRoomMessageFactory(
-//                                        aimConnection, roomService,
-//                                        invitation.getRoomKey()));
-//                    } else {
-//                        roomService.setMessageFactory(
-//                                new PlainChatRoomMessageFactory());
-//                    }
-                    break;
-                }
-            }
-        }
-
-        public void handleServiceFinished(Service service) {
-        }
+    public int hashCode() {
+      int result = inviter.hashCode();
+      result = 29 * result + exchange;
+      result = 29 * result + roomName.hashCode();
+      result = 29 * result + instance;
+      return result;
     }
+  }
+
+  private Map<InvitationRecord, IncompleteInvitationInfo> pendingInvitations
+      = new LinkedHashMap<InvitationRecord, IncompleteInvitationInfo>();
+  private final Object pendingInvitationsLock = new Object();
+
+
+  private InvitationRecord makeInvitationRecord(Screenname sn,
+      MiniRoomInfo roomInfo) {
+    return new InvitationRecord(sn, roomInfo.getExchange(),
+        OscarTools.getRoomNameFromCookie(roomInfo.getCookie()),
+        roomInfo.getInstance());
+  }
+
+  private void registerInvitation(IncompleteInvitationInfo invitation,
+      FullRoomInfo roomInfo) {
+    ChatInvitation ourInvitation;
+    if (invitation.getSecurityInfo() == null) {
+      ourInvitation = new ChatInvitationImpl(ChatRoomManager.this,
+          invitation.getSession(), invitation.getSn(), roomInfo,
+          invitation.getMsgString());
+
+    } else if (invitation.getRoomKey() == null) {
+      ourInvitation = new ChatInvitationImpl(ChatRoomManager.this,
+          invitation.getSession(), invitation.getSn(), roomInfo,
+          invitation.getReason(), invitation.getMsgString());
+
+    } else {
+      assert invitation.getBuddyCert() != null;
+      ourInvitation = new ChatInvitationImpl(ChatRoomManager.this,
+          invitation.getSession(), invitation.getSn(), roomInfo,
+          invitation.getBuddyCert(), invitation.getRoomKey(),
+          invitation.getMsgString());
+    }
+
+    LOGGER.fine("Firing invitation: " + ourInvitation);
+
+    for (ChatRoomManagerListener listener : listeners) {
+      listener.handleInvitation(ChatRoomManager.this, ourInvitation);
+    }
+  }
+
+  private synchronized ChatRoomSession getSession(FullRoomInfo roomInfo) {
+    return sessions.get(new RoomDescriptor(roomInfo));
+  }
+
+
+  private class MyRendezvousSessionHandler implements RendezvousSessionHandler {
+    private RvSession session;
+
+    public MyRendezvousSessionHandler(RvSession session) {
+      this.session = session;
+    }
+
+    public void handleRv(RecvRvEvent event) {
+      RvCommand cmd = event.getRvCommand();
+      if (cmd instanceof ChatInvitationRvCmd) {
+        ChatInvitationRvCmd invitation = (ChatInvitationRvCmd) cmd;
+        Screenname sn = new Screenname(
+            event.getRvSession().getScreenname());
+        SecretKey roomKey = null;
+        InvalidInvitationReason reason = null;
+        X509Certificate buddyCert = null;
+        ByteBlock securityInfo = invitation.getSecurityInfo();
+        if (securityInfo != null) {
+          try {
+            buddyCert = KeyExtractionTools.getBuddySigningCert(sn,
+                aimConnection.getBuddyInfoManager());
+            //noinspection ConstantConditions
+            assert buddyCert != null;
+          } catch (NoBuddyKeysException e) {
+            reason = InvalidInvitationReason.NO_BUDDY_KEYS;
+          }
+          try {
+            roomKey = KeyExtractionTools.extractChatKey(securityInfo, buddyCert,
+                aimConnection.getLocalPrefs());
+            //noinspection ConstantConditions
+            assert roomKey != null;
+          } catch (NoPrivateKeyException e) {
+            reason = InvalidInvitationReason.NO_LOCAL_KEYS;
+          } catch (CertificateNotYetValidException e) {
+            reason = InvalidInvitationReason.CERT_NOT_YET_VALID;
+          } catch (CertificateExpiredException e) {
+            reason = InvalidInvitationReason.CERT_EXPIRED;
+          } catch (BadKeyException e) {
+            reason = InvalidInvitationReason.INVALID_SIGNATURE;
+          }
+        }
+
+        MiniRoomInfo roomInfo = invitation.getRoomInfo();
+        String msgString = invitation.getInvMessage().getMessage();
+        synchronized (pendingInvitationsLock) {
+          pendingInvitations.put(makeInvitationRecord(sn, roomInfo),
+              new IncompleteInvitationInfo(session, sn, roomInfo,
+                  msgString, roomKey, securityInfo, reason, buddyCert));
+        }
+        LOGGER.info("Got invitation from " + sn + " to " + roomInfo + ": "
+            + msgString + "; requesting more information");
+        aimConnection.getExternalServiceManager()
+            .getChatRoomFinderServiceArbiter().getRoomInfo(roomInfo);
+      }
+    }
+
+    public void handleSnacResponse(RvSnacResponseEvent event) {
+    }
+  }
+
+  private class MyRoomFinderServiceListener implements
+      RoomFinderServiceListener {
+    public void handleNewChatRoom(RoomFinderService service,
+        FullRoomInfo roomInfo, BasicConnection connection) {
+      ChatRoomSession session = getSession(roomInfo);
+      assert session != null : "No session for " + roomInfo;
+      session.setRoomInfo(roomInfo);
+      session.setConnection(connection);
+      session.setState(ChatSessionState.CONNECTING);
+
+      LOGGER.fine("Opened new chat room connection for " + roomInfo.getName());
+
+      connection.addGlobalServiceListener(new MyServiceListener(session));
+    }
+    public void handleRoomInfo(RoomFinderService service, MiniRoomInfo mini,
+        FullRoomInfo info) {
+      LOGGER.fine("Got room info for pending invitation: " + info);
+      List<IncompleteInvitationInfo> uses
+          = new ArrayList<IncompleteInvitationInfo>();
+      synchronized (pendingInvitationsLock) {
+        for (Iterator it = pendingInvitations.values().iterator();
+            it.hasNext();) {
+          IncompleteInvitationInfo invinfo = (IncompleteInvitationInfo) it.next();
+          if (invinfo.getRoomInfo().isSameRoom(mini)) {
+            it.remove();
+            uses.add(invinfo);
+          }
+        }
+      }
+      for (IncompleteInvitationInfo use : uses) registerInvitation(use, info);
+    }
+  }
+
+  private class MyServiceListener implements ServiceListener {
+    private ChatRoomSession session;
+
+    public MyServiceListener(ChatRoomSession session) {
+      this.session = session;
+    }
+
+    public void handleServiceReady(Service service) {
+      if (!(service instanceof ChatRoomService)) return;
+
+      ChatRoomService roomService = (ChatRoomService) service;
+      LOGGER.fine("Service for " + roomService.getRoomName() + " is ready");
+      String contentType = roomService.getRoomInfo().getContentType();
+      if (contentType.equals(ChatMsg.CONTENTTYPE_SECURE)) {
+        roomService.setMessageFactory(
+            new EncryptedChatRoomMessageFactory(aimConnection, roomService,
+                session.getInvitationImpl().getRoomKey()));
+      } else {
+        if (!contentType.equals(ChatMsg.CONTENTTYPE_DEFAULT)) {
+          LOGGER.warning("Chat room " + session.getRoomInfo().getName()
+              + " has unknown content type: " + contentType);
+        }
+        roomService.setMessageFactory(new PlainChatRoomMessageFactory());
+      }
+      session.setService(roomService);
+    }
+
+    public void handleServiceFinished(Service service) {
+    }
+  }
+
+  private static class RoomDescriptor {
+    private int exchange;
+    private int instance;
+    private @NotNull String name;
+
+    public RoomDescriptor(int exchange, int instance, @NotNull String name) {
+      this.exchange = exchange;
+      this.instance = instance;
+      this.name = name;
+    }
+
+    public RoomDescriptor(FullRoomInfo roomInfo) {
+      this(roomInfo.getExchange(), roomInfo.getInstance(), roomInfo.getName());
+    }
+
+    public int getExchange() {
+      return exchange;
+    }
+
+    public int getInstance() {
+      return instance;
+    }
+
+    public String getName() {
+      return name;
+    }
+
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+
+      final RoomDescriptor that = (RoomDescriptor) o;
+
+      if (exchange != that.exchange) return false;
+      if (instance != that.instance) return false;
+      if (name != null ? !name.equals(that.name) : that.name != null) {
+        return false;
+      }
+
+      return true;
+    }
+
+    public int hashCode() {
+      int result = exchange;
+      result = 29 * result + instance;
+      result = 29 * result + (name != null ? name.hashCode() : 0);
+      return result;
+    }
+  }
 }

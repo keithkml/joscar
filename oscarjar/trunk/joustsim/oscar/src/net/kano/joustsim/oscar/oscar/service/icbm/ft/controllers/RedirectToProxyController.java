@@ -37,8 +37,8 @@ import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
 import net.kano.joscar.rvproto.rvproxy.RvProxyAckCmd;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferImpl;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.TransferPropertyHolder;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionImpl;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionPropertyHolder;
 
 import java.io.IOException;
 import java.net.Inet4Address;
@@ -54,12 +54,12 @@ public class RedirectToProxyController extends InitiateProxyController
         Inet4Address addr = ackCmd.getProxyIpAddress();
         int port = ackCmd.getProxyPort();
 
-        FileTransferImpl transfer = getFileTransfer();
+        RvConnectionImpl transfer = getRvConnection();
         RvSession rvSession = transfer.getRvSession();
         RvConnectionInfo connInfo = RvConnectionInfo
                 .createForOutgoingProxiedRequest(addr, port);
-        transfer.putTransferProperty(TransferPropertyHolder.KEY_CONN_INFO, connInfo);
-        transfer.putTransferProperty(TransferPropertyHolder.KEY_REDIRECTED, true);
+        transfer.putTransferProperty(RvConnectionPropertyHolder.KEY_CONN_INFO, connInfo);
+        transfer.putTransferProperty(RvConnectionPropertyHolder.KEY_REDIRECTED, true);
         rvSession.sendRv(new FileSendReqRvCmd(connInfo, transfer.increaseRequestIndex()));
 
     }

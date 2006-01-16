@@ -33,7 +33,7 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
-public class ResolvingProxyEvent extends FileTransferEvent {
+public class ResolvingProxyEvent extends RvConnectionEvent {
     private final String host;
 
     public ResolvingProxyEvent(String host) {

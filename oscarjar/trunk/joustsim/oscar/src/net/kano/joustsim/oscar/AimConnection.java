@@ -45,12 +45,14 @@ import net.kano.joscar.snaccmd.conn.ConnCommand;
 import net.kano.joscar.snaccmd.icbm.IcbmCommand;
 import net.kano.joscar.snaccmd.loc.LocCommand;
 import net.kano.joscar.snaccmd.ssi.SsiCommand;
+import net.kano.joustsim.JavaTools;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.oscar.OscarConnection;
 import net.kano.joustsim.oscar.oscar.service.Service;
 import net.kano.joustsim.oscar.oscar.service.ServiceArbiter;
 import net.kano.joustsim.oscar.oscar.service.bos.MainBosService;
 import net.kano.joustsim.oscar.oscar.service.buddy.BuddyService;
+import net.kano.joustsim.oscar.oscar.service.chatrooms.ChatRoomManager;
 import net.kano.joustsim.oscar.oscar.service.icbm.IcbmService;
 import net.kano.joustsim.oscar.oscar.service.info.BuddyTrustAdapter;
 import net.kano.joustsim.oscar.oscar.service.info.BuddyTrustEvent;
@@ -59,6 +61,7 @@ import net.kano.joustsim.oscar.oscar.service.info.CertificateInfoTrustManager;
 import net.kano.joustsim.oscar.oscar.service.info.InfoService;
 import net.kano.joustsim.oscar.oscar.service.login.LoginService;
 import net.kano.joustsim.oscar.oscar.service.ssi.SsiService;
+import net.kano.joustsim.oscar.proxy.AimProxyInfo;
 import net.kano.joustsim.trust.CertificateTrustManager;
 import net.kano.joustsim.trust.SignerTrustManager;
 import net.kano.joustsim.trust.TrustPreferences;
@@ -73,314 +76,329 @@ import java.util.logging.Logger;
 
 //TODO: time out waiting for all services to be ready, to ensure connection comes up eventually
 //TODO: factor unnecessarily visible public methods into AimConnectionServiceInterface
+
 public class AimConnection {
-    private static final Logger LOGGER
-            = Logger.getLogger(AimConnection.class.getName());
+  private static final Logger LOGGER
+      = Logger.getLogger(AimConnection.class.getName());
 
-    private final AppSession appSession;
-    private final AimSession aimSession;
+  private final AppSession appSession;
+  private final AimSession aimSession;
 
-    private final Screenname screenname;
+  private final Screenname screenname;
 
-    private Map<Integer,List<Service>> snacfamilies
-            = new HashMap<Integer, List<Service>>();
+  private Map<Integer, List<Service>> snacfamilies
+      = new HashMap<Integer, List<Service>>();
 
+  private CopyOnWriteArrayList<OpenedServiceListener> serviceListeners
+      = new CopyOnWriteArrayList<OpenedServiceListener>();
 
-    private CopyOnWriteArrayList<OpenedServiceListener> serviceListeners
-            = new CopyOnWriteArrayList<OpenedServiceListener>();
+  private final BuddyInfoManager buddyInfoManager;
+  private final BuddyInfoTracker buddyInfoTracker;
+  private final BuddyIconTracker buddyIconTracker;
+  private final MyBuddyIconManager myBuddyIconManager;
 
-    private final BuddyInfoManager buddyInfoManager;
-    private final BuddyInfoTracker buddyInfoTracker;
-    private final BuddyIconTracker buddyIconTracker;
-    private final MyBuddyIconManager myBuddyIconManager;
+  private final CertificateInfoTrustManager certificateInfoTrustManager;
+  private final TrustedCertificatesTracker trustedCertificatesTracker;
+  private final BuddyTrustManager buddyTrustManager;
+  private final CapabilityManager capabilityManager;
 
-    private final CertificateInfoTrustManager certificateInfoTrustManager;
-    private final TrustedCertificatesTracker trustedCertificatesTracker;
-    private final BuddyTrustManager buddyTrustManager;
-    private final CapabilityManager capabilityManager;
+  private final TrustPreferences localPrefs;
+  private final ExternalServiceManager externalServiceMgr;
+  private final ChatRoomManager chatRoomManager;
+  private final ConnectionManager connectionManager;
+  private volatile AimProxyInfo proxy = AimProxyInfo.forNoProxy();
 
-    private final TrustPreferences localPrefs;
-    private final ExternalServiceManager externalServiceMgr;
-    private ConnectionManager connectionManager;
+  public AimConnection(Screenname screenname, String password) {
+    this(new AimConnectionProperties(screenname, password));
+  }
 
-    public AimConnection(Screenname screenname, String password) {
-        this(new AimConnectionProperties(screenname, password));
+  public AimConnection(AimConnectionProperties props) {
+    this(new DefaultAimSession(props.getScreenname()), props);
+  }
+
+  public AimConnection(AimSession aimSession, AimConnectionProperties props) {
+    this(aimSession, aimSession.getTrustPreferences(), props);
+  }
+
+  public AimConnection(AimSession aimSession,
+      TrustPreferences prefs, AimConnectionProperties props)
+      throws IllegalArgumentException {
+    Screenname sn = aimSession.getScreenname();
+    if (!props.getScreenname().equals(sn)) {
+      throw new IllegalArgumentException("connection properties object "
+          + "is for screenname " + props.getScreenname() + ", but "
+          + "this connection is for " + sn);
+    }
+    DefensiveTools.checkNull(aimSession, "aimSession");
+    DefensiveTools.checkNull(props, "props");
+
+    if (!props.isComplete()) {
+      throw new IllegalArgumentException("connection properties are "
+          + "incomplete (props.isComplete() == false): " + props);
     }
 
-    public AimConnection(AimConnectionProperties props) {
-        this(new DefaultAimSession(props.getScreenname()), props);
-    }
+    this.appSession = aimSession.getAppSession();
+    this.aimSession = aimSession;
 
-    public AimConnection(AimSession aimSession, AimConnectionProperties props) {
-        this(aimSession, aimSession.getTrustPreferences(), props);
-    }
+    this.screenname = sn;
 
-    public AimConnection(AimSession aimSession,
-            TrustPreferences prefs, AimConnectionProperties props)
-            throws IllegalArgumentException {
-        Screenname sn = aimSession.getScreenname();
-        if (!props.getScreenname().equals(sn)) {
-            throw new IllegalArgumentException("connection properties object "
-                    + "is for screenname " + props.getScreenname() + ", but "
-                    + "this connection is for " + sn);
+    this.localPrefs = prefs;
+
+
+    connectionManager = new ConnectionManager(this, props);
+    connectionManager.addStateListener(new StateListener() {
+      public void handleStateChange(StateEvent event) {
+        if (event.getNewState().isFinished()) {
+          List<Service> services = DefensiveTools.getUnmodifiable(
+              getLocalServices());
+          for (OpenedServiceListener listener : serviceListeners) {
+            listener.closedServices(AimConnection.this, services);
+          }
         }
-        DefensiveTools.checkNull(aimSession, "aimSession");
-        DefensiveTools.checkNull(props, "props");
+      }
+    });
 
-        if (!props.isComplete()) {
-            throw new IllegalArgumentException("connection properties are "
-                    + "incomplete (props.isComplete() == false): " + props);
-        }
+    this.buddyInfoManager = new BuddyInfoManager(this);
+    this.buddyInfoTracker = new BuddyInfoTracker(this);
+    this.buddyIconTracker = new BuddyIconTracker(this);
+    this.myBuddyIconManager = new MyBuddyIconManager(this);
 
-        this.appSession = aimSession.getAppSession();
-        this.aimSession = aimSession;
+    this.trustedCertificatesTracker = createTrustedCertificatesTracker(prefs);
+    this.certificateInfoTrustManager
+        = new CertificateInfoTrustManager(trustedCertificatesTracker);
+    this.buddyTrustManager = new BuddyTrustManager(this);
+    this.buddyTrustManager.addBuddyTrustListener(new BuddyTrustAdapter() {
+      public void buddyTrusted(BuddyTrustEvent event) {
+        LOGGER.fine(event.getBuddy() + " is trusted");
+      }
 
-        this.screenname = sn;
+      public void buddyTrustRevoked(BuddyTrustEvent event) {
+        LOGGER.fine(event.getBuddy() + " is no longer trusted");
+      }
 
-        this.localPrefs = prefs;
+      public void gotTrustedCertificateChange(BuddyTrustEvent event) {
+        LOGGER.fine(event.getBuddy() + " has a trusted certificate");
+      }
 
+      public void gotUntrustedCertificateChange(BuddyTrustEvent event) {
+        LOGGER.fine(event.getBuddy() + " has an untrusted certificate");
+      }
+    });
 
-        connectionManager = new ConnectionManager(this, props);
-        connectionManager.addStateListener(new StateListener() {
-            public void handleStateChange(StateEvent event) {
-                if (event.getNewState().isFinished()) {
-                    List<Service> services = DefensiveTools.getUnmodifiable(
-                            getLocalServices());
-                    for (OpenedServiceListener listener : serviceListeners) {
-                        listener.closedServices(AimConnection.this, services);
-                    }
-                }
-            }
-        });
+    this.capabilityManager = createCapabilityManager();
+    this.externalServiceMgr = new ExternalServiceManager(this);
+    this.chatRoomManager = new ChatRoomManager(this);
+  }
 
-        this.buddyInfoManager = new BuddyInfoManager(this);
-        this.buddyInfoTracker = new BuddyInfoTracker(this);
-        this.buddyIconTracker = new BuddyIconTracker(this);
-        this.myBuddyIconManager = new MyBuddyIconManager(this);
+  private CapabilityManager createCapabilityManager() {
+    CapabilityManager mgr = new CapabilityManager(this);
+    mgr.setCapabilityHandler(CapabilityBlock.BLOCK_ENCRYPTION,
+        new SecurityEnabledHandler(this));
+    mgr.setCapabilityHandler(CapabilityBlock.BLOCK_ICQCOMPATIBLE,
+        new DefaultEnabledCapabilityHandler());
+    mgr.setCapabilityHandler(CapabilityBlock.BLOCK_SHORTCAPS,
+        new DefaultEnabledCapabilityHandler());
+    return mgr;
+  }
 
-        this.trustedCertificatesTracker = createTrustedCertificatesTracker(prefs);
-        this.certificateInfoTrustManager
-                = new CertificateInfoTrustManager(trustedCertificatesTracker);
-        this.buddyTrustManager = new BuddyTrustManager(this);
-        this.buddyTrustManager.addBuddyTrustListener(new BuddyTrustAdapter() {
-            public void buddyTrusted(BuddyTrustEvent event) {
-                LOGGER.fine(event.getBuddy() + " is trusted");
-            }
+  private TrustedCertificatesTracker createTrustedCertificatesTracker(
+      TrustPreferences prefs) {
+    CertificateTrustManager certMgr;
+    SignerTrustManager signerMgr;
+    if (prefs != null) {
+      certMgr = prefs.getCertificateTrustManager();
+      signerMgr = prefs.getSignerTrustManager();
 
-            public void buddyTrustRevoked(BuddyTrustEvent event) {
-                LOGGER.fine(event.getBuddy() + " is no longer trusted");
-            }
-
-            public void gotTrustedCertificateChange(BuddyTrustEvent event) {
-                LOGGER.fine(event.getBuddy() + " has a trusted certificate");
-            }
-
-            public void gotUntrustedCertificateChange(BuddyTrustEvent event) {
-                LOGGER.fine(event.getBuddy() + " has an untrusted certificate");
-            }
-        });
-
-        this.capabilityManager = createCapabilityManager();
-        this.externalServiceMgr = new ExternalServiceManager(this);
+    } else {
+      LOGGER.warning("Warning: this AIM connection's certificate "
+          + "and signer managers will not be set because the trust "
+          + "manager is null");
+      certMgr = null;
+      signerMgr = null;
     }
+    return new TrustedCertificatesTracker(certMgr, signerMgr);
+  }
 
-    private CapabilityManager createCapabilityManager() {
-        CapabilityManager mgr = new CapabilityManager(this);
-        mgr.setCapabilityHandler(CapabilityBlock.BLOCK_ENCRYPTION,
-                new SecurityEnabledHandler(this));
-        mgr.setCapabilityHandler(CapabilityBlock.BLOCK_ICQCOMPATIBLE,
-                new DefaultEnabledCapabilityHandler());
-        mgr.setCapabilityHandler(CapabilityBlock.BLOCK_SHORTCAPS,
-                new DefaultEnabledCapabilityHandler());
-        return mgr;
+  public final AppSession getAppSession() { return appSession; }
+
+  public final AimSession getAimSession() { return aimSession; }
+
+  public final Screenname getScreenname() { return screenname; }
+
+  public BuddyInfoManager getBuddyInfoManager() { return buddyInfoManager; }
+
+  public BuddyIconTracker getBuddyIconTracker() { return buddyIconTracker; }
+
+  public MyBuddyIconManager getMyBuddyIconManager() {
+    return myBuddyIconManager;
+  }
+
+  public CertificateInfoTrustManager getCertificateInfoTrustManager() {
+    return certificateInfoTrustManager;
+  }
+
+  public TrustedCertificatesTracker getTrustedCertificatesTracker() {
+    return trustedCertificatesTracker;
+  }
+
+  public TrustPreferences getLocalPrefs() { return localPrefs; }
+
+  public BuddyTrustManager getBuddyTrustManager() {
+    return buddyTrustManager;
+  }
+
+  public CapabilityManager getCapabilityManager() {
+    return capabilityManager;
+  }
+
+  public BuddyInfoTracker getBuddyInfoTracker() { return buddyInfoTracker; }
+
+  public void addOpenedServiceListener(OpenedServiceListener l) {
+    serviceListeners.addIfAbsent(l);
+  }
+
+  public void removeOpenedServiceListener(OpenedServiceListener l) {
+    serviceListeners.remove(l);
+  }
+
+  public @Nullable synchronized Service getService(int family) {
+    List<Service> list = getServiceListIfExists(family);
+    return list == null ? null : list.get(0);
+  }
+
+  public LoginService getLoginService() {
+    return getServiceOfType(AuthCommand.FAMILY_AUTH, LoginService.class);
+  }
+
+  public MainBosService getBosService() {
+    return getServiceOfType(ConnCommand.FAMILY_CONN, MainBosService.class);
+  }
+
+  public IcbmService getIcbmService() {
+    return getServiceOfType(IcbmCommand.FAMILY_ICBM, IcbmService.class);
+  }
+
+  public BuddyService getBuddyService() {
+    return getServiceOfType(BuddyCommand.FAMILY_BUDDY, BuddyService.class);
+  }
+
+  public InfoService getInfoService() {
+    return getServiceOfType(LocCommand.FAMILY_LOC, InfoService.class);
+  }
+
+  public SsiService getSsiService() {
+    return getServiceOfType(SsiCommand.FAMILY_SSI, SsiService.class);
+  }
+
+  private @Nullable <E extends Service> E getServiceOfType(int fam,
+      Class<E> cls) {
+    Service service = getService(fam);
+    if (cls.isInstance(service)) {
+      return JavaTools.cast(cls, service);
+    } else {
+      return null;
     }
+  }
 
-    private TrustedCertificatesTracker createTrustedCertificatesTracker(
-            TrustPreferences prefs) {
-        CertificateTrustManager certMgr;
-        SignerTrustManager signerMgr;
-        if (prefs != null) {
-            certMgr = prefs.getCertificateTrustManager();
-            signerMgr = prefs.getSignerTrustManager();
-
-        } else {
-            LOGGER.warning("Warning: this AIM connection's certificate "
-                    + "and signer managers will not be set because the trust "
-                    + "manager is null");
-            certMgr = null;
-            signerMgr = null;
-        }
-        return new TrustedCertificatesTracker(certMgr, signerMgr);
+  public void sendSnac(SnacCommand snac) {
+    int family = snac.getFamily();
+    Service service = getService(family);
+    if (service == null) {
+      ServiceArbiter<?> arbiter = externalServiceMgr.getServiceArbiter(family);
+      if (arbiter != null) {
+        //TODO: what to do when sending snac to arbiter?
+      }
+    } else {
+      service.sendSnac(snac);
     }
+  }
 
-    public final AppSession getAppSession() { return appSession; }
+  public ExternalServiceManager getExternalServiceManager() {
+    return externalServiceMgr;
+  }
 
-    public final AimSession getAimSession() { return aimSession; }
+  public ChatRoomManager getChatRoomManager() {
+    return chatRoomManager;
+  }
 
-    public final Screenname getScreenname() { return screenname; }
+  public void addStateListener(StateListener l) {
+    connectionManager.addStateListener(l);
+  }
 
-    public BuddyInfoManager getBuddyInfoManager() { return buddyInfoManager; }
+  public void removeStateListener(StateListener l) {
+    connectionManager.removeStateListener(l);
+  }
 
-    public BuddyIconTracker getBuddyIconTracker() { return buddyIconTracker; }
+  public State getState() { return connectionManager.getState(); }
 
-    public MyBuddyIconManager getMyBuddyIconManager() {
-        return myBuddyIconManager;
-    }
+  public StateInfo getStateInfo() { return connectionManager.getStateInfo(); }
 
-    public CertificateInfoTrustManager getCertificateInfoTrustManager() {
-        return certificateInfoTrustManager;
-    }
+  public boolean connect() { return connectionManager.connect(); }
 
-    public TrustedCertificatesTracker getTrustedCertificatesTracker() {
-        return trustedCertificatesTracker;
-    }
+  public boolean getTriedConnecting() {
+    return connectionManager.getTriedConnecting();
+  }
 
-    public TrustPreferences getLocalPrefs() { return localPrefs; }
+  public void disconnect() { connectionManager.disconnect(); }
 
-    public BuddyTrustManager getBuddyTrustManager() {
-        return buddyTrustManager;
-    }
+  public void disconnect(boolean onPurpose) {
+    connectionManager.disconnect(onPurpose);
+  }
 
-    public CapabilityManager getCapabilityManager() {
-        return capabilityManager;
-    }
+  public boolean wantedDisconnect() {
+    return connectionManager.wantedDisconnect();
+  }
 
-    public BuddyInfoTracker getBuddyInfoTracker() { return buddyInfoTracker; }
-
-    public void addOpenedServiceListener(OpenedServiceListener l) {
-        serviceListeners.addIfAbsent(l);
-    }
-
-    public void removeOpenedServiceListener(OpenedServiceListener l) {
-        serviceListeners.remove(l);
-    }
-
-    public @Nullable synchronized Service getService(int family) {
-        List<Service> list = getServiceListIfExists(family);
-        return list == null ? null : list.get(0);
-    }
-
-    public LoginService getLoginService() {
-        return getServiceOfType(AuthCommand.FAMILY_AUTH, LoginService.class);
-    }
-
-    public MainBosService getBosService() {
-        return getServiceOfType(ConnCommand.FAMILY_CONN, MainBosService.class);
-    }
-
-    public IcbmService getIcbmService() {
-        return getServiceOfType(IcbmCommand.FAMILY_ICBM, IcbmService.class);
-    }
-
-    public BuddyService getBuddyService() {
-        return getServiceOfType(BuddyCommand.FAMILY_BUDDY, BuddyService.class);
-    }
-
-    public InfoService getInfoService() {
-        return getServiceOfType(LocCommand.FAMILY_LOC, InfoService.class);
-    }
-
-    public SsiService getSsiService() {
-        return getServiceOfType(SsiCommand.FAMILY_SSI, SsiService.class);
-    }
-
-    private @Nullable <E extends Service> E getServiceOfType(int fam, Class<E> cls) {
-        Service service = getService(fam);
-        if (cls.isInstance(service)) {
-            return cls.cast(service);
-        } else {
-            return null;
-        }
-    }
-
-    public void sendSnac(SnacCommand snac) {
-        int family = snac.getFamily();
-        Service service = getService(family);
+  void recordSnacFamilies(OscarConnection conn) {
+    List<Service> added = new ArrayList<Service>();
+    synchronized (this) {
+      for (int family : conn.getSnacFamilies()) {
+        List<Service> services = getServiceList(family);
+        Service service = conn.getService(family);
         if (service == null) {
-            ServiceArbiter<?> arbiter = externalServiceMgr.getServiceArbiter(family);
-            if (arbiter != null) {
-                //TODO: what to do when sending snac to arbiter?
-            }
+          LOGGER.finer("Could not find service handler for family 0x"
+              + Integer.toHexString(family));
         } else {
-            service.sendSnac(snac);
+          services.add(service);
+          added.add(service);
         }
+      }
     }
 
-    public ExternalServiceManager getExternalServiceManager() {
-        return externalServiceMgr;
+    List<Service> addedClone = DefensiveTools.getUnmodifiable(added);
+
+    for (OpenedServiceListener listener : serviceListeners) {
+      listener.openedServices(this, addedClone);
     }
+  }
 
-    public void addStateListener(StateListener l) {
-        connectionManager.addStateListener(l);
+  private synchronized List<Service> getServiceList(int family) {
+    List<Service> list = snacfamilies.get(family);
+    if (list == null) {
+      list = new ArrayList<Service>();
+      snacfamilies.put(family, list);
     }
+    return list;
+  }
 
-    public void removeStateListener(StateListener l) {
-        connectionManager.removeStateListener(l);
+  private synchronized List<Service> getServiceListIfExists(int family) {
+    List<Service> list = snacfamilies.get(family);
+    return list == null || list.isEmpty() ? null : list;
+  }
+
+  private synchronized List<Service> getLocalServices() {
+    List<Service> list = new ArrayList<Service>();
+    for (Map.Entry<Integer, List<Service>> entry : snacfamilies.entrySet()) {
+      list.addAll(entry.getValue());
     }
+    return list;
+  }
 
-    public State getState() { return connectionManager.getState(); }
+  public AimProxyInfo getProxy() { return proxy; }
 
-    public StateInfo getStateInfo() { return connectionManager.getStateInfo(); }
-
-    public boolean connect() { return connectionManager.connect(); }
-
-    public boolean getTriedConnecting() {
-        return connectionManager.getTriedConnecting();
-    }
-
-    public void disconnect() { connectionManager.disconnect(); }
-
-    public void disconnect(boolean onPurpose) {
-        connectionManager.disconnect(onPurpose);
-    }
-
-    public boolean wantedDisconnect() {
-        return connectionManager.wantedDisconnect();
-    }
-
-    void recordSnacFamilies(OscarConnection conn) {
-        List<Service> added = new ArrayList<Service>();
-        synchronized(this) {
-            for (int family : conn.getSnacFamilies()) {
-                List<Service> services = getServiceList(family);
-                Service service = conn.getService(family);
-                if (service == null) {
-                    LOGGER.finer("Could not find service handler for family 0x"
-                            + Integer.toHexString(family));
-                } else {
-                    services.add(service);
-                    added.add(service);
-                }
-            }
-        }
-
-        List<Service> addedClone = DefensiveTools.getUnmodifiable(added);
-
-        for (OpenedServiceListener listener : serviceListeners) {
-            listener.openedServices(this, addedClone);
-        }
-    }
-
-    private synchronized List<Service> getServiceList(int family) {
-        List<Service> list = snacfamilies.get(family);
-        if (list == null) {
-            list = new ArrayList<Service>();
-            snacfamilies.put(family, list);
-        }
-        return list;
-    }
-
-    private synchronized List<Service> getServiceListIfExists(int family) {
-        List<Service> list = snacfamilies.get(family);
-        return list == null || list.isEmpty() ? null : list;
-    }
-
-    private synchronized List<Service> getLocalServices() {
-        List<Service> list = new ArrayList<Service>();
-        for (Map.Entry<Integer, List<Service>> entry : snacfamilies
-                .entrySet()) {
-            list.addAll(entry.getValue());
-        }
-        return list;
-    }
+  public void setProxy(AimProxyInfo proxy) {
+    DefensiveTools.checkNull(proxy, "proxy");
+    
+    this.proxy = proxy;
+  }
 }

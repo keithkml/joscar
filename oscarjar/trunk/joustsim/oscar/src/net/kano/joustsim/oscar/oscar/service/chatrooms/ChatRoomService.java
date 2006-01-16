@@ -38,8 +38,8 @@ import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.OscarTools;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.snac.SnacPacketEvent;
+import net.kano.joscar.snaccmd.FullRoomInfo;
 import net.kano.joscar.snaccmd.FullUserInfo;
-import net.kano.joscar.snaccmd.MiniRoomInfo;
 import net.kano.joscar.snaccmd.chat.ChatCommand;
 import net.kano.joscar.snaccmd.chat.ChatMsg;
 import net.kano.joscar.snaccmd.chat.RecvChatMsgIcbm;
@@ -59,131 +59,138 @@ import java.util.List;
 import java.util.Set;
 
 public class ChatRoomService extends Service {
-    private Set<ChatRoomUser> users = new HashSet<ChatRoomUser>();
-    private CopyOnWriteArrayList<ChatRoomServiceListener> listeners
-            = new CopyOnWriteArrayList<ChatRoomServiceListener>();
-    private MiniRoomInfo roomInfo;
-    private ChatRoomMessageFactory messageFactory;
-    private String roomName;
+  private Set<ChatRoomUser> users = new HashSet<ChatRoomUser>();
+  private CopyOnWriteArrayList<ChatRoomServiceListener> listeners
+      = new CopyOnWriteArrayList<ChatRoomServiceListener>();
+  private FullRoomInfo roomInfo;
+  private ChatRoomMessageFactory messageFactory;
+  private String roomName;
 
-    public ChatRoomService(AimConnection aimConnection,
-            OscarConnection oscarConnection,
-            MiniRoomInfo roomInfo) {
-        super(aimConnection, oscarConnection,
-                ChatCommand.FAMILY_CHAT);
-        this.roomInfo = roomInfo;
-        roomName = OscarTools.getRoomNameFromCookie(roomInfo.getCookie());
-    }
+  public ChatRoomService(AimConnection aimConnection,
+      OscarConnection oscarConnection,
+      FullRoomInfo roomInfo) {
+    super(aimConnection, oscarConnection,
+        ChatCommand.FAMILY_CHAT);
+    this.roomInfo = roomInfo;
+    roomName = OscarTools.getRoomNameFromCookie(roomInfo.getCookie());
+  }
 
-    public String getRoomName() { return roomName; }
+  public void connected() {
+    setReady();
+  }
 
-    public SnacFamilyInfo getSnacFamilyInfo() {
-        return ChatCommand.FAMILY_INFO;
-    }
+  public FullRoomInfo getRoomInfo() {
+    return roomInfo;
+  }
 
-    public void handleSnacPacket(SnacPacketEvent snacPacketEvent) {
-        SnacCommand cmd = snacPacketEvent.getSnacCommand();
-        if (cmd instanceof UsersJoinedCmd) {
-            UsersJoinedCmd joinedCmd = (UsersJoinedCmd) cmd;
-            List<ChatRoomUser> added = addUsers(joinedCmd.getUsers());
-            List<Exception> exceptions = new ArrayList<Exception>();
-            for (ChatRoomServiceListener listener : listeners) {
-                try {
-                    listener.handleUsersJoined(this, added);
-                } catch (Exception e) {
-                    exceptions.add(e);
-                }
-            }
-            JavaTools.throwExceptions(exceptions, "Error while handling room "
-                    + "join listeners");
+  public String getRoomName() { return roomName; }
 
-        } else if (cmd instanceof UsersLeftCmd) {
-            UsersLeftCmd leftCmd = (UsersLeftCmd) cmd;
-            List<FullUserInfo> users = leftCmd.getUsers();
-            List<ChatRoomUser> removed = removeUsers(users);
+  public SnacFamilyInfo getSnacFamilyInfo() {
+    return ChatCommand.FAMILY_INFO;
+  }
 
-            List<Exception> exceptions = new ArrayList<Exception>();
-            for (ChatRoomServiceListener listener : listeners) {
-                try {
-                    listener.handleUsersLeft(this, removed);
-                } catch (Exception e) {
-                    exceptions.add(e);
-                }
-            }
-            JavaTools.throwExceptions(exceptions, "Error while handling room "
-                    + "left listeners");
-
-        } else if (cmd instanceof RecvChatMsgIcbm) {
-            RecvChatMsgIcbm msgIcbm = (RecvChatMsgIcbm) cmd;
-            FullUserInfo senderInfo = msgIcbm.getSenderInfo();
-            ChatRoomUser user = findChatRoomUser(senderInfo);
-            if (user == null) {
-                user = new ChatRoomUser(senderInfo);
-            }
-            ChatMsg message = msgIcbm.getMessage();
-            ChatMessage ourMsg = messageFactory
-                    .createMessage(this, user, message);
-
-            List<Exception> exceptions = new ArrayList<Exception>();
-            for (ChatRoomServiceListener listener : listeners) {
-                try {
-                    listener.handleIncomingMessage(this, user, ourMsg);
-                } catch (Exception e) {
-                    exceptions.add(e);
-                }
-            }
-            JavaTools.throwExceptions(exceptions, "Error while handling room "
-                    + "left listeners");
+  public void handleSnacPacket(SnacPacketEvent snacPacketEvent) {
+    SnacCommand cmd = snacPacketEvent.getSnacCommand();
+    if (cmd instanceof UsersJoinedCmd) {
+      UsersJoinedCmd joinedCmd = (UsersJoinedCmd) cmd;
+      Set<ChatRoomUser> added = addUsers(joinedCmd.getUsers());
+      List<Exception> exceptions = new ArrayList<Exception>();
+      for (ChatRoomServiceListener listener : listeners) {
+        try {
+          listener.handleUsersJoined(this, added);
+        } catch (Exception e) {
+          exceptions.add(e);
         }
-    }
+      }
+      JavaTools.throwExceptions(exceptions, "Error while handling room "
+          + "join listeners");
 
-    public synchronized Set<ChatRoomUser> getUsers() {
-        return DefensiveTools.getUnmodifiableSetCopy(users);
-    }
+    } else if (cmd instanceof UsersLeftCmd) {
+      UsersLeftCmd leftCmd = (UsersLeftCmd) cmd;
+      List<FullUserInfo> users = leftCmd.getUsers();
+      Set<ChatRoomUser> removed = removeUsers(users);
 
-    private synchronized List<ChatRoomUser> removeUsers(
-            List<FullUserInfo> users) {
-        List<ChatRoomUser> removed = new ArrayList<ChatRoomUser>();
-        for (FullUserInfo userInfo : users) {
-            ChatRoomUser user = new ChatRoomUser(userInfo);
-            if (this.users.remove(user)) removed.add(user);
+      List<Exception> exceptions = new ArrayList<Exception>();
+      for (ChatRoomServiceListener listener : listeners) {
+        try {
+          listener.handleUsersLeft(this, removed);
+        } catch (Exception e) {
+          exceptions.add(e);
         }
-        return removed;
-    }
+      }
+      JavaTools.throwExceptions(exceptions, "Error while handling room "
+          + "left listeners");
 
-    private @Nullable synchronized ChatRoomUser findChatRoomUser(
-            FullUserInfo senderInfo) {
-        for (ChatRoomUser user : users) {
-            if (user.getScreenname().matches(senderInfo.getScreenname())) {
-                return user;
-            }
+    } else if (cmd instanceof RecvChatMsgIcbm) {
+      RecvChatMsgIcbm msgIcbm = (RecvChatMsgIcbm) cmd;
+      FullUserInfo senderInfo = msgIcbm.getSenderInfo();
+      ChatRoomUser user = findChatRoomUser(senderInfo);
+      if (user == null) {
+        user = new ChatRoomUser(senderInfo);
+      }
+      ChatMsg message = msgIcbm.getMessage();
+      ChatMessage ourMsg = messageFactory
+          .createMessage(this, user, message);
+
+      List<Exception> exceptions = new ArrayList<Exception>();
+      for (ChatRoomServiceListener listener : listeners) {
+        try {
+          listener.handleIncomingMessage(this, user, ourMsg);
+        } catch (Exception e) {
+          exceptions.add(e);
         }
-        return null;
+      }
+      JavaTools.throwExceptions(exceptions, "Error while handling room "
+          + "left listeners");
     }
+  }
 
-    private synchronized List<ChatRoomUser> addUsers(List<FullUserInfo> users) {
-        List<ChatRoomUser> added = new ArrayList<ChatRoomUser>();
-        for (FullUserInfo userInfo : users) {
-            ChatRoomUser user = new ChatRoomUser(userInfo);
-            if (this.users.add(user)) added.add(user);
-        }
-        return added;
+  public synchronized Set<ChatRoomUser> getUsers() {
+    return DefensiveTools.getUnmodifiableSetCopy(users);
+  }
+
+  private synchronized Set<ChatRoomUser> removeUsers(
+      List<FullUserInfo> users) {
+    Set<ChatRoomUser> removed = new HashSet<ChatRoomUser>();
+    for (FullUserInfo userInfo : users) {
+      ChatRoomUser user = new ChatRoomUser(userInfo);
+      if (this.users.remove(user)) removed.add(user);
     }
+    return removed;
+  }
 
-    public void addChatRoomListener(ChatRoomServiceListener listener) {
-        listeners.add(listener);
+  private @Nullable synchronized ChatRoomUser findChatRoomUser(
+      FullUserInfo senderInfo) {
+    for (ChatRoomUser user : users) {
+      if (user.getScreenname().matches(senderInfo.getScreenname())) {
+        return user;
+      }
     }
+    return null;
+  }
 
-    public void removeChatRoomListener(ChatRoomServiceListener listener) {
-        listeners.remove(listener);
+  private synchronized Set<ChatRoomUser> addUsers(List<FullUserInfo> users) {
+    Set<ChatRoomUser> added = new HashSet<ChatRoomUser>();
+    for (FullUserInfo userInfo : users) {
+      ChatRoomUser user = new ChatRoomUser(userInfo);
+      if (this.users.add(user)) added.add(user);
     }
+    return added;
+  }
 
-    void setMessageFactory(ChatRoomMessageFactory factory) {
-        this.messageFactory = factory;
-    }
+  public void addChatRoomListener(ChatRoomServiceListener listener) {
+    listeners.add(listener);
+  }
 
-    public void sendMessage(String message) throws EncodingException {
-        sendSnac(new SendChatMsgIcbm(messageFactory.encodeMessage(message)));
-    }
+  public void removeChatRoomListener(ChatRoomServiceListener listener) {
+    listeners.remove(listener);
+  }
 
+  void setMessageFactory(ChatRoomMessageFactory factory) {
+    this.messageFactory = factory;
+  }
+
+  public void sendMessage(String message) throws EncodingException {
+    sendSnac(new SendChatMsgIcbm(messageFactory.encodeMessage(message)));
+  }
 }

@@ -44,12 +44,12 @@ import net.kano.joustsim.oscar.oscar.service.icbm.RendezvousCapabilityHandler;
 import net.kano.joustsim.oscar.oscar.service.icbm.RendezvousSessionHandler;
 import net.kano.joustsim.Screenname;
 
-public class FileTransferManager {
+public class RvConnectionManager {
     private final IcbmService service;
-    private CopyOnWriteArrayList<FileTransferManagerListener> listeners
-            = new CopyOnWriteArrayList<FileTransferManagerListener>();
+    private CopyOnWriteArrayList<RvConnectionManagerListener> listeners
+            = new CopyOnWriteArrayList<RvConnectionManagerListener>();
 
-    public FileTransferManager(IcbmService service) {
+    public RvConnectionManager(IcbmService service) {
         this.service = service;
         CapabilityManager capMgr = service.getAimConnection()
                 .getCapabilityManager();
@@ -70,13 +70,13 @@ public class FileTransferManager {
         return outgoingFileTransfer;
     }
 
-    public void addFileTransferListener(FileTransferManagerListener listener) {
+    public void addFileTransferListener(RvConnectionManagerListener listener) {
         DefensiveTools.checkNull(listener, "listener");
 
         listeners.addIfAbsent(listener);
     }
 
-    public void removeFileTransferListener(FileTransferManagerListener listener) {
+    public void removeFileTransferListener(RvConnectionManagerListener listener) {
         DefensiveTools.checkNull(listener, "listener");
 
         listeners.remove(listener);
@@ -85,8 +85,8 @@ public class FileTransferManager {
     void fireNewIncomingTransfer(IncomingFileTransfer transfer) {
         assert !Thread.holdsLock(this);
 
-        for (FileTransferManagerListener listener : listeners) {
-            listener.handleNewIncomingFileTransfer(FileTransferManager.this, transfer);
+        for (RvConnectionManagerListener listener : listeners) {
+            listener.handleNewIncomingFileTransfer(RvConnectionManager.this, transfer);
         }
     }
 
@@ -96,7 +96,7 @@ public class FileTransferManager {
         public RendezvousSessionHandler handleSession(IcbmService service,
                 RvSession session) {
             IncomingFileTransferImpl transfer = new IncomingFileTransferImpl(
-                    FileTransferManager.this, session);
+                    RvConnectionManager.this, session);
             return transfer.getRvSessionHandler();
         }
     }

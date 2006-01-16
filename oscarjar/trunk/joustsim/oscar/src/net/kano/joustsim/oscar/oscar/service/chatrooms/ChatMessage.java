@@ -34,13 +34,17 @@
 package net.kano.joustsim.oscar.oscar.service.chatrooms;
 
 public class ChatMessage {
-    private String message;
+  private String message;
 
-    public ChatMessage(String message) {
-        this.message = message;
-    }
+  public ChatMessage(String message) {
+    this.message = message;
+  }
 
-    public String getMessage() {
-        return message;
-    }
+  public String getMessage() {
+    return message;
+  }
+
+  public String toString() {
+    return message;
+  }
 }

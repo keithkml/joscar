@@ -51,126 +51,126 @@ import java.util.List;
 import java.util.logging.Logger;
 
 public class MyBuddyIconItemManager {
-    private static final Logger LOGGER = Logger
-            .getLogger(MyBuddyIconItemManager.class.getName());
+  private static final Logger LOGGER = Logger
+      .getLogger(MyBuddyIconItemManager.class.getName());
 
-    private SsiService service;
-    private List<IconItem> items = new ArrayList<IconItem>();
-    private SsiItemObjectFactory factory = new DefaultSsiItemObjFactory();
-    private CopyOnWriteArrayList<MyBuddyIconItemListener> listeners
-            = new CopyOnWriteArrayList<MyBuddyIconItemListener>();
+  private SsiService service;
+  private List<IconItem> items = new ArrayList<IconItem>();
+  private SsiItemObjectFactory factory = new DefaultSsiItemObjFactory();
+  private CopyOnWriteArrayList<MyBuddyIconItemListener> listeners
+      = new CopyOnWriteArrayList<MyBuddyIconItemListener>();
 
-    public MyBuddyIconItemManager(SsiService service) {
-        this.service = service;
-        service.addItemChangeListener(new SsiItemChangeListener() {
-            public void handleItemCreated(SsiItem item) {
-                if (isIconItem(item)) {
-                    SsiItemObj itemObj = factory.getItemObj(item);
-                    if (itemObj instanceof IconItem) {
-                        final IconItem iconItem = (IconItem) itemObj;
-                        runAndCheckModifications(new Runnable() {
-                            public void run() {
-                                items.add(iconItem);
-                            }
-                        });
-                    }
+  public MyBuddyIconItemManager(SsiService service) {
+    this.service = service;
+    service.addItemChangeListener(new SsiItemChangeListener() {
+      public void handleItemCreated(SsiItem item) {
+        if (isIconItem(item)) {
+          SsiItemObj itemObj = factory.getItemObj(item);
+          if (itemObj instanceof IconItem) {
+            final IconItem iconItem = (IconItem) itemObj;
+            runAndCheckModifications(new Runnable() {
+              public void run() {
+                items.add(iconItem);
+              }
+            });
+          }
+        }
+      }
+
+      public void handleItemModified(SsiItem item) {
+        if (isIconItem(item)) {
+          SsiItemObj itemObj = factory.getItemObj(item);
+          if (itemObj instanceof IconItem) {
+            final IconItem iconItem = (IconItem) itemObj;
+            runAndCheckModifications(new Runnable() {
+              public void run() {
+                int id = iconItem.getId();
+                boolean removed = removeItemFromList(id);
+                if (!removed) {
+                  LOGGER.warning("MyBuddyIconManager got "
+                      + "modification of item " + iconItem
+                      + " which wasn't there (icons : "
+                      + items + ")");
                 }
-            }
-
-            public void handleItemModified(SsiItem item) {
-                if (isIconItem(item)) {
-                    SsiItemObj itemObj = factory.getItemObj(item);
-                    if (itemObj instanceof IconItem) {
-                        final IconItem iconItem = (IconItem) itemObj;
-                        runAndCheckModifications(new Runnable() {
-                            public void run() {
-                                int id = iconItem.getId();
-                                boolean removed = removeItemFromList(id);
-                                if (!removed) {
-                                    LOGGER.warning("MyBuddyIconManager got "
-                                            + "modification of item " + iconItem
-                                            + " which wasn't there (icons : "
-                                            + items + ")");
-                                }
-                                items.add(iconItem);
-                            }
-                        });
-                    }
-                }
-            }
-
-            public void handleItemDeleted(SsiItem item) {
-                if (isIconItem(item)) {
-                    if (!removeItemFromList(item.getId())) {
-                        LOGGER.warning("MyBuddyIconManager got "
-                                + "removal of item " + item
-                                + " which wasn't there (icons : "
-                                + items + ")");
-                    }
-                }
-            }
-        });
-    }
-
-    private void runAndCheckModifications(Runnable runnable) {
-        IconItem oldItem;
-        IconItem newItem;
-        synchronized (this) {
-            oldItem = getCurrentIconItem();
-            runnable.run();
-            newItem = getCurrentIconItem();
+                items.add(iconItem);
+              }
+            });
+          }
         }
-        if (oldItem != newItem) {
-            ExtraInfoData oldInfo = oldItem == null ? null
-                    : oldItem.getIconInfo();
-            ExtraInfoData newInfo = newItem == null ? null
-                    : newItem.getIconInfo();
-            for (MyBuddyIconItemListener listener : listeners) {
-                listener.handleMyIconItemChanged(this, oldInfo, newInfo);
-            }
-        }
-    }
+      }
 
-    private synchronized @Nullable IconItem getCurrentIconItem() {
-        for (IconItem iconItem : items) {
-            if (iconItem.getName().equals("1")) return iconItem;
+      public void handleItemDeleted(SsiItem item) {
+        if (isIconItem(item)) {
+          if (!removeItemFromList(item.getId())) {
+            LOGGER.warning("MyBuddyIconManager got "
+                + "removal of item " + item
+                + " which wasn't there (icons : "
+                + items + ")");
+          }
         }
-        return null;
-    }
+      }
+    });
+  }
 
-    private synchronized boolean removeItemFromList(int id) {
-        boolean good = false;
-        for (Iterator<IconItem> it = items.iterator();
-                it.hasNext();) {
-            IconItem otherItem = it.next();
-            if (otherItem.getId() == id) {
-                it.remove();
-                good = true;
-                break;
-            }
-        }
-        return good;
+  private void runAndCheckModifications(Runnable runnable) {
+    IconItem oldItem;
+    IconItem newItem;
+    synchronized (this) {
+      oldItem = getCurrentIconItem();
+      runnable.run();
+      newItem = getCurrentIconItem();
     }
+    if (oldItem != newItem) {
+      ExtraInfoData oldInfo = oldItem == null ? null
+          : oldItem.getIconInfo();
+      ExtraInfoData newInfo = newItem == null ? null
+          : newItem.getIconInfo();
+      for (MyBuddyIconItemListener listener : listeners) {
+        listener.handleMyIconItemChanged(this, oldInfo, newInfo);
+      }
+    }
+  }
 
-    private static boolean isIconItem(SsiItem item) {
-        return item.getItemType() == SsiItem.TYPE_ICON_INFO;
+  private synchronized @Nullable IconItem getCurrentIconItem() {
+    for (IconItem iconItem : items) {
+      if (iconItem.getName().equals("1")) return iconItem;
     }
+    return null;
+  }
 
-    public void setIcon(@Nullable ExtraInfoData iconInfo) {
-        IconItem currentItem = getCurrentIconItem();
-        ItemsCmd cmd;
-        if (currentItem == null) {
-            int nextId = service.getUniqueItemId(SsiItem.TYPE_ICON_INFO,
-                    SsiItem.GROUP_ROOT);
-            cmd = new CreateItemsCmd(
-                    new IconItem("1", nextId, iconInfo).toSsiItem());
-        } else {
-            IconItem newItem = new IconItem(currentItem);
-            newItem.setIconInfo(iconInfo);
-            cmd = new ModifyItemsCmd(newItem.toSsiItem());
-        }
-        service.sendSsiModification(cmd);
+  private synchronized boolean removeItemFromList(int id) {
+    boolean good = false;
+    for (Iterator<IconItem> it = items.iterator();
+        it.hasNext();) {
+      IconItem otherItem = it.next();
+      if (otherItem.getId() == id) {
+        it.remove();
+        good = true;
+        break;
+      }
     }
+    return good;
+  }
+
+  private static boolean isIconItem(SsiItem item) {
+    return item.getItemType() == SsiItem.TYPE_ICON_INFO;
+  }
+
+  public void setIcon(@Nullable ExtraInfoData iconInfo) {
+    IconItem currentItem = getCurrentIconItem();
+    ItemsCmd cmd;
+    if (currentItem == null) {
+      int nextId = service.getUniqueItemId(SsiItem.TYPE_ICON_INFO,
+          SsiItem.GROUP_ROOT);
+      cmd = new CreateItemsCmd(
+          new IconItem("1", nextId, iconInfo).toSsiItem());
+    } else {
+      IconItem newItem = new IconItem(currentItem);
+      newItem.setIconInfo(iconInfo);
+      cmd = new ModifyItemsCmd(newItem.toSsiItem());
+    }
+    service.sendSsiModification(cmd);
+  }
 
 //    public void addMyBuddyIconListener(MyBuddyIconListener listener) {
 //        listeners.addIfAbsent(listener);
@@ -180,7 +180,7 @@ public class MyBuddyIconItemManager {
 //        listeners.remove(listener);
 //    }
 
-    public CopyOnWriteArrayList<MyBuddyIconItemListener> getListeners() {
-        return new CopyOnWriteArrayList<MyBuddyIconItemListener>(listeners);
-    }
+  public CopyOnWriteArrayList<MyBuddyIconItemListener> getListeners() {
+    return new CopyOnWriteArrayList<MyBuddyIconItemListener>(listeners);
+  }
 }

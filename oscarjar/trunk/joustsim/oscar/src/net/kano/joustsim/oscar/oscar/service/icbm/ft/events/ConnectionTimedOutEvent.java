@@ -33,7 +33,7 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
-public class ConnectionTimedOutEvent extends FileTransferEvent {
+public class ConnectionTimedOutEvent extends RvConnectionEvent {
     private final long timeout;
 
     public ConnectionTimedOutEvent(long timeout) {

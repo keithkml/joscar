@@ -37,9 +37,7 @@ package net.kano.joustsim.app.forms.prefs;
 
 import net.kano.joustsim.trust.DistinguishedName;
 import net.kano.joustsim.app.GuiResources;
-import net.kano.joustsim.app.GuiResources;
 import net.kano.joustsim.trust.TrustTools;
-import net.kano.joustsim.trust.DistinguishedName;
 import net.kano.joscar.DefensiveTools;
 
 import javax.swing.Icon;

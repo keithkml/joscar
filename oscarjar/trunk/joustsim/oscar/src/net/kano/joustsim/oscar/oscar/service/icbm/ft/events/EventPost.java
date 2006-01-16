@@ -34,8 +34,8 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
 public interface EventPost {
-    void fireEvent(FileTransferEvent event);
+    void fireEvent(RvConnectionEvent event);
 
 //    void fireStateChange(FileTransferState state,
-//            FileTransferEvent event);
+//            RvConnectionEvent event);
 }

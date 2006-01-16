@@ -57,296 +57,338 @@ import net.kano.joustsim.oscar.oscar.service.icbm.Conversation;
 import net.kano.joustsim.oscar.oscar.service.icbm.IcbmBuddyInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.IcbmListener;
 import net.kano.joustsim.oscar.oscar.service.icbm.IcbmService;
+import net.kano.joustsim.oscar.oscar.service.chatrooms.ChatRoomManagerListener;
+import net.kano.joustsim.oscar.oscar.service.chatrooms.ChatRoomManager;
+import net.kano.joustsim.oscar.oscar.service.chatrooms.ChatInvitation;
+import net.kano.joustsim.oscar.oscar.service.chatrooms.ChatRoomSession;
+import net.kano.joustsim.oscar.oscar.service.chatrooms.ChatRoomSessionListener;
+import net.kano.joustsim.oscar.oscar.service.chatrooms.ChatSessionState;
+import net.kano.joustsim.oscar.oscar.service.chatrooms.ChatRoomUser;
+import net.kano.joustsim.oscar.oscar.service.chatrooms.ChatMessage;
 
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
+import javax.swing.JOptionPane;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 public class GuiSession {
-    private final JoustsimSession appSession;
+  private final JoustsimSession appSession;
 
-    private SignonWindow signonWin = null;
-    private SignonBox signonBox = null;
-    private SignonProgressBox signonProgressBox = null;
-    private DummyOnlineWindow dummyOnlineWindow = null;
+  private SignonWindow signonWin = null;
+  private SignonBox signonBox = null;
+  private SignonProgressBox signonProgressBox = null;
+  private DummyOnlineWindow dummyOnlineWindow = null;
 
-    private AimSession aimSession;
-    private AimConnection conn;
+  private AimSession aimSession;
+  private AimConnection conn;
 
-    private CopyOnWriteArrayList listeners = new CopyOnWriteArrayList();
+  private CopyOnWriteArrayList<GuiSessionListener> listeners
+      = new CopyOnWriteArrayList<GuiSessionListener>();
 
-    private boolean open = false;
-    private boolean closed = false;
-    private ConnStateListener connStateListener = new ConnStateListener();
+  private boolean open = false;
+  private boolean closed = false;
+  private ConnStateListener connStateListener = new ConnStateListener();
 
-    private Map imBoxes = new HashMap();
-    private Map prefsWindows = new HashMap();
+  private Map<Screenname, ImBox> imBoxes = new HashMap<Screenname, ImBox>();
+  private Map<Screenname, AccountPrefsWindow> prefsWindows
+      = new HashMap<Screenname, AccountPrefsWindow>();
 
-    public GuiSession(JoustsimSession appSession) {
-        DefensiveTools.checkNull(appSession, "appSession");
+  public GuiSession(JoustsimSession appSession) {
+    DefensiveTools.checkNull(appSession, "appSession");
 
-        this.appSession = appSession;
+    this.appSession = appSession;
+  }
+
+  public JoustsimSession getAppSession() { return appSession; }
+
+  public AimSession getAimSession() { return aimSession; }
+
+  public synchronized AimConnection getAimConnection() { return conn; }
+
+  public synchronized SignonBox getSignonBox() {
+    return signonBox;
+  }
+
+  public synchronized SignonProgressBox getSignonProgressBox() {
+    return signonProgressBox;
+  }
+
+  public void addListener(GuiSessionListener l) {
+    listeners.addIfAbsent(l);
+  }
+
+  public void removeListener(GuiSessionListener l) {
+    listeners.remove(l);
+  }
+
+  public void open() {
+    synchronized (this) {
+      if (open) return;
+      open = true;
+    }
+    for (GuiSessionListener listener : listeners) {
+      listener.opened(this);
+    }
+    openSignonWindow();
+  }
+
+  public void close() {
+    AimSession aimSession;
+    SignonWindow signonWin;
+    synchronized (this) {
+      if (!open || closed) return;
+      closed = true;
+
+      aimSession = this.aimSession;
+      signonWin = this.signonWin;
+
+      if (aimSession != null) this.aimSession = null;
+      if (signonWin != null) this.signonWin = null;
+      if (signonBox != null) signonBox = null;
+      if (signonProgressBox != null) signonProgressBox = null;
+      imBoxes.clear();
+      prefsWindows.clear();
+    }
+    signoff();
+
+    // we want to kill these things outside the lock so we're not in the
+    // lock for too long
+    if (aimSession != null) aimSession.closeConnection();
+    if (signonWin != null) signonWin.dispose();
+
+    for (GuiSessionListener listener : listeners) {
+      listener.closed(this);
+    }
+  }
+
+  public void signon(Screenname screenname, String pass) {
+    signon(new AimConnectionProperties(screenname, pass));
+  }
+
+  public void signoff() {
+    AimConnection conn = getAimConnection();
+    if (conn != null) conn.disconnect();
+  }
+
+  public synchronized ImBox openImBox(Screenname sn) {
+    ImBox box = imBoxes.get(sn);
+    if (box == null) {
+      IcbmService service = conn.getIcbmService();
+
+      box = createBox(sn);
+
+      box.handleConversation(service.getImConversation(sn));
+      box.handleConversation(service.getSecureAimConversation(sn));
+    }
+    final ImBox fbox = box;
+    SwingUtilities.invokeLater(new Runnable() {
+      public void run() {
+        fbox.setVisible(true);
+        fbox.requestFocus();
+      }
+    });
+    return box;
+  }
+
+  public synchronized AccountPrefsWindow openPrefsWindow(Screenname sn) {
+    AccountPrefsWindow frame = prefsWindows.get(sn);
+    if (frame == null) {
+      frame = new AccountPrefsWindow(appSession, sn);
+      frame.addPrefsPane(new LocalCertificatesPrefsPane(appSession, sn));
+      frame.addPrefsPane(new TrustPrefsPane(appSession, sn));
+      frame.setSize(640, 480);
+      prefsWindows.put(sn, frame);
     }
 
-    public JoustsimSession getAppSession() { return appSession; }
+    final AccountPrefsWindow fframe = frame;
+    SwingUtilities.invokeLater(new Runnable() {
+      public void run() {
+        fframe.setState(JFrame.NORMAL);
+        fframe.setVisible(true);
+        fframe.requestFocus();
+      }
+    });
+    return frame;
+  }
 
-    public AimSession getAimSession() { return aimSession; }
+  private void signon(AimConnectionProperties props) {
+    if (closed) return;
 
-    public synchronized AimConnection getAimConnection() { return conn; }
+    Screenname sn = new Screenname(signonBox.getScreenname());
+    SwingUtilities.invokeLater(new Runnable() {
+      public void run() {
+        System.out.println("setting visible because of signon() call");
 
-    public synchronized SignonBox getSignonBox() {
-        return signonBox;
+        initSignonProgressWindow();
+        signonProgressBox.updateSession();
+        signonWin.setToSignonProgressBox();
+        signonWin.setVisible(true);
+      }
+    });
+    aimSession = appSession.openAimSession(sn);
+    //TODO: dispose of other buddies' prefs windows
+
+    conn = aimSession.openConnection(props);
+    conn.addStateListener(connStateListener);
+    conn.connect();
+  }
+
+  private synchronized void initDummyOnlineWindow() {
+    if (closed) return;
+    if (dummyOnlineWindow == null) {
+      dummyOnlineWindow = new DummyOnlineWindow(this);
+      dummyOnlineWindow.pack();
     }
+    dummyOnlineWindow.updateSession();
+  }
 
-    public synchronized SignonProgressBox getSignonProgressBox() {
-        return signonProgressBox;
+  private synchronized void initSignonWindow() {
+    if (closed) return;
+    if (signonWin == null) {
+      signonWin = new SignonWindow(this);
     }
+  }
 
-    public void addListener(GuiSessionListener l) {
-        listeners.addIfAbsent(l);
+  private synchronized void initSignonBox() {
+    if (closed) return;
+    initSignonWindow();
+    if (signonBox == null) {
+      signonBox = new SignonBox(this);
     }
+  }
 
-    public void removeListener(GuiSessionListener l) {
-        listeners.remove(l);
+  private synchronized void initSignonProgressWindow() {
+    if (closed) return;
+    initSignonWindow();
+    if (signonProgressBox == null) {
+      signonProgressBox = new SignonProgressBox(this);
     }
+  }
 
-    public void open() {
-        synchronized(this) {
-            if (open) return;
-            open = true;
-        }
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            GuiSessionListener listener = (GuiSessionListener) it.next();
-            listener.opened(this);
-        }
-        openSignonWindow();
+  private void openSignonWindow() {
+    SwingUtilities.invokeLater(new Runnable() {
+      public void run() {
+        initSignonBox();
+        signonWin.setToSignonBox();
+        System.out.println("setting visible because of openSignonWindow call");
+        signonWin.setVisible(true);
+      }
+    });
+  }
+
+  private synchronized ImBox createBox(Screenname sn) {
+    DefensiveTools.checkNull(sn, "sn");
+    if (imBoxes.containsKey(sn)) {
+      throw new IllegalArgumentException("IM box for " + sn
+          + " already exists");
     }
+    ImBox box = new ImBox(this, conn, sn);
+    box.setSize(410, 280);
+    imBoxes.put(sn, box);
+    return box;
+  }
 
-    public void close() {
-        AimSession aimSession;
-        SignonWindow signonWin;
-        synchronized(this) {
-            if (!open || closed) return;
-            closed = true;
+  private void handleNewConversation(Conversation conv) {
+    ImBox box = openImBox(conv.getBuddy());
+    box.handleConversation(conv);
+  }
 
-            aimSession = this.aimSession;
-            signonWin = this.signonWin;
-
-            if (aimSession != null) this.aimSession = null;
-            if (signonWin != null) this.signonWin = null;
-            if (signonBox != null) signonBox = null;
-            if (signonProgressBox != null) signonProgressBox = null;
-            imBoxes.clear();
-            prefsWindows.clear();
-        }
-        signoff();
-
-        // we want to kill these things outside the lock so we're not in the
-        // lock for too long
-        if (aimSession != null) aimSession.closeConnection();
-        if (signonWin != null) signonWin.dispose();
-
-        for (Iterator it = listeners.iterator(); it.hasNext();) {
-            GuiSessionListener listener = (GuiSessionListener) it.next();
-            listener.closed(this);
-        }
+  private synchronized void resetForDisconnection() {
+    for (ImBox box : imBoxes.values()) {
+      box.setInvalidBox();
+      box.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
     }
+    imBoxes.clear();
+  }
 
-    public void signon(Screenname screenname, String pass) {
-        signon(new AimConnectionProperties(screenname, pass));
-    }
+  public DummyOnlineWindow getDummyOnlineWindow() {
+    return dummyOnlineWindow;
+  }
 
-    public void signoff() {
-        AimConnection conn = getAimConnection();
-        if (conn != null) conn.disconnect();
-    }
+  private class ConnStateListener implements StateListener {
+    public void handleStateChange(StateEvent event) {
+      AimConnection conn = event.getAimConnection();
+      if (aimSession == null || conn != aimSession.getConnection()) {
+        // we can ignore this event since we're using a new connection
+        // now
+        System.out.println("ignoring event for " + conn + ": " + event);
+        return;
+      }
+      State state = event.getNewState();
+      if (state == State.ONLINE) {
+        IcbmService icbmservice = conn.getIcbmService();
+        icbmservice.addIcbmListener(new IcbmListener() {
+          public void newConversation(IcbmService service, Conversation conv) {
+            handleNewConversation(conv);
+          }
 
-    public synchronized ImBox openImBox(Screenname sn) {
-        ImBox box = (ImBox) imBoxes.get(sn);
-        if (box == null) {
-            IcbmService service = conn.getIcbmService();
-
-            box = createBox(sn);
-
-            box.handleConversation(service.getImConversation(sn));
-            box.handleConversation(service.getSecureAimConversation(sn));
-        }
-        final ImBox fbox = box;
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                fbox.setVisible(true);
-                fbox.requestFocus();
-            }
+          public void buddyInfoUpdated(IcbmService service, Screenname buddy,
+              IcbmBuddyInfo info) {
+          }
         });
-        return box;
-    }
-
-    public synchronized AccountPrefsWindow openPrefsWindow(Screenname sn) {
-        AccountPrefsWindow frame = (AccountPrefsWindow) prefsWindows.get(sn);
-        if (frame == null) {
-            frame = new AccountPrefsWindow(appSession, sn);
-            frame.addPrefsPane(new LocalCertificatesPrefsPane(appSession, sn));
-            frame.addPrefsPane(new TrustPrefsPane(appSession, sn));
-            frame.setSize(640, 480);
-            prefsWindows.put(sn, frame);
-        }
-
-        final AccountPrefsWindow fframe = frame;
         SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                fframe.setState(JFrame.NORMAL);
-                fframe.setVisible(true);
-                fframe.requestFocus();
-            }
+          public void run() {
+            System.out.println("online, setting invisible");
+            signonWin.setVisible(false);
+            initDummyOnlineWindow();
+            dummyOnlineWindow.setVisible(true);
+          }
         });
-        return frame;
-    }
+        conn.getChatRoomManager().addListener(new ChatRoomManagerListener() {
+          public void handleInvitation(ChatRoomManager chatRoomManager,
+              ChatInvitation inv) {
+            int result = JOptionPane.showOptionDialog(dummyOnlineWindow,
+                inv.getScreenname() + " has invited you to " + inv.getRoomName(),
+                "Invitation", JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE, null,
+                new String[]{"Join Room", "Ignore"}, "Join Room");
+            if (result == JOptionPane.YES_OPTION) {
+              ChatRoomSession session = inv.accept();
 
-    private void signon(AimConnectionProperties props) {
-        if (closed) return;
+              session.addListener(new ChatRoomSessionListener() {
+                public void handleStateChange(ChatRoomSession room, ChatSessionState oldState,
+                    ChatSessionState state) {
 
-        Screenname sn = new Screenname(signonBox.getScreenname());
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                System.out.println("setting visible because of signon() call");
-
-                initSignonProgressWindow();
-                signonProgressBox.updateSession();
-                signonWin.setToSignonProgressBox();
-                signonWin.setVisible(true);
-            }
-        });
-        aimSession = appSession.openAimSession(sn);
-        //TODO: dispose of other buddies' prefs windows
-
-        conn = aimSession.openConnection(props);
-        conn.addStateListener(connStateListener);
-        conn.connect();
-    }
-
-    private synchronized void initDummyOnlineWindow() {
-        if (closed) return;
-        if (dummyOnlineWindow == null) {
-            dummyOnlineWindow = new DummyOnlineWindow(this);
-            dummyOnlineWindow.pack();
-        }
-        dummyOnlineWindow.updateSession();
-    }
-
-    private synchronized void initSignonWindow() {
-        if (closed) return;
-        if (signonWin == null) {
-            signonWin = new SignonWindow(this);
-        }
-    }
-
-    private synchronized void initSignonBox() {
-        if (closed) return;
-        initSignonWindow();
-        if (signonBox == null) {
-            signonBox = new SignonBox(this);
-        }
-    }
-
-    private synchronized void initSignonProgressWindow() {
-        if (closed) return;
-        initSignonWindow();
-        if (signonProgressBox == null) {
-            signonProgressBox = new SignonProgressBox(this);
-        }
-    }
-
-    private void openSignonWindow() {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                initSignonBox();
-                signonWin.setToSignonBox();
-                System.out.println("setting visible because of openSignonWindow call");
-                signonWin.setVisible(true);
-            }
-        });
-    }
-
-    private synchronized ImBox createBox(Screenname sn) {
-        DefensiveTools.checkNull(sn, "sn");
-        if (imBoxes.containsKey(sn)) {
-            throw new IllegalArgumentException("IM box for " + sn
-                    + " already exists");
-        }
-        ImBox box = new ImBox(this, conn, sn);
-        box.setSize(410, 280);
-        imBoxes.put(sn, box);
-        return box;
-    }
-
-    private void handleNewConversation(Conversation conv) {
-        ImBox box = openImBox(conv.getBuddy());
-        box.handleConversation(conv);
-    }
-
-    private synchronized void resetForDisconnection() {
-        for (Iterator it = imBoxes.values().iterator(); it.hasNext();) {
-            ImBox box = (ImBox) it.next();
-            box.setInvalidBox();
-            box.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        }
-        imBoxes.clear();
-    }
-
-    public DummyOnlineWindow getDummyOnlineWindow() {
-        return dummyOnlineWindow;
-    }
-
-    private class ConnStateListener implements StateListener {
-        public void handleStateChange(StateEvent event) {
-            AimConnection conn = event.getAimConnection();
-            if (aimSession == null || conn != aimSession.getConnection()) {
-                // we can ignore this event since we're using a new connection
-                // now
-                System.out.println("ignoring event for " + conn + ": " + event);
-                return;
-            }
-            State state = event.getNewState();
-            if (state == State.ONLINE) {
-                IcbmService icbmservice = conn.getIcbmService();
-                icbmservice.addIcbmListener(new IcbmListener() {
-                    public void newConversation(IcbmService service, Conversation conv) {
-                        handleNewConversation(conv);
-                    }
-
-                    public void buddyInfoUpdated(IcbmService service, Screenname buddy,
-                            IcbmBuddyInfo info) {
-                    }
-                });
-                SwingUtilities.invokeLater(new Runnable() {
-                    public void run() {
-                        System.out.println("online, setting invisible");
-                        signonWin.setVisible(false);
-                        initDummyOnlineWindow();
-                        dummyOnlineWindow.setVisible(true);
-                    }
-                });
-
-            } else if (state == State.DISCONNECTED
-                    || state == State.FAILED) {
-                AimConnection oldconn = event.getAimConnection();
-                if (oldconn != null) {
-                    oldconn.removeStateListener(connStateListener);
                 }
-                final StateInfo sinfo = event.getNewStateInfo();
-                SwingUtilities.invokeLater(new Runnable() {
-                    public void run() {
-                        signonBox.setFailureInfo(sinfo);
-                        if (dummyOnlineWindow != null) {
-                            dummyOnlineWindow.setVisible(false);
-                        }
-                        openSignonWindow();
-                    }
-                });
-                resetForDisconnection();
+
+                public void handleUsersJoined(ChatRoomSession room,
+                    Set<ChatRoomUser> joined) {
+                }
+
+                public void handleUsersLeft(ChatRoomSession room, Set<ChatRoomUser> left) {
+                }
+
+                public void handleIncomingMessage(ChatRoomSession room, ChatRoomUser user,
+                    ChatMessage message) {
+
+                }
+              });
+            } else {
+              inv.reject();
             }
+          }
+        });
+
+      } else if (state == State.DISCONNECTED
+          || state == State.FAILED) {
+        AimConnection oldconn = event.getAimConnection();
+        if (oldconn != null) {
+          oldconn.removeStateListener(connStateListener);
         }
+        final StateInfo sinfo = event.getNewStateInfo();
+        SwingUtilities.invokeLater(new Runnable() {
+          public void run() {
+            signonBox.setFailureInfo(sinfo);
+            if (dummyOnlineWindow != null) {
+              dummyOnlineWindow.setVisible(false);
+            }
+            openSignonWindow();
+          }
+        });
+        resetForDisconnection();
+      }
     }
+  }
 }
