@@ -48,426 +48,435 @@ import net.kano.joustsim.trust.BuddyCertificateInfo;
 import java.beans.PropertyChangeEvent;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Logger;
 
 public class BuddyTrustManager {
-    private final BuddyInfoManager buddyInfoManager;
+  private static final Logger LOGGER = Logger
+      .getLogger(BuddyTrustManager.class.getName());
 
-    private final AimConnection conn;
-    private final CertificateInfoTrustManager certTrustMgr;
+  private final BuddyInfoManager buddyInfoManager;
 
-    private Map<Screenname,BuddyTrustInfoHolder> trustInfos
-            = new HashMap<Screenname, BuddyTrustInfoHolder>();
-    private Map<Screenname,BuddyCertificateInfo> latestInfos
-            = new HashMap<Screenname, BuddyCertificateInfo>();
-    private Map<BuddyHashHolder,BuddyCertificateInfoHolder> cachedCertInfos
-            = new HashMap<BuddyHashHolder, BuddyCertificateInfoHolder>();
+  private final AimConnection conn;
+  private final CertificateInfoTrustManager certTrustMgr;
 
-    private CopyOnWriteArrayList<BuddyTrustListener> listeners
-            = new CopyOnWriteArrayList<BuddyTrustListener>();
+  private Map<Screenname, BuddyTrustInfoHolder> trustInfos
+      = new HashMap<Screenname, BuddyTrustInfoHolder>();
+  private Map<Screenname, BuddyCertificateInfo> latestInfos
+      = new HashMap<Screenname, BuddyCertificateInfo>();
+  private Map<BuddyHashHolder, BuddyCertificateInfoHolder> cachedCertInfos
+      = new HashMap<BuddyHashHolder, BuddyCertificateInfoHolder>();
 
-    public BuddyTrustManager(AimConnection conn) {
-        DefensiveTools.checkNull(conn, "conn");
+  private CopyOnWriteArrayList<BuddyTrustListener> listeners
+      = new CopyOnWriteArrayList<BuddyTrustListener>();
 
-        this.conn = conn;
-        this.buddyInfoManager = conn.getBuddyInfoManager();
-        this.certTrustMgr = conn.getCertificateInfoTrustManager();
+  public BuddyTrustManager(AimConnection conn) {
+    DefensiveTools.checkNull(conn, "conn");
 
-        if (buddyInfoManager == null || certTrustMgr == null) {
-            throw new IllegalArgumentException("conenction has no buddy info "
-                    + "manager and/or certificate trust manager");
+    this.conn = conn;
+    this.buddyInfoManager = conn.getBuddyInfoManager();
+    this.certTrustMgr = conn.getCertificateInfoTrustManager();
+
+    if (buddyInfoManager == null || certTrustMgr == null) {
+      throw new IllegalArgumentException("conenction has no buddy info "
+          + "manager and/or certificate trust manager");
+    }
+
+    buddyInfoManager.addGlobalBuddyInfoListener(new GlobalBuddyInfoAdapter() {
+      public void buddyInfoChanged(BuddyInfoManager manager,
+          Screenname buddy, BuddyInfo buddyInfo,
+          PropertyChangeEvent event) {
+        String prop = event.getPropertyName();
+
+        if (prop.equals(BuddyInfo.PROP_CERTIFICATE_INFO)) {
+          BuddyCertificateInfo certInfo
+              = (BuddyCertificateInfo) event.getNewValue();
+          LOGGER.fine("cert info for " + buddy + " changed: " + certInfo);
+          if (certInfo != null) {
+            // we want to cache this certificate before we handle
+            // the buddy's new hash
+            cacheCertInfo(certInfo);
+          }
+          handleBuddyHashChange(buddyInfo, certInfo);
         }
+      }
+    });
+    certTrustMgr.addTrustListener(new CertificateInfoTrustListener() {
+      public void certificateInfoTrusted(
+          CertificateInfoTrustManager manager,
+          BuddyCertificateInfo certInfo) {
 
-        buddyInfoManager.addGlobalBuddyInfoListener(new GlobalBuddyInfoAdapter() {
-            public void buddyInfoChanged(BuddyInfoManager manager,
-                    Screenname buddy, BuddyInfo buddyInfo,
-                    PropertyChangeEvent event) {
-                String prop = event.getPropertyName();
+        handleCertInfoTrustChange(certInfo, true);
+      }
 
-                if (prop.equals(BuddyInfo.PROP_CERTIFICATE_INFO)) {
-                    BuddyCertificateInfo certInfo
-                            = (BuddyCertificateInfo) event.getNewValue();
-                    System.out.println("cert info for " + buddy + " changed: " + certInfo);
-                    if (certInfo != null) {
-                        // we want to cache this certificate before we handle
-                        // the buddy's new hash
-                        cacheCertInfo(certInfo);
-                    }
-                    handleBuddyHashChange(buddyInfo, certInfo);
-                }
-            }
-        });
-        certTrustMgr.addTrustListener(new CertificateInfoTrustListener() {
-            public void certificateInfoTrusted(
-                    CertificateInfoTrustManager manager,
-                    BuddyCertificateInfo certInfo) {
+      public void certificateInfoNoLongerTrusted(
+          CertificateInfoTrustManager manager,
+          BuddyCertificateInfo certInfo) {
 
-                handleCertInfoTrustChange(certInfo, true);
-            }
+        handleCertInfoTrustChange(certInfo, false);
+      }
+    });
+  }
 
-            public void certificateInfoNoLongerTrusted(
-                    CertificateInfoTrustManager manager,
-                    BuddyCertificateInfo certInfo) {
+  public AimConnection getAimConnection() {
+    return conn;
+  }
 
-                handleCertInfoTrustChange(certInfo, false);
-            }
-        });
+  public void addBuddyTrustListener(BuddyTrustListener l) {
+    listeners.addIfAbsent(l);
+  }
+
+  public void removeBuddyTrustListener(BuddyTrustListener l) {
+    listeners.remove(l);
+  }
+
+  private void handleCertInfoTrustChange(BuddyCertificateInfo certInfo,
+      boolean trusted) {
+    assert !Thread.holdsLock(this);
+
+    DefensiveTools.checkNull(certInfo, "certInfo");
+
+    TrustStatus newTrusted = trusted
+        ? TrustStatus.TRUSTED
+        : TrustStatus.NOT_TRUSTED;
+
+    Screenname sn = certInfo.getBuddy();
+    ByteBlock trustedHash = certInfo.getCertificateInfoHash();
+    TrustStatus oldTrusted;
+    synchronized (this) {
+      BuddyTrustInfoHolder trustHolder = getTrustInfoInstance(sn);
+      if (trustHolder == null) {
+        // this probably means we got a listener callback for a
+        // certificate that we aren't monitoring anymore
+        return;
+      }
+
+      BuddyCertificateInfoHolder certInfoHolder
+          = getCertificateInfoHolder(sn, trustedHash);
+      if (certInfoHolder != null) {
+        // this should always be executed, but we put it in an if block
+        // so it doesn't totally break if something goes wrong
+        certInfoHolder.setTrusted(trusted);
+      }
+
+      BuddyCertificateInfo curCertInfo = latestInfos.get(sn);
+      ByteBlock hash = curCertInfo == null
+          ? null
+          : curCertInfo.getCertificateInfoHash();
+      if (hash == null || !hash.equals(trustedHash)) {
+        // this isn't the buddy's current certificate, so there's
+        // nothing left to do (no listeners need to be called since no
+        // buddy could've been trusted or untrusted.
+        return;
+      }
+
+      oldTrusted = trustHolder.getTrustedStatus();
+      if (oldTrusted == newTrusted) {
+        // this certificate was already trusted, as far as we know
+        return;
+      }
+
+      trustHolder.setTrustedStatus(newTrusted);
     }
 
-    public AimConnection getAimConnection() {
-        return conn;
+    // if we weren't supposed to fire an event, we would've returned before
+    // now
+    fireChangeEvents(sn, certInfo, oldTrusted, newTrusted);
+  }
+
+  private void handleBuddyHashChange(BuddyInfo info,
+      BuddyCertificateInfo certInfo) {
+    Screenname sn = info.getScreenname();
+    TrustStatus oldStatus;
+    TrustStatus newStatus;
+    synchronized (this) {
+      // get the trust info for this buddy
+      BuddyTrustInfoHolder buddyTrustInfo = getTrustInfoInstance(sn);
+
+      // save the buddy's new certificate hash, and determine whether his
+      // trust status changed
+      oldStatus = buddyTrustInfo.getTrustedStatus();
+
+      LOGGER.info("updating buddy hash for " + sn);
+      newStatus = updateBuddyHash(sn, certInfo);
+      LOGGER.info("new status for " + sn + " is " + newStatus);
+      if (newStatus == null) {
+        // the status did not change, so there's nothing left for us to
+        // do here
+        return;
+      }
+      // the buddy's trust status changed, so we need to set it here and
+      // fire some events to our listeners
+      buddyTrustInfo.setTrustedStatus(newStatus);
     }
 
-    public void addBuddyTrustListener(BuddyTrustListener l) {
-        listeners.addIfAbsent(l);
+    fireChangeEvents(sn, certInfo, oldStatus, newStatus);
+  }
+
+  private synchronized TrustStatus updateBuddyHash(Screenname sn,
+      BuddyCertificateInfo certInfo) {
+    DefensiveTools.checkNull(sn, "sn");
+
+    // store the new hash and get his old hash
+    BuddyCertificateInfo oldInfo = latestInfos.put(sn, certInfo);
+
+    if (oldInfo == certInfo || (oldInfo != null && oldInfo.equals(certInfo))) {
+      // the buddy's new hash is the same as his old hash
+      return null;
     }
 
-    public void removeBuddyTrustListener(BuddyTrustListener l) {
-        listeners.remove(l);
-    }
+    if (certInfo == null || certInfo.getCertificateInfoHash() == null) {
+      // if the hash is null, the buddy can't be trusted
+      return TrustStatus.NOT_TRUSTED;
 
-    private void handleCertInfoTrustChange(BuddyCertificateInfo certInfo,
-            boolean trusted) {
-        assert !Thread.holdsLock(this);
+    } else {
+      // the hash is not null, so we need to determine whether the buddy
+      // is trusted by seeing if we have a copy of the certificate info
+      // corresponding to his buddy hash, and then seeing whether it's
+      // trusted according to the trust manager
 
-        DefensiveTools.checkNull(certInfo, "certInfo");
+      if (!certInfo.isUpToDate()) {
+        // we don't have this certificate, so this buddy has an UNKNOWN
+        // certificate
+        return TrustStatus.UNKNOWN;
+      }
 
-        TrustStatus newTrusted = trusted
-                ? TrustStatus.TRUSTED
-                : TrustStatus.NOT_TRUSTED;
+      ByteBlock hash = certInfo.getCertificateInfoHash();
+      BuddyCertificateInfoHolder certHolder
+          = getCertificateInfoHolder(sn, hash);
+      if (certHolder == null) {
+        // we don't have this certificate, so this buddy has an UNKNOWN
+        // certificate
+        return TrustStatus.UNKNOWN;
 
-        Screenname sn = certInfo.getBuddy();
-        ByteBlock trustedHash = certInfo.getCertificateInfoHash();
-        TrustStatus oldTrusted;
-        synchronized(this) {
-            BuddyTrustInfoHolder trustHolder = getTrustInfoInstance(sn);
-            if (trustHolder == null) {
-                // this probably means we got a listener callback for a
-                // certificate that we aren't monitoring anymore
-                return;
-            }
-
-            BuddyCertificateInfoHolder certInfoHolder
-                    = getCertificateInfoHolder(sn, trustedHash);
-            if (certInfoHolder != null) {
-                // this should always be executed, but we put it in an if block
-                // so it doesn't totally break if something goes wrong
-                certInfoHolder.setTrusted(trusted);
-            }
-
-            BuddyCertificateInfo curCertInfo = latestInfos.get(sn);
-            ByteBlock hash = curCertInfo == null
-                    ? null
-                    : curCertInfo.getCertificateInfoHash();
-            if (hash == null || !hash.equals(trustedHash)) {
-                // this isn't the buddy's current certificate, so there's
-                // nothing left to do (no listeners need to be called since no
-                // buddy could've been trusted or untrusted.
-                return;
-            }
-
-            oldTrusted = trustHolder.getTrustedStatus();
-            if (oldTrusted == newTrusted) {
-                // this certificate was already trusted, as far as we know
-                return;
-            }
-
-            trustHolder.setTrustedStatus(newTrusted);
-        }
-
-        // if we weren't supposed to fire an event, we would've returned before
-        // now
-        fireChangeEvents(sn, certInfo, oldTrusted, newTrusted);
-    }
-
-    private void handleBuddyHashChange(BuddyInfo info, BuddyCertificateInfo certInfo) {
-        Screenname sn = info.getScreenname();
-        TrustStatus oldStatus;
-        TrustStatus newStatus;
-        synchronized(this) {
-            // get the trust info for this buddy
-            BuddyTrustInfoHolder buddyTrustInfo = getTrustInfoInstance(sn);
-
-            // save the buddy's new certificate hash, and determine whether his
-            // trust status changed
-            oldStatus = buddyTrustInfo.getTrustedStatus();
-
-            System.out.println("updating buddy hash for " + sn);
-            newStatus = updateBuddyHash(sn, certInfo);
-            System.out.println("new status for " + sn + " is " + newStatus);
-            if (newStatus == null) {
-                // the status did not change, so there's nothing left for us to
-                // do here
-                return;
-            }
-            // the buddy's trust status changed, so we need to set it here and
-            // fire some events to our listeners
-            buddyTrustInfo.setTrustedStatus(newStatus);
-        }
-
-        fireChangeEvents(sn, certInfo, oldStatus, newStatus);
-    }
-
-    private synchronized TrustStatus updateBuddyHash(Screenname sn,
-            BuddyCertificateInfo certInfo) {
-        DefensiveTools.checkNull(sn, "sn");
-
-        // store the new hash and get his old hash
-        BuddyCertificateInfo oldInfo = latestInfos.put(sn, certInfo);
-
-        if (oldInfo == certInfo || (oldInfo != null && oldInfo.equals(certInfo))) {
-            // the buddy's new hash is the same as his old hash
-            return null;
-        }
-
-        if (certInfo == null || certInfo.getCertificateInfoHash() == null) {
-            // if the hash is null, the buddy can't be trusted
-            return TrustStatus.NOT_TRUSTED;
-
+      } else {
+        // we have this buddy's certificate, so we return whether it's
+        // marked as being trusted or not
+        if (certHolder.isTrusted()) {
+          return TrustStatus.TRUSTED;
         } else {
-            // the hash is not null, so we need to determine whether the buddy
-            // is trusted by seeing if we have a copy of the certificate info
-            // corresponding to his buddy hash, and then seeing whether it's
-            // trusted according to the trust manager
-
-            if (!certInfo.isUpToDate()) {
-                // we don't have this certificate, so this buddy has an UNKNOWN
-                // certificate
-                return TrustStatus.UNKNOWN;
-            }
-
-            ByteBlock hash = certInfo.getCertificateInfoHash();
-            BuddyCertificateInfoHolder certHolder
-                    = getCertificateInfoHolder(sn, hash);
-            if (certHolder == null) {
-                // we don't have this certificate, so this buddy has an UNKNOWN
-                // certificate
-                return TrustStatus.UNKNOWN;
-
-            } else {
-                // we have this buddy's certificate, so we return whether it's
-                // marked as being trusted or not
-                if (certHolder.isTrusted()) return TrustStatus.TRUSTED;
-                else return TrustStatus.NOT_TRUSTED;
-            }
+          return TrustStatus.NOT_TRUSTED;
         }
+      }
+    }
+  }
+
+  private void fireChangeEvents(Screenname sn,
+      BuddyCertificateInfo certInfo, TrustStatus oldStatus,
+      TrustStatus newStatus) {
+    assert !Thread.holdsLock(this);
+
+    if (newStatus == TrustStatus.UNKNOWN) {
+      assert certInfo == null || !certInfo.isUpToDate();
+      fireUnknownCertificateChangeEvent(sn, certInfo);
+
+    } else if (newStatus == TrustStatus.NOT_TRUSTED) {
+      assert certInfo == null || certInfo.isUpToDate();
+      fireUntrustedCertificateChangeEvent(sn, certInfo);
+
+    } else if (newStatus == TrustStatus.TRUSTED) {
+      assert certInfo != null;
+      fireTrustedCertificateChangeEvent(sn, certInfo);
     }
 
-    private void fireChangeEvents(Screenname sn,
-            BuddyCertificateInfo certInfo, TrustStatus oldStatus,
-            TrustStatus newStatus) {
-        assert !Thread.holdsLock(this);
+    if ((oldStatus == TrustStatus.UNKNOWN
+        || oldStatus == TrustStatus.NOT_TRUSTED)
+        && newStatus == TrustStatus.TRUSTED) {
+      assert certInfo != null;
+      fireBuddyTrustedEvent(sn, certInfo);
 
-        if (newStatus == TrustStatus.UNKNOWN) {
-            assert certInfo == null || !certInfo.isUpToDate();
-            fireUnknownCertificateChangeEvent(sn, certInfo);
+    } else if (oldStatus == TrustStatus.TRUSTED
+        && (newStatus == TrustStatus.UNKNOWN
+        || newStatus == TrustStatus.NOT_TRUSTED)) {
+      fireBuddyNoLongerTrustedEvent(sn, certInfo);
+    }
+  }
 
-        } else if (newStatus == TrustStatus.NOT_TRUSTED) {
-            assert certInfo == null || certInfo.isUpToDate();
-            fireUntrustedCertificateChangeEvent(sn, certInfo);
+  private void fireTrustedCertificateChangeEvent(Screenname sn,
+      BuddyCertificateInfo certInfo) {
+    assert !Thread.holdsLock(this);
 
-        } else if (newStatus == TrustStatus.TRUSTED) {
-            assert certInfo != null;
-            fireTrustedCertificateChangeEvent(sn, certInfo);
-        }
+    BuddyTrustEvent event = new BuddyTrustEvent(this, sn, certInfo);
 
-        if ((oldStatus == TrustStatus.UNKNOWN
-                || oldStatus == TrustStatus.NOT_TRUSTED)
-                && newStatus == TrustStatus.TRUSTED) {
-            assert certInfo != null;
-            fireBuddyTrustedEvent(sn, certInfo);
+    for (BuddyTrustListener listener : listeners) {
+      listener.gotTrustedCertificateChange(event);
+    }
+  }
 
-        } else if (oldStatus == TrustStatus.TRUSTED
-                && (newStatus == TrustStatus.UNKNOWN
-                || newStatus == TrustStatus.NOT_TRUSTED)) {
-            fireBuddyNoLongerTrustedEvent(sn, certInfo);
-        }
+  private void fireUntrustedCertificateChangeEvent(Screenname sn,
+      BuddyCertificateInfo certInfo) {
+    assert !Thread.holdsLock(this);
+
+    BuddyTrustEvent event = new BuddyTrustEvent(this, sn, certInfo);
+
+    for (BuddyTrustListener listener : listeners) {
+      listener.gotUntrustedCertificateChange(event);
+    }
+  }
+
+  private void fireUnknownCertificateChangeEvent(Screenname sn,
+      BuddyCertificateInfo certInfo) {
+    assert !Thread.holdsLock(this);
+
+    BuddyTrustEvent event = new BuddyTrustEvent(this, sn, certInfo);
+
+    for (BuddyTrustListener listener : listeners) {
+      listener.gotUnknownCertificateChange(event);
+    }
+  }
+
+  private void fireBuddyTrustedEvent(Screenname sn,
+      BuddyCertificateInfo certInfo) {
+    assert !Thread.holdsLock(this);
+
+    BuddyTrustEvent event = new BuddyTrustEvent(this, sn, certInfo);
+
+    for (BuddyTrustListener listener : listeners) {
+      listener.buddyTrusted(event);
+    }
+  }
+
+  private void fireBuddyNoLongerTrustedEvent(Screenname sn,
+      BuddyCertificateInfo certInfo) {
+    assert !Thread.holdsLock(this);
+
+    BuddyTrustEvent event = new BuddyTrustEvent(this, sn, certInfo);
+
+    for (BuddyTrustListener listener : listeners) {
+      listener.buddyTrustRevoked(event);
+    }
+  }
+
+  private synchronized BuddyTrustInfoHolder getTrustInfoInstance(
+      Screenname sn) {
+    DefensiveTools.checkNull(sn, "sn");
+
+    BuddyTrustInfoHolder inst = trustInfos.get(sn);
+    if (inst == null) {
+      inst = new BuddyTrustInfoHolder(sn);
+      trustInfos.put(sn, inst);
+    }
+    return inst;
+  }
+
+  private void cacheCertInfo(BuddyCertificateInfo certInfo) {
+    DefensiveTools.checkNull(certInfo, "certInfo");
+
+    if (!certInfo.hasBothCertificates() || !certInfo.isUpToDate()) return;
+
+    Screenname sn = certInfo.getBuddy();
+    ByteBlock hash = certInfo.getCertificateInfoHash();
+    BuddyHashHolder hashHolder = new BuddyHashHolder(sn, hash);
+    BuddyCertificateInfoHolder certInfoHolder;
+    synchronized (this) {
+      // if we already cached this certificate info block, we don't need
+      // to do anything here
+      if (cachedCertInfos.containsKey(hashHolder)) return;
+
+      certInfoHolder = new BuddyCertificateInfoHolder(certInfo);
+      cachedCertInfos.put(hashHolder, certInfoHolder);
+    }
+    // we want to call this outside the lock since it might call our
+    // listeners right back, which might eventually cause us to fire our
+    // listeners, which shouldn't be done inside a lock
+    certTrustMgr.addTrackedCertificateInfo(certInfo);
+  }
+
+  private synchronized BuddyCertificateInfoHolder
+      getCurrentCertificateInfoHolder(Screenname sn) {
+    DefensiveTools.checkNull(sn, "sn");
+
+    ByteBlock hash = getCurrentCertificateInfoHash(sn);
+    if (hash == null) return null;
+
+    return getCertificateInfoHolder(sn, hash);
+  }
+
+  private synchronized BuddyCertificateInfoHolder getCertificateInfoHolder(
+      Screenname sn, ByteBlock hash) {
+    DefensiveTools.checkNull(sn, "sn");
+
+    if (hash == null) return null;
+
+    BuddyHashHolder holder = new BuddyHashHolder(sn, hash);
+    return cachedCertInfos.get(holder);
+  }
+
+  public synchronized ByteBlock getCurrentCertificateInfoHash(Screenname sn) {
+    return (latestInfos.get(sn)).getCertificateInfoHash();
+  }
+
+  public synchronized boolean isTrusted(Screenname buddy) {
+    BuddyCertificateInfoHolder holder
+        = getCurrentCertificateInfoHolder(buddy);
+    return holder != null && holder.isTrusted();
+  }
+
+  public synchronized boolean isTrusted(BuddyCertificateInfo info) {
+    DefensiveTools.checkNull(info, "info");
+
+    BuddyCertificateInfoHolder holder = getCertificateInfoHolder(
+        info.getBuddy(), info.getCertificateInfoHash());
+    return holder != null && holder.isTrusted();
+  }
+
+  private static class BuddyCertificateInfoHolder {
+    private final BuddyCertificateInfo info;
+    private boolean trusted = false;
+
+    public BuddyCertificateInfoHolder(BuddyCertificateInfo info) {
+      DefensiveTools.checkNull(info, "info");
+
+      this.info = info;
     }
 
-    private void fireTrustedCertificateChangeEvent(Screenname sn,
-            BuddyCertificateInfo certInfo) {
-        assert !Thread.holdsLock(this);
+    public BuddyCertificateInfo getInfo() { return info; }
 
-        BuddyTrustEvent event = new BuddyTrustEvent(this, sn, certInfo);
+    public synchronized boolean isTrusted() { return trusted; }
 
-        for (BuddyTrustListener listener : listeners) {
-            listener.gotTrustedCertificateChange(event);
-        }
+    public synchronized void setTrusted(boolean trusted) {
+      this.trusted = trusted;
+    }
+  }
+
+  private static class BuddyTrustInfoHolder {
+    private final Screenname buddy;
+    private TrustStatus trustedStatus = TrustStatus.UNKNOWN;
+
+    public BuddyTrustInfoHolder(Screenname buddy) {
+      DefensiveTools.checkNull(buddy, "buddy");
+
+      this.buddy = buddy;
     }
 
-    private void fireUntrustedCertificateChangeEvent(Screenname sn,
-            BuddyCertificateInfo certInfo) {
-        assert !Thread.holdsLock(this);
+    public Screenname getBuddy() { return buddy; }
 
-        BuddyTrustEvent event = new BuddyTrustEvent(this, sn, certInfo);
-
-        for (BuddyTrustListener listener : listeners) {
-            listener.gotUntrustedCertificateChange(event);
-        }
+    public synchronized TrustStatus getTrustedStatus() {
+      return trustedStatus;
     }
 
-    private void fireUnknownCertificateChangeEvent(Screenname sn,
-            BuddyCertificateInfo certInfo) {
-        assert !Thread.holdsLock(this);
+    public synchronized void setTrustedStatus(TrustStatus trustedStatus) {
+      DefensiveTools.checkNull(trustedStatus, "trustedStatus");
 
-        BuddyTrustEvent event = new BuddyTrustEvent(this, sn, certInfo);
+      this.trustedStatus = trustedStatus;
+    }
+  }
 
-        for (BuddyTrustListener listener : listeners) {
-            listener.gotUnknownCertificateChange(event);
-        }
+  private static class TrustStatus {
+    public static final TrustStatus UNKNOWN = new TrustStatus("UNKNOWN");
+    public static final TrustStatus NOT_TRUSTED = new TrustStatus(
+        "NOT_TRUSTED");
+    public static final TrustStatus TRUSTED = new TrustStatus("TRUSTED");
+
+    private final String name;
+
+    public TrustStatus(String name) {
+      DefensiveTools.checkNull(name, "name");
+
+      this.name = name;
     }
 
-    private void fireBuddyTrustedEvent(Screenname sn,
-            BuddyCertificateInfo certInfo) {
-        assert !Thread.holdsLock(this);
-
-        BuddyTrustEvent event = new BuddyTrustEvent(this, sn, certInfo);
-
-        for (BuddyTrustListener listener : listeners) {
-            listener.buddyTrusted(event);
-        }
+    public String toString() {
+      return name;
     }
-
-    private void fireBuddyNoLongerTrustedEvent(Screenname sn,
-            BuddyCertificateInfo certInfo) {
-        assert !Thread.holdsLock(this);
-
-        BuddyTrustEvent event = new BuddyTrustEvent(this, sn, certInfo);
-
-        for (BuddyTrustListener listener : listeners) {
-            listener.buddyTrustRevoked(event);
-        }
-    }
-
-    private synchronized BuddyTrustInfoHolder getTrustInfoInstance(
-            Screenname sn) {
-        DefensiveTools.checkNull(sn, "sn");
-
-        BuddyTrustInfoHolder inst = trustInfos.get(sn);
-        if (inst == null) {
-            inst = new BuddyTrustInfoHolder(sn);
-            trustInfos.put(sn, inst);
-        }
-        return inst;
-    }
-
-    private void cacheCertInfo(BuddyCertificateInfo certInfo) {
-        DefensiveTools.checkNull(certInfo, "certInfo");
-
-        if (!certInfo.hasBothCertificates() || !certInfo.isUpToDate()) return;
-
-        Screenname sn = certInfo.getBuddy();
-        ByteBlock hash = certInfo.getCertificateInfoHash();
-        BuddyHashHolder hashHolder = new BuddyHashHolder(sn, hash);
-        BuddyCertificateInfoHolder certInfoHolder;
-        synchronized(this) {
-            // if we already cached this certificate info block, we don't need
-            // to do anything here
-            if (cachedCertInfos.containsKey(hashHolder)) return;
-
-            certInfoHolder = new BuddyCertificateInfoHolder(certInfo);
-            cachedCertInfos.put(hashHolder, certInfoHolder);
-        }
-        // we want to call this outside the lock since it might call our
-        // listeners right back, which might eventually cause us to fire our
-        // listeners, which shouldn't be done inside a lock
-        certTrustMgr.addTrackedCertificateInfo(certInfo);
-    }
-
-    private synchronized BuddyCertificateInfoHolder
-            getCurrentCertificateInfoHolder(Screenname sn) {
-        DefensiveTools.checkNull(sn, "sn");
-
-        ByteBlock hash = getCurrentCertificateInfoHash(sn);
-        if (hash == null) return null;
-
-        return getCertificateInfoHolder(sn, hash);
-    }
-
-    private synchronized BuddyCertificateInfoHolder getCertificateInfoHolder(
-            Screenname sn, ByteBlock hash) {
-        DefensiveTools.checkNull(sn, "sn");
-
-        if (hash == null) return null;
-
-        BuddyHashHolder holder = new BuddyHashHolder(sn, hash);
-        return cachedCertInfos.get(holder);
-    }
-
-    public synchronized ByteBlock getCurrentCertificateInfoHash(Screenname sn) {
-        return (latestInfos.get(sn)).getCertificateInfoHash();
-    }
-
-    public synchronized boolean isTrusted(Screenname buddy) {
-        BuddyCertificateInfoHolder holder
-                = getCurrentCertificateInfoHolder(buddy);
-        return holder != null && holder.isTrusted();
-    }
-
-    public synchronized boolean isTrusted(BuddyCertificateInfo info) {
-        DefensiveTools.checkNull(info, "info");
-
-        BuddyCertificateInfoHolder holder = getCertificateInfoHolder(
-                info.getBuddy(), info.getCertificateInfoHash());
-        return holder != null && holder.isTrusted();
-    }
-
-    private static class BuddyCertificateInfoHolder {
-        private final BuddyCertificateInfo info;
-        private boolean trusted = false;
-
-        public BuddyCertificateInfoHolder(BuddyCertificateInfo info) {
-            DefensiveTools.checkNull(info, "info");
-
-            this.info = info;
-        }
-
-        public BuddyCertificateInfo getInfo() { return info; }
-
-        public synchronized boolean isTrusted() { return trusted; }
-
-        public synchronized void setTrusted(boolean trusted) {
-            this.trusted = trusted;
-        }
-    }
-
-    private static class BuddyTrustInfoHolder {
-        private final Screenname buddy;
-        private TrustStatus trustedStatus = TrustStatus.UNKNOWN;
-
-        public BuddyTrustInfoHolder(Screenname buddy) {
-            DefensiveTools.checkNull(buddy, "buddy");
-
-            this.buddy = buddy;
-        }
-
-        public Screenname getBuddy() { return buddy; }
-
-        public synchronized TrustStatus getTrustedStatus() {
-            return trustedStatus;
-        }
-
-        public synchronized void setTrustedStatus(TrustStatus trustedStatus) {
-            DefensiveTools.checkNull(trustedStatus, "trustedStatus");
-
-            this.trustedStatus = trustedStatus;
-        }
-    }
-
-    private static class TrustStatus {
-        public static final TrustStatus UNKNOWN = new TrustStatus("UNKNOWN");
-        public static final TrustStatus NOT_TRUSTED = new TrustStatus("NOT_TRUSTED");
-        public static final TrustStatus TRUSTED = new TrustStatus("TRUSTED");
-
-        private final String name;
-
-        public TrustStatus(String name) {
-            DefensiveTools.checkNull(name, "name");
-
-            this.name = name;
-        }
-
-        public String toString() {
-            return name;
-        }
-    }
+  }
 }

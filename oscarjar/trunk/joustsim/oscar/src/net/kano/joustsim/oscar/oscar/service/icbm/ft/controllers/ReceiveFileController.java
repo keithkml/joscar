@@ -263,7 +263,8 @@ public class ReceiveFileController extends TransferController {
                 int downloaded = 0;
                 while (true) {
                     if (downloaded >= length) {
-                        System.out.println("downloaded >= length");
+                        LOGGER.severe("downloaded " + downloaded
+                            + " >= length " + length);
                         break;
                     }
                     if (waitUntilUnpause()) continue;
@@ -274,14 +275,14 @@ public class ReceiveFileController extends TransferController {
                             offset + downloaded, Math.min(1024, remaining));
 
                     if (transferred == -1) {
-                        System.out.println("transferred bad");
+                        LOGGER.severe("transferFrom returned -1");
                         break;
                     }
 
                     downloaded += transferred;
                     setPosition(offset + downloaded);
                     if (shouldStop()) {
-                        System.out.println("should stop");
+                        LOGGER.fine("should stop");
                         break;
                     }
                 }

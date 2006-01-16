@@ -35,79 +35,82 @@
 
 package net.kano.joustsim.oscar.oscar.service.info;
 
-import net.kano.joustsim.Screenname;
-import net.kano.joustsim.trust.BuddyCertificateInfo;
-import net.kano.joustsim.trust.TrustTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.snaccmd.CertificateInfo;
 import net.kano.joscar.snaccmd.InfoData;
 import net.kano.joscar.snaccmd.loc.GetInfoCmd;
+import net.kano.joustsim.Screenname;
+import net.kano.joustsim.trust.BuddyCertificateInfo;
+import net.kano.joustsim.trust.TrustTools;
 
 import java.security.cert.X509Certificate;
-import java.util.Iterator;
+import java.util.logging.Logger;
 
 public class CertificateInfoRequestManager extends UserInfoRequestManager {
-    public CertificateInfoRequestManager(InfoService service) {
-        super(service);
+  private static final Logger LOGGER = Logger
+      .getLogger(CertificateInfoRequestManager.class.getName());
+
+  public CertificateInfoRequestManager(InfoService service) {
+    super(service);
+  }
+
+  protected SnacCommand generateSnacCommand(final Screenname sn) {
+    LOGGER.fine("generating cert request for " + sn);
+    return new GetInfoCmd(GetInfoCmd.FLAG_CERT, sn.getFormatted());
+  }
+
+  protected void callListener(InfoResponseListener listener, Screenname sn,
+      Object value) {
+    CertificateInfo certInfo = (CertificateInfo) value;
+
+    BuddyCertificateInfo bci = extractBuddyCertificateInfo(sn, certInfo);
+    listener.handleCertificateInfo(getService(), sn, bci);
+  }
+
+  private BuddyCertificateInfo extractBuddyCertificateInfo(Screenname sn,
+      CertificateInfo certInfo) {
+    if (certInfo == null) return null;
+
+    ByteBlock signingData;
+    ByteBlock encryptionData;
+    if (certInfo.isCommon()) {
+      signingData = certInfo.getCommonCertData();
+      encryptionData = certInfo.getCommonCertData();
+    } else {
+      signingData = certInfo.getSignCertData();
+      encryptionData = certInfo.getEncCertData();
+    }
+    if (signingData == null || encryptionData == null) {
+      fireInvalidCertsException(sn, null, certInfo);
+      return null;
     }
 
-    protected SnacCommand generateSnacCommand(final Screenname sn) {
-        System.out.println("generating cert request for " + sn);
-        return new GetInfoCmd(GetInfoCmd.FLAG_CERT, sn.getFormatted());
+    X509Certificate signing;
+    X509Certificate encryption;
+    try {
+      signing = TrustTools.decodeCertificate(signingData);
+      encryption = TrustTools.decodeCertificate(encryptionData);
+    } catch (Exception e) {
+      fireInvalidCertsException(sn, e, certInfo);
+      return null;
     }
 
-    protected void callListener(InfoResponseListener listener, Screenname sn,
-            Object value) {
-        CertificateInfo certInfo = (CertificateInfo) value;
+    return new BuddyCertificateInfo(sn,
+        ByteBlock.wrap(CertificateInfo.getCertInfoHash(certInfo)),
+        encryption, signing);
+  }
 
-        BuddyCertificateInfo bci = extractBuddyCertificateInfo(sn, certInfo);
-        listener.handleCertificateInfo(getService(), sn, bci);
+  private void fireInvalidCertsException(Screenname sn,
+      Exception e, CertificateInfo origCertInfo) {
+    for (Object o : getListeners(sn)) {
+      InfoResponseListener listener = (InfoResponseListener) o;
+      listener.handleInvalidCertificates(getService(), sn, origCertInfo,
+          e);
     }
+  }
 
-    private BuddyCertificateInfo extractBuddyCertificateInfo(Screenname sn,
-            CertificateInfo certInfo) {
-        if (certInfo == null) return null;
-
-        ByteBlock signingData;
-        ByteBlock encryptionData;
-        if (certInfo.isCommon()) {
-            signingData = certInfo.getCommonCertData();
-            encryptionData = certInfo.getCommonCertData();
-        } else {
-            signingData = certInfo.getSignCertData();
-            encryptionData = certInfo.getEncCertData();
-        }
-        if (signingData == null || encryptionData == null) {
-            fireInvalidCertsException(sn, null, certInfo);
-            return null;
-        }
-
-        X509Certificate signing;
-        X509Certificate encryption;
-        try {
-            signing = TrustTools.decodeCertificate(signingData);
-            encryption = TrustTools.decodeCertificate(encryptionData);
-        } catch (Exception e) {
-            fireInvalidCertsException(sn, e, certInfo);
-            return null;
-        }
-
-        return new BuddyCertificateInfo(sn,
-                ByteBlock.wrap(CertificateInfo.getCertInfoHash(certInfo)),
-                encryption, signing);
-    }
-
-    private void fireInvalidCertsException(Screenname sn,
-            Exception e, CertificateInfo origCertInfo) {
-        for (Object o : getListeners(sn)) {
-            InfoResponseListener listener = (InfoResponseListener) o;
-            listener.handleInvalidCertificates(getService(), sn, origCertInfo,
-                    e);
-        }
-    }
-
-    protected Object getDesiredValue(InfoData infodata) {
-        return infodata.getCertificateInfo();
-    }
+  protected Object getDesiredValue(InfoData infodata) {
+    return infodata.getCertificateInfo();
+  }
 }

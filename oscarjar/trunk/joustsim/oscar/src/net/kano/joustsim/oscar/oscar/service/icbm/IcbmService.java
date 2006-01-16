@@ -326,7 +326,8 @@ public class IcbmService extends Service {
             if (sessionHandler == null) {
                 RvCommand rvCommand = event.getRvCommand();
                 if (rvCommand == null) {
-                    System.out.println("unknown rv command");
+                    LOGGER.warning("unknown rv command: "
+                        + event.getSnacCommand());
                     return;
                 }
                 CapabilityBlock cap = rvCommand.getCapabilityBlock();

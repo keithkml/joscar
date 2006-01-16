@@ -88,12 +88,11 @@ public abstract class AbstractServiceArbiter<S extends Service>
     final S service = createServiceInstance(aimConnection, conn);
     conn.addOscarListener(new OscarConnListener() {
       public void registeredSnacFamilies(OscarConnection conn) {
-        System.out.println("registered snac families");
       }
 
       public void connStateChanged(OscarConnection conn,
           OscarConnStateEvent event) {
-        System.out.println("Conn state changed for " + AbstractServiceArbiter.this + ": "
+        LOGGER.info("Conn state changed for " + AbstractServiceArbiter.this + ": "
             + event.getClientConnEvent().getNewState());
       }
 

@@ -47,7 +47,6 @@ public class SendOverProxyController
     protected void handleAck(RvProxyAckCmd ackCmd) throws IOException {
         RvConnectionImpl transfer = getRvConnection();
         int proxyPort = ackCmd.getProxyPort();
-        System.out.println("proxy port: 0x" + Integer.toHexString(proxyPort));
         RvConnectionInfo connInfo = RvConnectionInfo.createForOutgoingProxiedRequest(
                 ackCmd.getProxyIpAddress(), proxyPort);
         FileSendReqRvCmd req = new FileSendReqRvCmd(transfer.getInvitationMessage(),

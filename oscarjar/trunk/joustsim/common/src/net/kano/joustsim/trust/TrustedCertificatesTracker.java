@@ -48,7 +48,7 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 public class TrustedCertificatesTracker {
-    private static final Logger logger
+    private static final Logger LOGGER
             = Logger.getLogger(TrustedCertificatesTracker.class.getName());
 
     private final CertificateTrustManager certTrustMgr;
@@ -71,7 +71,7 @@ public class TrustedCertificatesTracker {
             certTrustMgr.addTrustListener(new CertificateTrustListener() {
                 public void trustAdded(CertificateTrustManager manager,
                         X509Certificate cert) {
-                    System.out.println("TrustedCertificatesTracker: now trusted: "
+                    LOGGER.info("TrustedCertificatesTracker: now trusted: "
                             + cert.getSubjectDN());
                     certTrustAdded(cert);
                 }
@@ -82,7 +82,7 @@ public class TrustedCertificatesTracker {
                 }
             });
         } else {
-            logger.fine("Warning: Trusted certificates tracker will not track "
+            LOGGER.fine("Warning: Trusted certificates tracker will not track "
                     + "explicitly trusted certificates since the certificate "
                     + "trust manager is null");
         }
@@ -99,7 +99,7 @@ public class TrustedCertificatesTracker {
                 }
             });
         } else {
-            logger.fine("Warning: Trusted certificates tracker will not track "
+            LOGGER.fine("Warning: Trusted certificates tracker will not track "
                     + "signer-trusted certificates since the signer trust "
                     + "manager is null");
         }
@@ -184,7 +184,7 @@ public class TrustedCertificatesTracker {
             newTrusted = !wasTrusted && info.isSomehowTrusted();
         }
         if (newTrusted) {
-            System.out.println("TrustedCertificatesTracker: cert is now "
+            LOGGER.info("TrustedCertificatesTracker: cert is now "
                     + "trusted, firing events: " + cert.getSubjectDN());
             fireNowTrustedEvent(info);
         }
@@ -245,7 +245,7 @@ public class TrustedCertificatesTracker {
         }
 
         if (newTrusted) {
-            System.out.println("TrustedCertificatesTracker: cert "
+            LOGGER.info("TrustedCertificatesTracker: cert "
                     + cert.getSubjectDN() + " is now trusted");
             fireNowTrustedEvent(info);
         }

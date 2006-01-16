@@ -40,147 +40,154 @@ import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.MiscTools;
 import net.kano.joustsim.Screenname;
 
+import java.util.logging.Logger;
+
 public abstract class Conversation {
-    private final Screenname buddy;
+  private static final Logger LOGGER = Logger
+      .getLogger(Conversation.class.getName());
 
-    private CopyOnWriteArrayList<ConversationListener> listeners
-            = new CopyOnWriteArrayList<ConversationListener>();
-    private boolean open = false;
-    private boolean closed = false;
+  private final Screenname buddy;
 
-    public Conversation(Screenname buddy) {
-        this.buddy = buddy;
+  private CopyOnWriteArrayList<ConversationListener> listeners
+      = new CopyOnWriteArrayList<ConversationListener>();
+  private boolean open = false;
+  private boolean closed = false;
+
+  public Conversation(Screenname buddy) {
+    this.buddy = buddy;
+  }
+
+  public void addConversationListener(ConversationListener l) {
+    DefensiveTools.checkNull(l, "l");
+    listeners.addIfAbsent(l);
+  }
+
+  public void removeConversationListener(ConversationListener l) {
+    listeners.remove(l);
+  }
+
+  public final Screenname getBuddy() { return buddy; }
+
+  protected void initialize() { }
+
+  protected synchronized boolean setAlwaysOpen() {
+    if (open || closed) return false;
+    open = true;
+    return true;
+  }
+
+  public boolean open() {
+    synchronized (this) {
+      if (open || closed) return false;
+      open = true;
     }
 
-    public void addConversationListener(ConversationListener l) {
-        DefensiveTools.checkNull(l, "l");
-        listeners.addIfAbsent(l);
+    fireOpenEvent();
+    opened();
+
+    return true;
+  }
+
+  private void fireOpenEvent() {
+    assert !Thread.holdsLock(this);
+
+    for (ConversationListener l : listeners) {
+      l.conversationOpened(this);
+    }
+  }
+
+  public boolean close() {
+    synchronized (this) {
+      if (closed) return false;
+      closed = true;
     }
 
-    public void removeConversationListener(ConversationListener l) {
-        listeners.remove(l);
+    fireClosedEvent();
+    closed();
+
+    return true;
+  }
+
+  private void fireClosedEvent() {
+    assert !Thread.holdsLock(this);
+
+    for (ConversationListener l : listeners) {
+      l.conversationClosed(this);
     }
+  }
 
-    public final Screenname getBuddy() { return buddy; }
+  protected void opened() {
+  }
 
-    protected void initialize() { }
+  protected void closed() {
+  }
 
-    protected synchronized boolean setAlwaysOpen() {
-        if (open || closed) return false;
-        open = true;
-        return true;
+  public synchronized boolean isOpen() { return open; }
+
+  public synchronized boolean isClosed() { return closed; }
+
+  protected void fireIncomingEvent(ConversationEventInfo event) {
+    assert !Thread.holdsLock(this);
+
+    DefensiveTools.checkNull(event, "event");
+
+    LOGGER.fine(MiscTools.getClassName(this) + ": firing incoming "
+        + "event: " + event);
+    if (event instanceof MessageInfo) {
+      MessageInfo messageInfo = (MessageInfo) event;
+      for (ConversationListener l : listeners) {
+        l.gotMessage(this, messageInfo);
+      }
+    } else {
+      for (ConversationListener l : listeners) {
+        l.gotOtherEvent(this, event);
+      }
     }
+  }
 
-    public boolean open() {
-        synchronized(this) {
-            if (open || closed) return false;
-            open = true;
-        }
+  protected void fireOutgoingEvent(ConversationEventInfo event) {
+    assert !Thread.holdsLock(this);
 
-        fireOpenEvent();
-        opened();
+    DefensiveTools.checkNull(event, "event");
 
-        return true;
+    LOGGER.fine(MiscTools.getClassName(this) + ": firing outgoing "
+        + "event: " + event);
+    if (event instanceof MessageInfo) {
+      MessageInfo messageInfo = (MessageInfo) event;
+      for (ConversationListener l : listeners) {
+        l.sentMessage(this, messageInfo);
+      }
+    } else {
+      for (ConversationListener l : listeners) {
+        l.sentOtherEvent(this, event);
+      }
     }
+  }
 
-    private void fireOpenEvent() {
-        assert !Thread.holdsLock(this);
+  protected void fireCanSendChangedEvent(boolean canSend) {
+    assert !Thread.holdsLock(this);
 
-        for (ConversationListener l : listeners) {
-            l.conversationOpened(this);
-        }
+    for (ConversationListener listener : listeners) {
+      listener.canSendMessageChanged(this, canSend);
     }
+  }
 
-    public boolean close() {
-        synchronized(this) {
-            if (closed) return false;
-            closed = true;
-        }
+  protected synchronized void checkOpen() throws ConversationNotOpenException {
+    if (!open) throw new ConversationNotOpenException(this);
+  }
 
-        fireClosedEvent();
-        closed();
+  public boolean canSendMessage() {
+    return true;
+  }
 
-        return true;
-    }
+  public abstract void sendMessage(Message msg)
+      throws ConversationException;
 
-    private void fireClosedEvent() {
-        assert !Thread.holdsLock(this);
+  protected CopyOnWriteArrayList<ConversationListener> getListeners() {
+    return listeners;
+  }
 
-        for (ConversationListener l : listeners) {
-            l.conversationClosed(this);
-        }
-    }
-
-    protected void opened() {
-    }
-
-    protected void closed() {
-    }
-
-    public synchronized boolean isOpen() { return open; }
-
-    public synchronized boolean isClosed() { return closed; }
-
-    protected void fireIncomingEvent(ConversationEventInfo event) {
-        assert !Thread.holdsLock(this);
-
-        DefensiveTools.checkNull(event, "event");
-
-        System.out.println(MiscTools.getClassName(this) + ": firing incoming "
-                + "event: " + event);
-        if (event instanceof MessageInfo) {
-            MessageInfo messageInfo = (MessageInfo) event;
-            for (ConversationListener l : listeners) {
-                l.gotMessage(this, messageInfo);
-            }
-        } else {
-            for (ConversationListener l : listeners) {
-                l.gotOtherEvent(this, event);
-            }
-        }
-    }
-
-    protected void fireOutgoingEvent(ConversationEventInfo event) {
-        assert !Thread.holdsLock(this);
-
-        DefensiveTools.checkNull(event, "event");
-
-        System.out.println(MiscTools.getClassName(this) + ": firing outgoing "
-                + "event: " + event);
-        if (event instanceof MessageInfo) {
-            MessageInfo messageInfo = (MessageInfo) event;
-            for (ConversationListener l : listeners) {
-                l.sentMessage(this, messageInfo);
-            }
-        } else {
-            for (ConversationListener l : listeners) {
-                l.sentOtherEvent(this, event);
-            }
-        }
-    }
-
-    protected void fireCanSendChangedEvent(boolean canSend) {
-        assert !Thread.holdsLock(this);
-
-        for (ConversationListener listener : listeners) {
-            listener.canSendMessageChanged(this, canSend);
-        }
-    }
-
-    protected synchronized void checkOpen() throws ConversationNotOpenException {
-        if (!open) throw new ConversationNotOpenException(this);
-    }
-
-    public boolean canSendMessage() {
-        return true;
-    }
-
-    public abstract void sendMessage(Message msg)
-            throws ConversationException;
-
-    protected CopyOnWriteArrayList<ConversationListener> getListeners() { return listeners; }
-
-    protected void handleIncomingEvent(ConversationEventInfo event) {
-        fireIncomingEvent(event);
-    }
+  protected void handleIncomingEvent(ConversationEventInfo event) {
+    fireIncomingEvent(event);
+  }
 }
