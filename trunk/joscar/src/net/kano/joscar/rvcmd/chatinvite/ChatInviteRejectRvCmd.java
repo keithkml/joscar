@@ -63,4 +63,12 @@ public class ChatInviteRejectRvCmd extends AbstractRejectRvCmd {
     public ChatInviteRejectRvCmd(int rejectionCode) {
         super(CapabilityBlock.BLOCK_CHAT, rejectionCode);
     }
+
+
+    /**
+     * Creates a new outgoing chat invitation rejection command.
+     */
+    public ChatInviteRejectRvCmd() {
+      this(REJECTCODE_CANCELLED);
+    }
 }
