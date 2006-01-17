@@ -41,6 +41,7 @@ import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.MiscTools;
 import net.kano.joscar.rvcmd.AbstractRequestRvCmd;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
+import net.kano.joscar.rvcmd.ConnectionRequestRvCmd;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.tlv.Tlv;
@@ -71,7 +72,8 @@ import java.io.OutputStream;
  * #CHARSET_DEFAULT})) </li>
  * </ul>
  */
-public class GetFileReqRvCmd extends AbstractRequestRvCmd {
+public class GetFileReqRvCmd
+    extends AbstractRequestRvCmd implements ConnectionRequestRvCmd {
     /*
     AIM 5.1:      00 12 00 01 00 00 00 00 00 00 00 00
     AIM 5.2 beta: 00 12 00 02 00 00 00 01 00

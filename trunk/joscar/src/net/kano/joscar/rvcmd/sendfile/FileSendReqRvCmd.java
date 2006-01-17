@@ -39,6 +39,7 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.rvcmd.AbstractRequestRvCmd;
 import net.kano.joscar.rvcmd.InvitationMessage;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
+import net.kano.joscar.rvcmd.ConnectionRequestRvCmd;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.tlv.TlvChain;
@@ -50,7 +51,8 @@ import java.io.OutputStream;
  * A rendezvous command used to attempt to send one or more files to another
  * user.
  */
-public class FileSendReqRvCmd extends AbstractRequestRvCmd {
+public class FileSendReqRvCmd
+    extends AbstractRequestRvCmd implements ConnectionRequestRvCmd {
     /** The "invitation message" for this request. */
     private final InvitationMessage invMessage;
     /**

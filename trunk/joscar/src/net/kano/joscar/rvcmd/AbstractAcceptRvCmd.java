@@ -47,7 +47,8 @@ import java.io.OutputStream;
  * A base class for "acceptance" rendezvous commands, or commands with no RV
  * data and a status code of {@link #RVSTATUS_ACCEPT}.
  */
-public abstract class AbstractAcceptRvCmd extends AbstractRvCmd {
+public abstract class AbstractAcceptRvCmd
+        extends AbstractRvCmd implements AcceptRvCmd {
     /** A TLV type present if the rendezvous being accepted is a secure RV. */
     private static final int TYPE_ENCRYPTED = 0x0011;
 
@@ -84,9 +85,9 @@ public abstract class AbstractAcceptRvCmd extends AbstractRvCmd {
      * acceptance RV command will indicate that a "secure" or "encrypted"
      * rendezvous is being accepted (such as a secure file transfer).
      *
-     * @param cap the capability block associated with this RV command
+     * @param cap       the capability block associated with this RV command
      * @param encrypted whether the rendezvous being accepted is a secure
-     *        rendezvous
+     *                  rendezvous
      */
     protected AbstractAcceptRvCmd(CapabilityBlock cap, boolean encrypted) {
         super(RVSTATUS_ACCEPT, cap);
@@ -112,7 +113,6 @@ public abstract class AbstractAcceptRvCmd extends AbstractRvCmd {
      * acceptance RV commands contain no TLV's).
      *
      * @param out the stream to which to write
-     *
      * @throws IOException if an I/O error occurs
      */
     protected void writeRvTlvs(OutputStream out) throws IOException { }

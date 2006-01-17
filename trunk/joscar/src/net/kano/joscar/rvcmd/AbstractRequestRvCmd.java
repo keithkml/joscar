@@ -49,13 +49,12 @@ import java.io.OutputStream;
  * mysterious empty <code>0x000f</code> TLV, a "request index" which starts at
  * {@link #REQINDEX_FIRST}, and, normally, more type-specific TLV's.
  */
-public abstract class AbstractRequestRvCmd extends AbstractRvCmd {
-    public static final int REQINDEX_FIRST = 1;
+public abstract class AbstractRequestRvCmd
+        extends AbstractRvCmd implements RequestRvCmd {
     /**
-     * The default value of the <code>fPresent</code> field. This value
-     * indicates that the mysterious <code>0x000f</code> TLV is present in a
-     * command.
-      */
+     * The default value of the <code>fPresent</code> field. This value indicates
+     * that the mysterious <code>0x000f</code> TLV is present in a command.
+     */
     public static final boolean FPRESENT_DEFAULT = true;
 
     /** A TLV type containing the "request index." */
@@ -65,9 +64,7 @@ public abstract class AbstractRequestRvCmd extends AbstractRvCmd {
 
     /** This command's request index code. */
     private final int reqIndex;
-    /**
-     * Whether this commanc contained the mysterious <code>0x000f</code> TLV.
-     */
+    /** Whether this commanc contained the mysterious <code>0x000f</code> TLV. */
     private final boolean fPresent;
 
     /**
@@ -84,18 +81,17 @@ public abstract class AbstractRequestRvCmd extends AbstractRvCmd {
         reqIndex = chain.getUShort(TYPE_REQINDEX);
         fPresent = chain.hasTlv(TYPE_F);
 
-        getMutableTlvs().removeTlvs(new int[] {
-            TYPE_REQINDEX, TYPE_F
+        getMutableTlvs().removeTlvs(new int[]{
+                TYPE_REQINDEX, TYPE_F
         });
     }
 
     /**
      * Creates a new outgoing initial RV request command with the given ICBM
      * message ID, associated capability block, a request index of {@link
-     * #REQINDEX_FIRST}, and a <code>0x000f</code> TLV present. Using
-     * this constructor is equivalent to using {@link
-     * #AbstractRequestRvCmd(CapabilityBlock, int)
-     * AbstractRequestRvCmd(cap, REQTYPE_INITIALREQUEST)}.
+     * #REQINDEX_FIRST}, and a <code>0x000f</code> TLV present. Using this
+     * constructor is equivalent to using {@link #AbstractRequestRvCmd(CapabilityBlock,
+     * int) AbstractRequestRvCmd(cap, REQTYPE_INITIALREQUEST)}.
      *
      * @param cap the capability block associated with this RV command
      */
@@ -105,12 +101,12 @@ public abstract class AbstractRequestRvCmd extends AbstractRvCmd {
 
     /**
      * Creates a new outgoing initial RV request command with the given
-     * associated capability block, and request index, and a
-     * <code>0x000f</code> TLV present. Using this constructor is equivalent to
-     * using {@link #AbstractRequestRvCmd(CapabilityBlock, int, boolean)
+     * associated capability block, and request index, and a <code>0x000f</code>
+     * TLV present. Using this constructor is equivalent to using {@link
+     * #AbstractRequestRvCmd(CapabilityBlock, int, boolean)
      * AbstractRequestRvCmd(cap, REQTYPE_INITIALREQUEST, FPRESENT_DEFAULT)}.
      *
-     * @param cap the capability block associated with this RV command
+     * @param cap          the capability block associated with this RV command
      * @param requestIndex a request index, like {@link #REQINDEX_FIRST}
      */
     protected AbstractRequestRvCmd(CapabilityBlock cap, int requestIndex) {
@@ -124,10 +120,10 @@ public abstract class AbstractRequestRvCmd extends AbstractRvCmd {
      * #AbstractRequestRvCmd(CapabilityBlock, int, boolean)
      * AbstractRequestRvCmd(cap, REQTYPE_INITIALREQUEST, FPRESENT_DEFAULT)}.
      *
-     * @param cap the capability block associated with this RV command
+     * @param cap          the capability block associated with this RV command
      * @param requestIndex a request index, like {@link #REQINDEX_FIRST}
-     * @param fPresent whether this command should contain the mysterious
-     *        type <code>0x000f</code> TLV
+     * @param fPresent     whether this command should contain the mysterious
+     *                     type <code>0x000f</code> TLV
      */
     protected AbstractRequestRvCmd(CapabilityBlock cap, int requestIndex,
             boolean fPresent) {
