@@ -243,7 +243,7 @@ public class BuddyListBox extends JPanel {
                             transfer.setFile(files[0]);
                         }
                         guiSession.getDummyOnlineWindow().watchTransfer(transfer);
-                        transfer.makeRequest(new InvitationMessage("Here's a file!"));
+                        transfer.sendRequest(new InvitationMessage("Here's a file!"));
                     }
                 }
             }

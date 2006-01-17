@@ -37,7 +37,10 @@ import net.kano.joscar.MiscTools;
 import net.kano.joscar.rv.RecvRvEvent;
 import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rv.RvSnacResponseEvent;
+import net.kano.joscar.rvcmd.AcceptRvCmd;
+import net.kano.joscar.rvcmd.ConnectionRequestRvCmd;
 import net.kano.joscar.rvcmd.InvitationMessage;
+import net.kano.joscar.rvcmd.RejectRvCmd;
 import net.kano.joscar.rvcmd.sendfile.FileSendAcceptRvCmd;
 import net.kano.joscar.rvcmd.sendfile.FileSendBlock;
 import net.kano.joscar.rvcmd.sendfile.FileSendRejectRvCmd;
@@ -53,11 +56,9 @@ public abstract class FileTransferImpl
 
   protected FileTransferImpl(RvConnectionManager rvConnectionManager,
                              RvSession session) {
+    super(rvConnectionManager,  session);
     setPerConnectionTimeout(ConnectionType.LAN, 2L);
-    proxyInfo = rvConnectionManager.getIcbmService().getAimConnection().getProxy();
-    this.rvConnectionManager = rvConnectionManager;
-    this.session = session;
-    rvSessionHandler = createSessionHandler();
+    proxyInfo = getAimConnection().getProxy();
   }
 
   protected synchronized void setInvitationMessage(InvitationMessage message) {
@@ -98,13 +99,13 @@ public abstract class FileTransferImpl
     }
 
     protected abstract void handleIncomingReject(RecvRvEvent event,
-                                                 FileSendRejectRvCmd rejectCmd);
+                                                 RejectRvCmd rejectCmd);
 
     protected abstract void handleIncomingAccept(RecvRvEvent event,
-                                                 FileSendAcceptRvCmd acceptCmd);
+                                                 AcceptRvCmd acceptCmd);
 
     protected abstract void handleIncomingRequest(RecvRvEvent event,
-                                                  FileSendReqRvCmd reqCmd);
+                                                  ConnectionRequestRvCmd reqCmd);
 
     public void handleSnacResponse(RvSnacResponseEvent event) {
     }

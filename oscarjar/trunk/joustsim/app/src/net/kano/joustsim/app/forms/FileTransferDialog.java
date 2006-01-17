@@ -2,12 +2,12 @@ package net.kano.joustsim.app.forms;
 
 import net.kano.joscar.rvcmd.sendfile.FileSendBlock;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransfer;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferState;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.IncomingFileTransfer;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.OutgoingFileTransfer;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.ProgressStatusProvider;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnection;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionEventListener;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionState;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ChecksummingEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferringFileEvent;
@@ -62,7 +62,7 @@ public class FileTransferDialog extends JFrame {
         this.fileTransfer = fileTransfer;
         fileTransfer.addTransferListener(new RvConnectionEventListener() {
             public void handleEventWithStateChange(RvConnection transfer,
-                    FileTransferState state, RvConnectionEvent event) {
+                    RvConnectionState state, RvConnectionEvent event) {
                 stateLabel.setText(state.toString());
                 printEvent(event);
             }

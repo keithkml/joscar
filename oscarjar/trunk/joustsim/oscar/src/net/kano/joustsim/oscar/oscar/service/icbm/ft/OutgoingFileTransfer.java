@@ -6,8 +6,8 @@ import java.io.File;
 import java.util.List;
 import java.util.Map;
 
-public interface OutgoingFileTransfer extends FileTransfer {
-    void makeRequest(InvitationMessage msg);
+public interface OutgoingFileTransfer extends FileTransfer, OutgoingRvConnection {
+    void sendRequest(InvitationMessage msg);
 
     void setFile(File file);
     void setFiles(String folderName, List<File> files);
@@ -18,5 +18,5 @@ public interface OutgoingFileTransfer extends FileTransfer {
     void mapName(File file, String name);
     String getMappedName(File file);
 
-    ChecksumManager getChecksumManager();
+    FileChecksummer getChecksummer();
 }

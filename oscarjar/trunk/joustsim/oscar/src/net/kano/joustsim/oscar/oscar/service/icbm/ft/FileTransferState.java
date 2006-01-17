@@ -33,6 +33,10 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-public enum FileTransferState {
-    WAITING, PREPARING, CONNECTING, CONNECTED, TRANSFERRING, FAILED, FINISHED
+public class FileTransferState extends RvConnectionState {
+  public static final RvConnectionState TRANSFERRING = new FileTransferState("TRANSFERRING");
+
+  public FileTransferState(String name) {
+    super(name);
+  }
 }

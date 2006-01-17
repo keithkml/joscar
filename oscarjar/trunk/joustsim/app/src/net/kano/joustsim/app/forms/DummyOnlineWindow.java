@@ -49,6 +49,7 @@ import net.kano.joustsim.oscar.oscar.service.bos.MainBosService;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransfer;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionManager;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionManagerListener;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.IncomingRvConnection;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.IncomingFileTransfer;
 import net.kano.joustsim.oscar.oscar.service.info.InfoService;
 
@@ -302,21 +303,25 @@ public class DummyOnlineWindow extends JFrame {
             }
         });
         RvConnectionManager ftm = conn.getIcbmService().getFileTransferManager();
-        ftm.addFileTransferListener(new RvConnectionManagerListener() {
-            public void handleNewIncomingFileTransfer(RvConnectionManager manager,
-                    IncomingFileTransfer transfer) {
-                FileSendBlock fileInfo = transfer.getFileInfo();
+        ftm.addConnectionManagerListener(new RvConnectionManagerListener() {
+            public void handleNewIncomingConnection(RvConnectionManager manager,
+                    IncomingRvConnection transfer) {
+              if (transfer instanceof IncomingFileTransfer) {
+                IncomingFileTransfer ft = (IncomingFileTransfer) transfer;
+
+                FileSendBlock fileInfo = ft.getFileInfo();
                 int choice = JOptionPane.showConfirmDialog(DummyOnlineWindow.this,
-                        transfer.getBuddyScreenname() + " wants to send you "
-                                + fileInfo.getFileCount() + " files \""
-                                + fileInfo.getFilename() + "\"", "File Transfer",
-                        JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+                    transfer.getBuddyScreenname() + " wants to send you "
+                        + fileInfo.getFileCount() + " files \""
+                        + fileInfo.getFilename() + "\"", "File Transfer",
+                    JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
                 if (choice == JOptionPane.YES_OPTION) {
-                    watchTransfer(transfer);
-                    transfer.accept();
+                  watchTransfer(ft);
+                  transfer.accept();
                 } else {
-                    transfer.decline();
+                  transfer.reject();
                 }
+              }
             }
         });
         BuddyInfo myInfo = conn.getBuddyInfoManager()

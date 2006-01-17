@@ -1,37 +1,38 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
+import net.kano.joscar.CopyOnWriteArrayList;
+import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.rv.RvSession;
+import net.kano.joscar.rvcmd.ConnectionRequestRvCmd;
+import net.kano.joscar.rvcmd.RvConnectionInfo;
+import net.kano.joscar.rvcmd.sendfile.FileSendRejectRvCmd;
+import net.kano.joustsim.Screenname;
+import net.kano.joustsim.oscar.AimConnection;
+import net.kano.joustsim.oscar.oscar.service.icbm.RendezvousSessionHandler;
+import net.kano.joustsim.oscar.oscar.service.icbm.IcbmService;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ControllerListener;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ChecksummingEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectedEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectingEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectingToProxyEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ResolvingProxyEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.WaitingForConnectionEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectedEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferringFileEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileCompleteEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ChecksummingEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.LocallyCancelledEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ProxyRedirectDisallowedEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ControllerListener;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ResolvingProxyEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferringFileEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.WaitingForConnectionEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.RendezvousSessionHandler;
-import net.kano.joustsim.oscar.AimConnection;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
 import net.kano.joustsim.oscar.proxy.AimProxyInfo;
-import net.kano.joustsim.Screenname;
-import net.kano.joscar.rv.RvSession;
-import net.kano.joscar.rvcmd.sendfile.FileSendRejectRvCmd;
-import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
-import net.kano.joscar.rvcmd.RvConnectionInfo;
-import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.CopyOnWriteArrayList;
 
-import java.util.Timer;
-import java.util.Iterator;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Timer;
 import java.util.logging.Logger;
 
 public abstract class RvConnectionImpl
@@ -39,16 +40,17 @@ public abstract class RvConnectionImpl
     RvSessionBasedConnection, StateBasedConnection, CachedTimerHolder {
   private static final Logger LOGGER = Logger
       .getLogger(FileTransferImpl.class.getName());
+
   private Timer timer = new Timer("RV connection timer", true);
-  protected RendezvousSessionHandler rvSessionHandler;
-  protected RvSession session;
+  private RendezvousSessionHandler rvSessionHandler;
+  private RvSession session;
   private StateController controller = null;
   private Map<Key<?>, Object> transferProperties
       = new HashMap<Key<?>, Object>();
-  protected RvConnectionManager rvConnectionManager;
+  private RvConnectionManager rvConnectionManager;
   private final CopyOnWriteArrayList<RvConnectionEventListener> listeners
       = new CopyOnWriteArrayList<RvConnectionEventListener>();
-  private FileTransferState state = FileTransferState.WAITING;
+  private RvConnectionState state = RvConnectionState.WAITING;
   private EventPost eventPost = new EventPostImpl();
   private boolean done = false;
   private boolean onlyUsingProxy = false;
@@ -75,7 +77,15 @@ public abstract class RvConnectionImpl
   private Map<ConnectionType, Long> timeouts
       = new HashMap<ConnectionType, Long>();
   private int requestIndex = 1;
+  //TODO: encapsulate proxyInfo
   protected AimProxyInfo proxyInfo;
+
+  public RvConnectionImpl(RvConnectionManager rvConnectionManager,
+      RvSession session) {
+    this.rvConnectionManager = rvConnectionManager;
+    this.session = session;
+    rvSessionHandler = createSessionHandler();
+  }
 
   protected void fireEvent(RvConnectionEvent event) {
     assert !Thread.holdsLock(this);
@@ -85,17 +95,16 @@ public abstract class RvConnectionImpl
     }
   }
 
-  protected void fireStateChange(FileTransferState newState,
+  protected void fireStateChange(RvConnectionState newState,
                                  RvConnectionEvent event) {
     assert !Thread.holdsLock(this);
 
     for (RvConnectionEventListener listener : listeners) {
-      listener.handleEventWithStateChange(this,
-          newState, event);
+      listener.handleEventWithStateChange(this, newState, event);
     }
   }
 
-  public synchronized FileTransferState getState() { return state; }
+  public synchronized RvConnectionState getState() { return state; }
 
   public Timer getTimer() { return timer; }
 
@@ -200,28 +209,28 @@ public abstract class RvConnectionImpl
 
   //TODO: automatically cancel when state is set to FAILED
   public boolean cancel() {
-    setState(FileTransferState.FAILED, new LocallyCancelledEvent());
+    setState(RvConnectionState.FAILED, new LocallyCancelledEvent());
     return true;
   }
 
   //TODO: check for valid state changes
-  protected boolean setState(FileTransferState state, RvConnectionEvent event) {
+  protected boolean setState(RvConnectionState state, RvConnectionEvent event) {
     StateController controller;
     synchronized (this) {
       if (done) return false;
 
       this.state = state;
-      if (state == FileTransferState.FAILED
-          || state == FileTransferState.FINISHED) {
+      if (state == RvConnectionState.FAILED
+          || state == RvConnectionState.FINISHED) {
         done = true;
       }
       controller = this.controller;
     }
-    if (state == FileTransferState.FAILED) {
+    if (state == RvConnectionState.FAILED) {
       getRvSession().sendRv(new FileSendRejectRvCmd());
     }
-    if (controller != null && (state == FileTransferState.FAILED
-        || state == FileTransferState.FINISHED)) {
+    if (controller != null && (state == RvConnectionState.FAILED
+        || state == RvConnectionState.FINISHED)) {
       controller.stop();
     }
     fireStateChange(state, event);
@@ -287,9 +296,9 @@ public abstract class RvConnectionImpl
   }
 
   protected synchronized void queueStateChange(
-      FileTransferState fileTransferState,
+      RvConnectionState rvConnectionState,
       RvConnectionEvent event) {
-    eventQueue.add(new StateChangeEvent(fileTransferState, event));
+    eventQueue.add(new StateChangeEvent(rvConnectionState, event));
   }
 
   protected void flushEventQueue() {
@@ -311,10 +320,11 @@ public abstract class RvConnectionImpl
   }
 
   protected AimConnection getAimConnection() {
-    return getRvConnectionManager().getIcbmService().getAimConnection();
+    IcbmService icbm = getRvConnectionManager().getIcbmService();
+    return icbm.getAimConnection();
   }
 
-  protected HowToConnect processRedirect(FileSendReqRvCmd reqCmd) {
+  protected HowToConnect processRedirect(ConnectionRequestRvCmd reqCmd) {
     setRequestIndex(reqCmd.getRequestIndex());
     RvConnectionInfo connInfo = reqCmd.getConnInfo();
     LOGGER.fine("Received redirect packet: " + reqCmd
@@ -338,7 +348,7 @@ public abstract class RvConnectionImpl
     } else {
       //TODO: should we really fail when we get an invalid proxy redirect?
       //      we could ignore it
-      setState(FileTransferState.FAILED, error);
+      setState(RvConnectionState.FAILED, error);
       how = HowToConnect.DONT;
     }
     return how;
@@ -359,18 +369,22 @@ public abstract class RvConnectionImpl
 
   protected abstract RendezvousSessionHandler createSessionHandler();
 
+  protected RvSession getSession() {
+    return session;
+  }
+
   protected static class StateChangeEvent {
-    private FileTransferState state;
+    private RvConnectionState state;
     private RvConnectionEvent event;
 
-    public StateChangeEvent(FileTransferState state,
+    public StateChangeEvent(RvConnectionState state,
                             RvConnectionEvent event) {
 
       this.state = state;
       this.event = event;
     }
 
-    public FileTransferState getState() {
+    public RvConnectionState getState() {
       return state;
     }
 
@@ -382,25 +396,25 @@ public abstract class RvConnectionImpl
   private class EventPostImpl implements EventPost {
     public void fireEvent(RvConnectionEvent event) {
       boolean fireState;
-      FileTransferState newState = null;
+      RvConnectionState newState = null;
       synchronized (RvConnectionImpl.this) {
-        FileTransferState oldState = state;
+        RvConnectionState oldState = state;
         if (event instanceof ConnectingEvent
             || event instanceof ConnectingToProxyEvent
             || event instanceof ResolvingProxyEvent
             || event instanceof WaitingForConnectionEvent) {
-          newState = FileTransferState.CONNECTING;
+          newState = RvConnectionState.CONNECTING;
 
         } else if (event instanceof ConnectedEvent) {
-          newState = FileTransferState.CONNECTED;
+          newState = RvConnectionState.CONNECTED;
 
         } else if (event instanceof TransferringFileEvent
             || event instanceof FileCompleteEvent) {
           newState = FileTransferState.TRANSFERRING;
 
         } else if (event instanceof ChecksummingEvent
-            && oldState == FileTransferState.WAITING) {
-          newState = FileTransferState.PREPARING;
+            && oldState == RvConnectionState.WAITING) {
+          newState = RvConnectionState.PREPARING;
         }
         if (!done && newState != null && newState != oldState) {
           fireState = true;

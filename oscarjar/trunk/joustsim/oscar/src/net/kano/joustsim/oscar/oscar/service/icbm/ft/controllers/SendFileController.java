@@ -125,7 +125,7 @@ public class SendFileController extends TransferController {
 
                 long len = lengths.get(raf);
                 pauseTimeout();
-                long fileChecksum = otransfer.getChecksumManager().getChecksum(file);
+                long fileChecksum = otransfer.getChecksummer().getChecksum(file);
                 resumeTimeout();
 
                 FileTransferHeader sendheader = new FileTransferHeader();

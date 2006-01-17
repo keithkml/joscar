@@ -36,6 +36,6 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 import java.io.File;
 import java.io.IOException;
 
-public interface ChecksumManager {
+public interface FileChecksummer {
     long getChecksum(File file) throws IOException;
 }

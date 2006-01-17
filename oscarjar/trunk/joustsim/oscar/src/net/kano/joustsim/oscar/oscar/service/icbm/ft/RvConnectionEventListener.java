@@ -36,7 +36,7 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 
 public interface RvConnectionEventListener {
-    void handleEventWithStateChange(RvConnection transfer, FileTransferState state,
+    void handleEventWithStateChange(RvConnection transfer, RvConnectionState state,
             RvConnectionEvent event);
     void handleEvent(RvConnection transfer, RvConnectionEvent event);
 }

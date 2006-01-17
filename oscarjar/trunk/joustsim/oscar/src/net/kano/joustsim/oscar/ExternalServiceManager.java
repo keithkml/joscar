@@ -116,6 +116,7 @@ public class ExternalServiceManager {
         if (newState.isFinished()) {
           serviceTimer.cancel();
           synchronized (ExternalServiceManager.this) {
+            //TODO: this can cause ConcurrentModificationException
             for (OscarConnection conn : externalConnections.values()) {
               conn.disconnect();
             }
