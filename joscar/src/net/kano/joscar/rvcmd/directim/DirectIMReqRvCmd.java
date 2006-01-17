@@ -37,6 +37,7 @@ package net.kano.joscar.rvcmd.directim;
 
 import net.kano.joscar.rvcmd.AbstractRequestRvCmd;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
+import net.kano.joscar.rvcmd.ConnectionRequestRvCmd;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.tlv.TlvChain;
@@ -51,7 +52,8 @@ import java.io.OutputStream;
  *
  * @see net.kano.joscar.rvproto.directim
  */
-public class DirectIMReqRvCmd extends AbstractRequestRvCmd {
+public class DirectIMReqRvCmd
+    extends AbstractRequestRvCmd implements ConnectionRequestRvCmd {
     /** The connection information block sent in this request. */
     private final RvConnectionInfo connInfo;
 

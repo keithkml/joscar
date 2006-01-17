@@ -40,6 +40,7 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.rvcmd.AbstractRequestRvCmd;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
+import net.kano.joscar.rvcmd.ConnectionRequestRvCmd;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.tlv.TlvChain;
@@ -50,7 +51,8 @@ import java.io.OutputStream;
 /**
  * A rendezvous command used to request a voice chat session.
  */
-public class VoiceReqRvCmd extends AbstractRequestRvCmd {
+public class VoiceReqRvCmd
+    extends AbstractRequestRvCmd implements ConnectionRequestRvCmd {
     /** The voice chat protocol version used by WinAIM. */
     public static final long VERSION_DEFAULT = 0x00000001L;
 

@@ -46,15 +46,11 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * A base class for RV "reject" commands, commands with a status code of
- * {@link #RVSTATUS_DENY} and containing a rejection code.
+ * A base class for RV "reject" commands, commands with a status code of {@link
+ * #RVSTATUS_DENY} and containing a rejection code.
  */
-public abstract class AbstractRejectRvCmd extends AbstractRvCmd {
-    /**
-     * A rejection code indicating that the user cancelled or denied a
-     * rendezvous request.
-     */
-    public static final int REJECTCODE_CANCELLED = 0x0001;
+public abstract class AbstractRejectRvCmd
+        extends AbstractRvCmd implements RejectRvCmd {
 
     /** A TLV type containing a rejection code. */
     private static final int TYPE_REJECTCODE = 0x000b;
@@ -75,15 +71,16 @@ public abstract class AbstractRejectRvCmd extends AbstractRvCmd {
 
         this.rejectCode = chain.getUShort(TYPE_REJECTCODE);
 
-        chain.removeTlvs(new int[] {
-            TYPE_REJECTCODE,
+        chain.removeTlvs(new int[]{
+                TYPE_REJECTCODE,
         });
     }
 
     /**
      * Creates a new outgoing rejection RV command with the given properties.
      *
-     * @param cap the capability block associated with this RV command
+     * @param cap           the capability block associated with this RV
+     *                      command
      * @param rejectionCode the rejection code to send in this RV command
      */
     protected AbstractRejectRvCmd(CapabilityBlock cap, int rejectionCode) {
@@ -111,11 +108,10 @@ public abstract class AbstractRejectRvCmd extends AbstractRvCmd {
     /**
      * Provides a default implementation for writing this command's RV TLV's.
      * This implementation does not write any RV TLV's to the given stream, as
-     * most rejection RV commands contain only one TLV, the associated
-     * rejection code.
+     * most rejection RV commands contain only one TLV, the associated rejection
+     * code.
      *
      * @param out the stream to which to write
-     *
      * @throws IOException if an I/O error occurs
      */
     protected void writeRvTlvs(OutputStream out) throws IOException { }
