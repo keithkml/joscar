@@ -302,7 +302,7 @@ public class DummyOnlineWindow extends JFrame {
                 updateButtons();
             }
         });
-        RvConnectionManager ftm = conn.getIcbmService().getFileTransferManager();
+        RvConnectionManager ftm = conn.getIcbmService().getRvConnectionManager();
         ftm.addConnectionManagerListener(new RvConnectionManagerListener() {
             public void handleNewIncomingConnection(RvConnectionManager manager,
                     IncomingRvConnection transfer) {

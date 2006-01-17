@@ -228,7 +228,7 @@ public class BuddyListBox extends JPanel {
                 if (sn != null) {
                     AimConnection conn = guiSession.getAimConnection();
                     RvConnectionManager mgr = conn.getIcbmService()
-                            .getFileTransferManager();
+                            .getRvConnectionManager();
                     OutgoingFileTransfer transfer = mgr.createOutgoingFileTransfer(sn);
                     JFileChooser chooser = new JFileChooser();
                     chooser.setApproveButtonText("Send");

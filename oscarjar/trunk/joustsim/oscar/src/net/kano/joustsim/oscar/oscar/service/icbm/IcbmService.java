@@ -108,7 +108,7 @@ public class IcbmService extends Service {
     buddyInfoManager = getAimConnection().getBuddyInfoManager();
   }
 
-  public RvConnectionManager getFileTransferManager() {
+  public RvConnectionManager getRvConnectionManager() {
     return rvConnectionManager;
   }
 
