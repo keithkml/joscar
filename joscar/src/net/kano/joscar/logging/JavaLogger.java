@@ -38,6 +38,7 @@ package net.kano.joscar.logging;
 import net.kano.joscar.DefensiveTools;
 
 import java.util.logging.Level;
+import java.util.logging.LogRecord;
 
 /**
  * A logger implementation that uses Java 1.4's own
@@ -60,14 +61,39 @@ public final class JavaLogger implements Logger {
     }
 
     public void logException(String s, Throwable t) {
-        logger.log(Level.WARNING, s, t);
+        log(Level.WARNING, s, t);
     }
 
-    public void logWarning(String s) { logger.warning(s); }
+    public void logWarning(String s) {
+        log(Level.WARNING, s, null);
+    }
 
-    public void logFine(String s) { logger.fine(s); }
+    private void log(Level level, String s, Throwable t) {
+        LogRecord record = new LogRecord(level, s);
+        StackTraceElement frame = findLastRealStackFrame();
+        if (frame != null) {
+            record.setSourceClassName(frame.getClassName());
+            record.setSourceMethodName(frame.getMethodName());
+        }
+        if (t != null) record.setThrown(t);
+        logger.log(record);
+    }
 
-    public void logFiner(String s) { logger.finer(s); }
+    private StackTraceElement findLastRealStackFrame() {
+        StackTraceElement cool = null;
+        for (StackTraceElement frame : new Throwable()
+                .getStackTrace()) {
+            if (!frame.getClassName().equals(JavaLogger.class.getName())) {
+                cool = frame;
+                break;
+            }
+        }
+        return cool;
+    }
+
+    public void logFine(String s) { log(Level.FINE, s, null); }
+
+    public void logFiner(String s) { log(Level.FINER, s, null); }
 
     public boolean logWarningEnabled() {
         return logger.isLoggable(Level.WARNING);

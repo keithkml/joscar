@@ -103,8 +103,9 @@ public final class ImEncodingParams {
 
     /**
      * Attempts to produce the name of a charset (like <code>"US-ASCII"</code>)
-     * from this set of encoding parameters. Returns <code>null</code> if this
-     * object represents an unknown charset.
+     * from this set of encoding parameters. Returns {@code null} if this
+     * object represents an unknown charset. This method will always return
+     * either {@code null} or a valid Java charset name.
      *
      * @return the name of the charset described by these parameters, or
      *         <code>null</code> if unknown

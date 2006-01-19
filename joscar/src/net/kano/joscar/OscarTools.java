@@ -535,43 +535,6 @@ System.out.println("message text is "
     }
 
     /**
-     * A <code>CharSequence</code> that represents the contents of a block of
-     * binary data as a sequence of single-byte characters.
-     * <br>
-     * <br>
-     * One should note that each byte read is converted to a char via a simple
-     * cast, as in the following code: <code>(char) data[i]</code>. There are
-     * probably charset issues, but it should be safe to use when US-ASCII
-     * encoding is assumed for the data block.
-     */
-    private static class DynAsciiCharSequence implements CharSequence {
-        /** The block of binary data that this character sequence represents. */
-        private final ByteBlock data;
-
-        /**
-         * Creates a new character sequence representing the given block of
-         * binary data.
-         *
-         * @param data the data that this character sequence should represent
-         */
-        private DynAsciiCharSequence(ByteBlock data) {
-            DefensiveTools.checkNull(data, "data");
-
-            this.data = data;
-        }
-
-        public char charAt(int index) { return (char) data.get(index); }
-
-        public int length() { return data.getLength(); }
-
-        public CharSequence subSequence(int start, int end) {
-            return new DynAsciiCharSequence(data.subBlock(start, end-start));
-        }
-
-        public String toString() { return BinaryTools.getAsciiString(data); }
-    }
-
-    /**
      * A regular expression that matches the "cookie" or "URL" of a chat room.
      */
     private static final Pattern roomNameRE
