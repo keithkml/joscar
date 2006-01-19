@@ -41,7 +41,7 @@ public abstract class RvConnectionImpl
   private static final Logger LOGGER = Logger
       .getLogger(FileTransferImpl.class.getName());
 
-  private Timer timer = new Timer("RV connection timer", true);
+  private Timer timer = new Timer(true);
   private RendezvousSessionHandler rvSessionHandler;
   private RvSession session;
   private StateController controller = null;
@@ -77,14 +77,14 @@ public abstract class RvConnectionImpl
   private Map<ConnectionType, Long> timeouts
       = new HashMap<ConnectionType, Long>();
   private int requestIndex = 1;
-  //TODO: encapsulate proxyInfo
-  protected AimProxyInfo proxyInfo;
+  private AimProxyInfo proxyInfo;
 
   public RvConnectionImpl(RvConnectionManager rvConnectionManager,
       RvSession session) {
     this.rvConnectionManager = rvConnectionManager;
     this.session = session;
     rvSessionHandler = createSessionHandler();
+    proxyInfo = getAimConnection().getProxy();
   }
 
   protected void fireEvent(RvConnectionEvent event) {
@@ -122,11 +122,6 @@ public abstract class RvConnectionImpl
   }
 
   protected void startStateController(StateController controller) {
-//        StateController oldController = this.controller;
-//        if (oldController != null) {
-//            throw new IllegalStateException("Cannot start state controller: "
-//                    + "controller is already set to " + oldController);
-//        }
     changeStateController(controller);
   }
 
@@ -135,8 +130,7 @@ public abstract class RvConnectionImpl
     synchronized (this) {
       if (done) {
         LOGGER.warning("Someone tried changing state of " + this
-            + " to " + controller + ", but we are done so it is "
-            + "being ignored");
+            + " to " + controller + ", but we are done so it is being ignored");
         return;
       }
       last = storeNextController(controller);
@@ -371,6 +365,10 @@ public abstract class RvConnectionImpl
 
   protected RvSession getSession() {
     return session;
+  }
+
+  protected AimProxyInfo getProxyInfo() {
+    return proxyInfo;
   }
 
   protected static class StateChangeEvent {

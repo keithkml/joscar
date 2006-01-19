@@ -66,6 +66,8 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Collection;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 
@@ -115,12 +117,13 @@ public class ExternalServiceManager {
         State newState = event.getNewState();
         if (newState.isFinished()) {
           serviceTimer.cancel();
+
+          // we copy these
+          List<OscarConnection> vals;
           synchronized (ExternalServiceManager.this) {
-            //TODO: this can cause ConcurrentModificationException
-            for (OscarConnection conn : externalConnections.values()) {
-              conn.disconnect();
-            }
+            vals = new ArrayList<OscarConnection>(externalConnections.values());
           }
+          for (OscarConnection conn : vals) conn.disconnect();
         }
       }
     });
@@ -149,7 +152,7 @@ public class ExternalServiceManager {
   }
 
   private Timer initializeServiceTimer() {
-    Timer serviceTimer = new Timer("Service connection timeout watcher", true);
+    Timer serviceTimer = new Timer(true);
     serviceTimer.scheduleAtFixedRate(new TimerTask() {
       public void run() {
         //TODO: use configurable connection timeout

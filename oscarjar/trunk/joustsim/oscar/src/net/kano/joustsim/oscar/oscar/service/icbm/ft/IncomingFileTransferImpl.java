@@ -91,16 +91,14 @@ public class IncomingFileTransferImpl
           new ConnectionCompleteEvent());
       return null;
 
-    } else {
-      if (oldStateInfo instanceof StreamInfo) {
-        LOGGER.fine("Changing from success of conn controller "
-            + oldController + " to receive");
-        return new ReceiveFileController();
+    } else if (oldStateInfo instanceof StreamInfo) {
+      LOGGER.fine("Changing from success of conn controller "
+          + oldController + " to receive");
+      return new ReceiveFileController();
 
-      } else {
-        throw new IllegalStateException("Unknown last controller "
-            + oldController);
-      }
+    } else {
+      throw new IllegalStateException("Unknown last controller "
+          + oldController);
     }
   }
 

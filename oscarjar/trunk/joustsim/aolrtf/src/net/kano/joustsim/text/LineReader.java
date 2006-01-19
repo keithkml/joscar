@@ -70,8 +70,7 @@ class LineReader extends HTMLEditorKit.ParserCallback {
     public Color getBackgroundColor() { return bgColor; }
 
     public LineElement[] getElements() {
-        return (LineElement[])
-                elements.toArray(new LineElement[elements.size()]);
+        return elements.toArray(new LineElement[elements.size()]);
     }
 
     private AttributeSet getCurrentAttr() {

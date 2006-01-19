@@ -58,7 +58,6 @@ public abstract class FileTransferImpl
                              RvSession session) {
     super(rvConnectionManager,  session);
     setPerConnectionTimeout(ConnectionType.LAN, 2L);
-    proxyInfo = getAimConnection().getProxy();
   }
 
   protected synchronized void setInvitationMessage(InvitationMessage message) {

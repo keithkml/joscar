@@ -54,7 +54,7 @@ public class FileTransferTools {
             CachedTimerHolder timerHolder = (CachedTimerHolder) transfer;
             return timerHolder.getTimer();
         } else {
-            return new Timer("File transfer scheduler", true);
+            return new Timer(true);
         }
     }
 }
