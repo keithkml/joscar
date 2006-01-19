@@ -63,4 +63,8 @@ public class DirectIMRejectRvCmd extends AbstractRejectRvCmd {
     public DirectIMRejectRvCmd(int rejectionCode) {
         super(CapabilityBlock.BLOCK_DIRECTIM, rejectionCode);
     }
+
+    public DirectIMRejectRvCmd() {
+        this(REJECTCODE_CANCELLED);
+    }
 }

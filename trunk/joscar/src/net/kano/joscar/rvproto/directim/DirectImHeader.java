@@ -416,9 +416,9 @@ if ((directImHeader.getFlags() & DirectImHeader.FLAG_AUTORESPONSE) != 0) {
     /**
      * Sets the screenname to send in this header. This value is supposed to be
      * the screenname of the user sending the header, but in practice it is
-     * simply ignored by the official clients (as it should be). Note that by
-     * sending a different screenname allows one to remotely spoof messages from
-     * other users when chatting with someone using <a
+     * simply ignored by the official clients (as it should be). Note that, as
+     * of this writing, by sending a different screenname allows one to remotely
+     * spoof messages from other users when chatting with someone using <a
      * href="http://gaim.sf.net">Gaim</a>.
      *
      * @param sn a screenname to send in this header
