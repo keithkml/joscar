@@ -194,6 +194,10 @@ public final class SegmentedFilename {
         return parts;
     }
 
+    public final String getLastSegment() {
+        return parts.isEmpty() ? null : parts.get(0);
+    }
+
     /**
      * Converts this segmented filename to a string, separating segments in the
      * returned string with the given separator string.
