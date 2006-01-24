@@ -37,7 +37,7 @@ import net.kano.joustsim.Screenname;
 
 import java.util.Date;
 
-public class ConversationEventInfo {
+public abstract class ConversationEventInfo {
     private final Screenname from;
     private final Screenname to;
     private final Date date;

@@ -128,7 +128,7 @@ public class DirectImController
         if (charset == null) charset = "US-ASCII";
         ByteBuffer bytes = ByteBuffer.allocate(datalen);
 
-        DirectImReceiver receiver = new DirectImReceiver(charset, bytes,
+        DirectImReceiver receiver = new DirectImReceiver(header, charset, bytes,
             datalen, eventPost);
         receiver.receive(socketChan);
 
@@ -142,10 +142,15 @@ public class DirectImController
         if (receiver.getLastMode() == Mode.MESSAGE) {
           // we must have never hit a <BINARY> part
           String msg = new String(bytes.array(), charset);
-          eventPost.fireEvent(new ReceivedMessageEvent(msg));
+          eventPost.fireEvent(new ReceivedMessageEvent(msg,
+              isAutoResponse(header)));
         }
       }
     }
+  }
+
+  private boolean isAutoResponse(DirectImHeader header) {
+    return (header.getFlags() & DirectImHeader.FLAG_AUTORESPONSE) != 0;
   }
 
   private static TypingState getTypingState(long flags) {
@@ -178,7 +183,7 @@ public class DirectImController
     sendMessage(msg, false);
   }
 
-  private void sendMessage(String msg, boolean autoresponse) {
+  public void sendMessage(String msg, boolean autoresponse) {
     DirectImHeader header = DirectImHeader.createMessageHeader(
         ImEncodedString.encodeString(msg), autoresponse);
     //TODO: this must be done in blocking mode, or (preferably) rewritten to use NIO
@@ -204,14 +209,16 @@ public class DirectImController
     private int lastdatalen;
     private ByteBlock lastbytes;
     private int lasttag;
+    private DirectImHeader header;
     private final String charset;
     private final ByteBuffer bytes;
     private final int datalen;
     private final EventPost eventPost;
 
-    public DirectImReceiver(String charset, ByteBuffer bytes, int datalen,
-        EventPost eventPost) {
+    public DirectImReceiver(DirectImHeader header, String charset,
+        ByteBuffer bytes, int datalen, EventPost eventPost) {
       super(0, datalen);
+      this.header = header;
       this.charset = charset;
       this.bytes = bytes;
       this.datalen = datalen;
@@ -250,7 +257,8 @@ public class DirectImController
             lasttag = idx + "<BINARY>".length();
             mode = Mode.TAG;
             String message = new String(bytes.array(), 0, idx, charset);
-            eventPost.fireEvent(new ReceivedMessageEvent(message));
+            eventPost.fireEvent(new ReceivedMessageEvent(message,
+                isAutoResponse(header)));
           }
         }
 
@@ -282,8 +290,7 @@ public class DirectImController
 
           } else {
             // we got all of the data!
-            eventPost.fireEvent(new ReceivedAttachmentEvent(lastid,
-                lastbytes));
+            eventPost.fireEvent(new ReceivedAttachmentEvent(lastid, lastbytes));
             lastid = null;
             lastdata = -1;
             lastdatalen = -1;

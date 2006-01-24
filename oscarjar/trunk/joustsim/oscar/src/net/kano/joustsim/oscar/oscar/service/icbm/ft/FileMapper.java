@@ -38,7 +38,7 @@ import net.kano.joscar.rvcmd.SegmentedFilename;
 import java.io.File;
 
 public interface FileMapper {
-    File getDestinationFile(SegmentedFilename filename);
+  File getDestinationFile(SegmentedFilename filename);
 
-    File getUnspecifiedFilename();
+  File getUnspecifiedFilename();
 }

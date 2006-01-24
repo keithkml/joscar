@@ -33,9 +33,7 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
-import net.kano.joscar.rvcmd.InvitationMessage;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
-import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.ConnectionType;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionImpl;
 
@@ -43,20 +41,16 @@ import java.io.IOException;
 import java.net.InetAddress;
 
 public class SendPassivelyController extends PassiveConnectionController {
-    protected void sendRequest() throws IOException {
-        RvConnectionImpl transfer = getRvConnection();
-        InvitationMessage msg = transfer.getInvitationMessage();
-        RvConnectionInfo connInfo = RvConnectionInfo
-                .createForOutgoingRequest(InetAddress.getLocalHost(),
-                        getServerSocket().getLocalPort());
-        setConnInfo(connInfo);
-        FileSendReqRvCmd request = new FileSendReqRvCmd(msg,
-                connInfo, transfer.getFileInfo());
-        //TODO: is this redirected?
-        transfer.getRvSession().sendRv(request);
-    }
+  protected void sendRequest() throws IOException {
+    RvConnectionImpl transfer = getRvConnection();
+    RvConnectionInfo connInfo = RvConnectionInfo
+        .createForOutgoingRequest(InetAddress.getLocalHost(),
+            getServerSocket().getLocalPort());
+    transfer.setConnectionInfo(connInfo);
+    transfer.getRvRequestMaker().sendRvRequest();
+  }
 
-    protected ConnectionType getConnectionType() {
-        return ConnectionType.INCOMING;
-    }
+  protected ConnectionType getConnectionType() {
+    return ConnectionType.INCOMING;
+  }
 }

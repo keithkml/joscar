@@ -32,15 +32,14 @@
  * File created by keithkml
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm.dim;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.TypingState;
+public interface RvRequestMaker {
+  void sendRvRequest();
 
-public class BuddyTypingEvent extends RvConnectionEvent {
-  private final TypingState state;
+  void sendRvRequest(int newIndex);
 
-  public BuddyTypingEvent(TypingState state) {this.state = state;}
-
-  public TypingState getState() { return state; }
+  void sendRvAccept();
+  
+  void sendRvReject();
 }

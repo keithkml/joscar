@@ -34,10 +34,8 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.ConnectionType;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FailureEventException;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferImpl;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnection;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionImpl;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectionTimedOutEvent;
@@ -55,7 +53,6 @@ public abstract class AbstractConnectionController extends StateController {
     private static final Logger LOGGER = Logger
             .getLogger(AbstractConnectionController.class.getName());
 
-    private RvConnectionInfo connectionInfo;
     private StreamInfo stream;
     private RvConnectionImpl fileTransfer;
     private Socket socket;
@@ -66,12 +63,11 @@ public abstract class AbstractConnectionController extends StateController {
     protected abstract ConnectionType getConnectionType();
 
     private long getConnectionTimeoutMillis() {
-        return fileTransfer.getPerConnectionTimeout(getConnectionType());
+        return fileTransfer.getSettings()
+            .getPerConnectionTimeout(getConnectionType());
     }
 
-    public RvConnectionInfo getConnectionInfo() { return connectionInfo; }
-
-    protected StreamInfo getStream() { return stream; }
+  protected StreamInfo getStream() { return stream; }
 
     public RvConnectionImpl getRvConnection() {
         return fileTransfer;
@@ -88,9 +84,7 @@ public abstract class AbstractConnectionController extends StateController {
             throw new IllegalStateException("state is alreaday " + endState);
         }
 
-        this.fileTransfer = (FileTransferImpl) transfer;
-        connectionInfo = fileTransfer.getTransferProperty(
-                FileTransferImpl.KEY_CONN_INFO);
+        this.fileTransfer = (RvConnectionImpl) transfer;
 
         try {
             checkConnectionInfo();

@@ -34,31 +34,30 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rv.RecvRvEvent;
-import net.kano.joscar.rvcmd.RejectRvCmd;
+import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rvcmd.AcceptRvCmd;
 import net.kano.joscar.rvcmd.ConnectionRequestRvCmd;
+import net.kano.joscar.rvcmd.RejectRvCmd;
 import net.kano.joscar.rvcmd.RequestRvCmd;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.OutgoingConnectionController;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendPassivelyController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectToProxyForOutgoingController;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.RedirectToProxyController;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendFileController;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendOverProxyController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ManualTimeoutController;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailureEventInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.OutgoingConnectionController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.RedirectToProxyController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendOverProxyController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendPassivelyController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.BuddyCancelledEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownErrorEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.BuddyCancelledEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailureEventInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
 
 import java.util.logging.Logger;
 
-public abstract class OutgoingRvConnectionImpl extends FileTransferImpl
+public abstract class OutgoingRvConnectionImpl extends RvConnectionImpl
     implements OutgoingRvConnection {
   private static final Logger LOGGER = Logger
       .getLogger(OutgoingRvConnectionImpl.class.getName());
@@ -103,20 +102,22 @@ public abstract class OutgoingRvConnectionImpl extends FileTransferImpl
         return null;
 
       } else {
-        return getNextControllerFromUnknownError(oldController, event);
+        return getNextControllerFromUnknownError(oldController,
+            (FailedStateInfo) endState, event);
       }
     } else {
-      throw new IllegalStateException("unknown previous state " + endState);
+      throw new IllegalStateException("Unknown previous state " + endState);
     }
   }
 
   protected abstract StateController getNextControllerFromUnknownError(
-      StateController oldController, RvConnectionEvent event);
+      StateController oldController, FailedStateInfo failedStateInfo,
+      RvConnectionEvent event);
 
   protected abstract StateController getNextControllerFromUnknownSuccess(
       StateController oldController, StateInfo endState);
 
-  protected abstract SendFileController getConnectedController();
+  protected abstract StateController getConnectedController();
 
   private static boolean isLanController(StateController oldController) {
     return oldController instanceof OutgoingConnectionController
@@ -139,8 +140,8 @@ public abstract class OutgoingRvConnectionImpl extends FileTransferImpl
         || oldController instanceof SendOverProxyController;
   }
 
-  protected FtRvSessionHandler createSessionHandler() {
-    return new FtRvSessionHandler() {
+  protected AbstractRvSessionHandler createSessionHandler() {
+    return new AbstractRvSessionHandler(this) {
       protected void handleIncomingReject(RecvRvEvent event,
           RejectRvCmd rejectCmd) {
         setState(RvConnectionState.FAILED,
@@ -149,17 +150,16 @@ public abstract class OutgoingRvConnectionImpl extends FileTransferImpl
 
       protected void handleIncomingAccept(RecvRvEvent event,
           AcceptRvCmd acceptCmd) {
-        ManualTimeoutController mtc = null;
-        synchronized (this) {
-          StateController controller = getStateController();
-          if (controller instanceof SendPassivelyController
-              || controller instanceof RedirectToProxyController
-              || controller instanceof SendOverProxyController
-              || controller instanceof ConnectToProxyForOutgoingController) {
-            mtc = (ManualTimeoutController) controller;
-          }
-        }
+        ManualTimeoutController mtc = getManualTimeoutController();
         if (mtc != null) mtc.startTimeoutTimer();
+      }
+
+      private synchronized ManualTimeoutController getManualTimeoutController() {
+        StateController controller = getStateController();
+        if (controller instanceof ManualTimeoutController) {
+          return (ManualTimeoutController) controller;
+        }
+        return null;
       }
 
       protected void handleIncomingRequest(RecvRvEvent event,

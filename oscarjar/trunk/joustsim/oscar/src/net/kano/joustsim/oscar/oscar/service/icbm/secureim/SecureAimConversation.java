@@ -92,6 +92,7 @@ public class SecureAimConversation extends Conversation {
 
   private final BuddyInfoTrackerListener trackerListener
       = new BuddyInfoTrackerListener() {
+    // this does nothing??
   };
   private final GlobalBuddyInfoListener buddyInfoListener
       = new GlobalBuddyInfoAdapter() {
@@ -168,8 +169,8 @@ public class SecureAimConversation extends Conversation {
     List<QueuedDecryptableMsg> decHash = decryptables.get(hash);
     if (decHash == null) return DefensiveTools.emptyList();
 
-    List<QueuedDecryptableMsg> success = null;
     decoder.setBuddyCerts(certInfo);
+    List<QueuedDecryptableMsg> success = null;
     for (Iterator<QueuedDecryptableMsg> it = decHash.iterator(); it.hasNext();)
     {
       QueuedDecryptableMsg msg = it.next();
@@ -217,7 +218,7 @@ public class SecureAimConversation extends Conversation {
 
     if (can != canSend) {
       canSend = can;
-      return Boolean.valueOf(can);
+      return can;
     } else {
       // the can-send status did not change
       return null;
@@ -225,9 +226,9 @@ public class SecureAimConversation extends Conversation {
   }
 
   protected synchronized void opened() {
-    Screenname buddy = getBuddy();
     LOGGER.fine("secure conversation opened");
 
+    Screenname buddy = getBuddy();
     buddyInfoMgr.addGlobalBuddyInfoListener(buddyInfoListener);
     buddyInfoTracker.addTracker(buddy, trackerListener);
     BuddyInfo buddyInfo = buddyInfoMgr.getBuddyInfo(buddy);
@@ -273,9 +274,9 @@ public class SecureAimConversation extends Conversation {
 
     InstantMessage im = new InstantMessage(ByteBlock.wrap(encrypted));
     InternalIcbmTools.sendIM(icbmService, getBuddy(), im, msg.isAutoResponse());
-    OutgoingSecureAimMessageInfo msginfo;
-    msginfo = OutgoingSecureAimMessageInfo.getInstance(conn.getScreenname(),
-        getBuddy(), msg, new Date(), privates, buddyCertInfo, im);
+    OutgoingSecureAimMessageInfo msginfo = OutgoingSecureAimMessageInfo
+        .getInstance(conn.getScreenname(), getBuddy(), msg, new Date(),
+            privates, buddyCertInfo, im);
     fireOutgoingEvent(msginfo);
   }
 

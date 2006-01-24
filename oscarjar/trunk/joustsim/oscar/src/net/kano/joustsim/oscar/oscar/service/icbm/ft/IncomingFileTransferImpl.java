@@ -34,37 +34,37 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
 import net.kano.joscar.rv.RvSession;
-import static net.kano.joscar.rvcmd.AbstractRejectRvCmd.REJECTCODE_CANCELLED;
 import net.kano.joscar.rvcmd.ConnectionRequestRvCmd;
-import net.kano.joscar.rvcmd.sendfile.FileSendRejectRvCmd;
+import net.kano.joscar.rvcmd.InvitationMessage;
 import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
-import net.kano.joscar.rvcmd.sendfile.FileSendAcceptRvCmd;
+import net.kano.joscar.rvcmd.sendfile.FileSendBlock;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ReceiveFileController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectionCompleteEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.RendezvousSessionHandler;
 
 import java.util.logging.Logger;
 
 public class IncomingFileTransferImpl
     extends IncomingRvConnectionImpl implements IncomingFileTransfer {
   //TODO: send rejection RV when we fail, if we haven't gotten one
-  //TODO: don't re-use connection controllers
   private static final Logger LOGGER = Logger
       .getLogger(IncomingFileTransferImpl.class.getName());
 
   private FileMapper fileMapper;
+  private FileTransferHelper helper = new FileTransferHelper(this);
 
   IncomingFileTransferImpl(RvConnectionManager rvConnectionManager,
       RvSession session) {
     super(rvConnectionManager, session);
 
-    fileMapper = new DefaultFileMapper(getBuddyScreenname());
+    fileMapper = new DefaultFileMapper(getBuddyScreenname(), System.getProperty("user.dir"));
   }
 
-  protected FtRvSessionHandler createSessionHandler() {
+  protected RendezvousSessionHandler createSessionHandler() {
     return new IncomingFtRvSessionHandler();
   }
 
@@ -73,14 +73,6 @@ public class IncomingFileTransferImpl
   }
 
   public synchronized FileMapper getFileMapper() { return fileMapper; }
-
-  protected void sendAcceptRv() {
-    getRvSession().sendRv(new FileSendAcceptRvCmd());
-  }
-
-  protected void sendRejectRv() {
-    getRvSession().sendRv(new FileSendRejectRvCmd(REJECTCODE_CANCELLED));
-  }
 
   protected StateController getNextStateControllerFromSuccessState(
       StateController oldController, StateInfo oldStateInfo) {
@@ -112,6 +104,26 @@ public class IncomingFileTransferImpl
     } else {
       throw new IllegalStateException("Unknown controller " + oldController);
     }
+  }
+
+  public RvRequestMaker getRvRequestMaker() {
+    return helper.getRvRequestMaker();
+  }
+
+  public InvitationMessage getInvitationMessage() {
+    return helper.getInvitationMessage();
+  }
+
+  private void setInvitationMessage(InvitationMessage msg) {
+    helper.setInvitationMessage(msg);
+  }
+
+  public FileSendBlock getFileInfo() {
+    return helper.getFileInfo();
+  }
+
+  private void setFileInfo(FileSendBlock block) {
+    helper.setFileInfo(block);
   }
 
   private class IncomingFtRvSessionHandler extends IncomingRvSessionHandler {

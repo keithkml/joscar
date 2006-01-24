@@ -32,42 +32,35 @@
  * File created by keithkml
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm.ft;
+package net.kano.joustsim.oscar.oscar.service.icbm.dim;
 
 import net.kano.joscar.rv.RvSession;
-import net.kano.joscar.rvcmd.directim.DirectIMAcceptRvCmd;
-import net.kano.joscar.rvcmd.directim.DirectIMRejectRvCmd;
 import net.kano.joscar.rvcmd.ConnectionRequestRvCmd;
+import net.kano.joustsim.oscar.oscar.service.icbm.RendezvousSessionHandler;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.IncomingRvConnectionImpl;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionManager;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionState;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvRequestMaker;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectionCompleteEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.dim.DirectImController;
-import net.kano.joustsim.oscar.oscar.service.icbm.RendezvousSessionHandler;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
 
 import java.util.logging.Logger;
 
-class IncomingDirectimConnectionImpl extends IncomingRvConnectionImpl {
+public class IncomingDirectimConnectionImpl
+    extends IncomingRvConnectionImpl implements DirectimConnection {
   private static final Logger LOGGER = Logger
       .getLogger(IncomingDirectimConnectionImpl.class.getName());
 
-  public IncomingDirectimConnectionImpl(RvConnectionManager mgr,
+  public IncomingDirectimConnectionImpl(RvConnectionManager rvConnectionManager,
       RvSession session) {
-    super(mgr, session);
-  }
-
-  protected void sendAcceptRv() {
-    getRvSession().sendRv(new DirectIMAcceptRvCmd());
-  }
-
-  protected void sendRejectRv() {
-    getRvSession().sendRv(new DirectIMRejectRvCmd());
+    super(rvConnectionManager, session);
   }
 
   protected StateController getNextStateControllerFromSuccessState(
       StateController oldController, StateInfo oldStateInfo) {
-
     if (oldController instanceof DirectImController) {
       LOGGER.fine("Changing from success of receive controller to "
           + "completed");
@@ -107,4 +100,9 @@ class IncomingDirectimConnectionImpl extends IncomingRvConnectionImpl {
       }
     };
   }
+
+  public RvRequestMaker getRvRequestMaker() {
+    return new DirectimRequestMaker(this);
+  }
+
 }

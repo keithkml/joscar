@@ -55,7 +55,7 @@ public class OutgoingConnectionController
   }
 
   protected InetAddress getIpAddress() {
-    RvConnectionInfo connectionInfo = getConnectionInfo();
+    RvConnectionInfo connectionInfo = getRvConnection().getConnectionInfo();
 //        assert !connectionInfo.isProxied();
 
     InetAddress ip;
@@ -74,12 +74,12 @@ public class OutgoingConnectionController
     if (getIpAddress() == null) {
       throw new IllegalStateException(MiscTools.getClassName(this) + " ("
           + type + ") has invalid connection info: "
-          + getConnectionInfo());
+          + getRvConnection().getConnectionInfo());
     }
   }
 
   protected int getConnectionPort() {
-    return getConnectionInfo().getPort();
+    return getRvConnection().getConnectionInfo().getPort();
   }
 
   protected void setResolvingState() {
@@ -89,7 +89,7 @@ public class OutgoingConnectionController
 
   protected void setConnectingState() {
     InetAddress ipAddress = getIpAddress();
-    int outPort = getConnectionInfo().getPort();
+    int outPort = getRvConnection().getConnectionInfo().getPort();
     ConnectionType type = OutgoingConnectionController.this.type;
     EventPost eventPost = getRvConnection().getEventPost();
     eventPost.fireEvent(new ConnectingEvent(type, ipAddress, outPort));

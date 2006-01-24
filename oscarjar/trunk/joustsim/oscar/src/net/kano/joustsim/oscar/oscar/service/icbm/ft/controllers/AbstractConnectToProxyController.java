@@ -33,23 +33,22 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectingToProxyEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferImpl;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionManager;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionImpl;
-import net.kano.joustsim.oscar.AimConnection;
+import net.kano.joscar.MiscTools;
+import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joscar.rvproto.rvproxy.RvProxyAckCmd;
 import net.kano.joscar.rvproto.rvproxy.RvProxyCmd;
 import net.kano.joscar.rvproto.rvproxy.RvProxyInitRecvCmd;
 import net.kano.joscar.rvproto.rvproxy.RvProxyPacket;
 import net.kano.joscar.snaccmd.CapabilityBlock;
-import net.kano.joscar.rvcmd.RvConnectionInfo;
-import net.kano.joscar.MiscTools;
+import net.kano.joustsim.oscar.AimConnection;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionImpl;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionManager;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectingToProxyEvent;
 
-import java.net.InetAddress;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.ByteArrayOutputStream;
+import java.net.InetAddress;
 
 public abstract class AbstractConnectToProxyController
         extends AbstractProxyConnectionController
@@ -72,7 +71,7 @@ public abstract class AbstractConnectToProxyController
         RvConnectionImpl conn = getRvConnection();
         RvConnectionManager ftManager = conn.getRvConnectionManager();
         AimConnection connection = ftManager.getIcbmService().getAimConnection();
-        int port = conn.getTransferProperty(FileTransferImpl.KEY_CONN_INFO).getPort();
+        int port = conn.getConnectionInfo().getPort();
         String mysn = connection.getScreenname().getNormal();
 //        String otherSn = getFileTransfer().getRvSession().getScreenname();
         RvProxyCmd initCmd = new RvProxyInitRecvCmd(
@@ -85,7 +84,7 @@ public abstract class AbstractConnectToProxyController
     }
 
     protected InetAddress getIpAddress() throws IllegalStateException {
-        RvConnectionInfo connInfo = getConnectionInfo();
+      RvConnectionInfo connInfo = getRvConnection().getConnectionInfo();
         if (!connInfo.isProxied()) {
             throw new IllegalStateException("connection is not proxied: "
                     + connInfo);
@@ -100,8 +99,9 @@ public abstract class AbstractConnectToProxyController
 
     protected void checkConnectionInfo() throws IllegalStateException {
         if (getIpAddress() == null) {
-            throw new IllegalStateException("illegal connection info for "
-                    + MiscTools.getClassName(this) + ": " + getConnectionInfo());
+          throw new IllegalStateException("illegal connection info for "
+              + MiscTools.getClassName(this) + ": " 
+              + getRvConnection().getConnectionInfo());
         }
     }
 }

@@ -243,7 +243,7 @@ public class ExternalServiceManager {
     } else if (!arbiter.shouldKeepAlive()) {
       LOGGER.log(Level.INFO, "Someone requested a refresh of 0x"
           + Integer.toHexString(family) + " but the arbiter "
-          + arbiter + " says it doesn't want to live", new Throwable());
+          + arbiter + " says it doesn't want to live");
       return;
     }
     requestService(family, arbiter);

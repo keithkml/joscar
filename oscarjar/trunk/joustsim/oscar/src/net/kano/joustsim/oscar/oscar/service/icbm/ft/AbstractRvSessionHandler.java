@@ -32,15 +32,47 @@
  * File created by keithkml
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm.dim;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.TypingState;
+import net.kano.joustsim.oscar.oscar.service.icbm.RendezvousSessionHandler;
+import net.kano.joscar.rv.RecvRvEvent;
+import net.kano.joscar.rv.RvSnacResponseEvent;
+import net.kano.joscar.snaccmd.icbm.RvCommand;
+import net.kano.joscar.rvcmd.ConnectionRequestRvCmd;
+import net.kano.joscar.rvcmd.AcceptRvCmd;
+import net.kano.joscar.rvcmd.RejectRvCmd;
 
-public class BuddyTypingEvent extends RvConnectionEvent {
-  private final TypingState state;
+abstract class AbstractRvSessionHandler implements RendezvousSessionHandler {
+  private RvConnection transfer;
 
-  public BuddyTypingEvent(TypingState state) {this.state = state;}
+  public AbstractRvSessionHandler(RvConnection transfer) {
+    this.transfer = transfer;
+  }
 
-  public TypingState getState() { return state; }
+  public final void handleRv(RecvRvEvent event) {
+    RvCommand cmd = event.getRvCommand();
+    if (cmd instanceof ConnectionRequestRvCmd) {
+      handleIncomingRequest(event, (ConnectionRequestRvCmd) cmd);
+
+    } else if (cmd instanceof AcceptRvCmd) {
+      handleIncomingAccept(event, (AcceptRvCmd) cmd);
+
+    } else if (cmd instanceof RejectRvCmd) {
+      handleIncomingReject(event, (RejectRvCmd) cmd);
+    }
+  }
+
+  protected abstract void handleIncomingReject(RecvRvEvent event,
+                                               RejectRvCmd rejectCmd);
+
+  protected abstract void handleIncomingAccept(RecvRvEvent event,
+                                               AcceptRvCmd acceptCmd);
+
+  protected abstract void handleIncomingRequest(RecvRvEvent event,
+                                                ConnectionRequestRvCmd reqCmd);
+
+  public void handleSnacResponse(RvSnacResponseEvent event) {
+  }
+
+  protected RvConnection getFileTransfer() { return transfer; }
 }

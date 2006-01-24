@@ -34,28 +34,26 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
 import net.kano.joscar.rvcmd.RvConnectionInfo;
-import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferImpl;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.ConnectionType;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionImpl;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionPropertyHolder;
 
 import java.io.IOException;
 import java.net.InetAddress;
 
 public class RedirectConnectionController extends PassiveConnectionController {
+  protected void sendRequest() throws IOException {
+    RvConnectionInfo connInfo = RvConnectionInfo
+        .createForOutgoingRequest(InetAddress.getLocalHost(),
+            getServerSocket().getLocalPort());
+    RvConnectionImpl transfer = getRvConnection();
+    transfer.setConnectionInfo(connInfo);
+    transfer.putTransferProperty(RvConnectionPropertyHolder.KEY_REDIRECTED, true);
+    int newIndex = transfer.increaseRequestIndex();
+    transfer.getRvRequestMaker().sendRvRequest(newIndex);
+  }
 
-    protected void sendRequest() throws IOException {
-        RvConnectionInfo connInfo = RvConnectionInfo
-                .createForOutgoingRequest(InetAddress.getLocalHost(),
-                        getServerSocket().getLocalPort());
-        setConnInfo(connInfo);
-        RvConnectionImpl transfer = getRvConnection();
-        transfer.putTransferProperty(FileTransferImpl.KEY_REDIRECTED, true);
-        int newIndex = transfer.increaseRequestIndex();
-        transfer.getRvSession().sendRv(new FileSendReqRvCmd(connInfo, newIndex));
-    }
-
-    protected ConnectionType getConnectionType() {
-        return ConnectionType.INCOMING;
-    }
+  protected ConnectionType getConnectionType() {
+    return ConnectionType.INCOMING;
+  }
 }

@@ -34,13 +34,32 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.dim;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.TypingState;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvRequestMaker;
+import net.kano.joscar.rvcmd.directim.DirectIMReqRvCmd;
+import net.kano.joscar.rvcmd.directim.DirectIMAcceptRvCmd;
+import net.kano.joscar.rvcmd.directim.DirectIMRejectRvCmd;
 
-public class BuddyTypingEvent extends RvConnectionEvent {
-  private final TypingState state;
+public class DirectimRequestMaker implements RvRequestMaker {
+  private DirectimConnection connection;
 
-  public BuddyTypingEvent(TypingState state) {this.state = state;}
+  public DirectimRequestMaker(DirectimConnection connection) {
+    this.connection = connection;
+  }
 
-  public TypingState getState() { return state; }
+  public void sendRvRequest() {
+    sendRvRequest(DirectIMReqRvCmd.REQINDEX_FIRST);
+  }
+
+  public void sendRvRequest(int newIndex) {
+    connection.getRvSession().sendRv(new DirectIMReqRvCmd(newIndex,
+        connection.getConnectionInfo()));
+  }
+
+  public void sendRvAccept() {
+    connection.getRvSession().sendRv(new DirectIMAcceptRvCmd());
+  }
+
+  public void sendRvReject() {
+    connection.getRvSession().sendRv(new DirectIMRejectRvCmd());
+  }
 }

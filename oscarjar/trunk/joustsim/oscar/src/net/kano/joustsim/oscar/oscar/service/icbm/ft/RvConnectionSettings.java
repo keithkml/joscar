@@ -34,14 +34,65 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-import net.kano.joscar.rvcmd.RvConnectionInfo;
+import net.kano.joustsim.oscar.proxy.AimProxyInfo;
+import net.kano.joscar.DefensiveTools;
 
-public interface IncomingRvConnection extends RvConnection {
-  RvConnectionInfo getOriginalRemoteHostInfo();
-  void accept() throws IllegalStateException;
-  void reject() throws IllegalStateException;
-  boolean isAccepted();
-  boolean isRejected();
-  boolean isAlwaysRedirectEnabled();
-  void setAlwaysRedirect(boolean alwaysRedirect);
+import java.util.Map;
+import java.util.HashMap;
+
+public class RvConnectionSettings {
+  private boolean onlyUsingProxy = false;
+  private boolean proxyRequestTrusted = true;
+  private long perConnectionTimeout = 10000;
+  private Map<ConnectionType, Long> timeouts
+      = new HashMap<ConnectionType, Long>();
+  private AimProxyInfo proxyInfo;
+
+  public synchronized AimProxyInfo getProxyInfo() {
+    return proxyInfo;
+  }
+
+  public synchronized void setProxyInfo(AimProxyInfo proxyInfo) {
+    this.proxyInfo = proxyInfo;
+  }
+
+  public synchronized boolean isProxyRequestTrusted() {
+    return proxyRequestTrusted;
+  }
+
+  public synchronized void setProxyRequestTrusted(boolean trusted) {
+    this.proxyRequestTrusted = trusted;
+  }
+
+  public synchronized boolean isOnlyUsingProxy() {
+    return onlyUsingProxy;
+  }
+
+  public synchronized void setOnlyUsingProxy(boolean onlyUsingProxy) {
+    this.onlyUsingProxy = onlyUsingProxy;
+  }
+
+  public synchronized void setDefaultPerConnectionTimeout(long millis) {
+    perConnectionTimeout = millis;
+  }
+
+  public synchronized long getDefaultPerConnectionTimeout() {
+    return perConnectionTimeout;
+  }
+
+  public synchronized void setPerConnectionTimeout(ConnectionType type,
+      long millis) {
+    timeouts.put(type, millis);
+  }
+
+  public synchronized long getPerConnectionTimeout(ConnectionType type) {
+    DefensiveTools.checkNull(type, "type");
+
+    Long timeout = timeouts.get(type);
+    if (timeout == null) {
+      return perConnectionTimeout;
+    } else {
+      return timeout;
+    }
+  }
 }

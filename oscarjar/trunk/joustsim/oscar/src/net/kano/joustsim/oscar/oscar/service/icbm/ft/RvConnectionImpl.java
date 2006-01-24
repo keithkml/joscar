@@ -1,15 +1,13 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
 import net.kano.joscar.CopyOnWriteArrayList;
-import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rvcmd.ConnectionRequestRvCmd;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
-import net.kano.joscar.rvcmd.sendfile.FileSendRejectRvCmd;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.AimConnection;
-import net.kano.joustsim.oscar.oscar.service.icbm.RendezvousSessionHandler;
 import net.kano.joustsim.oscar.oscar.service.icbm.IcbmService;
+import net.kano.joustsim.oscar.oscar.service.icbm.RendezvousSessionHandler;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ControllerListener;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ChecksummingEvent;
@@ -26,7 +24,6 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferringFileEven
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.WaitingForConnectionEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
-import net.kano.joustsim.oscar.proxy.AimProxyInfo;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -39,7 +36,7 @@ public abstract class RvConnectionImpl
     implements RvConnection, RvConnectionPropertyHolder,
     RvSessionBasedConnection, StateBasedConnection, CachedTimerHolder {
   private static final Logger LOGGER = Logger
-      .getLogger(FileTransferImpl.class.getName());
+      .getLogger(FileTransferHelper.class.getName());
 
   private Timer timer = new Timer(true);
   private RendezvousSessionHandler rvSessionHandler;
@@ -53,8 +50,6 @@ public abstract class RvConnectionImpl
   private RvConnectionState state = RvConnectionState.WAITING;
   private EventPost eventPost = new EventPostImpl();
   private boolean done = false;
-  private boolean onlyUsingProxy = false;
-  private boolean proxyRequestTrusted = true;
   private ControllerListener controllerListener = new ControllerListener() {
     public void handleControllerSucceeded(StateController c,
                                           SuccessfulStateInfo info) {
@@ -73,18 +68,17 @@ public abstract class RvConnectionImpl
   };
   private List<StateChangeEvent> eventQueue
       = new CopyOnWriteArrayList<StateChangeEvent>();
-  private long perConnectionTimeout = 10000;
-  private Map<ConnectionType, Long> timeouts
-      = new HashMap<ConnectionType, Long>();
   private int requestIndex = 1;
-  private AimProxyInfo proxyInfo;
+  private RvConnectionInfo connInfo = null;
+  private final RvConnectionSettings settings = new RvConnectionSettings();
 
   public RvConnectionImpl(RvConnectionManager rvConnectionManager,
       RvSession session) {
     this.rvConnectionManager = rvConnectionManager;
     this.session = session;
     rvSessionHandler = createSessionHandler();
-    proxyInfo = getAimConnection().getProxy();
+    settings.setProxyInfo(getAimConnection().getProxy());
+    getSettings().setPerConnectionTimeout(ConnectionType.LAN, 2);
   }
 
   protected void fireEvent(RvConnectionEvent event) {
@@ -202,7 +196,7 @@ public abstract class RvConnectionImpl
   }
 
   //TODO: automatically cancel when state is set to FAILED
-  public boolean cancel() {
+  public boolean close() {
     setState(RvConnectionState.FAILED, new LocallyCancelledEvent());
     return true;
   }
@@ -221,7 +215,7 @@ public abstract class RvConnectionImpl
       controller = this.controller;
     }
     if (state == RvConnectionState.FAILED) {
-      getRvSession().sendRv(new FileSendRejectRvCmd());
+      getRvRequestMaker().sendRvReject();
     }
     if (controller != null && (state == RvConnectionState.FAILED
         || state == RvConnectionState.FINISHED)) {
@@ -241,44 +235,6 @@ public abstract class RvConnectionImpl
 
   public EventPost getEventPost() {
     return eventPost;
-  }
-
-  public synchronized boolean isProxyRequestTrusted() {
-    return proxyRequestTrusted;
-  }
-
-  public synchronized void setProxyRequestTrusted(
-      boolean trustingProxyRedirects) {
-    this.proxyRequestTrusted = trustingProxyRedirects;
-  }
-
-  public synchronized boolean isOnlyUsingProxy() {
-    return onlyUsingProxy;
-  }
-
-  public synchronized void setOnlyUsingProxy(boolean onlyUsingProxy) {
-    this.onlyUsingProxy = onlyUsingProxy;
-  }
-
-  public synchronized void setDefaultPerConnectionTimeout(long millis) {
-    perConnectionTimeout = millis;
-  }
-
-  public synchronized void setPerConnectionTimeout(ConnectionType type,
-                                                   long millis) {
-    timeouts.put(type, millis);
-  }
-
-  public synchronized long getDefaultPerConnectionTimeout() {
-    return perConnectionTimeout;
-  }
-
-  public synchronized long getPerConnectionTimeout(ConnectionType type) {
-    DefensiveTools.checkNull(type, "type");
-
-    Long timeout = timeouts.get(type);
-    if (timeout == null) return perConnectionTimeout;
-    else return timeout;
   }
 
   public Screenname getBuddyScreenname() {
@@ -326,7 +282,7 @@ public abstract class RvConnectionImpl
     RvConnectionEvent error = getConnectError(connInfo);
     HowToConnect how;
     if (error == null) {
-      putTransferProperty(KEY_CONN_INFO, connInfo);
+      setConnectionInfo(connInfo);
       LOGGER.fine("Storing connection info for redirect: " + connInfo);
       //TODO: replace KEY_REDIRECTED with KEY_DIRECTION which is enum IN or OUT or something
       if (connInfo.isProxied()) {
@@ -350,8 +306,8 @@ public abstract class RvConnectionImpl
 
   protected final RvConnectionEvent getConnectError(RvConnectionInfo connInfo) {
     RvConnectionEvent error = null;
-    if (isOnlyUsingProxy()) {
-      if (connInfo.isProxied() && !isProxyRequestTrusted()) {
+    if (settings.isOnlyUsingProxy()) {
+      if (connInfo.isProxied() && !settings.isProxyRequestTrusted()) {
         error = new ProxyRedirectDisallowedEvent(
             connInfo.getProxyIP());
       }
@@ -359,17 +315,17 @@ public abstract class RvConnectionImpl
     return error;
   }
 
-  public AimProxyInfo getProxy() { return proxyInfo; }
-
   protected abstract RendezvousSessionHandler createSessionHandler();
 
-  protected RvSession getSession() {
-    return session;
+  protected RvSession getSession() { return session; }
+
+  public void setConnectionInfo(RvConnectionInfo connInfo) {
+    this.connInfo = connInfo;
   }
 
-  protected AimProxyInfo getProxyInfo() {
-    return proxyInfo;
-  }
+  public RvConnectionInfo getConnectionInfo() { return connInfo; }
+
+  public RvConnectionSettings getSettings() { return settings; }
 
   protected static class StateChangeEvent {
     private RvConnectionState state;

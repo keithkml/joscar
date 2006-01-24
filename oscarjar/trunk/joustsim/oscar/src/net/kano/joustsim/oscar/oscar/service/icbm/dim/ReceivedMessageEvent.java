@@ -38,8 +38,14 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 
 public class ReceivedMessageEvent extends RvConnectionEvent {
   private final String message;
+  private final boolean autoResponse;
 
-  public ReceivedMessageEvent(String message) {this.message = message;}
+  public ReceivedMessageEvent(String message, boolean autoResponse) {
+    this.message = message;
+    this.autoResponse = autoResponse;
+  }
 
   public String getMessage() { return message; }
+
+  public boolean isAutoResponse() { return autoResponse; }
 }

@@ -34,25 +34,22 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
 import net.kano.joscar.rvcmd.RvConnectionInfo;
-import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
 import net.kano.joscar.rvproto.rvproxy.RvProxyAckCmd;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionImpl;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionPropertyHolder;
+import static net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionPropertyHolder.KEY_REDIRECTED;
 
 import java.io.IOException;
 
 public class SendOverProxyController
-        extends InitiateProxyController
-        implements ManualTimeoutController {
-    protected void handleAck(RvProxyAckCmd ackCmd) throws IOException {
-        RvConnectionImpl transfer = getRvConnection();
-        int proxyPort = ackCmd.getProxyPort();
-        RvConnectionInfo connInfo = RvConnectionInfo.createForOutgoingProxiedRequest(
-                ackCmd.getProxyIpAddress(), proxyPort);
-        FileSendReqRvCmd req = new FileSendReqRvCmd(transfer.getInvitationMessage(),
-                connInfo, transfer.getFileInfo());
-        transfer.putTransferProperty(RvConnectionPropertyHolder.KEY_CONN_INFO, connInfo);
-        transfer.putTransferProperty(RvConnectionPropertyHolder.KEY_REDIRECTED, false);
-        transfer.getRvSession().sendRv(req);
-    }
+    extends InitiateProxyController implements ManualTimeoutController {
+  protected void handleAck(RvProxyAckCmd ackCmd) throws IOException {
+    RvConnectionInfo connInfo = RvConnectionInfo
+        .createForOutgoingProxiedRequest(ackCmd.getProxyIpAddress(),
+            ackCmd.getProxyPort());
+    RvConnectionImpl transfer = getRvConnection();
+    transfer.setConnectionInfo(connInfo);
+    transfer.putTransferProperty(KEY_REDIRECTED, false);
+
+    transfer.getRvRequestMaker().sendRvRequest();
+  }
 }

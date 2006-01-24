@@ -47,10 +47,9 @@ public abstract class PassiveConnectionController
     extends AbstractConnectionController
     implements ManualTimeoutController {
   private ServerSocket serverSocket;
-  private RvConnectionInfo connInfo;
 
   protected void initializeBeforeStarting() throws IOException {
-    ServerSocketFactory ssf = getRvConnection().getProxy().getServerSocketFactory();
+    ServerSocketFactory ssf = getRvConnection().getSettings().getProxyInfo().getServerSocketFactory();
     serverSocket = ssf == null ? ServerSocketChannel.open().socket() : ssf.createServerSocket();
     serverSocket.bind(null);
     sendRequest();
@@ -72,16 +71,9 @@ public abstract class PassiveConnectionController
 
   protected void setConnectingState() {
     EventPost post = getRvConnection().getEventPost();
+    RvConnectionInfo connInfo = getRvConnection().getConnectionInfo();
     post.fireEvent(new WaitingForConnectionEvent(connInfo.getInternalIP(),
         connInfo.getPort()));
-  }
-
-  protected RvConnectionInfo getConnInfo() {
-    return connInfo;
-  }
-
-  protected void setConnInfo(RvConnectionInfo connInfo) {
-    this.connInfo = connInfo;
   }
 
   protected boolean shouldStartTimerAutomatically() {

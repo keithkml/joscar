@@ -49,6 +49,7 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectionCompleteEv
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownErrorEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.ComputedChecksumsInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
 
 import java.io.File;
@@ -59,7 +60,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 
 public class OutgoingFileTransferImpl
     extends OutgoingRvConnectionImpl implements OutgoingFileTransfer {
@@ -78,6 +78,7 @@ public class OutgoingFileTransferImpl
       return sum;
     }
   };
+  private FileTransferHelper helper = new FileTransferHelper(this);
 
   public OutgoingFileTransferImpl(RvConnectionManager rvConnectionManager,
       RvSession session) {
@@ -146,7 +147,8 @@ public class OutgoingFileTransferImpl
   }
 
   protected StateController getNextControllerFromUnknownError(
-      StateController oldController, RvConnectionEvent event) {
+      StateController oldController, FailedStateInfo failedStateInfo,
+      RvConnectionEvent event) {
     if (oldController instanceof SendFileController) {
       //TODO: retry send with other controllers like receiver does
 //                if (getState() == FileTransferState.TRANSFERRING) {
@@ -175,7 +177,7 @@ public class OutgoingFileTransferImpl
         ComputedChecksumsInfo info = (ComputedChecksumsInfo) endState;
         checksums.putAll(info.getChecksums());
       }
-      if (isOnlyUsingProxy()) {
+      if (getSettings().isOnlyUsingProxy()) {
         return new SendOverProxyController();
       } else {
         return new SendPassivelyController();
@@ -187,8 +189,20 @@ public class OutgoingFileTransferImpl
     }
   }
 
-  protected SendFileController getConnectedController() {
+  protected StateController getConnectedController() {
     return new SendFileController();
+  }
+
+  public RvRequestMaker getRvRequestMaker() {
+    return helper.getRvRequestMaker();
+  }
+
+  public InvitationMessage getInvitationMessage() {
+    return helper.getInvitationMessage();
+  }
+
+  private void setInvitationMessage(InvitationMessage msg) {
+    helper.setInvitationMessage(msg);
   }
 
   public void sendRequest() {

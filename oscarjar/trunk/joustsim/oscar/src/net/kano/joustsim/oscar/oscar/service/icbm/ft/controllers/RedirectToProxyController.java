@@ -33,9 +33,7 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
-import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
-import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
 import net.kano.joscar.rvproto.rvproxy.RvProxyAckCmd;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionImpl;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionPropertyHolder;
@@ -43,24 +41,18 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionPropertyHolder;
 import java.io.IOException;
 import java.net.Inet4Address;
 
-/**
- * 1. connect to ars.oscar.aol.com:5190
- * 2. find ip of server
- * 3. send rv
- */
+/** 1. connect to ars.oscar.aol.com:5190 2. find ip of server 3. send rv */
 public class RedirectToProxyController extends InitiateProxyController
-        implements ManualTimeoutController {
-    protected void handleAck(RvProxyAckCmd ackCmd) throws IOException {
-        Inet4Address addr = ackCmd.getProxyIpAddress();
-        int port = ackCmd.getProxyPort();
+    implements ManualTimeoutController {
+  protected void handleAck(RvProxyAckCmd ackCmd) throws IOException {
+    Inet4Address addr = ackCmd.getProxyIpAddress();
+    int port = ackCmd.getProxyPort();
 
-        RvConnectionImpl transfer = getRvConnection();
-        RvSession rvSession = transfer.getRvSession();
-        RvConnectionInfo connInfo = RvConnectionInfo
-                .createForOutgoingProxiedRequest(addr, port);
-        transfer.putTransferProperty(RvConnectionPropertyHolder.KEY_CONN_INFO, connInfo);
-        transfer.putTransferProperty(RvConnectionPropertyHolder.KEY_REDIRECTED, true);
-        rvSession.sendRv(new FileSendReqRvCmd(connInfo, transfer.increaseRequestIndex()));
-
-    }
+    RvConnectionImpl transfer = getRvConnection();
+    transfer.setConnectionInfo(
+        RvConnectionInfo.createForOutgoingProxiedRequest(addr, port));
+    transfer.putTransferProperty(RvConnectionPropertyHolder.KEY_REDIRECTED,
+        true);
+    transfer.getRvRequestMaker().sendRvRequest(transfer.increaseRequestIndex());
+  }
 }

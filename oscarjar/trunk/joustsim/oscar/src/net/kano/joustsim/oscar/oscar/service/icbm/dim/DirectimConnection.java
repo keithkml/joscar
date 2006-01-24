@@ -34,13 +34,8 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.dim;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.TypingState;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnection;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvSessionBasedConnection;
 
-public class BuddyTypingEvent extends RvConnectionEvent {
-  private final TypingState state;
-
-  public BuddyTypingEvent(TypingState state) {this.state = state;}
-
-  public TypingState getState() { return state; }
+public interface DirectimConnection extends RvConnection, RvSessionBasedConnection {
 }

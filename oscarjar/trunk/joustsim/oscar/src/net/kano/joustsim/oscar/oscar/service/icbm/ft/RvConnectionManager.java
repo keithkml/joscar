@@ -43,13 +43,10 @@ import net.kano.joustsim.oscar.DefaultEnabledCapabilityHandler;
 import net.kano.joustsim.oscar.oscar.service.icbm.IcbmService;
 import net.kano.joustsim.oscar.oscar.service.icbm.RendezvousCapabilityHandler;
 import net.kano.joustsim.oscar.oscar.service.icbm.RendezvousSessionHandler;
-
-import java.util.logging.Logger;
+import net.kano.joustsim.oscar.oscar.service.icbm.dim.IncomingDirectimConnectionImpl;
+import net.kano.joustsim.oscar.oscar.service.icbm.dim.OutgoingDirectimConnectionImpl;
 
 public class RvConnectionManager {
-  private static final Logger LOGGER = Logger
-      .getLogger(RvConnectionManager.class.getName());
-
   private final IcbmService service;
   private CopyOnWriteArrayList<RvConnectionManagerListener> listeners
       = new CopyOnWriteArrayList<RvConnectionManagerListener>();
@@ -68,12 +65,24 @@ public class RvConnectionManager {
   public IcbmService getIcbmService() { return service; }
 
   public OutgoingFileTransfer createOutgoingFileTransfer(Screenname sn) {
-    RvSession session = service.getRvProcessor()
-        .createRvSession(sn.getFormatted());
+    RvSession session = createSession(sn);
     OutgoingFileTransferImpl outgoingFileTransfer
         = new OutgoingFileTransferImpl(this, session);
     session.addListener(outgoingFileTransfer.getRvSessionHandler());
     return outgoingFileTransfer;
+  }
+
+  public OutgoingDirectimConnectionImpl openDirectimConnection(Screenname sn) {
+    RvSession session = createSession(sn);
+    OutgoingDirectimConnectionImpl outgoingFileTransfer
+        = new OutgoingDirectimConnectionImpl(this, session);
+    session.addListener(outgoingFileTransfer.getRvSessionHandler());
+    return outgoingFileTransfer;
+  }
+
+  private RvSession createSession(Screenname sn) {
+    return service.getRvProcessor()
+        .createRvSession(sn.getFormatted());
   }
 
   public void addConnectionManagerListener(RvConnectionManagerListener listener) {

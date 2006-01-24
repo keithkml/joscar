@@ -32,15 +32,34 @@
  * File created by keithkml
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm.dim;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.TypingState;
+import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
+import net.kano.joscar.rvcmd.sendfile.FileSendAcceptRvCmd;
+import net.kano.joscar.rvcmd.sendfile.FileSendRejectRvCmd;
 
-public class BuddyTypingEvent extends RvConnectionEvent {
-  private final TypingState state;
+class FileTransferRequestMaker implements RvRequestMaker {
+  private FileTransfer transfer;
 
-  public BuddyTypingEvent(TypingState state) {this.state = state;}
+  public FileTransferRequestMaker(FileTransfer transfer) {
+    this.transfer = transfer;
+  }
 
-  public TypingState getState() { return state; }
+  public void sendRvRequest() {
+    sendRvRequest(FileSendReqRvCmd.REQINDEX_FIRST);
+  }
+
+  public void sendRvRequest(int newIndex) {
+    transfer.getRvSession().sendRv(new FileSendReqRvCmd(newIndex,
+        transfer.getInvitationMessage(), transfer.getConnectionInfo(),
+        transfer.getFileInfo()));
+  }
+
+  public void sendRvAccept() {
+    transfer.getRvSession().sendRv(new FileSendAcceptRvCmd());
+  }
+
+  public void sendRvReject() {
+    transfer.getRvSession().sendRv(new FileSendRejectRvCmd());
+  }
 }

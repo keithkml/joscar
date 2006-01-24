@@ -31,24 +31,43 @@
  *
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-import net.kano.joscar.rv.RvSession;
+import net.kano.joscar.MiscTools;
+import net.kano.joscar.rvcmd.InvitationMessage;
+import net.kano.joscar.rvcmd.sendfile.FileSendBlock;
 
-import java.io.IOException;
-import java.util.logging.Logger;
+public class FileTransferHelper {
+  private final FileTransfer transfer;
+  private final FileTransferRequestMaker requestMaker;
+  private FileSendBlock fileInfo;
+  private InvitationMessage message;
 
-public class ConnectToProxyForIncomingController
-        extends AbstractConnectToProxyController {
-    private static final Logger LOGGER = Logger
-            .getLogger(ConnectToProxyForIncomingController.class.getName());
+  protected FileTransferHelper(FileTransfer transfer) {
+    this.transfer = transfer;
+    requestMaker = new FileTransferRequestMaker(transfer);
+  }
 
-    protected void initializeBeforeStarting() throws IOException {
-        super.initializeBeforeStarting();
-        RvSession rvSession = getRvConnection().getRvSession();
-        LOGGER.fine("Sending file transfer accept command to "
-                + rvSession.getScreenname());
-        getRvConnection().getRvRequestMaker().sendRvAccept();
-    }
+  protected synchronized void setInvitationMessage(InvitationMessage message) {
+    this.message = message;
+  }
 
+  protected synchronized void setFileInfo(FileSendBlock fileInfo) {
+    this.fileInfo = fileInfo;
+  }
+
+  public synchronized FileSendBlock getFileInfo() { return fileInfo; }
+
+  public synchronized InvitationMessage getInvitationMessage() {
+    return message;
+  }
+
+  public RvRequestMaker getRvRequestMaker() {
+    return requestMaker;
+  }
+
+  public String toString() {
+    return MiscTools.getClassName(this) + " with "
+        + transfer.getBuddyScreenname() + " of " + getFileInfo().getFilename();
+  }
 }

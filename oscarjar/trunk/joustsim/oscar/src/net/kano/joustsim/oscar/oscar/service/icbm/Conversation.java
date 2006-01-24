@@ -76,6 +76,10 @@ public abstract class Conversation {
     return true;
   }
 
+  /**
+   * Returns whether the conversation was opened
+   * @return
+   */
   public boolean open() {
     synchronized (this) {
       if (open || closed) return false;

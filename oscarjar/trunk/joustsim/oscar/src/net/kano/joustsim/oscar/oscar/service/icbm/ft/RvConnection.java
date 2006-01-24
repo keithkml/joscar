@@ -2,7 +2,6 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
-import net.kano.joscar.rvcmd.InvitationMessage;
 
 /**
  * Created by IntelliJ IDEA.
@@ -16,29 +15,12 @@ public interface RvConnection {
 
   Screenname getBuddyScreenname();
 
-  InvitationMessage getInvitationMessage();
-
-  boolean cancel();
+  boolean close();
 
   void addTransferListener(RvConnectionEventListener listener);
-
   void removeTransferListener(RvConnectionEventListener listener);
 
   EventPost getEventPost();
 
-  boolean isProxyRequestTrusted();
-
-  void setProxyRequestTrusted(boolean trusted);
-
-  boolean isOnlyUsingProxy();
-
-  void setOnlyUsingProxy(boolean onlyUsingProxy);
-
-  void setDefaultPerConnectionTimeout(long millis);
-
-  void setPerConnectionTimeout(ConnectionType type, long millis);
-
-  long getDefaultPerConnectionTimeout();
-
-  long getPerConnectionTimeout(ConnectionType type);
+  RvConnectionSettings getSettings();
 }

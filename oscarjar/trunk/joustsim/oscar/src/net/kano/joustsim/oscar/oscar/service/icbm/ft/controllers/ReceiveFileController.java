@@ -43,7 +43,7 @@ import static net.kano.joscar.rvproto.ft.FileTransferHeader.HEADERTYPE_SENDHEADE
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.Checksummer;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FailureEventException;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileMapper;
-import static net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferImpl.KEY_REDIRECTED;
+import static net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionPropertyHolder.KEY_REDIRECTED;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.IncomingFileTransfer;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvSessionBasedConnection;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionPropertyHolder;

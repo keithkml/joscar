@@ -59,13 +59,13 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
 import java.util.logging.Logger;
 
 public abstract class IncomingRvConnectionImpl
-    extends FileTransferImpl implements IncomingRvConnection {
+    extends RvConnectionImpl implements IncomingRvConnection {
   private static final Logger LOGGER = Logger
       .getLogger(IncomingRvConnectionImpl.class.getName());
 
   private RvConnectionInfo originalRemoteHostInfo;
   private boolean accepted = false;
-  private boolean declined = false;
+  private boolean rejected = false;
   private boolean alwaysRedirect = false;
 
   public IncomingRvConnectionImpl(RvConnectionManager rvConnectionManager,
@@ -83,9 +83,11 @@ public abstract class IncomingRvConnectionImpl
 
   public synchronized boolean isAccepted() { return accepted; }
 
-  public synchronized boolean isDeclined() { return declined; }
+  public synchronized boolean isRejected() { return rejected; }
 
-  public synchronized boolean isAlwaysRedirect() { return alwaysRedirect; }
+  public synchronized boolean isAlwaysRedirectEnabled() {
+    return alwaysRedirect;
+  }
 
   public synchronized void setAlwaysRedirect(boolean alwaysRedirect) {
     this.alwaysRedirect = alwaysRedirect;
@@ -94,16 +96,16 @@ public abstract class IncomingRvConnectionImpl
   public void accept() throws IllegalStateException {
     StateController controller;
     synchronized (this) {
-      if (declined) {
-        throw new IllegalStateException("Transfer was already declined");
+      if (rejected) {
+        throw new IllegalStateException("Transfer was already rejected");
       }
       if (accepted) return;
       accepted = true;
 
-      boolean onlyUsingProxy = isOnlyUsingProxy();
-      if (!isAlwaysRedirect() && !onlyUsingProxy) {
+      boolean onlyUsingProxy = getSettings().isOnlyUsingProxy();
+      if (!isAlwaysRedirectEnabled() && !onlyUsingProxy) {
         controller = new OutgoingConnectionController(ConnectionType.LAN);
-      } else if (isProxyRequestTrusted()) {
+      } else if (getSettings().isProxyRequestTrusted()) {
         controller = new ConnectToProxyForIncomingController();
       } else if (!onlyUsingProxy) {
         controller = new RedirectConnectionController();
@@ -114,10 +116,8 @@ public abstract class IncomingRvConnectionImpl
 
     startStateController(controller);
     LOGGER.fine("Sending accept command to " + getBuddyScreenname());
-    sendAcceptRv();
+    getRvRequestMaker().sendRvAccept();
   }
-
-  protected abstract void sendAcceptRv();
 
   public void reject() throws IllegalStateException {
     synchronized (this) {
@@ -125,14 +125,12 @@ public abstract class IncomingRvConnectionImpl
         //TODO: cancel the transfer when rejecting?
         throw new IllegalStateException("transfer was already accepted");
       }
-      if (declined) return;
-      declined = true;
-      cancel();
+      if (rejected) return;
+      rejected = true;
+      close();
     }
-    sendRejectRv();
+    getRvRequestMaker().sendRvReject();
   }
-
-  protected abstract void sendRejectRv();
 
   public synchronized StateController getNextStateController() {
     StateController oldController = getStateController();
@@ -194,7 +192,11 @@ public abstract class IncomingRvConnectionImpl
       RvConnectionEvent event);
 
 
-  public abstract class IncomingRvSessionHandler extends FtRvSessionHandler {
+  public abstract class IncomingRvSessionHandler extends AbstractRvSessionHandler {
+    public IncomingRvSessionHandler() {
+      super(IncomingRvConnectionImpl.this);
+    }
+
     protected void handleIncomingReject(RecvRvEvent event,
         RejectRvCmd rejectCmd) {
       BuddyCancelledEvent evt = new BuddyCancelledEvent(
@@ -222,7 +224,7 @@ public abstract class IncomingRvConnectionImpl
 
         RvConnectionInfo connInfo = reqCmd.getConnInfo();
         setOriginalRemoteHostInfo(connInfo);
-        putTransferProperty(RvConnectionPropertyHolder.KEY_CONN_INFO, connInfo);
+        setConnectionInfo(connInfo);
         putTransferProperty(RvConnectionPropertyHolder.KEY_REDIRECTED, false);
 
         RvConnectionManager rvmgr = getRvConnectionManager();
@@ -246,4 +248,9 @@ public abstract class IncomingRvConnectionImpl
 
     protected abstract void handleFirstRequest(ConnectionRequestRvCmd reqCmd);
   }
+}
+
+//TODO: file this bug
+abstract class Tester {
+  abstract void ttt();
 }

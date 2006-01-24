@@ -43,7 +43,6 @@ import net.kano.joscar.flap.FlapCommand;
 import net.kano.joscar.flap.FlapPacketEvent;
 import net.kano.joscar.flap.FlapPacketListener;
 import net.kano.joscar.flap.FlapProcessor;
-import net.kano.joscar.flap.VetoableFlapPacketListener;
 import net.kano.joscar.flapcmd.CloseFlapCmd;
 import net.kano.joscar.flapcmd.DefaultFlapCmdFactory;
 import net.kano.joscar.flapcmd.FlapErrorCmd;
@@ -60,7 +59,6 @@ import net.kano.joscar.snac.SnacRequest;
 import net.kano.joscar.snac.SnacRequestListener;
 import net.kano.joscar.snac.SnacResponseEvent;
 import net.kano.joscar.snac.SnacResponseListener;
-import net.kano.joscar.snac.VetoableSnacPacketListener;
 import net.kano.joscar.snaccmd.DefaultClientFactoryList;
 import net.kano.joscar.snaccmd.error.SnacError;
 import net.kano.joustsim.JavaTools;
@@ -76,8 +74,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.TimerTask;
-import java.util.Timer;
 import java.util.logging.Logger;
 
 public class OscarConnection {
@@ -183,39 +179,34 @@ public class OscarConnection {
   private void internalConnected() {
     LOGGER.fine("Connected to " + host);
 
-    flapProcessor.addVetoablePacketListener(new VetoableFlapPacketListener() {
-      public VetoResult handlePacket(FlapPacketEvent event) {
-        if (event.getFlapPacket().getChannel() == 5) {
-          LOGGER.finest("Got FLAP keepalive response from server");
-        }
-        updateLastPacketTime();
-        return VetoableFlapPacketListener.VetoResult.CONTINUE_PROCESSING;
-      }
-    });
-    snacProcessor.addVetoablePacketListener(new VetoableSnacPacketListener() {
-      public Object handlePacket(SnacPacketEvent event) {
-        return null;
-      }
-    });
-    Timer timer = new Timer("Connection timeout checker", true);
-    timer.scheduleAtFixedRate(new TimerTask() {
-      public void run() {
-        if (!isDisconnected()) {
-          sendFlap(new KeepaliveFlapCommand());
-
-          long last = lastPacketTime;
-          if (last != 0) {
-            long sinceLast = System.currentTimeMillis() - last;
-            if (sinceLast >= CONNECTION_DEAD_TIMEOUT) {
-              LOGGER.warning("Connection to " + getClientFlapConn()
-                  + " timed out after " + sinceLast
-                  + " ms; disconnecting");
-              disconnect();
-            }
-          }
-        }
-      }
-    }, 0, 10000);
+//    flapProcessor.addVetoablePacketListener(new VetoableFlapPacketListener() {
+//      public VetoResult handlePacket(FlapPacketEvent event) {
+//        if (event.getFlapPacket().getChannel() == 5) {
+//          LOGGER.finest("Got FLAP keepalive response from server");
+//        }
+//        updateLastPacketTime();
+//        return VetoableFlapPacketListener.VetoResult.CONTINUE_PROCESSING;
+//      }
+//    });
+//    Timer timer = new Timer("Connection timeout checker", true);
+//    timer.scheduleAtFixedRate(new TimerTask() {
+//      public void run() {
+//        if (!isDisconnected()) {
+//          sendFlap(new KeepaliveFlapCommand());
+//
+//          long last = lastPacketTime;
+//          if (last != 0) {
+//            long sinceLast = System.currentTimeMillis() - last;
+//            if (sinceLast >= CONNECTION_DEAD_TIMEOUT) {
+//              LOGGER.warning("Connection to " + getClientFlapConn()
+//                  + " timed out after " + sinceLast
+//                  + " ms; disconnecting");
+//              disconnect();
+//            }
+//          }
+//        }
+//      }
+//    }, 0, 10000);
 
     for (Service service : getServices()) {
       service.connected();

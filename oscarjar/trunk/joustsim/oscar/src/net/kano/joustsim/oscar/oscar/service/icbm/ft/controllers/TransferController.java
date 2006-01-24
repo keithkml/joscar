@@ -141,7 +141,7 @@ public abstract class TransferController extends StateController
   }
 
   protected long getTransferTimeoutMillis() {
-    return transfer.getDefaultPerConnectionTimeout();
+    return transfer.getSettings().getDefaultPerConnectionTimeout();
   }
 
   public void stop() {

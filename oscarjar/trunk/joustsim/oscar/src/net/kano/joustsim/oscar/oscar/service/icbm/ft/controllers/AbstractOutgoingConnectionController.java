@@ -50,7 +50,7 @@ public abstract class AbstractOutgoingConnectionController
       throw new IllegalStateException("no IP address");
     }
     setConnectingState();
-    SocketFactory factory = getRvConnection().getProxy().getSocketFactory();
+    SocketFactory factory = getRvConnection().getSettings().getProxyInfo().getSocketFactory();
     int port = getConnectionPort();
     if (factory == null) {
       return SocketChannel.open(new InetSocketAddress(ip, port)).socket();

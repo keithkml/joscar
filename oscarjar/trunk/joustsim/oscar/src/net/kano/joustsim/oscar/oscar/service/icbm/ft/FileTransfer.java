@@ -34,8 +34,9 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
 import net.kano.joscar.rvcmd.sendfile.FileSendBlock;
+import net.kano.joscar.rvcmd.InvitationMessage;
 
-//TOLATER: add pause mechanism
-public interface FileTransfer extends RvConnection {
+public interface FileTransfer extends RvSessionBasedConnection {
+  InvitationMessage getInvitationMessage();
   FileSendBlock getFileInfo();
 }

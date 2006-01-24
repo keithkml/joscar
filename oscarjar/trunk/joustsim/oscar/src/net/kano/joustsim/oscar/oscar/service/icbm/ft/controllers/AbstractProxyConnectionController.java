@@ -121,7 +121,7 @@ public abstract class AbstractProxyConnectionController
         alreadyStartedTimer = true;
 
         RvConnection transfer = getRvConnection();
-        final long timeout = transfer.getPerConnectionTimeout(INCOMING);
+        final long timeout = transfer.getSettings().getPerConnectionTimeout(INCOMING);
         Timer timer = FileTransferTools.getTimer(transfer);
         timer.schedule(new TimerTask() {
             public void run() {

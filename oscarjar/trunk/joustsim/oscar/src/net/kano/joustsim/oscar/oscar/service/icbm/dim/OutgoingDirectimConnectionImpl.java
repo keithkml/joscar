@@ -34,13 +34,49 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.dim;
 
+import net.kano.joscar.rv.RvSession;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.OutgoingRvConnectionImpl;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionManager;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvRequestMaker;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendOverProxyController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendPassivelyController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.TypingState;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
 
-public class BuddyTypingEvent extends RvConnectionEvent {
-  private final TypingState state;
+public class OutgoingDirectimConnectionImpl
+    extends OutgoingRvConnectionImpl implements DirectimConnection {
+  public OutgoingDirectimConnectionImpl(RvConnectionManager rvConnectionManager,
+      RvSession session) {
+    super(rvConnectionManager, session);
+  }
 
-  public BuddyTypingEvent(TypingState state) {this.state = state;}
+  //TODO: the controllers send accept/reject/redirect messages
+  protected StateController getNextControllerFromUnknownError(
+      StateController oldController, FailedStateInfo failedStateInfo,
+      RvConnectionEvent event) {
+    return null;
+  }
 
-  public TypingState getState() { return state; }
+  protected StateController getNextControllerFromUnknownSuccess(
+      StateController oldController, StateInfo endState) {
+    return null;
+  }
+
+  protected StateController getConnectedController() {
+    return new DirectImController();
+  }
+
+  public void sendRequest() {
+    if (getSettings().isOnlyUsingProxy()) {
+      startStateController(new SendOverProxyController());
+    } else {
+      startStateController(new SendPassivelyController());
+    }
+  }
+
+  public RvRequestMaker getRvRequestMaker() {
+    return new DirectimRequestMaker(this);
+  }
 }
