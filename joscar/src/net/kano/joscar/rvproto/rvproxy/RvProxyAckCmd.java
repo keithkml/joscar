@@ -42,6 +42,7 @@ import net.kano.joscar.DefensiveTools;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Inet4Address;
+import java.net.InetAddress;
 
 /**
  * A RV Proxy command indicating that the initialization of an AOL Proxy Server
@@ -52,7 +53,7 @@ import java.net.Inet4Address;
  */
 public class RvProxyAckCmd extends RvProxyCmd {
     /** An IP address to give to the receiving user to create a connection. */
-    private final Inet4Address ip;
+    private final InetAddress ip;
     /** A "port" value to give to the receiving user. */
     private final int port;
 
@@ -82,7 +83,7 @@ public class RvProxyAckCmd extends RvProxyCmd {
      * @param port a "port" value for the receiving user to send in its {@link
      *        RvProxyInitRecvCmd}
      */
-    public RvProxyAckCmd(Inet4Address ip, int port) {
+    public RvProxyAckCmd(InetAddress ip, int port) {
         super(RvProxyPacket.CMDTYPE_ACK);
 
         DefensiveTools.checkNull(ip, "ip");
@@ -100,7 +101,7 @@ public class RvProxyAckCmd extends RvProxyCmd {
      *
      * @return the AOL Proxy Server's IP address, as sent in this command
      */
-    public final Inet4Address getProxyIpAddress() { return ip; }
+    public final InetAddress getProxyIpAddress() { return ip; }
 
     /**
      * Returns a "port" value to send to the "receiving user." (The "receiving
