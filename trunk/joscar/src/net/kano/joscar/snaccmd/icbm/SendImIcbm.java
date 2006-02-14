@@ -191,6 +191,10 @@ public class SendImIcbm extends AbstractImIcbm implements SendIcbm {
                 wantsIcon, iconInfo, expInfoBlocks, featuresBlock);
 
         DefensiveTools.checkNull(sn, "sn");
+        if (ackRequested && autoResponse) {
+            throw new IllegalArgumentException("ackRequested and autoResponse "
+                    + "cannot both be true");
+        }
 
         this.sn = sn;
         this.ackRequested = ackRequested;

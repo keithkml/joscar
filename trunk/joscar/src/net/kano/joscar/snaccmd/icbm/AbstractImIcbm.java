@@ -289,6 +289,8 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
      * @throws IOException if an I/O error occurs
      */
     final void writeImTlvs(OutputStream out) throws IOException {
+      if (autoResponse) new Tlv(TYPE_AUTORESPONSE).write(out);
+
         InstantMessage message = this.message;
         if (message != null) {
             MutableTlvChain chain = TlvTools.createMutableChain();
@@ -325,8 +327,6 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
             chain.addTlv(new Tlv(TYPE_MESSAGE_PARTS, messageData));
             new Tlv(TYPE_MESSAGE, ByteBlock.createByteBlock(chain)).write(out);
         }
-
-        if (autoResponse) new Tlv(TYPE_AUTORESPONSE).write(out);
 
         if (iconInfo != null) {
             ByteArrayOutputStream bout = new ByteArrayOutputStream(20);
