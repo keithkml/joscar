@@ -222,7 +222,7 @@ public class RvConnectionInfo implements LiveWritable {
      *         <code>true</code>)
      */
     public static RvConnectionInfo createForOutgoingProxiedRequest(
-            Inet4Address proxyIP, int port) {
+            InetAddress proxyIP, int port) {
         DefensiveTools.checkNull(proxyIP, "proxyIP");
 
         return new RvConnectionInfo(null, null, proxyIP, port, true, false);
@@ -268,8 +268,8 @@ public class RvConnectionInfo implements LiveWritable {
      * @see #createForOutgoingRequest
      * @see #createForOutgoingProxiedRequest
      */
-    public RvConnectionInfo(InetAddress internalIP, Inet4Address externalIP,
-            Inet4Address proxyIP, int port, boolean proxied,
+    public RvConnectionInfo(InetAddress internalIP, InetAddress externalIP,
+            InetAddress proxyIP, int port, boolean proxied,
             boolean encrypted) {
         DefensiveTools.checkRange(port, "port", -1);
 
