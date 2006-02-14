@@ -34,12 +34,16 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
+import net.kano.joscar.snaccmd.CapabilityBlock;
+
 public interface RvRequestMaker {
   void sendRvRequest();
 
   void sendRvRequest(int newIndex);
 
   void sendRvAccept();
-  
+
   void sendRvReject();
+
+  CapabilityBlock getCapabilityBlock();
 }

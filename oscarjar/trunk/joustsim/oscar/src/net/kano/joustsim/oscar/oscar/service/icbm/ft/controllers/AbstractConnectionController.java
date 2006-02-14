@@ -34,148 +34,160 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
 import net.kano.joscar.DefensiveTools;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.ConnectionType;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FailureEventException;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnection;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionImpl;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvSessionConnectionInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectionTimedOutEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.LocallyCancelledInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
 
 import java.io.IOException;
-import java.net.Socket;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.logging.Logger;
 
-public abstract class AbstractConnectionController extends StateController {
-    private static final Logger LOGGER = Logger
-            .getLogger(AbstractConnectionController.class.getName());
+public abstract class AbstractConnectionController
+    extends StateController implements StreamInfoProvider, TimeoutableController {
 
-    private StreamInfo stream;
-    private RvConnectionImpl fileTransfer;
-    private Socket socket;
-    private Thread thread;
-    private boolean timerStarted = false;
-    private boolean connected = false;
+  private static final Logger LOGGER = Logger
+      .getLogger(AbstractConnectionController.class.getName());
 
-    protected abstract ConnectionType getConnectionType();
+  private StreamInfo stream;
+  private RvConnection rvConnection;
+  private Thread thread = null;
+  private boolean timerStarted = false;
+  private boolean connected = false;
+  private Connector connector = null;
 
-    private long getConnectionTimeoutMillis() {
-        return fileTransfer.getSettings()
-            .getPerConnectionTimeout(getConnectionType());
-    }
+  {
+    addControllerListener(new ControllerListener() {
+      public void handleControllerSucceeded(StateController controller,
+          SuccessfulStateInfo info) {
+      }
 
-  protected StreamInfo getStream() { return stream; }
-
-    public RvConnectionImpl getRvConnection() {
-        return fileTransfer;
-    }
-
-    protected synchronized void stopConnectionTimer() {
-        connected = true;
-    }
-
-    public void start(RvConnection transfer, StateController last) {
-        DefensiveTools.checkNull(transfer, "transfer");
-        StateInfo endState = getEndStateInfo();
-        if (endState != null) {
-            throw new IllegalStateException("state is alreaday " + endState);
-        }
-
-        this.fileTransfer = (RvConnectionImpl) transfer;
-
-        try {
-            checkConnectionInfo();
-            initializeBeforeStarting();
-        } catch (Exception e) {
-            fireFailed(e);
-            return;
-        }
-
-        thread = new Thread(new Runnable() {
-            public void run() {
-                try {
-                    openConnectionInThread();
-                } catch (Exception e) {
-                    fireFailed(e);
-                }
-            }
-        });
-
-        if (shouldStartTimerAutomatically()) startTimer();
-        thread.start();
-    }
-
-    protected void checkConnectionInfo() throws IllegalStateException {
-
-    }
-
-    protected boolean shouldStartTimerAutomatically() {
-        return true;
-    }
-
-    protected void startTimer() {
-        synchronized(this) {
-            if (timerStarted) return;
-            timerStarted = true;
-        }
-        Timer timer = fileTransfer.getTimer();
-        final long timeout = getConnectionTimeoutMillis();
-        TimerTask task = new TimerTask() {
-
-            public void run() {
-                boolean connected = isConnected();
-                if (!connected) {
-                    thread.interrupt();
-                    fireFailed(new ConnectionTimedOutEvent(timeout));
-                }
-            }
-
-        };
-        timer.schedule(task, timeout);
-    }
-
-    public synchronized boolean isConnected() {
-        return connected;
-    }
-
-    public void stop() {
-        fireFailed(new LocallyCancelledInfo());
+      public void handleControllerFailed(StateController controller,
+          FailedStateInfo info) {
         if (thread != null) thread.interrupt();
+      }
+    });
+  }
+
+  private long getConnectionTimeoutMillis() {
+    return rvConnection.getSettings()
+        .getPerConnectionTimeout(getTimeoutType());
+  }
+
+  public StreamInfo getStreamInfo() { return stream; }
+
+  public RvConnection getRvConnection() {
+    return rvConnection;
+  }
+
+  public RvSessionConnectionInfo getRvSessionInfo() {
+    return rvConnection.getRvSessionInfo();
+  }
+
+  protected synchronized void stopConnectionTimer() {
+    connected = true;
+  }
+
+  public Connector getConnector() {
+    return connector;
+  }
+
+  public void setConnector(Connector connector) {
+    this.connector = connector;
+  }
+
+  public void start(RvConnection transfer, StateController last) {
+    DefensiveTools.checkNull(transfer, "transfer");
+    StateInfo endState = getEndStateInfo();
+    if (endState != null) {
+      throw new IllegalStateException("state is alreaday " + endState);
     }
 
-    public Socket getSocket() { return socket; }
+    this.rvConnection = transfer;
 
-    protected void initializeBeforeStarting() throws IOException {
-
+    try {
+      connector.checkConnectionInfo();
+      initializeBeforeStarting();
+    } catch (Exception e) {
+      fireFailed(e);
+      return;
     }
 
-    protected void openConnectionInThread() {
+    thread = new Thread(new Runnable() {
+      public void run() {
         try {
-            LOGGER.fine(this + " opening socket");
-            socket = createSocket();
-            stream = new StreamInfo(socket.getChannel());
-            LOGGER.fine(this + " initializing connection in thread");
-            initializeConnectionInThread();
+          openConnectionInThread();
         } catch (Exception e) {
-            fireFailed(e);
+          fireFailed(e);
         }
+      }
+    });
+
+    if (shouldStartTimerAutomatically()) startTimer();
+    thread.start();
+  }
+
+  protected boolean shouldStartTimerAutomatically() {
+    return true;
+  }
+
+  protected void startTimer() {
+    synchronized (this) {
+      if (timerStarted) return;
+      timerStarted = true;
     }
+    rvConnection.getTimeoutHandler().startTimeout(this);
+  }
 
-    protected abstract void setConnectingState();
-    protected abstract void setResolvingState();
-
-    protected abstract Socket createSocket() throws IOException;
-
-    protected void fireConnected() {
-        fireSucceeded(stream);
+  public void cancelIfNotFruitful(long timeout) {
+    if (!isConnected()) {
+      fireFailed(new ConnectionTimedOutEvent(timeout));
     }
+  }
 
-    protected void initializeConnectionInThread()
-            throws IOException, FailureEventException {
-        fireConnected();
+  public synchronized boolean isConnected() { return connected; }
+
+  public void stop() {
+    fireFailed(new LocallyCancelledInfo());
+  }
+
+  protected void initializeBeforeStarting() throws IOException { }
+
+  protected void openConnectionInThread() {
+    try {
+      LOGGER.fine(this + " opening socket");
+      prepareStream();
+      stream = createStream();
+      LOGGER.fine(this + " initializing connection in thread");
+      initializeConnectionInThread();
+
+    } catch (Exception e) {
+      fireFailed(e);
     }
+  }
 
+  protected void prepareStream() throws IOException {
+    connector.prepareStream();
+  }
+
+  protected StreamInfo createStream() throws IOException {
+    return connector.createStream();
+  }
+
+  protected abstract void handleConnectingState();
+
+  protected abstract void handleResolvingState();
+
+  protected void fireConnected() {
+    fireSucceeded(stream);
+  }
+
+  protected void initializeConnectionInThread()
+      throws IOException, FailureEventException {
+    fireConnected();
+  }
 }

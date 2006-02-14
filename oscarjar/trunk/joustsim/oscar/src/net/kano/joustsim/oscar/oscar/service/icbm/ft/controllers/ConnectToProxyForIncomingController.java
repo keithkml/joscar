@@ -33,22 +33,6 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
-import net.kano.joscar.rv.RvSession;
-
-import java.io.IOException;
-import java.util.logging.Logger;
-
 public class ConnectToProxyForIncomingController
         extends AbstractConnectToProxyController {
-    private static final Logger LOGGER = Logger
-            .getLogger(ConnectToProxyForIncomingController.class.getName());
-
-    protected void initializeBeforeStarting() throws IOException {
-        super.initializeBeforeStarting();
-        RvSession rvSession = getRvConnection().getRvSession();
-        LOGGER.fine("Sending file transfer accept command to "
-                + rvSession.getScreenname());
-        getRvConnection().getRvRequestMaker().sendRvAccept();
-    }
-
 }

@@ -73,13 +73,16 @@ import net.kano.joustsim.oscar.CapabilityHandler;
 import net.kano.joustsim.oscar.oscar.OscarConnection;
 import net.kano.joustsim.oscar.oscar.service.Service;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionManager;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionManagerListener;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.IncomingRvConnection;
 import net.kano.joustsim.oscar.oscar.service.icbm.secureim.EncryptedAimMessage;
 import net.kano.joustsim.oscar.oscar.service.icbm.secureim.EncryptedAimMessageInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.secureim.InternalSecureTools;
 import net.kano.joustsim.oscar.oscar.service.icbm.secureim.SecureAimConversation;
+import net.kano.joustsim.oscar.oscar.service.icbm.dim.DirectimConnection;
 import net.kano.joustsim.trust.BuddyCertificateInfo;
-import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Date;
 import java.util.HashMap;
@@ -106,6 +109,20 @@ public class IcbmService extends Service {
     rvProcessor.addListener(new DelegatingRvProcessorListener());
     rvConnectionManager = new RvConnectionManager(this);
     buddyInfoManager = getAimConnection().getBuddyInfoManager();
+
+    rvConnectionManager.addConnectionManagerListener(new RvConnectionManagerListener() {
+      public void handleNewIncomingConnection(RvConnectionManager manager,
+          IncomingRvConnection connection) {
+        if (connection instanceof DirectimConnection) {
+          DirectimConnection dim = (DirectimConnection) connection;
+          DirectimConversation conv = new DirectimConversation(getAimConnection(), dim);
+          synchronized (IcbmService.this) {
+            directimconvs.put(dim.getBuddyScreenname(), conv);
+          }
+          initConversation(conv);
+        }
+      }
+    });
   }
 
   public RvConnectionManager getRvConnectionManager() {
@@ -245,8 +262,7 @@ public class IcbmService extends Service {
       conv = secureAimConvs.get(sn);
       if (conv == null) {
         isnew = true;
-        conv = InternalSecureTools
-            .newSecureAimConversation(getAimConnection(), sn);
+        conv = InternalSecureTools.newSecureAimConversation(getAimConnection(), sn);
         secureAimConvs.put(sn, conv);
       }
     }
@@ -255,6 +271,26 @@ public class IcbmService extends Service {
 
     return conv;
   }
+
+  public DirectimConversation getDirectimConversation(Screenname sn) {
+    boolean isnew = false;
+    DirectimConversation conv;
+    synchronized (this) {
+      conv = directimconvs.get(sn);
+      if (conv == null || conv.isClosed()) {
+        isnew = true;
+        conv = new DirectimConversation(getAimConnection(), sn);
+        directimconvs.put(sn, conv);
+      }
+    }
+    // we need to initialize this outside of the lock to prevent deadlocks
+    if (isnew) initConversation(conv);
+
+    return conv;
+  }
+
+  private Map<Screenname, DirectimConversation> directimconvs
+      = new HashMap<Screenname, DirectimConversation>();
 
   private Map<Screenname, ImConversation> imconvs
       = new HashMap<Screenname, ImConversation>();
@@ -314,7 +350,7 @@ public class IcbmService extends Service {
   private class DelegatingRvProcessorListener implements RvProcessorListener {
     public void handleNewSession(NewRvSessionEvent event) {
       if (event.getSessionType() == NewRvSessionEvent.TYPE_INCOMING) {
-        final RvSession session = event.getSession();
+        RvSession session = event.getSession();
         session.addListener(new SessionListenerDelegate(session));
       }
     }

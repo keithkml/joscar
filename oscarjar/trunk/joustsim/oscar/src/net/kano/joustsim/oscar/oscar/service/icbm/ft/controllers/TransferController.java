@@ -33,23 +33,19 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.ConnectionType;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FailureEventException;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferTools;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnection;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionPropertyHolder;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectedEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectionTimedOutEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
 
 import java.io.IOException;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.logging.Logger;
 
 //TOLATER: allow limiting bandwidth
-
 public abstract class TransferController extends StateController
-    implements PausableController {
+    implements PausableController, TimeoutableController {
   private static final Logger LOGGER = Logger
       .getLogger(TransferController.class.getName());
 
@@ -59,55 +55,37 @@ public abstract class TransferController extends StateController
   private boolean suppressErrors = false;
   @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
   private RvConnection transfer;
-  private long timeoutPaused = -1;
-  private long threadStarted = -1;
-  private long timeIgnored = 0;
-  private TimerTask latestTask = null;
 
-  private final PauseHelper pauseHelper = new PauseHelper();
+  private final PauseHelper pauseHelper = new PauseHelperImpl();
+  private StreamInfo stream;
 
   protected synchronized void pauseTimeout() {
     LOGGER.info("File transfer timeout paused");
-    if (timeoutPaused != -1) return;
-    timeoutPaused = System.currentTimeMillis();
-    latestTask = null;
+    transfer.getTimeoutHandler().pauseTimeout(this);
   }
 
   protected synchronized void resumeTimeout() {
     LOGGER.info("File transfer timeout resumed");
-    long current = System.currentTimeMillis();
-    long pausedAt = timeoutPaused;
-    if (pausedAt == -1) return;
-    timeIgnored += (current - pausedAt);
-    timeoutPaused = -1;
-    makeTimerTask();
+    transfer.getTimeoutHandler().unpauseTimeout(this);
   }
 
-  private synchronized void makeTimerTask() {
-    final long timeout = getTransferTimeoutMillis();
-    long timeoutAt = threadStarted + timeout + timeIgnored;
-    Timer timer = FileTransferTools.getTimer(transfer);
-    TimerTask task = new TimerTask() {
-      public void run() {
-        boolean timedout = false;
-        synchronized (TransferController.this) {
-          if (this != latestTask) return;
-          if (!isConnected()) {
-            cancelled = true;
-            suppressErrors = true;
-            timedout = true;
-          }
-        }
-        if (timedout) {
-          transferThread.interrupt();
-          fireFailed(new ConnectionTimedOutEvent(timeout));
-        }
+  public ConnectionType getTimeoutType() {
+    return null;
+  }
+
+  public void cancelIfNotFruitful(long timeout) {
+    boolean timedout = false;
+    synchronized (TransferController.this) {
+      if (!isConnected()) {
+        cancelled = true;
+        suppressErrors = true;
+        timedout = true;
       }
-    };
-    latestTask = task;
-    long currentTime = System.currentTimeMillis();
-    long delay = Math.max(0, timeoutAt - currentTime);
-    timer.schedule(task, delay);
+    }
+    if (timedout) {
+      transferThread.interrupt();
+      fireFailed(new ConnectionTimedOutEvent(timeout));
+    }
   }
 
   protected synchronized boolean shouldSuppressErrors() {
@@ -116,17 +94,14 @@ public abstract class TransferController extends StateController
 
   public void start(final RvConnection transfer, StateController last) {
     this.transfer = transfer;
-    final StreamInfo stream = (StreamInfo) last.getEndStateInfo();
+    stream = (StreamInfo) last.getEndStateInfo();
     transferThread = new Thread(new Runnable() {
       public void run() {
-        synchronized (TransferController.this) {
-          threadStarted = System.currentTimeMillis();
-        }
         try {
-          makeTimerTask();
-          RvConnectionPropertyHolder itransfer
-              = (RvConnectionPropertyHolder) transfer;
-          transferInThread(stream, itransfer);
+          synchronized (TransferController.this) {
+            transfer.getTimeoutHandler().startTimeout(TransferController.this);
+          }
+          transferInThread(transfer);
 
         } catch (Exception e) {
           if (!shouldSuppressErrors()) {
@@ -167,8 +142,8 @@ public abstract class TransferController extends StateController
     return connected;
   }
 
-  protected abstract void transferInThread(StreamInfo stream,
-      RvConnectionPropertyHolder transfer)
+  protected abstract void transferInThread(
+      RvConnection transfer)
       throws IOException, FailureEventException;
 
   public void pauseTransfer() {
@@ -186,5 +161,9 @@ public abstract class TransferController extends StateController
    */
   protected boolean waitUntilUnpause() {
     return pauseHelper.waitUntilUnpause();
+  }
+
+  public StreamInfo getStream() {
+    return stream;
   }
 }

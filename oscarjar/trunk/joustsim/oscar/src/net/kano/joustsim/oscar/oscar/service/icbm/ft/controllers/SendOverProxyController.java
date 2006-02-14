@@ -35,8 +35,8 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
 import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joscar.rvproto.rvproxy.RvProxyAckCmd;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionImpl;
-import static net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionPropertyHolder.KEY_REDIRECTED;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvSessionConnectionInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.Initiator;
 
 import java.io.IOException;
 
@@ -46,9 +46,9 @@ public class SendOverProxyController
     RvConnectionInfo connInfo = RvConnectionInfo
         .createForOutgoingProxiedRequest(ackCmd.getProxyIpAddress(),
             ackCmd.getProxyPort());
-    RvConnectionImpl transfer = getRvConnection();
+    RvSessionConnectionInfo transfer = getRvSessionInfo();
     transfer.setConnectionInfo(connInfo);
-    transfer.putTransferProperty(KEY_REDIRECTED, false);
+    transfer.setInitiator(Initiator.ME);
 
     transfer.getRvRequestMaker().sendRvRequest();
   }

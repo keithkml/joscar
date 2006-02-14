@@ -75,8 +75,6 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 //TODO: time out waiting for all services to be ready, to ensure connection comes up eventually
-//TODO: factor unnecessarily visible public methods into AimConnectionServiceInterface
-
 public class AimConnection {
   private static final Logger LOGGER
       = Logger.getLogger(AimConnection.class.getName());
@@ -306,7 +304,8 @@ public class AimConnection {
     if (service == null) {
       ServiceArbiter<?> arbiter = externalServiceMgr.getServiceArbiter(family);
       if (arbiter != null) {
-        //TODO: what to do when sending snac to arbiter?
+        throw new IllegalStateException("can't send SNAC because the family "
+            + "is controlled by an arbiter: " + snac);
       }
     } else {
       service.sendSnac(snac);

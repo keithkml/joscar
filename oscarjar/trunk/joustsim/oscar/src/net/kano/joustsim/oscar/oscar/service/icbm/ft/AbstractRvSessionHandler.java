@@ -35,18 +35,68 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
 import net.kano.joustsim.oscar.oscar.service.icbm.RendezvousSessionHandler;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ProxyRedirectDisallowedEvent;
 import net.kano.joscar.rv.RecvRvEvent;
 import net.kano.joscar.rv.RvSnacResponseEvent;
 import net.kano.joscar.snaccmd.icbm.RvCommand;
 import net.kano.joscar.rvcmd.ConnectionRequestRvCmd;
 import net.kano.joscar.rvcmd.AcceptRvCmd;
 import net.kano.joscar.rvcmd.RejectRvCmd;
+import net.kano.joscar.rvcmd.RvConnectionInfo;
+
+import java.util.logging.Logger;
 
 abstract class AbstractRvSessionHandler implements RendezvousSessionHandler {
+  private static final Logger LOGGER = Logger
+      .getLogger(AbstractRvSessionHandler.class.getName());
+  
   private RvConnection transfer;
 
   public AbstractRvSessionHandler(RvConnection transfer) {
     this.transfer = transfer;
+  }
+
+  protected final RvConnectionEvent getConnectError(RvConnectionInfo connInfo) {
+    RvConnectionEvent error = null;
+    RvConnectionSettings settings = transfer.getSettings();
+    if (settings.isOnlyUsingProxy()) {
+      if (connInfo.isProxied() && !settings.isProxyRequestTrusted()) {
+        error = new ProxyRedirectDisallowedEvent(
+            connInfo.getProxyIP());
+      }
+    }
+    return error;
+  }
+
+  protected static enum HowToConnect { DONT, PROXY, NORMAL }
+
+  protected HowToConnect processRedirect(ConnectionRequestRvCmd reqCmd) {
+    RvSessionConnectionInfo sessionInfo = transfer.getRvSessionInfo();
+    sessionInfo.setRequestIndex(reqCmd.getRequestIndex());
+    RvConnectionInfo connInfo = reqCmd.getConnInfo();
+    LOGGER.fine("Received redirect packet: " + reqCmd
+        + " - to " + connInfo);
+    RvConnectionEvent error = getConnectError(connInfo);
+    HowToConnect how;
+    if (error == null) {
+      sessionInfo.setConnectionInfo(connInfo);
+      LOGGER.fine("Storing connection info for redirect: " + connInfo);
+      if (connInfo.isProxied()) {
+        LOGGER.finer("Deciding to change to proxy connect controller");
+        how = HowToConnect.PROXY;
+        sessionInfo.setInitiator(Initiator.BUDDY);
+      } else {
+        LOGGER.finer("Deciding to change to normal connect controller");
+        how = HowToConnect.NORMAL;
+        sessionInfo.setInitiator(Initiator.BUDDY);
+      }
+    } else {
+      //      we could ignore it
+//      transfer.close(error);
+      how = HowToConnect.DONT;
+    }
+    return how;
   }
 
   public final void handleRv(RecvRvEvent event) {

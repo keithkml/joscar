@@ -36,32 +36,41 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rvcmd.ConnectionRequestRvCmd;
 import net.kano.joscar.rvcmd.InvitationMessage;
-import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
 import net.kano.joscar.rvcmd.sendfile.FileSendBlock;
+import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
+import net.kano.joustsim.Screenname;
+import net.kano.joustsim.oscar.oscar.service.icbm.RendezvousSessionHandler;
+import net.kano.joustsim.oscar.oscar.service.icbm.dim.MutableSessionConnectionInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ReceiveFileController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectionCompleteEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.RendezvousSessionHandler;
+import net.kano.joustsim.oscar.proxy.AimProxyInfo;
 
 import java.util.logging.Logger;
 
 public class IncomingFileTransferImpl
     extends IncomingRvConnectionImpl implements IncomingFileTransfer {
-  //TODO: send rejection RV when we fail, if we haven't gotten one
   private static final Logger LOGGER = Logger
       .getLogger(IncomingFileTransferImpl.class.getName());
 
   private FileMapper fileMapper;
   private FileTransferHelper helper = new FileTransferHelper(this);
 
-  IncomingFileTransferImpl(RvConnectionManager rvConnectionManager,
-      RvSession session) {
-    super(rvConnectionManager, session);
+  IncomingFileTransferImpl(AimProxyInfo proxy,
+      Screenname screenname, RvSessionConnectionInfo rvsessioninfo) {
+    super(proxy, screenname, rvsessioninfo);
 
     fileMapper = new DefaultFileMapper(getBuddyScreenname(), System.getProperty("user.dir"));
+  }
+
+  public IncomingFileTransferImpl(AimProxyInfo proxy, Screenname screenname,
+      RvSession session) {
+    this(proxy, screenname, new MutableSessionConnectionInfo(session));
+    ((MutableSessionConnectionInfo) getRvSessionInfo())
+        .setMaker(new FileTransferRequestMaker(this));
   }
 
   protected RendezvousSessionHandler createSessionHandler() {
@@ -126,7 +135,7 @@ public class IncomingFileTransferImpl
     helper.setFileInfo(block);
   }
 
-  private class IncomingFtRvSessionHandler extends IncomingRvSessionHandler {
+  private class IncomingFtRvSessionHandler extends AbstractIncomingRvSessionHandler {
     protected void handleFirstRequest(ConnectionRequestRvCmd reqCmd) {
       FileSendReqRvCmd ftcmd = (FileSendReqRvCmd) reqCmd;
       setFileInfo(ftcmd.getFileSendBlock());

@@ -46,87 +46,86 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public abstract class StateController {
-    private static final Logger LOGGER = Logger
-            .getLogger(StateController.class.getName());
+  private static final Logger LOGGER = Logger
+      .getLogger(StateController.class.getName());
 
-    private CopyOnWriteArrayList<ControllerListener> listeners
-            = new CopyOnWriteArrayList<ControllerListener>();
-    private StateInfo endState = null;
+  private CopyOnWriteArrayList<ControllerListener> listeners
+      = new CopyOnWriteArrayList<ControllerListener>();
+  private StateInfo endState = null;
 
-    public abstract void start(RvConnection transfer, StateController last);
+  public abstract void start(RvConnection transfer, StateController last);
 
-    public void addControllerListener(ControllerListener listener) {
-        listeners.addIfAbsent(listener);
+  public void addControllerListener(ControllerListener listener) {
+    listeners.addIfAbsent(listener);
+  }
+
+  public void removeControllerListener(ControllerListener listener) {
+    listeners.remove(listener);
+  }
+
+  protected void fireSucceeded(StateInfo stateInfo) {
+    assert !Thread.holdsLock(this);
+
+    fireEvent(stateInfo);
+  }
+
+  protected void fireFailed(final Exception e) {
+    assert !Thread.holdsLock(this);
+
+    LOGGER.log(Level.SEVERE, "Error in " + getClass().getName() + ":", e);
+
+    fireEvent(new ExceptionStateInfo(e));
+  }
+
+  protected void fireFailed(final RvConnectionEvent e) {
+    fireEvent(new FailureEventInfo(e));
+  }
+
+  protected void fireFailed(final FailedStateInfo info) {
+    fireEvent(info);
+  }
+
+  private void fireEvent(StateInfo e) {
+    assert !Thread.holdsLock(this);
+
+    boolean succeeded = e instanceof SuccessfulStateInfo;
+    boolean failed = e instanceof FailedStateInfo;
+    if (!succeeded && !failed) {
+      throw new IllegalArgumentException("invalid state " + e
+          + ": it must be either SuccessfulStateInfo or "
+          + "FailedStateInfo");
     }
 
-    public void removeControllerListener(ControllerListener listener) {
-        listeners.remove(listener);
+    synchronized (this) {
+      if (endState != null) {
+        LOGGER.info("State controller " + this
+            + " tried to set new end state " + e + " but it was "
+            + "already " + endState);
+        return;
+      }
+      endState = e;
     }
+    LOGGER.log(Level.FINE, "New state for " + getClass().getName() + ": " + e);
+    if (succeeded) {
+      SuccessfulStateInfo successfulStateInfo = (SuccessfulStateInfo) e;
 
-    protected void fireSucceeded(StateInfo stateInfo) {
-        assert !Thread.holdsLock(this);
+      for (ControllerListener listener : listeners) {
+        listener.handleControllerSucceeded(this, successfulStateInfo);
+      }
+    } else {
+      FailedStateInfo failedStateInfo = (FailedStateInfo) e;
 
-        fireEvent(stateInfo);
+      for (ControllerListener listener : listeners) {
+        listener.handleControllerFailed(this, failedStateInfo);
+      }
     }
+  }
 
-    protected void fireFailed(final Exception e) {
-        assert !Thread.holdsLock(this);
+  public synchronized StateInfo getEndStateInfo() { return endState; }
 
-        LOGGER.log(Level.SEVERE, "Error in " + getClass().getName() + ":", e);
+  public abstract void stop();
 
-        fireEvent(new ExceptionStateInfo(e));
-    }
-
-    protected void fireFailed(final RvConnectionEvent e) {
-        fireEvent(new FailureEventInfo(e));
-    }
-
-    protected void fireFailed(final FailedStateInfo info) {
-        fireEvent(info);
-    }
-
-    private void fireEvent(StateInfo e) {
-        assert !Thread.holdsLock(this);
-
-        boolean succeeded = e instanceof SuccessfulStateInfo;
-        boolean failed = e instanceof FailedStateInfo;
-        if (!succeeded && !failed) {
-            throw new IllegalArgumentException("invalid state " + e
-                    + ": it must be either SuccessfulStateInfo or "
-                    + "FailedStateInfo");
-        }
-
-        synchronized(this) {
-            if (endState != null) {
-                LOGGER.info("State controller " + getClass().getName()
-                        + " tried to set new end state " + e + "  but it was "
-                        + "already" + endState);
-                return;
-            }
-            endState = e;
-        }
-        LOGGER.log(Level.FINE, "New state for " + getClass().getName() + ": " 
-                + e, new Throwable().fillInStackTrace());
-        if (succeeded) {
-            SuccessfulStateInfo successfulStateInfo = (SuccessfulStateInfo) e;
-
-            for (ControllerListener listener : listeners) {
-                listener.handleControllerSucceeded(this, successfulStateInfo);
-            }
-        } else {
-            FailedStateInfo failedStateInfo = (FailedStateInfo) e;
-
-            for (ControllerListener listener : listeners) {
-                listener.handleControllerFailed(this, failedStateInfo);
-            }
-        }
-    }
-
-    public synchronized StateInfo getEndStateInfo() { return endState; }
-
-    public abstract void stop();
-
-    public String toString() {
-        return MiscTools.getClassName(this);
-    }
+  public String toString() {
+    return MiscTools.getClassName(this);
+  }
 }

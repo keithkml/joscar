@@ -33,114 +33,119 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
-import net.kano.joscar.rvproto.rvproxy.DefaultRvProxyCmdFactory;
 import net.kano.joscar.rvproto.rvproxy.RvProxyAckCmd;
 import net.kano.joscar.rvproto.rvproxy.RvProxyCmd;
-import net.kano.joscar.rvproto.rvproxy.RvProxyCmdFactory;
 import net.kano.joscar.rvproto.rvproxy.RvProxyErrorCmd;
-import net.kano.joscar.rvproto.rvproxy.RvProxyPacket;
 import net.kano.joscar.rvproto.rvproxy.RvProxyReadyCmd;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.ConnectionType;
-import static net.kano.joustsim.oscar.oscar.service.icbm.ft.ConnectionType.INCOMING;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FailureEventException;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileTransferTools;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnection;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.AolProxyTimedOutEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectionTimedOutEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownAolProxyErrorEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.logging.Logger;
 
 //TODO: make sure we only connect to the proxy when the user accepts - the proxy will time out if the user waits too long
+
 public abstract class AbstractProxyConnectionController
-        extends AbstractOutgoingConnectionController
-        implements ManualTimeoutController {
-    private static final Logger LOGGER = Logger
-            .getLogger(AbstractProxyConnectionController.class.getName());
+    extends AbstractOutgoingConnectionController
+    implements ManualTimeoutController {
+  private static final Logger LOGGER = Logger
+      .getLogger(AbstractProxyConnectionController.class.getName());
 
-    private boolean clientWantsTimer = false;
-    private boolean alreadyStartedTimer = false;
+  private boolean clientWantsTimer = false;
+  private boolean alreadyStartedTimer = false;
 
-    protected ConnectionType getConnectionType() {
-        return ConnectionType.PROXY;
-    }
+  public ConnectionType getTimeoutType() {
+    return ConnectionType.PROXY;
+  }
 
-    protected void initializeConnectionInThread()
-            throws IOException, FailureEventException {
-        StreamInfo stream = getStream();
-        InputStream in = stream.getInputStream();
+  protected void initializeConnectionInThread()
+      throws IOException, FailureEventException {
 
-        initializeProxy();
-        RvProxyCmdFactory factory = new DefaultRvProxyCmdFactory();
-        while (true) {
-            RvProxyPacket packet = RvProxyPacket.readPacket(in);
-            RvProxyCmd cmd = factory.getRvProxyCmd(packet);
-            LOGGER.fine("Got proxy packet: " + (cmd == null ? packet : cmd));
-            if (cmd instanceof RvProxyAckCmd) {
-                RvProxyAckCmd ackCmd = (RvProxyAckCmd) cmd;
-                startTimerIfReady();
-                stopConnectionTimer();
+    initializeProxy();
 
-                handleAck(ackCmd);
+    while (true) {
+      RvProxyCmd cmd = getProxyConnection().readPacket();
+      if (cmd instanceof RvProxyAckCmd) {
+        RvProxyAckCmd ackCmd = (RvProxyAckCmd) cmd;
+        startTimerIfReady();
+        stopConnectionTimer();
 
-            } else if (cmd instanceof RvProxyErrorCmd) {
-                RvProxyErrorCmd proxyErrorCmd = (RvProxyErrorCmd) cmd;
-                int code = proxyErrorCmd.getErrorCode();
-                if (code == RvProxyErrorCmd.ERRORCODE_TIMEOUT) {
-                    fireFailed(new AolProxyTimedOutEvent());
-                } else {
-                    fireFailed(new UnknownAolProxyErrorEvent(code));
-                }
-                break;
+        handleAck(ackCmd);
 
-            } else if (cmd instanceof RvProxyReadyCmd) {
-                fireConnected();
-                break;
-            } else {
-                LOGGER.warning("Got unknown RV proxy packet: " + packet + " ("
-                        + cmd + ")");
-            }
+      } else if (cmd instanceof RvProxyErrorCmd) {
+        RvProxyErrorCmd proxyErrorCmd = (RvProxyErrorCmd) cmd;
+        int code = proxyErrorCmd.getErrorCode();
+        if (code == RvProxyErrorCmd.ERRORCODE_TIMEOUT) {
+          fireFailed(new AolProxyTimedOutEvent());
+          
+        } else {
+          fireFailed(new UnknownAolProxyErrorEvent(code));
         }
+        break;
+
+      } else if (cmd instanceof RvProxyReadyCmd) {
+        fireConnected();
+        break;
+
+      } else {
+        LOGGER.warning("Got unknown RV proxy packet: " + cmd);
+      }
+    }
+  }
+
+  public RvProxyCmd readPacket() throws IOException {
+    return getProxyConnection().readPacket();
+  }
+
+  public synchronized final void startTimeoutTimer() {
+    if (!clientWantsTimer) {
+      clientWantsTimer = true;
+      startTimerIfReady();
+    }
+  }
+
+  private synchronized boolean startTimerIfReady() {
+    if (!clientWantsTimer || alreadyStartedTimer) return false;
+
+    alreadyStartedTimer = true;
+
+    getRvConnection().getTimeoutHandler().startTimeout(this);
+    return true;
+  }
+
+  protected final boolean shouldStartTimerAutomatically() {
+    return true;
+  }
+
+  protected abstract void handleAck(RvProxyAckCmd ackCmd) throws IOException;
+
+  protected abstract void initializeProxy() throws IOException;
+
+  protected void sendProxyPacket(RvProxyCmd initCmd) throws IOException {
+    getProxyConnection().sendProxyPacket(initCmd);
+  }
+
+  public ProxyConnector getConnector() {
+    return (ProxyConnector) super.getConnector();
+  }
+
+  protected ProxyConnection getProxyConnection() {
+    return getConnector().getProxyConnection();
+  }
+
+  public abstract class DefaultProxyConnector extends DefaultOutgoingConnector
+      implements ProxyConnector {
+    private ProxyConnection proxyConnection
+        = new StreamProxyConnection(AbstractProxyConnectionController.this);
+
+    public int getConnectionPort() {
+      return 5190;
     }
 
-    public synchronized final void startTimeoutTimer() {
-        if (!clientWantsTimer) {
-            clientWantsTimer = true;
-            startTimerIfReady();
-        }
+    public ProxyConnection getProxyConnection() {
+      return proxyConnection;
     }
-
-    private synchronized boolean startTimerIfReady() {
-        if (!clientWantsTimer || alreadyStartedTimer) return false;
-
-        alreadyStartedTimer = true;
-
-        RvConnection transfer = getRvConnection();
-        final long timeout = transfer.getSettings().getPerConnectionTimeout(INCOMING);
-        Timer timer = FileTransferTools.getTimer(transfer);
-        timer.schedule(new TimerTask() {
-            public void run() {
-                fireFailed(new ConnectionTimedOutEvent(timeout));
-            }
-        }, timeout);
-        return true;
-    }
-
-    protected final boolean shouldStartTimerAutomatically() {
-        return true;
-    }
-
-
-    protected int getConnectionPort() {
-        return 5190;
-    }
-
-    protected abstract void handleAck(RvProxyAckCmd ackCmd) throws IOException;
-
-    protected abstract void initializeProxy() throws IOException;
+  }
 }

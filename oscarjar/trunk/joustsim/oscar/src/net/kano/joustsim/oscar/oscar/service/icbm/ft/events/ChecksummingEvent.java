@@ -34,30 +34,29 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.Checksummer;
-
-import java.io.File;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.TransferredFile;
 
 public class ChecksummingEvent extends RvConnectionEvent {
-    private File file;
-    private Checksummer checksummer;
+  private TransferredFile file;
+  private Checksummer checksummer;
 
-    public ChecksummingEvent(File file, Checksummer summer) {
-        this.file = file;
-        checksummer = summer;
-    }
+  public ChecksummingEvent(TransferredFile file, Checksummer summer) {
+    this.file = file;
+    checksummer = summer;
+  }
 
-    public File getFile() {
-        return file;
-    }
+  public TransferredFile getFile() {
+    return file;
+  }
 
-    public Checksummer getChecksummer() {
-        return checksummer;
-    }
+  public Checksummer getChecksummer() {
+    return checksummer;
+  }
 
 
-    public String toString() {
-        return "ChecksummingEvent: " +
-                "file=" + file +
-                "";
-    }
+  public String toString() {
+    return "ChecksummingEvent: " +
+        "file=" + file +
+        "";
+  }
 }

@@ -37,6 +37,8 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
 import net.kano.joscar.rvcmd.sendfile.FileSendAcceptRvCmd;
 import net.kano.joscar.rvcmd.sendfile.FileSendRejectRvCmd;
+import net.kano.joscar.snaccmd.CapabilityBlock;
+import net.kano.joscar.rv.RvSession;
 
 class FileTransferRequestMaker implements RvRequestMaker {
   private FileTransfer transfer;
@@ -50,16 +52,25 @@ class FileTransferRequestMaker implements RvRequestMaker {
   }
 
   public void sendRvRequest(int newIndex) {
-    transfer.getRvSession().sendRv(new FileSendReqRvCmd(newIndex,
-        transfer.getInvitationMessage(), transfer.getConnectionInfo(),
+    getRvSession().sendRv(new FileSendReqRvCmd(newIndex,
+        transfer.getInvitationMessage(),
+        transfer.getRvSessionInfo().getConnectionInfo(), 
         transfer.getFileInfo()));
   }
 
+  private RvSession getRvSession() {
+    return transfer.getRvSessionInfo().getRvSession();
+  }
+
   public void sendRvAccept() {
-    transfer.getRvSession().sendRv(new FileSendAcceptRvCmd());
+    getRvSession().sendRv(new FileSendAcceptRvCmd());
   }
 
   public void sendRvReject() {
-    transfer.getRvSession().sendRv(new FileSendRejectRvCmd());
+    getRvSession().sendRv(new FileSendRejectRvCmd());
+  }
+
+  public CapabilityBlock getCapabilityBlock() {
+    return CapabilityBlock.BLOCK_FILE_SEND;
   }
 }

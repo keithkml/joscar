@@ -36,14 +36,18 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rvcmd.InvitationMessage;
+import net.kano.joscar.rvcmd.SegmentedFilename;
 import net.kano.joscar.rvcmd.sendfile.FileSendBlock;
 import static net.kano.joscar.rvcmd.sendfile.FileSendBlock.SENDTYPE_DIR;
 import static net.kano.joscar.rvcmd.sendfile.FileSendBlock.SENDTYPE_SINGLEFILE;
+import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ChecksumController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendFileController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendOverProxyController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendPassivelyController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.TransferredFile;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.TransferredFileImpl;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ChecksummingEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectionCompleteEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
@@ -51,6 +55,8 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownErrorEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.ComputedChecksumsInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.dim.MutableSessionConnectionInfo;
+import net.kano.joustsim.oscar.proxy.AimProxyInfo;
 
 import java.io.File;
 import java.io.IOException;
@@ -63,26 +69,22 @@ import java.util.Map;
 
 public class OutgoingFileTransferImpl
     extends OutgoingRvConnectionImpl implements OutgoingFileTransfer {
-  private List<File> files = new ArrayList<File>();
   private String folderName;
-  private Map<File, Long> checksums = new HashMap<File, Long>();
-  private FileChecksummer fileChecksummer = new FileChecksummer() {
-    public long getChecksum(File file) throws IOException {
-      Long sum = checksums.get(file);
-      if (sum == null) {
-        RandomAccessFile raf = new RandomAccessFile(file, "r");
-        Checksummer summer = new Checksummer(raf.getChannel(), raf.length());
-        fireEvent(new ChecksummingEvent(file, summer));
-        sum = summer.compute();
-      }
-      return sum;
-    }
-  };
-  private FileTransferHelper helper = new FileTransferHelper(this);
+  private Map<TransferredFile, Long> checksums = new HashMap<TransferredFile, Long>();
+  private FileChecksummer fileChecksummer = new FileChecksummerImpl();
+  private final FileTransferHelper helper = new FileTransferHelper(this);
+  private List<TransferredFile> tfiles = Collections.emptyList();
 
-  public OutgoingFileTransferImpl(RvConnectionManager rvConnectionManager,
+  public OutgoingFileTransferImpl(AimProxyInfo proxy,
+      Screenname screenname, RvSessionConnectionInfo rvsessioninfo) {
+    super(proxy, screenname, rvsessioninfo);
+  }
+
+  public OutgoingFileTransferImpl(AimProxyInfo proxy, Screenname screenname,
       RvSession session) {
-    super(rvConnectionManager, session);
+    super(proxy, screenname, new MutableSessionConnectionInfo(session));
+    ((MutableSessionConnectionInfo) getRvSessionInfo())
+        .setMaker(new FileTransferRequestMaker(this));
   }
 
   public void sendRequest(InvitationMessage msg) {
@@ -90,59 +92,67 @@ public class OutgoingFileTransferImpl
     startStateController(new ChecksumController());
   }
 
-  private Map<File, String> nameMappings = new HashMap<File, String>();
-
-  public synchronized Map<File, String> getNameMappings() {
-    return Collections.unmodifiableMap(new HashMap<File, String>(nameMappings));
-  }
-
-  public synchronized void mapName(File file, String name) {
-    DefensiveTools.checkNull(file, "file");
-
-    nameMappings.put(file, name);
-  }
-
   public synchronized String getFolderName() { return folderName; }
 
-  public synchronized List<File> getFiles() {
-    return DefensiveTools.getUnmodifiableCopy(files);
+  @SuppressWarnings({"ReturnOfCollectionOrArrayField"})
+  public synchronized List<TransferredFile> getFiles() {
+    return tfiles;
   }
 
-  public synchronized void setFile(File file) {
+  public synchronized void setFile(File file) throws IOException {
+    setFile(file, file.getName());
+  }
+
+  public synchronized void setFile(File file, String name) throws IOException {
     DefensiveTools.checkNull(file, "file");
+    DefensiveTools.checkNull(name, "name");
 
-    this.folderName = null;
-    this.files = Collections.singletonList(file);
+    folderName = null;
+    tfiles = Collections.<TransferredFile>singletonList(
+        new TransferredFileImpl(file, name, "r"));
   }
 
-  public synchronized void setFiles(String folderName, List<File> files) {
+  public synchronized void setFiles(String folderName, List<File> files)
+      throws IOException {
     DefensiveTools.checkNull(folderName, "folderName");
     DefensiveTools.checkNullElements(files, "files");
 
-    this.folderName = folderName;
-    this.files = DefensiveTools.getUnmodifiableCopy(files);
+    List<TransferredFile> tfiles = new ArrayList<TransferredFile>(files.size());
+    for (File file : files) {
+      tfiles.add(new TransferredFileImpl(file, folderName
+          + SegmentedFilename.FILESEP_NATIVE + file.getName(), "r"));
+    }
+
+    setFilesWithDetails(folderName, tfiles);
   }
 
-  public synchronized String getMappedName(File file) {
-    String name = nameMappings.get(file);
-    if (name == null) {
-      return file.getName();
-    } else {
-      return name;
-    }
+  public synchronized void setFilesWithDetails(String folderName,
+      List<TransferredFile> files) {
+    DefensiveTools.checkNullElements(files, "files");
+
+    this.folderName = folderName;
+    this.tfiles = DefensiveTools.getUnmodifiableCopy(tfiles);
   }
 
   public FileChecksummer getChecksummer() { return fileChecksummer; }
 
   public FileSendBlock getFileInfo() {
     long totalSize = 0;
-    List<File> files = getFiles();
-    for (File file : files) totalSize += file.length();
+    List<TransferredFile> files = getFiles();
+    for (TransferredFile file : files) totalSize += file.getSize();
     int numFiles = files.size();
     boolean folderMode = numFiles > 1;
-    int sendType = folderMode ? SENDTYPE_DIR : SENDTYPE_SINGLEFILE;
-    String filename = folderMode ? getFolderName()
-        : getMappedName(files.get(0));
+    int sendType;
+    String filename;
+    if (folderMode) {
+      sendType = SENDTYPE_DIR;
+      filename = getFolderName();
+
+    } else {
+      assert numFiles == 1;
+      sendType = SENDTYPE_SINGLEFILE;
+      filename = files.get(0).getTransferredName();
+    }
     return new FileSendBlock(sendType, filename, numFiles, totalSize);
   }
 
@@ -152,7 +162,7 @@ public class OutgoingFileTransferImpl
     if (oldController instanceof SendFileController) {
       //TODO: retry send with other controllers like receiver does
 //                if (getState() == FileTransferState.TRANSFERRING) {
-      setState(RvConnectionState.FAILED,
+      queueStateChange(RvConnectionState.FAILED,
           event == null ? new UnknownErrorEvent() : event);
 //                } else {
 //
@@ -189,7 +199,7 @@ public class OutgoingFileTransferImpl
     }
   }
 
-  protected StateController getConnectedController() {
+  protected StateController createConnectedController() {
     return new SendFileController();
   }
 
@@ -207,5 +217,18 @@ public class OutgoingFileTransferImpl
 
   public void sendRequest() {
     sendRequest(null);
+  }
+
+  private class FileChecksummerImpl implements FileChecksummer {
+    public long getChecksum(TransferredFile mfile) throws IOException {
+      Long sum = checksums.get(mfile);
+      if (sum == null) {
+        RandomAccessFile raf = new RandomAccessFile(mfile.getRealFile(), "r");
+        Checksummer summer = new ChecksummerImpl(raf.getChannel(), raf.length());
+        fireEvent(new ChecksummingEvent(mfile, summer));
+        sum = summer.compute();
+      }
+      return sum;
+    }
   }
 }

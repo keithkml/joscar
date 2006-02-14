@@ -34,6 +34,6 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
 public interface RvConnectionManagerListener {
-    void handleNewIncomingConnection(RvConnectionManager manager,
-            IncomingRvConnection transfer);
+  void handleNewIncomingConnection(RvConnectionManager manager,
+      IncomingRvConnection connection);
 }

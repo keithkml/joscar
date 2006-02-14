@@ -57,7 +57,6 @@ import net.kano.joustsim.oscar.oscar.service.Service;
 
 import java.util.logging.Logger;
 
-//TODO: allow exception handler to see contents of packets, so we can hunt down new packets through logs
 public class IconService extends Service implements IconRequestHandler {
     private static final Logger LOGGER = Logger
             .getLogger(IconService.class.getName());

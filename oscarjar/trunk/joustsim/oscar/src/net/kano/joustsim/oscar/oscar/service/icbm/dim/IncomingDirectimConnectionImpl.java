@@ -36,16 +36,18 @@ package net.kano.joustsim.oscar.oscar.service.icbm.dim;
 
 import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rvcmd.ConnectionRequestRvCmd;
+import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.oscar.service.icbm.RendezvousSessionHandler;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.IncomingRvConnectionImpl;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionManager;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionState;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvRequestMaker;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvSessionConnectionInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectionCompleteEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
+import net.kano.joustsim.oscar.proxy.AimProxyInfo;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.logging.Logger;
 
@@ -54,14 +56,23 @@ public class IncomingDirectimConnectionImpl
   private static final Logger LOGGER = Logger
       .getLogger(IncomingDirectimConnectionImpl.class.getName());
 
-  public IncomingDirectimConnectionImpl(RvConnectionManager rvConnectionManager,
-      RvSession session) {
-    super(rvConnectionManager, session);
+  private AttachmentSaver attachmentSaver = new SizeBasedAttachmentSaver();
+
+  public IncomingDirectimConnectionImpl(
+      AimProxyInfo proxy, Screenname screenname,
+      RvSessionConnectionInfo rvsessioninfo) {
+    super(proxy, screenname, rvsessioninfo);
+  }
+
+  public IncomingDirectimConnectionImpl(AimProxyInfo proxy,
+      Screenname screenname, RvSession session) {
+    this(proxy, screenname, new MutableSessionConnectionInfo(session));
+    ((MutableSessionConnectionInfo) getRvSessionInfo()).setMaker(new DirectimRequestMaker(this));
   }
 
   protected StateController getNextStateControllerFromSuccessState(
       StateController oldController, StateInfo oldStateInfo) {
-    if (oldController instanceof DirectImController) {
+    if (oldController instanceof DirectimController) {
       LOGGER.fine("Changing from success of receive controller to "
           + "completed");
       queueStateChange(RvConnectionState.FINISHED,
@@ -70,7 +81,7 @@ public class IncomingDirectimConnectionImpl
 
     } else if (oldStateInfo instanceof StreamInfo) {
       LOGGER.fine("Got stream info; starting directim controller");
-      return new DirectImController();
+      return new DirectimController();
 
     } else {
       throw new IllegalStateException("Trying to change from success "
@@ -82,7 +93,7 @@ public class IncomingDirectimConnectionImpl
   protected StateController getNextStateFromErrorWithUnknownController(
       StateController oldController, StateInfo oldState,
       RvConnectionEvent event) {
-    if (oldController instanceof DirectImController) {
+    if (oldController instanceof DirectimController) {
       queueStateChange(RvConnectionState.FAILED, event);
       return null;
 
@@ -94,15 +105,23 @@ public class IncomingDirectimConnectionImpl
   }
 
   protected RendezvousSessionHandler createSessionHandler() {
-    return new IncomingRvSessionHandler() {
+    return new AbstractIncomingRvSessionHandler() {
       protected void handleFirstRequest(ConnectionRequestRvCmd reqCmd) {
         // we're okay. there's no dim-specific stuff in the request.
       }
     };
   }
 
-  public RvRequestMaker getRvRequestMaker() {
-    return new DirectimRequestMaker(this);
+  @Nullable public DirectimController getDirectimController() {
+    return DirectimTools.getDirectimStateController(this);
+  }
+
+  public AttachmentSaver getAttachmentSaver() {
+    return attachmentSaver;
+  }
+
+  public void setAttachmentSaver(AttachmentSaver attachmentSaver) {
+    this.attachmentSaver = attachmentSaver;
   }
 
 }

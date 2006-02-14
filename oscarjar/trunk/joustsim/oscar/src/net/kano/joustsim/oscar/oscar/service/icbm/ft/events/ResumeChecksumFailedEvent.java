@@ -33,22 +33,22 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
-import java.io.File;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.TransferredFile;
 
 public class ResumeChecksumFailedEvent extends RvConnectionEvent {
-    private final File file;
+  private final TransferredFile file;
 
-    public ResumeChecksumFailedEvent(File file) {
-        this.file = file;
-    }
+  public ResumeChecksumFailedEvent(TransferredFile file) {
+    this.file = file;
+  }
 
-    public File getFile() {
-        return file;
-    }
+  public TransferredFile getFile() {
+    return file;
+  }
 
-    public String toString() {
-        return "ResumeChecksumFailedEvent: " +
-                "file=" + file +
-                "";
-    }
+  public String toString() {
+    return "ResumeChecksumFailedEvent: " +
+        "file=" + file +
+        "";
+  }
 }

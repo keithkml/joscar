@@ -33,35 +33,36 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
-import java.io.File;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.TransferredFile;
 
 public class TransferredFileInfo {
-    private File file;
-    private long fileSize;
-    private long resumedAt;
+  private TransferredFile file;
+  private long fileSize;
+  private long resumedAt;
 
-    public TransferredFileInfo(File file, long fileSize, long resumedAt) {
-        this.file = file;
-        this.fileSize = fileSize;
-        this.resumedAt = resumedAt;
-    }
+  public TransferredFileInfo(TransferredFile file, long fileSize,
+      long resumedAt) {
+    this.file = file;
+    this.fileSize = fileSize;
+    this.resumedAt = resumedAt;
+  }
 
-    public File getFile() {
-        return file;
-    }
+  public TransferredFile getFile() {
+    return file;
+  }
 
-    public long getFileSize() {
-        return fileSize;
-    }
+  public long getFileSize() {
+    return fileSize;
+  }
 
-    public long getResumedAt() {
-        return resumedAt;
-    }
+  public long getResumedAt() {
+    return resumedAt;
+  }
 
-    public String toString() {
-        return "TransferredFileInfo: " +
-                "resumedAt=" + resumedAt +
-                ", fileSize=" + fileSize +
-                ", file=" + file;
-    }
+  public String toString() {
+    return "TransferredFileInfo: " +
+        "resumedAt=" + resumedAt +
+        ", fileSize=" + fileSize +
+        ", file=" + file;
+  }
 }

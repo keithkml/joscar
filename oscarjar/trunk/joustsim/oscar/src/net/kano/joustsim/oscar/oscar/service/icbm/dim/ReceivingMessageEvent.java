@@ -34,22 +34,15 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.dim;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
+public class ReceivingMessageEvent extends TransferringMessageEvent {
+  private String message;
 
-public class ReceivingMessageEvent extends RvConnectionEvent {
-  private int position;
-  private long length;
-
-  public ReceivingMessageEvent(int position, long length) {
-    this.position = position;
-    this.length = length;
+  public ReceivingMessageEvent(int position, long length, String message) {
+    super(position, length);
+    this.message = message;
   }
 
-  public int getPosition() {
-    return position;
-  }
-
-  public long getLength() {
-    return length;
+  public String getMessage() {
+    return message;
   }
 }

@@ -40,13 +40,20 @@ import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.CapabilityManager;
 import net.kano.joustsim.oscar.DefaultEnabledCapabilityHandler;
+import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.oscar.oscar.service.icbm.IcbmService;
 import net.kano.joustsim.oscar.oscar.service.icbm.RendezvousCapabilityHandler;
 import net.kano.joustsim.oscar.oscar.service.icbm.RendezvousSessionHandler;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.dim.IncomingDirectimConnectionImpl;
 import net.kano.joustsim.oscar.oscar.service.icbm.dim.OutgoingDirectimConnectionImpl;
 
+import java.util.logging.Logger;
+
 public class RvConnectionManager {
+  private static final Logger LOGGER = Logger
+      .getLogger(RvConnectionManager.class.getName());
+
   private final IcbmService service;
   private CopyOnWriteArrayList<RvConnectionManagerListener> listeners
       = new CopyOnWriteArrayList<RvConnectionManagerListener>();
@@ -66,23 +73,27 @@ public class RvConnectionManager {
 
   public OutgoingFileTransfer createOutgoingFileTransfer(Screenname sn) {
     RvSession session = createSession(sn);
+    AimConnection conn = getIcbmService()
+        .getAimConnection();
     OutgoingFileTransferImpl outgoingFileTransfer
-        = new OutgoingFileTransferImpl(this, session);
+        = new OutgoingFileTransferImpl(conn.getProxy(), conn.getScreenname(),
+        session);
     session.addListener(outgoingFileTransfer.getRvSessionHandler());
     return outgoingFileTransfer;
   }
 
   public OutgoingDirectimConnectionImpl openDirectimConnection(Screenname sn) {
     RvSession session = createSession(sn);
-    OutgoingDirectimConnectionImpl outgoingFileTransfer
-        = new OutgoingDirectimConnectionImpl(this, session);
-    session.addListener(outgoingFileTransfer.getRvSessionHandler());
-    return outgoingFileTransfer;
+    AimConnection conn = getIcbmService().getAimConnection();
+    OutgoingDirectimConnectionImpl conno
+        = new OutgoingDirectimConnectionImpl(conn.getProxy(), conn.getScreenname(),
+        session);
+    session.addListener(conno.getRvSessionHandler());
+    return conno;
   }
 
   private RvSession createSession(Screenname sn) {
-    return service.getRvProcessor()
-        .createRvSession(sn.getFormatted());
+    return service.getRvProcessor().createRvSession(sn.getFormatted());
   }
 
   public void addConnectionManagerListener(RvConnectionManagerListener listener) {
@@ -97,7 +108,7 @@ public class RvConnectionManager {
     listeners.remove(listener);
   }
 
-  void fireNewIncomingConnection(IncomingRvConnection transfer) {
+  private void fireNewIncomingConnection(IncomingRvConnection transfer) {
     assert !Thread.holdsLock(this);
 
     for (RvConnectionManagerListener listener : listeners) {
@@ -105,13 +116,31 @@ public class RvConnectionManager {
     }
   }
 
+  private RvConnectionEventListener incomingListener = new RvConnectionEventListener() {
+    public void handleEventWithStateChange(RvConnection transfer,
+        RvConnectionState state, RvConnectionEvent event) {
+    }
+
+    public void handleEvent(RvConnection transfer, RvConnectionEvent event) {
+      if (event instanceof NewIncomingConnectionEvent) {
+        NewIncomingConnectionEvent incomingev
+            = (NewIncomingConnectionEvent) event;
+        fireNewIncomingConnection(incomingev.getConnection());
+      }
+    }
+  };
+
   private class FileTransferCapabilityHandler
       extends DefaultEnabledCapabilityHandler
       implements RendezvousCapabilityHandler {
     public RendezvousSessionHandler handleSession(IcbmService service,
         RvSession session) {
+      AimConnection conn = getIcbmService().getAimConnection();
       IncomingFileTransferImpl transfer = new IncomingFileTransferImpl(
-          RvConnectionManager.this, session);
+          conn.getProxy(), conn.getScreenname(), session);
+      LOGGER.fine("Creating IncomingFileTransferImpl for new session "
+          + session);
+      transfer.addTransferListener(incomingListener);
       return transfer.getRvSessionHandler();
     }
   }
@@ -121,11 +150,13 @@ public class RvConnectionManager {
       implements RendezvousCapabilityHandler {
     public RendezvousSessionHandler handleSession(IcbmService service,
         RvSession session) {
+      AimConnection conn = getIcbmService().getAimConnection();
       IncomingRvConnectionImpl transfer = new IncomingDirectimConnectionImpl(
-          RvConnectionManager.this, session);
+          conn.getProxy(), conn.getScreenname(), session);
+      LOGGER.fine("Creating IncomingDirectimConnectionImpl for new session "
+          + session);
+      transfer.addTransferListener(incomingListener);
       return transfer.getRvSessionHandler();
     }
-
   }
-
 }

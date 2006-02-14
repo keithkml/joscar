@@ -33,17 +33,19 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.state;
 
-import java.io.File;
-import java.util.Map;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.TransferredFile;
+
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
 
 public class ComputedChecksumsInfo extends SuccessfulStateInfo {
-    private final Map<File, Long> checksums;
+  private final Map<TransferredFile,Long> checksums;
 
-    public ComputedChecksumsInfo(Map<File, Long> checksums) {
-        this.checksums = Collections.unmodifiableMap(new HashMap<File, Long>(checksums));
-    }
+  public ComputedChecksumsInfo(Map<TransferredFile, Long> checksums) {
+    this.checksums = Collections
+        .unmodifiableMap(new HashMap<TransferredFile, Long>(checksums));
+  }
 
-    public Map<File, Long> getChecksums() { return checksums; }
+  public Map<TransferredFile,Long> getChecksums() { return checksums; }
 }

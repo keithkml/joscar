@@ -38,70 +38,69 @@ import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joscar.rvproto.rvproxy.RvProxyAckCmd;
 import net.kano.joscar.rvproto.rvproxy.RvProxyCmd;
 import net.kano.joscar.rvproto.rvproxy.RvProxyInitRecvCmd;
-import net.kano.joscar.rvproto.rvproxy.RvProxyPacket;
-import net.kano.joscar.snaccmd.CapabilityBlock;
-import net.kano.joustsim.oscar.AimConnection;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionImpl;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionManager;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvSessionConnectionInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectingToProxyEvent;
+import org.jetbrains.annotations.NotNull;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.InetAddress;
 
 public abstract class AbstractConnectToProxyController
-        extends AbstractProxyConnectionController
-        implements ManualTimeoutController {
-    protected void setConnectingState() {
-        int outPort = getConnectionPort();
-        InetAddress outAddr = getIpAddress();
-        getRvConnection().getEventPost().fireEvent(new ConnectingToProxyEvent(outAddr, outPort));
+    extends AbstractProxyConnectionController
+    implements ManualTimeoutController {
+
+  {
+    setConnector(new ConnectToProxyConnector());
+  }
+
+  protected void handleConnectingState() {
+    int outPort = getConnector().getConnectionPort();
+    InetAddress outAddr;
+    try {
+      outAddr = getConnector().getIpAddress();
+    } catch (IOException e) {
+      throw new IllegalStateException(e);
+    }
+    getRvConnection().getEventPost().fireEvent(
+        new ConnectingToProxyEvent(outAddr, outPort));
+  }
+
+  public ProxyConnector getConnector() {
+    return (ProxyConnector) super.getConnector();
+  }
+
+  protected void handleResolvingState() {
+  }
+
+  protected void handleAck(RvProxyAckCmd ackCmd) throws IOException {
+  }
+
+  protected void initializeProxy() throws IOException {
+    RvSessionConnectionInfo conn = getRvSessionInfo();
+    int port = conn.getConnectionInfo().getPort();
+    String mysn = getRvConnection().getMyScreenname().getNormal();
+    RvProxyCmd initCmd = new RvProxyInitRecvCmd(mysn,
+        conn.getRvSession().getRvSessionId(), port,
+        conn.getRvRequestMaker().getCapabilityBlock());
+    getProxyConnection().sendProxyPacket(initCmd);
+  }
+
+  public class ConnectToProxyConnector extends DefaultProxyConnector {
+    public @NotNull InetAddress getIpAddress() throws IllegalStateException {
+      RvConnectionInfo connInfo = getRvSessionInfo().getConnectionInfo();
+      if (!connInfo.isProxied()) {
+        throw new IllegalStateException("Connection is not proxied: " + connInfo);
+      }
+      InetAddress proxyIp = connInfo.getProxyIP();
+      if (proxyIp == null) {
+        throw new IllegalStateException(MiscTools.getClassName(this)
+            + " has invalid connection info: " + connInfo);
+      }
+      return proxyIp;
     }
 
-    protected void setResolvingState() {
+    public void checkConnectionInfo() throws Exception {
+      getIpAddress();
     }
-
-    protected void handleAck(RvProxyAckCmd ackCmd) throws IOException {
-    }
-
-    protected void initializeProxy() throws IOException {
-        OutputStream out = getStream().getOutputStream();
-
-        RvConnectionImpl conn = getRvConnection();
-        RvConnectionManager ftManager = conn.getRvConnectionManager();
-        AimConnection connection = ftManager.getIcbmService().getAimConnection();
-        int port = conn.getConnectionInfo().getPort();
-        String mysn = connection.getScreenname().getNormal();
-//        String otherSn = getFileTransfer().getRvSession().getScreenname();
-        RvProxyCmd initCmd = new RvProxyInitRecvCmd(
-                mysn, conn.getRvSession().getRvSessionId(), port,
-                CapabilityBlock.BLOCK_FILE_SEND);
-        RvProxyPacket packet = new RvProxyPacket(initCmd);
-        ByteArrayOutputStream bout = new ByteArrayOutputStream();
-        packet.write(bout);
-        bout.writeTo(out);
-    }
-
-    protected InetAddress getIpAddress() throws IllegalStateException {
-      RvConnectionInfo connInfo = getRvConnection().getConnectionInfo();
-        if (!connInfo.isProxied()) {
-            throw new IllegalStateException("connection is not proxied: "
-                    + connInfo);
-        }
-        InetAddress proxyIp = connInfo.getProxyIP();
-        if (proxyIp == null) {
-            throw new IllegalStateException(MiscTools.getClassName(this)
-                    + " has invalid connection info: " + connInfo);
-        }
-        return proxyIp;
-    }
-
-    protected void checkConnectionInfo() throws IllegalStateException {
-        if (getIpAddress() == null) {
-          throw new IllegalStateException("illegal connection info for "
-              + MiscTools.getClassName(this) + ": " 
-              + getRvConnection().getConnectionInfo());
-        }
-    }
+  }
 }

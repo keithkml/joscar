@@ -33,14 +33,14 @@
 
 package net.kano.joustsim.oscar.oscar.service.ssi;
 
+import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 
-import java.util.List;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Set;
 import java.util.HashSet;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.List;
+import java.util.Set;
 
 abstract class AbstractGroup implements Group {
     private final SimpleBuddyList buddyList;

@@ -35,12 +35,12 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
 import net.kano.joscar.rv.RecvRvEvent;
-import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rvcmd.AcceptRvCmd;
 import net.kano.joscar.rvcmd.ConnectionRequestRvCmd;
 import net.kano.joscar.rvcmd.RejectRvCmd;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
+import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectToProxyForIncomingController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ManualTimeoutController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.OutgoingConnectionController;
@@ -55,6 +55,7 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailureEventInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
+import net.kano.joustsim.oscar.proxy.AimProxyInfo;
 
 import java.util.logging.Logger;
 
@@ -68,9 +69,14 @@ public abstract class IncomingRvConnectionImpl
   private boolean rejected = false;
   private boolean alwaysRedirect = false;
 
-  public IncomingRvConnectionImpl(RvConnectionManager rvConnectionManager,
-      RvSession session) {
-    super(rvConnectionManager, session);
+  public IncomingRvConnectionImpl(Screenname screenname,
+      RvSessionConnectionInfo rvsessioninfo) {
+    this(AimProxyInfo.forNoProxy(), screenname, rvsessioninfo);
+  }
+
+  public IncomingRvConnectionImpl(AimProxyInfo proxy,
+      Screenname screenname, RvSessionConnectionInfo rvsessioninfo) {
+    super(proxy, screenname, rvsessioninfo);
   }
 
   public synchronized RvConnectionInfo getOriginalRemoteHostInfo() {
@@ -103,9 +109,10 @@ public abstract class IncomingRvConnectionImpl
       accepted = true;
 
       boolean onlyUsingProxy = getSettings().isOnlyUsingProxy();
-      if (!isAlwaysRedirectEnabled() && !onlyUsingProxy) {
+      boolean proxied = getRvSessionInfo().getConnectionInfo().isProxied();
+      if (!proxied && !isAlwaysRedirectEnabled() && !onlyUsingProxy) {
         controller = new OutgoingConnectionController(ConnectionType.LAN);
-      } else if (getSettings().isProxyRequestTrusted()) {
+      } else if (proxied && getSettings().isProxyRequestTrusted()) {
         controller = new ConnectToProxyForIncomingController();
       } else if (!onlyUsingProxy) {
         controller = new RedirectConnectionController();
@@ -114,22 +121,20 @@ public abstract class IncomingRvConnectionImpl
       }
     }
 
-    startStateController(controller);
     LOGGER.fine("Sending accept command to " + getBuddyScreenname());
-    getRvRequestMaker().sendRvAccept();
+    getRvSessionInfo().getRvRequestMaker().sendRvAccept();
+    startStateController(controller);
   }
 
   public void reject() throws IllegalStateException {
     synchronized (this) {
       if (accepted) {
-        //TODO: cancel the transfer when rejecting?
         throw new IllegalStateException("transfer was already accepted");
       }
       if (rejected) return;
       rejected = true;
-      close();
     }
-    getRvRequestMaker().sendRvReject();
+    close();
   }
 
   public synchronized StateController getNextStateController() {
@@ -163,7 +168,7 @@ public abstract class IncomingRvConnectionImpl
     if (oldController instanceof OutgoingConnectionController) {
       OutgoingConnectionController outController
           = (OutgoingConnectionController) oldController;
-      if (outController.getConnectionType() == ConnectionType.LAN) {
+      if (outController.getTimeoutType() == ConnectionType.LAN) {
         return new OutgoingConnectionController(ConnectionType.INTERNET);
 
       } else {
@@ -192,8 +197,8 @@ public abstract class IncomingRvConnectionImpl
       RvConnectionEvent event);
 
 
-  public abstract class IncomingRvSessionHandler extends AbstractRvSessionHandler {
-    public IncomingRvSessionHandler() {
+  public abstract class AbstractIncomingRvSessionHandler extends AbstractRvSessionHandler {
+    public AbstractIncomingRvSessionHandler() {
       super(IncomingRvConnectionImpl.this);
     }
 
@@ -204,8 +209,7 @@ public abstract class IncomingRvConnectionImpl
       setState(RvConnectionState.FAILED, evt);
     }
 
-    protected void handleIncomingAccept(RecvRvEvent event,
-        AcceptRvCmd acceptCmd) {
+    protected void handleIncomingAccept(RecvRvEvent event,AcceptRvCmd acceptCmd) {
       ManualTimeoutController mtc = null;
       synchronized (this) {
         StateController controller = getStateController();
@@ -224,17 +228,16 @@ public abstract class IncomingRvConnectionImpl
 
         RvConnectionInfo connInfo = reqCmd.getConnInfo();
         setOriginalRemoteHostInfo(connInfo);
-        setConnectionInfo(connInfo);
-        putTransferProperty(RvConnectionPropertyHolder.KEY_REDIRECTED, false);
+        getRvSessionInfo().setConnectionInfo(connInfo);
+        getRvSessionInfo().setInitiator(Initiator.BUDDY);
 
-        RvConnectionManager rvmgr = getRvConnectionManager();
-        rvmgr.fireNewIncomingConnection(IncomingRvConnectionImpl.this);
+        fireEvent(new NewIncomingConnectionEvent(IncomingRvConnectionImpl.this));
 
       } else if (index > FileSendReqRvCmd.REQINDEX_FIRST) {
-        RvConnectionImpl.HowToConnect how = processRedirect(reqCmd);
-        if (how == RvConnectionImpl.HowToConnect.PROXY) {
+        HowToConnect how = processRedirect(reqCmd);
+        if (how == HowToConnect.PROXY) {
           changeStateController(new ConnectToProxyForIncomingController());
-        } else if (how == RvConnectionImpl.HowToConnect.NORMAL) {
+        } else if (how == HowToConnect.NORMAL) {
           changeStateController(
               new OutgoingConnectionController(ConnectionType.LAN));
         } else {
@@ -248,9 +251,4 @@ public abstract class IncomingRvConnectionImpl
 
     protected abstract void handleFirstRequest(ConnectionRequestRvCmd reqCmd);
   }
-}
-
-//TODO: file this bug
-abstract class Tester {
-  abstract void ttt();
 }

@@ -42,11 +42,10 @@ import static net.kano.joscar.rvproto.ft.FileTransferHeader.HEADERTYPE_RESUME_SE
 import static net.kano.joscar.rvproto.ft.FileTransferHeader.HEADERTYPE_SENDHEADER;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.Checksummer;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FailureEventException;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileMapper;
-import static net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionPropertyHolder.KEY_REDIRECTED;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.IncomingFileTransfer;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvSessionBasedConnection;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionPropertyHolder;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnection;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvSessionConnectionInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.Initiator;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ChecksummingEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.CorruptTransferEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
@@ -55,48 +54,40 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ResumeChecksumFailed
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferredFileInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferringFileEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownErrorEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.TransferSucceededInfo;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
-import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
-//TODO: look into resource forks
-
+//TOLATER: look into resource forks
 public class ReceiveFileController extends TransferController {
   private static final Logger LOGGER = Logger
       .getLogger(ReceiveFileController.class.getName());
+  private IncomingFileTransferPlumber plumber = null;
 
-  protected void transferInThread(StreamInfo stream,
-      RvConnectionPropertyHolder transfer)
+  public void setPlumber(IncomingFileTransferPlumber plumber) {
+    this.plumber = plumber;
+  }
+
+  protected void transferInThread(RvConnection rvtransfer)
       throws IOException, FailureEventException {
-    SocketChannel socketChan = stream.getSocketChannel();
-    socketChan.configureBlocking(true);
+    RvSessionConnectionInfo conninfo = rvtransfer.getRvSessionInfo();
+    IncomingFileTransfer itransfer = (IncomingFileTransfer) rvtransfer;
+    if (plumber == null) {
+      plumber = new IncomingFileTransferPlumberImpl(itransfer, this);
+    }
 
-    InputStream socketIn = stream.getInputStream();
-    OutputStream socketOut = stream.getOutputStream();
-
-    List<File> files = new ArrayList<File>();
-    RvSessionBasedConnection rvConnection = (RvSessionBasedConnection) transfer;
-    EventPost eventpost = transfer.getEventPost();
-    IncomingFileTransfer itransfer = (IncomingFileTransfer) transfer;
-    long icbmId = rvConnection.getRvSession().getRvSessionId();
-    boolean good = false;
-    boolean redirected = transfer.getTransferProperty(KEY_REDIRECTED)
-        == Boolean.TRUE;
+    List<TransferredFile> files = new ArrayList<TransferredFile>();
+    EventPost eventpost = itransfer.getEventPost();
+    long icbmId = conninfo.getRvSession().getRvSessionId();
+    boolean finished = false;
     boolean stop = false;
-    for (; !stop && !shouldStop();) {
+    while (!stop && !shouldStop()) {
       LOGGER.fine("Waiting for next FT packet");
-      FileTransferHeader sendheader = FileTransferHeader
-          .readHeader(socketIn);
+      FileTransferHeader sendheader = plumber.readHeader();
 
       if (sendheader == null) {
         LOGGER.info("Couldn't read FT header");
@@ -104,7 +95,7 @@ public class ReceiveFileController extends TransferController {
       }
       assert sendheader.getHeaderType() == HEADERTYPE_SENDHEADER;
       long desiredChecksum = sendheader.getChecksum();
-      if (redirected) {
+      if (rvtransfer.getRvSessionInfo().getInitiator() == Initiator.ME) {
         long sentid = sendheader.getIcbmMessageId();
         if (sentid != icbmId) {
           LOGGER.info("Other end sent " + sentid + " but we're looking for "
@@ -115,91 +106,83 @@ public class ReceiveFileController extends TransferController {
       setConnected();
 
       SegmentedFilename segName = sendheader.getFilename();
-      List<String> parts = segName.getSegments();
-      File destFile;
-      FileMapper fileMapper = itransfer.getFileMapper();
-      if (parts.size() > 0) {
-        destFile = fileMapper.getDestinationFile(segName);
-      } else {
-        destFile = fileMapper.getUnspecifiedFilename();
-      }
+      TransferredFile destFile = plumber.getNativeFile(segName);
 
       files.add(destFile);
-      boolean attemptResume = destFile.exists();
-      RandomAccessFile raf = new RandomAccessFile(destFile, "rw");
-      FileChannel fileChannel = raf.getChannel();
+      boolean attemptResume = plumber.shouldAttemptResume(destFile);
+      FileChannel fileChannel = destFile.getChannel();
 
       long toDownload;
       if (attemptResume) {
-        FileTransferHeader outHeader = new FileTransferHeader(
-            sendheader);
+        FileTransferHeader outHeader = new FileTransferHeader(sendheader);
         outHeader.setHeaderType(HEADERTYPE_RESUME);
         outHeader.setIcbmMessageId(icbmId);
-        long len = raf.length();
+        long len = destFile.getSize();
         outHeader.setBytesReceived(len);
-        Checksummer summer = new Checksummer(fileChannel, len);
+        Checksummer summer = plumber.getChecksummer(destFile, len);
         eventpost.fireEvent(new ChecksummingEvent(destFile, summer));
         outHeader.setReceivedChecksum(summer.compute());
         outHeader.setCompression(0);
         outHeader.setEncryption(0);
-        outHeader.write(socketOut);
+        plumber.sendHeader(outHeader);
 
-        FileTransferHeader resumeResponse = FileTransferHeader
-            .readHeader(socketIn);
+        FileTransferHeader resumeResponse = plumber.readHeader();
         if (resumeResponse == null) {
+          LOGGER.info("Didn't receive resume response; connection closed");
           break;
         }
-        assert resumeResponse.getHeaderType()
-            == HEADERTYPE_RESUME_SENDHEADER
+        assert resumeResponse.getHeaderType() == HEADERTYPE_RESUME_SENDHEADER
             : resumeResponse.getHeaderType();
         long bytesReceived = resumeResponse.getBytesReceived();
+        // this is an assertion rather than exception because we check it
+        // for real immediately afterwards
         assert bytesReceived <= len : "sender is trying to trick us: "
             + bytesReceived + " > " + len;
         if (bytesReceived != len) {
           eventpost.fireEvent(new ResumeChecksumFailedEvent(destFile));
         }
         fileChannel.position(bytesReceived);
-        raf.setLength(bytesReceived);
-        toDownload = resumeResponse.getFileSize()
-            - bytesReceived;
+        fileChannel.truncate(bytesReceived);
+        toDownload = resumeResponse.getFileSize() - bytesReceived;
         FileTransferHeader finalResponse = new FileTransferHeader(
             resumeResponse);
         finalResponse.setHeaderType(HEADERTYPE_RESUME_ACK);
-        finalResponse.write(socketOut);
+        plumber.sendHeader(finalResponse);
 
       } else {
         // not resuming
         FileTransferHeader outHeader = new FileTransferHeader(sendheader);
         outHeader.setIcbmMessageId(icbmId);
-        raf.setLength(0);
+        fileChannel.truncate(0);
         outHeader.setHeaderType(HEADERTYPE_ACK);
         outHeader.setBytesReceived(0);
         outHeader.setReceivedChecksum(0);
         outHeader.setCompression(0);
         outHeader.setEncryption(0);
         outHeader.setFlags(0);
-        outHeader.write(socketOut);
+        plumber.sendHeader(outHeader);
         toDownload = sendheader.getFileSize();
       }
 
       long startedAt = fileChannel.position();
-      Receiver receiver = new FileReceiver(fileChannel, startedAt, toDownload);
+      Transferrer receiver = plumber
+          .createTransferrer(destFile, startedAt, toDownload);
       TransferredFileInfo info = new TransferredFileInfo(destFile,
           startedAt + toDownload, startedAt);
       eventpost.fireEvent(new TransferringFileEvent(info, receiver));
-      int downloaded = receiver.receive(socketChan);
+      long downloaded = receiver.transfer();
       if (downloaded != toDownload) {
+        LOGGER.fine("Didn't download correct number of bytes: downloaded "
+            + downloaded + ", wanted " + toDownload);
         break;
       }
 
-      Checksummer summer = new Checksummer(fileChannel,
-          startedAt + downloaded);
+      long sumLength = startedAt + downloaded;
+      Checksummer summer = plumber.getChecksummer(destFile, sumLength);
       eventpost.fireEvent(new ChecksummingEvent(destFile, summer));
       long calculatedSum = summer.compute();
 
-      fileChannel.close();
-      raf.close();
-
+      destFile.close();
 
       boolean failed = calculatedSum != desiredChecksum;
       if (!failed) eventpost.fireEvent(new FileCompleteEvent(info));
@@ -217,7 +200,7 @@ public class ReceiveFileController extends TransferController {
         }
         doneHeader.setBytesReceived(startedAt + downloaded);
         doneHeader.setReceivedChecksum(calculatedSum);
-        doneHeader.write(socketOut);
+        plumber.sendHeader(doneHeader);
       } finally {
         if (failed) {
           fireFailed(new CorruptTransferEvent(info));
@@ -227,7 +210,7 @@ public class ReceiveFileController extends TransferController {
       int filesLeft = doneHeader.getFilesLeft();
       int partsLeft = doneHeader.getPartsLeft();
       if (filesLeft == 0 && partsLeft == 0) {
-        good = true;
+        finished = true;
         break;
       } else {
         LOGGER.info(
@@ -235,33 +218,10 @@ public class ReceiveFileController extends TransferController {
       }
     }
 
-    if (good) {
+    if (finished) {
       fireSucceeded(new TransferSucceededInfo(files));
     } else {
       fireFailed(new UnknownErrorEvent());
-    }
-  }
-
-  private class FileReceiver extends Receiver {
-    private final FileChannel fileChannel;
-
-    public FileReceiver(FileChannel fileChannel, long offset, long length) {
-      super(offset, length);
-      this.fileChannel = fileChannel;
-    }
-
-    protected boolean isCancelled() {
-      return shouldStop();
-    }
-
-    protected boolean waitIfPaused() {
-      return waitUntilUnpause();
-    }
-
-    protected long transfer(SocketChannel socketIn, int downloaded,
-        long remaining) throws IOException {
-      return fileChannel.transferFrom(socketIn,
-          offset + downloaded, Math.min(1024, remaining));
     }
   }
 }

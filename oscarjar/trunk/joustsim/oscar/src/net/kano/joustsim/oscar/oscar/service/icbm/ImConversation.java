@@ -40,57 +40,47 @@ import net.kano.joustsim.oscar.AimConnection;
 
 import java.util.Date;
 
-public class ImConversation extends Conversation {
-    //TODO: store typing state, but think about whether the buddy is on our buddy list and we'll get signon/off notifications
-    private final AimConnection conn;
+public class ImConversation extends Conversation implements
+    TypingNotificationConversation {
+  private final AimConnection conn;
 
-    ImConversation(AimConnection conn, Screenname buddy) {
-        super(buddy);
-        this.conn = conn;
+  ImConversation(AimConnection conn, Screenname buddy) {
+    super(buddy);
+    this.conn = conn;
 
-        setAlwaysOpen();
+    setAlwaysOpen();
+  }
+
+  public void sendMessage(Message msg) throws ConversationException {
+    IcbmService service = conn.getIcbmService();
+    if (service == null) {
+      throw new ConversationException("no ICBM service to send to", this);
     }
+    service.sendIM(getBuddy(), msg.getMessageBody(), msg.isAutoResponse());
+    fireOutgoingEvent(ImMessageInfo.getInstance(conn.getScreenname(),
+        getBuddy(), msg, new Date()));
+  }
 
-    public void sendMessage(Message msg) throws ConversationException {
-        IcbmService service = conn.getIcbmService();
-        if (service == null) {
-            throw new ConversationException("no ICBM service to send to", this);
-        }
-        service.sendIM(getBuddy(), msg.getMessageBody(), msg.isAutoResponse());
-        fireOutgoingEvent(ImMessageInfo.getInstance(conn.getScreenname(),
-                getBuddy(), msg, new Date()));
+  protected void handleIncomingEvent(ConversationEventInfo event) {
+    assert !Thread.holdsLock(this);
+
+    super.handleIncomingEvent(event);
+  }
+
+  public void setTypingState(TypingState typingState) {
+    conn.getIcbmService().sendTypingStatus(getBuddy(), typingState);
+    fireOutgoingEvent(new TypingInfo(conn.getScreenname(), getBuddy(),
+        new Date(), typingState));
+  }
+
+  public void handleMissedMsg(MissedImInfo info) {
+    for (ConversationListener listener : getListeners()) {
+      if (listener instanceof ImConversationListener) {
+        ImConversationListener imlistener
+            = (ImConversationListener) listener;
+
+        imlistener.missedMessages(this, info);
+      }
     }
-
-    protected void handleIncomingEvent(ConversationEventInfo event) {
-        assert !Thread.holdsLock(this);
-
-        super.handleIncomingEvent(event);
-
-        if (event instanceof TypingInfo) {
-            TypingInfo typingInfo = (TypingInfo) event;
-            for (ConversationListener listener : getListeners()) {
-                if (listener instanceof TypingListener) {
-                    TypingListener typingListener = (TypingListener) listener;
-                    typingListener.gotTypingState(this, typingInfo);
-                }
-            }
-        }
-    }
-
-    public void setTypingState(TypingState typingState) {
-        conn.getIcbmService().sendTypingStatus(getBuddy(), typingState);
-        fireOutgoingEvent(new TypingInfo(conn.getScreenname(), getBuddy(),
-                new Date(), typingState));
-    }
-
-    public void handleMissedMsg(MissedImInfo info) {
-        for (ConversationListener listener : getListeners()) {
-            if (listener instanceof ImConversationListener) {
-                ImConversationListener imlistener
-                        = (ImConversationListener) listener;
-
-                imlistener.missedMessages(this, info);
-            }
-        }
-    }
+  }
 }

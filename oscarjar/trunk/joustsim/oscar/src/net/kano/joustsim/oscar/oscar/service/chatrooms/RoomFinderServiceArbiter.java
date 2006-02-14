@@ -77,7 +77,6 @@ public class RoomFinderServiceArbiter
 
   protected void processRequest(RoomFinderService service,
       ServiceArbiterRequest request) {
-    //TODO: fire events
     if (request instanceof JoinRoomRequest) {
       JoinRoomRequest req = (JoinRoomRequest) request;
       service.joinChatRoom(req.getExchange(), req.getRoomName());
@@ -85,11 +84,11 @@ public class RoomFinderServiceArbiter
     } else if (request instanceof AcceptInvitationRequest) {
       AcceptInvitationRequest invitationRequest
           = (AcceptInvitationRequest) request;
-      service.joinChatRoom(invitationRequest.getRoomInfo());
+      service.joinChatRoom(invitationRequest.roomInfo);
       
     } else if (request instanceof GetInfoRequest) {
       GetInfoRequest infoRequest = (GetInfoRequest) request;
-      service.requestRoomInfo(infoRequest.getRoomInfo());
+      service.requestRoomInfo(infoRequest.roomInfo);
     }
   }
 
@@ -140,9 +139,7 @@ public class RoomFinderServiceArbiter
       JoinRoomRequest that = (JoinRoomRequest) o;
 
       if (exchange != that.exchange) return false;
-      if (!roomName.equals(that.roomName)) return false;
-
-      return true;
+      return roomName.equals(that.roomName);
     }
 
     public int hashCode() {
@@ -154,24 +151,18 @@ public class RoomFinderServiceArbiter
 
   private static class AcceptInvitationRequest
       implements ServiceArbiterRequest {
-    private final FullRoomInfo roomInfo;
+    public final FullRoomInfo roomInfo;
 
     public AcceptInvitationRequest(FullRoomInfo roomInfo) {
       this.roomInfo = roomInfo;
     }
-
-    public FullRoomInfo getRoomInfo() { return roomInfo; }
   }
 
   private static class GetInfoRequest implements ServiceArbiterRequest {
-    private MiniRoomInfo roomInfo;
+    public final MiniRoomInfo roomInfo;
 
     public GetInfoRequest(MiniRoomInfo roomInfo) {
       this.roomInfo = roomInfo;
-    }
-
-    public MiniRoomInfo getRoomInfo() {
-      return roomInfo;
     }
   }
 

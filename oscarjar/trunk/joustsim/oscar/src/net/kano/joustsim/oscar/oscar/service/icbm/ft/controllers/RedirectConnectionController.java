@@ -35,8 +35,8 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
 import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.ConnectionType;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionImpl;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionPropertyHolder;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvSessionConnectionInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.Initiator;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -44,16 +44,15 @@ import java.net.InetAddress;
 public class RedirectConnectionController extends PassiveConnectionController {
   protected void sendRequest() throws IOException {
     RvConnectionInfo connInfo = RvConnectionInfo
-        .createForOutgoingRequest(InetAddress.getLocalHost(),
-            getServerSocket().getLocalPort());
-    RvConnectionImpl transfer = getRvConnection();
+        .createForOutgoingRequest(InetAddress.getLocalHost(), getConnector().getLocalPort());
+    RvSessionConnectionInfo transfer = getRvSessionInfo();
     transfer.setConnectionInfo(connInfo);
-    transfer.putTransferProperty(RvConnectionPropertyHolder.KEY_REDIRECTED, true);
+    transfer.setInitiator(Initiator.ME);
     int newIndex = transfer.increaseRequestIndex();
     transfer.getRvRequestMaker().sendRvRequest(newIndex);
   }
 
-  protected ConnectionType getConnectionType() {
+  public ConnectionType getTimeoutType() {
     return ConnectionType.INCOMING;
   }
 }

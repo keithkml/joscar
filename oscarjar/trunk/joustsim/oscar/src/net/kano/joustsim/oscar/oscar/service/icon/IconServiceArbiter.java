@@ -46,115 +46,105 @@ import net.kano.joustsim.oscar.oscar.service.ServiceArbiterRequest;
 import net.kano.joustsim.oscar.oscar.service.ServiceArbitrationManager;
 
 public class IconServiceArbiter extends AbstractServiceArbiter<IconService>
-        implements IconRequestHandler {
-    private CopyOnWriteArrayList<IconRequestListener> listeners
-            = new CopyOnWriteArrayList<IconRequestListener>();
-    private IconRequestListener delegatingListener
-            = JavaTools.getDelegatingProxy(listeners, IconRequestListener.class);
+    implements IconRequestHandler {
+  private CopyOnWriteArrayList<IconRequestListener> listeners
+      = new CopyOnWriteArrayList<IconRequestListener>();
+  private IconRequestListener delegatingListener
+      = JavaTools.getDelegatingProxy(listeners, IconRequestListener.class);
 
-    public IconServiceArbiter(ServiceArbitrationManager manager) {
-        super(manager);
-    }
+  public IconServiceArbiter(ServiceArbitrationManager manager) {
+    super(manager);
+  }
 
-    public int getSnacFamily() {
-        return IconCommand.FAMILY_ICON;
-    }
+  public int getSnacFamily() {
+    return IconCommand.FAMILY_ICON;
+  }
 
-    protected boolean shouldKeepAliveSub() { return false; }
+  protected boolean shouldKeepAliveSub() { return false; }
 
-    public void addIconRequestListener(IconRequestListener listener) {
-        listeners.addIfAbsent(listener);
-    }
+  public void addIconRequestListener(IconRequestListener listener) {
+    listeners.addIfAbsent(listener);
+  }
 
-    public void removeIconRequestListener(IconRequestListener listener) {
-        listeners.remove(listener);
-    }
+  public void removeIconRequestListener(IconRequestListener listener) {
+    listeners.remove(listener);
+  }
 
-    public void requestIcon(Screenname sn, ExtraInfoData hashBlock) {
-        addRequest(new RequestedIconInfo(sn, hashBlock));
-    }
+  public void requestIcon(Screenname sn, ExtraInfoData hashBlock) {
+    addRequest(new RequestedIconInfo(sn, hashBlock));
+  }
 
-    public void uploadIcon(Writable data) {
-        addUniqueRequest(new UploadIconRequest(data), UploadIconRequest.class);
-    }
+  public void uploadIcon(Writable data) {
+    addUniqueRequest(new UploadIconRequest(data), UploadIconRequest.class);
+  }
 
-    protected void handleRequestsDequeuedEvent(IconService service) {
-    }
+  protected void handleRequestsDequeuedEvent(IconService service) {
+  }
 
-    protected void processRequest(IconService service,
-            ServiceArbiterRequest request) {
-        if (request instanceof RequestedIconInfo) {
-            RequestedIconInfo iconInfo = (RequestedIconInfo) request;
-            service.requestIcon(iconInfo.getScreenname(),
-                    iconInfo.getIconHash());
-        } else if (request instanceof UploadIconRequest) {
-            UploadIconRequest uploadReq = (UploadIconRequest) request;
+  protected void processRequest(IconService service,
+      ServiceArbiterRequest request) {
+    if (request instanceof RequestedIconInfo) {
+      RequestedIconInfo iconInfo = (RequestedIconInfo) request;
+      service.requestIcon(iconInfo.screenname,
+          iconInfo.iconHash);
+    } else if (request instanceof UploadIconRequest) {
+      UploadIconRequest uploadReq = (UploadIconRequest) request;
 
-            service.uploadIcon(uploadReq.getIconData(), new IconSetListener() {
-                public void handleIconSet(IconService service, Writable data,
-                        boolean succeeded) {
-                    synchronized(this) {
-                        UploadIconRequest req = getRequest(UploadIconRequest.class);
-                        if (req != null && req.getIconData() == data) {
-                            removeRequest(req);
-                        }
-                    }
-                }
-            });
+      service.uploadIcon(uploadReq.data, new IconSetListener() {
+        public void handleIconSet(IconService service, Writable data,
+            boolean succeeded) {
+          synchronized (this) {
+            UploadIconRequest req = getRequest(UploadIconRequest.class);
+            if (req != null && req.data == data) {
+              removeRequest(req);
+            }
+          }
         }
+      });
+    }
+  }
+
+  protected IconService createServiceInstance(AimConnection aimConnection,
+      OscarConnection conn) {
+    IconService service = new IconService(aimConnection, conn);
+    service.addIconRequestListener(delegatingListener);
+    return service;
+  }
+
+  private static class RequestedIconInfo implements ServiceArbiterRequest {
+    public final Screenname screenname;
+    public final ExtraInfoData iconHash;
+
+    public RequestedIconInfo(Screenname screenname, ExtraInfoData iconHash) {
+      this.iconHash = iconHash;
+      this.screenname = screenname;
     }
 
-    protected IconService createServiceInstance(AimConnection aimConnection,
-            OscarConnection conn) {
-        IconService service = new IconService(aimConnection, conn);
-        service.addIconRequestListener(delegatingListener);
-        return service;
+    @SuppressWarnings({"RedundantIfStatement"})
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+
+      RequestedIconInfo that = (RequestedIconInfo) o;
+
+      if (!iconHash.equals(that.iconHash)) return false;
+      if (!screenname.equals(that.screenname)) return false;
+
+      return true;
     }
 
-    private static class RequestedIconInfo implements ServiceArbiterRequest {
-        private final Screenname screenname;
-        private final ExtraInfoData iconHash;
-
-        public RequestedIconInfo(Screenname screenname, ExtraInfoData iconHash) {
-            this.iconHash = iconHash;
-            this.screenname = screenname;
-        }
-
-        public ExtraInfoData getIconHash() {
-            return iconHash;
-        }
-
-        public Screenname getScreenname() {
-            return screenname;
-        }
-
-        @SuppressWarnings({"RedundantIfStatement"}) 
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            RequestedIconInfo that = (RequestedIconInfo) o;
-
-            if (!iconHash.equals(that.iconHash)) return false;
-            if (!screenname.equals(that.screenname)) return false;
-
-            return true;
-        }
-
-        public int hashCode() {
-            int result = screenname.hashCode();
-            result = 29 * result + iconHash.hashCode();
-            return result;
-        }
+    public int hashCode() {
+      int result = screenname.hashCode();
+      result = 29 * result + iconHash.hashCode();
+      return result;
     }
+  }
 
-    private static class UploadIconRequest implements ServiceArbiterRequest {
-        private final Writable data;
+  private static class UploadIconRequest implements ServiceArbiterRequest {
+    public final Writable data;
 
-        public UploadIconRequest(Writable data) {
-            this.data = data;
-        }
-
-        public Writable getIconData() { return data; }
+    public UploadIconRequest(Writable data) {
+      this.data = data;
     }
+  }
 }

@@ -35,35 +35,28 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.dim;
 
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
-import net.kano.joscar.ByteBlock;
 
 public class ReceivingAttachmentEvent extends RvConnectionEvent {
-  private final int totalpos;
-  private final int totallen;
-  private final String id;
-  private final int attachpos;
-  private final int attachlen;
-  private final ByteBlock data;
+  private final long totalpos;
+  private final long totallen;
+  private final long attachpos;
+  private AttachmentDestination attachmentDestination;
 
-  public ReceivingAttachmentEvent(int totalpos, int totallen, String id,
-      int attachpos, int attachlen, ByteBlock data) {
+  public ReceivingAttachmentEvent(long totalpos, long totallen,
+      long attachpos, AttachmentDestination dest) {
     this.totalpos = totalpos;
     this.totallen = totallen;
-    this.id = id;
     this.attachpos = attachpos;
-    this.attachlen = attachlen;
-    this.data = data;
+    attachmentDestination = dest;
   }
 
-  public int getTotalPosition() { return totalpos; }
+  public long getTotalPosition() { return totalpos; }
 
-  public int getTotalLength() { return totallen; }
+  public long getTotalLength() { return totallen; }
 
-  public String getAttachmentId() { return id; }
+  public long getAttachmentReceived() { return attachpos; }
 
-  public int getAttachmentReceived() { return attachpos; }
-
-  public int getAttachmentLength() { return attachlen; }
-
-  public ByteBlock getAttachmentBuffer() { return data; }
+  public AttachmentDestination getAttachmentDestination() {
+    return attachmentDestination;
+  }
 }

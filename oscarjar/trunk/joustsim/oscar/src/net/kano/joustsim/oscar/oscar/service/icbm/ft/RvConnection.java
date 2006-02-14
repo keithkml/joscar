@@ -2,6 +2,7 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 
 /**
  * Created by IntelliJ IDEA.
@@ -11,16 +12,25 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
  * To change this template use File | Settings | File Templates.
  */
 public interface RvConnection {
-  RvConnectionManager getRvConnectionManager();
-
   Screenname getBuddyScreenname();
 
   boolean close();
 
+  void close(RvConnectionEvent error);
+
   void addTransferListener(RvConnectionEventListener listener);
+
   void removeTransferListener(RvConnectionEventListener listener);
 
   EventPost getEventPost();
 
   RvConnectionSettings getSettings();
+
+  Screenname getMyScreenname();
+
+  RvSessionConnectionInfo getRvSessionInfo();
+
+  TimeoutHandler getTimeoutHandler();
+
+  RvConnectionState getState();
 }

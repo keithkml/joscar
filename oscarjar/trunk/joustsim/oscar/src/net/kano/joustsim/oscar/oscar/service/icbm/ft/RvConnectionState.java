@@ -35,6 +35,9 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
 public class RvConnectionState {
+  /**
+   * A state indicating that the connection has not started anything yet.
+   */
   public static final RvConnectionState WAITING = new RvConnectionState("WAITING");
   public static final RvConnectionState PREPARING = new RvConnectionState("PREPARING");
   public static final RvConnectionState CONNECTING = new RvConnectionState("CONNECTING");

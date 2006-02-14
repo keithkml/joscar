@@ -41,9 +41,11 @@ import java.util.Map;
 import java.util.HashMap;
 
 public class RvConnectionSettings {
+  private static final long DEFAULT_RV_CONNECTION_TIMEOUT = 10 * 1000;
+
   private boolean onlyUsingProxy = false;
   private boolean proxyRequestTrusted = true;
-  private long perConnectionTimeout = 10000;
+  private long perConnectionTimeout = DEFAULT_RV_CONNECTION_TIMEOUT;
   private Map<ConnectionType, Long> timeouts
       = new HashMap<ConnectionType, Long>();
   private AimProxyInfo proxyInfo;

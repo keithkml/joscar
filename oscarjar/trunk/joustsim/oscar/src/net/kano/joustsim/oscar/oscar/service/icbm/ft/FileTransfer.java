@@ -36,7 +36,7 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 import net.kano.joscar.rvcmd.sendfile.FileSendBlock;
 import net.kano.joscar.rvcmd.InvitationMessage;
 
-public interface FileTransfer extends RvSessionBasedConnection {
+public interface FileTransfer extends RvConnection {
   InvitationMessage getInvitationMessage();
   FileSendBlock getFileInfo();
 }

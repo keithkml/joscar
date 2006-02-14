@@ -72,11 +72,9 @@ import java.util.logging.Logger;
 import java.util.logging.Level;
 
 public class ExternalServiceManager {
-  //TODO: make opened services fire the AimConnection's OpenedServiiceListnener
-
   private static final Logger LOGGER = Logger
       .getLogger(ExternalServiceManager.class.getName());
-  private static final int DEFAULT_SERVICE_TIMEOUT = 10000;
+  private static final int DEFAULT_SERVICE_TIMEOUT = 10 * 1000;
 
   public static int fixPort(int port) {
     int usePort;
@@ -151,11 +149,18 @@ public class ExternalServiceManager {
     });
   }
 
+  public int getServiceConnectionTimeout() {
+    return serviceConnectionTimeout;
+  }
+
+  public void setServiceConnectionTimeout(int serviceConnectionTimeout) {
+    this.serviceConnectionTimeout = serviceConnectionTimeout;
+  }
+
   private Timer initializeServiceTimer() {
     Timer serviceTimer = new Timer(true);
     serviceTimer.scheduleAtFixedRate(new TimerTask() {
       public void run() {
-        //TODO: use configurable connection timeout
         Set<Integer> retry = new HashSet<Integer>();
         synchronized (this) {
           long time = System.currentTimeMillis();

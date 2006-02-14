@@ -35,18 +35,28 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.dim;
 
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
-import net.kano.joscar.ByteBlock;
 
 public class ReceivedAttachmentEvent extends RvConnectionEvent {
   private final String id;
-  private final ByteBlock data;
+  private final long size;
+  private AttachmentDestination destination;
 
-  public ReceivedAttachmentEvent(String id, ByteBlock data) {
+  public ReceivedAttachmentEvent(String id, long size,
+      AttachmentDestination destination) {
     this.id = id;
-    this.data = data;
+    this.size = size;
+    this.destination = destination;
   }
 
-  public String getAttachmentId() { return id; }
+  public String getId() {
+    return id;
+  }
 
-  public ByteBlock getData() { return data; }
+  public long getSize() {
+    return size;
+  }
+
+  public AttachmentDestination getDestination() {
+    return destination;
+  }
 }

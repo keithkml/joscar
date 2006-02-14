@@ -33,9 +33,10 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-import java.io.File;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.TransferredFile;
+
 import java.io.IOException;
 
 public interface FileChecksummer {
-    long getChecksum(File file) throws IOException;
+  long getChecksum(TransferredFile file) throws IOException;
 }

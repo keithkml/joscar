@@ -35,37 +35,68 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.dim;
 
 import net.kano.joscar.rv.RvSession;
+import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.OutgoingRvConnectionImpl;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionManager;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionState;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvRequestMaker;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvSessionConnectionInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendOverProxyController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendPassivelyController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectionCompleteEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownErrorEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
+import net.kano.joustsim.oscar.proxy.AimProxyInfo;
+import org.jetbrains.annotations.Nullable;
 
 public class OutgoingDirectimConnectionImpl
     extends OutgoingRvConnectionImpl implements DirectimConnection {
-  public OutgoingDirectimConnectionImpl(RvConnectionManager rvConnectionManager,
-      RvSession session) {
-    super(rvConnectionManager, session);
+  private AttachmentSaver attachmentSaver = new SizeBasedAttachmentSaver();
+
+  public OutgoingDirectimConnectionImpl(AimProxyInfo proxy,
+      Screenname screenname, RvSessionConnectionInfo rvsessioninfo) {
+    super(proxy, screenname, rvsessioninfo);
   }
 
-  //TODO: the controllers send accept/reject/redirect messages
+  public OutgoingDirectimConnectionImpl(AimProxyInfo proxy,
+      Screenname screenname, RvSession session) {
+    this(proxy, screenname, new MutableSessionConnectionInfo(session));
+    ((MutableSessionConnectionInfo) getRvSessionInfo())
+        .setMaker(new DirectimRequestMaker(this));
+  }
+
   protected StateController getNextControllerFromUnknownError(
       StateController oldController, FailedStateInfo failedStateInfo,
       RvConnectionEvent event) {
-    return null;
+    if (oldController instanceof DirectimController) {
+      //TODO: retry dim with other controllers like file receiver does
+      queueStateChange(RvConnectionState.FAILED,
+          event == null ? new UnknownErrorEvent() : event);
+      return null;
+
+    } else {
+      throw new IllegalStateException("unknown previous controller "
+          + oldController);
+    }
   }
 
   protected StateController getNextControllerFromUnknownSuccess(
       StateController oldController, StateInfo endState) {
-    return null;
+    if (oldController instanceof DirectimController) {
+      queueStateChange(RvConnectionState.FINISHED,
+          new ConnectionCompleteEvent());
+      return null;
+
+    } else {
+      throw new IllegalStateException("unknown previous controller "
+          + oldController);
+    }
   }
 
-  protected StateController getConnectedController() {
-    return new DirectImController();
+  protected StateController createConnectedController() {
+    return new DirectimController();
   }
 
   public void sendRequest() {
@@ -78,5 +109,17 @@ public class OutgoingDirectimConnectionImpl
 
   public RvRequestMaker getRvRequestMaker() {
     return new DirectimRequestMaker(this);
+  }
+
+  @Nullable public DirectimController getDirectimController() {
+    return DirectimTools.getDirectimStateController(this);
+  }
+
+  public AttachmentSaver getAttachmentSaver() {
+    return attachmentSaver;
+  }
+
+  public void setAttachmentSaver(AttachmentSaver attachmentSaver) {
+    this.attachmentSaver = attachmentSaver;
   }
 }

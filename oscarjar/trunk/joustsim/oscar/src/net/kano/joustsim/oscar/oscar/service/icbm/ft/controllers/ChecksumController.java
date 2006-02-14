@@ -33,9 +33,10 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.Checksummer;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.ChecksummerImpl;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.OutgoingFileTransfer;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnection;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.Checksummer;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ChecksummingEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.ComputedChecksumsInfo;
 
@@ -49,16 +50,17 @@ import java.util.Map;
 public class ChecksumController extends StateController {
   public void start(RvConnection transfer, StateController last) {
     try {
-      Map<File, Long> checksums = new HashMap<File, Long>();
+      Map<TransferredFile, Long> checksums = new HashMap<TransferredFile, Long>();
       if (transfer instanceof OutgoingFileTransfer) {
         OutgoingFileTransfer otransfer = (OutgoingFileTransfer) transfer;
-        List<File> files = otransfer.getFiles();
-        for (File file : files) {
+        List<TransferredFile> files = otransfer.getFiles();
+        for (TransferredFile tfile : files) {
+          File file = tfile.getRealFile();
           RandomAccessFile raf = new RandomAccessFile(file, "r");
 
-          Checksummer summer = new Checksummer(raf.getChannel(), raf.length());
-          otransfer.getEventPost().fireEvent(new ChecksummingEvent(file, summer));
-          checksums.put(file, summer.compute());
+          Checksummer summer = new ChecksummerImpl(raf.getChannel(), raf.length());
+          otransfer.getEventPost().fireEvent(new ChecksummingEvent(tfile, summer));
+          checksums.put(tfile, summer.compute());
         }
       }
       fireSucceeded(new ComputedChecksumsInfo(checksums));

@@ -35,7 +35,11 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.dim;
 
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnection;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvSessionBasedConnection;
+import org.jetbrains.annotations.Nullable;
 
-public interface DirectimConnection extends RvConnection, RvSessionBasedConnection {
+public interface DirectimConnection extends RvConnection {
+  @Nullable DirectimController getDirectimController();
+
+  AttachmentSaver getAttachmentSaver();
+  void setAttachmentSaver(AttachmentSaver factory);
 }

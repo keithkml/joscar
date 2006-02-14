@@ -35,57 +35,57 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
 import net.kano.joscar.rvproto.rvproxy.RvProxyCmd;
 import net.kano.joscar.rvproto.rvproxy.RvProxyInitSendCmd;
-import net.kano.joscar.rvproto.rvproxy.RvProxyPacket;
 import net.kano.joscar.snaccmd.CapabilityBlock;
-import net.kano.joustsim.oscar.AimConnection;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionImpl;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionManager;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvSessionConnectionInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectingToProxyEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ResolvingProxyEvent;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.InetAddress;
 
-public abstract class InitiateProxyController extends AbstractProxyConnectionController {
-    private InetAddress proxyAddr;
+public abstract class InitiateProxyController
+    extends AbstractProxyConnectionController {
+  private static final String AOL_PROXY_HOST = "ars.oscar.aol.com";
 
-    protected synchronized InetAddress getIpAddress() throws IOException {
+  private InetAddress proxyAddr = null;
+
+  private String aolProxyHost = AOL_PROXY_HOST;
+
+  {
+    setConnector(new DefaultProxyConnector() {
+      public InetAddress getIpAddress() throws IOException {
         if (proxyAddr == null) {
-            proxyAddr = InetAddress.getByName(getProxyHost());
+          proxyAddr = InetAddress.getByName(aolProxyHost);
         }
         return proxyAddr;
-    }
+      }
 
+      public void checkConnectionInfo() throws Exception {
+      }
+    });
+  }
 
-    private String getProxyHost() {
-        return "ars.oscar.aol.com";
-    }
+  protected void initializeProxy() throws IOException {
+    RvSessionConnectionInfo transfer = getRvSessionInfo();
+    RvProxyCmd initCmd = new RvProxyInitSendCmd(
+        getRvConnection().getMyScreenname().getNormal(),
+        transfer.getRvSession().getRvSessionId(),
+        CapabilityBlock.BLOCK_FILE_SEND);
+    getProxyConnection().sendProxyPacket(initCmd);
+  }
 
-    protected void initializeProxy() throws IOException {
-        OutputStream out = getStream().getOutputStream();
-        RvConnectionImpl transfer = getRvConnection();
-        RvConnectionManager ftManager = transfer.getRvConnectionManager();
-        AimConnection connection = ftManager.getIcbmService().getAimConnection();
-        RvProxyCmd initCmd = new RvProxyInitSendCmd(
-                connection.getScreenname().getNormal(),
-                transfer.getRvSession().getRvSessionId(),
-                CapabilityBlock.BLOCK_FILE_SEND);
-        RvProxyPacket packet = new RvProxyPacket(initCmd);
-        ByteArrayOutputStream bout = new ByteArrayOutputStream();
-        packet.write(bout);
-        bout.writeTo(out);
-    }
+  protected void handleResolvingState() {
+    EventPost post = getRvConnection().getEventPost();
+    post.fireEvent(new ResolvingProxyEvent(aolProxyHost));
+  }
 
-    protected void setResolvingState() {
-        getRvConnection().getEventPost().fireEvent(new ResolvingProxyEvent(getProxyHost()));
+  protected void handleConnectingState() {
+    try {
+      getRvConnection().getEventPost().fireEvent(
+          new ConnectingToProxyEvent(getConnector().getIpAddress(),
+              getConnector().getConnectionPort()));
+    } catch (IOException e) {
     }
-
-    protected void setConnectingState() {
-        try {
-            getRvConnection().getEventPost().fireEvent(new ConnectingToProxyEvent(getIpAddress(), getConnectionPort()));
-        } catch (IOException e) {
-        }
-    }
+  }
 }

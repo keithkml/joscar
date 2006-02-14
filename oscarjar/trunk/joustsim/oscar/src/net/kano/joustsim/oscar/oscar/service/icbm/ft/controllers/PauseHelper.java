@@ -32,51 +32,12 @@
  * File created by keithkml
  */
 
-/*
- * Created by IntelliJ IDEA.
- * User: keithkml
- * Date: Jan 18, 2006
- * Time: 8:50:55 PM
- */
-
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
-public class PauseHelper {
-  private final Object pauseLock = new Object();
-  private volatile boolean paused = false;
+public interface PauseHelper {
+  void setPaused(boolean newPaused);
 
-  public void setPaused(boolean newPaused) {
-    synchronized (pauseLock) {
-      paused = newPaused;
-      pauseLock.notifyAll();
-    }
-  }
+  boolean isPaused();
 
-  private Object getPauseLock() {
-    return pauseLock;
-  }
-
-  public boolean isPaused() {
-    return paused;
-  }
-
-  /**
-   * Returns true if it waited, false if not. If this method returns true it
-   * should be called again. If this method returns it does not necessarily mean
-   * the controller has been unpaused.
-   */
-  public boolean waitUntilUnpause() {
-    if (isPaused()) {
-      Object pauseLock = getPauseLock();
-      synchronized (pauseLock) {
-        try {
-          pauseLock.wait(5000);
-        } catch (InterruptedException ignored) {
-        }
-      }
-      return true;
-    } else {
-      return false;
-    }
-  }
+  boolean waitUntilUnpause();
 }

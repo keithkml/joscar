@@ -35,73 +35,118 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.ProgressStatusProvider;
+import org.jetbrains.annotations.Nullable;
 
-import java.nio.channels.SocketChannel;
-import java.nio.channels.Selector;
-import java.nio.channels.SelectionKey;
 import java.io.IOException;
+import java.nio.channels.Channel;
+import java.nio.channels.SelectableChannel;
+import java.nio.channels.Selector;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 
-public abstract class Receiver implements ProgressStatusProvider {
+public abstract class AbstractTransferrer<C extends Channel>
+    implements Transferrer, ProgressStatusProvider {
   private static final Logger LOGGER = Logger
-      .getLogger(Receiver.class.getName());
+      .getLogger(AbstractTransferrer.class.getName());
 
   protected final long offset;
   protected final long length;
   private volatile long position = 0;
+  private final C socket;
+  private @Nullable Selector selector;
+  private final @Nullable SelectableChannel selectable;
 
-  public Receiver(long offset, long length) {
+  public AbstractTransferrer(C channel, @Nullable SelectableChannel selectable,
+      long offset, long toTransfer) {
+    this.socket = channel;
+    this.selectable = selectable;
     this.offset = offset;
-    this.length = length;
+    this.length = toTransfer;
   }
 
-  public int receive(SocketChannel socketIn) throws IOException {
-    Selector selector = Selector.open();
-    boolean wasBlocking = socketIn.isBlocking();
+  protected void waitUntilReady() throws IOException {
+    if (selector != null) selector.select(50);
+  }
+
+  public long transfer() throws IOException {
+    boolean wasBlocking;
+    if (selectable != null) {
+      selector = Selector.open();
+      wasBlocking = selectable.isBlocking();
+    } else {
+      selector = null;
+      wasBlocking = false;
+    }
     try {
-      if (wasBlocking) socketIn.configureBlocking(false);
-      socketIn.register(selector, SelectionKey.OP_READ);
+      if (selectable != null) {
+        if (wasBlocking) selectable.configureBlocking(false);
+        selectable.register(selector, getSelectionKey());
+      }
 
       setPosition(offset);
-      int downloaded = 0;
+      long totalTransferred = 0;
       while (true) {
-        if (downloaded >= length) {
-          LOGGER.severe("downloaded too much: " + downloaded
+        if (totalTransferred > length) {
+          LOGGER.severe("downloaded too much: " + totalTransferred
               + " >= length " + length);
+          break;
+
+        } else if (totalTransferred == length) {
           break;
         }
         boolean waited = waitIfPaused();
         if (waited) continue;
 
-        long remaining = length - downloaded;
-        selector.select(50);
-        long transferred = transfer(socketIn, downloaded, remaining);
+        long remaining = length - totalTransferred;
+        waitUntilReady();
+        long transferred = transfer(socket, totalTransferred, remaining);
 
         if (transferred == -1) {
-          LOGGER.severe("transferFrom returned -1");
+          LOGGER.severe("transfer returned -1");
           break;
         }
 
-        downloaded += transferred;
-        setPosition(offset + downloaded);
+        totalTransferred += transferred;
+        setPosition(offset + totalTransferred);
         if (isCancelled()) {
           LOGGER.fine("Someone said to cancel receiving");
           break;
         }
       }
-      return downloaded;
+      return totalTransferred;
 
     } finally {
-      selector.close();
-      if (wasBlocking) socketIn.configureBlocking(true);
+      try {
+        if (selector != null) selector.close();
+      } catch (IOException e) {
+        LOGGER.log(Level.WARNING, "Couldn't close selector", e);
+      }
+      try {
+        if (wasBlocking) selectable.configureBlocking(true);
+      } catch (IOException e) {
+        LOGGER.log(Level.WARNING, "Couldn't reset blocking mode", e);
+      }
+      cleanUp();
     }
   }
 
+  protected void cleanUp() throws IOException {
+  }
+
+  protected abstract int getSelectionKey();
+
   protected abstract boolean isCancelled();
 
+  /**
+   * Returns true if this method waited
+   */
   protected abstract boolean waitIfPaused();
 
-  protected abstract long transfer(SocketChannel socketIn, int downloaded,
+  /**
+   * Returns the number of bytes transferred by this call, or -1 to cancel
+   * transfer
+   */
+  protected abstract long transfer(C channel, long transferred,
       long remaining) throws IOException;
 
   public long getStartPosition() {

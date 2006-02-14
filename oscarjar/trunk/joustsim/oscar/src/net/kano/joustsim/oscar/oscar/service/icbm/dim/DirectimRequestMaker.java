@@ -38,11 +38,14 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvRequestMaker;
 import net.kano.joscar.rvcmd.directim.DirectIMReqRvCmd;
 import net.kano.joscar.rvcmd.directim.DirectIMAcceptRvCmd;
 import net.kano.joscar.rvcmd.directim.DirectIMRejectRvCmd;
+import net.kano.joscar.snaccmd.CapabilityBlock;
+import net.kano.joscar.rv.RvSession;
 
 public class DirectimRequestMaker implements RvRequestMaker {
   private DirectimConnection connection;
 
   public DirectimRequestMaker(DirectimConnection connection) {
+    assert connection != null;
     this.connection = connection;
   }
 
@@ -51,15 +54,23 @@ public class DirectimRequestMaker implements RvRequestMaker {
   }
 
   public void sendRvRequest(int newIndex) {
-    connection.getRvSession().sendRv(new DirectIMReqRvCmd(newIndex,
-        connection.getConnectionInfo()));
+    getRvSession().sendRv(new DirectIMReqRvCmd(newIndex,
+        connection.getRvSessionInfo().getConnectionInfo()));
   }
 
   public void sendRvAccept() {
-    connection.getRvSession().sendRv(new DirectIMAcceptRvCmd());
+    getRvSession().sendRv(new DirectIMAcceptRvCmd());
   }
 
   public void sendRvReject() {
-    connection.getRvSession().sendRv(new DirectIMRejectRvCmd());
+    getRvSession().sendRv(new DirectIMRejectRvCmd());
+  }
+
+  private RvSession getRvSession() {
+    return connection.getRvSessionInfo().getRvSession();
+  }
+
+  public CapabilityBlock getCapabilityBlock() {
+    return CapabilityBlock.BLOCK_DIRECTIM;
   }
 }

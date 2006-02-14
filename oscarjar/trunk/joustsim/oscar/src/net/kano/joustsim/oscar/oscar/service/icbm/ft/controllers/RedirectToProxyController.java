@@ -35,24 +35,23 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
 import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joscar.rvproto.rvproxy.RvProxyAckCmd;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionImpl;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionPropertyHolder;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvSessionConnectionInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.Initiator;
 
 import java.io.IOException;
-import java.net.Inet4Address;
+import java.net.InetAddress;
 
 /** 1. connect to ars.oscar.aol.com:5190 2. find ip of server 3. send rv */
 public class RedirectToProxyController extends InitiateProxyController
     implements ManualTimeoutController {
   protected void handleAck(RvProxyAckCmd ackCmd) throws IOException {
-    Inet4Address addr = ackCmd.getProxyIpAddress();
+    InetAddress addr = ackCmd.getProxyIpAddress();
     int port = ackCmd.getProxyPort();
 
-    RvConnectionImpl transfer = getRvConnection();
+    RvSessionConnectionInfo transfer = getRvSessionInfo();
     transfer.setConnectionInfo(
         RvConnectionInfo.createForOutgoingProxiedRequest(addr, port));
-    transfer.putTransferProperty(RvConnectionPropertyHolder.KEY_REDIRECTED,
-        true);
+    transfer.setInitiator(Initiator.ME);
     transfer.getRvRequestMaker().sendRvRequest(transfer.increaseRequestIndex());
   }
 }

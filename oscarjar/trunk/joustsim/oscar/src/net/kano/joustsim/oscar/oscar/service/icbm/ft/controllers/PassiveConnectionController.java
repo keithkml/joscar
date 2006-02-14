@@ -36,42 +36,36 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.WaitingForConnectionEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
 
 import javax.net.ServerSocketFactory;
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.net.Socket;
 import java.nio.channels.ServerSocketChannel;
 
 public abstract class PassiveConnectionController
     extends AbstractConnectionController
     implements ManualTimeoutController {
-  private ServerSocket serverSocket;
 
-  protected void initializeBeforeStarting() throws IOException {
-    ServerSocketFactory ssf = getRvConnection().getSettings().getProxyInfo().getServerSocketFactory();
-    serverSocket = ssf == null ? ServerSocketChannel.open().socket() : ssf.createServerSocket();
-    serverSocket.bind(null);
-    sendRequest();
+  {
+    setConnector(new MyConnector());
   }
 
-  protected ServerSocket getServerSocket() {
-    return serverSocket;
+  public PassiveConnector getConnector() {
+    return (PassiveConnector) super.getConnector();
+  }
+
+  protected void initializeBeforeStarting() throws IOException {
   }
 
   protected abstract void sendRequest() throws IOException;
 
-  protected Socket createSocket() throws IOException {
-    setConnectingState();
-    return getServerSocket().accept();
+  protected void handleResolvingState() {
   }
 
-  protected void setResolvingState() {
-  }
-
-  protected void setConnectingState() {
+  protected void handleConnectingState() {
     EventPost post = getRvConnection().getEventPost();
-    RvConnectionInfo connInfo = getRvConnection().getConnectionInfo();
+    RvConnectionInfo connInfo = getRvSessionInfo().getConnectionInfo();
     post.fireEvent(new WaitingForConnectionEvent(connInfo.getInternalIP(),
         connInfo.getPort()));
   }
@@ -82,5 +76,39 @@ public abstract class PassiveConnectionController
 
   public void startTimeoutTimer() {
     super.startTimer();
+  }
+
+  protected void prepareStream() throws IOException {
+    super.prepareStream();
+    sendRequest();
+  }
+
+  private class MyConnector implements PassiveConnector {
+    private ServerSocket serverSocket;
+    private int localPort = -1;
+
+    public int getLocalPort() {
+      return localPort;
+    }
+
+    public StreamInfo createStream() throws IOException {
+      handleConnectingState();
+      return new StreamInfo(serverSocket.accept().getChannel());
+    }
+
+    public void prepareStream() throws IOException {
+      ServerSocketFactory ssf = getRvConnection().getSettings().getProxyInfo()
+          .getServerSocketFactory();
+      if (ssf == null) {
+        serverSocket = ServerSocketChannel.open().socket();
+      } else {
+        serverSocket = ssf.createServerSocket();
+      }
+      serverSocket.bind(null);
+      localPort = serverSocket.getLocalPort();
+    }
+
+    public void checkConnectionInfo() throws Exception {
+    }
   }
 }

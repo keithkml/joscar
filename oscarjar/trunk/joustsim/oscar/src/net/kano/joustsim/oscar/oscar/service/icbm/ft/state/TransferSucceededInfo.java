@@ -34,16 +34,16 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.state;
 
 import net.kano.joscar.DefensiveTools;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.TransferredFile;
 
-import java.io.File;
 import java.util.List;
 
 public class TransferSucceededInfo extends SuccessfulStateInfo {
-    private final List<File> files;
+    private final List<TransferredFile> files;
 
-    public TransferSucceededInfo(List<File> files) {
+    public TransferSucceededInfo(List<TransferredFile> files) {
         this.files = DefensiveTools.getUnmodifiableCopy(files);
     }
 
-    public List<File> getFiles() { return files; }
+    public List<TransferredFile> getFiles() { return files; }
 }

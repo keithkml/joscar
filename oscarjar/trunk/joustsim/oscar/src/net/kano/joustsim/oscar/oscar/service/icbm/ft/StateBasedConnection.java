@@ -34,10 +34,13 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 import org.jetbrains.annotations.Nullable;
 
 public interface StateBasedConnection {
-    StateController getStateController();
+  StateController getStateController();
 
-    @Nullable StateController getNextStateController();
+  @Nullable StateController getNextStateController();
+
+  boolean setState(RvConnectionState state, RvConnectionEvent event);
 }

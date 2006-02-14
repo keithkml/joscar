@@ -35,11 +35,11 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
 import net.kano.joscar.rv.RecvRvEvent;
-import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rvcmd.AcceptRvCmd;
 import net.kano.joscar.rvcmd.ConnectionRequestRvCmd;
 import net.kano.joscar.rvcmd.RejectRvCmd;
 import net.kano.joscar.rvcmd.RequestRvCmd;
+import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectToProxyForOutgoingController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ManualTimeoutController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.OutgoingConnectionController;
@@ -54,6 +54,7 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailureEventInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
+import net.kano.joustsim.oscar.proxy.AimProxyInfo;
 
 import java.util.logging.Logger;
 
@@ -62,9 +63,9 @@ public abstract class OutgoingRvConnectionImpl extends RvConnectionImpl
   private static final Logger LOGGER = Logger
       .getLogger(OutgoingRvConnectionImpl.class.getName());
 
-  public OutgoingRvConnectionImpl(RvConnectionManager rvConnectionManager,
-      RvSession session) {
-    super(rvConnectionManager, session);
+  public OutgoingRvConnectionImpl(AimProxyInfo proxy,
+      Screenname myScreenname, RvSessionConnectionInfo rvsessioninfo) {
+    super(proxy, myScreenname, rvsessioninfo);
   }
 
   public synchronized StateController getNextStateController() {
@@ -72,7 +73,7 @@ public abstract class OutgoingRvConnectionImpl extends RvConnectionImpl
     StateInfo endState = oldController.getEndStateInfo();
     if (endState instanceof SuccessfulStateInfo) {
       if (isConnectionController(oldController)) {
-        return getConnectedController();
+        return createConnectedController();
 
       } else {
         return getNextControllerFromUnknownSuccess(oldController, endState);
@@ -82,7 +83,6 @@ public abstract class OutgoingRvConnectionImpl extends RvConnectionImpl
       RvConnectionEvent event = null;
       if (endState instanceof FailureEventInfo) {
         FailureEventInfo failureEventInfo = (FailureEventInfo) endState;
-
         event = failureEventInfo.getEvent();
       }
 
@@ -117,17 +117,17 @@ public abstract class OutgoingRvConnectionImpl extends RvConnectionImpl
   protected abstract StateController getNextControllerFromUnknownSuccess(
       StateController oldController, StateInfo endState);
 
-  protected abstract StateController getConnectedController();
+  protected abstract StateController createConnectedController();
 
   private static boolean isLanController(StateController oldController) {
     return oldController instanceof OutgoingConnectionController
-        && ((OutgoingConnectionController) oldController).getConnectionType()
+        && ((OutgoingConnectionController) oldController).getTimeoutType()
         == ConnectionType.LAN;
   }
 
   private static boolean isInternetController(StateController oldController) {
     return oldController instanceof OutgoingConnectionController
-        && ((OutgoingConnectionController) oldController).getConnectionType()
+        && ((OutgoingConnectionController) oldController).getTimeoutType()
         == ConnectionType.INTERNET;
   }
 
@@ -158,8 +158,9 @@ public abstract class OutgoingRvConnectionImpl extends RvConnectionImpl
         StateController controller = getStateController();
         if (controller instanceof ManualTimeoutController) {
           return (ManualTimeoutController) controller;
+        } else {
+          return null;
         }
-        return null;
       }
 
       protected void handleIncomingRequest(RecvRvEvent event,

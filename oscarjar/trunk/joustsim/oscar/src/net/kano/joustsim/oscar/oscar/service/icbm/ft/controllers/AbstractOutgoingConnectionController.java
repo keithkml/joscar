@@ -33,6 +33,8 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
+
 import javax.net.SocketFactory;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -43,24 +45,29 @@ import java.nio.channels.SocketChannel;
 public abstract class AbstractOutgoingConnectionController
     extends AbstractConnectionController {
 
-  protected Socket createSocket() throws IOException {
-    setResolvingState();
-    InetAddress ip = getIpAddress();
-    if (ip == null) {
-      throw new IllegalStateException("no IP address");
+  protected abstract class DefaultOutgoingConnector implements OutgoingConnector {
+    public StreamInfo createStream() throws IOException {
+      handleResolvingState();
+      InetAddress ip = getIpAddress();
+      if (ip == null) {
+        throw new IllegalStateException("no IP address");
+      }
+      handleConnectingState();
+      SocketFactory factory = getRvConnection().getSettings().getProxyInfo().getSocketFactory();
+      int port = getConnectionPort();
+      Socket socket;
+      if (factory == null) {
+        socket = SocketChannel.open(new InetSocketAddress(ip, port)).socket();
+      } else {
+        socket = factory.createSocket(ip, port);
+      }
+      return new StreamInfo(socket.getChannel());
     }
-    setConnectingState();
-    SocketFactory factory = getRvConnection().getSettings().getProxyInfo().getSocketFactory();
-    int port = getConnectionPort();
-    if (factory == null) {
-      return SocketChannel.open(new InetSocketAddress(ip, port)).socket();
-    } else {
-      return factory.createSocket(ip, port);
+
+    public void checkConnectionInfo() throws Exception {
+    }
+
+    public void prepareStream() throws IOException {
     }
   }
-
-  protected abstract int getConnectionPort();
-
-
-  protected abstract InetAddress getIpAddress() throws IOException;
 }

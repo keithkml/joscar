@@ -34,9 +34,7 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
 public interface ProgressStatusProvider {
-    long getStartPosition();
-
-    long getPosition();
-
-    long getLength();
+  long getStartPosition();
+  long getPosition();
+  long getLength();
 }

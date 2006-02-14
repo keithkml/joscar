@@ -75,9 +75,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
+import java.util.logging.Level;
+import java.net.Socket;
+import java.net.SocketException;
 
 public class OscarConnection {
-  //TODO: send ping flaps to keep connection alive
   private static final Logger LOGGER
       = Logger.getLogger(OscarConnection.class.getName());
   private static final int CONNECTION_DEAD_TIMEOUT = 30000;
@@ -329,7 +331,20 @@ public class OscarConnection {
 
   protected void beforeServicesConnected() { }
 
-  protected void connected() { }
+  protected void connected() {
+    Socket socket = conn.getSocket();
+    if (socket != null) {
+      try {
+        socket.setKeepAlive(true);
+      } catch (SocketException e) {
+        LOGGER.log(Level.WARNING,
+            "Couldn't set SO_KEEPALIVE for connection " + this, e);
+      }
+    } else {
+      LOGGER.warning("Couldn't set SO_KEEPALIVE for connection " + this
+          + " because the ClientConn has no socket set");
+    }
+  }
 
   protected void disconnected() { }
 

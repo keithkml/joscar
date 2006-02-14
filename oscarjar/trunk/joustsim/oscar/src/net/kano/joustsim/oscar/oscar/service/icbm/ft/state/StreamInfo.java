@@ -33,15 +33,19 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.state;
 
+import net.kano.joustsim.oscar.oscar.service.icbm.dim.SelectorInputStream;
+import net.kano.joustsim.oscar.oscar.service.icbm.dim.SelectorOutputStream;
+
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.channels.SocketChannel;
-import java.nio.channels.Channels;
 
 public class StreamInfo extends SuccessfulStateInfo {
   private SocketChannel socketChannel;
 
-  public StreamInfo(SocketChannel channel) {
+  public StreamInfo(SocketChannel channel) throws IOException {
+    if (channel != null) channel.configureBlocking(false);
     socketChannel = channel;
   }
 
@@ -50,10 +54,18 @@ public class StreamInfo extends SuccessfulStateInfo {
   }
 
   public InputStream getInputStream() {
-    return Channels.newInputStream(getSocketChannel());
+    try {
+      return SelectorInputStream.getInstance(getSocketChannel());
+    } catch (IOException e) {
+      throw new IllegalStateException(e);
+    }
   }
 
   public OutputStream getOutputStream() {
-    return Channels.newOutputStream(getSocketChannel());
+    try {
+      return SelectorOutputStream.getInstance(getSocketChannel());
+    } catch (IOException e) {
+      throw new IllegalStateException(e);
+    }
   }
 }

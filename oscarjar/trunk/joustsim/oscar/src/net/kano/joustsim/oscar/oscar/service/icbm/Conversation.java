@@ -78,7 +78,6 @@ public abstract class Conversation {
 
   /**
    * Returns whether the conversation was opened
-   * @return
    */
   public boolean open() {
     synchronized (this) {
@@ -187,11 +186,21 @@ public abstract class Conversation {
   public abstract void sendMessage(Message msg)
       throws ConversationException;
 
+  @SuppressWarnings({"ReturnOfCollectionOrArrayField"})
   protected CopyOnWriteArrayList<ConversationListener> getListeners() {
     return listeners;
   }
 
   protected void handleIncomingEvent(ConversationEventInfo event) {
     fireIncomingEvent(event);
+
+    if (event instanceof TypingInfo) {
+      TypingInfo typingInfo = (TypingInfo) event;
+      for (ConversationListener listener : getListeners()) {
+        if (listener instanceof TypingListener) {
+          ((TypingListener) listener).gotTypingState(this, typingInfo);
+        }
+      }
+    }
   }
 }

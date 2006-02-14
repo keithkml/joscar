@@ -36,7 +36,14 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 
 public interface RvConnectionEventListener {
-    void handleEventWithStateChange(RvConnection transfer, RvConnectionState state,
-            RvConnectionEvent event);
-    void handleEvent(RvConnection transfer, RvConnectionEvent event);
+  /**
+   * This is called for events with state changes.
+   */
+  void handleEventWithStateChange(RvConnection transfer,
+      RvConnectionState state, RvConnectionEvent event);
+
+  /**
+   * This is called for events without state changes.
+   */
+  void handleEvent(RvConnection transfer, RvConnectionEvent event);
 }
