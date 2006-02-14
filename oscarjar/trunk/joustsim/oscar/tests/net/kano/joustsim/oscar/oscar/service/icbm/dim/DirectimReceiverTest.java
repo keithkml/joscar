@@ -38,6 +38,8 @@ import junit.framework.TestCase;
 import net.kano.joustsim.TestHelper;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
+import net.kano.joscar.ByteBlock;
+import net.kano.joscar.BinaryTools;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -152,9 +154,9 @@ public class DirectimReceiverTest extends TestCase {
     for (RvConnectionEvent event : events.getEvents()) {
       if (event instanceof ReceivedAttachmentEvent) {
         ReceivedAttachmentEvent attchev = (ReceivedAttachmentEvent) event;
-        byte[] attchbuf = ((MemoryAttachmentDestination) attchev.getDestination())
+        ByteBlock attchbuf = ((MemoryAttachment) attchev.getAttachment())
             .getBuffer();
-        String recvdattach = new String(attchbuf, "US-ASCII");
+        String recvdattach = BinaryTools.getAsciiString(attchbuf);
         assertEquals(expectAttachAscii[attcount], recvdattach);
         attcount++;
       }
@@ -190,8 +192,8 @@ public class DirectimReceiverTest extends TestCase {
   }
 
   private static class MemorySaver implements AttachmentSaver {
-    public AttachmentDestination createChannel(String id, long length) {
-      return MemoryAttachmentDestination.getInstance(id, length);
+    public Attachment createChannel(String id, long length) {
+      return new IncomingMemoryAttachment(id, length);
     }
   }
 }

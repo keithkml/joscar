@@ -48,6 +48,7 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.ConnectionType;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnection;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionEventListener;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionState;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.DefaultRvConnectionEventListener;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.AbstractConnectionController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectToProxyForIncomingController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.IncomingFileTransferPlumber;
@@ -73,9 +74,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class RvConnectionFunctionalTests extends TestCase {
   public static final CapabilityBlock MOCK_CAPABILITY
       = new CapabilityBlock(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15);
+  private MockIncomingRvConnection conn;
 
   public void testIncomingLanConnection() {
-    MockIncomingRvConnection conn = new MockIncomingRvConnection();
     addNopConnector(conn);
     StateInfo end = generateRequestAndRun(conn);
 
@@ -86,13 +87,7 @@ public class RvConnectionFunctionalTests extends TestCase {
     checkRequests(conn, 0, 1, 0);
   }
 
-  private StateInfo generateRequestAndRun(MockIncomingRvConnection conn) {
-    conn.getRvSessionHandler().handleIncomingRequest(null, new GenericRequest());
-    return conn.waitForCompletion();
-  }
-
   public void testIncomingInternetConnection() {
-    MockIncomingRvConnection conn = new MockIncomingRvConnection();
     conn.addTransferListener(new RvConnectionEventListener() {
       public void handleEventWithStateChange(RvConnection transfer,
           RvConnectionState state, RvConnectionEvent event) {
@@ -132,7 +127,6 @@ public class RvConnectionFunctionalTests extends TestCase {
   }
 
   public void testIncomingProxyConnection() {
-    MockIncomingRvConnection conn = new MockIncomingRvConnection();
     conn.addTransferListener(new RvConnectionEventListener() {
       public void handleEventWithStateChange(RvConnection transfer,
           RvConnectionState state, RvConnectionEvent event) {
@@ -163,13 +157,7 @@ public class RvConnectionFunctionalTests extends TestCase {
     checkRequests(conn, 0, 1, 0);
   }
 
-  private MockProxyConnector getDirectedToProxyConnector() {
-    return new MockProxyConnector(
-        new MockProxyConnection(new RvProxyReadyCmd()));
-  }
-
   public void testIncomingConnectionWeRedirect() {
-    MockIncomingRvConnection conn = new MockIncomingRvConnection();
     conn.addTransferListener(new RvConnectionEventListener() {
       public void handleEventWithStateChange(RvConnection transfer,
           RvConnectionState state, RvConnectionEvent event) {
@@ -207,7 +195,6 @@ public class RvConnectionFunctionalTests extends TestCase {
   }
 
   public void testIncomingConnectionWeRedirectToProxy() {
-    MockIncomingRvConnection conn = new MockIncomingRvConnection();
     conn.addTransferListener(new RvConnectionEventListener() {
       public void handleEventWithStateChange(RvConnection transfer,
           RvConnectionState state, RvConnectionEvent event) {
@@ -249,27 +236,7 @@ public class RvConnectionFunctionalTests extends TestCase {
     checkRequests(conn, 2, 1, 0);
   }
 
-  private void checkRequests(MockIncomingRvConnection connection, int numreqs,
-      int accepts, int rejects) {
-    MockRvRequestMaker maker = connection.getRvSessionInfo().getRvRequestMaker();
-    List<Integer> requests = maker.getSentRequests();
-    assertEquals(numreqs, requests.size());
-    for (int i = 0; i < numreqs; i++) {
-      assertEquals((Object) (i + 2), requests.get(i));
-    }
-    assertEquals(accepts, maker.getAcceptCount());
-    assertEquals(rejects, maker.getRejectCount());
-  }
-
-  private MockProxyConnector getInitiateProxyConnector()
-      throws UnknownHostException {
-    return new MockProxyConnector(new MockProxyConnection(
-        new RvProxyAckCmd(InetAddress.getByName("9.9.9.9"), 1000),
-        new RvProxyReadyCmd()));
-  }
-
   public void testIncomingConnectionBuddyRedirects() throws UnknownHostException {
-    final MockIncomingRvConnection conn = new MockIncomingRvConnection();
     final HangConnector hangConnector = new HangConnector();
     conn.addTransferListener(new RvConnectionEventListener() {
       public void handleEventWithStateChange(RvConnection transfer,
@@ -313,26 +280,9 @@ public class RvConnectionFunctionalTests extends TestCase {
     checkRequests(conn, 0, 1, 0);
   }
 
-  private StateInfo simulateBuddyRedirectionAndWait(
-      MockIncomingRvConnection conn, HangConnector hangConnector,
-      RvConnectionInfo conninfo) {
-    MockIncomingRvConnection.MockIncomingRvSessionHandler handler
-        = conn.getRvSessionHandler();
-    handler.handleIncomingRequest(null, new GenericRequest());
-    hangConnector.waitForConnectionAttempt();
-    handler.handleIncomingRequest(null, new GenericRequest(2,
-        conninfo));
-    return conn.waitForCompletion();
-  }
-
   public void testIncomingConnectionBuddyRedirectsToProxy() throws UnknownHostException {
-    final MockIncomingRvConnection conn = new MockIncomingRvConnection();
     final HangConnector hangConnector = new HangConnector();
-    conn.addTransferListener(new RvConnectionEventListener() {
-      public void handleEventWithStateChange(RvConnection transfer,
-          RvConnectionState state, RvConnectionEvent event) {
-      }
-
+    conn.addTransferListener(new DefaultRvConnectionEventListener() {
       public void handleEvent(RvConnection transfer, RvConnectionEvent event) {
         if (event instanceof StartingControllerEvent) {
           StateController controller = ((StartingControllerEvent) event)
@@ -370,13 +320,53 @@ public class RvConnectionFunctionalTests extends TestCase {
   }
 
   public void testIncomingRequestImmediatelyRejected() {
-    final MockIncomingRvConnection conn = new MockIncomingRvConnection();
     conn.setAutoMode(MockIncomingRvConnection.AutoMode.REJECT);
     StateInfo end = generateRequestAndRun(conn);
 
     assertNull(end);
     assertTrue(conn.getHitControllers().isEmpty());
     checkRequests(conn, 0, 0, 1);
+  }
+
+  private StateInfo generateRequestAndRun(MockIncomingRvConnection conn) {
+    conn.getRvSessionHandler().handleIncomingRequest(null, new GenericRequest());
+    return conn.waitForCompletion();
+  }
+
+  private MockProxyConnector getDirectedToProxyConnector() {
+    return new MockProxyConnector(
+        new MockProxyConnection(new RvProxyReadyCmd()));
+  }
+
+  private void checkRequests(MockIncomingRvConnection connection, int numreqs,
+      int accepts, int rejects) {
+    MockRvRequestMaker maker = connection.getRvSessionInfo().getRvRequestMaker();
+    List<Integer> requests = maker.getSentRequests();
+    assertEquals(numreqs, requests.size());
+    for (int i = 0; i < numreqs; i++) {
+      assertEquals((Object) (i + 2), requests.get(i));
+    }
+    assertEquals(accepts, maker.getAcceptCount());
+    assertEquals(rejects, maker.getRejectCount());
+  }
+
+  private MockProxyConnector getInitiateProxyConnector()
+      throws UnknownHostException {
+    return new MockProxyConnector(new MockProxyConnection(
+        new RvProxyAckCmd(InetAddress.getByName("9.9.9.9"), 1000),
+        new RvProxyReadyCmd()));
+  }
+
+  private StateInfo simulateBuddyRedirectionAndWait(
+      MockIncomingRvConnection conn, HangConnector hangConnector,
+      RvConnectionInfo conninfo) {
+    MockIncomingRvConnection.MockIncomingRvSessionHandler handler
+        = conn.getRvSessionHandler();
+    handler.handleIncomingRequest(null, new GenericRequest());
+    hangConnector.waitForConnectionAttempt();
+    handler.handleIncomingRequest(null, new GenericRequest(2,
+        conninfo));
+    return conn.waitForCompletion();
   }
 
   private void addNopConnector(MockIncomingRvConnection conn) {
@@ -397,6 +387,11 @@ public class RvConnectionFunctionalTests extends TestCase {
         }
       }
     });
+  }
+
+  protected void setUp() throws Exception {
+  super.setUp();
+    conn = new MockIncomingRvConnection();
   }
 
   private static class MyIncomingFileTransferPlumber
