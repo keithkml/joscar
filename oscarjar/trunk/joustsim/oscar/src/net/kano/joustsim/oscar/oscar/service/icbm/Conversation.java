@@ -100,14 +100,21 @@ public abstract class Conversation {
   }
 
   public boolean close() {
-    synchronized (this) {
-      if (closed) return false;
-      closed = true;
-    }
+    if (!closeWithoutEvents()) return false;
 
+    finishClosing();
+
+    return true;
+  }
+
+  private void finishClosing() {
     fireClosedEvent();
     closed();
+  }
 
+  private synchronized boolean closeWithoutEvents() {
+    if (closed) return false;
+    closed = true;
     return true;
   }
 

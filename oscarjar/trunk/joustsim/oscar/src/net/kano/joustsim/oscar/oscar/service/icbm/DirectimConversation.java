@@ -36,7 +36,7 @@ package net.kano.joustsim.oscar.oscar.service.icbm;
 
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.AimConnection;
-import net.kano.joustsim.oscar.oscar.service.icbm.dim.AttachmentDestination;
+import net.kano.joustsim.oscar.oscar.service.icbm.dim.Attachment;
 import net.kano.joustsim.oscar.oscar.service.icbm.dim.BuddyTypingEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.dim.DirectimConnection;
 import net.kano.joustsim.oscar.oscar.service.icbm.dim.DirectimController;
@@ -49,12 +49,13 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnection;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionEventListener;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionState;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 
 public class DirectimConversation extends Conversation
@@ -64,6 +65,7 @@ public class DirectimConversation extends Conversation
 
   private final AimConnection conn;
   private DirectimConnection directim = null;
+  private @Nullable RvConnectionEvent closingState = null;
 
   public DirectimConversation(AimConnection conn, DirectimConnection directim) {
     super(directim.getBuddyScreenname());
@@ -75,6 +77,14 @@ public class DirectimConversation extends Conversation
   public DirectimConversation(AimConnection conn, Screenname buddy) {
     super(buddy);
     this.conn = conn;
+  }
+
+  public synchronized DirectimConnection getDirectimConnection() {
+    return directim;
+  }
+
+  public @Nullable synchronized RvConnectionEvent getClosingEvent() {
+    return closingState;
   }
 
   public boolean open() {
@@ -105,14 +115,22 @@ public class DirectimConversation extends Conversation
 
   private synchronized void registerConnection(DirectimConnection directim) {
     directim.addTransferListener(new DirectimEventListener());
-    updateState(directim.getState());
+    updateState(directim.getState(), null);
   }
 
-  private void updateState(RvConnectionState state) {
+  private void updateState(RvConnectionState state,
+      @Nullable RvConnectionEvent event) {
     if (state == RvConnectionState.CONNECTED) {
       super.open();
+
     } else if (state == RvConnectionState.FAILED
         || state == RvConnectionState.FINISHED) {
+
+      synchronized (this) {
+        if (closingState == null) {
+          closingState = event;
+        }
+      }
       super.close();
     }
   }
@@ -164,7 +182,7 @@ public class DirectimConversation extends Conversation
     public void handleEventWithStateChange(RvConnection transfer,
         RvConnectionState state, RvConnectionEvent event) {
       LOGGER.fine("Directim for conversation changed to state: " + state);
-      updateState(state);
+      updateState(state, event);
     }
 
     public void handleEvent(RvConnection transfer, RvConnectionEvent event) {
@@ -197,10 +215,11 @@ public class DirectimConversation extends Conversation
           this.attachments = null;
         }
 
+        Date date = new Date();
         DirectMessage msg = new DirectMessage(lastMsg.getMessage(),
-            lastMsg.isAutoResponse(), buildAttachmentMap(attachments));
+            lastMsg.isAutoResponse(), buildAttachmentList(attachments));
         fireIncomingEvent(ImMessageInfo.getInstance(getBuddy(),
-            conn.getScreenname(), msg, new Date()));
+            conn.getScreenname(), msg, date));
       }
     }
 
@@ -211,11 +230,11 @@ public class DirectimConversation extends Conversation
       attachments = new ArrayList<ReceivedAttachmentEvent>();
     }
 
-    private Map<String,AttachmentDestination> buildAttachmentMap(
+    private Set<Attachment> buildAttachmentList(
         List<ReceivedAttachmentEvent> attachments) {
-      Map<String, AttachmentDestination> map = new HashMap<String, AttachmentDestination>();
+      Set<Attachment> map = new HashSet<Attachment>();
       for (ReceivedAttachmentEvent ev : attachments) {
-        map.put(ev.getId(), ev.getDestination());
+        map.add(ev.getAttachment());
       }
       return map;
     }

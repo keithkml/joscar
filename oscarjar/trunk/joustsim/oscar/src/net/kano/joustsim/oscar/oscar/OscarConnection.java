@@ -69,15 +69,15 @@ import net.kano.joustsim.oscar.oscar.service.ServiceListener;
 import net.kano.joustsim.oscar.oscar.service.ServiceManager;
 
 import java.io.OutputStream;
+import java.net.Socket;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.logging.Logger;
 import java.util.logging.Level;
-import java.net.Socket;
-import java.net.SocketException;
+import java.util.logging.Logger;
 
 public class OscarConnection {
   private static final Logger LOGGER
@@ -378,10 +378,12 @@ public class OscarConnection {
       throws IllegalStateException {
     List<Service> services;
     synchronized (this) {
+      // this isn't necessary
       if (this.snacFamilies != null) {
-        throw new IllegalStateException("this connection "
+        LOGGER.fine("this connection "
             + MiscTools.getClassName(this) + " already has SNAC "
             + "families set");
+        return;
       }
       DefensiveTools.checkNull(snacFamilies, "snacFamilies");
 

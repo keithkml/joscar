@@ -34,21 +34,25 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.dim.AttachmentDestination;
+import net.kano.joustsim.oscar.oscar.service.icbm.dim.Attachment;
 
-import java.util.Map;
+import java.util.Collections;
+import java.util.Set;
 
 public class DirectMessage implements Message {
   private final String message;
   private final boolean autoResponse;
-  private final Map<String,AttachmentDestination> map;
+  private final Set<Attachment> attachments;
 
-  public DirectMessage(String message, boolean autoResponse,
-      Map<String, AttachmentDestination> map) {
+  public DirectMessage(String message, boolean autoResponse) {
+    this(message, autoResponse, Collections.<Attachment>emptySet());
+  }
+
+  public DirectMessage(String message, boolean autoResponse, Set<Attachment> map) {
     this.message = message;
     this.autoResponse = autoResponse;
     //noinspection AssignmentToCollectionOrArrayFieldFromParameter
-    this.map = map;
+    this.attachments = map;
   }
 
   public String getMessageBody() {
@@ -60,7 +64,7 @@ public class DirectMessage implements Message {
   }
 
   @SuppressWarnings({"ReturnOfCollectionOrArrayField"})
-  public Map<String,AttachmentDestination> getAttachments() {
-    return map;
+  public Set<Attachment> getAttachments() {
+    return attachments;
   }
 }

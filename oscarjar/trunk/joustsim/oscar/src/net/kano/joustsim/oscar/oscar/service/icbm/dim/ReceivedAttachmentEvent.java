@@ -39,10 +39,10 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 public class ReceivedAttachmentEvent extends RvConnectionEvent {
   private final String id;
   private final long size;
-  private AttachmentDestination destination;
+  private Attachment destination;
 
   public ReceivedAttachmentEvent(String id, long size,
-      AttachmentDestination destination) {
+      Attachment destination) {
     this.id = id;
     this.size = size;
     this.destination = destination;
@@ -56,7 +56,7 @@ public class ReceivedAttachmentEvent extends RvConnectionEvent {
     return size;
   }
 
-  public AttachmentDestination getDestination() {
+  public Attachment getAttachment() {
     return destination;
   }
 }

@@ -95,7 +95,7 @@ public class DirectimReceiver extends AbstractTransferrer<ReadableByteChannel> {
   private @Nullable Selector selector;
   private Mode mode = Mode.MESSAGE;
   private String lastid = null;
-  private AttachmentDestination lastDestination = null;
+  private Attachment last = null;
   private long lastAttachmentReceived = 0;
   private Long lastAttachmentSize = null;
   private boolean checkbuffer = false;
@@ -246,9 +246,9 @@ public class DirectimReceiver extends AbstractTransferrer<ReadableByteChannel> {
           if (lastAttachmentSize != null && lastid != null) {
             mode = Mode.DATA;
 
-            lastDestination = saver.createChannel(lastid, lastAttachmentSize);
-            destchannel = lastDestination.getWritable();
-            SelectableChannel destinationSel = lastDestination.getSelectable();
+            last = saver.createChannel(lastid, lastAttachmentSize);
+            destchannel = last.openForWriting();
+            SelectableChannel destinationSel = last.getSelectableForWriting();
             if (destinationSel != null) {
               selector = Selector.open();
               destinationSel.register(selector, SelectionKey.OP_WRITE);
@@ -284,15 +284,15 @@ public class DirectimReceiver extends AbstractTransferrer<ReadableByteChannel> {
       }
       lastAttachmentReceived += wrote;
       eventPost.fireEvent(new ReceivingAttachmentEvent(transferred + wrote,
-          transferred + remaining, lastAttachmentReceived, lastDestination));
+          transferred + remaining, lastAttachmentReceived, last));
       if (lastAttachmentReceived >= lastAttachmentSize) {
         eventPost.fireEvent(new ReceivedAttachmentEvent(lastid,
-            lastAttachmentSize, lastDestination));
+            lastAttachmentSize, last));
         mode = Mode.TAG;
         lastid = null;
         lastAttachmentReceived = 0;
         lastAttachmentSize = null;
-        lastDestination = null;
+        last = null;
         try {
           destchannel.close();
         } catch (IOException e) {

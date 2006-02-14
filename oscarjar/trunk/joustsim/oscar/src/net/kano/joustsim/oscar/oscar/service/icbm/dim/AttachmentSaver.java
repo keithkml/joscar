@@ -37,6 +37,6 @@ package net.kano.joustsim.oscar.oscar.service.icbm.dim;
 import java.io.IOException;
 
 public interface AttachmentSaver {
-  AttachmentDestination createChannel(String id, long length)
+  Attachment createChannel(String id, long length)
       throws IOException;
 }

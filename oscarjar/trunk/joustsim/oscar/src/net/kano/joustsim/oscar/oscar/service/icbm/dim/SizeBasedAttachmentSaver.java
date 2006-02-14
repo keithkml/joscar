@@ -50,13 +50,12 @@ public class SizeBasedAttachmentSaver implements AttachmentSaver {
     this.minFileSize = minFileSize;
   }
 
-  public AttachmentDestination createChannel(String id, long length)
+  public Attachment createChannel(String id, long length)
       throws IOException {
     if (length < minFileSize) {
-      return MemoryAttachmentDestination.getInstance(id, length);
+      return new IncomingMemoryAttachment(id, length);
     } else {
-      return FileAttachmentDestination.create(
-          File.createTempFile("aim", "dim"), id, length);
+      return new FileAttachment(File.createTempFile("aim", "dim"), id, length);
     }
   }
 }

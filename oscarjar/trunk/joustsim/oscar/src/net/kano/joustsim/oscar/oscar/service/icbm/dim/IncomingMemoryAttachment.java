@@ -34,29 +34,39 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.dim;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
+import net.kano.joscar.ByteBlock;
+import org.jetbrains.annotations.Nullable;
 
-public class ReceivingAttachmentEvent extends RvConnectionEvent {
-  private final long totalpos;
-  private final long totallen;
-  private final long attachpos;
-  private Attachment attachment;
+import java.io.IOException;
+import java.io.ByteArrayOutputStream;
+import java.io.ByteArrayInputStream;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.SelectableChannel;
+import java.nio.channels.WritableByteChannel;
+import java.nio.channels.Channels;
 
-  public ReceivingAttachmentEvent(long totalpos, long totallen,
-      long attachpos, Attachment dest) {
-    this.totalpos = totalpos;
-    this.totallen = totallen;
-    this.attachpos = attachpos;
-    attachment = dest;
+public class IncomingMemoryAttachment extends MemoryAttachment {
+  private ByteArrayOutputStream bout;
+
+  public IncomingMemoryAttachment(String id, long length) {
+    super(id, length);
+    assert length < Integer.MAX_VALUE;
+    bout = new ByteArrayOutputStream((int) length);
   }
 
-  public long getTotalPosition() { return totalpos; }
+  public ByteBlock getBuffer() {
+    return ByteBlock.wrap(bout.toByteArray());
+  }
 
-  public long getTotalLength() { return totallen; }
+  public ReadableByteChannel openForReading() throws IOException {
+    return Channels.newChannel(new ByteArrayInputStream(bout.toByteArray()));
+  }
 
-  public long getAttachmentReceived() { return attachpos; }
+  public WritableByteChannel openForWriting() throws IOException {
+    return Channels.newChannel(bout);
+  }
 
-  public Attachment getAttachmentDestination() {
-    return attachment;
+  public @Nullable SelectableChannel getSelectableForWriting() {
+    return null;
   }
 }

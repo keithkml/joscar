@@ -32,52 +32,12 @@
  * File created by keithkml
  */
 
-/*
- * Created by IntelliJ IDEA.
- * User: keithkml
- * Date: Feb 12, 2006
- * Time: 12:41:42 PM
- */
-
 package net.kano.joustsim.oscar.oscar.service.icbm.dim;
 
-import org.jetbrains.annotations.Nullable;
+import net.kano.joscar.ByteBlock;
 
-import java.nio.channels.WritableByteChannel;
-import java.nio.channels.SelectableChannel;
-import java.nio.channels.ReadableByteChannel;
-import java.io.FileNotFoundException;
+public abstract class MemoryAttachment extends Attachment {
+  public MemoryAttachment(String id, long length) {super(id, length);}
 
-public abstract class AttachmentDestination {
-  private final String id;
-  private final long length;
-  private final WritableByteChannel writable;
-  private final @Nullable SelectableChannel selectable;
-
-  public AttachmentDestination(String id, long length,
-      WritableByteChannel writable, @Nullable SelectableChannel selectable) {
-    this.id = id;
-    this.length = length;
-    this.writable = writable;
-    this.selectable = selectable;
-  }
-
-  public abstract ReadableByteChannel openForReading() throws
-      FileNotFoundException;
-
-  public WritableByteChannel getWritable() {
-    return writable;
-  }
-
-  public @Nullable SelectableChannel getSelectable() {
-    return selectable;
-  }
-
-  public String getId() {
-    return id;
-  }
-
-  public long getLength() {
-    return length;
-  }
+  public abstract ByteBlock getBuffer();
 }

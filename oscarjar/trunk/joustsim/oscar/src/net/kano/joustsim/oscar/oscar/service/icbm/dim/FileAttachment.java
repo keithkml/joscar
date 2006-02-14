@@ -34,29 +34,43 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.dim;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
+import org.jetbrains.annotations.Nullable;
 
-public class ReceivingAttachmentEvent extends RvConnectionEvent {
-  private final long totalpos;
-  private final long totallen;
-  private final long attachpos;
-  private Attachment attachment;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.SelectableChannel;
+import java.nio.channels.WritableByteChannel;
 
-  public ReceivingAttachmentEvent(long totalpos, long totallen,
-      long attachpos, Attachment dest) {
-    this.totalpos = totalpos;
-    this.totallen = totallen;
-    this.attachpos = attachpos;
-    attachment = dest;
+public class FileAttachment extends Attachment {
+  private final File file;
+
+  public FileAttachment(File file, String id, long length) {
+    super(id, length);
+    this.file = file;
   }
 
-  public long getTotalPosition() { return totalpos; }
+  public FileAttachment(File file, String id) {
+    super(id, file.length());
+    this.file = file;
+  }
 
-  public long getTotalLength() { return totallen; }
+  public WritableByteChannel openForWriting() throws IOException {
+    return new FileOutputStream(file).getChannel();
+  }
 
-  public long getAttachmentReceived() { return attachpos; }
+  public @Nullable SelectableChannel getSelectableForWriting() {
+    return null;
+  }
 
-  public Attachment getAttachmentDestination() {
-    return attachment;
+  public ReadableByteChannel openForReading() throws FileNotFoundException {
+    return new FileInputStream(file).getChannel();
+  }
+
+  public File getFile() {
+    return file;
   }
 }

@@ -32,40 +32,57 @@
  * File created by keithkml
  */
 
+/*
+ * Created by IntelliJ IDEA.
+ * User: keithkml
+ * Date: Feb 12, 2006
+ * Time: 12:41:42 PM
+ */
+
 package net.kano.joustsim.oscar.oscar.service.icbm.dim;
 
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
 import java.nio.channels.SelectableChannel;
-import java.nio.channels.FileChannel;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
+import java.nio.channels.WritableByteChannel;
 
-public class FileAttachmentDestination extends AttachmentDestination {
-  private File file;
+public abstract class Attachment {
+  private final String id;
+  private final long length;
 
-  public static FileAttachmentDestination create(File file, String id,
-      long length)
-      throws FileNotFoundException {
-    FileChannel ch = new FileOutputStream(file).getChannel();
-    return new FileAttachmentDestination(file, id, length, ch, null);
+  public Attachment(String id, long length) {
+    this.id = id;
+    this.length = length;
   }
 
-  public FileAttachmentDestination(File file, String id, long length,
-      WritableByteChannel writable, @Nullable SelectableChannel selectable) {
-    super(id, length, writable, selectable);
-    this.file = file;
+  public abstract ReadableByteChannel openForReading() throws IOException;
+
+  public abstract WritableByteChannel openForWriting() throws IOException;
+
+  public @Nullable abstract SelectableChannel getSelectableForWriting();
+
+  public String getId() {
+    return id;
   }
 
-  public ReadableByteChannel openForReading() throws FileNotFoundException {
-    return new FileInputStream(file).getChannel();
+  public long getLength() {
+    return length;
   }
 
-  public File getFile() {
-    return file;
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    final Attachment that = (Attachment) o;
+
+    if (id != null ? !id.equals(that.id) : that.id != null) return false;
+
+    return true;
+  }
+
+  public int hashCode() {
+    return (id != null ? id.hashCode() : 0);
   }
 }

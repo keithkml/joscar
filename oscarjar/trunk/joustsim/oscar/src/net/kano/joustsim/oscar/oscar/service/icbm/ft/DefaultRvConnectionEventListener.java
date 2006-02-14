@@ -32,31 +32,16 @@
  * File created by keithkml
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm.dim;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 
-public class ReceivingAttachmentEvent extends RvConnectionEvent {
-  private final long totalpos;
-  private final long totallen;
-  private final long attachpos;
-  private Attachment attachment;
-
-  public ReceivingAttachmentEvent(long totalpos, long totallen,
-      long attachpos, Attachment dest) {
-    this.totalpos = totalpos;
-    this.totallen = totallen;
-    this.attachpos = attachpos;
-    attachment = dest;
+public abstract class DefaultRvConnectionEventListener implements
+    RvConnectionEventListener {
+  public void handleEventWithStateChange(RvConnection transfer,
+      RvConnectionState state, RvConnectionEvent event) {
   }
 
-  public long getTotalPosition() { return totalpos; }
-
-  public long getTotalLength() { return totallen; }
-
-  public long getAttachmentReceived() { return attachpos; }
-
-  public Attachment getAttachmentDestination() {
-    return attachment;
+  public void handleEvent(RvConnection transfer, RvConnectionEvent event) {
   }
 }

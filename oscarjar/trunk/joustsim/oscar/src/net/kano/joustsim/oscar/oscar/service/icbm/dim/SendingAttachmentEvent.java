@@ -36,12 +36,12 @@ package net.kano.joustsim.oscar.oscar.service.icbm.dim;
 
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 
-public class SendingAttachmentEvent extends RvConnectionEvent {
-  private final String id;
-  private final long pos;
-  private final long len;
-  private final int number;
-  private final int total;
+public abstract class SendingAttachmentEvent extends RvConnectionEvent {
+  protected final String id;
+  protected final long pos;
+  protected final long len;
+  protected final int number;
+  protected final int total;
 
   public SendingAttachmentEvent(String id, long pos, long len, int number,
       int total) {

@@ -46,7 +46,6 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.ConnectionType;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.Initiator;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnection;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvSessionConnectionInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.AbstractTransferrer;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.PausableController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.PauseHelper;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.PauseHelperImpl;
@@ -59,23 +58,20 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownErrorEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class DirectimController
-    extends StateController
+public class DirectimController extends StateController
     implements PausableController, Cancellable, TimeoutableController {
   private static final Logger LOGGER = Logger
       .getLogger(DirectimController.class.getName());
@@ -187,14 +183,13 @@ public class DirectimController
         List<AttachmentInfo> attachmentInfos = new ArrayList<AttachmentInfo>();
         if (message instanceof DirectMessage) {
           DirectMessage msg = (DirectMessage) message;
-          Map<String,AttachmentDestination> attachments = msg.getAttachments();
+          Set<Attachment> attachments = msg.getAttachments();
           if (!attachments.isEmpty()) {
             long length = header.getDataLength();
             length += TAG_BINARY.getLength();
             length += TAG_SBINARY.getLength();
-            for (Map.Entry<String,AttachmentDestination> entry : attachments.entrySet()) {
-              AttachmentDestination data = entry.getValue();
-              String id = entry.getKey();
+            for (Attachment data : attachments) {
+              String id = data.getId();
               ByteBlock prefix = ByteBlock.wrap(BinaryTools.getAsciiBytes(
                   "<DATA ID=\"" + id + "\" SIZE=\""
                   + data.getLength() + "\">"));
@@ -228,10 +223,11 @@ public class DirectimController
           int attachno = 0;
           int numattachments = attachmentInfos.size();
           for (AttachmentInfo attachment : attachmentInfos) {
-            AttachmentDestination data = attachment.data;
+            Attachment data = attachment.data;
             AttachmentSender sender = new AttachmentSender(chan, data, post,
-                attachment.id, attachno, numattachments);
-            if (sender.getPosition() != data.getLength()) {
+                attachment.id, attachno, numattachments, DirectimController.this);
+            long transferred = sender.transfer();
+            if (transferred != data.getLength()) {
               fireFailed(new UnknownErrorEvent());
             }
             attachno++;
@@ -272,14 +268,14 @@ public class DirectimController
     }
   }
 
-  private class AttachmentInfo {
+  private static class AttachmentInfo {
     public final String id;
     public final ByteBlock prefix;
     public final ByteBlock suffix;
-    public final AttachmentDestination data;
+    public final Attachment data;
 
     public AttachmentInfo(String id, ByteBlock prefix, ByteBlock suffix,
-        AttachmentDestination data) {
+        Attachment data) {
       this.prefix = prefix;
       this.id = id;
       this.suffix = suffix;
@@ -402,9 +398,9 @@ public class DirectimController
   public void sendMessage(Message message) {
     if (message instanceof DirectMessage) {
       DirectMessage dim = (DirectMessage) message;
-      for (String id : dim.getAttachments().keySet()) {
-        if (id.matches(".*(\"|<|>).*")) {
-          throw new IllegalArgumentException("Attachment ID " + id
+      for (Attachment attachment : dim.getAttachments()) {
+        if (attachment.getId().matches(".*(\"|<|>).*")) {
+          throw new IllegalArgumentException("Attachment ID " + attachment
               + " is invalid: illegal character \"<>");
         }
       }
@@ -426,51 +422,4 @@ public class DirectimController
   public PauseHelper getPauseHelper() {
     return pauseHelper;
   }
-
-  private static class AttachmentSender extends AbstractTransferrer<SocketChannel> {
-    private ByteBuffer buf;
-    private ReadableByteChannel inchan;
-    private final AttachmentDestination data;
-    private final EventPost post;
-    private final String id;
-    private final int attachno;
-    private final int numattachments;
-
-    public AttachmentSender(SocketChannel chan, AttachmentDestination data,
-        EventPost post, String id, int attachno, int numattachments)
-        throws FileNotFoundException {
-      super(chan, chan, 0, data.getLength());
-      this.data = data;
-      this.post = post;
-      this.id = id;
-      this.attachno = attachno;
-      this.numattachments = numattachments;
-      buf = ByteBuffer.allocate(1024);
-      inchan = data.openForReading();
-    }
-
-    protected int getSelectionKey() {
-      return SelectionKey.OP_WRITE;
-    }
-
-    protected boolean isCancelled() {
-      return false;
-    }
-
-    protected boolean waitIfPaused() {
-      return false;
-    }
-
-    protected long transfer(SocketChannel channel, long transferred,
-        long remaining) throws IOException {
-      post.fireEvent(new SendingAttachmentEvent(id, transferred,
-          data.getLength(), attachno, numattachments));
-      buf.rewind();
-      buf.limit(buf.capacity());
-      inchan.read(buf);
-      buf.flip();
-      return channel.write(buf);
-    }
-  }
-
 }
