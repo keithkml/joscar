@@ -47,7 +47,7 @@
         </fileset>
   </path>
 
-  <target name="build-oscar-jar-classes" depends="clean" description="Compiles common">
+  <target name="build-oscar-jar-classes" description="Compiles common">
     <javac srcdir="common/src" source="1.5" destdir="${common.bin}">
         <classpath refid="path.compile"/>
     </javac>
@@ -89,6 +89,30 @@
     </tar>
   </target>
 
-  <target name="nightly" depends="build-oscar-jar, build-src-archive" />
+  <target name="compile-tests" depends="build-oscar-jar-classes">
+    <mkdir dir="test-classes" />
+    <javac destdir="test-classes" srcdir="oscar/tests">
+      <classpath path="${oscar.bin}" />
+      <classpath path="${common.bin}" />
+      <classpath refid="path.compile" />
+    </javac>
+  </target>
+
+  <target name="run-oscar-tests" depends="compile-tests">
+    <junit>
+      <assertions>
+        <enable />
+      </assertions>
+      <test name="net.kano.joustsim.oscar.oscar.service.icbm.RvConnectionFunctionalTests" />
+      <test name="net.kano.joustsim.oscar.oscar.service.icbm.dim.DirectimReceiverTest" />
+      <classpath path="${oscar.bin}" />
+      <classpath path="${common.bin}" />
+      <classpath refid="path.compile" />
+      <classpath path="test-classes" />
+    </junit>
+  </target>
+
+
+  <target name="nightly" depends="clean, run-oscar-tests, build-oscar-jar, build-src-archive" />
 </project>
 
