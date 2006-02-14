@@ -89,7 +89,10 @@ public class FileWritable implements LiveWritable {
             FileChannel inch = in.getChannel();
             WritableByteChannel outch = Channels.newChannel(out);
 
-            inch.transferTo(0, len, outch);
+            int pos = 0;
+            while (pos < len) {
+                pos += inch.transferTo(pos, len - pos, outch);
+            }
         } finally {
             in.close();
         }

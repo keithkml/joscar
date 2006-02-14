@@ -72,7 +72,9 @@ public class DynAsciiCharSequence implements CharSequence {
         return new DynAsciiCharSequence(data.subBlock(start, end - start));
     }
 
-    public String toString() { return BinaryTools.getAsciiString(data); }
+    public String toString() {
+      return BinaryTools.getAsciiString(data.subBlock(0, length));
+    }
 
     public boolean contains(CharSequence target) {
         return indexOf(target) != -1;
@@ -90,33 +92,33 @@ public class DynAsciiCharSequence implements CharSequence {
     // the JDK.
     public int indexOf(CharSequence target, int fromIndex) {
         DefensiveTools.checkRange(fromIndex, "fromIndex", 0);
-        if (fromIndex >= length()) {
-            return (target.length() == 0 ? length() : -1);
+        int sourceCount = length();
+        int targetCount = target.length();
+        if (fromIndex >= sourceCount) {
+            return (targetCount == 0 ? sourceCount : -1);
         }
-        if (target.length() == 0) {
+        if (targetCount == 0) {
             return fromIndex;
         }
 
-        char first = target.charAt(0);
-        int max = length();
+        char first  = target.charAt(0);
+        int max = sourceCount - targetCount;
 
         for (int i = fromIndex; i <= max; i++) {
-            // Look for first character.
+            /* Look for first character. */
             if (charAt(i) != first) {
-                while (++i <= max && charAt(i) != first) ;
+                while (++i <= max && charAt(i) != first);
             }
 
             /* Found first character, now look at the rest of v2 */
             if (i <= max) {
                 int j = i + 1;
-                int end = j + target.length() - 1;
+                int end = j + targetCount - 1;
                 for (int k = 1; j < end && charAt(j) ==
-                        target.charAt(k); j++, k++) {
-                    // the loop parameters do it all
-                }
+                        target.charAt(k); j++, k++);
 
                 if (j == end) {
-                    // Found whole string.
+                    /* Found whole string. */
                     return i;
                 }
             }
