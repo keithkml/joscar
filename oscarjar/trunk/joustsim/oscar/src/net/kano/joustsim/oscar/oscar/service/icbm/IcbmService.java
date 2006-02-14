@@ -326,10 +326,10 @@ public class IcbmService extends Service {
     sendIM(buddy, new InstantMessage(body), autoresponse);
   }
 
-  void sendIM(Screenname buddy, InstantMessage im,
-      boolean autoresponse) {
+  void sendIM(Screenname buddy, InstantMessage im, boolean autoresponse) {
+    // ackRequested must be false if autoresponse is true
     sendSnac(new SendImIcbm(buddy.getFormatted(), im, autoresponse, 0,
-        false, null, null, true));
+        false, null, null, !autoresponse));
   }
 
   void sendTypingStatus(Screenname buddy, TypingState typingState) {
