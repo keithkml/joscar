@@ -245,7 +245,7 @@ public class AolRtfEditorKit extends HTMLEditorKit {
             }
 
             public void handleComment(char[] data, int pos) {
-                // do nothing
+                realCallback.handleComment(data, pos);
             }
         }
 
