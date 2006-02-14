@@ -305,21 +305,21 @@ public class DummyOnlineWindow extends JFrame {
         RvConnectionManager ftm = conn.getIcbmService().getRvConnectionManager();
         ftm.addConnectionManagerListener(new RvConnectionManagerListener() {
             public void handleNewIncomingConnection(RvConnectionManager manager,
-                    IncomingRvConnection transfer) {
-              if (transfer instanceof IncomingFileTransfer) {
-                IncomingFileTransfer ft = (IncomingFileTransfer) transfer;
+                    IncomingRvConnection connection) {
+              if (connection instanceof IncomingFileTransfer) {
+                IncomingFileTransfer ft = (IncomingFileTransfer) connection;
 
                 FileSendBlock fileInfo = ft.getFileInfo();
                 int choice = JOptionPane.showConfirmDialog(DummyOnlineWindow.this,
-                    transfer.getBuddyScreenname() + " wants to send you "
+                    connection.getBuddyScreenname() + " wants to send you "
                         + fileInfo.getFileCount() + " files \""
                         + fileInfo.getFilename() + "\"", "File Transfer",
                     JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
                 if (choice == JOptionPane.YES_OPTION) {
                   watchTransfer(ft);
-                  transfer.accept();
+                  connection.accept();
                 } else {
-                  transfer.reject();
+                  connection.reject();
                 }
               }
             }
@@ -341,7 +341,6 @@ public class DummyOnlineWindow extends JFrame {
         });
     }
 
-    //TODO: make communication between buddylistbox and dummyonline window more MVC
     public void watchTransfer(final FileTransfer transfer) {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {

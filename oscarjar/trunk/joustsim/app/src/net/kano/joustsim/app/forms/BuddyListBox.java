@@ -237,10 +237,14 @@ public class BuddyListBox extends JPanel {
                     int result = chooser.showOpenDialog(BuddyListBox.this);
                     if (result == JFileChooser.APPROVE_OPTION) {
                         File[] files = chooser.getSelectedFiles();
-                        if (files.length > 1) {
-                            transfer.setFiles("Folder", Arrays.asList(files));
-                        } else {
-                            transfer.setFile(files[0]);
+                        try {
+                            if (files.length > 1) {
+                                transfer.setFiles("Folder", Arrays.asList(files));
+                            } else {
+                                transfer.setFile(files[0]);
+                            }
+                        } catch (IOException e1) {
+                          e1.printStackTrace();
                         }
                         guiSession.getDummyOnlineWindow().watchTransfer(transfer);
                         transfer.sendRequest(new InvitationMessage("Here's a file!"));

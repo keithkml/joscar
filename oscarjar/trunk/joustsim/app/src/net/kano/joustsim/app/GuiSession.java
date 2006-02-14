@@ -172,15 +172,19 @@ public class GuiSession {
     if (conn != null) conn.disconnect();
   }
 
-  public synchronized ImBox openImBox(Screenname sn) {
-    ImBox box = imBoxes.get(sn);
-    if (box == null) {
-      IcbmService service = conn.getIcbmService();
+  public ImBox openImBox(Screenname sn) {
+    ImBox box;
+    synchronized (this) {
+      box = imBoxes.get(sn);
+      if (box == null) {
+        IcbmService service = conn.getIcbmService();
 
-      box = createBox(sn);
+        box = createBox(sn);
 
-      box.handleConversation(service.getImConversation(sn));
-      box.handleConversation(service.getSecureAimConversation(sn));
+        box.handleConversation(service.getImConversation(sn));
+        box.handleConversation(service.getSecureAimConversation(sn));
+        box.handleConversation(service.getDirectimConversation(sn));
+      }
     }
     final ImBox fbox = box;
     SwingUtilities.invokeLater(new Runnable() {
