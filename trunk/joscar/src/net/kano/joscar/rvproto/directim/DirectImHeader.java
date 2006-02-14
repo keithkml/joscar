@@ -47,7 +47,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.regex.Pattern;
 
 /**
  * A data structure containing information about a Direct IM message or typing
@@ -84,6 +83,18 @@ public final class DirectImHeader implements LiveWritable {
      * the user has typed a message, but has momentarily stopped typing.
      */
     public static final long FLAG_TYPED = 0x04;
+    /**
+     * A flag indicating that the ICBM ID contained in the header is being
+     * sent to confirm the connection. A packet with this flag is sent upon
+     * connection by whichever buddy did <em>not</em> send the RV
+     * request/redirect packet which led to the connection.
+     */
+    public static final long FLAG_CONFIRMATION = 0x20;
+    /**
+     * A flag whose significance is unknown as of this writing. This flag is
+     * always sent by iChat and MacAIM when {@link #FLAG_CONFIRMATION} is sent.
+     */
+    public static final long FLAG_CONFIRMATION_UNKNOWN = 0x40;
 
     /** A flag indicating that a message is an "auto-response." */
     public static final long FLAG_AUTORESPONSE = 0x01;
@@ -245,19 +256,31 @@ public final class DirectImHeader implements LiveWritable {
         // read the six-byte meta-header containing the ODC version and the
         // length of the real header
         byte[] miniHeader = new byte[6];
-        for (int i = 0; i < miniHeader.length;) {
-            int count = in.read(miniHeader, i, miniHeader.length - i);
+        if (!fillBuffer(miniHeader, in)) return null;
+        ByteBlock miniHeaderBlock = ByteBlock.wrap(miniHeader);
 
-            if (count == -1) return null;
-
-            i += count;
+        DirectImHeader hdr = produceInitialHeader(miniHeaderBlock);
+        if (hdr == null) return null;
+        if (!hdr.getDcVersion().equals("ODC2")) {
+          throw new IOException("Unknown DC version " + hdr.getDcVersion());
         }
 
+        // now read the real header. note that headerSize includes the length of
+        // the mini-header.
+        byte[] headerData = new byte[hdr.getHeaderSize() - 6];
+        if (!fillBuffer(headerData, in)) return null;
+
+        // okay.
+
+        return readRestOfHeader(hdr, ByteBlock.wrap(headerData));
+    }
+
+    private static DirectImHeader produceInitialHeader(
+            ByteBlock miniHeaderBlock) {
         // create a header object
         DirectImHeader hdr = new DirectImHeader();
 
-        // extract those two values (the version and the header length)
-        ByteBlock miniHeaderBlock = ByteBlock.wrap(miniHeader);
+        // extract the two values (the version and the header length)
         ByteBlock verBlock = miniHeaderBlock.subBlock(0, 4);
 
         hdr.setDcVersion(BinaryTools.getAsciiString(verBlock));
@@ -266,21 +289,24 @@ public final class DirectImHeader implements LiveWritable {
         if (headerLen < 6) return null;
 
         hdr.setHeaderSize(headerLen);
+        return hdr;
+    }
 
-        // now read the real header. note that headerLen includes the length of
-        // the mini-header.
-        byte[] headerData = new byte[headerLen - 6];
-        for (int i = 0; i < headerData.length;) {
-            int count = in.read(headerData, i, headerData.length - i);
+    private static boolean fillBuffer(byte[] array, InputStream in)
+            throws IOException {
+        int i;
+        for (i = 0; i < array.length;) {
+            int count = in.read(array, i, array.length - i);
 
-            if (count == -1) return null;
+            if (count == -1) break;
 
             i += count;
         }
+        return i == array.length;
+    }
 
-        // okay.
-        ByteBlock header = ByteBlock.wrap(headerData);
-
+    private static DirectImHeader readRestOfHeader(DirectImHeader hdr,
+            ByteBlock header) {
         hdr.setMessageId(BinaryTools.getLong(header, 6));
         hdr.setDataLength(BinaryTools.getUInt(header, 22));
         int charsetCode = BinaryTools.getUShort(header, 26);
