@@ -86,7 +86,7 @@ class LineReader extends HTMLEditorKit.ParserCallback {
     }
 
     public void handleText(char[] data, int pos) {
-        //TODO: manually handle spaces
+        //TODO: manually handle spaces (??)
         elements.add(new TextElement(new String(data), getCurrentAttr()));
     }
 
