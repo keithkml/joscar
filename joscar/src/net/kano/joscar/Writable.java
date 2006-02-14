@@ -43,15 +43,7 @@ import java.io.OutputStream;
  * for objects which can write themselves in some format or another to a stream
  * <i>and</i> know the length of that data beforehand.
  */
-public interface Writable extends LiveWritable {
-    /**
-     * Returns the length of the data that was or will be written in a call to
-     * <code>write</code>. The value returned by this method <b>must not
-     * change</b> after its first invocation.
-     *
-     * @return the length of the data to be written by <code>write</code>
-     */
-    long getWritableLength();
+public interface Writable extends LiveWritable, WritableLengthOwner {
 
     /**
      * Writes a representation of this object to the given stream. The length

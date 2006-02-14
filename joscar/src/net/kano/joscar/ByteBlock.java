@@ -45,6 +45,9 @@ import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.Channels;
 
 /**
  * Provides a read-only interface to an underlying block of data. This class
@@ -74,7 +77,7 @@ import java.util.Collection;
  * with the efficiency of accessing a single underlying <code>byte[]</code>,
  * <i>and</i> with the added security of being immutable (that is, read-only).
  */
-public final class ByteBlock implements Writable, Serializable {
+public final class ByteBlock implements Writable, NioWritable, Serializable {
     /** An empty byte array. */
     private static final byte[] BYTES_EMPTY = new byte[0];
 
@@ -214,8 +217,8 @@ public final class ByteBlock implements Writable, Serializable {
         } else {
             ByteArrayOutputStream out;
 
-            if (writable instanceof Writable) {
-                long writableLength = ((Writable) writable).getWritableLength();
+            if (writable instanceof WritableLengthOwner) {
+                long writableLength = ((WritableLengthOwner) writable).getWritableLength();
 
                 if (writableLength > Integer.MAX_VALUE) {
                     throw new ArrayIndexOutOfBoundsException("writable length "
@@ -259,12 +262,12 @@ public final class ByteBlock implements Writable, Serializable {
         long ttlSize = 0;
         boolean good = true;
         for (LiveWritable writable : writables) {
-            if (!(writable instanceof Writable)) {
+            if (!(writable instanceof WritableLengthOwner)) {
                 good = false;
                 break;
             }
 
-            long len = ((Writable) writable).getWritableLength();
+            long len = ((WritableLengthOwner) writable).getWritableLength();
             ttlSize += len;
         }
 
@@ -371,7 +374,7 @@ public final class ByteBlock implements Writable, Serializable {
     private ByteBlock(byte[] bytes, int offset, int len)
             throws IllegalArgumentException, IndexOutOfBoundsException {
         DefensiveTools.checkNull(bytes, "bytes");
-        
+
         if (offset < 0) {
             throw new IndexOutOfBoundsException("offset (" + offset + ") < 0");
         }
@@ -588,6 +591,10 @@ public final class ByteBlock implements Writable, Serializable {
         System.arraycopy(bytes, offset, dest, destOffset, len);
     }
 
+    public ByteBuffer toByteBuffer() {
+        return ByteBuffer.wrap(bytes, offset, len).asReadOnlyBuffer();
+    }
+
     /**
      * Returns <code>true</code> if this and the given object represent the same
      * data, byte for byte; <code>false</code> otherwise.
@@ -646,5 +653,9 @@ public final class ByteBlock implements Writable, Serializable {
 
     public String toString() {
         return BinaryTools.describeData(this);
+    }
+
+    public ReadableByteChannel getNioChannel() {
+        return Channels.newChannel(new ByteArrayInputStream(bytes, offset, len));
     }
 }
