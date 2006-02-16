@@ -199,7 +199,7 @@ public class OutgoingFileTransferImpl
     }
   }
 
-  protected StateController createConnectedController() {
+  protected StateController createConnectedController(StateInfo endState) {
     return new SendFileController();
   }
 

@@ -140,7 +140,7 @@ public class RvConnectionManager {
           conn.getProxy(), conn.getScreenname(), session);
       LOGGER.fine("Creating IncomingFileTransferImpl for new session "
           + session);
-      transfer.addTransferListener(incomingListener);
+      transfer.addEventListener(incomingListener);
       return transfer.getRvSessionHandler();
     }
   }
@@ -155,7 +155,7 @@ public class RvConnectionManager {
           conn.getProxy(), conn.getScreenname(), session);
       LOGGER.fine("Creating IncomingDirectimConnectionImpl for new session "
           + session);
-      transfer.addTransferListener(incomingListener);
+      transfer.addEventListener(incomingListener);
       return transfer.getRvSessionHandler();
     }
   }

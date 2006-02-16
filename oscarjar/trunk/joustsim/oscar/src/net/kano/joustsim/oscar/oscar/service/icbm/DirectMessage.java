@@ -35,6 +35,7 @@
 package net.kano.joustsim.oscar.oscar.service.icbm;
 
 import net.kano.joustsim.oscar.oscar.service.icbm.dim.Attachment;
+import net.kano.joscar.DefensiveTools;
 
 import java.util.Collections;
 import java.util.Set;
@@ -48,11 +49,10 @@ public class DirectMessage implements Message {
     this(message, autoResponse, Collections.<Attachment>emptySet());
   }
 
-  public DirectMessage(String message, boolean autoResponse, Set<Attachment> map) {
+  public DirectMessage(String message, boolean autoResponse, Set<Attachment> attachments) {
     this.message = message;
     this.autoResponse = autoResponse;
-    //noinspection AssignmentToCollectionOrArrayFieldFromParameter
-    this.attachments = map;
+    this.attachments = DefensiveTools.getUnmodifiableSetCopy(attachments);
   }
 
   public String getMessageBody() {

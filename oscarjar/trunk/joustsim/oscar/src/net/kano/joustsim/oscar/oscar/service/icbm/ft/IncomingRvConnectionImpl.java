@@ -34,20 +34,12 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-import net.kano.joscar.rv.RecvRvEvent;
-import net.kano.joscar.rvcmd.AcceptRvCmd;
-import net.kano.joscar.rvcmd.ConnectionRequestRvCmd;
-import net.kano.joscar.rvcmd.RejectRvCmd;
-import net.kano.joscar.rvcmd.RvConnectionInfo;
-import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectToProxyForIncomingController;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ManualTimeoutController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.OutgoingConnectionController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.RedirectConnectionController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.RedirectToProxyController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.BuddyCancelledEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectionFailedEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownErrorEvent;
@@ -64,7 +56,6 @@ public abstract class IncomingRvConnectionImpl
   private static final Logger LOGGER = Logger
       .getLogger(IncomingRvConnectionImpl.class.getName());
 
-  private RvConnectionInfo originalRemoteHostInfo;
   private boolean accepted = false;
   private boolean rejected = false;
   private boolean alwaysRedirect = false;
@@ -77,14 +68,6 @@ public abstract class IncomingRvConnectionImpl
   public IncomingRvConnectionImpl(AimProxyInfo proxy,
       Screenname screenname, RvSessionConnectionInfo rvsessioninfo) {
     super(proxy, screenname, rvsessioninfo);
-  }
-
-  public synchronized RvConnectionInfo getOriginalRemoteHostInfo() {
-    return originalRemoteHostInfo;
-  }
-
-  synchronized void setOriginalRemoteHostInfo(RvConnectionInfo info) {
-    this.originalRemoteHostInfo = info;
   }
 
   public synchronized boolean isAccepted() { return accepted; }
@@ -195,60 +178,4 @@ public abstract class IncomingRvConnectionImpl
   protected abstract StateController getNextStateFromErrorWithUnknownController(
       StateController oldController, StateInfo oldState,
       RvConnectionEvent event);
-
-
-  public abstract class AbstractIncomingRvSessionHandler extends AbstractRvSessionHandler {
-    public AbstractIncomingRvSessionHandler() {
-      super(IncomingRvConnectionImpl.this);
-    }
-
-    protected void handleIncomingReject(RecvRvEvent event,
-        RejectRvCmd rejectCmd) {
-      BuddyCancelledEvent evt = new BuddyCancelledEvent(
-          rejectCmd.getRejectCode());
-      setState(RvConnectionState.FAILED, evt);
-    }
-
-    protected void handleIncomingAccept(RecvRvEvent event,AcceptRvCmd acceptCmd) {
-      ManualTimeoutController mtc = null;
-      synchronized (this) {
-        StateController controller = getStateController();
-        if (controller instanceof ManualTimeoutController) {
-          mtc = (ManualTimeoutController) controller;
-        }
-      }
-      if (mtc != null) mtc.startTimeoutTimer();
-    }
-
-    protected void handleIncomingRequest(RecvRvEvent event,
-        ConnectionRequestRvCmd reqCmd) {
-      int index = reqCmd.getRequestIndex();
-      if (index == FileSendReqRvCmd.REQINDEX_FIRST) {
-        handleFirstRequest(reqCmd);
-
-        RvConnectionInfo connInfo = reqCmd.getConnInfo();
-        setOriginalRemoteHostInfo(connInfo);
-        getRvSessionInfo().setConnectionInfo(connInfo);
-        getRvSessionInfo().setInitiator(Initiator.BUDDY);
-
-        fireEvent(new NewIncomingConnectionEvent(IncomingRvConnectionImpl.this));
-
-      } else if (index > FileSendReqRvCmd.REQINDEX_FIRST) {
-        HowToConnect how = processRedirect(reqCmd);
-        if (how == HowToConnect.PROXY) {
-          changeStateController(new ConnectToProxyForIncomingController());
-        } else if (how == HowToConnect.NORMAL) {
-          changeStateController(
-              new OutgoingConnectionController(ConnectionType.LAN));
-        } else {
-          throw new IllegalStateException("How to connect was " + how);
-        }
-      } else {
-        LOGGER.warning("Got unknown request index " + index + " for "
-            + reqCmd);
-      }
-    }
-
-    protected abstract void handleFirstRequest(ConnectionRequestRvCmd reqCmd);
-  }
 }

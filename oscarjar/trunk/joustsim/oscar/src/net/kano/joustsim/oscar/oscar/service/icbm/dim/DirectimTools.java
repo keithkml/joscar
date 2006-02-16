@@ -34,7 +34,7 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.dim;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.StateBasedConnection;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.StateBasedRvConnection;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
 import org.jetbrains.annotations.Nullable;
 
@@ -42,7 +42,7 @@ final class DirectimTools {
   private DirectimTools() { }
 
   public static @Nullable DirectimController getDirectimStateController(
-      StateBasedConnection connection) {
+      StateBasedRvConnection connection) {
     StateController controller = connection.getStateController();
     if (controller instanceof DirectimController) {
       return (DirectimController) controller;

@@ -48,92 +48,96 @@ import java.util.List;
 import java.util.logging.Logger;
 
 public class MyBuddyIconManager {
-    private static final Logger LOGGER = Logger
-            .getLogger(MyBuddyIconManager.class.getName());
+  private static final Logger LOGGER = Logger
+      .getLogger(MyBuddyIconManager.class.getName());
 
-    private AimConnection conn;
+  private AimConnection conn;
 
-    private ByteBlock wantedIconData = null;
-    private ExtraInfoData wantedIconHash = null;
-    private MainBosServiceListener bosListener = new MainBosServiceListener() {
-        public void handleYourInfo(MainBosService service, FullUserInfo userInfo) {
-        }
-
-        public void handleYourExtraInfo(List<ExtraInfoBlock> extraInfos) {
-            for (ExtraInfoBlock block : extraInfos) {
-                if (!(block.getType() == ExtraInfoBlock.TYPE_ICONHASH)) continue;
-
-                handleMyIconBlock(block);
-            }
-        }
-    };
-
-    public MyBuddyIconManager(AimConnection connection) {
-        this.conn = connection;
-        conn.addOpenedServiceListener(new OpenedServiceListener() {
-            public void openedServices(AimConnection cocnn,
-                    Collection<? extends Service> services) {
-                for (Service service : services) {
-                    if (service instanceof MainBosService) {
-                        MainBosService bosService = (MainBosService) service;
-                        bosService.addMainBosServiceListener(bosListener);
-                    }
-                }
-            }
-
-            public void closedServices(AimConnection conn,
-                    Collection<? extends Service> services) {
-            }
-        });
+  private ByteBlock wantedIconData = null;
+  private ExtraInfoData wantedIconHash = null;
+  private MainBosServiceListener bosListener = new MainBosServiceListener() {
+    public void handleYourInfo(MainBosService service, FullUserInfo userInfo) {
     }
 
-    private void handleMyIconBlock(ExtraInfoBlock block) {
-        ExtraInfoData hash = block.getExtraData();
-        if (wantedIconData != null && wantedIconHash != null
-                && hash.getData().equals(wantedIconHash.getData())) {
-            if ((hash.getFlags() & ExtraInfoData.FLAG_UPLOAD_ICON) != 0) {
-                if (wantedIconData == null) {
-                    LOGGER.fine("Server asked us to upload "
-                            + "icon for " + hash + " but we don't "
-                            + "want icon data");
-                } else {
-                    ExternalServiceManager externalServiceManager = conn
-                            .getExternalServiceManager();
-                    IconServiceArbiter iconServiceArbiter = externalServiceManager
-                            .getIconServiceArbiter();
-                    iconServiceArbiter.uploadIcon(wantedIconData);
-                }
-            }
+    public void handleYourExtraInfo(List<ExtraInfoBlock> extraInfos) {
+      for (ExtraInfoBlock block : extraInfos) {
+        if (!(block.getType() == ExtraInfoBlock.TYPE_ICONHASH)) continue;
+
+        handleMyIconBlock(block);
+      }
+    }
+  };
+
+  public MyBuddyIconManager(AimConnection connection) {
+    this.conn = connection;
+    conn.addOpenedServiceListener(new OpenedServiceListener() {
+      public void openedServices(AimConnection cocnn,
+          Collection<? extends Service> services) {
+        for (Service service : services) {
+          if (service instanceof MainBosService) {
+            MainBosService bosService = (MainBosService) service;
+            bosService.addMainBosServiceListener(bosListener);
+          }
+        }
+      }
+
+      public void closedServices(AimConnection conn,
+          Collection<? extends Service> services) {
+      }
+    });
+  }
+
+  private void handleMyIconBlock(ExtraInfoBlock block) {
+    ExtraInfoData hash = block.getExtraData();
+    if (wantedIconData != null && wantedIconHash != null
+        && hash.getData().equals(wantedIconHash.getData())) {
+      //TODO(klea): when should we upload the icon?
+      if ((hash.getFlags() & ExtraInfoData.FLAG_HASH_PRESENT) != 0) {
+//      if ((hash.getFlags() & ExtraInfoData.FLAG_UPLOAD_ICON) != 0) {
+        if (wantedIconData == null) {
+          LOGGER.fine("Server asked us to upload "
+              + "icon for " + hash + " but we don't "
+              + "want icon data");
         } else {
-            LOGGER.fine("Ignoring obsolete icon upload "
-                    + "request from server for " + hash);
+          ExternalServiceManager externalServiceManager = conn
+              .getExternalServiceManager();
+          IconServiceArbiter iconServiceArbiter = externalServiceManager
+              .getIconServiceArbiter();
+          iconServiceArbiter.uploadIcon(wantedIconData);
         }
+      } else {
+        LOGGER.fine("Server doesn't want us to upload image " + hash.getData());
+      }
+    } else {
+      LOGGER.fine("Ignoring obsolete icon upload "
+          + "request from server for " + hash);
     }
+  }
 
-    public void requestSetIcon(ExtraInfoData iconInfo) {
-        wantedIconData = null;
-        reallySetIcon(iconInfo);
-    }
+  public void requestSetIcon(ExtraInfoData iconInfo) {
+    wantedIconData = null;
+    reallySetIcon(iconInfo);
+  }
 
-    public void requestSetIcon(ByteBlock iconData) {
-        DefensiveTools.checkNull(iconData, "iconData");
+  public void requestSetIcon(ByteBlock iconData) {
+    DefensiveTools.checkNull(iconData, "iconData");
 
-        wantedIconData = iconData;
-        ExtraInfoData iconInfo = conn.getBuddyIconTracker()
-                .addToCache(conn.getScreenname(), iconData);
-        reallySetIcon(iconInfo);
-    }
+    wantedIconData = iconData;
+    ExtraInfoData iconInfo = conn.getBuddyIconTracker()
+        .addToCache(conn.getScreenname(), iconData);
+    reallySetIcon(iconInfo);
+  }
 
-    public void requestClearIcon() {
-        wantedIconData = null;
-        reallySetIcon(new ExtraInfoData(ExtraInfoData.FLAG_DEFAULT,
-                ExtraInfoData.HASH_SPECIAL));
-    }
+  public void requestClearIcon() {
+    wantedIconData = null;
+    reallySetIcon(new ExtraInfoData(ExtraInfoData.FLAG_DEFAULT,
+        ExtraInfoData.HASH_SPECIAL));
+  }
 
-    private void reallySetIcon(ExtraInfoData iconInfo) {
-        DefensiveTools.checkNull(iconInfo, "iconInfo");
+  private void reallySetIcon(ExtraInfoData iconInfo) {
+    DefensiveTools.checkNull(iconInfo, "iconInfo");
 
-        wantedIconHash = iconInfo;
-        conn.getSsiService().getBuddyIconItemManager().setIcon(iconInfo);
-    }
+    wantedIconHash = iconInfo;
+    conn.getSsiService().getBuddyIconItemManager().setIcon(iconInfo);
+  }
 }

@@ -41,6 +41,7 @@ import net.kano.joustsim.oscar.oscar.service.icbm.RendezvousSessionHandler;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.IncomingRvConnectionImpl;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionState;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvSessionConnectionInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.AbstractIncomingRvSessionHandler;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectionCompleteEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
@@ -105,7 +106,7 @@ public class IncomingDirectimConnectionImpl
   }
 
   protected RendezvousSessionHandler createSessionHandler() {
-    return new AbstractIncomingRvSessionHandler() {
+    return new AbstractIncomingRvSessionHandler(this) {
       protected void handleFirstRequest(ConnectionRequestRvCmd reqCmd) {
         // we're okay. there's no dim-specific stuff in the request.
       }

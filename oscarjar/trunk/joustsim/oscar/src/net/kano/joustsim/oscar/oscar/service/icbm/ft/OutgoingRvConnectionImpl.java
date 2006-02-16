@@ -35,19 +35,15 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
 import net.kano.joscar.rv.RecvRvEvent;
-import net.kano.joscar.rvcmd.AcceptRvCmd;
 import net.kano.joscar.rvcmd.ConnectionRequestRvCmd;
-import net.kano.joscar.rvcmd.RejectRvCmd;
 import net.kano.joscar.rvcmd.RequestRvCmd;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectToProxyForOutgoingController;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ManualTimeoutController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.OutgoingConnectionController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.RedirectToProxyController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendOverProxyController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendPassivelyController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.BuddyCancelledEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownErrorEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
@@ -63,6 +59,11 @@ public abstract class OutgoingRvConnectionImpl extends RvConnectionImpl
   private static final Logger LOGGER = Logger
       .getLogger(OutgoingRvConnectionImpl.class.getName());
 
+  public OutgoingRvConnectionImpl(Screenname myScreenname,
+      RvSessionConnectionInfo rvsessioninfo) {
+    super(AimProxyInfo.forNoProxy(), myScreenname, rvsessioninfo);
+  }
+
   public OutgoingRvConnectionImpl(AimProxyInfo proxy,
       Screenname myScreenname, RvSessionConnectionInfo rvsessioninfo) {
     super(proxy, myScreenname, rvsessioninfo);
@@ -73,7 +74,7 @@ public abstract class OutgoingRvConnectionImpl extends RvConnectionImpl
     StateInfo endState = oldController.getEndStateInfo();
     if (endState instanceof SuccessfulStateInfo) {
       if (isConnectionController(oldController)) {
-        return createConnectedController();
+        return createConnectedController(endState);
 
       } else {
         return getNextControllerFromUnknownSuccess(oldController, endState);
@@ -117,7 +118,8 @@ public abstract class OutgoingRvConnectionImpl extends RvConnectionImpl
   protected abstract StateController getNextControllerFromUnknownSuccess(
       StateController oldController, StateInfo endState);
 
-  protected abstract StateController createConnectedController();
+  protected abstract StateController createConnectedController(
+      StateInfo endState);
 
   private static boolean isLanController(StateController oldController) {
     return oldController instanceof OutgoingConnectionController
@@ -141,45 +143,28 @@ public abstract class OutgoingRvConnectionImpl extends RvConnectionImpl
   }
 
   protected AbstractRvSessionHandler createSessionHandler() {
-    return new AbstractRvSessionHandler(this) {
-      protected void handleIncomingReject(RecvRvEvent event,
-          RejectRvCmd rejectCmd) {
-        setState(RvConnectionState.FAILED,
-            new BuddyCancelledEvent(rejectCmd.getRejectCode()));
-      }
+    return new MyAbstractRvSessionHandler();
+  }
 
-      protected void handleIncomingAccept(RecvRvEvent event,
-          AcceptRvCmd acceptCmd) {
-        ManualTimeoutController mtc = getManualTimeoutController();
-        if (mtc != null) mtc.startTimeoutTimer();
-      }
+  private class MyAbstractRvSessionHandler extends AbstractRvSessionHandler {
+    public MyAbstractRvSessionHandler() {super(OutgoingRvConnectionImpl.this);}
 
-      private synchronized ManualTimeoutController getManualTimeoutController() {
-        StateController controller = getStateController();
-        if (controller instanceof ManualTimeoutController) {
-          return (ManualTimeoutController) controller;
-        } else {
-          return null;
+    protected void handleIncomingRequest(RecvRvEvent event,
+        ConnectionRequestRvCmd reqCmd) {
+      int reqType = reqCmd.getRequestIndex();
+      if (reqType > RequestRvCmd.REQINDEX_FIRST) {
+        HowToConnect how = processRedirect(reqCmd);
+        if (how == HowToConnect.PROXY) {
+          changeStateController(
+              new OutgoingConnectionController(ConnectionType.LAN));
+        } else if (how == HowToConnect.NORMAL) {
+          changeStateController(
+              new ConnectToProxyForOutgoingController());
         }
+      } else {
+        LOGGER.warning("got unknown rv connection request type in outgoing "
+            + "transfer: " + reqType);
       }
-
-      protected void handleIncomingRequest(RecvRvEvent event,
-          ConnectionRequestRvCmd reqCmd) {
-        int reqType = reqCmd.getRequestIndex();
-        if (reqType > RequestRvCmd.REQINDEX_FIRST) {
-          HowToConnect how = processRedirect(reqCmd);
-          if (how == HowToConnect.PROXY) {
-            changeStateController(
-                new OutgoingConnectionController(ConnectionType.LAN));
-          } else if (how == HowToConnect.NORMAL) {
-            changeStateController(
-                new ConnectToProxyForOutgoingController());
-          }
-        } else {
-          LOGGER.warning("got unknown rv connection request type in outgoing "
-              + "transfer: " + reqType);
-        }
-      }
-    };
+    }
   }
 }

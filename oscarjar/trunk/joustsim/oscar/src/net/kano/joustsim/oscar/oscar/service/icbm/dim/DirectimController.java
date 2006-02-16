@@ -83,7 +83,7 @@ public class DirectimController extends StateController
   public static final ByteBlock TAG_SDATA
       = ByteBlock.wrap(BinaryTools.getAsciiBytes("</DATA>"));
 
-  private DirectimConnection transfer;
+  private DirectimConnection connection;
   private StreamInfo stream;
   private Thread recvThread;
   private Thread sendThread;
@@ -96,13 +96,13 @@ public class DirectimController extends StateController
   private boolean icbmIdConfirmed = false;
 
   public void start(RvConnection conn, StateController last) {
-    this.transfer = (DirectimConnection) conn;
+    this.connection = (DirectimConnection) conn;
 
-    if (transfer.getRvSessionInfo().getInitiator() == Initiator.BUDDY) {
+    if (connection.getRvSessionInfo().getInitiator() == Initiator.BUDDY) {
       setIcbmIdConfirmed();
     }
     stream = (StreamInfo) last.getEndStateInfo();
-    transfer.getTimeoutHandler().startTimeout(this);
+    connection.getTimeoutHandler().startTimeout(this);
 
     recvThread = new Thread(new Runnable() {
       public void run() {
@@ -138,11 +138,11 @@ public class DirectimController extends StateController
           for (Object item : newItems) {
             try {
               if (item == INIT) {
-                RvSessionConnectionInfo rvinfo = transfer.getRvSessionInfo();
+                RvSessionConnectionInfo rvinfo = connection.getRvSessionInfo();
                 if (rvinfo.getInitiator() == Initiator.BUDDY) {
                   DirectImHeader header = new DirectImHeader();
                   header.setDefaults();
-                  header.setScreenname(transfer.getMyScreenname().getFormatted());
+                  header.setScreenname(connection.getMyScreenname().getFormatted());
                   header.setFlags(DirectImHeader.FLAG_CONFIRMATION
                       | DirectImHeader.FLAG_CONFIRMATION_UNKNOWN);
                   header.setMessageId(rvinfo
@@ -179,7 +179,7 @@ public class DirectimController extends StateController
         ImEncodedString str = ImEncodedString.encodeString(message.getMessageBody());
         DirectImHeader header = DirectImHeader.createMessageHeader(str,
             message.isAutoResponse());
-        header.setScreenname(transfer.getMyScreenname().getFormatted());
+        header.setScreenname(connection.getMyScreenname().getFormatted());
         List<AttachmentInfo> attachmentInfos = new ArrayList<AttachmentInfo>();
         if (message instanceof DirectMessage) {
           DirectMessage msg = (DirectMessage) message;
@@ -206,7 +206,7 @@ public class DirectimController extends StateController
         SocketChannel chan = stream.getSocketChannel();
         Selector selector = Selector.open();
         chan.register(selector, SelectionKey.OP_WRITE);
-        EventPost post = transfer.getEventPost();
+        EventPost post = connection.getEventPost();
         int length = msgData.limit();
         while (msgData.hasRemaining() && selector.isOpen() && chan.isOpen()) {
           selector.select(50);
@@ -292,7 +292,7 @@ public class DirectimController extends StateController
   }
 
   private void receiveInThread() throws IOException {
-    transfer.getEventPost().fireEvent(new ConnectedEvent());
+    connection.getEventPost().fireEvent(new ConnectedEvent());
 
     InputStream is = stream.getInputStream();
     while (true) {
@@ -304,11 +304,11 @@ public class DirectimController extends StateController
 
       long datalen = header.getDataLength();
       long flags = header.getFlags();
-      EventPost eventPost = transfer.getEventPost();
+      EventPost eventPost = connection.getEventPost();
       if ((flags & DirectImHeader.FLAG_TYPINGPACKET) != 0) {
         eventPost.fireEvent(new BuddyTypingEvent(getTypingState(flags)));
       }
-      RvSessionConnectionInfo rvinfo = transfer.getRvSessionInfo();
+      RvSessionConnectionInfo rvinfo = connection.getRvSessionInfo();
       if (!isIcbmIdConfirmed() && rvinfo.getInitiator() == Initiator.ME) {
         long realid = rvinfo.getRvSession().getRvSessionId();
         if ((flags & DirectImHeader.FLAG_CONFIRMATION) != 0
@@ -328,7 +328,7 @@ public class DirectimController extends StateController
         if (charset == null) charset = "US-ASCII";
 
         DirectimReceiver receiver = new DirectimReceiver(stream, eventPost,
-            getPauseHelper(), transfer.getAttachmentSaver(), this, charset,
+            getPauseHelper(), connection.getAttachmentSaver(), this, charset,
             datalen, DirectimReceiver.isAutoResponse(header));
         long transferred = receiver.transfer();
 

@@ -37,6 +37,9 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 import net.kano.joustsim.oscar.oscar.service.icbm.RendezvousSessionHandler;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ProxyRedirectDisallowedEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.BuddyCancelledEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ManualTimeoutController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
 import net.kano.joscar.rv.RecvRvEvent;
 import net.kano.joscar.rv.RvSnacResponseEvent;
 import net.kano.joscar.snaccmd.icbm.RvCommand;
@@ -47,19 +50,19 @@ import net.kano.joscar.rvcmd.RvConnectionInfo;
 
 import java.util.logging.Logger;
 
-abstract class AbstractRvSessionHandler implements RendezvousSessionHandler {
+public abstract class AbstractRvSessionHandler implements RendezvousSessionHandler {
   private static final Logger LOGGER = Logger
       .getLogger(AbstractRvSessionHandler.class.getName());
   
-  private RvConnection transfer;
+  private final RvConnection connection;
 
   public AbstractRvSessionHandler(RvConnection transfer) {
-    this.transfer = transfer;
+    this.connection = transfer;
   }
 
   protected final RvConnectionEvent getConnectError(RvConnectionInfo connInfo) {
     RvConnectionEvent error = null;
-    RvConnectionSettings settings = transfer.getSettings();
+    RvConnectionSettings settings = connection.getSettings();
     if (settings.isOnlyUsingProxy()) {
       if (connInfo.isProxied() && !settings.isProxyRequestTrusted()) {
         error = new ProxyRedirectDisallowedEvent(
@@ -69,10 +72,19 @@ abstract class AbstractRvSessionHandler implements RendezvousSessionHandler {
     return error;
   }
 
+  private synchronized ManualTimeoutController getManualTimeoutController() {
+    if (!(connection instanceof StateBasedRvConnection)) return null;
+    StateBasedRvConnection stateBasedRvConnection
+        = (StateBasedRvConnection) connection;
+    StateController controller = stateBasedRvConnection.getStateController();
+    if (!(controller instanceof ManualTimeoutController)) return null;
+    return (ManualTimeoutController) controller;
+  }
+
   protected static enum HowToConnect { DONT, PROXY, NORMAL }
 
   protected HowToConnect processRedirect(ConnectionRequestRvCmd reqCmd) {
-    RvSessionConnectionInfo sessionInfo = transfer.getRvSessionInfo();
+    RvSessionConnectionInfo sessionInfo = connection.getRvSessionInfo();
     sessionInfo.setRequestIndex(reqCmd.getRequestIndex());
     RvConnectionInfo connInfo = reqCmd.getConnInfo();
     LOGGER.fine("Received redirect packet: " + reqCmd
@@ -93,7 +105,7 @@ abstract class AbstractRvSessionHandler implements RendezvousSessionHandler {
       }
     } else {
       //      we could ignore it
-//      transfer.close(error);
+//      connection.close(error);
       how = HowToConnect.DONT;
     }
     return how;
@@ -112,11 +124,16 @@ abstract class AbstractRvSessionHandler implements RendezvousSessionHandler {
     }
   }
 
-  protected abstract void handleIncomingReject(RecvRvEvent event,
-                                               RejectRvCmd rejectCmd);
+  protected void handleIncomingReject(RecvRvEvent event,
+      RejectRvCmd rejectCmd) {
+    connection.close(new BuddyCancelledEvent(rejectCmd.getRejectCode()));
+  }
 
-  protected abstract void handleIncomingAccept(RecvRvEvent event,
-                                               AcceptRvCmd acceptCmd);
+  protected void handleIncomingAccept(RecvRvEvent event,
+      AcceptRvCmd acceptCmd) {
+    ManualTimeoutController mtc = getManualTimeoutController();
+    if (mtc != null) mtc.startTimeoutTimer();
+  }
 
   protected abstract void handleIncomingRequest(RecvRvEvent event,
                                                 ConnectionRequestRvCmd reqCmd);
@@ -124,5 +141,5 @@ abstract class AbstractRvSessionHandler implements RendezvousSessionHandler {
   public void handleSnacResponse(RvSnacResponseEvent event) {
   }
 
-  protected RvConnection getFileTransfer() { return transfer; }
+  protected RvConnection getRvConnection() { return connection; }
 }

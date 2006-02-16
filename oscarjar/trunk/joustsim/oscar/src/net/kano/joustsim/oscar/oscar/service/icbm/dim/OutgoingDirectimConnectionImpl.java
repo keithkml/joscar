@@ -95,7 +95,7 @@ public class OutgoingDirectimConnectionImpl
     }
   }
 
-  protected StateController createConnectedController() {
+  protected StateController createConnectedController(StateInfo endState) {
     return new DirectimController();
   }
 

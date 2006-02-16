@@ -44,7 +44,6 @@ import net.kano.joscar.snaccmd.FullUserInfo;
 import net.kano.joscar.snaccmd.InfoData;
 import net.kano.joscar.snaccmd.loc.UserInfoCmd;
 
-import java.util.Iterator;
 import java.util.Set;
 
 public abstract class UserInfoRequestManager extends InfoRequestManager {
@@ -79,7 +78,7 @@ public abstract class UserInfoRequestManager extends InfoRequestManager {
     }
 
     private void runListeners(Screenname sn, Object value) {
-        Set listeners = clearListeners(sn);
+        Set<InfoResponseListener> listeners = clearListeners(sn);
         for (Object listener1 : listeners) {
             InfoResponseListener listener = (InfoResponseListener) listener1;
             callListener(listener, sn, value);

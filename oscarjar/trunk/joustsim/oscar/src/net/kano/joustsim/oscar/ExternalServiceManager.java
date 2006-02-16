@@ -86,17 +86,17 @@ public class ExternalServiceManager {
     return usePort;
   }
 
-  private AimConnection aimConnection;
-
-  private ServiceArbiterFactory arbiterFactory
-      = new DefaultServiceArbiterFactory();
+  private final AimConnection aimConnection;
 
   private final Object externalServicesLock = new Object();
   private final Map<Integer, ServiceArbiter<? extends Service>> externalServices
       = new HashMap<Integer, ServiceArbiter<? extends Service>>();
-  private Map<ServiceArbiter<? extends Service>, OscarConnection> externalConnections
+  private final Map<ServiceArbiter<? extends Service>, OscarConnection> externalConnections
       = new HashMap<ServiceArbiter<? extends Service>, OscarConnection>();
-  private ServiceArbitrationManager arbitrationManager
+  private final Map<Integer, ServiceRequestInfo<? extends Service>> pendingServiceRequests
+      = new HashMap<Integer, ServiceRequestInfo<? extends Service>>();
+
+  private final ServiceArbitrationManager arbitrationManager
       = new ServiceArbitrationManager() {
     public void openService(ServiceArbiter<? extends Service> arbiter) {
       int family = arbiter.getSnacFamily();
@@ -106,7 +106,11 @@ public class ExternalServiceManager {
     }
   };
   private final Timer serviceTimer = initializeServiceTimer();
-  private int serviceConnectionTimeout = DEFAULT_SERVICE_TIMEOUT;
+
+  private ServiceArbiterFactory arbiterFactory
+      = new DefaultServiceArbiterFactory();
+  @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
+  private volatile int serviceConnectionTimeout = DEFAULT_SERVICE_TIMEOUT;
 
   public ExternalServiceManager(AimConnection aimConnection) {
     this.aimConnection = aimConnection;
@@ -166,29 +170,27 @@ public class ExternalServiceManager {
           long time = System.currentTimeMillis();
           Set<Map.Entry<Integer, ServiceRequestInfo<? extends Service>>> entries
               = pendingServiceRequests.entrySet();
-          if (entries.isEmpty()) {
-            LOGGER.finer("No pending service requests!");
-          }
-          for (Iterator<Map.Entry<Integer, ServiceRequestInfo<? extends Service>>> it
-              = entries.iterator();
-              it.hasNext();) {
-            Map.Entry<Integer, ServiceRequestInfo<? extends Service>> entry = it.next();
+          boolean changed = true;
+          while (changed) {
+            changed = false;
+            for (Iterator<Map.Entry<Integer, ServiceRequestInfo<? extends Service>>> it
+                = entries.iterator(); it.hasNext();) {
+              Map.Entry<Integer, ServiceRequestInfo<? extends Service>> entry = it.next();
 
-            ServiceRequestInfo request = entry.getValue();
-            long diff = time - request.getStartTime();
-            if (diff > serviceConnectionTimeout) {
-              LOGGER.info("External service for arbiter "
-                  + request.getArbiter() + "(0x"
-                  + Integer.toHexString(request.getFamily())
-                  + ") timed out after "
-                  + ((int) diff / 1000.0) + "s; retrying");
-              retry.add(entry.getKey());
-              request.cancel();
-              it.remove();
-            } else {
-              LOGGER.fine("Service request for "
-                  + request.getArbiter() + " still has "
-                  + (serviceConnectionTimeout - diff) + "ms before timing out");
+              ServiceRequestInfo request = entry.getValue();
+              long diff = time - request.getStartTime();
+              if (diff > serviceConnectionTimeout) {
+                LOGGER.info("External service for arbiter "
+                    + request.getArbiter() + "(0x"
+                    + Integer.toHexString(request.getFamily())
+                    + ") timed out after "
+                    + (diff / 1000.0) + "s; retrying");
+                retry.add(entry.getKey());
+                request.cancel();
+                it.remove();
+                changed = true;
+                break;
+              }
             }
           }
         }
@@ -229,7 +231,6 @@ public class ExternalServiceManager {
   private <A> A getArbiter(int family, Class<A> arbiterClass) {
     ServiceArbiter<?> arbiter = getServiceArbiter(family);
     if (arbiterClass.isInstance(arbiter)) {
-      //noinspection unchecked
       return JavaTools.cast(arbiterClass, arbiter);
     } else {
       return null;
@@ -254,8 +255,67 @@ public class ExternalServiceManager {
     requestService(family, arbiter);
   }
 
-  private Map<Integer, ServiceRequestInfo<? extends Service>> pendingServiceRequests
-      = new HashMap<Integer, ServiceRequestInfo<? extends Service>>();
+  private <S extends Service> void requestService(int service,
+      ServiceArbiter<S> arbiter) {
+    ServiceRequestInfo<S> request;
+    synchronized (this) {
+      if (pendingServiceRequests.containsKey(service)) return;
+      if (externalConnections.containsKey(arbiter)) {
+        LOGGER.finer("Someone requested 0x"
+            + Integer.toHexString(service) + " but there's "
+            + "already an external connection: "
+            + externalConnections.get(arbiter));
+        return;
+      }
+      request = new ServiceRequestInfo<S>(service, arbiter);
+      pendingServiceRequests.put(service, request);
+    }
+    updateServiceRequest(request);
+  }
+
+  private <S extends Service>void updateServiceRequest(
+      ServiceRequestInfo<S> request) {
+    int family = request.getFamily();
+    LOGGER.info("Requesting external service " + family + " for " + request.getArbiter());
+    MainBosService bosService = aimConnection.getBosService();
+    if (bosService == null) return;
+    bosService.requestService(family,
+        new ArbitratedExternalServiceListener<S>(request));
+  }
+
+  private synchronized <S extends Service> boolean clearRequest(
+      ServiceRequestInfo<S> request) {
+    boolean removed = pendingServiceRequests.values().remove(request);
+    if (removed) {
+      LOGGER.info("External connection request " + request + " cleared");
+    } else {
+      LOGGER.info("External connection request " + request + " was not cleared "
+          + "because it is obsolete");
+    }
+    return removed;
+  }
+
+  private synchronized void clearExternalConnection(OscarConnection conn,
+      ServiceArbiter<? extends Service> arbiter) {
+    if (getExternalConnection(arbiter) == conn) {
+      externalConnections.remove(arbiter);
+    }
+  }
+
+  private synchronized OscarConnection getExternalConnection(
+      ServiceArbiter<? extends Service> arbiter) {
+    return externalConnections.get(arbiter);
+  }
+
+  private synchronized boolean storeExternalConnection(BasicConnection conn,
+      ServiceRequestInfo<? extends Service> request) {
+    if (!clearRequest(request)) return false;
+//        if (request.isChatRequest()) {
+//            chatConnections.put(request.getChatInfo())
+//        }
+    externalConnections.put(request.getArbiter(), conn);
+    return true;
+  }
 
   private static class ServiceRequestInfo<S extends Service> {
     private long startTime = System.currentTimeMillis();
@@ -310,75 +370,6 @@ public class ExternalServiceManager {
 //        public @Nullable ChatInfo getChatInfo() {
 //            return chatInfo;
 //        }
-  }
-
-  private <S extends Service> void requestService(int service,
-      ServiceArbiter<S> arbiter) {
-    ServiceRequestInfo<S> request;
-    synchronized (this) {
-      if (pendingServiceRequests.containsKey(service)) return;
-      if (externalConnections.containsKey(arbiter)) {
-        LOGGER.finer("Someone requested 0x"
-            + Integer.toHexString(service) + " but there's "
-            + "already an external connection: "
-            + externalConnections.get(arbiter));
-        return;
-      }
-      request = new ServiceRequestInfo<S>(service, arbiter);
-      pendingServiceRequests.put(service, request);
-    }
-    updateServiceRequest(request);
-  }
-
-  private <S extends Service>void updateServiceRequest(
-      ServiceRequestInfo<S> request) {
-    int family = request.getFamily();
-    LOGGER.info("Requesting external service " + family + " for " + request.getArbiter());
-    MainBosService bosService = aimConnection.getBosService();
-    if (bosService == null) return;
-    bosService.requestService(family,
-        new ArbitratedExternalServiceListener<S>(request));
-  }
-
-  private synchronized <S extends Service> boolean clearRequest(
-      ServiceRequestInfo<S> request) {
-    boolean removed = pendingServiceRequests.values().remove(request);
-    if (removed) {
-      LOGGER.info("External connection request " + request + " cleared");
-    } else {
-      LOGGER.info("External connection request " + request + " was not cleared because it is "
-          + "obsolete");
-    }
-    return removed;
-  }
-
-  private synchronized void clearExternalConnection(OscarConnection conn,
-      ServiceArbiter<? extends Service> arbiter) {
-    if (getExternalConnection(arbiter) == conn) {
-      externalConnections.remove(arbiter);
-    }
-  }
-
-  private synchronized OscarConnection getExternalConnection(
-      ServiceArbiter<? extends Service> arbiter) {
-    return externalConnections.get(arbiter);
-  }
-
-//    private synchronized OscarConnection getExternalConnection(
-//            int family) {
-//        ServiceArbiter<? extends Service> arbiter = getServiceArbiter(family);
-//        if (arbiter == null) return null;
-//        return externalConnections.get(arbiter);
-//    }
-
-  private synchronized boolean storeExternalConnection(BasicConnection conn,
-      ServiceRequestInfo<? extends Service> request) {
-    if (!clearRequest(request)) return false;
-//        if (request.isChatRequest()) {
-//            chatConnections.put(request.getChatInfo())
-//        }
-    externalConnections.put(request.getArbiter(), conn);
-    return true;
   }
 
   private class ExternalServiceFactory<S extends Service>

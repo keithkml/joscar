@@ -136,6 +136,10 @@ public class IncomingFileTransferImpl
   }
 
   private class IncomingFtRvSessionHandler extends AbstractIncomingRvSessionHandler {
+    public IncomingFtRvSessionHandler() {
+      super(IncomingFileTransferImpl.this);
+    }
+
     protected void handleFirstRequest(ConnectionRequestRvCmd reqCmd) {
       FileSendReqRvCmd ftcmd = (FileSendReqRvCmd) reqCmd;
       setFileInfo(ftcmd.getFileSendBlock());

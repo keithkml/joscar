@@ -37,7 +37,7 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 import org.jetbrains.annotations.Nullable;
 
-public interface StateBasedConnection {
+public interface StateBasedRvConnection extends RvConnection {
   StateController getStateController();
 
   @Nullable StateController getNextStateController();

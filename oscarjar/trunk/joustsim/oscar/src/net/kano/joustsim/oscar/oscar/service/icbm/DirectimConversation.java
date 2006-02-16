@@ -114,7 +114,7 @@ public class DirectimConversation extends Conversation
   }
 
   private synchronized void registerConnection(DirectimConnection directim) {
-    directim.addTransferListener(new DirectimEventListener());
+    directim.addEventListener(new DirectimEventListener());
     updateState(directim.getState(), null);
   }
 

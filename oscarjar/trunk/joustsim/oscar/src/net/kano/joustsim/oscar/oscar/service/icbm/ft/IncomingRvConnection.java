@@ -34,10 +34,7 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-import net.kano.joscar.rvcmd.RvConnectionInfo;
-
 public interface IncomingRvConnection extends RvConnection {
-  RvConnectionInfo getOriginalRemoteHostInfo();
   void accept() throws IllegalStateException;
   void reject() throws IllegalStateException;
   boolean isAccepted();

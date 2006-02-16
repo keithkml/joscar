@@ -29,7 +29,7 @@ import java.util.Arrays;
 import java.util.logging.Logger;
 
 public abstract class RvConnectionImpl
-    implements RvConnection, StateBasedConnection {
+    implements RvConnection, StateBasedRvConnection {
   private static final Logger LOGGER = Logger
       .getLogger(FileTransferHelper.class.getName());
 
@@ -223,11 +223,11 @@ public abstract class RvConnectionImpl
     return true;
   }
 
-  public void addTransferListener(RvConnectionEventListener listener) {
+  public void addEventListener(RvConnectionEventListener listener) {
     listeners.addIfAbsent(listener);
   }
 
-  public void removeTransferListener(RvConnectionEventListener listener) {
+  public void removeEventListener(RvConnectionEventListener listener) {
     listeners.remove(listener);
   }
 

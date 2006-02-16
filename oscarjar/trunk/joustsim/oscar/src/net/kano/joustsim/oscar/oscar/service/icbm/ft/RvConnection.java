@@ -18,9 +18,9 @@ public interface RvConnection {
 
   void close(RvConnectionEvent error);
 
-  void addTransferListener(RvConnectionEventListener listener);
+  void addEventListener(RvConnectionEventListener listener);
 
-  void removeTransferListener(RvConnectionEventListener listener);
+  void removeEventListener(RvConnectionEventListener listener);
 
   EventPost getEventPost();
 
