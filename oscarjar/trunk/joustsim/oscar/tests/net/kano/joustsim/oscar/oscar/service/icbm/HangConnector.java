@@ -34,12 +34,12 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.Connector;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.PassiveConnector;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
 
 import java.io.IOException;
 
-class HangConnector implements Connector {
+class HangConnector implements PassiveConnector {
   private final Object lock = new Object();
   private boolean done = false;
 
@@ -77,5 +77,9 @@ class HangConnector implements Connector {
   }
 
   public void prepareStream() throws IOException {
+  }
+
+  public int getLocalPort() {
+    return 501;
   }
 }

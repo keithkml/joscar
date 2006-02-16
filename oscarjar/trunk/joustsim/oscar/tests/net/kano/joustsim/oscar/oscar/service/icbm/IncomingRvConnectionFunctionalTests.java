@@ -205,11 +205,7 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
           } else if (controller instanceof RedirectToProxyController) {
             RedirectToProxyController redir
                 = (RedirectToProxyController) controller;
-            try {
-              redir.setConnector(getInitiateProxyConnector());
-            } catch (UnknownHostException e) {
-              throw new IllegalStateException(e);
-            }
+            redir.setConnector(getInitiateProxyConnector());
           }
         }
       }

@@ -89,11 +89,14 @@ public abstract class RvConnectionTestCase extends TestCase {
 
   protected abstract int getBaseOutgoingRequestId();
 
-  protected MockProxyConnector getInitiateProxyConnector()
-      throws UnknownHostException {
-    return new MockProxyConnector(new MockProxyConnection(
-        new RvProxyAckCmd(InetAddress.getByName("9.9.9.9"), 1000),
-        new RvProxyReadyCmd()));
+  protected MockProxyConnector getInitiateProxyConnector() {
+    try {
+      return new MockProxyConnector(new MockProxyConnection(
+          new RvProxyAckCmd(InetAddress.getByName("9.9.9.9"), 1000),
+          new RvProxyReadyCmd()));
+    } catch (UnknownHostException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   protected StateInfo simulateBuddyRedirectionAndWait(

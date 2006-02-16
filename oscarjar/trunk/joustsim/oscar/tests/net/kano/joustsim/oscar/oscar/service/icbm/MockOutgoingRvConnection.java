@@ -142,11 +142,7 @@ public class MockOutgoingRvConnection
   }
 
   private class MockOutgoingRvSessionHandler
-      extends AbstractRvSessionHandler implements MockRvSessionHandler {
-    public MockOutgoingRvSessionHandler() {
-      super(MockOutgoingRvConnection.this);
-    }
-
+      extends OutgoingRvSessionHandler implements MockRvSessionHandler {
     public void handleIncomingReject(RecvRvEvent event, RejectRvCmd rejectCmd) {
       super.handleIncomingReject(event, rejectCmd);
     }
@@ -157,6 +153,7 @@ public class MockOutgoingRvConnection
 
     public void handleIncomingRequest(RecvRvEvent event,
         ConnectionRequestRvCmd reqCmd) {
+      super.handleIncomingRequest(event, reqCmd);
     }
   }
 }
