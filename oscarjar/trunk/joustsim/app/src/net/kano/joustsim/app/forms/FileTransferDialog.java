@@ -60,7 +60,7 @@ public class FileTransferDialog extends JFrame {
 
     public FileTransferDialog(FileTransfer fileTransfer) {
         this.fileTransfer = fileTransfer;
-        fileTransfer.addTransferListener(new RvConnectionEventListener() {
+        fileTransfer.addEventListener(new RvConnectionEventListener() {
             public void handleEventWithStateChange(RvConnection transfer,
                     RvConnectionState state, RvConnectionEvent event) {
                 stateLabel.setText(state.toString());
