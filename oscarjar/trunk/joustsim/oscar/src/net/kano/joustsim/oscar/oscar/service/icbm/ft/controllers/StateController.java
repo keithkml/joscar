@@ -69,19 +69,19 @@ public abstract class StateController {
     fireEvent(stateInfo);
   }
 
-  protected void fireFailed(final Exception e) {
+  protected void fireFailed(Exception e) {
     assert !Thread.holdsLock(this);
 
-    LOGGER.log(Level.SEVERE, "Error in " + getClass().getName() + ":", e);
+    LOGGER.log(Level.SEVERE, "Error in " + MiscTools.getClassName(this) + ":", e);
 
     fireEvent(new ExceptionStateInfo(e));
   }
 
-  protected void fireFailed(final RvConnectionEvent e) {
+  protected void fireFailed(RvConnectionEvent e) {
     fireEvent(new FailureEventInfo(e));
   }
 
-  protected void fireFailed(final FailedStateInfo info) {
+  protected void fireFailed(FailedStateInfo info) {
     fireEvent(info);
   }
 

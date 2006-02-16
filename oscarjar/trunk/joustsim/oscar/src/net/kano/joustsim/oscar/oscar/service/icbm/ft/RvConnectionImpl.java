@@ -19,6 +19,7 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.StartingControllerEv
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.StoppingControllerEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferringFileEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.WaitingForConnectionEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.StartedControllerEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
 import net.kano.joustsim.oscar.proxy.AimProxyInfo;
@@ -127,6 +128,7 @@ public abstract class RvConnectionImpl
     if (controller != null) {
       fireEvent(new StartingControllerEvent(controller));
       controller.start(this, last);
+      fireEvent(new StartedControllerEvent(controller));
     }
   }
 

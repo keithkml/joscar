@@ -35,5 +35,9 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
 public interface OutgoingRvConnection extends RvConnection {
+  /**
+   * Starts the connection negotiation process, normally by sending a rendezvous
+   * request to the buddy.
+   */
   void sendRequest();
 }

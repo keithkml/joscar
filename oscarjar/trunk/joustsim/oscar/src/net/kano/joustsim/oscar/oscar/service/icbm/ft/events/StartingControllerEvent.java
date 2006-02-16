@@ -35,16 +35,9 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
-import net.kano.joscar.MiscTools;
 
-public class StartingControllerEvent extends RvConnectionEvent {
-  private final StateController last;
-
-  public StartingControllerEvent(StateController last) {this.last = last;}
-
-  public StateController getController() { return last; }
-
-  public String toString() {
-    return MiscTools.getClassName(this) + ": " + last;
+public class StartingControllerEvent extends ControllerEvent {
+  public StartingControllerEvent(StateController last) {
+    super(last);
   }
 }
