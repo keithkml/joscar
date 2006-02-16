@@ -87,6 +87,7 @@ public abstract class OutgoingRvConnectionImpl extends RvConnectionImpl
         event = failureEventInfo.getEvent();
       }
 
+      //TODO: why should this happen?
       if (isLanController(oldController)) {
         if (event != null) queueEvent(event);
         return new OutgoingConnectionController(ConnectionType.INTERNET);
@@ -143,11 +144,11 @@ public abstract class OutgoingRvConnectionImpl extends RvConnectionImpl
   }
 
   protected AbstractRvSessionHandler createSessionHandler() {
-    return new MyAbstractRvSessionHandler();
+    return new OutgoingRvSessionHandler();
   }
 
-  private class MyAbstractRvSessionHandler extends AbstractRvSessionHandler {
-    public MyAbstractRvSessionHandler() {super(OutgoingRvConnectionImpl.this);}
+  protected class OutgoingRvSessionHandler extends AbstractRvSessionHandler {
+    public OutgoingRvSessionHandler() {super(OutgoingRvConnectionImpl.this);}
 
     protected void handleIncomingRequest(RecvRvEvent event,
         ConnectionRequestRvCmd reqCmd) {
@@ -155,11 +156,10 @@ public abstract class OutgoingRvConnectionImpl extends RvConnectionImpl
       if (reqType > RequestRvCmd.REQINDEX_FIRST) {
         HowToConnect how = processRedirect(reqCmd);
         if (how == HowToConnect.PROXY) {
-          changeStateController(
-              new OutgoingConnectionController(ConnectionType.LAN));
+          changeStateController(new ConnectToProxyForOutgoingController());
         } else if (how == HowToConnect.NORMAL) {
           changeStateController(
-              new ConnectToProxyForOutgoingController());
+              new OutgoingConnectionController(ConnectionType.LAN));
         }
       } else {
         LOGGER.warning("got unknown rv connection request type in outgoing "
