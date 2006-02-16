@@ -34,17 +34,36 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.AbstractRvSessionConnectionInfo;
+import net.kano.joscar.rv.RecvRvEvent;
+import net.kano.joscar.rvcmd.ConnectionRequestRvCmd;
+import net.kano.joscar.rvcmd.RejectRvCmd;
+import net.kano.joscar.rvcmd.AcceptRvCmd;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.IncomingRvConnectionImpl;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.AbstractIncomingRvSessionHandler;
 
-public class MockRvSessionConnectionInfo extends
-    AbstractRvSessionConnectionInfo {
-  private MockRvRequestMaker maker = new MockRvRequestMaker();
-
-  public MockRvSessionConnectionInfo() {
-    super(new MockRvSession());
+public class MockIncomingRvSessionHandler
+    extends AbstractIncomingRvSessionHandler implements MockRvSessionHandler {
+  public MockIncomingRvSessionHandler(
+      IncomingRvConnectionImpl incomingRvConnection) {
+    super(incomingRvConnection);
   }
 
-  public MockRvRequestMaker getRvRequestMaker() {
-    return maker;
+  public void handleIncomingRequest(RecvRvEvent event,
+      ConnectionRequestRvCmd reqCmd) {
+    super.handleIncomingRequest(event, reqCmd);
   }
+
+  protected void handleFirstRequest(ConnectionRequestRvCmd reqCmd) {
+  }
+
+  public void handleIncomingReject(RecvRvEvent event,
+      RejectRvCmd rejectCmd) {
+    super.handleIncomingReject(event, rejectCmd);
+  }
+
+  public void handleIncomingAccept(RecvRvEvent event,
+      AcceptRvCmd acceptCmd) {
+    super.handleIncomingAccept(event, acceptCmd);
+  }
+
 }

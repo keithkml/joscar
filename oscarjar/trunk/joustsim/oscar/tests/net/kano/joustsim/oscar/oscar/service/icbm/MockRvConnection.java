@@ -34,17 +34,19 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.AbstractRvSessionConnectionInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnection;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.StateBasedRvConnection;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
 
-public class MockRvSessionConnectionInfo extends
-    AbstractRvSessionConnectionInfo {
-  private MockRvRequestMaker maker = new MockRvRequestMaker();
+import java.util.List;
 
-  public MockRvSessionConnectionInfo() {
-    super(new MockRvSession());
-  }
+public interface MockRvConnection extends RvConnection, StateBasedRvConnection {
+  StateInfo waitForCompletion();
 
-  public MockRvRequestMaker getRvRequestMaker() {
-    return maker;
-  }
+  List<StateController> getHitControllers();
+
+  MockRvSessionConnectionInfo getRvSessionInfo();
+
+  MockRvSessionHandler getRvSessionHandler();
 }

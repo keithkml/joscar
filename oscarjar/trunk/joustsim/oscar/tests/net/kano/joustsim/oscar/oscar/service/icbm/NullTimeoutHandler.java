@@ -34,17 +34,16 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.AbstractRvSessionConnectionInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.TimeoutHandler;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.TimeoutableController;
 
-public class MockRvSessionConnectionInfo extends
-    AbstractRvSessionConnectionInfo {
-  private MockRvRequestMaker maker = new MockRvRequestMaker();
-
-  public MockRvSessionConnectionInfo() {
-    super(new MockRvSession());
+class NullTimeoutHandler implements TimeoutHandler {
+  public void startTimeout(TimeoutableController controller) {
   }
 
-  public MockRvRequestMaker getRvRequestMaker() {
-    return maker;
+  public void pauseTimeout(TimeoutableController controller) {
+  }
+
+  public void unpauseTimeout(TimeoutableController controller) {
   }
 }

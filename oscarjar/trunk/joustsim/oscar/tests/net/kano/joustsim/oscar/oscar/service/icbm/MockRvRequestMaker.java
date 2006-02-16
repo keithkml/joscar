@@ -41,7 +41,7 @@ import net.kano.joscar.snaccmd.CapabilityBlock;
 import java.util.List;
 import java.util.ArrayList;
 
-class MockRvRequestMaker implements RvRequestMaker {
+public class MockRvRequestMaker implements RvRequestMaker {
   private List<Integer> requests = new ArrayList<Integer>();
   private int accept = 0;
   private int reject = 0;
@@ -76,6 +76,6 @@ class MockRvRequestMaker implements RvRequestMaker {
   }
 
   public CapabilityBlock getCapabilityBlock() {
-    return RvConnectionFunctionalTests.MOCK_CAPABILITY;
+    return RvConnectionTestCase.MOCK_CAPABILITY;
   }
 }

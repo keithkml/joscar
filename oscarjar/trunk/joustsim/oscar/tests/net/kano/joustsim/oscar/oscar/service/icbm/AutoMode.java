@@ -34,17 +34,4 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.AbstractRvSessionConnectionInfo;
-
-public class MockRvSessionConnectionInfo extends
-    AbstractRvSessionConnectionInfo {
-  private MockRvRequestMaker maker = new MockRvRequestMaker();
-
-  public MockRvSessionConnectionInfo() {
-    super(new MockRvSession());
-  }
-
-  public MockRvRequestMaker getRvRequestMaker() {
-    return maker;
-  }
-}
+public enum AutoMode { ACCEPT, REJECT }
