@@ -50,7 +50,7 @@ public class MutableSessionConnectionInfo extends
     this.maker = maker;
   }
 
-  public RvRequestMaker getRvRequestMaker() {
+  public RvRequestMaker getRequestMaker() {
     assert maker != null;
     return maker;
   }

@@ -47,7 +47,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class ChecksumController extends StateController {
+public class ChecksumController extends AbstractStateController {
   public void start(RvConnection transfer, StateController last) {
     try {
       Map<TransferredFile, Long> checksums = new HashMap<TransferredFile, Long>();

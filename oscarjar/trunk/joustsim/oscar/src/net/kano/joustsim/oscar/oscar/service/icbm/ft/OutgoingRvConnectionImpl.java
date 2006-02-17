@@ -49,7 +49,6 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownErrorEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailureEventInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
 import net.kano.joustsim.oscar.proxy.AimProxyInfo;
 
 import java.util.logging.Logger;
@@ -69,46 +68,32 @@ public abstract class OutgoingRvConnectionImpl extends RvConnectionImpl
     super(proxy, myScreenname, rvsessioninfo);
   }
 
-  public synchronized StateController getNextStateController() {
-    StateController oldController = getStateController();
-    StateInfo endState = oldController.getEndStateInfo();
-    if (endState instanceof SuccessfulStateInfo) {
-      if (isConnectionController(oldController)) {
-        return createConnectedController(endState);
+  protected StateController getNextControllerFromError(
+      StateController oldController, StateInfo endState) {
+    RvConnectionEvent event = null;
+    if (endState instanceof FailureEventInfo) {
+      FailureEventInfo failureEventInfo = (FailureEventInfo) endState;
+      event = failureEventInfo.getEvent();
+    }
 
-      } else {
-        return getNextControllerFromUnknownSuccess(oldController, endState);
-      }
+    if (isLanController(oldController)) {
+      if (event != null) queueEvent(event);
+      return new OutgoingConnectionController(ConnectionType.INTERNET);
 
-    } else if (endState instanceof FailedStateInfo) {
-      RvConnectionEvent event = null;
-      if (endState instanceof FailureEventInfo) {
-        FailureEventInfo failureEventInfo = (FailureEventInfo) endState;
-        event = failureEventInfo.getEvent();
-      }
+    } else if (oldController instanceof SendPassivelyController
+        || isInternetController(oldController)
+        || oldController instanceof ConnectToProxyForOutgoingController) {
+      if (event != null) queueEvent(event);
+      return new RedirectToProxyController();
 
-      //TODO: why should this happen?
-      if (isLanController(oldController)) {
-        if (event != null) queueEvent(event);
-        return new OutgoingConnectionController(ConnectionType.INTERNET);
+    } else if (oldController instanceof RedirectToProxyController) {
+      setState(RvConnectionState.FAILED,
+          event == null ? new UnknownErrorEvent() : event);
+      return null;
 
-      } else if (oldController instanceof SendPassivelyController
-          || isInternetController(oldController)
-          || oldController instanceof ConnectToProxyForOutgoingController) {
-        if (event != null) queueEvent(event);
-        return new RedirectToProxyController();
-
-      } else if (oldController instanceof RedirectToProxyController) {
-        setState(RvConnectionState.FAILED,
-            event == null ? new UnknownErrorEvent() : event);
-        return null;
-
-      } else {
-        return getNextControllerFromUnknownError(oldController,
-            (FailedStateInfo) endState, event);
-      }
     } else {
-      throw new IllegalStateException("Unknown previous state " + endState);
+      return getNextControllerFromUnknownError(oldController,
+          (FailedStateInfo) endState, event);
     }
   }
 
@@ -116,25 +101,7 @@ public abstract class OutgoingRvConnectionImpl extends RvConnectionImpl
       StateController oldController, FailedStateInfo failedStateInfo,
       RvConnectionEvent event);
 
-  protected abstract StateController getNextControllerFromUnknownSuccess(
-      StateController oldController, StateInfo endState);
-
-  protected abstract StateController createConnectedController(
-      StateInfo endState);
-
-  private static boolean isLanController(StateController oldController) {
-    return oldController instanceof OutgoingConnectionController
-        && ((OutgoingConnectionController) oldController).getTimeoutType()
-        == ConnectionType.LAN;
-  }
-
-  private static boolean isInternetController(StateController oldController) {
-    return oldController instanceof OutgoingConnectionController
-        && ((OutgoingConnectionController) oldController).getTimeoutType()
-        == ConnectionType.INTERNET;
-  }
-
-  private boolean isConnectionController(StateController oldController) {
+  protected boolean isSomeConnectionController(StateController oldController) {
     return oldController instanceof SendPassivelyController
         || isLanController(oldController)
         || isInternetController(oldController)
@@ -155,11 +122,23 @@ public abstract class OutgoingRvConnectionImpl extends RvConnectionImpl
       int reqType = reqCmd.getRequestIndex();
       if (reqType > RequestRvCmd.REQINDEX_FIRST) {
         HowToConnect how = processRedirect(reqCmd);
-        if (how == HowToConnect.PROXY) {
-          changeStateController(new ConnectToProxyForOutgoingController());
-        } else if (how == HowToConnect.NORMAL) {
-          changeStateController(
-              new OutgoingConnectionController(ConnectionType.LAN));
+        if (how == HowToConnect.PROXY || how == HowToConnect.NORMAL) {
+          boolean worked;
+          if (how == HowToConnect.PROXY) {
+            worked = changeStateController(
+                new ConnectToProxyForOutgoingController());
+
+          } else {
+            //noinspection ConstantConditions
+            assert how == HowToConnect.NORMAL;
+            worked = changeStateController(
+                new OutgoingConnectionController(ConnectionType.LAN));
+          }
+          if (worked) {
+            getRvSessionInfo().getRequestMaker().sendRvAccept();
+          }
+        } else if (how == HowToConnect.DONT) {
+          changeStateController(new RedirectToProxyController());
         }
       } else {
         LOGGER.warning("got unknown rv connection request type in outgoing "

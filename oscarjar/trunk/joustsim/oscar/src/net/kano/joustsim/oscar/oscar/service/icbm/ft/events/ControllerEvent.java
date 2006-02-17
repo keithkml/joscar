@@ -34,8 +34,8 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
 import net.kano.joscar.MiscTools;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
 
 public abstract class ControllerEvent extends RvConnectionEvent {
   protected final StateController controller;

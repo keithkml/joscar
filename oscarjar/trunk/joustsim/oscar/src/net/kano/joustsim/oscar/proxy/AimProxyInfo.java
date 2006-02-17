@@ -114,7 +114,7 @@ public class AimProxyInfo {
     return serverSocketFactory;
   }
 
-  public Proxy createProxy() throws UnknownHostException {
+  public Proxy createSocksProxy() throws UnknownHostException {
     if (type == Type.SOCKS4) {
       return new Socks4Proxy(getHost(), getPort(), getUsername());
 

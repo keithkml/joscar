@@ -32,24 +32,8 @@
  * File created by keithkml
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm;
+package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnection;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.StateBasedRvConnection;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectedController;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
-
-import java.util.List;
-
-public interface MockRvConnection extends RvConnection, StateBasedRvConnection {
-  StateInfo waitForCompletion();
-
-  List<StateController> getHitControllers();
-
-  MockRvSessionConnectionInfo getRvSessionInfo();
-
-  MockRvSessionHandler getRvSessionHandler();
-
-  void setConnectedController(ConnectedController connectedController);
+public interface ConnectedController extends StateController {
+  public boolean isConnected();
 }

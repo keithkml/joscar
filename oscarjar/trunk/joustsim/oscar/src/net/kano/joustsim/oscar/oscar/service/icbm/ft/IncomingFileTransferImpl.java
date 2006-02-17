@@ -43,6 +43,7 @@ import net.kano.joustsim.oscar.oscar.service.icbm.RendezvousSessionHandler;
 import net.kano.joustsim.oscar.oscar.service.icbm.dim.MutableSessionConnectionInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ReceiveFileController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectedController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectionCompleteEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
@@ -83,7 +84,15 @@ public class IncomingFileTransferImpl
 
   public synchronized FileMapper getFileMapper() { return fileMapper; }
 
-  protected StateController getNextStateControllerFromSuccessState(
+  protected ConnectedController createConnectedController(StateInfo endState) {
+    return new ReceiveFileController();
+  }
+
+  protected boolean isConnectedController(StateController controller) {
+    return controller instanceof ReceiveFileController;
+  }
+
+  protected StateController getNextControllerFromSuccess(
       StateController oldController, StateInfo oldStateInfo) {
     if (oldController instanceof ReceiveFileController) {
       LOGGER.fine("Changing from success of receive controller to "
@@ -93,9 +102,7 @@ public class IncomingFileTransferImpl
       return null;
 
     } else if (oldStateInfo instanceof StreamInfo) {
-      LOGGER.fine("Changing from success of conn controller "
-          + oldController + " to receive");
-      return new ReceiveFileController();
+      throw new IllegalStateException("stream info here??");
 
     } else {
       throw new IllegalStateException("Unknown last controller "
@@ -103,7 +110,7 @@ public class IncomingFileTransferImpl
     }
   }
 
-  protected StateController getNextStateFromErrorWithUnknownController(
+  protected StateController getNextControllerFromUnknownError(
       StateController oldController, StateInfo oldState,
       RvConnectionEvent event) {
     if (oldController instanceof ReceiveFileController) {

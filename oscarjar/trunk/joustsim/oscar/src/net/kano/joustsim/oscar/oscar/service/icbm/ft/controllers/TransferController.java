@@ -44,8 +44,8 @@ import java.io.IOException;
 import java.util.logging.Logger;
 
 //TOLATER: allow limiting bandwidth
-public abstract class TransferController extends StateController
-    implements PausableController, TimeoutableController {
+public abstract class TransferController extends AbstractStateController
+    implements PausableController, TimeoutableController, ConnectedController {
   private static final Logger LOGGER = Logger
       .getLogger(TransferController.class.getName());
 
@@ -138,7 +138,7 @@ public abstract class TransferController extends StateController
     transfer.getEventPost().fireEvent(new ConnectedEvent());
   }
 
-  protected synchronized boolean isConnected() {
+  public synchronized boolean isConnected() {
     return connected;
   }
 

@@ -55,25 +55,25 @@ public class SocksSocketFactory extends SocketFactory {
 
   public Socket createSocket(String host, int port)
       throws IOException, UnknownHostException {
-    return new SocksSocket(proxy.createProxy(), host, port);
+    return new SocksSocket(proxy.createSocksProxy(), host, port);
   }
 
   public Socket createSocket(String host, int port, InetAddress localhost,
       int localport) throws IOException, UnknownHostException {
     LOGGER.warning("Ignoring local host/port arguments in createSocket: "
         + localhost + ":" + localport);
-    return new SocksSocket(proxy.createProxy(), host, port);
+    return new SocksSocket(proxy.createSocksProxy(), host, port);
   }
 
   public Socket createSocket(InetAddress inetAddress, int port)
       throws IOException {
-    return new SocksSocket(proxy.createProxy(), inetAddress, port);
+    return new SocksSocket(proxy.createSocksProxy(), inetAddress, port);
   }
 
   public Socket createSocket(InetAddress inetAddress, int port,
       InetAddress localaddr, int localport) throws IOException {
     LOGGER.warning("Ignoring local host/port arguments in createSocket: "
         + localaddr + ":" + localport);
-    return new SocksSocket(proxy.createProxy(), inetAddress, port);
+    return new SocksSocket(proxy.createSocksProxy(), inetAddress, port);
   }
 }

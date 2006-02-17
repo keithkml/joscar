@@ -36,10 +36,10 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
 import net.kano.joscar.rv.RecvRvEvent;
 import net.kano.joscar.rvcmd.ConnectionRequestRvCmd;
-import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joscar.rvcmd.sendfile.FileSendReqRvCmd;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectToProxyForIncomingController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.OutgoingConnectionController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.RedirectToProxyController;
 
 import java.util.logging.Logger;
 
@@ -48,6 +48,7 @@ public abstract class AbstractIncomingRvSessionHandler extends AbstractRvSession
       .getLogger(AbstractIncomingRvSessionHandler.class.getName());
 
   private final IncomingRvConnectionImpl incomingRvConnection;
+  private boolean gotFirstRequest = false;
 
   public AbstractIncomingRvSessionHandler(
       IncomingRvConnectionImpl incomingRvConnection) {
@@ -59,24 +60,44 @@ public abstract class AbstractIncomingRvSessionHandler extends AbstractRvSession
       ConnectionRequestRvCmd reqCmd) {
     int index = reqCmd.getRequestIndex();
     if (index == FileSendReqRvCmd.REQINDEX_FIRST) {
+      synchronized (this) {
+        if (gotFirstRequest) return;
+        gotFirstRequest = true;
+      }
+
       handleFirstRequest(reqCmd);
 
-      RvConnectionInfo connInfo = reqCmd.getConnInfo();
-      incomingRvConnection.getRvSessionInfo().setConnectionInfo(connInfo);
-      incomingRvConnection.getRvSessionInfo().setInitiator(Initiator.BUDDY);
+      RvSessionConnectionInfo rvinfo = incomingRvConnection.getRvSessionInfo();
+      rvinfo.setConnectionInfo(reqCmd.getConnInfo());
+      rvinfo.setInitiator(Initiator.BUDDY);
 
-      incomingRvConnection.getEventPost().fireEvent(new NewIncomingConnectionEvent(incomingRvConnection));
+      incomingRvConnection.getEventPost().fireEvent(
+          new NewIncomingConnectionEvent(incomingRvConnection));
 
     } else if (index > FileSendReqRvCmd.REQINDEX_FIRST) {
       HowToConnect how = processRedirect(reqCmd);
-      if (how == HowToConnect.PROXY) {
-        incomingRvConnection.changeStateController(new ConnectToProxyForIncomingController());
-      } else if (how == HowToConnect.NORMAL) {
+      if (how == HowToConnect.PROXY || how == HowToConnect.NORMAL) {
+        boolean worked;
+        if (how == HowToConnect.PROXY) {
+          worked = incomingRvConnection.changeStateController(
+              new ConnectToProxyForIncomingController());
+
+        } else {
+          //noinspection ConstantConditions
+          assert how == HowToConnect.NORMAL;
+          worked = incomingRvConnection.changeStateController(
+              new OutgoingConnectionController(ConnectionType.LAN));
+        }
+        if (worked) {
+          incomingRvConnection.getRvSessionInfo().getRequestMaker()
+              .sendRvAccept();
+        }
+
+      } else if (how == HowToConnect.DONT) {
         incomingRvConnection.changeStateController(
-            new OutgoingConnectionController(ConnectionType.LAN));
-      } else {
-        throw new IllegalStateException("How to connect was " + how);
+            new RedirectToProxyController());
       }
+
     } else {
       LOGGER.warning("Got unknown request index " + index + " for "
           + reqCmd);

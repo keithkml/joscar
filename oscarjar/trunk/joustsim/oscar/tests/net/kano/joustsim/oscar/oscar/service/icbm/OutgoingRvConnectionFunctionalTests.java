@@ -37,22 +37,29 @@ package net.kano.joustsim.oscar.oscar.service.icbm;
 import net.kano.joscar.rvcmd.AcceptRvCmd;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joustsim.TestHelper;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.DefaultRvConnectionEventListener;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnection;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionEventListener;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionSettings;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionState;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.PassiveConnectionController;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.RedirectToProxyController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.AbstractProxyConnectionController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectToProxyForOutgoingController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.OutgoingConnectionController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.PassiveConnectionController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.RedirectToProxyController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.StartingControllerEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.StartedControllerEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.StartingControllerEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 
+//TODO(klea): test for timeout only called when accept received
 public class OutgoingRvConnectionFunctionalTests extends RvConnectionTestCase {
   private MockOutgoingRvConnection conn;
 
@@ -72,7 +79,7 @@ public class OutgoingRvConnectionFunctionalTests extends RvConnectionTestCase {
     return 1;
   }
 
-  public void testOutgoingPassiveConnection() {
+  public void testPassive() {
     conn.addEventListener(new RvConnectionEventListener() {
       public void handleEventWithStateChange(RvConnection transfer,
           RvConnectionState state, RvConnectionEvent event) {
@@ -90,15 +97,13 @@ public class OutgoingRvConnectionFunctionalTests extends RvConnectionTestCase {
       }
     });
     conn.sendRequest();
-    assertEquals(RvConnectionState.WAITING, conn.getState());
     conn.getRvSessionHandler().handleIncomingAccept(null, new GenericAcceptRv());
-    assertTrue(conn.waitForCompletion() instanceof StreamInfo);
-    assertNotNull(TestHelper.findOnlyInstance(conn.getHitControllers(),
-        PassiveConnectionController.class));
+    assertEndWasStream(conn.waitForCompletion());
+    assertHit(PassiveConnectionController.class);
     assertSentRvs(1, 0, 0);
   }
 
-  public void testOutgoingConnectionPassiveTimesOut() {
+  public void testPassiveTimesOut() {
     conn.addEventListener(new RvConnectionEventListener() {
       public void handleEventWithStateChange(RvConnection transfer,
           RvConnectionState state, RvConnectionEvent event) {
@@ -106,8 +111,7 @@ public class OutgoingRvConnectionFunctionalTests extends RvConnectionTestCase {
 
       public void handleEvent(RvConnection transfer, RvConnectionEvent event) {
         if (event instanceof StartingControllerEvent) {
-          StartingControllerEvent event1 = (StartingControllerEvent) event;
-          StateController controller = event1.getController();
+          StateController controller = ((StartingControllerEvent) event).getController();
           if (controller instanceof PassiveConnectionController) {
             PassiveConnectionController passive
                 = (PassiveConnectionController) controller;
@@ -117,32 +121,29 @@ public class OutgoingRvConnectionFunctionalTests extends RvConnectionTestCase {
             RedirectToProxyController redirect
                 = (RedirectToProxyController) controller;
             redirect.setConnector(getInitiateProxyConnector());
-          } else {
-            throw new IllegalStateException();
+
+          } else if (!(controller instanceof MockConnectedController)) {
+            throw new IllegalStateException("Unknown controller " + controller);
           }
         }
         if (event instanceof StartedControllerEvent) {
-          StateController controller = ((StartedControllerEvent) event).getController();
+          StateController controller
+              = ((StartedControllerEvent) event).getController();
           if (controller instanceof PassiveConnectionController) {
-            PassiveConnectionController passive
-                = (PassiveConnectionController) controller;
-            passive.cancelIfNotFruitful(0);
+            ((PassiveConnectionController) controller).cancelIfNotFruitful(0);
           }
         }
       }
     });
     conn.sendRequest();
-    assertEquals(RvConnectionState.WAITING, conn.getState());
     conn.getRvSessionHandler().handleIncomingAccept(null, new GenericAcceptRv());
-    assertTrue(conn.waitForCompletion() instanceof StreamInfo);
-    assertNotNull(TestHelper.findOnlyInstance(conn.getHitControllers(),
-        PassiveConnectionController.class));
-    assertNotNull(TestHelper.findOnlyInstance(conn.getHitControllers(),
-        RedirectToProxyController.class));
+    assertEndWasStream(conn.waitForCompletion());
+    assertHit(PassiveConnectionController.class);
+    assertHit(RedirectToProxyController.class);
     assertSentRvs(2, 0, 0);
   }
 
-  public void testOutgoingConnectionBuddyRedirects() throws UnknownHostException {
+  public void testBuddyRedirects() throws UnknownHostException {
     conn.addEventListener(new RvConnectionEventListener() {
       public void handleEventWithStateChange(RvConnection transfer,
           RvConnectionState state, RvConnectionEvent event) {
@@ -173,12 +174,213 @@ public class OutgoingRvConnectionFunctionalTests extends RvConnectionTestCase {
             InetAddress.getByName("1.2.3.4"), InetAddress.getByName("2.3.4.5"),
             null, 5000, false, false)));
     StateInfo end = conn.waitForCompletion();
-    assertTrue("End was " + end, end instanceof StreamInfo);
-    assertNotNull(TestHelper.findOnlyInstance(conn.getHitControllers(),
-        PassiveConnectionController.class));
-    assertNotNull(TestHelper.findOnlyInstance(conn.getHitControllers(),
-        OutgoingConnectionController.class));
+    assertEndWasStream(end);
+    assertHit(PassiveConnectionController.class);
+    assertHit(OutgoingConnectionController.class);
+    assertSentRvs(1, 1, 0);
+  }
+
+  public void testBuddyRedirectsToProxy() throws UnknownHostException {
+    conn.addEventListener(new RvConnectionEventListener() {
+      public void handleEventWithStateChange(RvConnection transfer,
+          RvConnectionState state, RvConnectionEvent event) {
+      }
+
+      public void handleEvent(RvConnection transfer, RvConnectionEvent event) {
+        if (event instanceof StartingControllerEvent) {
+          StartingControllerEvent event1 = (StartingControllerEvent) event;
+          StateController controller = event1.getController();
+          if (controller instanceof PassiveConnectionController) {
+            PassiveConnectionController passive
+                = (PassiveConnectionController) controller;
+            passive.setConnector(new HangConnector());
+
+          } else if (controller instanceof ConnectToProxyForOutgoingController) {
+            ConnectToProxyForOutgoingController cont
+                = (ConnectToProxyForOutgoingController) controller;
+            cont.setConnector(getDirectedToProxyConnector());
+          }
+        }
+      }
+    });
+    conn.sendRequest();
+    assertEquals(RvConnectionState.WAITING, conn.getState());
+    conn.getRvSessionHandler().handleIncomingAccept(null, new GenericAcceptRv());
+    conn.getRvSessionHandler().handleIncomingRequest(null,
+        new GenericRequest(2, new RvConnectionInfo(
+            InetAddress.getByName("1.2.3.4"), InetAddress.getByName("2.3.4.5"),
+            InetAddress.getByName("4.5.6.7"), 5000, true, false)));
+    StateInfo end = conn.waitForCompletion();
+    assertEndWasStream(end);
+    assertHit(PassiveConnectionController.class);
+    assertHit(ConnectToProxyForOutgoingController.class);
+    assertSentRvs(1, 1, 0);
+  }
+
+  public void testPassiveFails() throws UnknownHostException {
+    conn.addEventListener(new RvConnectionEventListener() {
+      public void handleEventWithStateChange(RvConnection transfer,
+          RvConnectionState state, RvConnectionEvent event) {
+      }
+
+      public void handleEvent(RvConnection transfer, RvConnectionEvent event) {
+        if (event instanceof StartingControllerEvent) {
+          StartingControllerEvent event1 = (StartingControllerEvent) event;
+          StateController controller = event1.getController();
+          if (controller instanceof PassiveConnectionController) {
+            PassiveConnectionController passive
+                = (PassiveConnectionController) controller;
+            passive.setConnector(new FailConnector());
+
+          } else if (controller instanceof RedirectToProxyController) {
+            ((RedirectToProxyController) controller)
+                .setConnector(getInitiateProxyConnector());
+          }
+        }
+      }
+    });
+    conn.sendRequest();
+    conn.getRvSessionHandler().handleIncomingAccept(null, new GenericAcceptRv());
+    StateInfo end = conn.waitForCompletion();
+    assertEndWasStream(end);
+    assertHit(PassiveConnectionController.class);
+    assertHit(RedirectToProxyController.class);
+    assertSentRvs(2, 0, 0);
+  }
+
+  public void testOnlyUsingProxyRedirected() throws UnknownHostException {
+    conn.getSettings().setOnlyUsingProxy(true);
+    conn.addEventListener(createOnlyUsingProxyEventListener());
+    conn.sendRequest();
+    assertEquals(RvConnectionState.WAITING, conn.getState());
+    conn.getRvSessionHandler().handleIncomingAccept(null, new GenericAcceptRv());
+    conn.getRvSessionHandler().handleIncomingRequest(null,
+        new GenericRequest(2, new RvConnectionInfo(
+            InetAddress.getByName("1.2.3.4"), InetAddress.getByName("2.3.4.5"),
+            null, 5000, false, false)));
+    StateInfo end = conn.waitForCompletion();
+    assertEndWasStream(end);
+    assertHit(PassiveConnectionController.class);
+    assertDidntHit(OutgoingConnectionController.class);
+    assertHit(RedirectToProxyController.class);
+    assertSentRvs(2, 0, 0);
+  }
+
+  public void testOnlyUsingProxyRedirectedToProxyTrusted() throws UnknownHostException {
+    RvConnectionSettings settings = conn.getSettings();
+    settings.setOnlyUsingProxy(true);
+    settings.setProxyRequestTrusted(true);
+    conn.addEventListener(createOnlyUsingProxyEventListener());
+    conn.sendRequest();
+    assertEquals(RvConnectionState.WAITING, conn.getState());
+    conn.getRvSessionHandler().handleIncomingAccept(null, new GenericAcceptRv());
+    conn.getRvSessionHandler().handleIncomingRequest(null,
+        new GenericRequest(2,
+            RvConnectionInfo.createForOutgoingProxiedRequest(
+                InetAddress.getByName("4.5.6.7"), 5000)));
+    StateInfo end = conn.waitForCompletion();
+    assertEndWasStream(end);
+    assertHit(PassiveConnectionController.class);
+    assertHit(ConnectToProxyForOutgoingController.class);
+    assertDidntHit(RedirectToProxyController.class);
+    assertDidntHit(OutgoingConnectionController.class);
+    assertSentRvs(1, 1, 0);
+  }
+
+  public void testOnlyUsingProxyRedirectedToProxyUntrusted() throws UnknownHostException {
+    RvConnectionSettings settings = conn.getSettings();
+    settings.setOnlyUsingProxy(true);
+    settings.setProxyRequestTrusted(false);
+    conn.addEventListener(createOnlyUsingProxyEventListener());
+    conn.sendRequest();
+    assertEquals(RvConnectionState.WAITING, conn.getState());
+    conn.getRvSessionHandler().handleIncomingAccept(null, new GenericAcceptRv());
+    conn.getRvSessionHandler().handleIncomingRequest(null,
+        new GenericRequest(2, RvConnectionInfo.createForOutgoingProxiedRequest(
+            InetAddress.getByName("4.5.6.7"), 5000)));
+    StateInfo end = conn.waitForCompletion();
+    assertEndWasStream(end);
+    assertHit(PassiveConnectionController.class);
+    assertHit(RedirectToProxyController.class);
+    assertDidntHit(OutgoingConnectionController.class);
+    assertSentRvs(2, 0, 0);
+  }
+
+  private void assertDidntHit(Class<?> cls) {
+    assertNull(TestHelper.findOnlyInstance(conn.getHitControllers(), cls));
+  }
+
+  public void testRedirectAfterCompleted()
+      throws UnknownHostException {
+    conn.addEventListener(new DefaultRvConnectionEventListener() {
+      public void handleEvent(RvConnection transfer, RvConnectionEvent event) {
+        if (event instanceof StartingControllerEvent) {
+          StateController controller = ((StartingControllerEvent) event).getController();
+          if (controller instanceof PassiveConnectionController) {
+            ((PassiveConnectionController) controller)
+                .setConnector(new MockPassiveConnector());
+          }
+        }
+      }
+    });
+    conn.sendRequest();
+    conn.getRvSessionHandler().handleIncomingAccept(null, new GenericAcceptRv());
+    assertEndWasStream(conn.waitForCompletion());
+    assertHit(PassiveConnectionController.class);
     assertSentRvs(1, 0, 0);
+    conn.getRvSessionHandler().handleIncomingRequest(null, new GenericRequest(2,
+        new RvConnectionInfo(InetAddress.getByName("1.2.3.4"),
+            InetAddress.getByName("2.3.4.5"), null, 500, false, true)));
+    assertDidntHit(OutgoingConnectionController.class);
+  }
+
+  public void testRedirectDuringTransfer()
+      throws UnknownHostException, ExecutionException, InterruptedException {
+    final MyFutureTask connectedWaiter = setConnectedWaiter();
+    conn.addEventListener(new DefaultRvConnectionEventListener() {
+      public void handleEvent(RvConnection transfer, RvConnectionEvent event) {
+        if (event instanceof StartingControllerEvent) {
+          StateController controller = ((StartingControllerEvent) event).getController();
+          if (controller instanceof PassiveConnectionController) {
+            ((PassiveConnectionController) controller)
+                .setConnector(new MockPassiveConnector());
+          }
+        }
+      }
+    });
+    conn.sendRequest();
+    conn.getRvSessionHandler().handleIncomingAccept(null, new GenericAcceptRv());
+    connectedWaiter.get();
+    assertHit(PassiveConnectionController.class);
+    assertSentRvs(1, 0, 0);
+    List<StateController> hit = conn.getHitControllers();
+    StateController last = hit.get(hit.size() - 1);
+    conn.getRvSessionHandler().handleIncomingRequest(null, new GenericRequest(2,
+        new RvConnectionInfo(InetAddress.getByName("1.2.3.4"),
+            InetAddress.getByName("2.3.4.5"), null, 500, false, true)));
+    assertSame("Redirect while connected should not cause controller change",
+        last, hit.get(hit.size() - 1));
+    assertSentRvs(1, 0, 0);
+  }
+
+  private RvConnectionEventListener createOnlyUsingProxyEventListener() {
+    return new DefaultRvConnectionEventListener() {
+      public void handleEvent(RvConnection transfer, RvConnectionEvent event) {
+        if (event instanceof StartingControllerEvent) {
+          StartingControllerEvent event1 = (StartingControllerEvent) event;
+          StateController controller = event1.getController();
+          if (controller instanceof PassiveConnectionController) {
+            PassiveConnectionController passive
+                = (PassiveConnectionController) controller;
+            passive.setConnector(new HangConnector());
+
+          } else if (controller instanceof AbstractProxyConnectionController) {
+            ((AbstractProxyConnectionController) controller)
+                .setConnector(getInitiateProxyConnector());
+          }
+        }
+      }
+    };
   }
 
   private static class GenericAcceptRv implements AcceptRvCmd {
@@ -186,4 +388,5 @@ public class OutgoingRvConnectionFunctionalTests extends RvConnectionTestCase {
       return false;
     }
   }
+
 }

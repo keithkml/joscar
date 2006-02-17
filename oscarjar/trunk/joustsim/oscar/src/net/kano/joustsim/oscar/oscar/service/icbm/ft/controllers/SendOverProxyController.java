@@ -50,6 +50,6 @@ public class SendOverProxyController
     transfer.setConnectionInfo(connInfo);
     transfer.setInitiator(Initiator.ME);
 
-    transfer.getRvRequestMaker().sendRvRequest();
+    transfer.getRequestMaker().sendRvRequest();
   }
 }

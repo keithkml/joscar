@@ -32,24 +32,11 @@
  * File created by keithkml
  */
 
-package net.kano.joustsim.oscar.oscar.service.icbm;
+package net.kano.joustsim.oscar.oscar.loginstatus;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnection;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.StateBasedRvConnection;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectedController;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
+import net.kano.joustsim.oscar.oscar.service.login.LoginService;
 
-import java.util.List;
-
-public interface MockRvConnection extends RvConnection, StateBasedRvConnection {
-  StateInfo waitForCompletion();
-
-  List<StateController> getHitControllers();
-
-  MockRvSessionConnectionInfo getRvSessionInfo();
-
-  MockRvSessionHandler getRvSessionHandler();
-
-  void setConnectedController(ConnectedController connectedController);
-}
+/**
+ * See {@link LoginService#setSecuridProvider} for details.
+ */
+public class NoSecuridFailure extends LoginFailureInfo { }

@@ -66,6 +66,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ExecutionException;
 
 public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
   private MockIncomingRvConnection conn;
@@ -86,7 +87,12 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
     return 2;
   }
 
-  public void testIncomingLanConnection() {
+  protected void assertHit(Class<?> cls) {
+    assertNotNull(TestHelper.findOnlyInstance(getConnection().getHitControllers(),
+        cls));
+  }
+
+  public void testLanConnection() {
     addNopConnector(conn);
     generateRequestAndWaitForStream();
     assertTrue(TestHelper.findOnlyInstance(conn.getHitControllers(),
@@ -95,7 +101,7 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
     assertSentRvs(0, 1, 0);
   }
 
-  public void testIncomingInternetConnection() {
+  public void testInternetConnection() {
     conn.addEventListener(new DefaultRvConnectionEventListener() {
       public void handleEvent(RvConnection transfer, RvConnectionEvent event) {
         if (event instanceof StartingControllerEvent) {
@@ -119,16 +125,21 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
       }
     });
     generateRequestAndWaitForStream();
-    List<OutgoingConnectionController> controllers
-        = findInstances(conn.getHitControllers(),
-        OutgoingConnectionController.class);
-    assertEquals(2, controllers.size());
-    assertTrue(controllers.get(0).getTimeoutType() == ConnectionType.LAN);
-    assertTrue(controllers.get(1).getTimeoutType() == ConnectionType.INTERNET);
+    assertOnlyHit(ConnectionType.LAN, ConnectionType.INTERNET);
     assertSentRvs(0, 1, 0);
   }
 
-  public void testIncomingProxyConnection() {
+  private void assertOnlyHit(ConnectionType... array) {
+    List<OutgoingConnectionController> controllers
+        = findInstances(conn.getHitControllers(),
+        OutgoingConnectionController.class);
+    assertEquals(array.length, controllers.size());
+    for (int i = 0; i < array.length; i++) {
+      assertEquals("Controller #" + (i+1), array[i], controllers.get(i).getTimeoutType());
+    }
+  }
+
+  public void testProxyConnection() {
     conn.addEventListener(new RvConnectionEventListener() {
       public void handleEventWithStateChange(RvConnection transfer,
           RvConnectionState state, RvConnectionEvent event) {
@@ -157,7 +168,7 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
     assertSentRvs(0, 1, 0);
   }
 
-  public void testIncomingConnectionWeRedirect() {
+  public void testWeRedirect() {
     conn.addEventListener(new DefaultRvConnectionEventListener() {
       public void handleEvent(RvConnection transfer, RvConnectionEvent event) {
         if (event instanceof StartingControllerEvent) {
@@ -180,17 +191,13 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
 
     assertTrue("End was " + end, end instanceof StreamInfo);
     List<StateController> hit = conn.getHitControllers();
-    List<OutgoingConnectionController> controllers = findInstances(hit,
-        OutgoingConnectionController.class);
-    assertEquals(2, controllers.size());
-    assertTrue(controllers.get(0).getTimeoutType() == ConnectionType.LAN);
-    assertTrue(controllers.get(1).getTimeoutType() == ConnectionType.INTERNET);
+    assertOnlyHit(ConnectionType.LAN, ConnectionType.INTERNET);
     assertEquals(1, findInstances(hit,
         RedirectConnectionController.class).size());
     assertSentRvs(1, 1, 0);
   }
 
-  public void testIncomingConnectionWeRedirectToProxy() {
+  public void testWeRedirectPassiveFails() {
     conn.addEventListener(new DefaultRvConnectionEventListener() {
       public void handleEvent(RvConnection transfer, RvConnectionEvent event) {
         if (event instanceof StartingControllerEvent) {
@@ -213,18 +220,13 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
     StateInfo end = generateRequestAndRun(conn);
 
     assertTrue("End was " + end, end instanceof StreamInfo);
-    List<StateController> hit = conn.getHitControllers();
-    List<OutgoingConnectionController> controllers = findInstances(hit,
-        OutgoingConnectionController.class);
-    assertEquals(2, controllers.size());
-    assertTrue(controllers.get(0).getTimeoutType() == ConnectionType.LAN);
-    assertTrue(controllers.get(1).getTimeoutType() == ConnectionType.INTERNET);
-    assertEquals(1, findInstances(hit, RedirectConnectionController.class).size());
-    assertEquals(1, findInstances(hit, RedirectToProxyController.class).size());
+    assertOnlyHit(ConnectionType.LAN, ConnectionType.INTERNET);
+    assertHit(RedirectConnectionController.class);
+    assertHit(RedirectToProxyController.class);
     assertSentRvs(2, 1, 0);
   }
 
-  public void testIncomingConnectionBuddyRedirects() throws UnknownHostException {
+  public void testBuddyRedirects() throws UnknownHostException {
     final HangConnector hangConnector = new HangConnector();
     conn.addEventListener(new DefaultRvConnectionEventListener() {
       public void handleEvent(RvConnection transfer, RvConnectionEvent event) {
@@ -236,8 +238,9 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
             AbstractConnectionController ogc
                 = (AbstractConnectionController) controller;
             try {
-              if (conn.getRvSessionInfo().getConnectionInfo().getInternalIP()
-                  .equals(InetAddress.getByName("40.40.40.40"))) {
+              InetAddress internalip = conn.getRvSessionInfo().getConnectionInfo()
+                  .getInternalIP();
+              if (internalip.equals(InetAddress.getByName("40.40.40.40"))) {
                 ogc.setConnector(new NopConnector());
               } else {
                 ogc.setConnector(hangConnector);
@@ -249,22 +252,17 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
         }
       }
     });
-    List<StateController> hit = conn.getHitControllers();
     RvConnectionInfo conninfo = new RvConnectionInfo(
         InetAddress.getByName("40.40.40.40"),
         InetAddress.getByName("41.41.41.41"), null, 10, false, false);
     StateInfo end = simulateBuddyRedirectionAndWait(conn, hangConnector, conninfo);
 
     assertTrue("End was " + end, end instanceof StreamInfo);
-    List<OutgoingConnectionController> controllers = findInstances(hit,
-        OutgoingConnectionController.class);
-    assertEquals(2, controllers.size());
-    assertTrue(controllers.get(0).getTimeoutType() == ConnectionType.LAN);
-    assertTrue(controllers.get(1).getTimeoutType() == ConnectionType.LAN);
+    assertOnlyHit(ConnectionType.LAN, ConnectionType.LAN);
     assertSentRvs(0, 2, 0);
   }
 
-  public void testIncomingConnectionBuddyRedirectsToProxy() throws UnknownHostException {
+  public void testBuddyRedirectsToProxy() throws UnknownHostException {
     final HangConnector hangConnector = new HangConnector();
     conn.addEventListener(new DefaultRvConnectionEventListener() {
       public void handleEvent(RvConnection transfer, RvConnectionEvent event) {
@@ -288,22 +286,51 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
         }
       }
     });
-    List<StateController> hit = conn.getHitControllers();
     RvConnectionInfo conninfo = RvConnectionInfo.createForOutgoingProxiedRequest(
         InetAddress.getByName("60.60.60.60"), 10);
     StateInfo end = simulateBuddyRedirectionAndWait(conn, hangConnector, conninfo);
 
     assertTrue("End was " + end, end instanceof StreamInfo);
     List<OutgoingConnectionController> controllers
-        = findInstances(hit, OutgoingConnectionController.class);
+        = findInstances(conn.getHitControllers(), OutgoingConnectionController.class);
     assertEquals(1, controllers.size());
     assertTrue(controllers.get(0).getTimeoutType() == ConnectionType.LAN);
-    assertNotNull(TestHelper.findOnlyInstance(hit,
+    assertNotNull(TestHelper.findOnlyInstance(conn.getHitControllers(),
         ConnectToProxyForIncomingController.class));
     assertSentRvs(0, 2, 0);
   }
 
-  public void testIncomingRequestWeImmediatelyReject() {
+  public void testBuddyRedirectsAfterFinished()
+      throws UnknownHostException {
+    addNopConnector(conn);
+    generateRequestAndWaitForStream();
+    conn.getRvSessionHandler().handleIncomingRequest(null,
+        new GenericRequest(2, new RvConnectionInfo(
+            InetAddress.getByName("1.2.3.4"),
+            InetAddress.getByName("5.6.7.8"), null, 500, false, false)));
+    assertSentRvs(0, 1, 0);
+  }
+
+  public void testBuddyRedirectsDuringTransfer()
+      throws UnknownHostException, ExecutionException, InterruptedException {
+    addNopConnector(conn);
+    MyFutureTask waiter = setConnectedWaiter();
+    MockRvConnection conn1 = getConnection();
+    conn1.getRvSessionHandler().handleIncomingRequest(null, new GenericRequest());
+    assertSentRvs(0, 1, 0);
+    List<StateController> hit = conn.getHitControllers();
+    StateController last = hit.get(hit.size() - 1);
+    conn.getRvSessionHandler().handleIncomingRequest(null,
+        new GenericRequest(2, new RvConnectionInfo(
+            InetAddress.getByName("1.2.3.4"),
+            InetAddress.getByName("5.6.7.8"), null, 500, false, false)));
+    waiter.get();
+    assertSame("Redirect during transfer should not change controller",
+        last, hit.get(hit.size() - 1));
+    assertSentRvs(0, 1, 0);
+  }
+
+  public void testWeImmediatelyReject() {
     conn.setAutoMode(AutoMode.REJECT);
     StateInfo end = generateRequestAndRun(conn);
 

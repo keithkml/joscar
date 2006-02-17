@@ -50,6 +50,8 @@ import net.kano.joscar.snaccmd.auth.AuthResponse;
 import net.kano.joscar.snaccmd.auth.ClientVersionInfo;
 import net.kano.joscar.snaccmd.auth.KeyRequest;
 import net.kano.joscar.snaccmd.auth.KeyResponse;
+import net.kano.joscar.snaccmd.auth.SecuridRequest;
+import net.kano.joscar.snaccmd.auth.SecuridResponse;
 import net.kano.joscar.snaccmd.conn.SnacFamilyInfo;
 import net.kano.joscar.snaccmd.error.SnacError;
 import net.kano.joustsim.Screenname;
@@ -62,146 +64,181 @@ import net.kano.joustsim.oscar.oscar.loginstatus.DisconnectedFailureInfo;
 import net.kano.joustsim.oscar.oscar.loginstatus.FlapErrorFailureInfo;
 import net.kano.joustsim.oscar.oscar.loginstatus.LoginFailureInfo;
 import net.kano.joustsim.oscar.oscar.loginstatus.LoginSuccessInfo;
+import net.kano.joustsim.oscar.oscar.loginstatus.NoSecuridFailure;
 import net.kano.joustsim.oscar.oscar.loginstatus.SnacErrorFailureInfo;
 import net.kano.joustsim.oscar.oscar.loginstatus.TimeoutFailureInfo;
 import net.kano.joustsim.oscar.oscar.service.Service;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.logging.Logger;
 
 public class LoginService extends Service {
-    private static final Logger logger = Logger.getLogger(LoginService.class.getName());
+  private static final Logger logger = Logger
+      .getLogger(LoginService.class.getName());
 
-    public static final ClientVersionInfo VERSIONINFO_DEFAULT
-            = new ClientVersionInfo(
-        "AOL Instant Messenger, version 5.5.3415/WIN32",
-                -1, 5, 5, 0, 3415, 239);
-    public static final ClientVersionInfo VERSIONINFO_ICHAT
-            = new ClientVersionInfo("Apple iChat", 0x311a, 1, 0, 0, 0x0184, 0xc6);
+  public static final ClientVersionInfo VERSIONINFO_WINAIM
+      = new ClientVersionInfo(
+      "AOL Instant Messenger, version 5.5.3415/WIN32",
+      -1, 5, 5, 0, 3415, 239);
+  public static final ClientVersionInfo VERSIONINFO_ICHAT
+      = new ClientVersionInfo("Apple iChat", 0x311a, 1, 0, 0, 0x0184, 0xc6);
 
-    private final Screenname screenname;
-    private final String password;
-    private ClientVersionInfo versionInfo = VERSIONINFO_ICHAT;
+  private final Screenname screenname;
+  private final String password;
+  private ClientVersionInfo versionInfo = VERSIONINFO_ICHAT;
 
-    private CopyOnWriteArrayList<LoginServiceListener> listeners
-            = new CopyOnWriteArrayList<LoginServiceListener>();
+  private CopyOnWriteArrayList<LoginServiceListener> listeners
+      = new CopyOnWriteArrayList<LoginServiceListener>();
 
-    private boolean notified = false;
+  private boolean notified = false;
+  private volatile @Nullable SecuridProvider securidProvider = null;
 
-    public LoginService(AimConnection aimConnection,
-            OscarConnection oscarConnection, Screenname screenname,
-            String password) {
-        super(aimConnection, oscarConnection, AuthCommand.FAMILY_AUTH);
+  public LoginService(AimConnection aimConnection,
+      OscarConnection oscarConnection, Screenname screenname,
+      String password) {
+    super(aimConnection, oscarConnection, AuthCommand.FAMILY_AUTH);
 
-        DefensiveTools.checkNull(screenname, "screenname");
-        DefensiveTools.checkNull(password, "password");
+    DefensiveTools.checkNull(screenname, "screenname");
+    DefensiveTools.checkNull(password, "password");
 
-        this.screenname = screenname;
-        this.password = password;
+    this.screenname = screenname;
+    this.password = password;
 
-        setReady();
+    setReady();
+  }
+
+  public SnacFamilyInfo getSnacFamilyInfo() {
+    return AuthCommand.FAMILY_INFO;
+  }
+
+  public void addLoginListener(LoginServiceListener l) {
+    listeners.addIfAbsent(l);
+  }
+
+  public void removeLoginListener(LoginServiceListener l) {
+    listeners.remove(l);
+  }
+
+  public synchronized ClientVersionInfo getVersionInfo() { return versionInfo; }
+
+  public synchronized void setVersionInfo(ClientVersionInfo versionInfo) {
+    this.versionInfo = versionInfo;
+  }
+
+  public SecuridProvider getSecuridProvider() {
+    return securidProvider;
+  }
+
+  public void setSecuridProvider(SecuridProvider securidProvider) {
+    this.securidProvider = securidProvider;
+  }
+
+  private void fireLoginSucceeded(LoginSuccessInfo info) {
+    logger.fine("Login process succeeded: " + info);
+
+    synchronized (this) {
+      if (notified) return;
+      notified = true;
     }
-
-    public SnacFamilyInfo getSnacFamilyInfo() {
-        return AuthCommand.FAMILY_INFO;
+    for (LoginServiceListener listener : listeners) {
+      listener.loginSucceeded(info);
     }
+    setFinished();
+  }
 
-    public void addLoginListener(LoginServiceListener l) {
-        listeners.addIfAbsent(l);
+  private void fireLoginFailed(LoginFailureInfo info) {
+    logger.fine("Login failed: " + info.getClass().getName()
+        + ": " + info);
+
+    synchronized (this) {
+      if (notified) return;
+      notified = true;
     }
-
-    public void removeLoginListener(LoginServiceListener l) {
-        listeners.remove(l);
+    for (LoginServiceListener listener : listeners) {
+      listener.loginFailed(info);
     }
+    setFinished();
+  }
 
-    public synchronized ClientVersionInfo getVersionInfo() { return versionInfo; }
-
-    public synchronized void setVersionInfo(ClientVersionInfo versionInfo) {
-        this.versionInfo = versionInfo;
+  public void timeout(int timeout) {
+    if (!getNotified()) {
+      fireLoginFailed(new TimeoutFailureInfo(timeout));
     }
+  }
 
-    private void loginSucceeded(LoginSuccessInfo info) {
-        logger.fine("Login process succeeded: " + info);
+  private synchronized boolean getNotified() { return notified; }
 
-        synchronized(this) {
-            if (notified) return;
-            notified = true;
-        }
-        for (LoginServiceListener listener : listeners) {
-            listener.loginSucceeded(info);
-        }
-        setFinished();
+  public void connected() {
+    logger.fine("Sending key request");
+
+    sendFlap(new LoginFlapCmd());
+    sendSnac(new KeyRequest(screenname.getFormatted()));
+  }
+
+  protected void finishUp() {
+    if (!getNotified()) {
+      fireLoginFailed(
+          new DisconnectedFailureInfo(getAimConnection().wantedDisconnect()));
     }
+  }
 
-    private void loginFailed(LoginFailureInfo info) {
-        logger.fine("Login failed: " + info.getClass().getName()
-                + ": " + info);
+  public void handleFlapPacket(FlapPacketEvent flapPacketEvent) {
+    FlapCommand flap = flapPacketEvent.getFlapCommand();
 
-        synchronized(this) {
-            if (notified) return;
-            notified = true;
-        }
-        for (LoginServiceListener listener : listeners) {
-            listener.loginFailed(info);
-        }
-        setFinished();
+    if (flap instanceof CloseFlapCmd) {
+      CloseFlapCmd fc = (CloseFlapCmd) flap;
+      fireLoginFailed(new ClosedEarlyFailureInfo(fc));
+
+    } else if (flap instanceof FlapErrorCmd) {
+      FlapErrorCmd fe = (FlapErrorCmd) flap;
+      fireLoginFailed(new FlapErrorFailureInfo(fe));
     }
+  }
 
-    public void timeout(int timeout) {
-        if (!getNotified()) {
-            loginFailed(new TimeoutFailureInfo(timeout));
-        }
-    }
+  public void handleSnacPacket(SnacPacketEvent snacPacketEvent) {
+    SnacCommand snac = snacPacketEvent.getSnacCommand();
 
-    private synchronized boolean getNotified() { return notified; }
+    if (snac instanceof KeyResponse) {
+      KeyResponse kr = (KeyResponse) snac;
 
-    public void connected() {
-        logger.fine("Sending key request");
+      logger.fine("Sending authorization request");
 
-        sendFlap(new LoginFlapCmd());
-        sendSnac(new KeyRequest(screenname.getFormatted()));
-    }
+      sendSnac(new AuthRequest(screenname.getFormatted(), password,
+          getVersionInfo(), kr.getKey()));
 
-    protected void finishUp() {
-        if (!getNotified()) {
-            loginFailed(new DisconnectedFailureInfo(getAimConnection().wantedDisconnect()));
-        }
-    }
+    } else if (snac instanceof AuthResponse) {
+      AuthResponse ar = (AuthResponse) snac;
+      if (ar.getErrorCode() != -1) {
+        fireLoginFailed(new AuthFailureInfo(ar));
+      } else {
+        fireLoginSucceeded(new LoginSuccessInfo(ar));
+      }
+    } else if (snac instanceof SecuridRequest) {
+      final SecuridProvider provider = securidProvider;
+      if (provider == null) {
+        fireLoginFailed(new NoSecuridFailure());
 
-    public void handleFlapPacket(FlapPacketEvent flapPacketEvent) {
-        FlapCommand flap = flapPacketEvent.getFlapCommand();
+      } else {
+        // we start a new thread so this method can block, because it will
+        // likely pop up a dialog for the user
+        Thread thread = new Thread(new Runnable() {
+          public void run() {
+            String securid = provider.getSecurid();
+            if (securid == null) {
+              fireLoginFailed(new NoSecuridFailure());
 
-        if (flap instanceof CloseFlapCmd) {
-            CloseFlapCmd fc = (CloseFlapCmd) flap;
-            loginFailed(new ClosedEarlyFailureInfo(fc));
-
-        } else if (flap instanceof FlapErrorCmd) {
-            FlapErrorCmd fe = (FlapErrorCmd) flap;
-            loginFailed(new FlapErrorFailureInfo(fe));
-        }
-    }
-
-    public void handleSnacPacket(SnacPacketEvent snacPacketEvent) {
-        SnacCommand snac = snacPacketEvent.getSnacCommand();
-
-        if (snac instanceof KeyResponse) {
-            KeyResponse kr = (KeyResponse) snac;
-
-            logger.fine("Sending authorization request");
-
-            sendSnac(new AuthRequest(screenname.getFormatted(), password,
-                    getVersionInfo(), kr.getKey()));
-
-        } else if (snac instanceof AuthResponse) {
-            AuthResponse ar = (AuthResponse) snac;
-            if (ar.getErrorCode() != -1) {
-                loginFailed(new AuthFailureInfo(ar));
             } else {
-                loginSucceeded(new LoginSuccessInfo(ar));
+              sendSnac(new SecuridResponse(securid));
             }
+          }
+        });
+        thread.setDaemon(true);
+        thread.start();
+      }
 
-        } else if (snac instanceof SnacError) {
-            SnacError se = (SnacError) snac;
-            loginFailed(new SnacErrorFailureInfo(se));
-        }
+    } else if (snac instanceof SnacError) {
+      SnacError se = (SnacError) snac;
+      fireLoginFailed(new SnacErrorFailureInfo(se));
     }
+  }
 }

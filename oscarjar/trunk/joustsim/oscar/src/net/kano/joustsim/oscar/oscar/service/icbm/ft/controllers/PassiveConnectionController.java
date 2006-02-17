@@ -41,6 +41,7 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
 import javax.net.ServerSocketFactory;
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.net.InetAddress;
 import java.nio.channels.ServerSocketChannel;
 
 public abstract class PassiveConnectionController
@@ -89,6 +90,10 @@ public abstract class PassiveConnectionController
 
     public int getLocalPort() {
       return localPort;
+    }
+
+    public InetAddress getLocalHost() {
+      return serverSocket.getInetAddress();
     }
 
     public StreamInfo createStream() throws IOException {

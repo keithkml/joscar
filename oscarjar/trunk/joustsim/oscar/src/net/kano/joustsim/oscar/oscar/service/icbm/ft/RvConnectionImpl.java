@@ -6,6 +6,8 @@ import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.oscar.service.icbm.RendezvousSessionHandler;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ControllerListener;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.OutgoingConnectionController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectedController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ChecksummingEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectedEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectingEvent;
@@ -15,18 +17,19 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileCompleteEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.LocallyCancelledEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ResolvingProxyEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.StartedControllerEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.StartingControllerEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.StoppingControllerEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferringFileEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.WaitingForConnectionEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.StartedControllerEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
 import net.kano.joustsim.oscar.proxy.AimProxyInfo;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Arrays;
 import java.util.logging.Logger;
 
 public abstract class RvConnectionImpl
@@ -64,9 +67,9 @@ public abstract class RvConnectionImpl
   private RvConnectionState state = RvConnectionState.WAITING;
   private boolean done = false;
   private volatile TimeoutHandler timeoutHandler = new TimerTimeoutHandler(this);
-  private static final List<RvConnectionState> COOL_STATES = Arrays.asList(RvConnectionState.WAITING,
-      RvConnectionState.PREPARING, RvConnectionState.CONNECTING,
-      RvConnectionState.CONNECTED);
+  private static final List<RvConnectionState> COOL_STATES
+      = Arrays.asList(RvConnectionState.WAITING, RvConnectionState.PREPARING,
+      RvConnectionState.CONNECTING, RvConnectionState.CONNECTED);
 
   protected RvConnectionImpl(AimProxyInfo proxy,
       Screenname myScreenname, RvSessionConnectionInfo rvsessioninfo) {
@@ -106,17 +109,36 @@ public abstract class RvConnectionImpl
     changeStateController(controller);
   }
 
-  protected void changeStateController(StateController controller) {
+  protected boolean changeStateController(StateController controller) {
     StateController last;
     synchronized (this) {
-      if (done) {
-        LOGGER.warning("Someone tried changing state of " + this
-            + " to " + controller + ", but we are done so it is being ignored");
-        return;
-      }
+      StateController old = this.controller;
+      if (!isValidNextController(old, controller)) return false;
       last = storeNextController(controller);
+      assert last == old;
     }
     stopThenStart(last, controller);
+    return true;
+  }
+
+  protected boolean isValidNextController(StateController oldController,
+      StateController newController) {
+    if (done) {
+      LOGGER.warning("Someone tried changing controller for " + this
+          + " to " + newController + ", but we are done so it is being ignored");
+      return false;
+    }
+
+    if (isConnectedController(oldController)) {
+      ConnectedController conn = (ConnectedController) oldController;
+      if (conn.isConnected()) {
+        if (!canInterruptConnectedController(conn, newController)) {
+          return false;
+        }
+      }
+    }
+
+    return true;
   }
 
   private void stopThenStart(StateController last,
@@ -132,21 +154,22 @@ public abstract class RvConnectionImpl
     }
   }
 
-  protected void changeStateControllerFrom(StateController controller) {
-    LOGGER.finer("Changing state controller from " + controller);
+  protected boolean changeStateControllerFrom(StateController oldController) {
+    LOGGER.finer("Changing state controller from " + oldController);
     StateController next;
     synchronized (this) {
-      if (done) return;
-
-      if (this.controller == controller) {
+      if (this.controller == oldController) {
         next = getNextStateController();
+        if (!isValidNextController(oldController, next)) return false;
         storeNextController(next);
+
       } else {
         next = null;
       }
     }
     flushEventQueue();
-    stopThenStart(controller, next);
+    stopThenStart(oldController, next);
+    return true;
   }
 
   private synchronized StateController storeNextController(
@@ -195,7 +218,7 @@ public abstract class RvConnectionImpl
       controller = this.controller;
     }
     if (state == RvConnectionState.FAILED) {
-      sessionInfo.getRvRequestMaker().sendRvReject();
+      sessionInfo.getRequestMaker().sendRvReject();
     }
     if (controller != null && (state == RvConnectionState.FAILED
         || state == RvConnectionState.FINISHED)) {
@@ -284,6 +307,55 @@ public abstract class RvConnectionImpl
   public String toString() {
     return MiscTools.getClassName(this) + " with " + getBuddyScreenname();
   }
+
+  public static boolean isLanController(StateController oldController) {
+    return oldController instanceof OutgoingConnectionController
+        && ((OutgoingConnectionController) oldController).getTimeoutType()
+        == ConnectionType.LAN;
+  }
+
+  public static boolean isInternetController(StateController oldController) {
+    return oldController instanceof OutgoingConnectionController
+        && ((OutgoingConnectionController) oldController).getTimeoutType()
+        == ConnectionType.INTERNET;
+  }
+
+  public synchronized StateController getNextStateController() {
+    StateController oldController = getStateController();
+    StateInfo endState = oldController.getEndStateInfo();
+    if (endState instanceof SuccessfulStateInfo) {
+      if (isSomeConnectionController(oldController)) {
+        return createConnectedController(endState);
+
+      } else {
+        return getNextControllerFromSuccess(oldController, endState);
+      }
+
+    } else if (endState instanceof FailedStateInfo) {
+      return getNextControllerFromError(oldController, endState);
+
+    } else {
+      throw new IllegalStateException("Unknown previous state " + endState);
+    }
+  }
+
+  protected abstract StateController getNextControllerFromError(
+      StateController oldController, StateInfo endState);
+
+  protected abstract StateController getNextControllerFromSuccess(
+      StateController oldController, StateInfo endState);
+
+  protected abstract ConnectedController createConnectedController(
+      StateInfo endState);
+
+  protected abstract boolean isSomeConnectionController(StateController oldController);
+
+  protected boolean canInterruptConnectedController(
+      ConnectedController connected, StateController newController) {
+    return newController == null;
+  }
+
+  protected abstract boolean isConnectedController(StateController controller);
 
   protected static class StateChangeEvent {
     private RvConnectionState state;

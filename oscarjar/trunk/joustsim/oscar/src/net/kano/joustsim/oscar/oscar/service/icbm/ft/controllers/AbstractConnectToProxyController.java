@@ -81,7 +81,7 @@ public abstract class AbstractConnectToProxyController
     String mysn = getRvConnection().getMyScreenname().getNormal();
     RvProxyCmd initCmd = new RvProxyInitRecvCmd(mysn,
         conn.getRvSession().getRvSessionId(), port,
-        conn.getRvRequestMaker().getCapabilityBlock());
+        conn.getRequestMaker().getCapabilityBlock());
     getProxyConnection().sendProxyPacket(initCmd);
   }
 

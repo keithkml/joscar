@@ -44,7 +44,7 @@ public class MockRvSessionConnectionInfo extends
     super(new MockRvSession());
   }
 
-  public MockRvRequestMaker getRvRequestMaker() {
+  public MockRvRequestMaker getRequestMaker() {
     return maker;
   }
 }

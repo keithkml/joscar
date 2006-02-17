@@ -34,22 +34,28 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnection;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.StateBasedRvConnection;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.AbstractStateController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectedController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnection;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
 
-import java.util.List;
+import java.io.IOException;
 
-public interface MockRvConnection extends RvConnection, StateBasedRvConnection {
-  StateInfo waitForCompletion();
+public class MockConnectedController
+    extends AbstractStateController implements ConnectedController {
+  public boolean isConnected() {
+    return true;
+  }
 
-  List<StateController> getHitControllers();
+  public void start(RvConnection transfer, StateController last) {
+    try {
+      fireSucceeded(new StreamInfo(null));
+    } catch (IOException e) {
+      fireFailed(e);
+    }
+  }
 
-  MockRvSessionConnectionInfo getRvSessionInfo();
-
-  MockRvSessionHandler getRvSessionHandler();
-
-  void setConnectedController(ConnectedController connectedController);
+  public void stop() {
+  }
 }

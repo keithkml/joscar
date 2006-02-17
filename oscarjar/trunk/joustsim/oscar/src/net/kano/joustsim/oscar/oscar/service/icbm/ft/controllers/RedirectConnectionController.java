@@ -39,17 +39,16 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvSessionConnectionInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.Initiator;
 
 import java.io.IOException;
-import java.net.InetAddress;
 
 public class RedirectConnectionController extends PassiveConnectionController {
   protected void sendRequest() throws IOException {
     RvConnectionInfo connInfo = RvConnectionInfo
-        .createForOutgoingRequest(InetAddress.getLocalHost(), getConnector().getLocalPort());
+        .createForOutgoingRequest(getConnector().getLocalHost(), getConnector().getLocalPort());
     RvSessionConnectionInfo transfer = getRvSessionInfo();
     transfer.setConnectionInfo(connInfo);
     transfer.setInitiator(Initiator.ME);
     int newIndex = transfer.increaseRequestIndex();
-    transfer.getRvRequestMaker().sendRvRequest(newIndex);
+    transfer.getRequestMaker().sendRvRequest(newIndex);
   }
 
   public ConnectionType getTimeoutType() {

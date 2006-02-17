@@ -74,6 +74,7 @@ public final class BuddyInfo {
     public static final String PROP_MOBILE = "mobile";
     public static final String PROP_ROBOT = "robot";
     public static final String PROP_AOL_USER = "aolUser";
+    public static final String PROP_ITUNES_URL = "itunesUrl";
 
     private final Screenname screenname;
 
@@ -88,6 +89,7 @@ public final class BuddyInfo {
     private String awayMessage = null;
     private String userProfile = null;
     private String statusMessage = null;
+    private String itunesUrl = null;
     private ExtraInfoData iconHash = null;
     private ByteBlock iconData = null;
     private boolean mobile = false;
@@ -267,6 +269,17 @@ public final class BuddyInfo {
     }
 
     public synchronized @Nullable String getStatusMessage() { return statusMessage; }
+
+    void setItunesUrl(String itunesUrl) {
+        String old;
+        synchronized (this) {
+            old = this.itunesUrl;
+            this.itunesUrl = itunesUrl;
+        }
+        fireObjectChange(PROP_ITUNES_URL, old, itunesUrl);
+    }
+
+    public synchronized @Nullable String getItunesUrl() { return itunesUrl; }
 
     void setUserProfile(String userProfile) {
         String old;

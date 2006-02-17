@@ -52,6 +52,6 @@ public class RedirectToProxyController extends InitiateProxyController
     transfer.setConnectionInfo(
         RvConnectionInfo.createForOutgoingProxiedRequest(addr, port));
     transfer.setInitiator(Initiator.ME);
-    transfer.getRvRequestMaker().sendRvRequest(transfer.increaseRequestIndex());
+    transfer.getRequestMaker().sendRvRequest(transfer.increaseRequestIndex());
   }
 }

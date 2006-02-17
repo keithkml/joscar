@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.HashMap;
 
 public class RvConnectionSettings {
+  //TODO(klea): change default rv connection timeout
   private static final long DEFAULT_RV_CONNECTION_TIMEOUT = 10 * 1000;
 
   private boolean onlyUsingProxy = false;

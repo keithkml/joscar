@@ -5,7 +5,7 @@ import net.kano.joscar.rvcmd.RvConnectionInfo;
 
 public interface RvSessionConnectionInfo  {
   RvSession getRvSession();
-  RvRequestMaker getRvRequestMaker();
+  RvRequestMaker getRequestMaker();
 
   void setConnectionInfo(RvConnectionInfo connInfo);
   RvConnectionInfo getConnectionInfo();

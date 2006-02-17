@@ -114,7 +114,7 @@ public class MyBuddyIconManager {
     }
   }
 
-  public void requestSetIcon(ExtraInfoData iconInfo) {
+  public void requestSetIconFromExtraInfoData(ExtraInfoData iconInfo) {
     wantedIconData = null;
     reallySetIcon(iconInfo);
   }

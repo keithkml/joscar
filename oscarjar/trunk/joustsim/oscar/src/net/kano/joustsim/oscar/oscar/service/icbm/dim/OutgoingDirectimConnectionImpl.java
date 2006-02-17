@@ -43,6 +43,7 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvSessionConnectionInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendOverProxyController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendPassivelyController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectedController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectionCompleteEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownErrorEvent;
@@ -82,7 +83,7 @@ public class OutgoingDirectimConnectionImpl
     }
   }
 
-  protected StateController getNextControllerFromUnknownSuccess(
+  protected StateController getNextControllerFromSuccess(
       StateController oldController, StateInfo endState) {
     if (oldController instanceof DirectimController) {
       queueStateChange(RvConnectionState.FINISHED,
@@ -95,8 +96,12 @@ public class OutgoingDirectimConnectionImpl
     }
   }
 
-  protected StateController createConnectedController(StateInfo endState) {
+  protected ConnectedController createConnectedController(StateInfo endState) {
     return new DirectimController();
+  }
+
+  protected boolean isConnectedController(StateController controller) {
+    return controller instanceof DirectimController;
   }
 
   public void sendRequest() {

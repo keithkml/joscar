@@ -48,7 +48,7 @@ import java.io.IOException;
 import java.util.logging.Logger;
 
 public abstract class AbstractConnectionController
-    extends StateController implements StreamInfoProvider, TimeoutableController {
+    extends AbstractStateController implements StreamInfoProvider, TimeoutableController {
 
   private static final Logger LOGGER = Logger
       .getLogger(AbstractConnectionController.class.getName());

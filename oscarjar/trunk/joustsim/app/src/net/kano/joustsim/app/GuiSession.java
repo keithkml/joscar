@@ -53,22 +53,22 @@ import net.kano.joustsim.oscar.State;
 import net.kano.joustsim.oscar.StateEvent;
 import net.kano.joustsim.oscar.StateInfo;
 import net.kano.joustsim.oscar.StateListener;
+import net.kano.joustsim.oscar.oscar.service.chatrooms.ChatInvitation;
+import net.kano.joustsim.oscar.oscar.service.chatrooms.ChatMessage;
+import net.kano.joustsim.oscar.oscar.service.chatrooms.ChatRoomManager;
+import net.kano.joustsim.oscar.oscar.service.chatrooms.ChatRoomManagerListener;
+import net.kano.joustsim.oscar.oscar.service.chatrooms.ChatRoomSession;
+import net.kano.joustsim.oscar.oscar.service.chatrooms.ChatRoomSessionListener;
+import net.kano.joustsim.oscar.oscar.service.chatrooms.ChatRoomUser;
+import net.kano.joustsim.oscar.oscar.service.chatrooms.ChatSessionState;
 import net.kano.joustsim.oscar.oscar.service.icbm.Conversation;
 import net.kano.joustsim.oscar.oscar.service.icbm.IcbmBuddyInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.IcbmListener;
 import net.kano.joustsim.oscar.oscar.service.icbm.IcbmService;
-import net.kano.joustsim.oscar.oscar.service.chatrooms.ChatRoomManagerListener;
-import net.kano.joustsim.oscar.oscar.service.chatrooms.ChatRoomManager;
-import net.kano.joustsim.oscar.oscar.service.chatrooms.ChatInvitation;
-import net.kano.joustsim.oscar.oscar.service.chatrooms.ChatRoomSession;
-import net.kano.joustsim.oscar.oscar.service.chatrooms.ChatRoomSessionListener;
-import net.kano.joustsim.oscar.oscar.service.chatrooms.ChatSessionState;
-import net.kano.joustsim.oscar.oscar.service.chatrooms.ChatRoomUser;
-import net.kano.joustsim.oscar.oscar.service.chatrooms.ChatMessage;
 
 import javax.swing.JFrame;
-import javax.swing.SwingUtilities;
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -235,6 +235,7 @@ public class GuiSession {
     //TODO: dispose of other buddies' prefs windows
 
     conn = aimSession.openConnection(props);
+//    conn.setProxy(AimProxyInfo.forSocks4("kano.net", 10800, "test"));
     conn.addStateListener(connStateListener);
     conn.connect();
   }

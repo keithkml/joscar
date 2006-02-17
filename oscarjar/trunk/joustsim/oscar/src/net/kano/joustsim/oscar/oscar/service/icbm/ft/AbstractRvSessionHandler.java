@@ -64,7 +64,7 @@ public abstract class AbstractRvSessionHandler implements RendezvousSessionHandl
     RvConnectionEvent error = null;
     RvConnectionSettings settings = connection.getSettings();
     if (settings.isOnlyUsingProxy()) {
-      if (connInfo.isProxied() && !settings.isProxyRequestTrusted()) {
+      if (!(connInfo.isProxied() && settings.isProxyRequestTrusted())) {
         error = new ProxyRedirectDisallowedEvent(
             connInfo.getProxyIP());
       }

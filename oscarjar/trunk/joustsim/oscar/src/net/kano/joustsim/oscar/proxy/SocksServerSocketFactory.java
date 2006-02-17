@@ -34,10 +34,13 @@
 
 package net.kano.joustsim.oscar.proxy;
 
+import socks.SocksServerSocket;
+
 import javax.net.ServerSocketFactory;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
+import java.util.Random;
 
 public class SocksServerSocketFactory extends ServerSocketFactory {
   private final AimProxyInfo proxy;
@@ -46,19 +49,21 @@ public class SocksServerSocketFactory extends ServerSocketFactory {
     this.proxy = proxy;
   }
 
+  public ServerSocket createServerSocket() throws IOException {
+    return new SocksServerSocket(proxy.createSocksProxy(),
+        new Random().nextInt(65535-1025) + 1025);
+  }
+
   public ServerSocket createServerSocket(int port) throws IOException {
-    throw new InternalError("broken");
-//    return new SocksServerSocket(proxy.createProxy(), port);
+    return new SocksServerSocket(proxy.createSocksProxy(), port);
   }
 
   public ServerSocket createServerSocket(int port, int backlog) throws IOException {
-    throw new InternalError("broken");
-//    return new SocksServerSocket(proxy.createProxy(), port);
+    return new SocksServerSocket(proxy.createSocksProxy(), port);
   }
 
   public ServerSocket createServerSocket(int port, int backlog, InetAddress localhost)
       throws IOException {
-    throw new InternalError("broken");
-//    return new SocksServerSocket(proxy.createProxy(), port);
+    return new SocksServerSocket(proxy.createSocksProxy(), port);
   }
 }

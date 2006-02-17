@@ -38,11 +38,12 @@ import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rvcmd.ConnectionRequestRvCmd;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.oscar.service.icbm.RendezvousSessionHandler;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.AbstractIncomingRvSessionHandler;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.IncomingRvConnectionImpl;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionState;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvSessionConnectionInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.AbstractIncomingRvSessionHandler;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectedController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectionCompleteEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
@@ -71,7 +72,15 @@ public class IncomingDirectimConnectionImpl
     ((MutableSessionConnectionInfo) getRvSessionInfo()).setMaker(new DirectimRequestMaker(this));
   }
 
-  protected StateController getNextStateControllerFromSuccessState(
+  protected ConnectedController createConnectedController(StateInfo endState) {
+    return new DirectimController();
+  }
+
+  protected boolean isConnectedController(StateController controller) {
+    return controller instanceof DirectimController;
+  }
+
+  protected StateController getNextControllerFromSuccess(
       StateController oldController, StateInfo oldStateInfo) {
     if (oldController instanceof DirectimController) {
       LOGGER.fine("Changing from success of receive controller to "
@@ -81,8 +90,7 @@ public class IncomingDirectimConnectionImpl
       return null;
 
     } else if (oldStateInfo instanceof StreamInfo) {
-      LOGGER.fine("Got stream info; starting directim controller");
-      return new DirectimController();
+      throw new IllegalStateException("stream info??");
 
     } else {
       throw new IllegalStateException("Trying to change from success "
@@ -91,7 +99,7 @@ public class IncomingDirectimConnectionImpl
     }
   }
 
-  protected StateController getNextStateFromErrorWithUnknownController(
+  protected StateController getNextControllerFromUnknownError(
       StateController oldController, StateInfo oldState,
       RvConnectionEvent event) {
     if (oldController instanceof DirectimController) {

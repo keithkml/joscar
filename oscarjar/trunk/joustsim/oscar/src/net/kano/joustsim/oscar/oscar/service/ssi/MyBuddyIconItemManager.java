@@ -158,8 +158,8 @@ public class MyBuddyIconItemManager {
   }
 
   public void setIcon(@Nullable ExtraInfoData iconInfo) {
-    if (iconInfo != null && iconInfo.getData().getLength() != 18) {
-      LOGGER.log(Level.WARNING, "Icon hash length should be 18, but it's "
+    if (iconInfo != null && iconInfo.getData().getLength() != 16) {
+      LOGGER.log(Level.WARNING, "Icon hash length should be 16, but it's "
           + iconInfo.getData().getLength(), new Throwable());
     }
 

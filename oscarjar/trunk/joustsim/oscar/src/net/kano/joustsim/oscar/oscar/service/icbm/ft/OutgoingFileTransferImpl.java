@@ -41,6 +41,7 @@ import net.kano.joscar.rvcmd.sendfile.FileSendBlock;
 import static net.kano.joscar.rvcmd.sendfile.FileSendBlock.SENDTYPE_DIR;
 import static net.kano.joscar.rvcmd.sendfile.FileSendBlock.SENDTYPE_SINGLEFILE;
 import net.kano.joustsim.Screenname;
+import net.kano.joustsim.oscar.oscar.service.icbm.dim.MutableSessionConnectionInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ChecksumController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendFileController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendOverProxyController;
@@ -48,6 +49,7 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendPassivelyCo
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.TransferredFile;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.TransferredFileImpl;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectedController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ChecksummingEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectionCompleteEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
@@ -55,7 +57,6 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownErrorEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.ComputedChecksumsInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.dim.MutableSessionConnectionInfo;
 import net.kano.joustsim.oscar.proxy.AimProxyInfo;
 
 import java.io.File;
@@ -175,7 +176,7 @@ public class OutgoingFileTransferImpl
     }
   }
 
-  protected StateController getNextControllerFromUnknownSuccess(
+  protected StateController getNextControllerFromSuccess(
       StateController oldController, StateInfo endState) {
     if (oldController instanceof SendFileController) {
       queueStateChange(RvConnectionState.FINISHED,
@@ -199,8 +200,12 @@ public class OutgoingFileTransferImpl
     }
   }
 
-  protected StateController createConnectedController(StateInfo endState) {
+  protected ConnectedController createConnectedController(StateInfo endState) {
     return new SendFileController();
+  }
+
+  protected boolean isConnectedController(StateController controller) {
+    return controller instanceof SendFileController;
   }
 
   public RvRequestMaker getRvRequestMaker() {

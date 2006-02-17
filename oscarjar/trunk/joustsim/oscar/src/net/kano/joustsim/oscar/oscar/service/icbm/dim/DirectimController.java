@@ -49,8 +49,10 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvSessionConnectionInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.PausableController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.PauseHelper;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.PauseHelperImpl;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.AbstractStateController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.TimeoutableController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectedController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectedEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectionTimedOutEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
@@ -71,8 +73,9 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class DirectimController extends StateController
-    implements PausableController, Cancellable, TimeoutableController {
+public class DirectimController extends AbstractStateController
+    implements PausableController, Cancellable, TimeoutableController,
+    ConnectedController {
   private static final Logger LOGGER = Logger
       .getLogger(DirectimController.class.getName());
 
@@ -266,6 +269,10 @@ public class DirectimController extends StateController
     if (!isIcbmIdConfirmed()) {
       fireFailed(new ConnectionTimedOutEvent(timeout));
     }
+  }
+
+  public boolean isConnected() {
+    return icbmIdConfirmed;
   }
 
   private static class AttachmentInfo {

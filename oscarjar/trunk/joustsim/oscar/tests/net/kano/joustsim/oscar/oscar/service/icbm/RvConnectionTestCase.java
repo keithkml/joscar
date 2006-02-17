@@ -40,16 +40,21 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionEventListener;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnection;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionState;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.OutgoingConnectionController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectedController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ControllerListener;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.StartingControllerEvent;
+import net.kano.joustsim.TestHelper;
 import net.kano.joscar.rvproto.rvproxy.RvProxyReadyCmd;
 import net.kano.joscar.rvproto.rvproxy.RvProxyAckCmd;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 
 import java.util.List;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.Callable;
 import java.net.UnknownHostException;
 import java.net.InetAddress;
 
@@ -60,9 +65,11 @@ public abstract class RvConnectionTestCase extends TestCase {
   protected abstract MockRvConnection getConnection();
 
   protected void generateRequestAndWaitForStream() {
-    StateInfo end = generateRequestAndRun(getConnection());
+    assertEndWasStream(generateRequestAndRun(getConnection()));
+  }
 
-    assertTrue(end instanceof StreamInfo);
+  protected void assertEndWasStream(StateInfo end) {
+    assertTrue("End was " + end, end instanceof StreamInfo);
   }
 
   protected StateInfo generateRequestAndRun(MockRvConnection conn) {
@@ -77,14 +84,16 @@ public abstract class RvConnectionTestCase extends TestCase {
 
   protected void assertSentRvs(int numreqs, int accepts, int rejects) {
     MockRvConnection connection = getConnection();
-    MockRvRequestMaker maker = connection.getRvSessionInfo().getRvRequestMaker();
+    MockRvRequestMaker maker = connection.getRvSessionInfo().getRequestMaker();
     List<Integer> requests = maker.getSentRequests();
-    assertEquals(numreqs, requests.size());
+    assertEquals("Unexpected request count", numreqs, requests.size());
     for (int i = 0; i < numreqs; i++) {
-      assertEquals((Object) (i + getBaseOutgoingRequestId()), requests.get(i));
+      int expected = i + getBaseOutgoingRequestId();
+      assertTrue("Got req#" + requests.get(i) + ", expected >=" + expected,
+          expected <= requests.get(i));
     }
-    assertEquals(accepts, maker.getAcceptCount());
-    assertEquals(rejects, maker.getRejectCount());
+    assertEquals("Unexpected accept count", accepts, maker.getAcceptCount());
+    assertEquals("Unexpected reject count", rejects, maker.getRejectCount());
   }
 
   protected abstract int getBaseOutgoingRequestId();
@@ -128,5 +137,56 @@ public abstract class RvConnectionTestCase extends TestCase {
         }
       }
     });
+  }
+
+  protected void assertHit(Class<?> cls) {
+    assertNotNull(TestHelper.findOnlyInstance(getConnection().getHitControllers(),
+        cls));
+  }
+
+  protected MyFutureTask setConnectedWaiter() {
+    final MyFutureTask connectedWaiter = new MyFutureTask();
+    getConnection().setConnectedController(new ConnectedController() {
+      public boolean isConnected() {
+        return true;
+      }
+
+      public void start(RvConnection transfer, StateController last) {
+        connectedWaiter.set(null);
+      }
+
+      public void addControllerListener(ControllerListener listener) {
+      }
+
+      public void removeControllerListener(ControllerListener listener) {
+      }
+
+      public StateInfo getEndStateInfo() {
+    //        try {
+    //          return new StreamInfo(null);
+    //        } catch (IOException e) {
+    //          throw new IllegalStateException(e);
+    //        }
+        return null;
+      }
+
+      public void stop() {
+      }
+    });
+    return connectedWaiter;
+  }
+
+  protected static class MyFutureTask extends FutureTask<Object> {
+    public MyFutureTask() {
+      super(new Callable<Object>() {
+        public Object call() throws Exception {
+          return null;
+        }
+      });
+    }
+
+    public void set(Object v) {
+      super.set(v);
+    }
   }
 }

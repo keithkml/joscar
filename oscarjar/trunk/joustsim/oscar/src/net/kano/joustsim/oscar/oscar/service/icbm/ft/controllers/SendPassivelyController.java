@@ -35,20 +35,19 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
 import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.ConnectionType;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvSessionConnectionInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.Initiator;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvSessionConnectionInfo;
 
 import java.io.IOException;
-import java.net.InetAddress;
 
 public class SendPassivelyController extends PassiveConnectionController {
   protected void sendRequest() throws IOException {
     RvSessionConnectionInfo transfer = getRvSessionInfo();
     RvConnectionInfo connInfo = RvConnectionInfo.createForOutgoingRequest(
-        InetAddress.getLocalHost(), getConnector().getLocalPort());
+        getConnector().getLocalHost(), getConnector().getLocalPort());
     transfer.setInitiator(Initiator.ME);
     transfer.setConnectionInfo(connInfo);
-    transfer.getRvRequestMaker().sendRvRequest();
+    transfer.getRequestMaker().sendRvRequest();
   }
 
   public ConnectionType getTimeoutType() {

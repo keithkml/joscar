@@ -43,10 +43,8 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectionFailedEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownErrorEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailureEventInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
 import net.kano.joustsim.oscar.proxy.AimProxyInfo;
 
 import java.util.logging.Logger;
@@ -103,9 +101,9 @@ public abstract class IncomingRvConnectionImpl
         controller = new RedirectToProxyController();
       }
     }
-
+    //TODO(klea): only fire accept if start state controller returned true
     LOGGER.fine("Sending accept command to " + getBuddyScreenname());
-    getRvSessionInfo().getRvRequestMaker().sendRvAccept();
+    getRvSessionInfo().getRequestMaker().sendRvAccept();
     startStateController(controller);
   }
 
@@ -120,26 +118,24 @@ public abstract class IncomingRvConnectionImpl
     close();
   }
 
-  public synchronized StateController getNextStateController() {
-    StateController oldController = getStateController();
-    StateInfo oldStateInfo = oldController.getEndStateInfo();
-    if (oldStateInfo instanceof SuccessfulStateInfo) {
-      return getNextStateControllerFromSuccessState(oldController,
-          oldStateInfo);
+  protected boolean isSomeConnectionController(StateController oldController) {
+//    return oldController instanceof SendPassivelyController
+//    || isLanController(oldController)
+//      || isInternetController(oldController)
+//      || oldController instanceof RedirectToProxyController
+//      || oldController instanceof ConnectToProxyForOutgoingController
+//      || oldController instanceof SendOverProxyController;
 
-    } else if (oldStateInfo instanceof FailedStateInfo) {
-      LOGGER.fine("Changing from failure of last controller");
-      return getNextStateFromError(oldController, oldStateInfo);
-
-    } else {
-      throw new IllegalStateException("Unknown last state " + oldStateInfo);
-    }
+    return isLanController(oldController)
+        || isInternetController(oldController)
+        || oldController instanceof RedirectToProxyController
+        || oldController instanceof ConnectToProxyForIncomingController;
   }
 
-  protected abstract StateController getNextStateControllerFromSuccessState(
+  protected abstract StateController getNextControllerFromSuccess(
       StateController oldController, StateInfo oldStateInfo);
 
-  private synchronized StateController getNextStateFromError(
+  protected synchronized StateController getNextControllerFromError(
       StateController oldController, StateInfo oldState) {
     RvConnectionEvent event;
     if (oldState instanceof FailureEventInfo) {
@@ -170,12 +166,11 @@ public abstract class IncomingRvConnectionImpl
       return null;
 
     } else {
-      return getNextStateFromErrorWithUnknownController(oldController, oldState,
-          event);
+      return getNextControllerFromUnknownError(oldController, oldState, event);
     }
   }
 
-  protected abstract StateController getNextStateFromErrorWithUnknownController(
+  protected abstract StateController getNextControllerFromUnknownError(
       StateController oldController, StateInfo oldState,
       RvConnectionEvent event);
 }

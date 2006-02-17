@@ -38,6 +38,8 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.PassiveConnecto
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 class FailConnector implements PassiveConnector {
   public StreamInfo createStream() throws IOException {
@@ -52,5 +54,13 @@ class FailConnector implements PassiveConnector {
 
   public int getLocalPort() {
     return 100;
+  }
+
+  public InetAddress getLocalHost() {
+    try {
+      return InetAddress.getLocalHost();
+    } catch (UnknownHostException e) {
+      throw new RuntimeException(e);
+    }
   }
 }
