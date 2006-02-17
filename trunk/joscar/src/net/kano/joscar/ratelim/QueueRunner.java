@@ -40,11 +40,13 @@ import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.logging.Logger;
 import net.kano.joscar.logging.LoggingSystem;
 import net.kano.joscar.snac.ClientSnacProcessor;
+import net.kano.joscar.snac.SnacRequest;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.Collection;
+import java.util.ArrayList;
 
 /**
  * "Runs" a set of <code>RateQueue</code>s, dequeuing SNACs at appropriate
@@ -222,21 +224,24 @@ public final class QueueRunner {
     }
 
     /**
-     * Dequeues all "ready" requests in the given rate queue.
+     * Dequeues all "ready" requests in the given rate queue. This is only
+     * executed from the QueueRunner thread.
      *
      * @param queue a rate queue
      */
     private void dequeueReady(RateQueue queue) {
         ConnectionQueueMgr connMgr = queue.getParentMgr();
-        ClientSnacProcessor processor = connMgr.getSnacProcessor();
         RateLimitingQueueMgr rateMgr = connMgr.getParentQueueMgr();
 
+        List<SnacRequest> requests = new ArrayList<SnacRequest>();
         synchronized(queue) {
-            for (;;) {
-                if (!queue.hasRequests() || !isReady(queue)) break;
-
-                rateMgr.sendSnac(processor, queue.dequeue());
+            while (queue.hasRequests() && isReady(queue)) {
+                requests.add(queue.dequeue());
             }
+        }
+        ClientSnacProcessor processor = connMgr.getSnacProcessor();
+        for (SnacRequest request : requests) {
+            rateMgr.sendSnac(processor, request);
         }
     }
 
