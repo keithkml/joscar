@@ -79,7 +79,7 @@ public final class BuddyInfo {
     private final Screenname screenname;
 
     private BuddyCertificateInfo certificateInfo = null;
-    private boolean online = true;
+    private boolean online = false;
     private DirInfo directoryInfo = null;
     private Date onlineSince = null;
     private boolean away = false;

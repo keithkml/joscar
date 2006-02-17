@@ -145,8 +145,7 @@ public class BuddyInfoManager {
       }
 
       public void buddyOffline(BuddyService service, Screenname buddy) {
-        BuddyInfo buddyInfo = getBuddyInfoInstance(buddy);
-        if (buddyInfo != null) buddyInfo.setOnline(false);
+        getBuddyInfoInstance(buddy).setOnline(false);
       }
     });
   }
@@ -164,18 +163,21 @@ public class BuddyInfoManager {
       public void handleDirectoryInfo(InfoService service, Screenname buddy,
           DirInfo info) {
         BuddyInfo buddyInfo = getBuddyInfoInstance(buddy);
+        buddyInfo.setOnline(true);
         buddyInfo.setDirectoryInfo(info);
       }
 
       public void handleAwayMessage(InfoService service, Screenname buddy,
           String awayMsg) {
         BuddyInfo buddyInfo = getBuddyInfoInstance(buddy);
+        buddyInfo.setOnline(true);
         buddyInfo.setAwayMessage(awayMsg);
       }
 
       public void handleUserProfile(InfoService service, Screenname buddy,
           String infoString) {
         BuddyInfo buddyInfo = getBuddyInfoInstance(buddy);
+        buddyInfo.setOnline(true);
         buddyInfo.setUserProfile(infoString);
       }
 
@@ -183,6 +185,7 @@ public class BuddyInfoManager {
           BuddyCertificateInfo certInfo) {
         LOGGER.info("BuddyInfoManager got cert info for " + buddy);
         BuddyInfo buddyInfo = getBuddyInfoInstance(buddy);
+        buddyInfo.setOnline(true);
         if (certInfo != null) cacheCertInfo(certInfo);
         buddyInfo.setCertificateInfo(certInfo);
       }
@@ -306,7 +309,7 @@ public class BuddyInfoManager {
       } else if (type == ExtraInfoBlock.TYPE_AVAILMSG) {
         String status = ExtraInfoData.readAvailableMessage(data);
         buddyInfo.setStatusMessage(status);
-        
+
       } else if (type == ExtraInfoBlock.TYPE_ITUNES_URL) {
         String status = ExtraInfoData.readAvailableMessage(data);
         buddyInfo.setItunesUrl(status);
