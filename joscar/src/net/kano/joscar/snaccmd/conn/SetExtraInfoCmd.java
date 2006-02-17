@@ -48,6 +48,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
+import java.util.Arrays;
 
 /**
  * A SNAC command used to set the user's online status (ICQ-only) and the list
@@ -102,6 +103,10 @@ public class SetExtraInfoCmd extends ConnCommand {
 
     public SetExtraInfoCmd(long icqstatus) {
         this(icqstatus, null);
+    }
+
+    public SetExtraInfoCmd(ExtraInfoBlock... blocks) {
+        this(Arrays.asList(blocks));
     }
 
     public SetExtraInfoCmd(List<ExtraInfoBlock> blocks) {
