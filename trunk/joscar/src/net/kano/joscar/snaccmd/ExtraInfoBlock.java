@@ -66,6 +66,16 @@ public final class ExtraInfoBlock implements Writable {
     public static final int TYPE_AVAILMSG = 0x0002;
 
     /**
+     * An extra info block type indicating that it contains a link to the iTunes
+     * music store, like
+     * {@code itms://itunes.com/link?n=Corvette%20Bummer&an=Beck&pn=Loser}.
+     * The URL is stored in the same format as an {@link #TYPE_AVAILMSG}, so
+     * {@link ExtraInfoData#readAvailableMessage(ExtraInfoData)
+     * ExtraInfoData.readAvailableMessage} can be used to extract it.
+     */
+    public static final int TYPE_ITUNES_URL = 0x0009;
+
+    /**
      * An extra info block type indicating that the block contains AIM
      * Expressions information.
      */
