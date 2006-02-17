@@ -41,11 +41,13 @@ import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.MiscTools;
 import net.kano.joscar.Writable;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 
 /**
  * A data structure used to hold data in {@link ExtraInfoBlock}s, containing
@@ -161,6 +163,13 @@ public final class ExtraInfoData implements Writable {
         return new ExtraInfoData(FLAG_AVAILMSG_PRESENT, ByteBlock.wrap(bout.toByteArray()));
     }
 
+
+    public static @NotNull ExtraInfoData getItunesUrlBlock(
+            @Nullable String band, @Nullable String album,
+            @Nullable String song) {
+        return getAvailableMessageBlock(buildItunesUrl(band, album, song));
+    }
+
     //TODO: make readAvailMessage deal with encoding
     public static @NotNull String readAvailableMessage(ExtraInfoData data) {
         ByteBlock msgBlock = data.getData();
@@ -173,6 +182,31 @@ public final class ExtraInfoData implements Writable {
         } catch (UnsupportedEncodingException impossible) {
             throw new IllegalStateException(impossible);
         }
+    }
+
+    // itms://itunes.com/link?n=Corvette%20Bummer&an=Beck&pn=Loser
+    public static String buildItunesUrl(@Nullable String band,
+            @Nullable String album, @Nullable String song) {
+        StringBuilder buf = new StringBuilder();
+        buf.append("itms://itunes.com/link?");
+        boolean and = appendParamIfNotNull(buf, "n=", song, false);
+        and = appendParamIfNotNull(buf, "an=", band, and);
+        appendParamIfNotNull(buf, "pn=", album, and);
+        return buf.toString();
+    }
+
+    private static boolean appendParamIfNotNull(StringBuilder buf, String key,
+            String value, boolean and) {
+        if (value != null) {
+            try {
+                if (and) buf.append('&');
+                buf.append(key).append('=').append(URLEncoder.encode(value, "UTF-8"));
+                return true;
+            } catch (UnsupportedEncodingException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+        return false;
     }
 
     /**
