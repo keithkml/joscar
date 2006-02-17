@@ -51,7 +51,8 @@ public class ClientAuthCmdFactory implements SnacCmdFactory {
     /** A list of command types supported by this package. */
     protected static final List<CmdType> SUPPORTED_TYPES = DefensiveTools.asUnmodifiableList(
         new CmdType(AuthCommand.FAMILY_AUTH, AuthCommand.CMD_KEY_RESP),
-        new CmdType(AuthCommand.FAMILY_AUTH, AuthCommand.CMD_AUTH_RESP));
+        new CmdType(AuthCommand.FAMILY_AUTH, AuthCommand.CMD_AUTH_RESP),
+        new CmdType(AuthCommand.FAMILY_AUTH, AuthCommand.CMD_KEY_REQ));
 
     public List<CmdType> getSupportedTypes() {
         return SUPPORTED_TYPES;
@@ -66,6 +67,8 @@ public class ClientAuthCmdFactory implements SnacCmdFactory {
             return new KeyResponse(packet);
         } else if (command == AuthCommand.CMD_AUTH_RESP) {
             return new AuthResponse(packet);
+        } else if (command == AuthCommand.CMD_SECURID_REQ) {
+            return new SecuridRequest(packet);
         } else {
             return null;
         }

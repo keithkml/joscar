@@ -59,6 +59,9 @@ public abstract class AuthCommand extends SnacCommand {
     /** The command subtype for an authorization attempt response. */
     public static final int CMD_AUTH_RESP = 0x0003;
 
+    public static final int CMD_SECURID_REQ = 0x000a;
+    public static final int CMD_SECURID_RESPONSE = 0x000b;
+
     /**
      * Creates a new SNAC command in this family with the given command subtype.
      *
