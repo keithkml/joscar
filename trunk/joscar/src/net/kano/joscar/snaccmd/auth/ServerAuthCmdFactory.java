@@ -35,14 +35,13 @@
 
 package net.kano.joscar.snaccmd.auth;
 
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snac.CmdType;
 import net.kano.joscar.snac.SnacCmdFactory;
-import net.kano.joscar.DefensiveTools;
 
 import java.util.List;
-import java.util.Arrays;
 
 /**
  * A SNAC command factory for the server-bound commands provided by this
@@ -52,7 +51,8 @@ public class ServerAuthCmdFactory implements SnacCmdFactory {
     /** A list of command types supported by this package. */
     protected static final List<CmdType> SUPPORTED_TYPES = DefensiveTools.asUnmodifiableList(
         new CmdType(AuthCommand.FAMILY_AUTH, AuthCommand.CMD_KEY_REQ),
-        new CmdType(AuthCommand.FAMILY_AUTH, AuthCommand.CMD_AUTH_REQ));
+        new CmdType(AuthCommand.FAMILY_AUTH, AuthCommand.CMD_AUTH_REQ),
+        new CmdType(AuthCommand.FAMILY_AUTH, AuthCommand.CMD_SECURID_RESPONSE));
 
     public List<CmdType> getSupportedTypes() {
         return SUPPORTED_TYPES;
@@ -67,6 +67,8 @@ public class ServerAuthCmdFactory implements SnacCmdFactory {
             return new KeyRequest(packet);
         } else if (command == AuthCommand.CMD_AUTH_REQ) {
             return new AuthRequest(packet);
+        } else if (command == AuthCommand.CMD_SECURID_RESPONSE) {
+            return new SecuridResponse(packet);
         } else {
             return null;
         }
