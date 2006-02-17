@@ -45,8 +45,8 @@ import net.kano.joscar.snac.SnacResponseEvent;
 import net.kano.joscar.snaccmd.CertificateInfo;
 import net.kano.joscar.snaccmd.ExtraInfoBlock;
 import net.kano.joscar.snaccmd.ExtraInfoData;
-import net.kano.joscar.snaccmd.FullUserInfo;
 import net.kano.joscar.snaccmd.FullRoomInfo;
+import net.kano.joscar.snaccmd.FullUserInfo;
 import net.kano.joscar.snaccmd.MiniRoomInfo;
 import net.kano.joscar.snaccmd.chat.ChatCommand;
 import net.kano.joscar.snaccmd.conn.ExtraInfoAck;
@@ -150,20 +150,29 @@ public class MainBosService extends BosService {
   }
 
   public synchronized void setStatusMessage(@Nullable String msg) {
-    if (availMsg == null ? msg == null : availMsg.equals(msg)) return;
-    availMsg = msg;
-    String useMsg = availMsg == null ? "" : availMsg;
-    ExtraInfoBlock availBlock = new ExtraInfoBlock(ExtraInfoBlock.TYPE_AVAILMSG,
+    setStatusMessageSong(msg, null);
+  }
+
+  private ExtraInfoBlock buildStatusMsgBlock(int type, @Nullable String msg) {
+    String useMsg = msg == null ? "" : msg;
+    return new ExtraInfoBlock(type,
         ExtraInfoData.getAvailableMessageBlock(useMsg));
-    sendSnac(new SetExtraInfoCmd(Arrays.asList(availBlock)));
-    ExtraInfoBlock secret = new ExtraInfoBlock(0x0009,
-        new ExtraInfoData(ExtraInfoData.FLAG_AVAILMSG_PRESENT,
-            ByteBlock.wrap(new byte[4])));
-    sendSnac(new SetExtraInfoCmd(Arrays.asList(secret)));
+  }
+
+  public synchronized void setStatusMessageSong(@Nullable String msg,
+      @Nullable String band, @Nullable String album, @Nullable String song) {
+    setStatusMessageSong(msg, ExtraInfoData.buildItunesUrl(band, album, song));
+  }
+
+  public synchronized void setStatusMessageSong(@Nullable String msg,
+      @Nullable String url) {
+    sendSnac(new SetExtraInfoCmd(buildStatusMsgBlock(
+        ExtraInfoBlock.TYPE_AVAILMSG, msg),
+        buildStatusMsgBlock(ExtraInfoBlock.TYPE_ITUNES_URL, url)));
   }
 
   public void addMainBosServiceListener(MainBosServiceListener listener) {
-    listeners.add(listener);
+    listeners.addIfAbsent(listener);
   }
 
   public void removeMainBosServiceListener(MainBosServiceListener listener) {

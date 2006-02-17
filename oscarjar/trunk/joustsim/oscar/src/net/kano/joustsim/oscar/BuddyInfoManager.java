@@ -306,6 +306,10 @@ public class BuddyInfoManager {
       } else if (type == ExtraInfoBlock.TYPE_AVAILMSG) {
         String status = ExtraInfoData.readAvailableMessage(data);
         buddyInfo.setStatusMessage(status);
+        
+      } else if (type == ExtraInfoBlock.TYPE_ITUNES_URL) {
+        String status = ExtraInfoData.readAvailableMessage(data);
+        buddyInfo.setItunesUrl(status);
       }
     }
   }

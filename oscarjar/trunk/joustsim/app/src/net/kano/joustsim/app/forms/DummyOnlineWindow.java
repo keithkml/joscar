@@ -87,314 +87,334 @@ import java.util.Arrays;
 import java.util.Date;
 
 public class DummyOnlineWindow extends JFrame {
-    private JPanel mainPanel;
-    private JButton disconnectButton;
-    private JTextField snBox;
-    private JButton openButton;
-    private JLabel onlineLabel;
-    private JButton prefsButton;
-    private JProgressBar memoryUseBar;
+  private JPanel mainPanel;
+  private JButton disconnectButton;
+  private JTextField snBox;
+  private JButton openButton;
+  private JLabel onlineLabel;
+  private JButton prefsButton;
+  private JProgressBar memoryUseBar;
 
-    private final GuiSession guiSession;
-    private AimConnection conn = null;
+  private final GuiSession guiSession;
+  private AimConnection conn = null;
 
-    private OpenImAction openImAction = new OpenImAction();
-    private DisconnectAction disconnectAction = new DisconnectAction();
+  private OpenImAction openImAction = new OpenImAction();
+  private DisconnectAction disconnectAction = new DisconnectAction();
 
-    private Timer memoryUseTimer = new Timer(5000, new ActionListener() {
-        public void actionPerformed(ActionEvent e) {
-            updateMemoryUse();
-        }
+  private Timer memoryUseTimer = new Timer(5000, new ActionListener() {
+    public void actionPerformed(ActionEvent e) {
+      updateMemoryUse();
+    }
+  });
+  private BuddyListBox buddyListBox;
+  private JButton awayButton;
+  private JButton idleButton;
+  private JButton statusButton;
+  private JCheckBox visibleCheckbox;
+  private JButton changeIconButton;
+  private JLabel myIconLabel;
+  private JButton songButton;
+
+  {
+    getContentPane().add(mainPanel);
+    openButton.setAction(openImAction);
+    disconnectButton.setAction(disconnectAction);
+    snBox.getDocument().addDocumentListener(new DocumentListener() {
+      public void changedUpdate(DocumentEvent e) {
+        changed();
+      }
+
+      public void insertUpdate(DocumentEvent e) {
+        changed();
+      }
+
+      public void removeUpdate(DocumentEvent e) {
+        changed();
+      }
+
+      private void changed() {
+        updateButtons();
+      }
     });
-    private BuddyListBox buddyListBox;
-    private JButton awayButton;
-    private JButton idleButton;
-    private JButton statusButton;
-    private JCheckBox visibleCheckbox;
-    private JButton changeIconButton;
-    private JLabel myIconLabel;
+    memoryUseTimer.setInitialDelay(0);
+    addWindowListener(new WindowAdapter() {
+      public void windowOpened(WindowEvent e) {
+        memoryUseTimer.start();
+      }
 
-    {
-        getContentPane().add(mainPanel);
-        openButton.setAction(openImAction);
-        disconnectButton.setAction(disconnectAction);
-        snBox.getDocument().addDocumentListener(new DocumentListener() {
-            public void changedUpdate(DocumentEvent e) {
-                changed();
-            }
+      public void windowClosing(WindowEvent e) {
+        conn.disconnect();
+        memoryUseTimer.stop();
+      }
+    });
 
-            public void insertUpdate(DocumentEvent e) {
-                changed();
-            }
+    prefsButton.setAction(new ShowPrefsAction());
 
-            public void removeUpdate(DocumentEvent e) {
-                changed();
-            }
+    setIconImage(new ImageIcon(getClass().getClassLoader()
+        .getResource("icons/buddy-list-tiny.png")).getImage());
+    awayButton.setAction(new AbstractAction() {
+      {
+        putValue(NAME, "Away...");
+      }
 
-            private void changed() {
-                updateButtons();
-            }
-        });
-        memoryUseTimer.setInitialDelay(0);
-        addWindowListener(new WindowAdapter() {
-            public void windowOpened(WindowEvent e) {
-                memoryUseTimer.start();
-            }
+      public void actionPerformed(ActionEvent e) {
+        String msg = JOptionPane.showInputDialog(DummyOnlineWindow.this,
+            "Away message (leave empty to set un-away):",
+            "doing something cool");
 
-            public void windowClosing(WindowEvent e) {
-                conn.disconnect();
-                memoryUseTimer.stop();
-            }
-        });
-
-        prefsButton.setAction(new ShowPrefsAction());
-
-        setIconImage(new ImageIcon(getClass().getClassLoader()
-                .getResource("icons/buddy-list-tiny.png")).getImage());
-        awayButton.setAction(new AbstractAction() {
-            {
-                putValue(NAME, "Away");
-            }
-            public void actionPerformed(ActionEvent e) {
-                String msg = JOptionPane.showInputDialog(DummyOnlineWindow.this,
-                        "Away message (leave empty to set un-away):",
-                        "doing something cool");
-
-                if (msg == null) return;
-                InfoService infoService = conn.getInfoService();
-                if (msg.equals("")) {
-                    infoService.setAwayMessage(null);
-                } else {
-                    infoService.setAwayMessage(msg);
-                }
-            }
-        });
-        idleButton.setAction(new AbstractAction() {
-            {
-                putValue(NAME, "Idle");
-            }
-            public void actionPerformed(ActionEvent e) {
-                String msg = JOptionPane.showInputDialog(DummyOnlineWindow.this,
-                        "Idle time, in minutes (0 for un-idle):");
-
-                if (msg == null) return;
-                int mins = Integer.parseInt(msg);
-                MainBosService service = conn.getBosService();
-                if (mins == 0) {
-                    service.setUnidle();
-                } else {
-                    service.setIdleSince(new Date(System.currentTimeMillis()-(mins*60*1000)));
-                }
-            }
-        });
-        statusButton.setAction(new AbstractAction() {
-            {
-                putValue(NAME, "Status");
-            }
-
-            public void actionPerformed(ActionEvent e) {
-                String msg = JOptionPane.showInputDialog(DummyOnlineWindow.this,
-                        "Status message:");
-                if (msg == null) return;
-
-                conn.getBosService().setStatusMessage(msg);
-            }
-        });
-        visibleCheckbox.addChangeListener(new ChangeListener() {
-            public void stateChanged(ChangeEvent e) {
-                boolean visible = visibleCheckbox.isSelected();
-                conn.getBosService().setVisibleStatus(visible);
-            }
-        });
-        changeIconButton.setAction(new AbstractAction() {
-            {
-                putValue(NAME, "Change...");
-            }
-
-            private JLabel accessory = new JLabel();
-            private JFileChooser chooser = new JFileChooser();
-            {
-                chooser.setAcceptAllFileFilterUsed(true);
-                chooser.setApproveButtonText("Choose");
-                chooser.setDialogTitle("Choose Buddy Icon");
-                chooser.setAccessory(accessory);
-                chooser.addChoosableFileFilter(new FileFilter() {
-                    public boolean accept(File f) {
-                        if (f.isDirectory()) return true;
-
-                        String name = f.getName();
-                        int dot = name.lastIndexOf('.');
-                        if (dot == -1) return false;
-                        String ext = name.substring(dot + 1).toLowerCase();
-                        return Arrays.asList("png", "jpg", "gif").contains(ext);
-                    }
-
-                    public String getDescription() {
-                        return "Image files (*.png, *.jpg, *.gif)";
-                    }
-                });
-                accessory.setSize(50, 50);
-                chooser.addPropertyChangeListener(new PropertyChangeListener() {
-                    public void propertyChange(PropertyChangeEvent evt) {
-                        Image icon = getSelectedImage();
-                        accessory.setIcon(icon == null ? null : new ImageIcon(icon));
-                    }
-                });
-            }
-
-            private Image getSelectedImage() {
-                File file = chooser.getSelectedFile();
-                Image icon = null;
-                if (file != null) {
-                    try {
-                        icon = ImageIO.read(file);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-                return icon;
-            }
-
-            public void actionPerformed(ActionEvent e) {
-                int result = chooser.showOpenDialog(DummyOnlineWindow.this);
-                if (result == JFileChooser.APPROVE_OPTION) {
-                    MyBuddyIconManager mgr = guiSession.getAimConnection().getMyBuddyIconManager();
-                    FileWritable writable = new FileWritable(
-                            chooser.getSelectedFile().getAbsolutePath());
-                    mgr.requestSetIcon(ByteBlock.createByteBlock(writable));
-                }
-            }
-        });
-    }
-
-    private void updateMemoryUse() {
-        assert SwingUtilities.isEventDispatchThread();
-
-        Runtime runtime = Runtime.getRuntime();
-        int totalkb = (int) (runtime.totalMemory()/1024);
-        int usedkb = (int) ((runtime.totalMemory() - runtime.freeMemory())/1024);
-        memoryUseBar.setMaximum(totalkb);
-        memoryUseBar.setValue(usedkb);
-        NumberFormat formatter = NumberFormat.getNumberInstance();
-        formatter.setMaximumFractionDigits(1);
-        memoryUseBar.setString(formatter.format(usedkb/1024.0) + " MB of "
-                + formatter.format(totalkb/1024.0) + " MB");
-    }
-
-    public DummyOnlineWindow(GuiSession session) {
-        DefensiveTools.checkNull(session, "session");
-
-        this.guiSession = session;
-    }
-
-    public void updateSession() {
-        synchronized(this) {
-            this.conn = guiSession.getAimConnection();
+        if (msg == null) return;
+        InfoService infoService = conn.getInfoService();
+        if (msg.equals("")) {
+          infoService.setAwayMessage(null);
+        } else {
+          infoService.setAwayMessage(msg);
         }
+      }
+    });
+    idleButton.setAction(new AbstractAction() {
+      {
+        putValue(NAME, "Idle...");
+      }
 
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                String sn = conn.getScreenname().getFormatted();
-                setTitle(sn);
-                onlineLabel.setText("You are online as " + sn);
-                buddyListBox.updateSession(guiSession);
-                snBox.setText("");
-                updateButtons();
-            }
+      public void actionPerformed(ActionEvent e) {
+        String msg = JOptionPane.showInputDialog(DummyOnlineWindow.this,
+            "Idle time, in minutes (0 for un-idle):");
+
+        if (msg == null) return;
+        int mins = Integer.parseInt(msg);
+        MainBosService service = conn.getBosService();
+        if (mins == 0) {
+          service.setUnidle();
+        } else {
+          service.setIdleSince(
+              new Date(System.currentTimeMillis() - (mins * 60 * 1000)));
+        }
+      }
+    });
+    statusButton.setAction(new AbstractAction() {
+      {
+        putValue(NAME, "Status...");
+      }
+
+      public void actionPerformed(ActionEvent e) {
+        String msg = JOptionPane.showInputDialog(DummyOnlineWindow.this,
+            "Status message:");
+        if (msg == null) return;
+
+        conn.getBosService().setStatusMessage(msg);
+      }
+    });
+    songButton.setAction(new AbstractAction() {
+      {
+        putValue(NAME, "Song...");
+      }
+
+      public void actionPerformed(ActionEvent e) {
+        String msg = JOptionPane.showInputDialog(DummyOnlineWindow.this,
+            "Status message:");
+        if (msg == null) return;
+
+        conn.getBosService().setStatusMessageSong(msg,
+            "Fake Band", "Fake album", "Fake song");
+      }
+    });
+    visibleCheckbox.addChangeListener(new ChangeListener() {
+      public void stateChanged(ChangeEvent e) {
+        boolean visible = visibleCheckbox.isSelected();
+        conn.getBosService().setVisibleStatus(visible);
+      }
+    });
+    changeIconButton.setAction(new AbstractAction() {
+      {
+        putValue(NAME, "Change...");
+      }
+
+      private JLabel accessory = new JLabel();
+      private JFileChooser chooser = new JFileChooser();
+
+      {
+        chooser.setAcceptAllFileFilterUsed(true);
+        chooser.setApproveButtonText("Choose");
+        chooser.setDialogTitle("Choose Buddy Icon");
+        chooser.setAccessory(accessory);
+        chooser.addChoosableFileFilter(new FileFilter() {
+          public boolean accept(File f) {
+            if (f.isDirectory()) return true;
+
+            String name = f.getName();
+            int dot = name.lastIndexOf('.');
+            if (dot == -1) return false;
+            String ext = name.substring(dot + 1).toLowerCase();
+            return Arrays.asList("png", "jpg", "gif").contains(ext);
+          }
+
+          public String getDescription() {
+            return "Image files (*.png, *.jpg, *.gif)";
+          }
         });
-        RvConnectionManager ftm = conn.getIcbmService().getRvConnectionManager();
-        ftm.addConnectionManagerListener(new RvConnectionManagerListener() {
-            public void handleNewIncomingConnection(RvConnectionManager manager,
-                    IncomingRvConnection connection) {
-              if (connection instanceof IncomingFileTransfer) {
-                IncomingFileTransfer ft = (IncomingFileTransfer) connection;
-
-                FileSendBlock fileInfo = ft.getFileInfo();
-                int choice = JOptionPane.showConfirmDialog(DummyOnlineWindow.this,
-                    connection.getBuddyScreenname() + " wants to send you "
-                        + fileInfo.getFileCount() + " files \""
-                        + fileInfo.getFilename() + "\"", "File Transfer",
-                    JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-                if (choice == JOptionPane.YES_OPTION) {
-                  watchTransfer(ft);
-                  connection.accept();
-                } else {
-                  connection.reject();
-                }
-              }
-            }
+        accessory.setSize(50, 50);
+        chooser.addPropertyChangeListener(new PropertyChangeListener() {
+          public void propertyChange(PropertyChangeEvent evt) {
+            Image icon = getSelectedImage();
+            accessory.setIcon(icon == null ? null : new ImageIcon(icon));
+          }
         });
-        BuddyInfo myInfo = conn.getBuddyInfoManager()
-                .getBuddyInfo(conn.getScreenname());
-        myInfo.addPropertyListener(new BuddyInfoChangeListener() {
-            public void receivedBuddyStatusUpdate(BuddyInfo info) {
-            }
+      }
 
-            public void propertyChange(PropertyChangeEvent evt) {
-                String propertyName = evt.getPropertyName();
-                if (propertyName.equals(BuddyInfo.PROP_ICON_DATA)) {
-                    ByteBlock data = (ByteBlock) evt.getNewValue();
-                    ImageIcon image = new ImageIcon(data.toByteArray());
-                    myIconLabel.setIcon(image);
-                }
-            }
-        });
+      private Image getSelectedImage() {
+        File file = chooser.getSelectedFile();
+        Image icon = null;
+        if (file != null) {
+          try {
+            icon = ImageIO.read(file);
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+        }
+        return icon;
+      }
+
+      public void actionPerformed(ActionEvent e) {
+        int result = chooser.showOpenDialog(DummyOnlineWindow.this);
+        if (result == JFileChooser.APPROVE_OPTION) {
+          MyBuddyIconManager mgr = guiSession.getAimConnection()
+              .getMyBuddyIconManager();
+          FileWritable writable = new FileWritable(
+              chooser.getSelectedFile().getAbsolutePath());
+          mgr.requestSetIcon(ByteBlock.createByteBlock(writable));
+        }
+      }
+    });
+  }
+
+  private void updateMemoryUse() {
+    assert SwingUtilities.isEventDispatchThread();
+
+    Runtime runtime = Runtime.getRuntime();
+    int totalkb = (int) (runtime.totalMemory() / 1024);
+    int usedkb = (int) ((runtime.totalMemory() - runtime.freeMemory()) / 1024);
+    memoryUseBar.setMaximum(totalkb);
+    memoryUseBar.setValue(usedkb);
+    NumberFormat formatter = NumberFormat.getNumberInstance();
+    formatter.setMaximumFractionDigits(1);
+    memoryUseBar.setString(formatter.format(usedkb / 1024.0) + " MB of "
+        + formatter.format(totalkb / 1024.0) + " MB");
+  }
+
+  public DummyOnlineWindow(GuiSession session) {
+    DefensiveTools.checkNull(session, "session");
+
+    this.guiSession = session;
+  }
+
+  public void updateSession() {
+    synchronized (this) {
+      this.conn = guiSession.getAimConnection();
     }
 
-    public void watchTransfer(final FileTransfer transfer) {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                FileTransferDialog dialog = new FileTransferDialog(transfer);
-                dialog.pack();
-                dialog.setVisible(true);
-            }
-        });
+    SwingUtilities.invokeLater(new Runnable() {
+      public void run() {
+        String sn = conn.getScreenname().getFormatted();
+        setTitle(sn);
+        onlineLabel.setText("You are online as " + sn);
+        buddyListBox.updateSession(guiSession);
+        snBox.setText("");
+        updateButtons();
+      }
+    });
+    RvConnectionManager ftm = conn.getIcbmService().getRvConnectionManager();
+    ftm.addConnectionManagerListener(new RvConnectionManagerListener() {
+      public void handleNewIncomingConnection(RvConnectionManager manager,
+          IncomingRvConnection connection) {
+        if (connection instanceof IncomingFileTransfer) {
+          IncomingFileTransfer ft = (IncomingFileTransfer) connection;
+
+          FileSendBlock fileInfo = ft.getFileInfo();
+          int choice = JOptionPane.showConfirmDialog(DummyOnlineWindow.this,
+              connection.getBuddyScreenname() + " wants to send you "
+                  + fileInfo.getFileCount() + " files \""
+                  + fileInfo.getFilename() + "\"", "File Transfer",
+              JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+          if (choice == JOptionPane.YES_OPTION) {
+            watchTransfer(ft);
+            connection.accept();
+          } else {
+            connection.reject();
+          }
+        }
+      }
+    });
+    BuddyInfo myInfo = conn.getBuddyInfoManager()
+        .getBuddyInfo(conn.getScreenname());
+    myInfo.addPropertyListener(new BuddyInfoChangeListener() {
+      public void receivedBuddyStatusUpdate(BuddyInfo info) {
+      }
+
+      public void propertyChange(PropertyChangeEvent evt) {
+        String propertyName = evt.getPropertyName();
+        if (propertyName.equals(BuddyInfo.PROP_ICON_DATA)) {
+          ByteBlock data = (ByteBlock) evt.getNewValue();
+          ImageIcon image = new ImageIcon(data.toByteArray());
+          myIconLabel.setIcon(image);
+        }
+      }
+    });
+  }
+
+  public void watchTransfer(final FileTransfer transfer) {
+    SwingUtilities.invokeLater(new Runnable() {
+      public void run() {
+        FileTransferDialog dialog = new FileTransferDialog(transfer);
+        dialog.pack();
+        dialog.setVisible(true);
+      }
+    });
+  }
+
+  private void updateButtons() {
+    assert SwingUtilities.isEventDispatchThread();
+
+    openImAction.setEnabled(snBox.getDocument().getLength() != 0);
+  }
+
+  private class OpenImAction extends AbstractAction {
+    public OpenImAction() {
+      super("IM");
+
+      putValue(SHORT_DESCRIPTION, "Open an IM window with this buddy");
     }
 
-    private void updateButtons() {
-        assert SwingUtilities.isEventDispatchThread();
+    public void actionPerformed(ActionEvent e) {
+      Screenname sn = new Screenname(snBox.getText());
+      snBox.setText("");
+      guiSession.openImBox(sn);
+    }
+  }
 
-        openImAction.setEnabled(snBox.getDocument().getLength() != 0);
+  private class DisconnectAction extends AbstractAction {
+    public DisconnectAction() {
+      super("Disconnect");
+
+      putValue(MNEMONIC_KEY, KeyEvent.VK_D);
+      putValue(SHORT_DESCRIPTION, "Disconnect from AIM");
     }
 
-    private class OpenImAction extends AbstractAction {
-        public OpenImAction() {
-            super("IM");
+    public void actionPerformed(ActionEvent e) {
+      guiSession.signoff();
+    }
+  }
 
-            putValue(SHORT_DESCRIPTION, "Open an IM window with this buddy");
-        }
+  private class ShowPrefsAction extends AbstractAction {
+    public ShowPrefsAction() {
+      super("Preferences");
 
-        public void actionPerformed(ActionEvent e) {
-            Screenname sn = new Screenname(snBox.getText());
-            snBox.setText("");
-            guiSession.openImBox(sn);
-        }
+      putValue(MNEMONIC_KEY, new Integer(KeyEvent.VK_P));
+      putValue(SHORT_DESCRIPTION, "View this screenname's account "
+          + "preferences");
     }
 
-    private class DisconnectAction extends AbstractAction {
-        public DisconnectAction() {
-            super("Disconnect");
-
-            putValue(MNEMONIC_KEY, KeyEvent.VK_D);
-            putValue(SHORT_DESCRIPTION, "Disconnect from AIM");
-        }
-
-        public void actionPerformed(ActionEvent e) {
-            guiSession.signoff();
-        }
+    public void actionPerformed(ActionEvent e) {
+      guiSession.openPrefsWindow(conn.getScreenname());
     }
-
-    private class ShowPrefsAction extends AbstractAction {
-        public ShowPrefsAction() {
-            super("Preferences");
-
-            putValue(MNEMONIC_KEY, new Integer(KeyEvent.VK_P));
-            putValue(SHORT_DESCRIPTION, "View this screenname's account "
-                    + "preferences");
-        }
-
-        public void actionPerformed(ActionEvent e) {
-            guiSession.openPrefsWindow(conn.getScreenname());
-        }
-    }
+  }
 }
