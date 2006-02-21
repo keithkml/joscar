@@ -180,6 +180,13 @@ public final class CapabilityBlock implements Writable {
             = ShortCapabilityBlock.getCapFromShortBytes(0x00, 0x01);
 
     /**
+     * A capability block indicating that the user is using a Hiptop mobile
+     * device.
+     */
+    public static final CapabilityBlock BLOCK_HIPTOP
+            = ShortCapabilityBlock.getCapFromShortBytes(0x13, 0x23);
+
+    /**
      * Converts the given list of capabilities to a block of bytes, suitable for
      * sending in a {@link InfoData} structure.
      *
