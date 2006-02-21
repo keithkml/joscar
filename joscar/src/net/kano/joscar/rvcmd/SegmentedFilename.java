@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.StringTokenizer;
 import java.util.Collection;
 import java.util.ArrayList;
+import java.io.File;
 
 /**
  * A data structure containing a series of directory and file names ("segments")
@@ -54,8 +55,7 @@ public final class SegmentedFilename {
     /** The file separator used in AIM file transfer. */
     private static final String FILESEP_FT = "\001";
     /** The file separator used by the current platform. */
-    public static final String FILESEP_NATIVE
-            = System.getProperty("file.separator");
+    public static final String FILESEP_NATIVE = File.pathSeparator;
 
     public SegmentedFilename(String... strings) {
         this(Arrays.asList(strings));
@@ -246,7 +246,7 @@ public final class SegmentedFilename {
      *
      * @return a <code>String</code> containing the filename as a "file transfer
      *         filename"
-     */ 
+     */
     public final String toFTFilename() {
         return toFilename(FILESEP_FT);
     }
