@@ -41,9 +41,12 @@ import net.kano.joscar.EncodedStringInfo;
 import net.kano.joscar.LiveWritable;
 import net.kano.joscar.MinimalEncoder;
 import net.kano.joscar.OscarTools;
+import net.kano.joscar.logging.Logger;
+import net.kano.joscar.logging.LoggingSystem;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
 import net.kano.joscar.tlv.TlvTools;
+import net.kano.joscar.tlv.MutableTlvChain;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -54,6 +57,9 @@ import java.util.List;
  * and capability blocks.
  */
 public class InfoData implements LiveWritable {
+    private static final Logger LOGGER
+            = LoggingSystem.getLogger(InfoData.class.getName());
+
     /**
      * An away message string indicating that one has come back from away.
      * It is of note that this is just an empty string, or <code>""</code>.
@@ -134,6 +140,13 @@ public class InfoData implements LiveWritable {
         CertificateInfo certInfo = null;
         if (certTlv != null) {
             certInfo = CertificateInfo.readCertInfoBlock(certTlv.getData());
+        }
+
+        MutableTlvChain copy = TlvTools.getMutableCopy(chain);
+        copy.removeTlvs(TYPE_AWAY_FMT, TYPE_AWAY, TYPE_INFO_FMT, TYPE_INFO,
+                TYPE_CAPS, TYPE_CERTIFICATE_INFO);
+        if (copy.getTlvCount() > 0) {
+            LOGGER.logWarning("Unknown TLV's in InfoData: " + copy);
         }
 
         return new InfoData(info, awayMessage, caps, certInfo);
