@@ -76,7 +76,7 @@ public interface MutableTlvChain extends TlvChain, Writable {
      *
      * @param types the TLV types of which to remove all instances
      */
-    void removeTlvs(int[] types);
+    void removeTlvs(int... types);
 
     /**
      * Adds all TLV's in the given chain to the end of this chain (preserving
