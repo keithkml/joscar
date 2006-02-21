@@ -34,10 +34,6 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.dim;
 
-import net.kano.joscar.BinaryTools;
-import net.kano.joscar.ByteBlock;
-import net.kano.joscar.ImEncodedString;
-import net.kano.joscar.ImEncodingParams;
 import net.kano.joscar.rvproto.directim.DirectImHeader;
 import net.kano.joustsim.oscar.oscar.service.icbm.DirectMessage;
 import net.kano.joustsim.oscar.oscar.service.icbm.Message;
@@ -62,14 +58,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -79,21 +69,15 @@ public class DirectimController extends AbstractStateController
   private static final Logger LOGGER = Logger
       .getLogger(DirectimController.class.getName());
 
-  private static final ByteBlock TAG_BINARY
-      = ByteBlock.wrap(BinaryTools.getAsciiBytes("<BINARY>"));
-  private static final ByteBlock TAG_SBINARY
-      = ByteBlock.wrap(BinaryTools.getAsciiBytes("</BINARY>"));
-  public static final ByteBlock TAG_SDATA
-      = ByteBlock.wrap(BinaryTools.getAsciiBytes("</DATA>"));
-
   private DirectimConnection connection;
   private StreamInfo stream;
   private Thread recvThread;
   private Thread sendThread;
   private volatile boolean cancelled = false;
   private PauseHelper pauseHelper = new PauseHelperImpl();
+
   private final List<Object> queue = new ArrayList<Object>();
-  private static final Object INIT = new Object();
+  private DirectimQueueProcessor queueProcessor = null;
 
   private final Object icbmIdLock = new Object();
   private boolean icbmIdConfirmed = false;
@@ -107,6 +91,8 @@ public class DirectimController extends AbstractStateController
     stream = (StreamInfo) last.getEndStateInfo();
     connection.getTimeoutHandler().startTimeout(this);
 
+    queueProcessor = new DirectimQueueProcessor(this, connection, stream);
+
     recvThread = new Thread(new Runnable() {
       public void run() {
         try {
@@ -119,144 +105,8 @@ public class DirectimController extends AbstractStateController
     recvThread.setDaemon(true);
     recvThread.start();
 
-    queue.add(INIT);
-    sendThread = new Thread(new Runnable() {
-      public void run() {
-        while (true) {
-          if (!waitForIcbmIdConfirmation()) {
-            return;
-          }
-          List<Object> newItems;
-          synchronized(queue) {
-            if (queue.isEmpty()) {
-              try {
-                queue.wait();
-              } catch (InterruptedException e) {
-                break;
-              }
-            }
-            newItems = new ArrayList<Object>(queue);
-            queue.clear();
-          }
-          for (Object item : newItems) {
-            try {
-              if (item == INIT) {
-                RvSessionConnectionInfo rvinfo = connection.getRvSessionInfo();
-                if (rvinfo.getInitiator() == Initiator.BUDDY) {
-                  DirectImHeader header = new DirectImHeader();
-                  header.setDefaults();
-                  header.setScreenname(connection.getMyScreenname().getFormatted());
-                  header.setFlags(DirectImHeader.FLAG_CONFIRMATION
-                      | DirectImHeader.FLAG_CONFIRMATION_UNKNOWN);
-                  header.setMessageId(rvinfo
-                      .getRvSession().getRvSessionId());
-                  header.setEncoding(new ImEncodingParams(
-                      ImEncodingParams.CHARSET_ASCII));
-
-                  OutputStream out = stream.getOutputStream();
-                  header.write(out);
-                }
-
-              } else if (item instanceof Message) {
-                reallySendMessage((Message) item);
-
-              } else if (item instanceof TypingState) {
-                reallySendTypingState((TypingState) item);
-
-              } else {
-                LOGGER.warning("I don't understand what to do with " + item
-                    + " in directim queue");
-              }
-
-            } catch (IOException e) {
-              fireFailed(e);
-
-            } catch (Exception e) {
-              LOGGER.log(Level.SEVERE, "Error while processing DIM queue", e);
-            }
-          }
-        }
-      }
-
-      private void reallySendMessage(Message message) throws IOException {
-        ImEncodedString str = ImEncodedString.encodeString(message.getMessageBody());
-        DirectImHeader header = DirectImHeader.createMessageHeader(str,
-            message.isAutoResponse());
-        header.setScreenname(connection.getMyScreenname().getFormatted());
-        List<AttachmentInfo> attachmentInfos = new ArrayList<AttachmentInfo>();
-        if (message instanceof DirectMessage) {
-          DirectMessage msg = (DirectMessage) message;
-          Set<Attachment> attachments = msg.getAttachments();
-          if (!attachments.isEmpty()) {
-            long length = header.getDataLength();
-            length += TAG_BINARY.getLength();
-            length += TAG_SBINARY.getLength();
-            for (Attachment data : attachments) {
-              String id = data.getId();
-              ByteBlock prefix = ByteBlock.wrap(BinaryTools.getAsciiBytes(
-                  "<DATA ID=\"" + id + "\" SIZE=\""
-                  + data.getLength() + "\">"));
-              ByteBlock suffix = TAG_SDATA;
-              attachmentInfos.add(new AttachmentInfo(id, prefix, suffix, data));
-              length += prefix.getLength() + suffix.getLength() + data.getLength();
-            }
-            header.setDataLength(length);
-          }
-        }
-        OutputStream out = stream.getOutputStream();
-        header.write(out);
-        ByteBuffer msgData = ByteBuffer.wrap(str.getBytes());
-        SocketChannel chan = stream.getSocketChannel();
-        Selector selector = Selector.open();
-        chan.register(selector, SelectionKey.OP_WRITE);
-        EventPost post = connection.getEventPost();
-        int length = msgData.limit();
-        while (msgData.hasRemaining() && selector.isOpen() && chan.isOpen()) {
-          selector.select(50);
-          post.fireEvent(new SendingMessageEvent(msgData.position(), length));
-          int i = chan.write(msgData);
-          if (i == -1) {
-            fireFailed(new UnknownErrorEvent());
-            return;
-          }
-        }
-        post.fireEvent(new SentMessageEvent(length));
-        if (!attachmentInfos.isEmpty()) {
-          TAG_BINARY.write(out);
-          int attachno = 0;
-          int numattachments = attachmentInfos.size();
-          for (AttachmentInfo attachment : attachmentInfos) {
-            Attachment data = attachment.data;
-            AttachmentSender sender = new AttachmentSender(chan, data, post,
-                attachment.id, attachno, numattachments, DirectimController.this);
-            long transferred = sender.transfer();
-            if (transferred != data.getLength()) {
-              fireFailed(new UnknownErrorEvent());
-            }
-            attachno++;
-          }
-          TAG_SBINARY.write(out);
-        }
-        post.fireEvent(new SentCompletePacketEvent());
-      }
-
-      private void reallySendTypingState(TypingState state) throws IOException {
-        DirectImHeader header;
-        if (state == TypingState.PAUSED) {
-          header = DirectImHeader.createTypedHeader();
-
-        } else if (state == TypingState.TYPING) {
-          header = DirectImHeader.createTypingHeader();
-
-        } else if (state == TypingState.NO_TEXT) {
-          header = DirectImHeader.createTypingErasedHeader();
-          
-        } else {
-          throw new IllegalStateException("Unknown typing state: " + state);
-        }
-        header.write(stream.getOutputStream());
-      }
-    }, "Direct IM queue");
+    queue.add(DirectimQueueProcessor.INIT);
+    sendThread = new Thread(new DimQueue(), "Direct IM queue");
     sendThread.setDaemon(true);
     sendThread.start();
   }
@@ -272,22 +122,7 @@ public class DirectimController extends AbstractStateController
   }
 
   public boolean isConnected() {
-    return icbmIdConfirmed;
-  }
-
-  private static class AttachmentInfo {
-    public final String id;
-    public final ByteBlock prefix;
-    public final ByteBlock suffix;
-    public final Attachment data;
-
-    public AttachmentInfo(String id, ByteBlock prefix, ByteBlock suffix,
-        Attachment data) {
-      this.prefix = prefix;
-      this.id = id;
-      this.suffix = suffix;
-      this.data = data;
-    }
+    return isIcbmIdConfirmed();
   }
 
   public void pauseTransfer() {
@@ -428,5 +263,43 @@ public class DirectimController extends AbstractStateController
 
   public PauseHelper getPauseHelper() {
     return pauseHelper;
+  }
+
+  private class DimQueue implements Runnable {
+
+    public void run() {
+      while (true) {
+        if (!waitForIcbmIdConfirmation()) {
+          return;
+        }
+        List<Object> newItems;
+        synchronized(queue) {
+          if (queue.isEmpty()) {
+            try {
+              queue.wait();
+            } catch (InterruptedException e) {
+              break;
+            }
+          }
+          newItems = new ArrayList<Object>(queue);
+          queue.clear();
+        }
+        for (Object item : newItems) {
+          try {
+            queueProcessor.processItem(item);
+
+          } catch (IOException e) {
+            fireFailed(e);
+
+          } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error while processing DIM queue", e);
+          }
+        }
+      }
+    }
+
+    protected void processItem(Object item) throws IOException {
+      queueProcessor.processItem(item);
+    }
   }
 }

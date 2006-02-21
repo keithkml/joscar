@@ -34,22 +34,30 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-import net.kano.joustsim.oscar.proxy.AimProxyInfo;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joustsim.oscar.proxy.AimProxyInfo;
 
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
 
 public class RvConnectionSettings {
-  //TODO(klea): change default rv connection timeout
   private static final long DEFAULT_RV_CONNECTION_TIMEOUT = 10 * 1000;
+  public static final long DEFAULT_LAN_TIMEOUT = 2000L;
+  public static final long DEFAULT_INCOMING_MODIFICATION = 3000L;
 
   private boolean onlyUsingProxy = false;
   private boolean proxyRequestTrusted = true;
   private long perConnectionTimeout = DEFAULT_RV_CONNECTION_TIMEOUT;
   private Map<ConnectionType, Long> timeouts
       = new HashMap<ConnectionType, Long>();
-  private AimProxyInfo proxyInfo;
+  private Map<Initiator,Long> timeoutModifications
+      = new HashMap<Initiator, Long>();
+  private AimProxyInfo proxyInfo = AimProxyInfo.forNoProxy();
+
+  {
+    timeouts.put(ConnectionType.LAN, DEFAULT_LAN_TIMEOUT);
+    timeoutModifications.put(Initiator.BUDDY, DEFAULT_INCOMING_MODIFICATION);
+  }
 
   public synchronized AimProxyInfo getProxyInfo() {
     return proxyInfo;
@@ -79,8 +87,18 @@ public class RvConnectionSettings {
     perConnectionTimeout = millis;
   }
 
-  public synchronized long getDefaultPerConnectionTimeout() {
-    return perConnectionTimeout;
+  public synchronized long getDefaultPerConnectionTimeout(Initiator initiator) {
+    return perConnectionTimeout + getTimeoutModification(initiator);
+  }
+
+  public synchronized void setTimeoutModification(Initiator initiator, Long mod) {
+    timeoutModifications.put(initiator, mod);
+  }
+
+  public synchronized long getTimeoutModification(Initiator initiator) {
+    Long mod = timeoutModifications.get(initiator);
+    if (mod == null) return 0;
+    return mod;
   }
 
   public synchronized void setPerConnectionTimeout(ConnectionType type,
@@ -88,14 +106,16 @@ public class RvConnectionSettings {
     timeouts.put(type, millis);
   }
 
-  public synchronized long getPerConnectionTimeout(ConnectionType type) {
+  public synchronized long getPerConnectionTimeout(Initiator initiator,
+      ConnectionType type) {
     DefensiveTools.checkNull(type, "type");
 
     Long timeout = timeouts.get(type);
     if (timeout == null) {
-      return perConnectionTimeout;
+      return getDefaultPerConnectionTimeout(initiator);
+
     } else {
-      return timeout;
+      return timeout + getTimeoutModification(initiator);
     }
   }
 }

@@ -100,12 +100,14 @@
 
   <target name="run-oscar-tests" depends="compile-tests">
     <junit>
+      <formatter type="xml" />
       <assertions>
         <enable />
       </assertions>
       <test name="net.kano.joustsim.oscar.oscar.service.icbm.IncomingRvConnectionFunctionalTests" />
       <test name="net.kano.joustsim.oscar.oscar.service.icbm.OutgoingRvConnectionFunctionalTests" />
       <test name="net.kano.joustsim.oscar.oscar.service.icbm.dim.DirectimReceiverTest" />
+      <test name="net.kano.joustsim.oscar.oscar.service.icbm.dim.DirectimQueueTest" />
       <classpath path="${oscar.bin}" />
       <classpath path="${common.bin}" />
       <classpath refid="path.compile" />

@@ -74,7 +74,8 @@ public class OutgoingFileTransferImpl
   private Map<TransferredFile, Long> checksums = new HashMap<TransferredFile, Long>();
   private FileChecksummer fileChecksummer = new FileChecksummerImpl();
   private final FileTransferHelper helper = new FileTransferHelper(this);
-  private List<TransferredFile> tfiles = Collections.emptyList();
+  @SuppressWarnings({"unchecked"})
+  private List<TransferredFile> tfiles = Collections.EMPTY_LIST;
 
   public OutgoingFileTransferImpl(AimProxyInfo proxy,
       Screenname screenname, RvSessionConnectionInfo rvsessioninfo) {

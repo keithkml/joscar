@@ -315,16 +315,15 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
       throws UnknownHostException, ExecutionException, InterruptedException {
     addNopConnector(conn);
     MyFutureTask waiter = setConnectedWaiter();
-    MockRvConnection conn1 = getConnection();
-    conn1.getRvSessionHandler().handleIncomingRequest(null, new GenericRequest());
+    conn.getRvSessionHandler().handleIncomingRequest(null, new GenericRequest());
     assertSentRvs(0, 1, 0);
     List<StateController> hit = conn.getHitControllers();
     StateController last = hit.get(hit.size() - 1);
+    waiter.get();
     conn.getRvSessionHandler().handleIncomingRequest(null,
         new GenericRequest(2, new RvConnectionInfo(
             InetAddress.getByName("1.2.3.4"),
             InetAddress.getByName("5.6.7.8"), null, 500, false, false)));
-    waiter.get();
     assertSame("Redirect during transfer should not change controller",
         last, hit.get(hit.size() - 1));
     assertSentRvs(0, 1, 0);

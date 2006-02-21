@@ -56,9 +56,10 @@ public class TimerTimeoutHandler implements TimeoutHandler {
   public void startTimeout(TimeoutableController controller) {
     ConnectionType type = controller.getTimeoutType();
     RvConnectionSettings settings = conn.getSettings();
+    Initiator initiator = conn.getRvSessionInfo().getInitiator();
     long timeout = type == null
-        ? settings.getDefaultPerConnectionTimeout() 
-        : settings.getPerConnectionTimeout(type);
+        ? settings.getDefaultPerConnectionTimeout(initiator)
+        : settings.getPerConnectionTimeout(initiator, type);
     TimerInfo task = new TimerInfo(controller, timeout);
     storeTimer(controller, task);
     task.start();

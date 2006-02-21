@@ -87,6 +87,7 @@ public class IconServiceArbiter extends AbstractServiceArbiter<IconService>
       RequestedIconInfo iconInfo = (RequestedIconInfo) request;
       service.requestIcon(iconInfo.screenname,
           iconInfo.iconHash);
+
     } else if (request instanceof UploadIconRequest) {
       UploadIconRequest uploadReq = (UploadIconRequest) request;
 

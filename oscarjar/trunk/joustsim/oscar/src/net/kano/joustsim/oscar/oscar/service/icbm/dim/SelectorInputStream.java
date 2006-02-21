@@ -49,11 +49,16 @@ public class SelectorInputStream extends InputStream {
   private final SelectableChannel selectable;
 
   private SelectorInputStream(Channel channel) throws IOException {
+    this((ReadableByteChannel) channel, (SelectableChannel) channel);
+  }
+
+  public SelectorInputStream(ReadableByteChannel readable,
+      SelectableChannel selectable) throws IOException {
     selector = Selector.open();
-    readable = (ReadableByteChannel) channel;
-    selectable = (SelectableChannel) channel;
-    selectable.configureBlocking(false);
-    selectable.register(selector, SelectionKey.OP_READ);
+    this.readable = readable;
+    this.selectable = selectable;
+    this.selectable.configureBlocking(false);
+    this.selectable.register(selector, SelectionKey.OP_READ);
   }
 
   public static <C extends SelectableChannel & ReadableByteChannel>

@@ -35,7 +35,6 @@
 
 package net.kano.joustsim.oscar.oscar.service.info;
 
-import net.kano.joustsim.Screenname;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.snac.SnacRequestAdapter;
 import net.kano.joscar.snac.SnacRequestTimeoutEvent;
@@ -43,64 +42,68 @@ import net.kano.joscar.snac.SnacResponseEvent;
 import net.kano.joscar.snaccmd.FullUserInfo;
 import net.kano.joscar.snaccmd.InfoData;
 import net.kano.joscar.snaccmd.loc.UserInfoCmd;
+import net.kano.joustsim.Screenname;
 
 import java.util.Set;
 
 public abstract class UserInfoRequestManager extends InfoRequestManager {
-    public UserInfoRequestManager(InfoService service) {
-        super(service);
-    }
+  public UserInfoRequestManager(InfoService service) {
+    super(service);
+  }
 
-    protected void sendRequest(final Screenname sn) {
-        SnacCommand cmd = generateSnacCommand(sn);
-        getService().sendSnacRequest(cmd, new SnacRequestAdapter() {
-            private boolean ran = false;
+  protected void sendRequest(final Screenname sn) {
+    SnacCommand cmd = generateSnacCommand(sn);
+    getService().sendSnacRequest(cmd, new SnacRequestAdapter() {
+      private boolean ran = false;
 
-            public void handleResponse(SnacResponseEvent e) {
-                SnacCommand snac = e.getSnacCommand();
+      public void handleResponse(SnacResponseEvent e) {
+        SnacCommand snac = e.getSnacCommand();
 
-                synchronized(this) {
-                    if (ran) return;
-                    ran = true;
-                }
-
-                runListeners(sn, getDesiredValueFromSnac(snac));
-            }
-
-            public void handleTimeout(SnacRequestTimeoutEvent event) {
-                synchronized(this) {
-                    if (ran) return;
-                    ran = true;
-                }
-                runListeners(sn, null);
-            }
-        });
-    }
-
-    private void runListeners(Screenname sn, Object value) {
-        Set<InfoResponseListener> listeners = clearListeners(sn);
-        for (Object listener1 : listeners) {
-            InfoResponseListener listener = (InfoResponseListener) listener1;
-            callListener(listener, sn, value);
+        synchronized (this) {
+          if (ran) return;
+          ran = true;
         }
-    }
 
-    private Object getDesiredValueFromSnac(SnacCommand snac) {
-        Object value = null;
-        if (snac instanceof UserInfoCmd) {
-            UserInfoCmd uic = (UserInfoCmd) snac;
+        runListeners(sn, getDesiredValueFromSnac(snac));
+      }
 
-            FullUserInfo userInfo = uic.getUserInfo();
-            if (userInfo != null) {
-                InfoData infodata = uic.getInfoData();
-                if (infodata != null) value = getDesiredValue(infodata);
-            }
+      public void handleTimeout(SnacRequestTimeoutEvent event) {
+        synchronized (this) {
+          if (ran) return;
+          ran = true;
         }
-        return value;
-    }
+        runListeners(sn, null);
+      }
+    });
+  }
 
-    protected abstract SnacCommand generateSnacCommand(Screenname sn);
-    protected abstract void callListener(InfoResponseListener listener, Screenname sn,
-            Object value);
-    protected abstract Object getDesiredValue(InfoData infodata);
+  private void runListeners(Screenname sn, Object value) {
+    Set<InfoResponseListener> listeners = clearListeners(sn);
+    for (Object listener1 : listeners) {
+      InfoResponseListener listener = (InfoResponseListener) listener1;
+      callListener(listener, sn, value);
+    }
+  }
+
+  private Object getDesiredValueFromSnac(SnacCommand snac) {
+    Object value = null;
+    if (snac instanceof UserInfoCmd) {
+      UserInfoCmd uic = (UserInfoCmd) snac;
+
+      FullUserInfo userInfo = uic.getUserInfo();
+      if (userInfo != null) {
+        InfoData infodata = uic.getInfoData();
+        if (infodata != null) value = getDesiredValue(infodata);
+      }
+    }
+    return value;
+  }
+
+  protected abstract SnacCommand generateSnacCommand(Screenname sn);
+
+  protected abstract void callListener(InfoResponseListener listener,
+      Screenname sn,
+      Object value);
+
+  protected abstract Object getDesiredValue(InfoData infodata);
 }

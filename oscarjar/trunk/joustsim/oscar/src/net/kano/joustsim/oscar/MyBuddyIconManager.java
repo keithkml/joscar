@@ -92,12 +92,12 @@ public class MyBuddyIconManager {
     if (wantedIconData != null && wantedIconHash != null
         && hash.getData().equals(wantedIconHash.getData())) {
       //TODO(klea): when should we upload the icon?
-      if ((hash.getFlags() & ExtraInfoData.FLAG_HASH_PRESENT) != 0) {
-//      if ((hash.getFlags() & ExtraInfoData.FLAG_UPLOAD_ICON) != 0) {
+      if ((hash.getFlags() & ExtraInfoData.FLAG_UPLOAD_ICON) != 0) {
         if (wantedIconData == null) {
           LOGGER.fine("Server asked us to upload "
               + "icon for " + hash + " but we don't "
               + "want icon data");
+
         } else {
           ExternalServiceManager externalServiceManager = conn
               .getExternalServiceManager();

@@ -35,13 +35,13 @@
 package net.kano.joustsim.oscar.oscar.service.icbm;
 
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.Connector;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SocketStreamInfo;
 
 import java.io.IOException;
 
 class NopConnector implements Connector {
-  public StreamInfo createStream() throws IOException {
-    return new StreamInfo(null);
+  public SocketStreamInfo createStream() throws IOException {
+    return new SocketStreamInfo(null);
   }
 
   public void checkConnectionInfo() throws Exception {

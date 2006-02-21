@@ -52,7 +52,6 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.StartedControllerEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.StartingControllerEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;

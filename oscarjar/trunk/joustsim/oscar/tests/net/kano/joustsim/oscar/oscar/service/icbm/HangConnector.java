@@ -35,7 +35,7 @@
 package net.kano.joustsim.oscar.oscar.service.icbm;
 
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.PassiveConnector;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SocketStreamInfo;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -45,7 +45,7 @@ class HangConnector implements PassiveConnector {
   private final Object lock = new Object();
   private boolean done = false;
 
-  public StreamInfo createStream() throws IOException {
+  public SocketStreamInfo createStream() throws IOException {
     try {
       synchronized(lock) {
         done = true;

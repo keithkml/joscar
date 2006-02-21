@@ -41,6 +41,7 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.dim;
 
+import net.kano.joscar.DefensiveTools;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -48,11 +49,17 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.WritableByteChannel;
 
+/**
+ * An attachment. Attachments are treated as equal (in {@code equals} and
+ * {@code hashCode}) if they have the same {@code id} value.
+ */
 public abstract class Attachment {
   private final String id;
   private final long length;
 
   public Attachment(String id, long length) {
+    DefensiveTools.checkNull(id, "id");
+    DefensiveTools.checkRange(length, "length", 0);
     this.id = id;
     this.length = length;
   }
@@ -61,28 +68,23 @@ public abstract class Attachment {
 
   public abstract WritableByteChannel openForWriting() throws IOException;
 
-  public @Nullable abstract SelectableChannel getSelectableForWriting();
+  public abstract @Nullable SelectableChannel getSelectableForWriting();
 
-  public String getId() {
-    return id;
-  }
+  public String getId() { return id; }
 
-  public long getLength() {
-    return length;
-  }
+  public long getLength() { return length; }
 
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
 
-    final Attachment that = (Attachment) o;
+    Attachment that = (Attachment) o;
 
-    if (id != null ? !id.equals(that.id) : that.id != null) return false;
+    return !(id != null ? !id.equals(that.id) : that.id != null);
 
-    return true;
   }
 
   public int hashCode() {
-    return (id != null ? id.hashCode() : 0);
+    return id != null ? id.hashCode() : 0;
   }
 }

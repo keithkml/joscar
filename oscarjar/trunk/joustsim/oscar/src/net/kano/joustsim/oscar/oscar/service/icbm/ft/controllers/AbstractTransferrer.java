@@ -35,16 +35,18 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.ProgressStatusProvider;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.nio.channels.Channel;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.Selector;
-import java.util.logging.Logger;
+import java.nio.channels.WritableByteChannel;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
-public abstract class AbstractTransferrer<C extends Channel>
+public abstract class AbstractTransferrer
     implements Transferrer, ProgressStatusProvider {
   private static final Logger LOGGER = Logger
       .getLogger(AbstractTransferrer.class.getName());
@@ -52,16 +54,25 @@ public abstract class AbstractTransferrer<C extends Channel>
   protected final long offset;
   protected final long length;
   private volatile long position = 0;
-  private final C socket;
   private @Nullable Selector selector;
   private final @Nullable SelectableChannel selectable;
+  private final ReadableByteChannel readable;
+  private final WritableByteChannel writable;
 
-  public AbstractTransferrer(C channel, @Nullable SelectableChannel selectable,
+  public AbstractTransferrer(ReadableByteChannel readable,
+      WritableByteChannel writable, @Nullable SelectableChannel selectable,
       long offset, long toTransfer) {
-    this.socket = channel;
+    this.readable = readable;
+    this.writable = writable;
     this.selectable = selectable;
     this.offset = offset;
     this.length = toTransfer;
+  }
+
+  public AbstractTransferrer(StreamInfo stream, long offset,
+      long toDownload) {
+    this(stream.getReadableChannel(), stream.getWritableChannel(),
+        stream.getSelectableChannel(), offset, toDownload);
   }
 
   protected void waitUntilReady() throws IOException {
@@ -99,7 +110,8 @@ public abstract class AbstractTransferrer<C extends Channel>
 
         long remaining = length - totalTransferred;
         waitUntilReady();
-        long transferred = transfer(socket, totalTransferred, remaining);
+        long transferred = transfer(readable, writable, totalTransferred,
+            remaining);
 
         if (transferred == -1) {
           LOGGER.severe("transfer returned -1");
@@ -146,7 +158,8 @@ public abstract class AbstractTransferrer<C extends Channel>
    * Returns the number of bytes transferred by this call, or -1 to cancel
    * transfer
    */
-  protected abstract long transfer(C channel, long transferred,
+  protected abstract long transfer(ReadableByteChannel readable,
+      WritableByteChannel writable, long transferred,
       long remaining) throws IOException;
 
   public long getStartPosition() {

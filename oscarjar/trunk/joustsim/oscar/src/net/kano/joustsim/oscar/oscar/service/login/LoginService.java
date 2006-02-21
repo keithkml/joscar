@@ -140,10 +140,10 @@ public class LoginService extends Service {
       if (notified) return;
       notified = true;
     }
+    setFinished();
     for (LoginServiceListener listener : listeners) {
       listener.loginSucceeded(info);
     }
-    setFinished();
   }
 
   private void fireLoginFailed(LoginFailureInfo info) {

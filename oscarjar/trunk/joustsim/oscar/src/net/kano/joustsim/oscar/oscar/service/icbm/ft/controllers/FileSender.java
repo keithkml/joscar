@@ -36,17 +36,17 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
 import java.io.IOException;
 import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.SocketChannel;
+import java.nio.channels.WritableByteChannel;
 
-class FileSender extends AbstractTransferrer<SocketChannel> {
+class FileSender extends AbstractTransferrer {
   private final FileChannel fileChannel;
   private SendFileController controller;
 
   public FileSender(SendFileController controller, FileChannel fileChannel,
       long offset, long toSend) {
-    super(controller.getStream().getSocketChannel(),
-        controller.getStream().getSocketChannel(), offset, toSend);
+    super(controller.getStream(), offset, toSend);
     this.controller = controller;
     this.fileChannel = fileChannel;
   }
@@ -63,9 +63,10 @@ class FileSender extends AbstractTransferrer<SocketChannel> {
     return SelectionKey.OP_WRITE;
   }
 
-  protected long transfer(SocketChannel channel, long transferred,
-      long remaining) throws IOException {
+  protected long transfer(ReadableByteChannel readable,
+      WritableByteChannel writable, long transferred, long remaining)
+      throws IOException {
     return fileChannel.transferTo(offset + transferred,
-        Math.min(1024, remaining), channel);
+        Math.min(1024, remaining), writable);
   }
 }

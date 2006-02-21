@@ -34,37 +34,59 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.dim.Attachment;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joustsim.oscar.oscar.service.icbm.dim.Attachment;
 
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
+/**
+ * A message with attachments. Each attachment must have an ID which is unique
+ * within this message. Normally, each attachment corresponds to an {@code IMG}
+ * tag in the message body, like
+ * {@code <IMG SRC="65.gif" ID="1" WIDTH="30" HEIGHT="31" DATASIZE="1502">}.
+ */
 public class DirectMessage implements Message {
   private final String message;
   private final boolean autoResponse;
   private final Set<Attachment> attachments;
 
+  @SuppressWarnings({"unchecked"})
   public DirectMessage(String message, boolean autoResponse) {
-    this(message, autoResponse, Collections.<Attachment>emptySet());
+    this(message, autoResponse, Collections.EMPTY_SET);
   }
 
-  public DirectMessage(String message, boolean autoResponse, Set<Attachment> attachments) {
+  /**
+   * Creates a new direct message with attachments. Each attachment have an ID
+   * which is unique among the other attachments in this message.
+   *
+   * @param attachments a list of attachments
+   */
+  public DirectMessage(String message, boolean autoResponse,
+      Attachment... attachments) {
+    this(message, autoResponse, new LinkedHashSet<Attachment>(
+        Arrays.asList(attachments)));
+  }
+
+  /**
+   * Creates a new direct message with attachments. Each attachment have an ID
+   * which is unique among the other attachments in this message.
+   *
+   * @param attachments a list of attachments
+   */
+  public DirectMessage(String message, boolean autoResponse,
+      Set<Attachment> attachments) {
     this.message = message;
     this.autoResponse = autoResponse;
     this.attachments = DefensiveTools.getUnmodifiableSetCopy(attachments);
   }
 
-  public String getMessageBody() {
-    return message;
-  }
+  public String getMessageBody() { return message; }
 
-  public boolean isAutoResponse() {
-    return autoResponse;
-  }
+  public boolean isAutoResponse() { return autoResponse; }
 
   @SuppressWarnings({"ReturnOfCollectionOrArrayField"})
-  public Set<Attachment> getAttachments() {
-    return attachments;
-  }
+  public Set<Attachment> getAttachments() { return attachments; }
 }

@@ -55,7 +55,9 @@ public class SizeBasedAttachmentSaver implements AttachmentSaver {
     if (length < minFileSize) {
       return new IncomingMemoryAttachment(id, length);
     } else {
-      return new FileAttachment(File.createTempFile("aim", "dim"), id, length);
+      File tempFile = File.createTempFile("aim", "dim");
+      tempFile.deleteOnExit();
+      return new FileAttachment(tempFile, id, length);
     }
   }
 }

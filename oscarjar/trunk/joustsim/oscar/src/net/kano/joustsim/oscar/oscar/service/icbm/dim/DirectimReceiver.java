@@ -56,7 +56,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class DirectimReceiver extends AbstractTransferrer<ReadableByteChannel> {
+public class DirectimReceiver extends AbstractTransferrer {
   private static final Logger LOGGER = Logger
       .getLogger(DirectimReceiver.class.getName());
 
@@ -106,7 +106,7 @@ public class DirectimReceiver extends AbstractTransferrer<ReadableByteChannel> {
       AttachmentSaver saver, @Nullable Cancellable cancellable,
       String charset, long datalen, boolean autoResponse) {
     this(eventPost, pauseHelper, saver, cancellable, charset, datalen,
-        stream.getSocketChannel(), stream.getSocketChannel(), autoResponse);
+        stream.getReadableChannel(), stream.getSelectableChannel(), autoResponse);
   }
 
   public DirectimReceiver(EventPost eventPost, AttachmentSaver saver,
@@ -121,7 +121,7 @@ public class DirectimReceiver extends AbstractTransferrer<ReadableByteChannel> {
       AttachmentSaver saver, @Nullable Cancellable cancellable,
       String charset, long datalen, ReadableByteChannel readable,
       @Nullable SelectableChannel selectable, boolean autoResponse) {
-    super(readable, selectable, 0, datalen);
+    super(readable, null, selectable, 0, datalen);
 
     this.cancellable = cancellable;
     this.charset = charset;
@@ -159,8 +159,9 @@ public class DirectimReceiver extends AbstractTransferrer<ReadableByteChannel> {
     }
   }
 
-  protected long transfer(ReadableByteChannel channel, long transferred,
-      long remaining) throws IOException {
+  protected long transfer(ReadableByteChannel readable,
+      WritableByteChannel writable, long transferred, long remaining)
+      throws IOException {
     int origpos = buffer.position();
     if (!checkbuffer && ((mode == Mode.MESSAGE || mode == Mode.TAG) && buffer.remaining() == 0)) {
       LOGGER.warning("DIM buffer full; entering drain mode from " + mode);
@@ -173,7 +174,7 @@ public class DirectimReceiver extends AbstractTransferrer<ReadableByteChannel> {
     }
     buffer.limit((int) Math.min(buffer.capacity(), buffer.position()
         + remaining));
-    int read = channel.read(buffer);
+    int read = readable.read(buffer);
     int actuallyRead = Math.max(read, 0);
     if (!checkbuffer && (read == -1 || mode == Mode.DRAIN)) {
       int skipped = buffer.position();

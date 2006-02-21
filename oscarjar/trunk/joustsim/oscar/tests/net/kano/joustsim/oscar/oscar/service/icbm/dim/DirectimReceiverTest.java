@@ -47,7 +47,7 @@ import java.nio.channels.Channels;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DirectimReceiverTest extends TestCase {
+public class DirectimReceiverTest extends DirectimTest {
   public void testShortMessages() throws IOException {
     for (int i = 0; i < 20; i++) {
       String str = makeString(i);
@@ -63,14 +63,6 @@ public class DirectimReceiverTest extends TestCase {
       String str = makeString(i);
       runTestWithPlainMessage(str, bufferSize, str);
     }
-  }
-
-  private String makeString(int len) {
-    char[] array = new char[len];
-    for (int j = 0; j < array.length; j++) {
-      array[j] = (char) ('a' + (j % 26));
-    }
-    return new String(array);
   }
 
   public void testShortMessagesWithFakeAttachment() throws IOException {

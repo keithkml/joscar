@@ -45,63 +45,68 @@ import java.util.Map;
 import java.util.Set;
 
 public abstract class InfoRequestManager {
-    private final InfoService service;
-    private final Map<Screenname,Set<InfoResponseListener>> listenerMap
-            = new HashMap<Screenname, Set<InfoResponseListener>>();
+  private final InfoService service;
+  private final Map<Screenname, Set<InfoResponseListener>> listenerMap
+      = new HashMap<Screenname, Set<InfoResponseListener>>();
 
-    protected InfoRequestManager(InfoService service) {
-        this.service = service;
+  protected InfoRequestManager(InfoService service) {
+    this.service = service;
+  }
+
+  public void request(Screenname sn) {
+    DefensiveTools.checkNull(sn, "sn");
+
+    request(sn, null);
+  }
+
+  public void request(Screenname sn, InfoResponseListener listener) {
+    DefensiveTools.checkNull(sn, "sn");
+
+    boolean shouldRequest;
+    synchronized (this) {
+      shouldRequest = storeListener(sn, listener);
     }
+    if (shouldRequest) sendRequest(sn);
+  }
 
-    public void request(Screenname sn) {
-        DefensiveTools.checkNull(sn, "sn");
+  protected abstract void sendRequest(Screenname sn);
 
-        request(sn, null);
+  private synchronized boolean storeListener(Screenname sn,
+      InfoResponseListener listener) {
+    DefensiveTools.checkNull(sn, "sn");
+
+    boolean shouldRequest = !listenerMap.containsKey(sn);
+    Set<InfoResponseListener> listeners = getListeners(sn);
+    if (listener != null) listeners.add(listener);
+    return shouldRequest;
+  }
+
+  protected synchronized final Set<InfoResponseListener> getListeners(
+      Screenname sn) {
+    DefensiveTools.checkNull(sn, "sn");
+
+    Set<InfoResponseListener> set = listenerMap.get(sn);
+    if (set == null) {
+      set = new LinkedHashSet<InfoResponseListener>();
+      set.add(service.getInfoRequestListener());
+      listenerMap.put(sn, set);
     }
+    return set;
+  }
 
-    public void request(Screenname sn, InfoResponseListener listener) {
-        DefensiveTools.checkNull(sn, "sn");
+  protected synchronized final Set<InfoResponseListener> clearListeners(
+      Screenname sn) {
+    DefensiveTools.checkNull(sn, "sn");
 
-        boolean shouldRequest;
-        synchronized(this) {
-            shouldRequest = storeListener(sn, listener);
-        }
-        if (shouldRequest) sendRequest(sn);
+    Set<InfoResponseListener> set = listenerMap.remove(sn);
+    if (set == null) {
+      return Collections.EMPTY_SET;
+    } else {
+      return set;
     }
+  }
 
-    protected abstract void sendRequest(Screenname sn);
-
-    private synchronized boolean storeListener(Screenname sn,
-            InfoResponseListener listener) {
-        DefensiveTools.checkNull(sn, "sn");
-
-        boolean shouldRequest = !listenerMap.containsKey(sn);
-        Set<InfoResponseListener> listeners = getListeners(sn);
-        if (listener != null) listeners.add(listener);
-        return shouldRequest;
-    }
-
-    protected synchronized final Set<InfoResponseListener> getListeners(Screenname sn) {
-        DefensiveTools.checkNull(sn, "sn");
-
-        Set<InfoResponseListener> set = listenerMap.get(sn);
-        if (set == null) {
-            set = new LinkedHashSet<InfoResponseListener>();
-            set.add(service.getInfoRequestListener());
-            listenerMap.put(sn, set);
-        }
-        return set;
-    }
-
-    protected synchronized final Set<InfoResponseListener> clearListeners(Screenname sn) {
-        DefensiveTools.checkNull(sn, "sn");
-
-        Set<InfoResponseListener> set = listenerMap.remove(sn);
-        if (set == null) return Collections.EMPTY_SET;
-        else return set;
-    }
-
-    public InfoService getService() {
-        return service;
-    }
+  public InfoService getService() {
+    return service;
+  }
 }

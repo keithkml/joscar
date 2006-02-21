@@ -40,4 +40,11 @@ public abstract class MemoryAttachment extends Attachment {
   public MemoryAttachment(String id, long length) {super(id, length);}
 
   public abstract ByteBlock getBuffer();
+
+  public long getLength() {
+    long superlen = super.getLength();
+    assert superlen == getBuffer().getLength() : "length should be "
+        + superlen + " but was " + getBuffer().getLength();
+    return superlen;
+  }
 }

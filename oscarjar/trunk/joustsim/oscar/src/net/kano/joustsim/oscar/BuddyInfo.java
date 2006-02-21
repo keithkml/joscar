@@ -53,356 +53,363 @@ import java.util.Date;
 import java.util.List;
 
 public final class BuddyInfo {
-    public static final String PROP_CERTIFICATE_INFO = "certificateInfo";
-    public static final String PROP_ONLINE = "online";
-    public static final String PROP_DIRECTORY_INFO = "dirInfo";
-    public static final String PROP_ONLINE_SINCE = "onlineSince";
-    public static final String PROP_AWAY = "away";
-    public static final String PROP_CAPABILITIES = "capabilities";
-    public static final String PROP_IDLE_SINCE = "idleSince";
-    public static final String PROP_WARNING_LEVEL = "warningLevel";
-    public static final String PROP_AWAY_MESSAGE = "awayMessage";
-    public static final String PROP_STATUS_MESSAGE = "statusMessage";
-    public static final String PROP_USER_PROFILE = "userProfile";
-    public static final String PROP_OLD_ICON_INFO = "oldIconInfo";
-    public static final String PROP_LAST_AIM_EXPRESSION = "lastAimExpression";
-    public static final String PROP_SUPPORTS_TYPING_NOTIFICATIONS
-            = "supportsTypingNotifications";
-    public static final String PROP_WANTS_OUR_ICON = "wantsOurIcon";
-    public static final String PROP_ICON_HASH = "iconHash";
-    public static final String PROP_ICON_DATA = "iconData";
-    public static final String PROP_MOBILE = "mobile";
-    public static final String PROP_ROBOT = "robot";
-    public static final String PROP_AOL_USER = "aolUser";
-    public static final String PROP_ITUNES_URL = "itunesUrl";
+  public static final String PROP_CERTIFICATE_INFO = "certificateInfo";
+  public static final String PROP_ONLINE = "online";
+  public static final String PROP_DIRECTORY_INFO = "dirInfo";
+  public static final String PROP_ONLINE_SINCE = "onlineSince";
+  public static final String PROP_AWAY = "away";
+  public static final String PROP_CAPABILITIES = "capabilities";
+  public static final String PROP_IDLE_SINCE = "idleSince";
+  public static final String PROP_WARNING_LEVEL = "warningLevel";
+  public static final String PROP_AWAY_MESSAGE = "awayMessage";
+  public static final String PROP_STATUS_MESSAGE = "statusMessage";
+  public static final String PROP_USER_PROFILE = "userProfile";
+  public static final String PROP_OLD_ICON_INFO = "oldIconInfo";
+  public static final String PROP_LAST_AIM_EXPRESSION = "lastAimExpression";
+  public static final String PROP_SUPPORTS_TYPING_NOTIFICATIONS
+      = "supportsTypingNotifications";
+  public static final String PROP_WANTS_OUR_ICON = "wantsOurIcon";
+  public static final String PROP_ICON_HASH = "iconHash";
+  public static final String PROP_ICON_DATA = "iconData";
+  public static final String PROP_MOBILE = "mobile";
+  public static final String PROP_ROBOT = "robot";
+  public static final String PROP_AOL_USER = "aolUser";
+  public static final String PROP_ITUNES_URL = "itunesUrl";
 
-    private final Screenname screenname;
+  private final Screenname screenname;
 
-    private BuddyCertificateInfo certificateInfo = null;
-    private boolean online = false;
-    private DirInfo directoryInfo = null;
-    private Date onlineSince = null;
-    private boolean away = false;
-    private List<CapabilityBlock> capabilities = DefensiveTools.emptyList();
-    private Date idleSince = null;
-    private int warningLevel = -1;
-    private String awayMessage = null;
-    private String userProfile = null;
-    private String statusMessage = null;
-    private String itunesUrl = null;
-    private ExtraInfoData iconHash = null;
-    private ByteBlock iconData = null;
-    private boolean mobile = false;
-    private boolean robot = false;
-    private boolean aolUser = false;
+  private BuddyCertificateInfo certificateInfo = null;
+
+  //TODO(klea): online needs to be Boolean, and it needs to be null if the buddy isn't on our list
+  // also add a lastSeenOnline value, for buddies not on the list
+  private boolean online = false;
+  private DirInfo directoryInfo = null;
+  private Date onlineSince = null;
+  private boolean away = false;
+  private List<CapabilityBlock> capabilities = DefensiveTools.emptyList();
+  private Date idleSince = null;
+  private int warningLevel = -1;
+  private String awayMessage = null;
+  private String userProfile = null;
+  private String statusMessage = null;
+  private String itunesUrl = null;
+  private ExtraInfoData iconHash = null;
+  private ByteBlock iconData = null;
+  private boolean mobile = false;
+  private boolean robot = false;
+  private boolean aolUser = false;
 
 
-    // icbm info
-    private OldIconHashInfo oldIconInfo = null;
-    private String lastAimExpression = null;
-    private boolean supportsTypingNotifications = false;
-    private boolean wantsOurIcon = false;
+  // icbm info
+  private OldIconHashInfo oldIconInfo = null;
+  private String lastAimExpression = null;
+  private boolean supportsTypingNotifications = false;
+  private boolean wantsOurIcon = false;
 
-    private PropertyChangeSupport pcs = new PropertyChangeSupport(this);
-    private CopyOnWriteArrayList<BuddyInfoChangeListener> listeners
-            = new CopyOnWriteArrayList<BuddyInfoChangeListener>();
+  private PropertyChangeSupport pcs = new PropertyChangeSupport(this);
+  private CopyOnWriteArrayList<BuddyInfoChangeListener> listeners
+      = new CopyOnWriteArrayList<BuddyInfoChangeListener>();
 
-    public BuddyInfo(Screenname screenname) {
-        DefensiveTools.checkNull(screenname, "screenname");
+  public BuddyInfo(Screenname screenname) {
+    DefensiveTools.checkNull(screenname, "screenname");
 
-        this.screenname = screenname;
+    this.screenname = screenname;
+  }
+
+  public void addPropertyListener(BuddyInfoChangeListener l) {
+    pcs.addPropertyChangeListener(l);
+    listeners.add(l);
+  }
+
+  public void removePropertyListener(BuddyInfoChangeListener l) {
+    pcs.removePropertyChangeListener(l);
+    listeners.remove(l);
+  }
+
+  public @NotNull Screenname getScreenname() { return screenname; }
+
+  void setCertificateInfo(BuddyCertificateInfo certificateInfo) {
+    BuddyCertificateInfo old;
+    synchronized (this) {
+      old = this.certificateInfo;
+      this.certificateInfo = certificateInfo;
     }
+    fireObjectChange(PROP_CERTIFICATE_INFO, old, certificateInfo);
+  }
 
-    public void addPropertyListener(BuddyInfoChangeListener l) {
-        pcs.addPropertyChangeListener(l);
-        listeners.add(l);
+  public synchronized @Nullable BuddyCertificateInfo getCertificateInfo() {
+    return certificateInfo;
+  }
+
+  void setOnline(boolean online) {
+    boolean old;
+    synchronized (this) {
+      old = this.online;
+      this.online = online;
     }
+    pcs.firePropertyChange(PROP_ONLINE, old, online);
+  }
 
-    public void removePropertyListener(BuddyInfoChangeListener l) {
-        pcs.removePropertyChangeListener(l);
-        listeners.remove(l);
+  public synchronized boolean isOnline() { return online; }
+
+  void setDirectoryInfo(DirInfo directoryInfo) {
+    DirInfo old;
+    synchronized (this) {
+      old = this.directoryInfo;
+      this.directoryInfo = directoryInfo;
     }
+    fireObjectChange(PROP_DIRECTORY_INFO, old, directoryInfo);
+  }
 
-    public @NotNull Screenname getScreenname() { return screenname; }
+  public synchronized @Nullable DirInfo getDirectoryInfo() {
+    return directoryInfo;
+  }
 
-    void setCertificateInfo(BuddyCertificateInfo certificateInfo) {
-        BuddyCertificateInfo old;
-        synchronized (this) {
-            old = this.certificateInfo;
-            this.certificateInfo = certificateInfo;
-        }
-        fireObjectChange(PROP_CERTIFICATE_INFO, old, certificateInfo);
+  void setOnlineSince(Date onlineSince) {
+    Date old;
+    synchronized (this) {
+      old = this.onlineSince;
+      this.onlineSince = onlineSince;
     }
+    fireObjectChange(PROP_ONLINE_SINCE, old, onlineSince);
+  }
 
-    public synchronized @Nullable BuddyCertificateInfo getCertificateInfo() {
-        return certificateInfo;
+  public synchronized @Nullable Date getOnlineSince() { return onlineSince; }
+
+  void setAway(boolean away) {
+    boolean old;
+    synchronized (this) {
+      old = this.away;
+      this.away = away;
     }
+    pcs.firePropertyChange(PROP_AWAY, old, away);
+  }
 
-    void setOnline(boolean online) {
-        boolean old;
-        synchronized (this) {
-            old = this.online;
-            this.online = online;
-        }
-        pcs.firePropertyChange(PROP_ONLINE, old, online);
+  public synchronized boolean isAway() { return away; }
+
+  void setCapabilities(Collection<CapabilityBlock> capabilities) {
+    List<CapabilityBlock> cloned = DefensiveTools.getSafeNonnullListCopy(
+        capabilities, "capabilities");
+    List<CapabilityBlock> old;
+    synchronized (this) {
+      old = this.capabilities;
+      this.capabilities = cloned;
     }
+    pcs.firePropertyChange(PROP_CAPABILITIES, old, capabilities);
+  }
 
-    public synchronized boolean isOnline() { return online; }
+  @SuppressWarnings({"ReturnOfCollectionOrArrayField"})
+  public synchronized @NotNull List<CapabilityBlock> getCapabilities() {
+    return capabilities;
+  }
 
-    void setDirectoryInfo(DirInfo directoryInfo) {
-        DirInfo old;
-        synchronized (this) {
-            old = this.directoryInfo;
-            this.directoryInfo = directoryInfo;
-        }
-        fireObjectChange(PROP_DIRECTORY_INFO, old, directoryInfo);
+  void setIdleSince(Date idleSince) {
+    Date old;
+    synchronized (this) {
+      old = this.idleSince;
+      this.idleSince = idleSince;
     }
+    fireObjectChange(PROP_IDLE_SINCE, old, idleSince);
+  }
 
-    public synchronized @Nullable DirInfo getDirectoryInfo() {
-        return directoryInfo;
+  void setIconHash(ExtraInfoData iconHash) {
+    ExtraInfoData old;
+    synchronized (this) {
+      old = this.iconHash;
+      this.iconHash = iconHash;
     }
+    fireObjectChange(PROP_ICON_HASH, old, iconHash);
+  }
 
-    void setOnlineSince(Date onlineSince) {
-        Date old;
-        synchronized (this) {
-            old = this.onlineSince;
-            this.onlineSince = onlineSince;
-        }
-        fireObjectChange(PROP_ONLINE_SINCE, old, onlineSince);
+  public synchronized @Nullable ExtraInfoData getIconHash() {
+    return iconHash;
+  }
+
+  void setIconData(ByteBlock iconData) {
+    ByteBlock old;
+    synchronized (this) {
+      old = this.iconData;
+      this.iconData = iconData;
     }
+    fireObjectChange(PROP_ICON_DATA, old, iconData);
+  }
 
-    public synchronized @Nullable Date getOnlineSince() { return onlineSince; }
+  public synchronized @Nullable ByteBlock getIconData() {
+    return iconData;
+  }
 
-    void setAway(boolean away) {
-        boolean old;
-        synchronized (this) {
-            old = this.away;
-            this.away = away;
-        }
-        pcs.firePropertyChange(PROP_AWAY, old, away);
+  public synchronized Date getIdleSince() { return idleSince; }
+
+  void setWarningLevel(int warningLevel) {
+    int old;
+    synchronized (this) {
+      old = this.warningLevel;
+      this.warningLevel = warningLevel;
     }
+    pcs.firePropertyChange(PROP_WARNING_LEVEL, old, warningLevel);
+  }
 
-    public synchronized boolean isAway() { return away; }
+  public synchronized int getWarningLevel() { return warningLevel; }
 
-    void setCapabilities(Collection<CapabilityBlock> capabilities) {
-        List<CapabilityBlock> cloned = DefensiveTools.getSafeNonnullListCopy(
-                capabilities, "capabilities");
-        List<CapabilityBlock> old;
-        synchronized (this) {
-            old = this.capabilities;
-            this.capabilities = cloned;
-        }
-        pcs.firePropertyChange(PROP_CAPABILITIES, old, capabilities);
+  void setAwayMessage(String awayMessage) {
+    String old;
+    synchronized (this) {
+      old = this.awayMessage;
+      this.awayMessage = awayMessage;
     }
+    fireObjectChange(PROP_AWAY_MESSAGE, old, awayMessage);
+  }
 
-    @SuppressWarnings({"ReturnOfCollectionOrArrayField"})
-    public synchronized @NotNull List<CapabilityBlock> getCapabilities() {
-        return capabilities;
+  public synchronized @Nullable String getAwayMessage() { return awayMessage; }
+
+  void setStatusMessage(String statusMessage) {
+    String old;
+    synchronized (this) {
+      old = this.statusMessage;
+      this.statusMessage = statusMessage;
     }
+    fireObjectChange(PROP_STATUS_MESSAGE, old, statusMessage);
+  }
 
-    void setIdleSince(Date idleSince) {
-        Date old;
-        synchronized (this) {
-            old = this.idleSince;
-            this.idleSince = idleSince;
-        }
-        fireObjectChange(PROP_IDLE_SINCE, old, idleSince);
+  public synchronized @Nullable String getStatusMessage() {
+    return statusMessage;
+  }
+
+  void setItunesUrl(String itunesUrl) {
+    String old;
+    synchronized (this) {
+      old = this.itunesUrl;
+      this.itunesUrl = itunesUrl;
     }
+    fireObjectChange(PROP_ITUNES_URL, old, itunesUrl);
+  }
 
-    void setIconHash(ExtraInfoData iconHash) {
-        ExtraInfoData old;
-        synchronized(this) {
-            old = this.iconHash;
-            this.iconHash = iconHash;
-        }
-        fireObjectChange(PROP_ICON_HASH, old, iconHash);
+  public synchronized @Nullable String getItunesUrl() { return itunesUrl; }
+
+  void setUserProfile(String userProfile) {
+    String old;
+    synchronized (this) {
+      old = this.userProfile;
+      this.userProfile = userProfile;
     }
+    fireObjectChange(PROP_USER_PROFILE, old, userProfile);
+  }
 
-    public synchronized @Nullable ExtraInfoData getIconHash() {
-        return iconHash;
+  public synchronized @Nullable String getUserProfile() { return userProfile; }
+
+  void setOldIconInfo(OldIconHashInfo oldIconInfo) {
+    OldIconHashInfo old;
+    synchronized (this) {
+      old = this.oldIconInfo;
+      this.oldIconInfo = oldIconInfo;
     }
+    fireObjectChange(PROP_OLD_ICON_INFO, old, oldIconInfo);
+  }
 
-    void setIconData(ByteBlock iconData) {
-        ByteBlock old;
-        synchronized(this) {
-            old = this.iconData;
-            this.iconData = iconData;
-        }
-        fireObjectChange(PROP_ICON_DATA, old, iconData);
+  public synchronized @Nullable OldIconHashInfo getOldIconInfo() {
+    return oldIconInfo;
+  }
+
+  void setLastAimExpression(String lastAimExpression) {
+    String old;
+    synchronized (this) {
+      old = this.lastAimExpression;
+      this.lastAimExpression = lastAimExpression;
     }
+    fireObjectChange(PROP_LAST_AIM_EXPRESSION, old, lastAimExpression);
+  }
 
-    public synchronized @Nullable ByteBlock getIconData() {
-        return iconData;
+  public synchronized @Nullable String getLastAimExpression() {
+    return lastAimExpression;
+  }
+
+  void setSupportsTypingNotifications(boolean supportsTypingNotifications) {
+    boolean old;
+    synchronized (this) {
+      old = this.supportsTypingNotifications;
+      this.supportsTypingNotifications = supportsTypingNotifications;
     }
+    pcs.firePropertyChange(PROP_SUPPORTS_TYPING_NOTIFICATIONS, old,
+        supportsTypingNotifications);
+  }
 
-    public synchronized Date getIdleSince() { return idleSince; }
+  public synchronized boolean supportsTypingNotifications() {
+    return supportsTypingNotifications;
+  }
 
-    void setWarningLevel(int warningLevel) {
-        int old;
-        synchronized (this) {
-            old = this.warningLevel;
-            this.warningLevel = warningLevel;
-        }
-        pcs.firePropertyChange(PROP_WARNING_LEVEL, old, warningLevel);
+  void setWantsOurIcon(boolean wantsOurIcon) {
+    boolean old;
+    synchronized (this) {
+      old = this.wantsOurIcon;
+      this.wantsOurIcon = wantsOurIcon;
     }
+    pcs.firePropertyChange(PROP_WANTS_OUR_ICON, old, wantsOurIcon);
+  }
 
-    public synchronized int getWarningLevel() { return warningLevel; }
+  public synchronized boolean wantsOurIcon() { return wantsOurIcon; }
 
-    void setAwayMessage(String awayMessage) {
-        String old;
-        synchronized (this) {
-            old = this.awayMessage;
-            this.awayMessage = awayMessage;
-        }
-        fireObjectChange(PROP_AWAY_MESSAGE, old, awayMessage);
+  void setMobile(boolean mobile) {
+    boolean old;
+    synchronized (this) {
+      old = this.mobile;
+      this.mobile = mobile;
     }
+    pcs.firePropertyChange(PROP_MOBILE, old, mobile);
+  }
 
-    public synchronized @Nullable String getAwayMessage() { return awayMessage; }
+  public synchronized boolean isMobile() { return mobile; }
 
-    void setStatusMessage(String statusMessage) {
-        String old;
-        synchronized (this) {
-            old = this.statusMessage;
-            this.statusMessage = statusMessage;
-        }
-        fireObjectChange(PROP_STATUS_MESSAGE, old, statusMessage);
+  void setRobot(boolean robot) {
+    boolean old;
+    synchronized (this) {
+      old = this.robot;
+      this.robot = robot;
     }
+    pcs.firePropertyChange(PROP_ROBOT, old, robot);
+  }
 
-    public synchronized @Nullable String getStatusMessage() { return statusMessage; }
+  public synchronized boolean isRobot() { return robot; }
 
-    void setItunesUrl(String itunesUrl) {
-        String old;
-        synchronized (this) {
-            old = this.itunesUrl;
-            this.itunesUrl = itunesUrl;
-        }
-        fireObjectChange(PROP_ITUNES_URL, old, itunesUrl);
+  void setAolUser(boolean aolUser) {
+    boolean old;
+    synchronized (this) {
+      old = this.aolUser;
+      this.aolUser = aolUser;
     }
+    pcs.firePropertyChange(PROP_AOL_USER, old, aolUser);
+  }
 
-    public synchronized @Nullable String getItunesUrl() { return itunesUrl; }
+  public synchronized boolean isAolUser() { return aolUser; }
 
-    void setUserProfile(String userProfile) {
-        String old;
-        synchronized (this) {
-            old = this.userProfile;
-            this.userProfile = userProfile;
-        }
-        fireObjectChange(PROP_USER_PROFILE, old, userProfile);
+  void receivedBuddyStatusUpdate() {
+    assert !Thread.holdsLock(this);
+
+    for (BuddyInfoChangeListener listener : listeners) {
+      listener.receivedBuddyStatusUpdate(this);
     }
+  }
 
-    public synchronized @Nullable String getUserProfile() { return userProfile; }
+  public synchronized boolean isCertificateInfoCurrent() {
+    BuddyCertificateInfo certInfo = certificateInfo;
+    return certInfo == null || certInfo.isUpToDate();
+  }
 
-    void setOldIconInfo(OldIconHashInfo oldIconInfo) {
-        OldIconHashInfo old;
-        synchronized(this) {
-            old = this.oldIconInfo;
-            this.oldIconInfo = oldIconInfo;
-        }
-        fireObjectChange(PROP_OLD_ICON_INFO, old, oldIconInfo);
+  private void fireObjectChange(String property,
+      Object oldval, Object newval) {
+    if (oldval != newval) pcs.firePropertyChange(property, oldval, newval);
+  }
+
+  boolean setIconDataIfHashMatches(ExtraInfoData hash, ByteBlock iconData) {
+    ByteBlock old;
+    synchronized (this) {
+      ExtraInfoData curHash = getIconHash();
+      if (!(curHash == null ? hash == null : curHash.equals(hash))) {
+        return false;
+      }
+      old = this.iconData;
+      this.iconData = iconData;
     }
-
-    public synchronized @Nullable OldIconHashInfo getOldIconInfo() { return oldIconInfo; }
-
-    void setLastAimExpression(String lastAimExpression) {
-        String old;
-        synchronized(this) {
-            old = this.lastAimExpression;
-            this.lastAimExpression = lastAimExpression;
-        }
-        fireObjectChange(PROP_LAST_AIM_EXPRESSION, old, lastAimExpression);
-    }
-
-    public synchronized @Nullable String getLastAimExpression() {
-        return lastAimExpression;
-    }
-
-    void setSupportsTypingNotifications(boolean supportsTypingNotifications) {
-        boolean old;
-        synchronized (this) {
-            old = this.supportsTypingNotifications;
-            this.supportsTypingNotifications = supportsTypingNotifications;
-        }
-        pcs.firePropertyChange(PROP_SUPPORTS_TYPING_NOTIFICATIONS, old,
-                supportsTypingNotifications);
-    }
-
-    public synchronized boolean supportsTypingNotifications() {
-        return supportsTypingNotifications;
-    }
-
-    void setWantsOurIcon(boolean wantsOurIcon) {
-        boolean old;
-        synchronized (this) {
-            old = this.wantsOurIcon;
-            this.wantsOurIcon = wantsOurIcon;
-        }
-        pcs.firePropertyChange(PROP_WANTS_OUR_ICON, old, wantsOurIcon);
-    }
-
-    public synchronized boolean wantsOurIcon() { return wantsOurIcon; }
-
-    void setMobile(boolean mobile) {
-        boolean old;
-        synchronized (this) {
-            old = this.mobile;
-            this.mobile = mobile;
-        }
-        pcs.firePropertyChange(PROP_MOBILE, old, mobile);
-    }
-
-    public synchronized boolean isMobile() { return mobile; }
-
-    void setRobot(boolean robot) {
-        boolean old;
-        synchronized (this) {
-            old = this.robot;
-            this.robot = robot;
-        }
-        pcs.firePropertyChange(PROP_ROBOT, old, robot);
-    }
-
-    public synchronized boolean isRobot() { return robot; }
-
-    void setAolUser(boolean aolUser) {
-        boolean old;
-        synchronized (this) {
-            old = this.aolUser;
-            this.aolUser = aolUser;
-        }
-        pcs.firePropertyChange(PROP_AOL_USER, old, aolUser);
-    }
-
-    public synchronized boolean isAolUser() { return aolUser; }
-
-    void receivedBuddyStatusUpdate() {
-        assert !Thread.holdsLock(this);
-
-        for (BuddyInfoChangeListener listener : listeners) {
-            listener.receivedBuddyStatusUpdate(this);
-        }
-    }
-
-    public synchronized boolean isCertificateInfoCurrent() {
-        BuddyCertificateInfo certInfo = certificateInfo;
-        return certInfo == null || certInfo.isUpToDate();
-    }
-
-    private void fireObjectChange(String property,
-            Object oldval, Object newval) {
-        if (oldval != newval) pcs.firePropertyChange(property, oldval, newval);
-    }
-
-    boolean setIconDataIfHashMatches(ExtraInfoData hash, ByteBlock iconData) {
-        ByteBlock old;
-        synchronized (this) {
-            ExtraInfoData curHash = getIconHash();
-            if (!(curHash == null ? hash == null : curHash.equals(hash))) {
-                return false;
-            }
-            old = this.iconData;
-            this.iconData = iconData;
-        }
-        pcs.firePropertyChange(PROP_ICON_DATA, old, iconData);
-        return true;
-    }
+    pcs.firePropertyChange(PROP_ICON_DATA, old, iconData);
+    return true;
+  }
 }

@@ -36,13 +36,15 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.WaitingForConnectionEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SocketStreamInfo;
 
 import javax.net.ServerSocketFactory;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.channels.ServerSocketChannel;
+import java.util.Arrays;
 
 public abstract class PassiveConnectionController
     extends AbstractConnectionController
@@ -93,12 +95,19 @@ public abstract class PassiveConnectionController
     }
 
     public InetAddress getLocalHost() {
-      return serverSocket.getInetAddress();
+      InetAddress addr = serverSocket.getInetAddress();
+      if (Arrays.equals(addr.getAddress(), new byte[] { 0, 0, 0, 0 })) {
+        try {
+          return InetAddress.getLocalHost();
+        } catch (UnknownHostException ignored) {
+        }
+      }
+      return addr;
     }
 
-    public StreamInfo createStream() throws IOException {
+    public SocketStreamInfo createStream() throws IOException {
       handleConnectingState();
-      return new StreamInfo(serverSocket.accept().getChannel());
+      return new SocketStreamInfo(serverSocket.accept().getChannel());
     }
 
     public void prepareStream() throws IOException {

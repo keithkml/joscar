@@ -41,8 +41,9 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectionTimedOutEv
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.LocallyCancelledInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SocketStreamInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
 
 import java.io.IOException;
 import java.util.logging.Logger;
@@ -53,7 +54,7 @@ public abstract class AbstractConnectionController
   private static final Logger LOGGER = Logger
       .getLogger(AbstractConnectionController.class.getName());
 
-  private StreamInfo stream;
+  private SocketStreamInfo stream;
   private RvConnection rvConnection;
   private Thread thread = null;
   private boolean timerStarted = false;
@@ -74,8 +75,8 @@ public abstract class AbstractConnectionController
   }
 
   private long getConnectionTimeoutMillis() {
-    return rvConnection.getSettings()
-        .getPerConnectionTimeout(getTimeoutType());
+    return rvConnection.getSettings().getPerConnectionTimeout(
+        rvConnection.getRvSessionInfo().getInitiator(), getTimeoutType());
   }
 
   public StreamInfo getStreamInfo() { return stream; }
@@ -174,7 +175,7 @@ public abstract class AbstractConnectionController
     connector.prepareStream();
   }
 
-  protected StreamInfo createStream() throws IOException {
+  protected SocketStreamInfo createStream() throws IOException {
     return connector.createStream();
   }
 

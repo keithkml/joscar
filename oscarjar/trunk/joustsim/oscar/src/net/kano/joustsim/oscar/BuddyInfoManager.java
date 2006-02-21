@@ -38,6 +38,10 @@ package net.kano.joustsim.oscar;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.flapcmd.SnacCommand;
+import net.kano.joscar.snac.SnacRequestAdapter;
+import net.kano.joscar.snac.SnacResponseEvent;
+import net.kano.joscar.snac.ClientSnacProcessor;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.CertificateInfo;
 import net.kano.joscar.snaccmd.DirInfo;
@@ -46,6 +50,8 @@ import net.kano.joscar.snaccmd.ExtraInfoData;
 import net.kano.joscar.snaccmd.FullUserInfo;
 import net.kano.joscar.snaccmd.ShortCapabilityBlock;
 import net.kano.joscar.snaccmd.WarningLevel;
+import net.kano.joscar.snaccmd.icbm.SingleBuddyRequest;
+import net.kano.joscar.snaccmd.error.SnacError;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.oscar.service.Service;
 import net.kano.joustsim.oscar.oscar.service.bos.MainBosService;
@@ -113,6 +119,7 @@ public class BuddyInfoManager {
     });
     initBuddyService();
     initInfoService();
+    initBosService();
   }
 
   public AimConnection getAimConnection() {
@@ -197,15 +204,15 @@ public class BuddyInfoManager {
   }
 
   private void initBosService() {
-    MainBosService boService = conn.getBosService();
-    if (boService == null) return;
+    MainBosService bos = conn.getBosService();
+    if (bos == null) return;
 
     synchronized (this) {
       if (initedBosService) return;
       initedBosService = true;
     }
 
-    boService.addMainBosServiceListener(new MainBosServiceListener() {
+    bos.addMainBosServiceListener(new MainBosServiceListener() {
       public void handleYourInfo(MainBosService service,
           FullUserInfo userInfo) {
         handleBuddyStatusUpdate(conn.getScreenname(), userInfo);
@@ -214,6 +221,23 @@ public class BuddyInfoManager {
       public void handleYourExtraInfo(List<ExtraInfoBlock> extraInfos) {
         if (extraInfos != null) {
           handleExtraInfoBlocks(conn.getScreenname(), extraInfos);
+        }
+      }
+    });
+    ClientSnacProcessor processor = bos.getOscarConnection().getSnacProcessor();
+    processor.addGlobalResponseListener(new SnacRequestAdapter() {
+      public void handleResponse(SnacResponseEvent e) {
+        SnacCommand cmd = e.getSnacCommand();
+        if (cmd instanceof SnacError) {
+          SnacError error = (SnacError) cmd;
+          if (error.getErrorCode() == SnacError.CODE_USER_UNAVAILABLE) {
+            SnacCommand sent = e.getRequest().getCommand();
+            if (sent instanceof SingleBuddyRequest) {
+              SingleBuddyRequest request = (SingleBuddyRequest) sent;
+              getBuddyInfoInstance(new Screenname(request.getScreenname())).
+                  setOnline(false);
+            }
+          }
         }
       }
     });
@@ -237,6 +261,7 @@ public class BuddyInfoManager {
     Boolean awayStatus = info.getAwayStatus();
     if (awayStatus != null) buddyInfo.setAway(awayStatus);
 
+    boolean mobile = false;
     List<CapabilityBlock> caps = info.getCapabilityBlocks();
     List<ShortCapabilityBlock> shortCaps = info.getShortCapabilityBlocks();
     if (caps != null || shortCaps != null) {
@@ -252,6 +277,9 @@ public class BuddyInfoManager {
         for (ShortCapabilityBlock shortCap : shortCaps) {
           blocks.add(shortCap.toCapabilityBlock());
         }
+      }
+      if (blocks.contains(CapabilityBlock.BLOCK_HIPTOP)) {
+        mobile = true;
       }
       buddyInfo.setCapabilities(blocks);
     }
@@ -287,7 +315,7 @@ public class BuddyInfoManager {
     }
 
     int flags = info.getFlags();
-    buddyInfo.setMobile((flags & FullUserInfo.MASK_WIRELESS) != 0);
+    buddyInfo.setMobile(mobile || (flags & FullUserInfo.MASK_WIRELESS) != 0);
     buddyInfo.setRobot((flags & FullUserInfo.MASK_AB) != 0);
     buddyInfo.setAolUser((flags & FullUserInfo.MASK_AOL) != 0);
 

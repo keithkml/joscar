@@ -35,7 +35,7 @@
 package net.kano.joustsim.oscar.oscar.service.icbm;
 
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.Connector;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SocketStreamInfo;
 
 import java.io.IOException;
 
@@ -46,7 +46,7 @@ class NeverConnector implements Connector {
     this.connector = connector;
   }
 
-  public StreamInfo createStream() throws IOException {
+  public SocketStreamInfo createStream() throws IOException {
     throw new IllegalStateException();
   }
 

@@ -58,57 +58,57 @@ import net.kano.joustsim.oscar.oscar.service.Service;
 import java.util.logging.Logger;
 
 public class IconService extends Service implements IconRequestHandler {
-    private static final Logger LOGGER = Logger
-            .getLogger(IconService.class.getName());
+  private static final Logger LOGGER = Logger
+      .getLogger(IconService.class.getName());
 
-    private CopyOnWriteArrayList<IconRequestListener> listeners
-            = new CopyOnWriteArrayList<IconRequestListener>();
+  private CopyOnWriteArrayList<IconRequestListener> listeners
+      = new CopyOnWriteArrayList<IconRequestListener>();
 
-    public void addIconRequestListener(IconRequestListener listener) {
-        listeners.addIfAbsent(listener);
-    }
+  public void addIconRequestListener(IconRequestListener listener) {
+    listeners.addIfAbsent(listener);
+  }
 
-    public void removeIconRequestListener(IconRequestListener listener) {
-        listeners.remove(listener);
-    }
+  public void removeIconRequestListener(IconRequestListener listener) {
+    listeners.remove(listener);
+  }
 
-    protected IconService(AimConnection aimConnection,
-            OscarConnection oscarConnection) {
-        super(aimConnection, oscarConnection, IconCommand.FAMILY_ICON);
+  protected IconService(AimConnection aimConnection,
+      OscarConnection oscarConnection) {
+    super(aimConnection, oscarConnection, IconCommand.FAMILY_ICON);
 
-        ClientSnacProcessor snacProcessor = oscarConnection.getSnacProcessor();
-        snacProcessor.addGlobalResponseListener(new SnacResponseListener() {
-            public void handleResponse(SnacResponseEvent e) {
-                SnacCommand cmd = e.getSnacCommand();
-                if (cmd instanceof IconDataCmd) {
-                    IconDataCmd iconDataCmd = (IconDataCmd) cmd;
-                    ExtraInfoBlock iconInfo = iconDataCmd.getIconInfo();
-                    ExtraInfoData data = iconInfo.getExtraData();
-                    ByteBlock hash = data.getData();
-                    Screenname sn = new Screenname(iconDataCmd.getScreenname());
-                    if ((data.getFlags() & ExtraInfoData.FLAG_HASH_PRESENT) == 0
-                            && hash.equals(ExtraInfoData.HASH_SPECIAL)) {
-                        for (IconRequestListener listener : listeners) {
-                            listener.buddyIconCleared(IconService.this, sn, data);
-                        }
-                    } else {
-                        for (IconRequestListener listener : listeners) {
-                            listener.buddyIconUpdated(IconService.this, sn, 
-                                    data, iconDataCmd.getIconData());
-                        }
-                    }
-                }
+    ClientSnacProcessor snacProcessor = oscarConnection.getSnacProcessor();
+    snacProcessor.addGlobalResponseListener(new SnacResponseListener() {
+      public void handleResponse(SnacResponseEvent e) {
+        SnacCommand cmd = e.getSnacCommand();
+        if (cmd instanceof IconDataCmd) {
+          IconDataCmd iconDataCmd = (IconDataCmd) cmd;
+          ExtraInfoBlock iconInfo = iconDataCmd.getIconInfo();
+          ExtraInfoData data = iconInfo.getExtraData();
+          ByteBlock hash = data.getData();
+          Screenname sn = new Screenname(iconDataCmd.getScreenname());
+          if ((data.getFlags() & ExtraInfoData.FLAG_HASH_PRESENT) == 0
+              && hash.equals(ExtraInfoData.HASH_SPECIAL)) {
+            for (IconRequestListener listener : listeners) {
+              listener.buddyIconCleared(IconService.this, sn, data);
             }
-        });
-    }
+          } else {
+            for (IconRequestListener listener : listeners) {
+              listener.buddyIconUpdated(IconService.this, sn,
+                  data, iconDataCmd.getIconData());
+            }
+          }
+        }
+      }
+    });
+  }
 
-    public SnacFamilyInfo getSnacFamilyInfo() {
-        return IconCommand.FAMILY_INFO;
-    }
+  public SnacFamilyInfo getSnacFamilyInfo() {
+    return IconCommand.FAMILY_INFO;
+  }
 
-    public void connected() {
-        setReady();
-    }
+  public void connected() {
+    setReady();
+  }
 
 //    public void requestIcon(Screenname sn, ByteBlock hash) {
 //        ExtraInfoBlock block = new ExtraInfoBlock(TYPE_ICONHASH,
@@ -117,36 +117,39 @@ public class IconService extends Service implements IconRequestHandler {
 //        requestIcon(sn, block);
 //    }
 
-    public void requestIcon(Screenname sn, ExtraInfoData block) {
-        sendSnac(new IconRequest(sn.getFormatted(), block));
-    }
+  public void requestIcon(Screenname sn, ExtraInfoData block) {
+    sendSnac(new IconRequest(sn.getFormatted(), block));
+  }
 
-    public void uploadIcon(Writable data) {
-        uploadIcon(data, null);
-    }
+  public void uploadIcon(Writable data) {
+    uploadIcon(data, null);
+  }
 
-    public void uploadIcon(final Writable data, final IconSetListener listener) {
-        sendSnacRequest(new UploadIconCmd(data), new SnacRequestAdapter() {
-            public void handleResponse(SnacResponseEvent e) {
-                SnacCommand cmd = e.getSnacCommand();
-                if (cmd instanceof UploadIconAck) {
-                    UploadIconAck iconAck = (UploadIconAck) cmd;
-                    if (iconAck.getCode() != UploadIconAck.CODE_DEFAULT) {
-                        LOGGER.fine("Got unknown code from UploadIconAck: "
-                                + iconAck);
-                    }
-                    ExtraInfoBlock iconInfo = iconAck.getIconInfo();
-                    if (iconInfo == null) {
-                        LOGGER.finer("Got icon ack with no iconInfo: "
-                                + iconAck);
-                    }
-                    if (listener != null) {
-                        listener.handleIconSet(IconService.this, data, true);
-                    }
-                } else if (cmd instanceof SnacError) {
-                    listener.handleIconSet(IconService.this, data, false);
-                }
-            }
-        });
-    }
+  public void uploadIcon(final Writable data, final IconSetListener listener) {
+    LOGGER.fine("Uploading icon " + data);
+    sendSnacRequest(new UploadIconCmd(data), new SnacRequestAdapter() {
+      public void handleResponse(SnacResponseEvent e) {
+        SnacCommand cmd = e.getSnacCommand();
+        if (cmd instanceof UploadIconAck) {
+          UploadIconAck iconAck = (UploadIconAck) cmd;
+          if (iconAck.getCode() != UploadIconAck.CODE_DEFAULT) {
+            LOGGER.fine("Got unknown code from UploadIconAck: "
+                + iconAck);
+          }
+          ExtraInfoBlock iconInfo = iconAck.getIconInfo();
+          if (iconInfo == null) {
+            LOGGER.finer("Got icon ack with no iconInfo: "
+                + iconAck);
+          }
+          if (listener != null) {
+            LOGGER.fine("Successfully set icon " + data);
+            listener.handleIconSet(IconService.this, data, true);
+          }
+        } else if (cmd instanceof SnacError) {
+          LOGGER.warning("Got SnacError while setting icon: " + cmd);
+          listener.handleIconSet(IconService.this, data, false);
+        }
+      }
+    });
+  }
 }

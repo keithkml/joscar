@@ -34,12 +34,12 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SocketStreamInfo;
 
 import java.io.IOException;
 
 public interface Connector {
-  StreamInfo createStream() throws IOException;
+  SocketStreamInfo createStream() throws IOException;
 
   void checkConnectionInfo() throws Exception;
 

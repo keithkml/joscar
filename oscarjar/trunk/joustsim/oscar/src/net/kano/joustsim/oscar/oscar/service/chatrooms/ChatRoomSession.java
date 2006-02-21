@@ -182,8 +182,9 @@ public class ChatRoomSession {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   public Set<ChatRoomUser> getUsers() {
-    if (service == null) return Collections.emptySet();
+    if (service == null) return Collections.EMPTY_SET;
     return service.getUsers();
   }
 

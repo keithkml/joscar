@@ -146,33 +146,7 @@ public abstract class RvConnectionTestCase extends TestCase {
 
   protected MyFutureTask setConnectedWaiter() {
     final MyFutureTask connectedWaiter = new MyFutureTask();
-    getConnection().setConnectedController(new ConnectedController() {
-      public boolean isConnected() {
-        return true;
-      }
-
-      public void start(RvConnection transfer, StateController last) {
-        connectedWaiter.set(null);
-      }
-
-      public void addControllerListener(ControllerListener listener) {
-      }
-
-      public void removeControllerListener(ControllerListener listener) {
-      }
-
-      public StateInfo getEndStateInfo() {
-    //        try {
-    //          return new StreamInfo(null);
-    //        } catch (IOException e) {
-    //          throw new IllegalStateException(e);
-    //        }
-        return null;
-      }
-
-      public void stop() {
-      }
-    });
+    getConnection().setConnectedController(new NotifyingConnectedController(connectedWaiter));
     return connectedWaiter;
   }
 
@@ -187,6 +161,40 @@ public abstract class RvConnectionTestCase extends TestCase {
 
     public void set(Object v) {
       super.set(v);
+    }
+  }
+
+  private static class NotifyingConnectedController implements ConnectedController {
+    private final MyFutureTask connectedWaiter;
+
+    public NotifyingConnectedController(MyFutureTask connectedWaiter) {
+      this.connectedWaiter = connectedWaiter;
+    }
+
+    public boolean isConnected() {
+      return true;
+    }
+
+    public void start(RvConnection transfer, StateController last) {
+      connectedWaiter.set(null);
+    }
+
+    public void addControllerListener(ControllerListener listener) {
+    }
+
+    public void removeControllerListener(ControllerListener listener) {
+    }
+
+    public StateInfo getEndStateInfo() {
+    //        try {
+    //          return new SocketStreamInfo(null);
+    //        } catch (IOException e) {
+    //          throw new IllegalStateException(e);
+    //        }
+      return null;
+    }
+
+    public void stop() {
     }
   }
 }

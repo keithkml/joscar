@@ -35,14 +35,14 @@
 package net.kano.joustsim.oscar.oscar.service.icbm;
 
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.PassiveConnector;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SocketStreamInfo;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 class FailConnector implements PassiveConnector {
-  public StreamInfo createStream() throws IOException {
+  public SocketStreamInfo createStream() throws IOException {
     throw new IOException("Intentionally failed");
   }
 

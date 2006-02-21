@@ -35,27 +35,36 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.dim;
 
 import net.kano.joscar.BinaryTools;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.OutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.channels.Channel;
+import java.nio.channels.SelectableChannel;
+import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.WritableByteChannel;
-import java.nio.channels.SelectableChannel;
-import java.nio.channels.Channel;
-import java.nio.channels.SelectionKey;
-import java.nio.ByteBuffer;
 
 public class SelectorOutputStream extends OutputStream {
-  private final Selector selector;
+  private final @Nullable Selector selector;
   private final WritableByteChannel writable;
   private volatile int total = 0;
 
   private SelectorOutputStream(Channel chan) throws IOException {
-    selector = Selector.open();
-    writable = (WritableByteChannel) chan;
-    SelectableChannel selectable = (SelectableChannel) chan;
-    selectable.configureBlocking(false);
-    selectable.register(selector, SelectionKey.OP_WRITE);
+    this((WritableByteChannel) chan, (SelectableChannel) chan);
+  }
+
+  public SelectorOutputStream(WritableByteChannel writable,
+      SelectableChannel selectable) throws IOException {
+    this.writable = writable;
+    if (selectable != null) {
+      selector = Selector.open();
+      selectable.configureBlocking(false);
+      selectable.register(selector, SelectionKey.OP_WRITE);
+    } else {
+      selector = null;
+    }
   }
 
   public void write(int b) throws IOException {
@@ -64,8 +73,11 @@ public class SelectorOutputStream extends OutputStream {
 
   public void write(byte[] b, int off, int len) throws IOException {
     ByteBuffer buf = ByteBuffer.wrap(b, off, len);
-    while (buf.hasRemaining() && writable.isOpen() && selector.isOpen()) {
-      selector.select(50);
+    while (buf.hasRemaining() && writable.isOpen()
+        && (selector == null || selector.isOpen())) {
+      if (selector != null) {
+        selector.select(50);
+      }
 
       total += writable.write(buf);
     }

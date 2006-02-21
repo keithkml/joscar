@@ -38,7 +38,7 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.AbstractStateCo
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectedController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnection;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SocketStreamInfo;
 
 import java.io.IOException;
 
@@ -50,7 +50,7 @@ public class MockConnectedController
 
   public void start(RvConnection transfer, StateController last) {
     try {
-      fireSucceeded(new StreamInfo(null));
+      fireSucceeded(new SocketStreamInfo(null));
     } catch (IOException e) {
       fireFailed(e);
     }

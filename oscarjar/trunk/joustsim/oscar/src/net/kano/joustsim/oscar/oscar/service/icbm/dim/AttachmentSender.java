@@ -36,14 +36,15 @@ package net.kano.joustsim.oscar.oscar.service.icbm.dim;
 
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.AbstractTransferrer;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
 
-import java.nio.channels.SocketChannel;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SelectionKey;
-import java.nio.ByteBuffer;
-import java.io.IOException;
+import java.nio.channels.WritableByteChannel;
 
-class AttachmentSender extends AbstractTransferrer<SocketChannel> {
+class AttachmentSender extends AbstractTransferrer {
   private ByteBuffer buf;
   private ReadableByteChannel inchan;
   private final Attachment data;
@@ -53,19 +54,23 @@ class AttachmentSender extends AbstractTransferrer<SocketChannel> {
   private final int numattachments;
   private Cancellable cancellable;
 
-  public AttachmentSender(SocketChannel chan, Attachment data,
+  public AttachmentSender(StreamInfo stream, Attachment data,
       EventPost post, String id, int attachno, int numattachments,
       Cancellable cancellable)
       throws IOException {
-    super(chan, chan, 0, data.getLength());
+    super(stream, 0, data.getLength());
     this.data = data;
     this.post = post;
     this.id = id;
     this.attachno = attachno;
     this.numattachments = numattachments;
-    buf = ByteBuffer.allocate(1024);
+    resizeBuffer(1024);
     inchan = data.openForReading();
     this.cancellable = cancellable;
+  }
+
+  public void resizeBuffer(int size) {
+    buf = ByteBuffer.allocate(size);
   }
 
   protected int getSelectionKey() {
@@ -80,8 +85,9 @@ class AttachmentSender extends AbstractTransferrer<SocketChannel> {
     return false;
   }
 
-  protected long transfer(SocketChannel channel, long transferred,
-      long remaining) throws IOException {
+  protected long transfer(ReadableByteChannel readable,
+      WritableByteChannel writable, long transferred, long remaining)
+      throws IOException {
     buf.rewind();
     buf.limit((int) Math.min(buf.capacity(), remaining));
     int read = inchan.read(buf);
@@ -98,6 +104,7 @@ class AttachmentSender extends AbstractTransferrer<SocketChannel> {
           data.getLength(), attachno, numattachments));
       buf.flip();
     }
-    return channel.write(buf);
+    int wrote = writable.write(buf);
+    return wrote;
   }
 }
