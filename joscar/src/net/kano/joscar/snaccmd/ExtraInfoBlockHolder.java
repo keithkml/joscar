@@ -39,6 +39,7 @@ import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.Writable;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -68,7 +69,8 @@ public class ExtraInfoBlockHolder implements Writable {
      * @return an extra info block holder object read from the given block of
      *         binary data, or <code>null</code> if none could be read
      */
-    public static ExtraInfoBlockHolder readBlockHolder(ByteBlock origBlock) {
+    public static @Nullable ExtraInfoBlockHolder readBlockHolder(
+            ByteBlock origBlock) {
         DefensiveTools.checkNull(origBlock, "block");
 
         int origOffset = origBlock.getOffset();
@@ -225,7 +227,7 @@ public class ExtraInfoBlockHolder implements Writable {
 
     public String toString() {
         return "ExtraInfoBlockHolder: code=" + code
-                + ", first=" + first 
+                + ", first=" + first
                 + ", second=" + second;
     }
 }

@@ -35,6 +35,7 @@
 
 package net.kano.joscar;
 
+import org.jetbrains.annotations.Nullable;
 
 
 /**
@@ -110,15 +111,21 @@ public final class ImEncodingParams {
      * @return the name of the charset described by these parameters, or
      *         <code>null</code> if unknown
      */
-    public final String toCharsetName() {
-        if (charsetCode == CHARSET_ASCII) return "US-ASCII";
-        else if (charsetCode == CHARSET_ISO) return "ISO-8859-1";
-        else if (charsetCode == CHARSET_UTF16) return "UTF-16BE";
-        else return null;
+    public final @Nullable String toCharsetName() {
+        // we decode with ISO8859-1 for CHARSET_ASCII because US-ASCII is a
+        // subset of ISO8859-1, and Trillian sends ISO8859-1 text with
+        // CHARSET_ASCII
+        if (charsetCode == CHARSET_ASCII || charsetCode == CHARSET_ISO) {
+            return "ISO-8859-1";
+        } else if (charsetCode == CHARSET_UTF16) {
+            return "UTF-16BE";
+        } else {
+            return null;
+        }
     }
 
     public String toString() {
         return "ImEncoding: code=" + charsetCode + ", subcode=" + charsetSubcode
-                + " (charset guess: " + toCharsetName() + ")";
+                + " (Java charset: " + toCharsetName() + ")";
     }
 }

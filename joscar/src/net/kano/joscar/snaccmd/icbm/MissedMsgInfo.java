@@ -41,10 +41,10 @@ import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.LiveWritable;
 import net.kano.joscar.MiscTools;
 import net.kano.joscar.snaccmd.FullUserInfo;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.regex.Pattern;
 
 /**
  * A data structure used to transmit information about messages that could not
@@ -97,7 +97,7 @@ public class MissedMsgInfo implements LiveWritable {
      * @return a missed message information object read from the given block of
      *         data
      */
-    protected static MissedMsgInfo readMissedMsgInfo(ByteBlock block) {
+    protected static @Nullable MissedMsgInfo readMissedMsgInfo(ByteBlock block) {
         DefensiveTools.checkNull(block, "block");
 
         if (block.getLength() < 7) return null;

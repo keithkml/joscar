@@ -43,6 +43,8 @@ import net.kano.joscar.LiveWritable;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
  * A data structure containing information about a "chat interest." A quick
  * example of a list of interest information follows (note that these are not
@@ -109,7 +111,7 @@ public class InterestInfo implements LiveWritable {
      * @return an interest information block read from the given block of binary
      *         data, or <code>null</code> if none could be read
      */
-    protected static InterestInfo readInterestInfo(ByteBlock block) {
+    protected static @Nullable InterestInfo readInterestInfo(ByteBlock block) {
         DefensiveTools.checkNull(block, "block");
 
         if (block.getLength() < 4) return null;

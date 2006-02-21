@@ -196,10 +196,9 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
         int charsetSubcode = BinaryTools.getUShort(partBlock, 2);
         ByteBlock messageBlock = partBlock.subBlock(4);
 
-        ImEncodingParams encoding
-                = new ImEncodingParams(charsetCode, charsetSubcode);
         return ImEncodedString.readImEncodedString(
-                encoding, messageBlock);
+                new ImEncodingParams(charsetCode, charsetSubcode),
+                messageBlock);
     }
 
     /**
@@ -220,15 +219,12 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
             ByteBlock featuresBlock) {
         super(IcbmCommand.FAMILY_ICBM, command, messageId, CHANNEL_IM);
 
-        List<ExtraInfoBlock> safeExpInfoBlocks
-                = DefensiveTools.getSafeListCopy(
-                expInfoBlocks, "expInfoBlocks");
-
         this.message = message;
         this.autoResponse = autoResponse;
         this.wantsIcon = wantsIcon;
         this.iconInfo = iconInfo;
-        this.expressionInfoBlocks = safeExpInfoBlocks;
+        this.expressionInfoBlocks = DefensiveTools.getSafeListCopy(
+                expInfoBlocks, "expInfoBlocks");
         this.featuresBlock = featuresBlock;
     }
 
@@ -269,6 +265,7 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
      * @return the list of AIM Expression information blocks sent in this
      *         command, or <code>null</code> if none were sent
      */
+    @SuppressWarnings({"ReturnOfCollectionOrArrayField"})
     public final List<ExtraInfoBlock> getAimExpressionInfo() {
         return expressionInfoBlocks;
     }

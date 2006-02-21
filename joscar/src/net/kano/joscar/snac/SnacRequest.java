@@ -40,6 +40,7 @@ import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.logging.Logger;
 import net.kano.joscar.logging.LoggingSystem;
 import net.kano.joscar.net.ConnProcessor;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -128,7 +129,7 @@ public class SnacRequest {
      * locally.
      */
     private boolean storingResponses = false;
-    
+
     /**
      * Creates a new <code>SnacRequest</code> for the given command and adds the
      * given event listener to its listener list.
@@ -297,14 +298,12 @@ public class SnacRequest {
      *
      * @return a copy of the listener list
      */
-    private List<SnacRequestListener> getListenersCopy() {
+    private synchronized @Nullable List<SnacRequestListener> getListenersCopy() {
         List<SnacRequestListener> listeners;
-        synchronized(this) {
-            listeners = this.listeners;
-            if (listeners != null && listeners.isEmpty()) listeners = null;
-        }
-        if (listeners != null) return new ArrayList<SnacRequestListener>(listeners);
-        else return null;
+        listeners = this.listeners;
+        if (listeners != null && listeners.isEmpty()) listeners = null;
+        if (listeners == null) return null;
+        return new ArrayList<SnacRequestListener>(listeners);
     }
 
     /**

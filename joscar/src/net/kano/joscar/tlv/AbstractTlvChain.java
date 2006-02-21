@@ -38,10 +38,10 @@ package net.kano.joscar.tlv;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.OscarTools;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -95,7 +95,7 @@ public abstract class AbstractTlvChain implements TlvChain {
 
         tlvList.clear();
         tlvMap.clear();
-        
+
         if (chain instanceof AbstractTlvChain) {
             // this is easy
             AbstractTlvChain atc = (AbstractTlvChain) chain;
@@ -207,7 +207,7 @@ public abstract class AbstractTlvChain implements TlvChain {
         return hasTlv(type) ? getLastTlv(type).getDataAsString() : null;
     }
 
-    public String getString(int type, String charset) {
+    public @Nullable String getString(int type, String charset) {
         DefensiveTools.checkRange(type, "type", 0);
         DefensiveTools.checkNull(charset, "charset");
 
@@ -226,11 +226,8 @@ public abstract class AbstractTlvChain implements TlvChain {
     public long getUInt(int type) {
         Tlv tlv = getFirstTlv(type);
 
-        if (tlv != null) {
-            return tlv.getDataAsUInt();
-        } else {
-            return -1;
-        }
+        if (tlv == null) return -1;
+        return tlv.getDataAsUInt();
     }
 
     public synchronized int getTotalSize() {

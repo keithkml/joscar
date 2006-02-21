@@ -39,6 +39,7 @@ import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.LiveWritable;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -101,7 +102,8 @@ public final class RvProxyPacket implements LiveWritable {
      *         <code>null</code> if no valid packet could be read
      * @throws IOException
      */
-    public static RvProxyPacket readPacket(InputStream in) throws IOException {
+    public static @Nullable RvProxyPacket readPacket(InputStream in)
+            throws IOException {
         DefensiveTools.checkNull(in, "in");
 
         byte[] lenBytes = new byte[2];

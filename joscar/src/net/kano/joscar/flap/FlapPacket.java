@@ -39,6 +39,7 @@ import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.LiveWritable;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -108,7 +109,7 @@ public final class FlapPacket implements LiveWritable {
      *         the FLAP data in the given stream
      * @throws IOException if an I/O exception occurs
      */
-    static FlapPacket readRestOfFlap(FlapHeader header, InputStream in)
+    static @Nullable FlapPacket readRestOfFlap(FlapHeader header, InputStream in)
             throws IOException {
         DefensiveTools.checkNull(header, "header");
         DefensiveTools.checkNull(in, "in");

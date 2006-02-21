@@ -49,6 +49,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Collection;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
  * A data structure representing a "Get File" directory listing. Note that a
  * Get File list may contain only the files and directories in one directory or
@@ -77,7 +79,7 @@ public class GetFileList implements LiveWritable {
      * @param block a block of data containing a Get File directory listing
      * @return a Get File directory listing object read from the given block
      */
-    public static GetFileList readGetFileList(ByteBlock block) {
+    public static @Nullable GetFileList readGetFileList(ByteBlock block) {
         DefensiveTools.checkNull(block, "block");
 
         if (block.getLength() < 4) return null;

@@ -40,6 +40,7 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.LiveWritable;
 import net.kano.joscar.MiscTools;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -110,7 +111,7 @@ public class SsiItem implements LiveWritable, Serializable {
      * @return a new SSI item object read from the given block of data, or
      *         <code>null</code> if none could be read
      */
-    protected static SsiItem readSsiItem(ByteBlock block) {
+    protected static @Nullable SsiItem readSsiItem(ByteBlock block) {
         DefensiveTools.checkNull(block, "block");
 
         if (block.getLength() < 10) return null;

@@ -39,10 +39,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
 
 /**
  * A set of utilities for ensuring the validity (and non-<code>null</code>ness)
@@ -228,7 +227,7 @@ public final class DefensiveTools {
         if (array == null) return null;
 
         E[] safeArray = array.clone();
-        DefensiveTools.checkNullElements(safeArray, name);
+        checkNullElements(safeArray, name);
 
         return safeArray;
     }
@@ -248,7 +247,7 @@ public final class DefensiveTools {
      */
     public static <E> E[] getSafeNonnullArrayCopy(E[] array, String name)
             throws IllegalArgumentException {
-        DefensiveTools.checkNull(array, name);
+        checkNull(array, name);
 
         E[] safeArray = array.clone();
         checkNullElements(safeArray, name);

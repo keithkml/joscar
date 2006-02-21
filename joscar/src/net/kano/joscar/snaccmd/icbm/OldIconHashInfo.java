@@ -48,6 +48,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Date;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
  * A data structure containing a set of information about a buddy icon. This is
  * called "old" icon hash data because of the new buddy icon system (the
@@ -123,7 +125,8 @@ public final class OldIconHashInfo {
      * @return an icon hash data block read from the given block, or
      *         <code>null</code> if none could be read
      */
-    public static OldIconHashInfo readIconHashFromImTlvData(ByteBlock block) {
+    public static @Nullable OldIconHashInfo readIconHashFromImTlvData(
+            ByteBlock block) {
         DefensiveTools.checkNull(block, "block");
 
         if (block.getLength() < 12) return null;

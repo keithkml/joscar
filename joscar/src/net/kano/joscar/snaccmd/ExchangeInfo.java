@@ -41,6 +41,7 @@ import net.kano.joscar.LiveWritable;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
 import net.kano.joscar.tlv.TlvTools;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -64,7 +65,7 @@ public final class ExchangeInfo extends AbstractChatInfo implements LiveWritable
      * @return an exchange information object read from the given data block,
      *         or <code>null</code> if none can be read
      */
-    public static ExchangeInfo readExchangeInfo(ByteBlock block) {
+    public static @Nullable ExchangeInfo readExchangeInfo(ByteBlock block) {
         if (block.getLength() < 2) return null;
 
         return new ExchangeInfo(block);

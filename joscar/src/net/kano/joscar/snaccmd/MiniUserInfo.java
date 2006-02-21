@@ -40,6 +40,7 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.LiveWritable;
 import net.kano.joscar.OscarTools;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -65,7 +66,7 @@ public class MiniUserInfo implements LiveWritable {
      * @param block a block of bytes containing a mini user info block
      * @return a mini user info object read from the given byte block
      */
-    public static MiniUserInfo readUserInfo(ByteBlock block) {
+    public static @Nullable MiniUserInfo readUserInfo(ByteBlock block) {
         DefensiveTools.checkNull(block, "block");
 
         if (block.getLength() == 0) return null;

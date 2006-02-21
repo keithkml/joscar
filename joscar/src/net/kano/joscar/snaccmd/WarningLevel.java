@@ -35,8 +35,10 @@
 
 package net.kano.joscar.snaccmd;
 
+import org.jetbrains.annotations.Nullable;
+
 public final class WarningLevel extends Number {
-    public static WarningLevel getInstanceFromX10(int x10) {
+    public static @Nullable WarningLevel getInstanceFromX10(int x10) {
         if (x10 < 0) return null;
 
         if (x10 == 0) return LEVEL_ZERO;

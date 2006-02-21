@@ -35,6 +35,8 @@
 
 package net.kano.joscar;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
@@ -246,7 +248,7 @@ public final class BinaryTools {
      * @see java.net.Inet4Address#getByAddress(byte[])
      * @see Inet4Address#getAddress()
      */
-    public static Inet4Address getIPFromBytes(final ByteBlock data,
+    public static @Nullable Inet4Address getIPFromBytes(final ByteBlock data,
             final int pos) {
         if (data.getLength() - pos < 4) return null;
 

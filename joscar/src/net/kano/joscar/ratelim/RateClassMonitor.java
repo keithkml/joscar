@@ -114,15 +114,15 @@ public class RateClassMonitor {
         runningAvg = Math.min(rateInfo.getMax(), runningAvg);
 
         if (changeCode == RateChange.CODE_LIMITED) {
-            if (logger.logFineEnabled()) {
-                logger.logFine("Rate class " + this.rateInfo.getRateClass()
+            if (logger.logWarningEnabled()) {
+                logger.logWarning("Rate class " + this.rateInfo.getRateClass()
                         + ") is now rate-limited!");
             }
             setLimited(true);
 
         } else if (changeCode == RateChange.CODE_LIMIT_CLEARED) {
-            if (logger.logFineEnabled()) {
-                logger.logFine("Rate class " + this.rateInfo.getRateClass()
+            if (logger.logWarningEnabled()) {
+                logger.logWarning("Rate class " + this.rateInfo.getRateClass()
                         + ") is no longer rate-limited, according to server");
             }
             setLimited(false);

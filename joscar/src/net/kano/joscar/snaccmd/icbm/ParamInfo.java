@@ -41,6 +41,7 @@ import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.MiscTools;
 import net.kano.joscar.Writable;
 import net.kano.joscar.snaccmd.WarningLevel;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -93,7 +94,7 @@ public class ParamInfo implements Writable {
      * @return an ICBM parameter information block read from the given data
      *         block
      */
-    protected static ParamInfo readParamInfo(ByteBlock block) {
+    protected static @Nullable ParamInfo readParamInfo(ByteBlock block) {
         DefensiveTools.checkNull(block, "block");
 
         if (block.getLength() < 16) return null;

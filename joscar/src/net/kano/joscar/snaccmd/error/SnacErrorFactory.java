@@ -35,6 +35,7 @@
 
 package net.kano.joscar.snaccmd.error;
 
+import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snac.CmdType;
@@ -52,10 +53,9 @@ import net.kano.joscar.snaccmd.popup.PopupCommand;
 import net.kano.joscar.snaccmd.rooms.RoomCommand;
 import net.kano.joscar.snaccmd.search.SearchCommand;
 import net.kano.joscar.snaccmd.ssi.SsiCommand;
-import net.kano.joscar.DefensiveTools;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
-import java.util.Arrays;
 
 /**
  * A base class for both the client and server error factories.
@@ -84,7 +84,7 @@ public abstract class SnacErrorFactory implements SnacCmdFactory {
         return SUPPORTED_TYPES;
     }
 
-    public SnacCommand genSnacCommand(SnacPacket packet) {
+    public @Nullable SnacCommand genSnacCommand(SnacPacket packet) {
         if (packet.getCommand() != SnacError.CMD_ERROR) return null;
 
         return new SnacError(packet);

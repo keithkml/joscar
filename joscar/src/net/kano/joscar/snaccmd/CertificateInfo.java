@@ -35,13 +35,14 @@
 
 package net.kano.joscar.snaccmd;
 
+import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.LiveWritable;
-import net.kano.joscar.BinaryTools;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
 import net.kano.joscar.tlv.TlvTools;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -120,7 +121,7 @@ public class CertificateInfo implements LiveWritable {
      * @param block a block of data containing a user's certificate information
      * @return a certificate information block object
      */
-    public static CertificateInfo readCertInfoBlock(ByteBlock block) {
+    public static @Nullable CertificateInfo readCertInfoBlock(ByteBlock block) {
         DefensiveTools.checkNull(block, "block");
 
         TlvChain chain = TlvTools.readChain(block);

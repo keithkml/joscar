@@ -219,7 +219,7 @@ public final class ExtraInfoData implements Writable {
      * @return an extra info data block object read from the given data block,
      *         or <code>null</code> if no valid block could be read
      */
-    public static ExtraInfoData readExtraInfoData(ByteBlock block) {
+    public static @Nullable ExtraInfoData readExtraInfoData(ByteBlock block) {
         DefensiveTools.checkNull(block, "block");
 
         if (block.getLength() < 2) return null;

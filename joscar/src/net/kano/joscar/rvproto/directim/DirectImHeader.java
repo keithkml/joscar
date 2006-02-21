@@ -42,6 +42,7 @@ import net.kano.joscar.ImEncodedString;
 import net.kano.joscar.ImEncodingParams;
 import net.kano.joscar.LiveWritable;
 import net.kano.joscar.MiscTools;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -249,7 +250,7 @@ public final class DirectImHeader implements LiveWritable {
      *
      * @throws IOException if an I/O error occurs
      */
-    public static DirectImHeader readDirectIMHeader(InputStream in)
+    public static @Nullable DirectImHeader readDirectIMHeader(InputStream in)
             throws IOException {
         DefensiveTools.checkNull(in, "in");
 
@@ -275,7 +276,7 @@ public final class DirectImHeader implements LiveWritable {
         return readRestOfHeader(hdr, ByteBlock.wrap(headerData));
     }
 
-    private static DirectImHeader produceInitialHeader(
+    private static @Nullable DirectImHeader produceInitialHeader(
             ByteBlock miniHeaderBlock) {
         // create a header object
         DirectImHeader hdr = new DirectImHeader();

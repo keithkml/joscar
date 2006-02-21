@@ -40,11 +40,12 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.Writable;
 import net.kano.joscar.snac.CmdType;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.List;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * A data structure containing rate limiting information for a specific "class"
@@ -200,7 +201,7 @@ public class RateClassInfo implements Writable {
      * @return a rate class information object read from the given block of
      *         data
      */
-    public static RateClassInfo readRateClassInfo(ByteBlock block) {
+    public static @Nullable RateClassInfo readRateClassInfo(ByteBlock block) {
         if (block.getLength() < RATECLASSINFO_SIZE) return null;
 
         return new RateClassInfo(block);
