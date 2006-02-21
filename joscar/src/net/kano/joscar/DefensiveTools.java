@@ -42,6 +42,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 
 /**
  * A set of utilities for ensuring the validity (and non-<code>null</code>ness)
@@ -326,6 +327,6 @@ public final class DefensiveTools {
 
 
     public static <E> Set<E> getUnmodifiableSetCopy(Collection<? extends E> oldItems) {
-        return Collections.unmodifiableSet(new HashSet<E>(oldItems));
+        return Collections.unmodifiableSet(new LinkedHashSet<E>(oldItems));
     }
 }
