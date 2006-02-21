@@ -40,6 +40,7 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.LiveWritable;
 import net.kano.joscar.OscarTools;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -59,7 +60,7 @@ public final class MiniRoomInfo implements LiveWritable {
      * @return a mini room info object read from the given data block, or
      *         <code>null</code> if no valid object can be read
      */
-    public static MiniRoomInfo readMiniRoomInfo(ByteBlock block) {
+    public static @Nullable MiniRoomInfo readMiniRoomInfo(ByteBlock block) {
         DefensiveTools.checkNull(block, "block");
 
         if (block.getLength() < 5) return null;

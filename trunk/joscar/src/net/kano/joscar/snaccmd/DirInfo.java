@@ -42,6 +42,7 @@ import net.kano.joscar.MinimalEncoder;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
 import net.kano.joscar.tlv.TlvTools;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -94,7 +95,7 @@ public final class DirInfo implements LiveWritable {
      * @return a directory information object generated from the TLV's in the
      *         given chain
      */
-    public static DirInfo readDirInfo(TlvChain chain) {
+    public static @Nullable DirInfo readDirInfo(TlvChain chain) {
         DefensiveTools.checkNull(chain, "chain");
 
         if (chain.getTlvCount() == 0) return null;

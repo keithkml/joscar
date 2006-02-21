@@ -38,6 +38,7 @@ package net.kano.joscar;
 import net.kano.joscar.logging.Logger;
 import net.kano.joscar.logging.LoggingSystem;
 import net.kano.joscar.snaccmd.MiniRoomInfo;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -74,7 +75,7 @@ public final class OscarTools {
      * @return an object containing the screenname and the total number of bytes
      *         read, or <code>null</code>
      */
-    public static StringBlock readScreenname(ByteBlock data) {
+    public static @Nullable StringBlock readScreenname(ByteBlock data) {
         if (data.getLength() < 1) return null;
 
         int length = BinaryTools.getUByte(data, 0);
@@ -342,18 +343,18 @@ public final class OscarTools {
     public static String normalize(String str) {
         DefensiveTools.checkNull(str, "str");
 
-	    // see if it's already normalized. this doesn't hurt performance on my
+        // see if it's already normalized. this doesn't hurt performance on my
         // machine.
         boolean normalized = true;
         int len = str.length();
         for (int i = 0; i < len; i++) {
-		    char c = str.charAt(i);
-		    if ((c < '0' || c > '9') && (c < 'a' || c > 'z')) {
-			    normalized = false;
-			    break;
-		    }
-	    }
-	    if (normalized) return str;
+            char c = str.charAt(i);
+            if ((c < '0' || c > '9') && (c < 'a' || c > 'z')) {
+                normalized = false;
+                break;
+            }
+        }
+        if (normalized) return str;
 
         StringBuffer buffer = new StringBuffer(len);
 
@@ -447,7 +448,7 @@ System.out.println("message text is "
      * @param data the block of data containing an HTTP header followed by data
      * @return a structure containing HTTP header information and the data
      *         following the headers for the given input
-     */ 
+     */
     public static HttpHeaderInfo parseHttpHeader(ByteBlock data) {
         DefensiveTools.checkNull(data, "data");
 
@@ -549,7 +550,7 @@ System.out.println("message text is "
      * @param cookie a chat room "cookie"
      * @return the name of the chat room described by the cookie
      */
-    public static String getRoomNameFromCookie(String cookie) {
+    public static @Nullable String getRoomNameFromCookie(String cookie) {
         Matcher m = roomNameRE.matcher(cookie);
         if (!m.matches()) return null;
 
@@ -559,7 +560,7 @@ System.out.println("message text is "
         try {
             name = URLDecoder.decode(encodedName, "us-ascii");
         } catch (UnsupportedEncodingException impossible) { }
-        
+
         return name;
     }
 }

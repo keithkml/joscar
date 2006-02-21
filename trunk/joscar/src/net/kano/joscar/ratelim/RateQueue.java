@@ -39,6 +39,7 @@ import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.logging.Logger;
 import net.kano.joscar.logging.LoggingSystem;
 import net.kano.joscar.snac.SnacRequest;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -129,7 +130,7 @@ public class RateQueue {
      *
      * @return the request that was removed
      */
-    synchronized SnacRequest dequeue() {
+    synchronized @Nullable SnacRequest dequeue() {
         if (queue.isEmpty()) return null;
 
         SnacRequest request = queue.removeFirst();

@@ -35,7 +35,7 @@
 
 package net.kano.joscar;
 
-import net.kano.joscar.snaccmd.CapabilityBlock;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -100,7 +100,8 @@ public final class MiscTools {
      *        searched, or <code>null</code> to match all fields of the class
      * @return the name of a field matching the given constraints
      */
-    public static String findIntField(Class<?> cl, long value, String pattern) {
+    public static @Nullable String findIntField(Class<?> cl, long value,
+            String pattern) {
         Pattern p = pattern == null ? null : Pattern.compile(pattern);
 
         for (Field field : cl.getFields()) {
@@ -137,7 +138,8 @@ public final class MiscTools {
      *        searched, or <code>null</code> to match all fields of the class
      * @return the name of a field matching the given constraints
      */
-    public static String findEqualField(Class<?> cl, Object value, String pattern) {
+    public static @Nullable String findEqualField(Class<?> cl, Object value,
+            String pattern) {
         Pattern p = pattern == null ? null : Pattern.compile(pattern);
 
         for (Field field : cl.getFields()) {

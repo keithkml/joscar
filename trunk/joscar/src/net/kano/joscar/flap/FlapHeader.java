@@ -42,6 +42,8 @@ import net.kano.joscar.DefensiveTools;
 import java.io.IOException;
 import java.io.InputStream;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
  * Represents the first six bytes of a FLAP packet, the FLAP "header," which
  * contains a sequence number, channel, and data length.
@@ -82,7 +84,7 @@ final class FlapHeader {
      * @throws InvalidFlapHeaderException if an invalid FLAP header is received
      *         from the given stream
      */
-    public static FlapHeader readFLAPHeader(InputStream in)
+    public static @Nullable FlapHeader readFLAPHeader(InputStream in)
             throws InvalidFlapHeaderException, IOException {
         DefensiveTools.checkNull(in, "in");
 
@@ -123,7 +125,7 @@ final class FlapHeader {
      */
     FlapHeader(ByteBlock bytes) throws IllegalArgumentException {
         DefensiveTools.checkNull(bytes, "bytes");
-        
+
         if (bytes.getLength() != 6) {
             throw new IllegalArgumentException("FLAP header length ("
                     + bytes.getLength() + ") must be 6");

@@ -41,6 +41,7 @@ import net.kano.joscar.snac.CmdType;
 import net.kano.joscar.snac.SnacQueueManager;
 import net.kano.joscar.snac.SnacRequest;
 import net.kano.joscar.snaccmd.conn.RateClassInfo;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.IdentityHashMap;
@@ -69,7 +70,8 @@ public final class ConnectionQueueMgr {
     private boolean paused = false;
 
     /** A map from <code>RateClassMonitor</code>s to <code>RateQueue</code>s. */
-    private final Map<RateClassMonitor,RateQueue> queues = new IdentityHashMap<RateClassMonitor, RateQueue>();
+    private final Map<RateClassMonitor,RateQueue> queues
+            = new IdentityHashMap<RateClassMonitor, RateQueue>();
 
     /** A rate listener used to monitor rate events. */
     private RateListener rateListener = new RateListener() {
@@ -108,7 +110,8 @@ public final class ConnectionQueueMgr {
      * @param queueMgr this connection queue manager's parent rate manager
      * @param processor the SNAC processor to manage
      */
-    ConnectionQueueMgr(RateLimitingQueueMgr queueMgr, ClientSnacProcessor processor) {
+    ConnectionQueueMgr(RateLimitingQueueMgr queueMgr,
+            ClientSnacProcessor processor) {
         DefensiveTools.checkNull(queueMgr, "queueMgr");
         DefensiveTools.checkNull(processor, "processor");
 
@@ -180,7 +183,7 @@ connQueueMgr.getRateMonitor().addListener(myRateListener);
      * @param type the command type whose rate queue is to be returned
      * @return the rate queue used for the given command type
      */
-    public synchronized RateQueue getRateQueue(CmdType type) {
+    public synchronized @Nullable RateQueue getRateQueue(CmdType type) {
         DefensiveTools.checkNull(type, "type");
 
         RateClassMonitor cm = monitor.getMonitor(type);

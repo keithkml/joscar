@@ -53,6 +53,8 @@ import java.io.OutputStream;
 import java.util.Date;
 import java.util.List;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
  * A very widely used structure that represents a single screen name and various
  * flags and values associated with it. Such values include warning level,
@@ -147,7 +149,7 @@ public class FullUserInfo implements LiveWritable {
      * @param origBlock the block from which to read user info
      * @return a user info object read from the given data block
      */
-    public static FullUserInfo readUserInfo(ByteBlock origBlock) {
+    public static @Nullable FullUserInfo readUserInfo(ByteBlock origBlock) {
         DefensiveTools.checkNull(origBlock, "block");
 
         int start = origBlock.getOffset();
@@ -851,14 +853,14 @@ if ((userInfo.getFlags() & FullUserInfo.MASK_WIRELESS) != 0) {
     }
 
     public String toString() {
-        return "UserInfo for " + sn + 
+        return "UserInfo for " + sn +
                 (warningLevel != null && warningLevel.intValue() != 0
                 ? " <" + warningLevel.floatValue() + "%>"  : "") +
                 ": flags=0x" + Integer.toHexString(flags) + " ("
                 + MiscTools.getFlagFieldsString(FullUserInfo.class, flags,
                         "MASK_.*") + ")" +
 
-                (icqstatus == -1 ? "" : ", ICQ status=" 
+                (icqstatus == -1 ? "" : ", ICQ status="
                 + MiscTools.getFlagFieldsString(FullUserInfo.class, icqstatus,
                         "ICQSTATUS_.*")) +
 

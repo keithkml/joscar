@@ -46,6 +46,8 @@ import java.io.OutputStream;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
  * Represents an "extra information block," as I call it, which contains a
  * single result code and an <code>ExtraInfoData</code>. This structure is used
@@ -145,7 +147,7 @@ public final class ExtraInfoBlock implements Writable {
      * @return an extra info block object read from the given data block, or
      *         <code>null</code> if no valid object could be read
      */
-    public static ExtraInfoBlock readExtraInfoBlock(ByteBlock block) {
+    public static @Nullable ExtraInfoBlock readExtraInfoBlock(ByteBlock block) {
         DefensiveTools.checkNull(block, "block");
 
         if (block.getLength() < 2) return null;

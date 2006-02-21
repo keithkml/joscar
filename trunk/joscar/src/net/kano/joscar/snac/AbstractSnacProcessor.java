@@ -46,6 +46,7 @@ import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.logging.Logger;
 import net.kano.joscar.logging.LoggingSystem;
 import net.kano.joscar.net.ConnProcessor;
+import org.jetbrains.annotations.Nullable;
 
 
 /**
@@ -490,7 +491,7 @@ public abstract class AbstractSnacProcessor {
      *        be generated
      * @return an appropriate <code>SnacCommand</code> for the given packet
      */
-    private SnacCommand generateSnacCommand(SnacPacket packet) {
+    private @Nullable SnacCommand generateSnacCommand(SnacPacket packet) {
         CmdType type = new CmdType(packet.getFamily(), packet.getCommand());
 
         SnacCmdFactory factory = factories.findFactory(type);

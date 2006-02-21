@@ -57,6 +57,7 @@ import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.snaccmd.icbm.RvCommand;
 import net.kano.joscar.snaccmd.icbm.RvResponse;
 import net.kano.joscar.snaccmd.icbm.SendRvIcbm;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -416,7 +417,7 @@ public class RvProcessor {
      * @return an <code>RvCommand</code> generated from the given ICBM, or
      *         <code>null</code> if none could be generated
      */
-    private RvCommand genRvCommand(RecvRvIcbm icbm) {
+    private @Nullable RvCommand genRvCommand(RecvRvIcbm icbm) {
         DefensiveTools.checkNull(icbm, "icbm");
 
         RvCommandFactory factory;
@@ -749,7 +750,7 @@ public class RvProcessor {
         }
 
         public String toString() {
-            return "(" + sn + ", " + sessionId + ")"; 
+            return "(" + sn + ", " + sessionId + ")";
         }
     }
 

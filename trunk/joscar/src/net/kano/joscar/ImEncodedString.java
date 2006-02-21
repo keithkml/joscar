@@ -108,7 +108,7 @@ public final class ImEncodedString {
      * @return the raw bytes of the associated string
      */
     public final byte[] getBytes() {
-        return (byte[]) bytes.clone();
+        return bytes.clone();
     }
 
     /**

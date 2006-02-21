@@ -52,6 +52,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.jetbrains.annotations.Nullable;
+
 
 /**
  * A client-side SNAC processor. In addition to the functionality provided by
@@ -407,7 +409,7 @@ public class ClientSnacProcessor extends AbstractSnacProcessor {
      * @param reqid the request ID to look for
      * @return a SNAC request with the given request ID, if one has been sent
      */
-    public synchronized SnacRequest getRequest(long reqid) {
+    public synchronized @Nullable SnacRequest getRequest(long reqid) {
         RequestInfo reqinfo = requests.get(reqid);
         if (reqinfo == null) return null;
 

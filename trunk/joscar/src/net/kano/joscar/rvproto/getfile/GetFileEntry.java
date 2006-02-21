@@ -42,6 +42,7 @@ import net.kano.joscar.rvcmd.SegmentedFilename;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
 import net.kano.joscar.tlv.TlvTools;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -78,7 +79,7 @@ public class GetFileEntry implements LiveWritable {
      * @param offset the index of the first TLV in the given array from which
      *        the file entry TLV's should be read
      */
-    public static GetFileEntry readEntry(List<Tlv> tlvs, int offset) {
+    public static @Nullable GetFileEntry readEntry(List<Tlv> tlvs, int offset) {
         DefensiveTools.checkNull(tlvs, "tlvs");
         DefensiveTools.checkRange(offset, "offset", 0, tlvs.size() - 1);
 

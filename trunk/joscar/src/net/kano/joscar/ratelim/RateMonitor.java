@@ -144,9 +144,6 @@ System.out.println("Current IM rate average: "
  * </pre>
  */
 public class RateMonitor {
-    private static final java.util.logging.Logger LOGGER = java.util.logging
-            .Logger.getLogger(RateMonitor.class.getName());
-
     /**
      * An error type indicating that an exception occurred when calling a
      * rate listener method. The error info object for an error of this type
@@ -156,17 +153,18 @@ public class RateMonitor {
             = new ConnProcessor.ErrorType("ERRTYPE_RATE_LISTENER");
 
     /** A default rate average error margin. */
-    public static final int ERRORMARGIN_DEFAULT = 100;
+    public static final int ERRORMARGIN_DEFAULT = 200;
 
     /** A logger object for this class. */
-    private static final Logger logger
+    private static final Logger LOGGER
             = LoggingSystem.getLogger("net.kano.joscar.ratelim");
 
     /** The SNAC processor to which this rate monitor is attached. */
     private ClientSnacProcessor snacProcessor;
 
     /** A list of listeners for rate-related events. */
-    private final CopyOnWriteArrayList<RateListener> listeners = new CopyOnWriteArrayList<RateListener>();
+    private final CopyOnWriteArrayList<RateListener> listeners
+            = new CopyOnWriteArrayList<RateListener>();
 
     /**
      * A "listener event lock" used to prevent overlapping or other lacks of
@@ -175,9 +173,11 @@ public class RateMonitor {
     private final Object listenerEventLock = new Object();
 
     /** A map from rate class numbers to rate class monitors. */
-    private Map<Integer,RateClassMonitor> classToMonitor = new HashMap<Integer, RateClassMonitor>(10);
+    private Map<Integer,RateClassMonitor> classToMonitor
+            = new HashMap<Integer, RateClassMonitor>(10);
     /** A map from SNAC command types to rate class monitors. */
-    private Map<CmdType,RateClassMonitor> typeToMonitor = new HashMap<CmdType, RateClassMonitor>(500);
+    private Map<CmdType,RateClassMonitor> typeToMonitor
+            = new HashMap<CmdType, RateClassMonitor>(500);
     /**
      * The default rate class monitor (for commands which are not a member of a
      * specific rate class).
@@ -332,11 +332,10 @@ public class RateMonitor {
      */
     public final void setRateClasses(Collection<RateClassInfo> rateInfos) {
         List<RateClassInfo> safeRateInfos =
-                 DefensiveTools.getSafeNonnullListCopy(
-                rateInfos, "rateInfos");
+                 DefensiveTools.getSafeNonnullListCopy(rateInfos, "rateInfos");
 
-        if (logger.logFineEnabled()) {
-            logger.logFine("Got rate classes for monitor " + this);
+        if (LOGGER.logFineEnabled()) {
+            LOGGER.logFine("Got rate classes for monitor " + this);
         }
 
         synchronized(this) {
@@ -409,7 +408,7 @@ public class RateMonitor {
         RateClassMonitor monitor = getMonitor(rateClass);
 
         if (monitor == null) {
-            LOGGER.warning("updateRateClass called with unknown rate class "
+            LOGGER.logWarning("updateRateClass called with unknown rate class "
                     + rateClass + ": changeCode=" + changeCode + " - "
                     + rateInfo);
             return;
@@ -438,7 +437,8 @@ public class RateMonitor {
      *
      * @see FlapProcessor#handleException
      */
-    private void handleException(ConnProcessor.ErrorType type, Throwable t, RateListener info) {
+    private void handleException(ConnProcessor.ErrorType type, Throwable t,
+            RateListener info) {
         ClientSnacProcessor processor;
         synchronized(this) {
             processor = snacProcessor;
@@ -448,7 +448,7 @@ public class RateMonitor {
             processor.getFlapProcessor().handleException(type, t, info);
 
         } else {
-            logger.logWarning("Rate monitor couldn't process error because "
+            LOGGER.logWarning("Rate monitor couldn't process error because "
                     + "not attached to SNAC processor: " + t.getMessage()
                     + " (reason obj: " + info + ")");
         }
@@ -488,7 +488,6 @@ public class RateMonitor {
             }
         }
     }
-
 
     /**
      * Sets this rate monitor's error margin. See {@linkplain RateMonitor above}
@@ -551,8 +550,7 @@ public class RateMonitor {
      * @return all of the rate class monitors in use in this rate monitor
      */
     public final synchronized List<RateClassMonitor> getMonitors() {
-        Collection<RateClassMonitor> vals = classToMonitor.values();
-        return DefensiveTools.getUnmodifiableCopy(vals);
+        return DefensiveTools.getUnmodifiableCopy(classToMonitor.values());
     }
 
     public String toString() {

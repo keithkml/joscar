@@ -43,6 +43,7 @@ import net.kano.joscar.ImEncodingParams;
 import net.kano.joscar.LiveWritable;
 import net.kano.joscar.MiscTools;
 import net.kano.joscar.rvcmd.SegmentedFilename;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -159,7 +160,7 @@ public final class FileTransferHeader implements LiveWritable {
      *
      * @throws IOException if an I/O error occurs
      */
-    public static FileTransferHeader readHeader(InputStream in)
+    public static @Nullable FileTransferHeader readHeader(InputStream in)
             throws IOException {
         DefensiveTools.checkNull(in, "in");
 
@@ -581,11 +582,11 @@ public final class FileTransferHeader implements LiveWritable {
 
     /**
      * Returns the Mac file information block sent in this command. When
-     * receiving files from Windows or other non-Macintosh OS users, this value
+     * receiving files from Windows or other non-Mac users, this value
      * is normally {@link #MACFILEINFO_DEFAULT} (a block of sixteen null bytes).
      * When coming from a Macintosh user, however, this block is a copy of the
      * file's <a href=
-     * "http://developer.apple.com/techpubs/macosx/Carbon/Files/FinderInterface/Finder_Interface/finder_interface/data_type_8.html"
+     * "http://developer.apple.com/documentation/Carbon/Reference/Finder_Interface/Reference/reference.html#//apple_ref/doc/uid/TP30000242-CH1g-C001613"
      * title="Apple's description of the FInfo file information
      * block"><code>FInfo</code> block</a>. For more information on reading and
      * writing Macintosh file attributes in Java, see <a

@@ -40,6 +40,7 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.LiveWritable;
 import net.kano.joscar.StringBlock;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -95,7 +96,8 @@ public class SendBuddyListGroup implements LiveWritable {
      * @return a <code>SendBuddyListGroup</code> read from the given block of
      *         data, or <code>null</code> if none could be read
      */
-    public static SendBuddyListGroup readBuddyListGroup(ByteBlock block) {
+    public static @Nullable SendBuddyListGroup readBuddyListGroup(
+            ByteBlock block) {
         DefensiveTools.checkNull(block, "block");
 
         StringBlock groupName = readString(block);

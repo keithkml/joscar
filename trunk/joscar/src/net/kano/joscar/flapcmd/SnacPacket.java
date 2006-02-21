@@ -39,6 +39,7 @@ import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.LiveWritable;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -89,7 +90,7 @@ public final class SnacPacket implements LiveWritable {
      * @throws IllegalArgumentException if the given data block does not contain
      *         a valid SNAC packet
      */
-    static SnacPacket readSnacPacket(ByteBlock flapData) {
+    static @Nullable SnacPacket readSnacPacket(ByteBlock flapData) {
         if (!isValidSnacPacket(flapData)) return null;
 
         int family = BinaryTools.getUShort(flapData, 0);

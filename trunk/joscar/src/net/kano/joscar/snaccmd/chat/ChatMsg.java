@@ -45,6 +45,7 @@ import net.kano.joscar.tlv.MutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
 import net.kano.joscar.tlv.TlvTools;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -235,7 +236,7 @@ public class ChatMsg implements LiveWritable {
      * @return the plaintext message body stored in this object, or
      *         <code>null</code> if no plaintext message is present
      */
-    public final String getMessage() {
+    public final @Nullable String getMessage() {
         if (contentType == null || contentType.equals(CONTENTTYPE_DEFAULT)) {
             return getMessageAsString();
         } else {

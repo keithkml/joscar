@@ -35,6 +35,8 @@
 
 package net.kano.joscar;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.io.UnsupportedEncodingException;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -149,7 +151,7 @@ public final class MinimalEncoder {
      * @return the given charset name if the given charset can encode the given
      *         string; <code>null</code> otherwise
      */
-    private static String getCharset(String str, Charset charset,
+    private static @Nullable String getCharset(String str, Charset charset,
             String name) {
         if (charset != null && charset.newEncoder().canEncode(str)) return name;
         else return null;
