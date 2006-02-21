@@ -129,7 +129,7 @@ public class DefaultMutableTlvChain
         if (tlvs != null) getTlvList().removeAll(tlvs);
     }
 
-    public synchronized final void removeTlvs(int[] types) {
+    public synchronized final void removeTlvs(int... types) {
         DefensiveTools.checkNull(types, "types");
 
         int[] safeTypes = types.clone();
