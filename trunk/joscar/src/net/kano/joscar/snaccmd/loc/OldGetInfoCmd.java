@@ -40,6 +40,7 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.OscarTools;
 import net.kano.joscar.StringBlock;
+import net.kano.joscar.snaccmd.icbm.SingleBuddyRequest;
 import net.kano.joscar.flapcmd.SnacPacket;
 
 import java.io.IOException;
@@ -57,7 +58,7 @@ import java.io.OutputStream;
  * @see GetInfoCmd
  * @see UserInfoCmd
  */
-public class OldGetInfoCmd extends LocCommand {
+public class OldGetInfoCmd extends LocCommand implements SingleBuddyRequest {
     /**
      * An information request type indicating a request for the user's "info."
      */

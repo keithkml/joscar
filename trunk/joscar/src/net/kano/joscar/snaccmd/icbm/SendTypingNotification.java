@@ -47,7 +47,8 @@ import net.kano.joscar.flapcmd.SnacPacket;
  *
  * @see RecvTypingNotification
  */
-public class SendTypingNotification extends TypingCmd {
+public class SendTypingNotification extends TypingCmd
+        implements SingleBuddyRequest {
     /**
      * Generates a new send-typing-notification command from the given
      * incoming SNAC packet.
