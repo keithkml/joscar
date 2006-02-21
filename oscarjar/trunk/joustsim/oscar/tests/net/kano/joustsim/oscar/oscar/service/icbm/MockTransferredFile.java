@@ -35,6 +35,8 @@
 package net.kano.joustsim.oscar.oscar.service.icbm;
 
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.TransferredFile;
+import net.kano.joscar.ByteBlock;
+import net.kano.joscar.rvproto.ft.FileTransferHeader;
 
 import java.io.IOException;
 import java.io.File;
@@ -69,5 +71,9 @@ class MockTransferredFile implements TransferredFile {
 
   public FileChannel getChannel() {
     throw new UnsupportedOperationException();
+  }
+
+  public ByteBlock getMacFileInfo() {
+    return FileTransferHeader.MACFILEINFO_DEFAULT;
   }
 }

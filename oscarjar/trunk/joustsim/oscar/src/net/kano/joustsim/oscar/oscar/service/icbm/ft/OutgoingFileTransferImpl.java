@@ -36,20 +36,18 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rvcmd.InvitationMessage;
-import net.kano.joscar.rvcmd.SegmentedFilename;
 import net.kano.joscar.rvcmd.sendfile.FileSendBlock;
 import static net.kano.joscar.rvcmd.sendfile.FileSendBlock.SENDTYPE_DIR;
 import static net.kano.joscar.rvcmd.sendfile.FileSendBlock.SENDTYPE_SINGLEFILE;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.oscar.service.icbm.dim.MutableSessionConnectionInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ChecksumController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectedController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendFileController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendOverProxyController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendPassivelyController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.TransferredFile;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.TransferredFileImpl;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectedController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ChecksummingEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectionCompleteEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
@@ -71,11 +69,14 @@ import java.util.Map;
 public class OutgoingFileTransferImpl
     extends OutgoingRvConnectionImpl implements OutgoingFileTransfer {
   private String folderName;
-  private Map<TransferredFile, Long> checksums = new HashMap<TransferredFile, Long>();
+  private Map<TransferredFile, Long> checksums
+      = new HashMap<TransferredFile, Long>();
   private FileChecksummer fileChecksummer = new FileChecksummerImpl();
   private final FileTransferHelper helper = new FileTransferHelper(this);
   @SuppressWarnings({"unchecked"})
   private List<TransferredFile> tfiles = Collections.EMPTY_LIST;
+  private TransferredFileFactory transferredFileFactory
+      = new DefaultTransferredFileFactory();
 
   public OutgoingFileTransferImpl(AimProxyInfo proxy,
       Screenname screenname, RvSessionConnectionInfo rvsessioninfo) {
@@ -101,31 +102,35 @@ public class OutgoingFileTransferImpl
     return tfiles;
   }
 
-  public synchronized void setFile(File file) throws IOException {
-    setFile(file, file.getName());
+  public synchronized TransferredFile setFile(File file) throws IOException {
+    return setFile(file, file.getName());
   }
 
-  public synchronized void setFile(File file, String name) throws IOException {
+  public synchronized TransferredFile setFile(File file, String name)
+      throws IOException {
     DefensiveTools.checkNull(file, "file");
     DefensiveTools.checkNull(name, "name");
 
     folderName = null;
-    tfiles = Collections.<TransferredFile>singletonList(
-        new TransferredFileImpl(file, name, "r"));
+    TransferredFile tfile = transferredFileFactory.getTransferredFile(file,
+        name);
+    tfiles = Collections.singletonList(tfile);
+    return tfile;
   }
 
-  public synchronized void setFiles(String folderName, List<File> files)
+  public synchronized List<TransferredFile> setFiles(String folderName,
+      List<File> files)
       throws IOException {
     DefensiveTools.checkNull(folderName, "folderName");
     DefensiveTools.checkNullElements(files, "files");
 
     List<TransferredFile> tfiles = new ArrayList<TransferredFile>(files.size());
     for (File file : files) {
-      tfiles.add(new TransferredFileImpl(file, folderName
-          + SegmentedFilename.FILESEP_NATIVE + file.getName(), "r"));
+      tfiles.add(transferredFileFactory.getTransferredFile(file, folderName));
     }
 
     setFilesWithDetails(folderName, tfiles);
+    return tfiles;
   }
 
   public synchronized void setFilesWithDetails(String folderName,
@@ -138,7 +143,16 @@ public class OutgoingFileTransferImpl
 
   public FileChecksummer getChecksummer() { return fileChecksummer; }
 
-  public FileSendBlock getFileInfo() {
+  public synchronized TransferredFileFactory getTransferredFileFactory() {
+    return transferredFileFactory;
+  }
+
+  public synchronized void setTransferredFileFactory(
+      TransferredFileFactory transferredFileFactory) {
+    this.transferredFileFactory = transferredFileFactory;
+  }
+
+  public FileSendBlock getRequestBlock() {
     long totalSize = 0;
     List<TransferredFile> files = getFiles();
     for (TransferredFile file : files) totalSize += file.getSize();
@@ -163,12 +177,8 @@ public class OutgoingFileTransferImpl
       RvConnectionEvent event) {
     if (oldController instanceof SendFileController) {
       //TODO: retry send with other controllers like receiver does
-//                if (getState() == FileTransferState.TRANSFERRING) {
       queueStateChange(RvConnectionState.FAILED,
           event == null ? new UnknownErrorEvent() : event);
-//                } else {
-//
-//                }
       return null;
 
     } else {
@@ -237,4 +247,5 @@ public class OutgoingFileTransferImpl
       return sum;
     }
   }
+
 }

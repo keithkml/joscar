@@ -35,11 +35,14 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
 import net.kano.joscar.rvcmd.SegmentedFilename;
+import net.kano.joscar.ByteBlock;
 
 import java.io.IOException;
 
 public interface IncomingFileTransferPlumber extends FileTransferPlumber {
   TransferredFile getNativeFile(SegmentedFilename segName) throws IOException;
+  TransferredFile getNativeFile(SegmentedFilename segName,
+      ByteBlock macFileInfo) throws IOException;
 
   boolean shouldAttemptResume(TransferredFile file);
 }

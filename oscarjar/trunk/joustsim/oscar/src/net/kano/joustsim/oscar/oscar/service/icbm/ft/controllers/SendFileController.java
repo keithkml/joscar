@@ -108,6 +108,7 @@ public class SendFileController extends TransferController {
         sendheader.setLastmod(mfile.getLastModifiedMillis() / 1000);
         sendheader.setPartCount(1);
         sendheader.setPartsLeft(1);
+        sendheader.setMacFileInfo(mfile.getMacFileInfo());
         sendheader.setResForkChecksum(FileTransferChecksum.CHECKSUM_EMPTY);
         sendheader.setResForkReceivedChecksum(FileTransferChecksum.CHECKSUM_EMPTY);
         sendheader.setListNameOffset(FileTransferHeader.LISTNAMEOFFSET_DEFAULT);

@@ -315,7 +315,8 @@ public class BuddyInfoManager {
     }
 
     int flags = info.getFlags();
-    buddyInfo.setMobile(mobile || (flags & FullUserInfo.MASK_WIRELESS) != 0);
+    mobile |= (flags & FullUserInfo.MASK_WIRELESS) != 0;
+    buddyInfo.setMobile(mobile);
     buddyInfo.setRobot((flags & FullUserInfo.MASK_AB) != 0);
     buddyInfo.setAolUser((flags & FullUserInfo.MASK_AOL) != 0);
 
@@ -329,11 +330,8 @@ public class BuddyInfoManager {
       int type = block.getType();
       ExtraInfoData data = block.getExtraData();
       if (type == ExtraInfoBlock.TYPE_ICONHASH) {
-//                    if ((data.getFlags() & ExtraInfoData.FLAG_HASH_PRESENT) != 0) {
         buddyInfo.setIconHash(block.getExtraData());
-//                    } else {
-//                        buddyInfo.setIconHash(null);
-//                    }
+
       } else if (type == ExtraInfoBlock.TYPE_AVAILMSG) {
         String status = ExtraInfoData.readAvailableMessage(data);
         buddyInfo.setStatusMessage(status);

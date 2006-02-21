@@ -34,6 +34,8 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
+import net.kano.joscar.ByteBlock;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -43,8 +45,9 @@ public class TransferredFileImpl implements TransferredFile {
   private final RandomAccessFile raf;
   private final long size;
   private final File file;
-  private String name;
-  private long lastmod;
+  private final String name;
+  private final long lastmod;
+  private ByteBlock macFileInfo;
 
   public TransferredFileImpl(File file, String name, String fileMode)
       throws IOException {
@@ -77,5 +80,13 @@ public class TransferredFileImpl implements TransferredFile {
 
   public FileChannel getChannel() {
     return raf.getChannel();
+  }
+
+  public ByteBlock getMacFileInfo() {
+    return macFileInfo;
+  }
+
+  public void setMacFileInfo(ByteBlock macFileInfo) {
+    this.macFileInfo = macFileInfo;
   }
 }

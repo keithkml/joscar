@@ -11,11 +11,11 @@ public interface OutgoingFileTransfer
     extends FileTransfer, OutgoingRvConnection {
   void sendRequest(InvitationMessage msg);
 
-  void setFile(File file) throws IOException;
+  TransferredFile setFile(File file) throws IOException;
 
-  void setFile(File file, String pseudonym) throws IOException;
+  TransferredFile setFile(File file, String pseudonym) throws IOException;
 
-  void setFiles(String folderName, List<File> files) throws IOException;
+  List<TransferredFile> setFiles(String folderName, List<File> files) throws IOException;
 
   void setFilesWithDetails(String folderName, List<TransferredFile> files);
 
@@ -24,4 +24,8 @@ public interface OutgoingFileTransfer
   String getFolderName();
 
   FileChecksummer getChecksummer();
+
+  TransferredFileFactory getTransferredFileFactory();
+
+  void setTransferredFileFactory(TransferredFileFactory factory);
 }

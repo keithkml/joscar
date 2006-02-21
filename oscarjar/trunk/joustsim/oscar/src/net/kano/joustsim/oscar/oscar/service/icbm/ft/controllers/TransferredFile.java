@@ -34,6 +34,8 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
+import net.kano.joscar.ByteBlock;
+
 import java.io.IOException;
 import java.io.File;
 import java.nio.channels.FileChannel;
@@ -45,4 +47,5 @@ public interface TransferredFile {
   File getRealFile();
   long getLastModifiedMillis();
   FileChannel getChannel();
+  ByteBlock getMacFileInfo();
 }

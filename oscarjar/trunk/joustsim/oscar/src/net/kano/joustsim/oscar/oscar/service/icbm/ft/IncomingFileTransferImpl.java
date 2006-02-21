@@ -134,7 +134,7 @@ public class IncomingFileTransferImpl
     helper.setInvitationMessage(msg);
   }
 
-  public FileSendBlock getFileInfo() {
+  public FileSendBlock getRequestBlock() {
     return helper.getFileInfo();
   }
 

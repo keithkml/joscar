@@ -38,5 +38,5 @@ import net.kano.joscar.rvcmd.InvitationMessage;
 
 public interface FileTransfer extends RvConnection {
   InvitationMessage getInvitationMessage();
-  FileSendBlock getFileInfo();
+  FileSendBlock getRequestBlock();
 }

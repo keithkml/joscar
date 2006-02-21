@@ -106,7 +106,8 @@ public class ReceiveFileController extends TransferController {
       setConnected();
 
       SegmentedFilename segName = sendheader.getFilename();
-      TransferredFile destFile = plumber.getNativeFile(segName);
+      TransferredFile destFile = plumber.getNativeFile(segName,
+          sendheader.getMacFileInfo());
 
       files.add(destFile);
       boolean attemptResume = plumber.shouldAttemptResume(destFile);

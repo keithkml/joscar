@@ -42,6 +42,8 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
 import net.kano.joscar.rvcmd.SegmentedFilename;
+import net.kano.joscar.ByteBlock;
+import net.kano.joscar.rvproto.ft.FileTransferHeader;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FileMapper;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.IncomingFileTransfer;
 
@@ -61,8 +63,13 @@ public class IncomingFileTransferPlumberImpl
     this.controller = controller;
   }
 
-  public TransferredFile getNativeFile(SegmentedFilename segName) throws
-      IOException {
+  public TransferredFile getNativeFile(SegmentedFilename segName)
+      throws IOException {
+    return getNativeFile(segName, FileTransferHeader.MACFILEINFO_DEFAULT);
+  }
+
+  public TransferredFile getNativeFile(SegmentedFilename segName,
+      ByteBlock macFileInfo) throws IOException {
     List<String> parts = segName.getSegments();
     File destFile;
     FileMapper fileMapper = transfer.getFileMapper();
@@ -71,7 +78,10 @@ public class IncomingFileTransferPlumberImpl
     } else {
       destFile = fileMapper.getUnspecifiedFilename();
     }
-    return new TransferredFileImpl(destFile, segName.toNativeFilename(), "rw");
+    TransferredFileImpl tfile = new TransferredFileImpl(destFile,
+        segName.toNativeFilename(), "rw");
+    tfile.setMacFileInfo(macFileInfo);
+    return tfile;
   }
 
   public Transferrer createTransferrer(TransferredFile file, long startedAt,
