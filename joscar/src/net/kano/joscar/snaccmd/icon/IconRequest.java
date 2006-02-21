@@ -43,6 +43,7 @@ import net.kano.joscar.StringBlock;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.snaccmd.ExtraInfoBlock;
 import net.kano.joscar.snaccmd.ExtraInfoData;
+import net.kano.joscar.snaccmd.icbm.SingleBuddyRequest;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -57,7 +58,7 @@ import java.util.logging.Logger;
  *
  * @see IconDataCmd
  */
-public class IconRequest extends IconCommand {
+public class IconRequest extends IconCommand implements SingleBuddyRequest {
     private static final Logger LOGGER = Logger
             .getLogger(IconRequest.class.getName());
 

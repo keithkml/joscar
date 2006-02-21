@@ -39,6 +39,7 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.OscarTools;
 import net.kano.joscar.StringBlock;
+import net.kano.joscar.snaccmd.icbm.SingleBuddyRequest;
 import net.kano.joscar.flapcmd.SnacPacket;
 
 import java.io.IOException;
@@ -53,7 +54,7 @@ import java.io.OutputStream;
  *
  * @see DirInfoCmd
  */
-public class GetDirInfoCmd extends LocCommand {
+public class GetDirInfoCmd extends LocCommand implements SingleBuddyRequest {
     /**
      * The screenname of the user whose directory information is being
      * requested.

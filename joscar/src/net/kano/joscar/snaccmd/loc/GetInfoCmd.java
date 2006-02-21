@@ -41,6 +41,7 @@ import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.MiscTools;
 import net.kano.joscar.OscarTools;
 import net.kano.joscar.StringBlock;
+import net.kano.joscar.snaccmd.icbm.SingleBuddyRequest;
 import net.kano.joscar.flapcmd.SnacPacket;
 
 import java.io.IOException;
@@ -57,7 +58,7 @@ import java.io.OutputStream;
  * @snac.src client
  * @snac.cmd 0x02 0x15
  */
-public class GetInfoCmd extends LocCommand {
+public class GetInfoCmd extends LocCommand implements SingleBuddyRequest {
     /**
      * A flag indicating that the user's user profile ("info") is being
      * requested.
