@@ -1,32 +1,32 @@
 /*
- *  Copyright (c) 2002-2003, The Joust Project
+ *  Copyright (c) 2006, The Joust Project
  *  All rights reserved.
  *
- *  Redistribution and use in source and binary forms, with or without 
- *  modification, are permitted provided that the following conditions 
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
  *  are met:
  *
- *  - Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
- *  - Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in 
- *    the documentation and/or other materials provided with the 
- *    distribution. 
- *  - Neither the name of the Joust Project nor the names of its 
- *    contributors may be used to endorse or promote products derived 
- *    from this software without specific prior written permission. 
+ *  - Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  - Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  - Neither the name of the Joust Project nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
  *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS 
- *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT 
- *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS 
- *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE 
- *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
- *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, 
- *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER 
- *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN 
- *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  *  File created by keith @ Apr 25, 2003
@@ -42,6 +42,8 @@ import net.kano.joscar.ImEncodedString;
 import net.kano.joscar.ImEncodingParams;
 import net.kano.joscar.LiveWritable;
 import net.kano.joscar.MiscTools;
+import net.kano.joscar.logging.Logger;
+import net.kano.joscar.logging.LoggingSystem;
 import net.kano.joscar.rvcmd.SegmentedFilename;
 import org.jetbrains.annotations.Nullable;
 
@@ -55,6 +57,9 @@ import java.io.OutputStream;
  * connection.
  */
 public final class FileTransferHeader implements LiveWritable {
+    private static final Logger LOGGER
+        = LoggingSystem.getLogger(FileTransferHeader.class.getName());
+
     /** The file transfer protocol version used by WinAIM. */
     public static final String FTVERSION_DEFAULT = "OFT2";
 
@@ -170,17 +175,38 @@ public final class FileTransferHeader implements LiveWritable {
         for (int i = 0; i < header.length;) {
             int count = in.read(header, i, header.length - i);
 
-            if (count == -1) return null;
+            if (count == -1) {
+              if (LOGGER.logWarningEnabled()) {
+                  LOGGER.logWarning("EOF while reading FT mini-header after "
+                        + i + " bytes");
+              }
+              return null;
+            }
 
             i += count;
         }
 
         ByteBlock ftVerBlock = ByteBlock.wrap(header, 0, 4);
         String ftversion = BinaryTools.getAsciiString(ftVerBlock);
+        if (LOGGER.logWarningEnabled() && !ftversion.equals(FTVERSION_DEFAULT)) {
+            LOGGER.logWarning("Got unexpected FT version block from buddy: "
+                    + ftVerBlock);
+        }
 
         int headerLen = BinaryTools.getUShort(ByteBlock.wrap(header), 4);
 
-        if (headerLen < 6) return null;
+        if (headerLen != 256) {
+            if (LOGGER.logWarningEnabled()) {
+                LOGGER.logWarning("Got header length of " + headerLen
+                        + " bytes; expected 256");
+            }
+        }
+        // we check for 100K because that would be a silly header size. Even
+        // 1k would be silly but we don't want to break future clients or
+        // anything.
+        if (headerLen < 6 || headerLen > (100 * 1024)) {
+            return null;
+        }
 
         // then we read the full header by reading the rest of the bytes
         // whose length was given in the mini-header
@@ -188,7 +214,13 @@ public final class FileTransferHeader implements LiveWritable {
         for (int i = 0; i < bigheader.length;) {
             int count = in.read(bigheader, i, bigheader.length - i);
 
-            if (count == -1) return null;
+            if (count == -1) {
+                if (LOGGER.logWarningEnabled()) {
+                    LOGGER.logWarning("EOF while reading rest of FT header: "
+                            + "read " + (6+i) + " of " + headerLen);
+                }
+                return null;
+            }
 
             i += count;
         }
@@ -241,8 +273,8 @@ public final class FileTransferHeader implements LiveWritable {
         ByteBlock filenameBlock = rest.subBlock(92);
 
         ImEncodingParams encoding = new ImEncodingParams(charset, charsubset);
-        String ftFilename = ImEncodedString.readImEncodedString(
-                encoding, filenameBlock);
+        String ftFilename = ImEncodedString.readImEncodedString(encoding,
+                filenameBlock);
         int firstNull = ftFilename.indexOf('\0');
         int lastNull = ftFilename.lastIndexOf('\0');
         if (firstNull != lastNull) {
