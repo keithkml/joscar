@@ -35,6 +35,8 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
 import net.kano.joscar.ByteBlock;
+import net.kano.joscar.rvproto.ft.FileTransferHeader;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,12 +44,21 @@ import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 
 public class TransferredFileImpl implements TransferredFile {
-  private final RandomAccessFile raf;
+  private final @Nullable RandomAccessFile raf;
   private final long size;
   private final File file;
   private final String name;
   private final long lastmod;
-  private ByteBlock macFileInfo;
+  private ByteBlock macFileInfo = FileTransferHeader.MACFILEINFO_DEFAULT;
+
+  protected TransferredFileImpl(@Nullable RandomAccessFile raf,
+      long size, File file, String name, long lastmod) {
+    this.raf = raf;
+    this.size = size;
+    this.file = file;
+    this.name = name;
+    this.lastmod = lastmod;
+  }
 
   public TransferredFileImpl(File file, String name, String fileMode)
       throws IOException {
@@ -63,7 +74,7 @@ public class TransferredFileImpl implements TransferredFile {
   }
 
   public void close() throws IOException {
-    raf.close();
+    if (raf != null) raf.close();
   }
 
   public String getTransferredName() {
@@ -79,6 +90,10 @@ public class TransferredFileImpl implements TransferredFile {
   }
 
   public FileChannel getChannel() {
+    if (raf == null) {
+      throw new IllegalStateException("This file does not have a "
+          + "RandomAccessFile. It was probably created for unit testing.");
+    }
     return raf.getChannel();
   }
 

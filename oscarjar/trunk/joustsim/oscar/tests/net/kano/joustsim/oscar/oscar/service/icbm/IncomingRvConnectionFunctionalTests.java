@@ -37,6 +37,7 @@ package net.kano.joustsim.oscar.oscar.service.icbm;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joscar.rvcmd.SegmentedFilename;
 import net.kano.joscar.rvproto.ft.FileTransferHeader;
+import net.kano.joscar.ByteBlock;
 import net.kano.joustsim.TestHelper;
 import static net.kano.joustsim.TestHelper.findInstances;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.Checksummer;
@@ -68,6 +69,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ExecutionException;
 
+//TODO(klea): test for redirect before accept
 public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
   private MockIncomingRvConnection conn;
 
@@ -329,6 +331,70 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
     assertSentRvs(0, 1, 0);
   }
 
+  public void testBuddyRedirectsBeforeWeAccept()
+      throws UnknownHostException, ExecutionException, InterruptedException {
+    conn.setAutoMode(null);
+    addNopConnector(conn);
+    conn.getRvSessionHandler().handleIncomingRequest(null, new GenericRequest());
+    assertSentRvs(0, 0, 0);
+    conn.getRvSessionHandler().handleIncomingRequest(null,
+        new GenericRequest(2, new RvConnectionInfo(
+            InetAddress.getByName("1.2.3.4"),
+            InetAddress.getByName("5.6.7.8"), null, 500, false, false)));
+    assertSentRvs(0, 0, 0);
+    assertDidntHit(OutgoingConnectionController.class);
+  }
+
+  public void testBuddyRedirectsBeforeWeAcceptThenConnect()
+      throws UnknownHostException, ExecutionException, InterruptedException {
+    conn.setAutoMode(null);
+    final boolean[] fail = new boolean[1];
+    final boolean[] succeed = new boolean[1];
+    final HangConnector hanger = new HangConnector();
+    conn.addEventListener(new DefaultRvConnectionEventListener() {
+      public void handleEvent(RvConnection transfer, RvConnectionEvent event) {
+        if (event instanceof StartingControllerEvent) {
+          StateController controller = ((StartingControllerEvent) event).getController();
+          if (controller instanceof OutgoingConnectionController) {
+            OutgoingConnectionController ogc
+                = (OutgoingConnectionController) controller;
+            String addr = conn.getRvSessionInfo().getConnectionInfo().getInternalIP()
+                .getHostAddress();
+            if (addr.equals("1.1.1.1")) {
+              fail[0] = true;
+              throw new IllegalStateException("Should not connect to 1.1.1.1");
+              
+            } else if (addr.equals("2.2.2.2")) {
+              succeed[0] = true;
+              ogc.setConnector(hanger);
+            }
+          }
+        }
+      }
+    });
+    conn.getRvSessionHandler().handleIncomingRequest(null, new GenericRequest(
+        new RvConnectionInfo(InetAddress.getByName("1.1.1.1"), null, null, 500,
+            false, false)));
+    assertSentRvs(0, 0, 0);
+    assertFalse(fail[0]);
+    assertFalse(succeed[0]);
+
+    conn.getRvSessionHandler().handleIncomingRequest(null, new GenericRequest(2,
+        new RvConnectionInfo(InetAddress.getByName("2.2.2.2"), null, null, 500,
+            false, false)));
+    assertSentRvs(0, 0, 0);
+    assertFalse(fail[0]);
+    assertFalse(succeed[0]);
+
+    conn.accept();
+    hanger.waitForConnectionAttempt();
+    assertFalse(fail[0]);
+    assertTrue(succeed[0]);
+
+    assertNotNull(TestHelper.findOnlyInstance(conn.getHitControllers(),
+        OutgoingConnectionController.class));
+  }
+
   public void testWeImmediatelyReject() {
     conn.setAutoMode(AutoMode.REJECT);
     StateInfo end = generateRequestAndRun(conn);
@@ -355,6 +421,11 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
 
     public TransferredFile getNativeFile(SegmentedFilename segName)
         throws IOException {
+      return getNativeFile(segName, FileTransferHeader.MACFILEINFO_DEFAULT);
+    }
+
+    public TransferredFile getNativeFile(SegmentedFilename segName,
+        ByteBlock macFileInfo) throws IOException {
       return new MockTransferredFile();
     }
 

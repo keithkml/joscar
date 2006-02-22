@@ -2,7 +2,7 @@ package net.kano.joustsim.oscar.oscar.service.icbm.dim;
 
 import junit.framework.TestCase;
 
-public class DirectimTest extends TestCase {
+class DirectimTest extends TestCase {
   protected String makeString(int len) {
     char[] array = new char[len];
     for (int j = 0; j < array.length; j++) {

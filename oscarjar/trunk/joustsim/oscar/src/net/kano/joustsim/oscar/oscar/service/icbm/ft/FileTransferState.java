@@ -34,9 +34,9 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
 public class FileTransferState extends RvConnectionState {
-  public static final RvConnectionState TRANSFERRING = new FileTransferState("TRANSFERRING");
+  public static final RvConnectionState TRANSFERRING = new FileTransferState("TRANSFERRING", true);
 
-  public FileTransferState(String name) {
-    super(name);
+  protected FileTransferState(String name, boolean open) {
+    super(name, open);
   }
 }

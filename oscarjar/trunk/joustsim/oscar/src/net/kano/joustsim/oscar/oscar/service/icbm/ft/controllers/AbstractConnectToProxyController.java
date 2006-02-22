@@ -65,10 +65,6 @@ public abstract class AbstractConnectToProxyController
         new ConnectingToProxyEvent(outAddr, outPort));
   }
 
-  public ProxyConnector getConnector() {
-    return (ProxyConnector) super.getConnector();
-  }
-
   protected void handleResolvingState() {
   }
 

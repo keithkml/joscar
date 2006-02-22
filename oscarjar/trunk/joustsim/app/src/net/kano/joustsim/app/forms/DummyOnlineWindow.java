@@ -329,7 +329,7 @@ public class DummyOnlineWindow extends JFrame {
         if (connection instanceof IncomingFileTransfer) {
           IncomingFileTransfer ft = (IncomingFileTransfer) connection;
 
-          FileSendBlock fileInfo = ft.getRequestBlock();
+          FileSendBlock fileInfo = ft.getRequestFileInfo();
           int choice = JOptionPane.showConfirmDialog(DummyOnlineWindow.this,
               connection.getBuddyScreenname() + " wants to send you "
                   + fileInfo.getFileCount() + " files \""

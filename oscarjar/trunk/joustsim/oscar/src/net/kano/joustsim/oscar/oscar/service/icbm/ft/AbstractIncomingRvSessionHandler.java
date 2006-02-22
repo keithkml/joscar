@@ -76,26 +76,28 @@ public abstract class AbstractIncomingRvSessionHandler extends AbstractRvSession
 
     } else if (index > FileSendReqRvCmd.REQINDEX_FIRST) {
       HowToConnect how = processRedirect(reqCmd);
-      if (how == HowToConnect.PROXY || how == HowToConnect.NORMAL) {
-        boolean worked;
-        if (how == HowToConnect.PROXY) {
-          worked = incomingRvConnection.changeStateController(
-              new ConnectToProxyForIncomingController());
+      if (incomingRvConnection.isOpen()) {
+        if (how == HowToConnect.PROXY || how == HowToConnect.NORMAL) {
+          boolean worked;
+          if (how == HowToConnect.PROXY) {
+            worked = incomingRvConnection.changeStateController(
+                new ConnectToProxyForIncomingController());
 
-        } else {
-          //noinspection ConstantConditions
-          assert how == HowToConnect.NORMAL;
-          worked = incomingRvConnection.changeStateController(
-              new OutgoingConnectionController(ConnectionType.LAN));
-        }
-        if (worked) {
-          incomingRvConnection.getRvSessionInfo().getRequestMaker()
-              .sendRvAccept();
-        }
+          } else {
+            //noinspection ConstantConditions
+            assert how == HowToConnect.NORMAL;
+            worked = incomingRvConnection.changeStateController(
+                new OutgoingConnectionController(ConnectionType.LAN));
+          }
+          if (worked) {
+            incomingRvConnection.getRvSessionInfo().getRequestMaker()
+                .sendRvAccept();
+          }
 
-      } else if (how == HowToConnect.DONT) {
-        incomingRvConnection.changeStateController(
-            new RedirectToProxyController());
+        } else if (how == HowToConnect.DONT) {
+          incomingRvConnection.changeStateController(
+              new RedirectToProxyController());
+        }
       }
 
     } else {

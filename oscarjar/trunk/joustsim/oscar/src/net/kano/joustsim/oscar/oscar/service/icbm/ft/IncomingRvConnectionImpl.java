@@ -173,4 +173,8 @@ public abstract class IncomingRvConnectionImpl
   protected abstract StateController getNextControllerFromUnknownError(
       StateController oldController, StateInfo oldState,
       RvConnectionEvent event);
+
+  public boolean isOpen() {
+    return isAccepted() && super.isOpen();
+  }
 }

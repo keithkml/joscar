@@ -36,7 +36,6 @@ package net.kano.joustsim.oscar.oscar.service.icbm;
 
 import net.kano.joscar.rvcmd.AcceptRvCmd;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
-import net.kano.joustsim.TestHelper;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.DefaultRvConnectionEventListener;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnection;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionEventListener;
@@ -58,7 +57,7 @@ import java.net.UnknownHostException;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-//TODO(klea): test for timeout only called when accept received
+//TODO(klea): write test for redirect after reject
 public class OutgoingRvConnectionFunctionalTests extends RvConnectionTestCase {
   private MockOutgoingRvConnection conn;
 
@@ -305,10 +304,6 @@ public class OutgoingRvConnectionFunctionalTests extends RvConnectionTestCase {
     assertSentRvs(2, 0, 0);
   }
 
-  private void assertDidntHit(Class<?> cls) {
-    assertNull(TestHelper.findOnlyInstance(conn.getHitControllers(), cls));
-  }
-
   public void testRedirectAfterCompleted()
       throws UnknownHostException {
     conn.addEventListener(new DefaultRvConnectionEventListener() {
@@ -335,7 +330,7 @@ public class OutgoingRvConnectionFunctionalTests extends RvConnectionTestCase {
 
   public void testRedirectDuringTransfer()
       throws UnknownHostException, ExecutionException, InterruptedException {
-    final MyFutureTask connectedWaiter = setConnectedWaiter();
+    MyFutureTask connectedWaiter = setConnectedWaiter();
     conn.addEventListener(new DefaultRvConnectionEventListener() {
       public void handleEvent(RvConnection transfer, RvConnectionEvent event) {
         if (event instanceof StartingControllerEvent) {

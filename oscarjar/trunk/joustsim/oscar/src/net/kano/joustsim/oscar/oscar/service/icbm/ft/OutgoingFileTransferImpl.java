@@ -56,25 +56,25 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.ComputedChecksumsInfo
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
 import net.kano.joustsim.oscar.proxy.AimProxyInfo;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class OutgoingFileTransferImpl
     extends OutgoingRvConnectionImpl implements OutgoingFileTransfer {
-  private String folderName;
+  private @Nullable String displayName;
   private Map<TransferredFile, Long> checksums
       = new HashMap<TransferredFile, Long>();
   private FileChecksummer fileChecksummer = new FileChecksummerImpl();
   private final FileTransferHelper helper = new FileTransferHelper(this);
   @SuppressWarnings({"unchecked"})
-  private List<TransferredFile> tfiles = Collections.EMPTY_LIST;
+  private List<TransferredFile> tfiles = new ArrayList<TransferredFile>();
   private TransferredFileFactory transferredFileFactory
       = new DefaultTransferredFileFactory();
 
@@ -95,50 +95,71 @@ public class OutgoingFileTransferImpl
     startStateController(new ChecksumController());
   }
 
-  public synchronized String getFolderName() { return folderName; }
+  public TransferredFile setSingleFile(File file) throws IOException {
+    setDisplayName(file.getName());
+    return addFile(file);
+  }
 
-  @SuppressWarnings({"ReturnOfCollectionOrArrayField"})
+  public synchronized String getDisplayName() { return displayName; }
+
   public synchronized List<TransferredFile> getFiles() {
-    return tfiles;
+    return DefensiveTools.getUnmodifiableCopy(tfiles);
   }
 
-  public synchronized TransferredFile setFile(File file) throws IOException {
-    return setFile(file, file.getName());
+  public synchronized TransferredFile addFile(File file) throws IOException {
+    return addFile(file, file.getName());
   }
 
-  public synchronized TransferredFile setFile(File file, String name)
+  public synchronized TransferredFile addFile(File file, String name)
       throws IOException {
     DefensiveTools.checkNull(file, "file");
     DefensiveTools.checkNull(name, "name");
 
-    folderName = null;
+    displayName = null;
     TransferredFile tfile = transferredFileFactory.getTransferredFile(file,
         name);
-    tfiles = Collections.singletonList(tfile);
+    tfiles.add(tfile);
     return tfile;
   }
 
-  public synchronized List<TransferredFile> setFiles(String folderName,
-      List<File> files)
-      throws IOException {
+  public synchronized List<TransferredFile> addFilesInFlatFolder(
+      String folderName, List<File> files) throws IOException {
     DefensiveTools.checkNull(folderName, "folderName");
     DefensiveTools.checkNullElements(files, "files");
 
     List<TransferredFile> tfiles = new ArrayList<TransferredFile>(files.size());
     for (File file : files) {
-      tfiles.add(transferredFileFactory.getTransferredFile(file, folderName));
+      tfiles.add(transferredFileFactory.getTransferredFileInFolder(file, folderName));
     }
 
-    setFilesWithDetails(folderName, tfiles);
+    this.tfiles.addAll(tfiles);
     return tfiles;
   }
 
-  public synchronized void setFilesWithDetails(String folderName,
-      List<TransferredFile> files) {
+  public synchronized List<TransferredFile> addFilesInHierarchy(
+      @Nullable String folderName, File root, List<File> files)
+      throws IOException {
+    DefensiveTools.checkNull(root, "root");
     DefensiveTools.checkNullElements(files, "files");
 
-    this.folderName = folderName;
-    this.tfiles = DefensiveTools.getUnmodifiableCopy(tfiles);
+    List<TransferredFile> tfiles = new ArrayList<TransferredFile>(files.size());
+    for (File file : files) {
+      tfiles.add(transferredFileFactory.getTransferredFileFromRoot(file, root,
+          folderName));
+    }
+
+    this.tfiles.addAll(tfiles);
+    return tfiles;
+  }
+
+  public synchronized void addFilesWithDetails(List<TransferredFile> files) {
+    DefensiveTools.checkNullElements(files, "files");
+
+    tfiles.addAll(files);
+  }
+
+  public synchronized void setDisplayName(String name) {
+    displayName = name;
   }
 
   public FileChecksummer getChecksummer() { return fileChecksummer; }
@@ -152,7 +173,7 @@ public class OutgoingFileTransferImpl
     this.transferredFileFactory = transferredFileFactory;
   }
 
-  public FileSendBlock getRequestBlock() {
+  public FileSendBlock getRequestFileInfo() {
     long totalSize = 0;
     List<TransferredFile> files = getFiles();
     for (TransferredFile file : files) totalSize += file.getSize();
@@ -162,7 +183,7 @@ public class OutgoingFileTransferImpl
     String filename;
     if (folderMode) {
       sendType = SENDTYPE_DIR;
-      filename = getFolderName();
+      filename = getDisplayName();
 
     } else {
       assert numFiles == 1;

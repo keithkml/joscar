@@ -97,7 +97,7 @@ public class FileTransferDialog extends JFrame {
             throw new IllegalArgumentException("file transfer is not incoming "
                     + "or outgoing");
         }
-        FileSendBlock fileInfo = fileTransfer.getRequestBlock();
+        FileSendBlock fileInfo = fileTransfer.getRequestFileInfo();
         String filesDescr;
         String filename = fileInfo.getFilename();
         int fileCount = fileInfo.getFileCount();

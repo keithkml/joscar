@@ -115,31 +115,36 @@ public abstract class OutgoingRvConnectionImpl extends RvConnectionImpl
   }
 
   protected class OutgoingRvSessionHandler extends AbstractRvSessionHandler {
-    public OutgoingRvSessionHandler() {super(OutgoingRvConnectionImpl.this);}
+    public OutgoingRvSessionHandler() {
+      super(OutgoingRvConnectionImpl.this);
+    }
 
     protected void handleIncomingRequest(RecvRvEvent event,
         ConnectionRequestRvCmd reqCmd) {
       int reqType = reqCmd.getRequestIndex();
       if (reqType > RequestRvCmd.REQINDEX_FIRST) {
         HowToConnect how = processRedirect(reqCmd);
-        if (how == HowToConnect.PROXY || how == HowToConnect.NORMAL) {
-          boolean worked;
-          if (how == HowToConnect.PROXY) {
-            worked = changeStateController(
-                new ConnectToProxyForOutgoingController());
+        if (isOpen()) {
+          if (how == HowToConnect.PROXY || how == HowToConnect.NORMAL) {
+            boolean worked;
+            if (how == HowToConnect.PROXY) {
+              worked = changeStateController(
+                  new ConnectToProxyForOutgoingController());
 
-          } else {
-            //noinspection ConstantConditions
-            assert how == HowToConnect.NORMAL;
-            worked = changeStateController(
-                new OutgoingConnectionController(ConnectionType.LAN));
+            } else {
+              //noinspection ConstantConditions
+              assert how == HowToConnect.NORMAL;
+              worked = changeStateController(
+                  new OutgoingConnectionController(ConnectionType.LAN));
+            }
+            if (worked) {
+              getRvSessionInfo().getRequestMaker().sendRvAccept();
+            }
+          } else if (how == HowToConnect.DONT) {
+            changeStateController(new RedirectToProxyController());
           }
-          if (worked) {
-            getRvSessionInfo().getRequestMaker().sendRvAccept();
-          }
-        } else if (how == HowToConnect.DONT) {
-          changeStateController(new RedirectToProxyController());
         }
+
       } else {
         LOGGER.warning("got unknown rv connection request type in outgoing "
             + "transfer: " + reqType);

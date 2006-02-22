@@ -35,11 +35,17 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.TransferredFile;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
 
 public interface TransferredFileFactory {
-  TransferredFile getTransferredFile(File file, String folderName)
+  TransferredFile getTransferredFile(File file, String name)
       throws IOException;
+  TransferredFile getTransferredFileInFolder(File file, String folderName)
+      throws IOException;
+  TransferredFile getTransferredFileFromRoot(File file, File root,
+      @Nullable String folderName)
+      throws IOException, IllegalArgumentException;
 }

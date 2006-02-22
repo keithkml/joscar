@@ -55,7 +55,7 @@ class FileTransferRequestMaker implements RvRequestMaker {
     getRvSession().sendRv(new FileSendReqRvCmd(newIndex,
         transfer.getInvitationMessage(),
         transfer.getRvSessionInfo().getConnectionInfo(), 
-        transfer.getRequestBlock()));
+        transfer.getRequestFileInfo()));
   }
 
   private RvSession getRvSession() {

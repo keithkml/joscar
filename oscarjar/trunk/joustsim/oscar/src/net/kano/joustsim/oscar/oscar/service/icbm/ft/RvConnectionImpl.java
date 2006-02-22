@@ -339,6 +339,10 @@ public abstract class RvConnectionImpl
     }
   }
 
+  public boolean isOpen() {
+    return getState().isOpen();
+  }
+
   protected abstract StateController getNextControllerFromError(
       StateController oldController, StateInfo endState);
 

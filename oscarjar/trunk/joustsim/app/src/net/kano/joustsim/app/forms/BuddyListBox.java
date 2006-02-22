@@ -239,9 +239,9 @@ public class BuddyListBox extends JPanel {
                         File[] files = chooser.getSelectedFiles();
                         try {
                             if (files.length > 1) {
-                                transfer.setFiles("Folder", Arrays.asList(files));
+                                transfer.addFilesInFlatFolder("Folder", Arrays.asList(files));
                             } else {
-                                transfer.setFile(files[0]);
+                                transfer.addFile(files[0]);
                             }
                         } catch (IOException e1) {
                           e1.printStackTrace();

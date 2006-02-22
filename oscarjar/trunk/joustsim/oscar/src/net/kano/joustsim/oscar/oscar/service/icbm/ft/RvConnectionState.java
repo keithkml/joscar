@@ -38,21 +38,27 @@ public class RvConnectionState {
   /**
    * A state indicating that the connection has not started anything yet.
    */
-  public static final RvConnectionState WAITING = new RvConnectionState("WAITING");
-  public static final RvConnectionState PREPARING = new RvConnectionState("PREPARING");
-  public static final RvConnectionState CONNECTING = new RvConnectionState("CONNECTING");
-  public static final RvConnectionState CONNECTED = new RvConnectionState("CONNECTED");
-  public static final RvConnectionState FAILED = new RvConnectionState("FAILED");
-  public static final RvConnectionState FINISHED = new RvConnectionState("FINISHED");
+  public static final RvConnectionState WAITING = new RvConnectionState("WAITING", true);
+  public static final RvConnectionState PREPARING = new RvConnectionState("PREPARING", true);
+  public static final RvConnectionState CONNECTING = new RvConnectionState("CONNECTING", true);
+  public static final RvConnectionState CONNECTED = new RvConnectionState("CONNECTED", true);
+  public static final RvConnectionState FAILED = new RvConnectionState("FAILED", false);
+  public static final RvConnectionState FINISHED = new RvConnectionState("FINISHED", false);
 
   private final String name;
+  private final boolean open;
 
-  public RvConnectionState(String name) {
+  protected RvConnectionState(String name, boolean open) {
+    this.open = open;
     assert name != null;
     this.name = name;
   }
 
   public final String toString() {
     return name;
+  }
+
+  public boolean isOpen() {
+    return open;
   }
 }

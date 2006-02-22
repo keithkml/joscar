@@ -150,6 +150,10 @@ public abstract class RvConnectionTestCase extends TestCase {
     return connectedWaiter;
   }
 
+  protected void assertDidntHit(Class<?> cls) {
+    assertNull(TestHelper.findOnlyInstance(getConnection().getHitControllers(), cls));
+  }
+
   protected static class MyFutureTask extends FutureTask<Object> {
     public MyFutureTask() {
       super(new Callable<Object>() {

@@ -45,8 +45,6 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownAolProxyError
 import java.io.IOException;
 import java.util.logging.Logger;
 
-//TODO: make sure we only connect to the proxy when the user accepts - the proxy will time out if the user waits too long
-
 public abstract class AbstractProxyConnectionController
     extends AbstractOutgoingConnectionController
     implements ManualTimeoutController {

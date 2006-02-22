@@ -34,19 +34,66 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
-import net.kano.joscar.rvcmd.SegmentedFilename;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.TransferredFile;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.TransferredFileImpl;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
 
 public class DefaultTransferredFileFactory implements TransferredFileFactory {
-  public TransferredFileImpl getTransferredFile(File file, String folderName)
+  public TransferredFileImpl getTransferredFile(File file, String name)
       throws IOException {
-    TransferredFileImpl tfile = new TransferredFileImpl(file, folderName
-        + SegmentedFilename.FILESEP_NATIVE + file.getName(), "r");
+    return createTransferredFile(file, name);
+  }
+
+  private TransferredFileImpl createTransferredFile(File file, String name)
+      throws IOException {
+    TransferredFileImpl tfile = createInitialTransferredFile(file, name);
     initializeFile(tfile);
     return tfile;
+  }
+
+  protected TransferredFileImpl createInitialTransferredFile(File file,
+      String name) throws IOException {
+    return new TransferredFileImpl(file, name, "r");
+  }
+
+  public TransferredFile getTransferredFileInFolder(File file,
+      String folderName) throws IOException {
+    return createTransferredFile(file, folderName
+        + File.separator + file.getName());
+  }
+
+  public TransferredFile getTransferredFileFromRoot(File file, File root,
+      @Nullable String folderName)
+      throws IOException, IllegalArgumentException {
+    if (file.equals(root)) {
+      throw new IllegalArgumentException("File cannot be root: " + file);
+    }
+    StringBuilder string = new StringBuilder(100);
+    File component;
+    for (component = file; component != null && !component.equals(root);
+        component = component.getParentFile()) {
+      string.insert(0, File.separator + component.getName());
+    }
+    if (component == null) {
+      throw new IllegalArgumentException("File is not child of root: file="
+          + file + ", root=" + root);
+    }
+    // remove leading slash
+    string.delete(0, 1);
+
+    // remove trailing slash
+    if (folderName != null) {
+      while (folderName.endsWith(File.separator)) {
+        folderName = folderName.substring(0, folderName.length() - 1);
+      }
+      if (folderName.length() > 0) {
+        string.insert(0, folderName + File.separator);
+      }
+    }
+    return createTransferredFile(file, string.toString());
   }
 
   protected void initializeFile(TransferredFileImpl tfile) {

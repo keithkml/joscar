@@ -98,6 +98,7 @@ public abstract class AbstractRvSessionHandler implements RendezvousSessionHandl
         LOGGER.finer("Deciding to change to proxy connect controller");
         how = HowToConnect.PROXY;
         sessionInfo.setInitiator(Initiator.BUDDY);
+        
       } else {
         LOGGER.finer("Deciding to change to normal connect controller");
         how = HowToConnect.NORMAL;

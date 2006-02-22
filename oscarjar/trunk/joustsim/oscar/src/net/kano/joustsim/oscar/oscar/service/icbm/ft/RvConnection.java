@@ -33,4 +33,6 @@ public interface RvConnection {
   TimeoutHandler getTimeoutHandler();
 
   RvConnectionState getState();
+
+  boolean isOpen();
 }

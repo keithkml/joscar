@@ -75,6 +75,10 @@ class HangConnector implements PassiveConnector {
     }
   }
 
+  public boolean hasAttemptedConnection() {
+    synchronized(lock) { return done; }
+  }
+
   public void checkConnectionInfo() throws Exception {
   }
 
