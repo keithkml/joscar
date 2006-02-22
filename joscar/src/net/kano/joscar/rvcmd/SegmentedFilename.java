@@ -55,7 +55,7 @@ public final class SegmentedFilename {
     /** The file separator used in AIM file transfer. */
     private static final String FILESEP_FT = "\001";
     /** The file separator used by the current platform. */
-    public static final String FILESEP_NATIVE = File.pathSeparator;
+    public static final String FILESEP_NATIVE = File.separator;
 
     public SegmentedFilename(String... strings) {
         this(Arrays.asList(strings));
