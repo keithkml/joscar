@@ -240,6 +240,7 @@
         <pathelement location="${tests.bin}"/>
         <pathelement location="${joscar.bin}"/>
       </classpath>
+      <test name="net.kano.joscar.rvproto.ft.FileTransferHeaderTest" />
       <batchtest>
         <fileset dir="${tests.bin}">
           <include name="**/SelfTest.*"/>
@@ -360,6 +361,6 @@
   <target name="dist" depends="jar,dist-clean,dist-src,dist-doc,dist-package"
           description="Packages joscar for a release in compressed archives." />
 
-  <target name="nightly" depends="dist" />
+  <target name="nightly" depends="test, dist" />
 
 </project>
