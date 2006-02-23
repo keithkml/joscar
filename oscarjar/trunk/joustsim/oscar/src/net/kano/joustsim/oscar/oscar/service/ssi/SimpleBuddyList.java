@@ -270,7 +270,6 @@ class SimpleBuddyList implements BuddyList, SsiItemChangeListener {
             AbstractGroup group = getActualGroup(buddyItem.getGroupId());
             SimpleBuddy buddy = group.getBuddy(buddyItem.getId());
             buddy.setItem(buddyItem);
-            // TODO(klea): if buddy was renamed, we should remove and add? what happens when we send a rename?
         }
         return null;
     }

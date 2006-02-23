@@ -101,10 +101,10 @@ public abstract class IncomingRvConnectionImpl
         controller = new RedirectToProxyController();
       }
     }
-    //TODO(klea): only fire accept if start state controller returned true
-    LOGGER.fine("Sending accept command to " + getBuddyScreenname());
-    getRvSessionInfo().getRequestMaker().sendRvAccept();
-    startStateController(controller);
+    if (startStateController(controller)) {
+      LOGGER.fine("Sending accept command to " + getBuddyScreenname());
+      getRvSessionInfo().getRequestMaker().sendRvAccept();
+    }
   }
 
   public void reject() throws IllegalStateException {

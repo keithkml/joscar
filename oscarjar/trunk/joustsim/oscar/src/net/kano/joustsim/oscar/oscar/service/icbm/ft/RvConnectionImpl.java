@@ -105,8 +105,8 @@ public abstract class RvConnectionImpl
 
   public TimeoutHandler getTimeoutHandler() { return timeoutHandler; }
 
-  protected void startStateController(StateController controller) {
-    changeStateController(controller);
+  protected boolean startStateController(StateController controller) {
+    return changeStateController(controller);
   }
 
   protected boolean changeStateController(StateController controller) {

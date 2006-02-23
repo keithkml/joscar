@@ -81,8 +81,11 @@ public final class BuddyInfo {
   private BuddyCertificateInfo certificateInfo = null;
 
   //TODO(klea): online needs to be Boolean, and it needs to be null if the buddy isn't on our list
-  // also add a lastSeenOnline value, for buddies not on the list
-  private boolean online = false;
+  // also add a lastSeenOnline value, for buddies not on the list. or maybe
+  // lastUpdated?
+  // maybe it should be an enum: YES, NO, PROBABLY, PROBABLYNOT
+
+  private Boolean online = null;
   private DirInfo directoryInfo = null;
   private Date onlineSince = null;
   private boolean away = false;
@@ -141,8 +144,8 @@ public final class BuddyInfo {
     return certificateInfo;
   }
 
-  void setOnline(boolean online) {
-    boolean old;
+  void setOnline(@Nullable Boolean online) {
+    Boolean old;
     synchronized (this) {
       old = this.online;
       this.online = online;
@@ -150,7 +153,11 @@ public final class BuddyInfo {
     pcs.firePropertyChange(PROP_ONLINE, old, online);
   }
 
-  public synchronized boolean isOnline() { return online; }
+  public synchronized @Nullable Boolean isOnline() { return online; }
+
+  public synchronized boolean isDefinitelyOnline() {
+    return online != null && online;
+  }
 
   void setDirectoryInfo(DirInfo directoryInfo) {
     DirInfo old;
