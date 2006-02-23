@@ -57,7 +57,6 @@ import java.net.UnknownHostException;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-//TODO(klea): write test for redirect after reject
 public class OutgoingRvConnectionFunctionalTests extends RvConnectionTestCase {
   private MockOutgoingRvConnection conn;
 

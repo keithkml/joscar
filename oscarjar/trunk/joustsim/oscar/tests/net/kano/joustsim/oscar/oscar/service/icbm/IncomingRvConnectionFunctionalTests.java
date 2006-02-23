@@ -69,7 +69,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ExecutionException;
 
-//TODO(klea): test for redirect before accept
 public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
   private MockIncomingRvConnection conn;
 
@@ -90,8 +89,8 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
   }
 
   protected void assertHit(Class<?> cls) {
-    assertNotNull(TestHelper.findOnlyInstance(getConnection().getHitControllers(),
-        cls));
+    assertNotNull(TestHelper.findOnlyInstance(
+        getConnection().getHitControllers(), cls));
   }
 
   public void testLanConnection() {
@@ -137,7 +136,8 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
         OutgoingConnectionController.class);
     assertEquals(array.length, controllers.size());
     for (int i = 0; i < array.length; i++) {
-      assertEquals("Controller #" + (i+1), array[i], controllers.get(i).getTimeoutType());
+      assertEquals("Controller #" + (i+1), array[i],
+          controllers.get(i).getTimeoutType());
     }
   }
 
@@ -393,6 +393,20 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
 
     assertNotNull(TestHelper.findOnlyInstance(conn.getHitControllers(),
         OutgoingConnectionController.class));
+  }
+
+  public void testRedirectAfterRejectNeverAccepted()
+      throws UnknownHostException {
+    conn.setAutoMode(null);
+    addNopConnector(conn);
+    MockIncomingRvSessionHandler handler = conn.getRvSessionHandler();
+    handler.handleIncomingRequest(null, new GenericRequest());
+    conn.reject();
+    handler.handleIncomingRequest(null, new GenericRequest(2,
+        new RvConnectionInfo(InetAddress.getByName("2.2.2.2"), null, null, 500,
+            false, false)));
+    assertTrue(conn.getHitControllers().isEmpty());
+    assertSentRvs(0, 0, 1);
   }
 
   public void testWeImmediatelyReject() {
