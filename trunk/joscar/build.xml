@@ -235,7 +235,8 @@
   <target name="test" depends="-build-tests"
           description="Runs the joscar library's JUnit tests.">
     <mkdir dir="${tests.reports}"/>
-    <junit printsummary="true">
+    <junit>
+      <formatter type="xml"/>
       <classpath>
         <pathelement location="${tests.bin}"/>
         <pathelement location="${joscar.bin}"/>

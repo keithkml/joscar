@@ -67,10 +67,11 @@ public class SsiDataModResponse extends SsiCommand {
      * deleted.
       */
     public static final int RESULT_NO_SUCH_ITEM = 0x0002;
-    //TODO: is CANT_ADD_ANOTHER... more like ITEM_EXISTS_OTHER_TYPE?
     /**
      * A result code indicating that the client attempted to create a second
-     * {@linkplain net.kano.joscar.ssiitem.RootItem group list}.
+     * {@linkplain net.kano.joscar.ssiitem.RootItem group list}. Sometimes this
+     * code is also used when attempting to add an item with the same ID but
+     * different type as an existing item.
      */
     public static final int RESULT_CANT_ADD_ANOTHER_ROOT_GROUP = 0x0003;
     /**
@@ -137,10 +138,8 @@ public class SsiDataModResponse extends SsiCommand {
     public SsiDataModResponse(int[] results) {
         super(CMD_MOD_ACK);
 
-        int[] safeResults = DefensiveTools.getSafeMinArrayCopy(results,
+        this.results = DefensiveTools.getSafeMinArrayCopy(results,
                 "results", 0);
-
-        this.results = safeResults;
     }
 
     /**

@@ -103,12 +103,10 @@ public interface RvSession {
     String getScreenname();
 
     /**
-     * Sends the given RV command to the user with whom this session exists,
-     * with an ICBM message ID of <code>0</code>.
-     * TODO: it isn't 0 anymore
+     * Sends the given RV command to the user with whom this session exists.
      * <br>
      * <br>
-     * Note that calling this method will have <i>no effect</i> if the
+     * Calling this method will have <i>no effect</i> if the
      * underlying <code>RvProcessor</code> is not currently attached to a SNAC
      * connection. See {@link RvProcessor#attachToSnacProcessor} for details.
      *
@@ -124,7 +122,7 @@ public interface RvSession {
      * giving the outgoing RV ICBM the given message ID.
      * <br>
      * <br>
-     * Note that calling this method will have <i>no effect</i> if the
+     * Calling this method will have <i>no effect</i> if the
      * underlying <code>RvProcessor</code> is not currently attached to a SNAC
      * connection. See {@link RvProcessor#attachToSnacProcessor} for details.
      *

@@ -1,0 +1,8 @@
+Before releasing 0.9.4,
+- document trillian encryption
+- check TODOs
+- make sure ICQ plugin works
+- inspect for javadoc errors
+- run FindBugs, InspectionGadgets
+- check IM features blocks of official clients
+- post JNLP library component on joustkano

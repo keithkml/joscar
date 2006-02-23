@@ -1,0 +1,19 @@
+- added clientid field to ClientVersionInfo
+- fixed typing notification flag in ParamInfo
+- updated client info and SNAC family versions to AIM 5.5 beta
+- fixed parsing of SsiDataModResponse to read multiple response codes
+- added OscarTools.equalScreennames
+- fixed JoscarTester demo to allow it to log in when buddy list is empty (like on new accounts)
+- added some more defensive null checks to methods that take arrays as arguments
+- many structures' toString methods now indicate when a certain value is equal to a constant in that
+  class
+- added toString methods to many classes which did not have them
+- removed all reference to FlapException*; now ConnProcessorException*
+- made logging output nicer for ConnProcessor exception logging when no handler is registered
+- made various improvements to joscartester, including help system
+- updated error codes in AuthResponse
+- made QueueRunner stop
+- fixed ByteBlock.hashCode
+- added more setxxx methods to SSI item objects
+
+- ** check CVS log for more changelogs! 

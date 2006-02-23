@@ -44,6 +44,10 @@ public class JoscarVersionTask extends Task {
 
     public void setProperty(String property) { this.property = property; }
 
+    public String getProperty() {
+        return property;
+    }
+
     public void execute() throws BuildException {
         String version;
         try {
