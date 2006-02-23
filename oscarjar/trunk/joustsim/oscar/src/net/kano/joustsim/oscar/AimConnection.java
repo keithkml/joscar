@@ -74,7 +74,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
-//TODO: time out waiting for all services to be ready, to ensure connection comes up eventually
+//TODO(klea): time out waiting for all services to be ready, to ensure connection comes up eventually
 public class AimConnection {
   private static final Logger LOGGER
       = Logger.getLogger(AimConnection.class.getName());

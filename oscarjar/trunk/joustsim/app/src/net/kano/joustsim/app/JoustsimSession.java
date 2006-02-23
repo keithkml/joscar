@@ -48,7 +48,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -56,161 +55,165 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class JoustsimSession implements AppSession {
-    private static final Logger logger
-            = Logger.getLogger(JoustsimSession.class.getName());
+  private static final Logger logger
+      = Logger.getLogger(JoustsimSession.class.getName());
 
-    private final File baseDir;
-    private final File configDir;
-    private final File localPrefsDir;
-    private final File globalPrefsDir;
+  private final File baseDir;
+  private final File configDir;
+  private final File localPrefsDir;
+  private final File globalPrefsDir;
 
-    private final GlobalPrefs globalPrefs;
-    private boolean loadedGlobalPrefs = false;
+  private final GlobalPrefs globalPrefs;
+  private boolean loadedGlobalPrefs = false;
 
-    private Map prefs = new HashMap();
-    private Map sessions = new HashMap();
+  private Map<Screenname, LocalPreferencesManager> prefs
+      = new HashMap<Screenname, LocalPreferencesManager>();
+  private Map<Screenname, List<AimSession>> sessions
+      = new HashMap<Screenname, List<AimSession>>();
 
-    private Thread shutdownHook = null;
+  private Thread shutdownHook = null;
 
-    public JoustsimSession(File baseDir) throws IllegalArgumentException {
-        DefensiveTools.checkNull(baseDir, "baseDir");
+  public JoustsimSession(File baseDir) throws IllegalArgumentException {
+    DefensiveTools.checkNull(baseDir, "baseDir");
 
-        if (baseDir.exists()) {
-            if (!baseDir.isDirectory()) {
-                throw new IllegalArgumentException(baseDir.getPath()
-                        + " is not a directory");
-            }
-        } else {
-            baseDir.mkdirs();
-            if (!baseDir.isDirectory()) {
-                throw new IllegalArgumentException(baseDir.getPath()
-                        + " is not a directory and cannot be created");
-            }
+    if (baseDir.exists()) {
+      if (!baseDir.isDirectory()) {
+        throw new IllegalArgumentException(baseDir.getPath()
+            + " is not a directory");
+      }
+    } else {
+      baseDir.mkdirs();
+      if (!baseDir.isDirectory()) {
+        throw new IllegalArgumentException(baseDir.getPath()
+            + " is not a directory and cannot be created");
+      }
+    }
+
+    this.baseDir = baseDir;
+    File configDir = PrefTools.getConfigDir(baseDir);
+    this.configDir = configDir;
+    this.localPrefsDir = PrefTools.getLocalConfigDir(configDir);
+    this.globalPrefsDir = PrefTools.getGlobalConfigDir(configDir);
+
+    this.globalPrefs = new GlobalPrefs(configDir);
+  }
+
+  public synchronized void setSavePrefsOnExit(boolean save) {
+    if (shutdownHook == null) {
+      if (!save) return;
+      shutdownHook = new Thread() {
+        public void run() {
+          saveAllPrefs();
         }
-
-        this.baseDir = baseDir;
-        File configDir = PrefTools.getConfigDir(baseDir);
-        this.configDir = configDir;
-        this.localPrefsDir = PrefTools.getLocalConfigDir(configDir);
-        this.globalPrefsDir = PrefTools.getGlobalConfigDir(configDir);
-
-        this.globalPrefs = new GlobalPrefs(configDir);
+      };
     }
 
-    public synchronized void setSavePrefsOnExit(boolean save) {
-        if (shutdownHook == null) {
-            if (!save) return;
-            shutdownHook = new Thread() {
-                public void run() {
-                    saveAllPrefs();
-                }
-            };
-        }
+    Runtime runtime = Runtime.getRuntime();
+    if (save) {
+      runtime.addShutdownHook(shutdownHook);
+    } else {
+      runtime.removeShutdownHook(shutdownHook);
+      shutdownHook = null;
+    }
+  }
 
-        Runtime runtime = Runtime.getRuntime();
-        if (save) {
-            runtime.addShutdownHook(shutdownHook);
-        } else {
-            runtime.removeShutdownHook(shutdownHook);
-            shutdownHook = null;
-        }
+  private synchronized void saveAllPrefs() {
+    try {
+      globalPrefs.savePrefs();
+    } catch (Exception e) {
+      logger.log(Level.WARNING, "Couldn't save global prefs", e);
+    }
+    for (LocalPreferencesManager mgr : prefs.values()) {
+      mgr.saveAllPrefs();
+    }
+  }
+
+
+  public AimSession openAimSession(Screenname sn) {
+    AimSession sess = new JoustsimAimSession(this, sn);
+
+    synchronized (this) {
+      List<AimSession> snsesses = sessions.get(sn);
+      if (snsesses == null) {
+        snsesses = new ArrayList<AimSession>();
+        sessions.put(sn, snsesses);
+      }
+
+      snsesses.add(sess);
+    }
+    return sess;
+  }
+
+  public synchronized GlobalPrefs getGlobalPrefs() {
+    if (!loadedGlobalPrefs) {
+      loadedGlobalPrefs = true;
+      globalPrefs.loadPrefs();
+    }
+    return globalPrefs;
+  }
+
+  public synchronized LocalPreferencesManager getLocalPrefs(Screenname sn) {
+    DefensiveTools.checkNull(sn, "sn");
+    File prefsDir = getLocalPrefsDir(sn);
+    if (prefsDir == null) return null;
+
+    LocalPreferencesManager appPrefs = prefs.get(sn);
+    if (appPrefs == null) {
+      appPrefs = new LocalPreferencesManager(sn, prefsDir);
+      prefs.put(sn, appPrefs);
+    }
+    return appPrefs;
+  }
+
+  public synchronized LocalPreferencesManager getLocalPrefsIfExist(
+      Screenname sn) {
+    File prefsDir = getLocalPrefsDir(sn);
+    if (prefsDir == null) return null;
+    if (prefsDir.isDirectory()) {
+      return getLocalPrefs(sn);
+    } else {
+      return null;
+    }
+  }
+
+  public synchronized boolean deleteLocalPrefs(Screenname sn) {
+    File prefsDir = getLocalPrefsDir(sn);
+    if (prefsDir == null) return false;
+
+    boolean deleted = PrefTools.deleteDir(prefsDir);
+    if (deleted) prefs.remove(sn);
+    return deleted;
+  }
+
+  public synchronized Screenname[] getKnownScreennames() {
+    globalPrefs.reloadIfNecessary();
+    String[] possible = globalPrefs.getKnownScreennames();
+    Collection<LocalPreferencesManager> loaded = prefs.values();
+    Set<Screenname> known = new HashSet<Screenname>(
+        possible.length + loaded.size());
+
+    for (String sn : possible) {
+      known.add(new Screenname(sn));
     }
 
-    private synchronized void saveAllPrefs() {
-        try {
-            globalPrefs.savePrefs();
-        } catch (Exception e) {
-            logger.log(Level.WARNING, "Couldn't save global prefs", e);
-        }
-        for (Iterator it = prefs.values().iterator(); it.hasNext();) {
-            LocalPreferencesManager prefs = (LocalPreferencesManager) it.next();
-            prefs.saveAllPrefs();
-        }
+    for (LocalPreferencesManager prefs : loaded) {
+      String fmt = prefs.getGeneralPrefs().getScreennameFormat();
+      Screenname sn;
+      if (fmt == null) {
+        sn = prefs.getScreenname();
+      } else {
+        sn = new Screenname(fmt);
+      }
+      known.add(sn);
     }
+    return known.toArray(new Screenname[known.size()]);
+  }
 
+  private File getLocalPrefsDir(Screenname sn) {
+    return PrefTools.getLocalPrefsDirForScreenname(this.localPrefsDir, sn);
+  }
 
-    public AimSession openAimSession(Screenname sn) {
-        AimSession sess = new JoustsimAimSession(this, sn);
-
-        synchronized(this) {
-            List snsesses = (List) sessions.get(sn);
-            if (snsesses == null) {
-                snsesses = new ArrayList();
-                sessions.put(sn, snsesses);
-            }
-
-            snsesses.add(sess);
-        }
-        return sess;
-    }
-
-    public synchronized GlobalPrefs getGlobalPrefs() {
-        if (!loadedGlobalPrefs) {
-            loadedGlobalPrefs = true;
-            globalPrefs.loadPrefs();
-        }
-        return globalPrefs;
-    }
-
-    public synchronized LocalPreferencesManager getLocalPrefs(Screenname sn) {
-        DefensiveTools.checkNull(sn, "sn");
-        File prefsDir = getLocalPrefsDir(sn);
-        if (prefsDir == null) return null;
-
-        LocalPreferencesManager appPrefs = (LocalPreferencesManager) prefs.get(sn);
-        if (appPrefs == null) {
-            appPrefs = new LocalPreferencesManager(sn, prefsDir);
-            prefs.put(sn, appPrefs);
-        }
-        return appPrefs;
-    }
-
-    public synchronized LocalPreferencesManager getLocalPrefsIfExist(Screenname sn) {
-        File prefsDir = getLocalPrefsDir(sn);
-        if (prefsDir == null) return null;
-        if (prefsDir.isDirectory()) return getLocalPrefs(sn);
-        else return null;
-    }
-
-    public synchronized boolean deleteLocalPrefs(Screenname sn) {
-        File prefsDir = getLocalPrefsDir(sn);
-        if (prefsDir == null) return false;
-
-        boolean deleted = PrefTools.deleteDir(prefsDir);
-        if (deleted) prefs.remove(sn);
-        return deleted;
-    }
-
-    public synchronized Screenname[] getKnownScreennames() {
-        globalPrefs.reloadIfNecessary();
-        String[] possible = globalPrefs.getKnownScreennames();
-        Collection loaded = prefs.values();
-        Set known = new HashSet(possible.length + loaded.size());
-
-        for (int i = 0; i < possible.length; i++) {
-            String sn = possible[i];
-            known.add(new Screenname(sn));
-        }
-
-        for (Iterator it = loaded.iterator(); it.hasNext();) {
-            LocalPreferencesManager prefs = (LocalPreferencesManager) it.next();
-            String fmt = prefs.getGeneralPrefs().getScreennameFormat();
-            Screenname sn;
-            if (fmt == null) {
-                sn = prefs.getScreenname();
-            } else {
-                sn = new Screenname(fmt);
-            }
-            known.add(sn);
-        }
-        return (Screenname[]) known.toArray(new Screenname[known.size()]);
-    }
-
-    private File getLocalPrefsDir(Screenname sn) {
-        return PrefTools.getLocalPrefsDirForScreenname(this.localPrefsDir, sn);
-    }
-
-    public boolean hasLocalPrefs(Screenname sn) {
-        return getLocalPrefsDir(sn).isDirectory();
-    }
+  public boolean hasLocalPrefs(Screenname sn) {
+    return getLocalPrefsDir(sn).isDirectory();
+  }
 }

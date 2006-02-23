@@ -367,7 +367,6 @@ public class SsiService extends Service {
         return idsForType;
     }
 
-    //TODO: test new unique group id and buddy id method
     synchronized int getUniqueGroupId() {
         Set<Integer> groupIds = getPossiblyUsedGroupIds();
         addUsedGroupIdsInRoot(groupIds);

@@ -91,7 +91,6 @@ public class MyBuddyIconManager {
     ExtraInfoData hash = block.getExtraData();
     if (wantedIconData != null && wantedIconHash != null
         && hash.getData().equals(wantedIconHash.getData())) {
-      //TODO(klea): when should we upload the icon?
       if ((hash.getFlags() & ExtraInfoData.FLAG_UPLOAD_ICON) != 0) {
         if (wantedIconData == null) {
           LOGGER.fine("Server asked us to upload "

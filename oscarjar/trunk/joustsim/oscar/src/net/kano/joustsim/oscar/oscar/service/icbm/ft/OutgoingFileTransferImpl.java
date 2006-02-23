@@ -197,7 +197,7 @@ public class OutgoingFileTransferImpl
       StateController oldController, FailedStateInfo failedStateInfo,
       RvConnectionEvent event) {
     if (oldController instanceof SendFileController) {
-      //TODO: retry send with other controllers like receiver does
+      //TODO(klea): retry send with other controllers like receiver does
       queueStateChange(RvConnectionState.FAILED,
           event == null ? new UnknownErrorEvent() : event);
       return null;
