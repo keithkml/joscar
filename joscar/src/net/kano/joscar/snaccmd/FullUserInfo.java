@@ -47,13 +47,12 @@ import net.kano.joscar.tlv.MutableTlvChain;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
 import net.kano.joscar.tlv.TlvTools;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Date;
 import java.util.List;
-
-import org.jetbrains.annotations.Nullable;
 
 /**
  * A very widely used structure that represents a single screen name and various
