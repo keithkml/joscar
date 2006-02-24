@@ -48,6 +48,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.beans.PropertyChangeSupport;
+import java.beans.PropertyChangeEvent;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -75,17 +76,16 @@ public final class BuddyInfo {
   public static final String PROP_ROBOT = "robot";
   public static final String PROP_AOL_USER = "aolUser";
   public static final String PROP_ITUNES_URL = "itunesUrl";
+  private static final String PROP_ON_BUDDY_LIST = "onBuddyList";
+  private static final String PROP_LAST_UPDATED = "lastUpdated";
 
   private final Screenname screenname;
 
   private BuddyCertificateInfo certificateInfo = null;
 
-  //TODO(klea): online needs to be Boolean, and it needs to be null if the buddy isn't on our list
-  // also add a lastSeenOnline value, for buddies not on the list. or maybe
-  // lastUpdated?
-  // maybe it should be an enum: YES, NO, PROBABLY, PROBABLYNOT
-
-  private Boolean online = null;
+  private boolean online = false;
+  private boolean onBuddyList = false;
+  private Date lastUpdated = null;
   private DirInfo directoryInfo = null;
   private Date onlineSince = null;
   private boolean away = false;
@@ -102,7 +102,6 @@ public final class BuddyInfo {
   private boolean robot = false;
   private boolean aolUser = false;
 
-
   // icbm info
   private OldIconHashInfo oldIconInfo = null;
   private String lastAimExpression = null;
@@ -117,6 +116,17 @@ public final class BuddyInfo {
     DefensiveTools.checkNull(screenname, "screenname");
 
     this.screenname = screenname;
+
+    listeners.add(new BuddyInfoChangeListener() {
+      public void receivedBuddyStatusUpdate(BuddyInfo info) {
+      }
+
+      public void propertyChange(PropertyChangeEvent evt) {
+        if (!evt.getPropertyName().equals(PROP_LAST_UPDATED)) {
+          setLastUpdated(new Date());
+        }
+      }
+    });
   }
 
   public void addPropertyListener(BuddyInfoChangeListener l) {
@@ -144,8 +154,8 @@ public final class BuddyInfo {
     return certificateInfo;
   }
 
-  void setOnline(@Nullable Boolean online) {
-    Boolean old;
+  void setOnline(boolean online) {
+    boolean old;
     synchronized (this) {
       old = this.online;
       this.online = online;
@@ -153,11 +163,29 @@ public final class BuddyInfo {
     pcs.firePropertyChange(PROP_ONLINE, old, online);
   }
 
-  public synchronized @Nullable Boolean isOnline() { return online; }
+  public synchronized boolean isOnline() { return online; }
 
-  public synchronized boolean isDefinitelyOnline() {
-    return online != null && online;
+  void setOnBuddyList(boolean onBuddyList) {
+    boolean old;
+    synchronized (this) {
+      old = this.onBuddyList;
+      this.onBuddyList = onBuddyList;
+    }
+    pcs.firePropertyChange(PROP_ON_BUDDY_LIST, old, onBuddyList);
   }
+
+  public synchronized boolean isOnBuddyList() { return onBuddyList; }
+
+  void setLastUpdated(@Nullable Date lastUpdated) {
+    Date old;
+    synchronized (this) {
+      old = this.lastUpdated;
+      this.lastUpdated = lastUpdated;
+    }
+    fireObjectChange(PROP_LAST_UPDATED, old, lastUpdated);
+  }
+
+  public synchronized @Nullable Date getLastUpdated() { return lastUpdated; }
 
   void setDirectoryInfo(DirInfo directoryInfo) {
     DirInfo old;

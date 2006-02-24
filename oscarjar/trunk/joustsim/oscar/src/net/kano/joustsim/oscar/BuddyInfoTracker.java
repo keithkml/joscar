@@ -61,7 +61,6 @@ public class BuddyInfoTracker {
   private Map<Screenname, Set<BuddyInfoTrackerListener>> trackers
       = new HashMap<Screenname, Set<BuddyInfoTrackerListener>>();
   private boolean initializedSsi = false;
-  private boolean buddiesUpdated = true;
   private Set<Screenname> buddies = new HashSet<Screenname>();
 
   public BuddyInfoTracker(AimConnection conn) {
@@ -155,7 +154,22 @@ public class BuddyInfoTracker {
   }
 
   private synchronized void setBuddiesUpdated() {
-    buddiesUpdated = true;
+    SsiService ssi = conn.getSsiService();
+    if (ssi != null) {
+      Set<Screenname> old = new HashSet<Screenname>(buddies);
+      buddies.clear();
+      for (Group group : ssi.getBuddyList().getGroups()) {
+        for (Buddy buddy : group.getBuddiesCopy()) {
+          Screenname sn = buddy.getScreenname();
+          buddyInfoMgr.getBuddyInfo(sn).setOnBuddyList(true);
+          buddies.add(sn);
+        }
+      }
+      old.removeAll(buddies);
+      for (Screenname screenname : old) {
+        buddyInfoMgr.getBuddyInfo(screenname).setOnBuddyList(false);
+      }
+    }
   }
 
   private InfoService getInfoService() {
@@ -241,18 +255,6 @@ public class BuddyInfoTracker {
 
   public synchronized boolean isTracked(Screenname sn) {
     if (sn.equals(conn.getScreenname())) return true;
-    if (buddiesUpdated) {
-      SsiService ssi = conn.getSsiService();
-      if (ssi != null) {
-        buddies.clear();
-        for (Group group : ssi.getBuddyList().getGroups()) {
-          for (Buddy buddy : group.getBuddiesCopy()) {
-            buddies.add(buddy.getScreenname());
-          }
-        }
-        buddiesUpdated = false;
-      }
-    }
     if (buddies.contains(sn)) return true;
     return trackers.containsKey(sn);
   }
