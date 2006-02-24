@@ -38,49 +38,53 @@ package net.kano.joustsim.oscar;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.trust.TrustPreferences;
 
-public class DefaultAimSession implements AimSession {
-    private final AppSession appSession;
-    private final Screenname screenname;
-    private final TrustPreferences trustPreferences;
+public class DefaultAimSession extends AbstractAimSession {
+  private final AppSession appSession;
+  private final Screenname screenname;
+  private final TrustPreferences trustPreferences;
 
-    private AimConnection connection = null;
+  private AimConnection connection = null;
 
-    public DefaultAimSession(Screenname screenname) {
-        this(new DefaultAppSession(), screenname); 
+  public DefaultAimSession(Screenname screenname) {
+    this(new DefaultAppSession(), screenname);
+  }
+
+  public DefaultAimSession(AppSession appSession, Screenname screenname) {
+    this(appSession, screenname, null);
+  }
+
+  public DefaultAimSession(AppSession appSession, Screenname screenname,
+      TrustPreferences trustPreferences) {
+    this.appSession = appSession;
+    this.screenname = screenname;
+    this.trustPreferences = trustPreferences;
+  }
+
+  public AppSession getAppSession() { return appSession; }
+
+  public Screenname getScreenname() { return screenname; }
+
+
+  public AimConnection openConnection(AimConnectionProperties props) {
+    closeConnection();
+    AimConnection conn = new AimConnection(this,
+        getTrustPreferences(), props);
+    synchronized (this) {
+      this.connection = conn;
     }
+    fireOpenedConnection(conn);
+    return conn;
+  }
 
-    public DefaultAimSession(AppSession appSession, Screenname screenname) {
-        this(appSession, screenname, null);
+  public synchronized AimConnection getConnection() { return connection; }
+
+  public void closeConnection() {
+    AimConnection conn = getConnection();
+    if (conn != null) {
+      conn.disconnect();
     }
+  }
 
-    public DefaultAimSession(AppSession appSession, Screenname screenname,
-            TrustPreferences trustPreferences) {
-        this.appSession = appSession;
-        this.screenname = screenname;
-        this.trustPreferences = trustPreferences;
-    }
+  public TrustPreferences getTrustPreferences() { return trustPreferences; }
 
-    public AppSession getAppSession() { return appSession; }
-
-    public Screenname getScreenname() { return screenname; }
-
-
-    public AimConnection openConnection(AimConnectionProperties props) {
-        closeConnection();
-        AimConnection conn = new AimConnection(this,
-                getTrustPreferences(), props);
-        synchronized(this) {
-            this.connection = conn;
-        }
-        return conn;
-    }
-
-    public synchronized AimConnection getConnection() { return connection; }
-
-    public void closeConnection() {
-        AimConnection conn = getConnection();
-        if (conn != null) conn.disconnect();
-    }
-
-    public TrustPreferences getTrustPreferences() { return trustPreferences; }
 }

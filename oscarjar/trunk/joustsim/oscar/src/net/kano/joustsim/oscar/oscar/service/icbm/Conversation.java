@@ -48,7 +48,7 @@ public abstract class Conversation {
 
   private final Screenname buddy;
 
-  private CopyOnWriteArrayList<ConversationListener> listeners
+  private final CopyOnWriteArrayList<ConversationListener> listeners
       = new CopyOnWriteArrayList<ConversationListener>();
   private boolean open = false;
   private boolean closed = false;
@@ -70,9 +70,12 @@ public abstract class Conversation {
 
   protected void initialize() { }
 
-  protected synchronized boolean setAlwaysOpen() {
-    if (open || closed) return false;
-    open = true;
+  protected boolean setAlwaysOpen() {
+    synchronized (this) {
+      if (open || closed) return false;
+      open = true;
+    }
+    opened();
     return true;
   }
 

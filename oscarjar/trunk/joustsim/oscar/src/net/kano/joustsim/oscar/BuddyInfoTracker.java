@@ -36,7 +36,13 @@
 package net.kano.joustsim.oscar;
 
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.ratelim.ConnectionQueueMgr;
+import net.kano.joscar.ratelim.RateQueue;
+import net.kano.joscar.snac.CmdType;
+import static net.kano.joscar.snaccmd.loc.LocCommand.CMD_NEW_GET_INFO;
+import static net.kano.joscar.snaccmd.loc.LocCommand.FAMILY_LOC;
 import net.kano.joustsim.Screenname;
+import net.kano.joustsim.oscar.oscar.OscarConnection;
 import net.kano.joustsim.oscar.oscar.service.Service;
 import net.kano.joustsim.oscar.oscar.service.info.InfoService;
 import net.kano.joustsim.oscar.oscar.service.ssi.Buddy;
@@ -47,29 +53,52 @@ import net.kano.joustsim.oscar.oscar.service.ssi.SsiService;
 import net.kano.joustsim.trust.BuddyCertificateInfo;
 
 import java.beans.PropertyChangeEvent;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.Iterator;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+//TODO: remove buddies from tracking loop if they're added to the buddylist
 public class BuddyInfoTracker {
+  private static final Logger LOGGER = Logger
+      .getLogger(BuddyInfoTracker.class.getName());
+
+  public static final long DEFAULT_MINIMUM_TRACK_INTERVAL = 30 * 1000;
+
   private final AimConnection conn;
   private final BuddyInfoManager buddyInfoMgr;
 
-  private Map<Screenname, Set<BuddyInfoTrackerListener>> trackers
-      = new HashMap<Screenname, Set<BuddyInfoTrackerListener>>();
+  private Map<Screenname, TrackedBuddyInfo> trackers
+      = new HashMap<Screenname, TrackedBuddyInfo>();
   private boolean initializedSsi = false;
   private Set<Screenname> buddies = new HashSet<Screenname>();
+  private long minimumTrackInterval = DEFAULT_MINIMUM_TRACK_INTERVAL;
+  private final Thread thread;
+  private Comparator<TrackedBuddyInfo> lastCheckedComparator
+      = new Comparator<TrackedBuddyInfo>() {
+    public int compare(TrackedBuddyInfo o1,
+        TrackedBuddyInfo o2) {
+      if (o1.lastChecked < o2.lastChecked) return 1;
+      if (o1.lastChecked > o2.lastChecked) return -1;
+      return 0;
+    }
+  };
 
-  public BuddyInfoTracker(AimConnection conn) {
-    DefensiveTools.checkNull(conn, "conn");
+  public BuddyInfoTracker(AimConnection connection) {
+    DefensiveTools.checkNull(connection, "connection");
 
-    this.conn = conn;
-    BuddyInfoManager buddyInfoMgr = conn.getBuddyInfoManager();
+    this.conn = connection;
+    BuddyInfoManager buddyInfoMgr = connection.getBuddyInfoManager();
     this.buddyInfoMgr = buddyInfoMgr;
-    conn.addOpenedServiceListener(new OpenedServiceListener() {
+    connection.addOpenedServiceListener(new OpenedServiceListener() {
       public void openedServices(AimConnection conn,
           Collection<? extends Service> services) {
         if (!initializedSsi) {
@@ -151,6 +180,92 @@ public class BuddyInfoTracker {
         }
       }
     });
+    thread = new Thread(new Runnable() {
+      public void run() {
+        while (conn.getState() != State.FAILED
+            && conn.getState() != State.DISCONNECTED) {
+          try {
+            becool();
+          } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Error running buddy tracker", e);
+          }
+          try {
+            Thread.sleep(10000);
+          } catch (InterruptedException ignored) {
+          }
+        }
+        LOGGER.fine("Shutting down buddy tracker thread for " + conn);
+      }
+
+      private void becool() {
+        InfoService infoService = conn.getInfoService();
+        if (infoService == null) return;
+
+        OscarConnection oscar = infoService.getOscarConnection();
+        ConnectionQueueMgr queueMgr = oscar.getRateManager()
+            .getQueueMgr(oscar.getSnacProcessor());
+        RateQueue infoQueue = queueMgr
+            .getRateQueue(new CmdType(FAMILY_LOC, CMD_NEW_GET_INFO));
+        if (infoQueue == null) return;
+
+        long now = System.currentTimeMillis();
+        List<Screenname> request;
+        synchronized (BuddyInfoTracker.this) {
+          Set<TrackedBuddyInfo> want = new TreeSet<TrackedBuddyInfo>(lastCheckedComparator);
+          for (TrackedBuddyInfo info : trackers.values()) {
+            if (now - info.lastChecked > minimumTrackInterval) {
+              want.add(info);
+            }
+          }
+          request = new ArrayList<Screenname>();
+          int possible = infoQueue.getRateClassMonitor().getPossibleCmdCount() - 1;
+          int i = 0;
+          for (Iterator<TrackedBuddyInfo> it = want.iterator(); it.hasNext();) {
+            if (i >= possible) break;
+            TrackedBuddyInfo info = it.next();
+            LOGGER.fine("Requesting tracked buddy " + info.screenname
+                + "'s awaymsg after " + (now - info.lastChecked / 1000)
+                + "sec");
+
+            it.remove();
+            info.lastChecked = now;
+            request.add(info.screenname);
+            i++;
+          }
+        }
+        for (Screenname screenname : request) {
+          infoService.requestAwayMessage(screenname);
+        }
+      }
+    });
+    thread.setDaemon(true);
+    thread.start();
+  }
+
+  private class TrackedBuddyInfo {
+    private final Screenname screenname;
+    public volatile long lastChecked = 0;
+    public final Set<BuddyInfoTrackerListener> trackers
+        = new HashSet<BuddyInfoTrackerListener>();
+
+    public TrackedBuddyInfo(Screenname screenname) {
+      this.screenname = screenname;
+    }
+
+    public boolean addListener(BuddyInfoTrackerListener listener) {
+      assert Thread.holdsLock(BuddyInfoTracker.this);
+      return trackers.add(listener);
+    }
+
+    public boolean removeListener(BuddyInfoTrackerListener listener) {
+      assert Thread.holdsLock(BuddyInfoTracker.this);
+      return trackers.remove(listener);
+    }
+
+    public boolean hasListeners() {
+      assert Thread.holdsLock(BuddyInfoTracker.this);
+      return trackers.isEmpty();
+    }
   }
 
   private synchronized void setBuddiesUpdated() {
@@ -184,19 +299,20 @@ public class BuddyInfoTracker {
     boolean startTracking = false;
     boolean added;
     synchronized (this) {
-      Set<BuddyInfoTrackerListener> btrackers = trackers.get(buddy);
+      TrackedBuddyInfo btrackers = trackers.get(buddy);
       if (btrackers == null) {
-        btrackers = new HashSet<BuddyInfoTrackerListener>();
+        btrackers = new TrackedBuddyInfo(buddy);
         trackers.put(buddy, btrackers);
         startTracking = true;
       }
-      added = btrackers.add(listener);
+      added = btrackers.addListener(listener);
     }
 
     //noinspection SimplifiableConditionalExpression
     assert startTracking ? added : true;
 
     if (startTracking) startTracking(buddy);
+    thread.interrupt();
 
     return added;
   }
@@ -208,15 +324,15 @@ public class BuddyInfoTracker {
 
     boolean stopTracking;
     synchronized (this) {
-      Set<BuddyInfoTrackerListener> btrackers = trackers.get(buddy);
+      TrackedBuddyInfo btrackers = trackers.get(buddy);
       if (btrackers == null) return false;
 
-      boolean removed = btrackers.remove(listener);
+      boolean removed = btrackers.removeListener(listener);
       if (!removed) return false;
 
       // if there aren't any trackers left, we should remove the entry and
       // stop tracking
-      stopTracking = btrackers.isEmpty();
+      stopTracking = btrackers.hasListeners();
       if (stopTracking) trackers.remove(buddy);
     }
     if (stopTracking) stopTracking(buddy);
@@ -225,9 +341,7 @@ public class BuddyInfoTracker {
 
   private void startTracking(Screenname buddy) {
     assert !Thread.holdsLock(this);
-    synchronized (this) {
-      assert trackers.containsKey(buddy);
-    }
+    assert isExplicitlyTracked(buddy);
 
     DefensiveTools.checkNull(buddy, "buddy");
 
@@ -243,9 +357,7 @@ public class BuddyInfoTracker {
 
   private void stopTracking(Screenname buddy) {
     assert !Thread.holdsLock(this);
-    synchronized (this) {
-      assert !trackers.containsKey(buddy);
-    }
+    assert !isExplicitlyTracked(buddy);
 
     DefensiveTools.checkNull(buddy, "buddy");
 
@@ -256,6 +368,10 @@ public class BuddyInfoTracker {
   public synchronized boolean isTracked(Screenname sn) {
     if (sn.equals(conn.getScreenname())) return true;
     if (buddies.contains(sn)) return true;
+    return isExplicitlyTracked(sn);
+  }
+
+  private synchronized boolean isExplicitlyTracked(Screenname sn) {
     return trackers.containsKey(sn);
   }
 }

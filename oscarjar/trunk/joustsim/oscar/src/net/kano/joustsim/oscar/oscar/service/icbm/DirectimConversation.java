@@ -36,6 +36,10 @@ package net.kano.joustsim.oscar.oscar.service.icbm;
 
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.AimConnection;
+import net.kano.joustsim.oscar.AimSessionListener;
+import net.kano.joustsim.oscar.AimSession;
+import net.kano.joustsim.oscar.BuddyInfoTracker;
+import net.kano.joustsim.oscar.BuddyInfoTrackerListener;
 import net.kano.joustsim.oscar.oscar.service.icbm.dim.Attachment;
 import net.kano.joustsim.oscar.oscar.service.icbm.dim.BuddyTypingEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.dim.DirectimConnection;
@@ -66,6 +70,9 @@ public class DirectimConversation extends Conversation
   private final AimConnection conn;
   private DirectimConnection directim = null;
   private @Nullable RvConnectionEvent closingState = null;
+  private BuddyInfoTracker oldTracker = null;
+  private final BuddyInfoTrackerListener trackListener = new BuddyInfoTrackerListener() {
+  };
 
   public DirectimConversation(AimConnection conn, DirectimConnection directim) {
     super(directim.getBuddyScreenname());
@@ -77,6 +84,26 @@ public class DirectimConversation extends Conversation
   public DirectimConversation(AimConnection conn, Screenname buddy) {
     super(buddy);
     this.conn = conn;
+  }
+
+  protected void opened() {
+    conn.getAimSession().addSessionListener(new AimSessionListener() {
+      public void handleOpenedConnection(AimSession aimSession,
+          AimConnection conn) {
+        synchronized (DirectimConversation.this) {
+          clearOldTracker();
+          oldTracker = conn.getBuddyInfoTracker();
+          oldTracker.addTracker(getBuddy(), trackListener);
+        }
+      }
+    });
+  }
+
+  private synchronized void clearOldTracker() {
+    if (oldTracker != null) {
+      oldTracker.removeTracker(getBuddy(), trackListener);
+      oldTracker = null;
+    }
   }
 
   public synchronized DirectimConnection getDirectimConnection() {
@@ -140,6 +167,7 @@ public class DirectimConversation extends Conversation
       directim.close();
       directim = null;
     }
+    clearOldTracker();
   }
 
   public void sendMessage(Message msg) throws ConversationException {

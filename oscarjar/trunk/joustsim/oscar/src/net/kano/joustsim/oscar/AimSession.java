@@ -51,4 +51,7 @@ public interface AimSession {
   void closeConnection();
 
   @Nullable TrustPreferences getTrustPreferences();
+
+  public void addSessionListener(AimSessionListener listener);
+  public void removeSessionListener(AimSessionListener listener);
 }

@@ -35,16 +35,16 @@
 
 package net.kano.joustsim.app;
 
+import net.kano.joscar.DefensiveTools;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.app.config.LocalPreferencesManager;
+import net.kano.joustsim.oscar.AbstractAimSession;
 import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.oscar.AimConnectionProperties;
 import net.kano.joustsim.oscar.AppSession;
-import net.kano.joustsim.oscar.AimSession;
 import net.kano.joustsim.trust.TrustPreferences;
-import net.kano.joscar.DefensiveTools;
 
-public class JoustsimAimSession implements AimSession {
+public class JoustsimAimSession extends AbstractAimSession {
     private final JoustsimSession appSession;
     private final Screenname screenname;
     private AimConnection connection = null;

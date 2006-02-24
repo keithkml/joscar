@@ -38,6 +38,7 @@ package net.kano.joustsim.oscar.oscar;
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.MiscTools;
+import net.kano.joscar.ratelim.RateLimitingQueueMgr;
 import net.kano.joscar.flap.ClientFlapConn;
 import net.kano.joscar.flap.FlapCommand;
 import net.kano.joscar.flap.FlapPacketEvent;
@@ -108,6 +109,7 @@ public class OscarConnection {
 
   private Set<Service> unready = new HashSet<Service>();
   private Set<Service> unfinished = new HashSet<Service>();
+  private final RateLimitingQueueMgr rateManager = new RateLimitingQueueMgr();
   private long lastPacketTime = 0;
 
   public OscarConnection(String host, int port) {
@@ -152,6 +154,7 @@ public class OscarConnection {
         OscarConnection.this.handleSnacResponse(snacResponseEvent);
       }
     });
+    snacProcessor.setSnacQueueManager(rateManager);
     conn.addConnListener(new ClientConnListener() {
       public void stateChanged(ClientConnEvent clientConnEvent) {
         ClientConn.State state = clientConnEvent.getNewState();
@@ -168,6 +171,10 @@ public class OscarConnection {
         OscarConnection.this.stateChanged(clientConnEvent);
       }
     });
+  }
+
+  public RateLimitingQueueMgr getRateManager() {
+    return rateManager;
   }
 
   public void addOscarListener(OscarConnListener l) {

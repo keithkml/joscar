@@ -37,18 +37,29 @@ package net.kano.joustsim.oscar.oscar.service.icbm;
 
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.AimConnection;
+import net.kano.joustsim.oscar.BuddyInfoTrackerListener;
 
 import java.util.Date;
 
-public class ImConversation extends Conversation implements
-    TypingNotificationConversation {
+public class ImConversation
+    extends Conversation implements TypingNotificationConversation {
   private final AimConnection conn;
+  private final BuddyInfoTrackerListener tracker = new BuddyInfoTrackerListener() {
+  };
 
   ImConversation(AimConnection conn, Screenname buddy) {
     super(buddy);
     this.conn = conn;
 
     setAlwaysOpen();
+  }
+
+  protected void opened() {
+    conn.getBuddyInfoTracker().addTracker(getBuddy(), tracker);
+  }
+
+  protected void closed() {
+    conn.getBuddyInfoTracker().removeTracker(getBuddy(), tracker);
   }
 
   public void sendMessage(Message msg) throws ConversationException {

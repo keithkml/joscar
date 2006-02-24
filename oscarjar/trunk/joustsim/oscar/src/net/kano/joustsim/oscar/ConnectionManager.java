@@ -35,7 +35,6 @@ package net.kano.joustsim.oscar;
 
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.ratelim.RateLimitingQueueMgr;
 import net.kano.joscar.net.ClientConn;
 import net.kano.joscar.snaccmd.auth.AuthCommand;
 import net.kano.joscar.snaccmd.buddy.BuddyCommand;
@@ -182,7 +181,6 @@ public class ConnectionManager {
     mainConn.setCookie(info.getCookie());
     mainConn.addOscarListener(new MainBosConnListener());
     mainConn.setServiceFactory(new BasicServiceFactory());
-    mainConn.getSnacProcessor().setSnacQueueManager(new RateLimitingQueueMgr());
     this.mainConn = mainConn;
     return mainConn;
   }
