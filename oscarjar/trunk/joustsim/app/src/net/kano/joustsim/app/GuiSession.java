@@ -53,7 +53,6 @@ import net.kano.joustsim.oscar.State;
 import net.kano.joustsim.oscar.StateEvent;
 import net.kano.joustsim.oscar.StateInfo;
 import net.kano.joustsim.oscar.StateListener;
-import net.kano.joustsim.oscar.proxy.AimProxyInfo;
 import net.kano.joustsim.oscar.oscar.service.chatrooms.ChatInvitation;
 import net.kano.joustsim.oscar.oscar.service.chatrooms.ChatMessage;
 import net.kano.joustsim.oscar.oscar.service.chatrooms.ChatRoomManager;
@@ -236,7 +235,7 @@ public class GuiSession {
     //TODO: dispose of other buddies' prefs windows
 
     conn = aimSession.openConnection(props);
-    conn.setProxy(AimProxyInfo.forSocks5("kano.net", 10800, "test", "test"));
+//    conn.setProxy(AimProxyInfo.forSocks5("kano.net", 10800, "test", "test"));
     conn.addStateListener(connStateListener);
     conn.connect();
   }
