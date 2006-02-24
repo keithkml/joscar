@@ -75,6 +75,7 @@
   <target name="build-oscar-jar" depends="build-oscar-jar-classes"
           description="builds oscar.jar">
     <delete file="dist/oscar.jar" />
+    <mkdir dir="dist" />
     <jar file="dist/oscar.jar">
       <fileset dir="${oscar.bin}"  includes="**/*.class" />
       <fileset dir="${common.bin}" includes="**/*.class" />
