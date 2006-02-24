@@ -70,8 +70,8 @@ public class TimerTimeoutHandler implements TimeoutHandler {
     tasks.put(controller, task);
   }
 
-  private @Nullable synchronized TimerInfo getTimer(TimeoutableController controller) {
-    return tasks.get(controller);
+  private synchronized @Nullable TimerInfo getTimer(TimeoutableController c) {
+    return tasks.get(c);
   }
 
   public void pauseTimeout(TimeoutableController controller) {
@@ -151,5 +151,10 @@ public class TimerTimeoutHandler implements TimeoutHandler {
       }
       timer.schedule(task, date);
     }
+  }
+
+  protected void finalize() throws Throwable {
+    super.finalize();
+    timer.cancel();
   }
 }

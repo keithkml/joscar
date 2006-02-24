@@ -399,4 +399,8 @@ public class AimConnection {
     
     this.proxy = proxy;
   }
+
+  public boolean isOnline() {
+    return getState() == State.ONLINE;
+  }
 }

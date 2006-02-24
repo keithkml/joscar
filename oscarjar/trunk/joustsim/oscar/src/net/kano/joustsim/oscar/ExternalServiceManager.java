@@ -105,7 +105,7 @@ public class ExternalServiceManager {
       }
     }
   };
-  private final Timer serviceTimer = initializeServiceTimer();
+  private final Timer serviceTimer = createServiceTimer();
 
   private ServiceArbiterFactory arbiterFactory
       = new DefaultServiceArbiterFactory();
@@ -161,7 +161,7 @@ public class ExternalServiceManager {
     this.serviceConnectionTimeout = serviceConnectionTimeout;
   }
 
-  private Timer initializeServiceTimer() {
+  private Timer createServiceTimer() {
     Timer serviceTimer = new Timer(true);
     serviceTimer.scheduleAtFixedRate(new TimerTask() {
       public void run() {
