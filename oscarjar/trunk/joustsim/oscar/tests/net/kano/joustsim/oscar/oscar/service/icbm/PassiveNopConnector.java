@@ -41,7 +41,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-class MockPassiveConnector implements PassiveConnector {
+class PassiveNopConnector implements PassiveConnector {
   public int getLocalPort() {
     return 500;
   }

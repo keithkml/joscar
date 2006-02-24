@@ -36,6 +36,8 @@ package net.kano.joustsim.oscar.oscar.service.icbm;
 
 import net.kano.joscar.rvcmd.AcceptRvCmd;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
+import net.kano.joustsim.TestHelper;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.ControllerRestartConsultant;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.DefaultRvConnectionEventListener;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnection;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionEventListener;
@@ -77,18 +79,14 @@ public class OutgoingRvConnectionFunctionalTests extends RvConnectionTestCase {
   }
 
   public void testPassive() {
-    conn.addEventListener(new RvConnectionEventListener() {
-      public void handleEventWithStateChange(RvConnection transfer,
-          RvConnectionState state, RvConnectionEvent event) {
-      }
-
+    conn.addEventListener(new DefaultRvConnectionEventListener() {
       public void handleEvent(RvConnection transfer, RvConnectionEvent event) {
         if (event instanceof StartingControllerEvent) {
           StateController controller = ((StartingControllerEvent) event).getController();
           if (controller instanceof PassiveConnectionController) {
             PassiveConnectionController passive
                 = (PassiveConnectionController) controller;
-            passive.setConnector(new MockPassiveConnector());
+            passive.setConnector(new PassiveNopConnector());
           }
         }
       }
@@ -98,6 +96,33 @@ public class OutgoingRvConnectionFunctionalTests extends RvConnectionTestCase {
     assertEndWasStream(conn.waitForCompletion());
     assertHit(PassiveConnectionController.class);
     assertSentRvs(1, 0, 0);
+  }
+
+  public void testPassiveNotAcceptedRestarted() {
+    final SingleRestartConsultant restarter = new SingleRestartConsultant();
+    conn.setRestartConsultant(restarter);
+    conn.addEventListener(new DefaultRvConnectionEventListener() {
+      public void handleEvent(RvConnection transfer, RvConnectionEvent event) {
+        if (event instanceof StartingControllerEvent) {
+          StateController controller = ((StartingControllerEvent) event).getController();
+          if (controller instanceof PassiveConnectionController) {
+            PassiveConnectionController passive
+                = (PassiveConnectionController) controller;
+            if (restarter.restarted()) {
+              passive.setConnector(new PassiveNopConnector());
+            } else {
+              passive.setConnector(new FailConnector());
+            }
+          }
+        }
+      }
+    });
+    conn.sendRequest();
+    assertEndWasStream(conn.waitForCompletion());
+    assertTrue(restarter.restarted());
+    assertEquals(2, TestHelper.findInstances(getConnection().getHitControllers(),
+        PassiveConnectionController.class).size());
+    assertSentRvs(2, 0, 0);
   }
 
   public void testPassiveTimesOut() {
@@ -311,7 +336,7 @@ public class OutgoingRvConnectionFunctionalTests extends RvConnectionTestCase {
           StateController controller = ((StartingControllerEvent) event).getController();
           if (controller instanceof PassiveConnectionController) {
             ((PassiveConnectionController) controller)
-                .setConnector(new MockPassiveConnector());
+                .setConnector(new PassiveNopConnector());
           }
         }
       }
@@ -336,7 +361,7 @@ public class OutgoingRvConnectionFunctionalTests extends RvConnectionTestCase {
           StateController controller = ((StartingControllerEvent) event).getController();
           if (controller instanceof PassiveConnectionController) {
             ((PassiveConnectionController) controller)
-                .setConnector(new MockPassiveConnector());
+                .setConnector(new PassiveNopConnector());
           }
         }
       }
@@ -382,4 +407,20 @@ public class OutgoingRvConnectionFunctionalTests extends RvConnectionTestCase {
     }
   }
 
+  private static class SingleRestartConsultant implements
+      ControllerRestartConsultant {
+    private boolean restarted = false;
+
+    public void handleRestart() {
+      restarted = true;
+    }
+
+    public boolean shouldRestart() {
+      return !restarted;
+    }
+
+    public boolean restarted() {
+      return restarted;
+    }
+  }
 }

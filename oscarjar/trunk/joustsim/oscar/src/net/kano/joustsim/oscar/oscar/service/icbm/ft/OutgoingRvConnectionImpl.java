@@ -37,6 +37,7 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 import net.kano.joscar.rv.RecvRvEvent;
 import net.kano.joscar.rvcmd.ConnectionRequestRvCmd;
 import net.kano.joscar.rvcmd.RequestRvCmd;
+import net.kano.joscar.rvcmd.AcceptRvCmd;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectToProxyForOutgoingController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.OutgoingConnectionController;
@@ -44,6 +45,7 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.RedirectToProxy
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendOverProxyController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendPassivelyController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.RedirectConnectionController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownErrorEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
@@ -57,6 +59,10 @@ public abstract class OutgoingRvConnectionImpl extends RvConnectionImpl
     implements OutgoingRvConnection {
   private static final Logger LOGGER = Logger
       .getLogger(OutgoingRvConnectionImpl.class.getName());
+
+  private boolean gotAccept = false;
+  private ControllerRestartConsultant restarter
+      = new ControllerRestartConsultantImpl();
 
   public OutgoingRvConnectionImpl(Screenname myScreenname,
       RvSessionConnectionInfo rvsessioninfo) {
@@ -74,6 +80,24 @@ public abstract class OutgoingRvConnectionImpl extends RvConnectionImpl
     if (endState instanceof FailureEventInfo) {
       FailureEventInfo failureEventInfo = (FailureEventInfo) endState;
       event = failureEventInfo.getEvent();
+    }
+
+    boolean gotAccept;
+    ControllerRestartConsultant restarter;
+    synchronized (this) {
+      gotAccept = this.gotAccept;
+      restarter = this.restarter;
+    }
+    if (!gotAccept && isOpen() && restarter.shouldRestart()) {
+      restarter.handleRestart();
+      if (oldController instanceof SendPassivelyController
+          || oldController instanceof RedirectConnectionController) {
+        return new RedirectConnectionController();
+
+      } else if (oldController instanceof RedirectToProxyController
+          || oldController instanceof SendOverProxyController) {
+        return new RedirectToProxyController();
+      }
     }
 
     if (isLanController(oldController)) {
@@ -114,9 +138,25 @@ public abstract class OutgoingRvConnectionImpl extends RvConnectionImpl
     return new OutgoingRvSessionHandler();
   }
 
+  public synchronized ControllerRestartConsultant getRestartConsultant() {
+    return restarter;
+  }
+
+  public synchronized void setRestartConsultant(ControllerRestartConsultant restarter) {
+    this.restarter = restarter;
+  }
+
   protected class OutgoingRvSessionHandler extends AbstractRvSessionHandler {
     public OutgoingRvSessionHandler() {
       super(OutgoingRvConnectionImpl.this);
+    }
+
+    protected void handleIncomingAccept(RecvRvEvent event,
+        AcceptRvCmd acceptCmd) {
+      synchronized (this) {
+        gotAccept = true;
+      }
+      super.handleIncomingAccept(event, acceptCmd);
     }
 
     protected void handleIncomingRequest(RecvRvEvent event,
