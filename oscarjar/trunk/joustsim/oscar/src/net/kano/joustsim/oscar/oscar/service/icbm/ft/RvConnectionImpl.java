@@ -4,10 +4,10 @@ import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.MiscTools;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.oscar.service.icbm.RendezvousSessionHandler;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectedController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ControllerListener;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.OutgoingConnectionController;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectedController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ChecksummingEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectedEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectingEvent;
@@ -23,8 +23,8 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.StoppingControllerEv
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferringFileEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.WaitingForConnectionEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
 import net.kano.joustsim.oscar.proxy.AimProxyInfo;
 
 import java.util.Arrays;
@@ -36,6 +36,18 @@ public abstract class RvConnectionImpl
     implements RvConnection, StateBasedRvConnection {
   private static final Logger LOGGER = Logger
       .getLogger(FileTransferHelper.class.getName());
+
+  public static boolean isLanController(StateController oldController) {
+    return oldController instanceof OutgoingConnectionController
+        && ((OutgoingConnectionController) oldController).getTimeoutType()
+        == ConnectionType.LAN;
+  }
+
+  public static boolean isInternetController(StateController oldController) {
+    return oldController instanceof OutgoingConnectionController
+        && ((OutgoingConnectionController) oldController).getTimeoutType()
+        == ConnectionType.INTERNET;
+  }
 
   private final RendezvousSessionHandler rvSessionHandler;
   private final CopyOnWriteArrayList<RvConnectionEventListener> listeners
@@ -169,7 +181,7 @@ public abstract class RvConnectionImpl
     }
     flushEventQueue();
     stopThenStart(oldController, next);
-    return true;
+    return next != null;
   }
 
   private synchronized StateController storeNextController(
@@ -306,18 +318,6 @@ public abstract class RvConnectionImpl
 
   public String toString() {
     return MiscTools.getClassName(this) + " with " + getBuddyScreenname();
-  }
-
-  public static boolean isLanController(StateController oldController) {
-    return oldController instanceof OutgoingConnectionController
-        && ((OutgoingConnectionController) oldController).getTimeoutType()
-        == ConnectionType.LAN;
-  }
-
-  public static boolean isInternetController(StateController oldController) {
-    return oldController instanceof OutgoingConnectionController
-        && ((OutgoingConnectionController) oldController).getTimeoutType()
-        == ConnectionType.INTERNET;
   }
 
   public synchronized StateController getNextStateController() {
