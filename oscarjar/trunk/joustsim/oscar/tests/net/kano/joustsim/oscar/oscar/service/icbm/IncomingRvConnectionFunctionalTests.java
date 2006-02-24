@@ -184,7 +184,7 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
           } else if (controller instanceof RedirectConnectionController) {
             RedirectConnectionController redir
                 = (RedirectConnectionController) controller;
-            redir.setConnector(new MockPassiveConnector());
+            redir.setConnector(new PassiveNopConnector());
           }
         }
       }
