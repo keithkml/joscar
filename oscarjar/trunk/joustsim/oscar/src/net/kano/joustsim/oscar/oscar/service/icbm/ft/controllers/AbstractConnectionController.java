@@ -153,6 +153,7 @@ public abstract class AbstractConnectionController
   public synchronized boolean isConnected() { return connected; }
 
   public void stop() {
+    if (thread != null) thread.interrupt();
     fireFailed(new LocallyCancelledInfo());
   }
 

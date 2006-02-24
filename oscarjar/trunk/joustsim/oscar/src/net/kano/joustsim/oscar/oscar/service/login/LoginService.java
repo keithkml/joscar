@@ -92,6 +92,7 @@ public class LoginService extends Service {
 
   private boolean notified = false;
   private volatile @Nullable SecuridProvider securidProvider = null;
+  private volatile @Nullable Thread securidThread = null;
 
   public LoginService(AimConnection aimConnection,
       OscarConnection oscarConnection, Screenname screenname,
@@ -176,6 +177,9 @@ public class LoginService extends Service {
   }
 
   protected void finishUp() {
+    synchronized (this) {
+      if (securidThread != null) securidThread.interrupt();
+    }
     if (!getNotified()) {
       fireLoginFailed(
           new DisconnectedFailureInfo(getAimConnection().wantedDisconnect()));
@@ -233,6 +237,10 @@ public class LoginService extends Service {
           }
         });
         thread.setDaemon(true);
+        synchronized (this) {
+          if (securidThread != null) securidThread.interrupt();
+          securidThread = thread;
+        }
         thread.start();
       }
 
