@@ -144,6 +144,10 @@ public class ChatRoomSession {
     this.connection = connection;
   }
 
+  public void close() {
+    connection.disconnect();
+  }
+
   public void sendMessage(String msg) throws EncodingException {
     service.sendMessage(msg);
   }
