@@ -132,6 +132,7 @@ public abstract class AbstractRvSessionHandler implements RendezvousSessionHandl
 
   protected void handleIncomingAccept(RecvRvEvent event,
       AcceptRvCmd acceptCmd) {
+    connection.getEventPost().fireEvent(new BuddyAcceptedEvent());
     ManualTimeoutController mtc = getManualTimeoutController();
     if (mtc != null) mtc.startTimeoutTimer();
   }
@@ -143,4 +144,5 @@ public abstract class AbstractRvSessionHandler implements RendezvousSessionHandl
   }
 
   protected RvConnection getRvConnection() { return connection; }
+
 }

@@ -36,7 +36,7 @@ package net.kano.joustsim.oscar.oscar.service.icbm.dim;
 
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 
-class SentMessageEvent extends RvConnectionEvent {
+public class SentMessageEvent extends RvConnectionEvent {
   private final int length;
 
   public SentMessageEvent(int length) {this.length = length;}
