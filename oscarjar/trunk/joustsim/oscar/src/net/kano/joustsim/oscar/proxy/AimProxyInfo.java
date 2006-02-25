@@ -43,6 +43,9 @@ import socks.UserPasswordAuthentication;
 import javax.net.ServerSocketFactory;
 import javax.net.SocketFactory;
 import java.net.UnknownHostException;
+import java.net.ServerSocket;
+import java.net.InetAddress;
+import java.io.IOException;
 
 public class AimProxyInfo {
   private SocketFactory socketFactory;
@@ -53,6 +56,14 @@ public class AimProxyInfo {
   private String username;
   private String password;
   private Type type;
+
+  public static AimProxyInfo forHttp(String host, int port,
+      @Nullable String username, @Nullable String password) {
+    DefensiveTools.checkNull(host, "host");
+    DefensiveTools.checkRange(port, "port", 1, 65535);
+
+    return new AimProxyInfo(Type.HTTP, host, port, username, password);
+  }
 
   public static AimProxyInfo forSocks4(String host, int port,
       @Nullable String username) {
@@ -93,6 +104,16 @@ public class AimProxyInfo {
     if (type == Type.SOCKS4 || type == Type.SOCKS5) {
       socketFactory = new SocksSocketFactory(this);
       serverSocketFactory = new SocksServerSocketFactory(this);
+
+    } else if (type == Type.HTTP) {
+      if (username == null && password != null
+          || username != null && password == null) {
+        throw new IllegalArgumentException("Username and password must be "
+            + "specified together; username was " + username
+            + ", password was <" + (password == null ? "null" : "non-null")
+            + ">");
+      }
+      socketFactory = new HttpProxiedSocketFactory(this);
     }
   }
 
@@ -134,4 +155,19 @@ public class AimProxyInfo {
   }
 
   public static enum Type { NONE, SOCKS4, SOCKS5, HTTP }
+
+  private static class UselessServerSocketFactory extends ServerSocketFactory {
+    public ServerSocket createServerSocket(int i) throws IOException {
+      throw new IOException("Cannot open server socket over HTTP proxy");
+    }
+
+    public ServerSocket createServerSocket(int i, int i1) throws IOException {
+      throw new IOException("Cannot open server socket over HTTP proxy");
+    }
+
+    public ServerSocket createServerSocket(int i, int i1, InetAddress inetAddress)
+        throws IOException {
+      throw new IOException("Cannot open server socket over HTTP proxy");
+    }
+  }
 }
