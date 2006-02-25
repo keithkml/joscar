@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="us-ascii"?>
 
 <project name="Joust Secure IM Lite" default="build-oscar-jar">
-  <description> Joust Secure IM Lite build file </description>
-
   <property name="oscar.bin" value="oscar/bin"/>
   <property name="aolrtf.bin" value="aolrtf/bin"/>
   <property name="app.bin" value="app/bin"/>
