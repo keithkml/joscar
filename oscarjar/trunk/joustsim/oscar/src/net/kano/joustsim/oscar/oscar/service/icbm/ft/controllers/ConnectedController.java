@@ -35,5 +35,7 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers;
 
 public interface ConnectedController extends StateController {
-  public boolean isConnected();
+  boolean isConnected();
+
+  boolean didConnect();
 }

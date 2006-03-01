@@ -38,8 +38,8 @@ import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joscar.rvcmd.SegmentedFilename;
 import net.kano.joscar.rvproto.ft.FileTransferHeader;
 import net.kano.joscar.ByteBlock;
-import net.kano.joustsim.TestHelper;
-import static net.kano.joustsim.TestHelper.findInstances;
+import net.kano.joustsim.TestTools;
+import static net.kano.joustsim.TestTools.findInstances;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.Checksummer;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.ConnectionType;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.DefaultRvConnectionEventListener;
@@ -89,14 +89,14 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
   }
 
   protected void assertHit(Class<?> cls) {
-    assertNotNull(TestHelper.findOnlyInstance(
+    assertNotNull(TestTools.findOnlyInstance(
         getConnection().getHitControllers(), cls));
   }
 
   public void testLanConnection() {
-    addNopConnector(conn);
+    addNopConnector();
     generateRequestAndWaitForStream();
-    assertTrue(TestHelper.findOnlyInstance(conn.getHitControllers(),
+    assertTrue(TestTools.findOnlyInstance(conn.getHitControllers(),
         OutgoingConnectionController.class).getTimeoutType()
         == ConnectionType.LAN);
     assertSentRvs(0, 1, 0);
@@ -165,7 +165,7 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
       }
     });
     generateRequestAndWaitForStream();
-    assertNotNull(TestHelper.findOnlyInstance(conn.getHitControllers(),
+    assertNotNull(TestTools.findOnlyInstance(conn.getHitControllers(),
         ConnectToProxyForIncomingController.class));
     assertSentRvs(0, 1, 0);
   }
@@ -297,14 +297,14 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
         = findInstances(conn.getHitControllers(), OutgoingConnectionController.class);
     assertEquals(1, controllers.size());
     assertTrue(controllers.get(0).getTimeoutType() == ConnectionType.LAN);
-    assertNotNull(TestHelper.findOnlyInstance(conn.getHitControllers(),
+    assertNotNull(TestTools.findOnlyInstance(conn.getHitControllers(),
         ConnectToProxyForIncomingController.class));
     assertSentRvs(0, 2, 0);
   }
 
   public void testBuddyRedirectsAfterFinished()
       throws UnknownHostException {
-    addNopConnector(conn);
+    addNopConnector();
     generateRequestAndWaitForStream();
     conn.getRvSessionHandler().handleIncomingRequest(null,
         new GenericRequest(2, new RvConnectionInfo(
@@ -315,7 +315,7 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
 
   public void testBuddyRedirectsDuringTransfer()
       throws UnknownHostException, ExecutionException, InterruptedException {
-    addNopConnector(conn);
+    addNopConnector();
     MyFutureTask waiter = setConnectedWaiter();
     conn.getRvSessionHandler().handleIncomingRequest(null, new GenericRequest());
     assertSentRvs(0, 1, 0);
@@ -334,7 +334,7 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
   public void testBuddyRedirectsBeforeWeAccept()
       throws UnknownHostException, ExecutionException, InterruptedException {
     conn.setAutoMode(null);
-    addNopConnector(conn);
+    addNopConnector();
     conn.getRvSessionHandler().handleIncomingRequest(null, new GenericRequest());
     assertSentRvs(0, 0, 0);
     conn.getRvSessionHandler().handleIncomingRequest(null,
@@ -391,14 +391,14 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
     assertFalse(fail[0]);
     assertTrue(succeed[0]);
 
-    assertNotNull(TestHelper.findOnlyInstance(conn.getHitControllers(),
+    assertNotNull(TestTools.findOnlyInstance(conn.getHitControllers(),
         OutgoingConnectionController.class));
   }
 
   public void testRedirectAfterRejectNeverAccepted()
       throws UnknownHostException {
     conn.setAutoMode(null);
-    addNopConnector(conn);
+    addNopConnector();
     MockIncomingRvSessionHandler handler = conn.getRvSessionHandler();
     handler.handleIncomingRequest(null, new GenericRequest());
     conn.reject();

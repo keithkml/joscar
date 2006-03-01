@@ -46,7 +46,7 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectedContro
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ControllerListener;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.StartingControllerEvent;
-import net.kano.joustsim.TestHelper;
+import net.kano.joustsim.TestTools;
 import net.kano.joscar.rvproto.rvproxy.RvProxyReadyCmd;
 import net.kano.joscar.rvproto.rvproxy.RvProxyAckCmd;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
@@ -119,8 +119,8 @@ public abstract class RvConnectionTestCase extends TestCase {
     return conn.waitForCompletion();
   }
 
-  protected void addNopConnector(MockRvConnection conn) {
-    conn.addEventListener(new RvConnectionEventListener() {
+  protected void addNopConnector() {
+    getConnection().addEventListener(new RvConnectionEventListener() {
       public void handleEventWithStateChange(RvConnection transfer,
           RvConnectionState state, RvConnectionEvent event) {
       }
@@ -140,7 +140,7 @@ public abstract class RvConnectionTestCase extends TestCase {
   }
 
   protected void assertHit(Class<?> cls) {
-    assertNotNull(TestHelper.findOnlyInstance(getConnection().getHitControllers(),
+    assertNotNull(TestTools.findOnlyInstance(getConnection().getHitControllers(),
         cls));
   }
 
@@ -151,7 +151,7 @@ public abstract class RvConnectionTestCase extends TestCase {
   }
 
   protected void assertDidntHit(Class<?> cls) {
-    assertNull(TestHelper.findOnlyInstance(getConnection().getHitControllers(), cls));
+    assertNull(TestTools.findOnlyInstance(getConnection().getHitControllers(), cls));
   }
 
   protected static class MyFutureTask extends FutureTask<Object> {
@@ -176,6 +176,10 @@ public abstract class RvConnectionTestCase extends TestCase {
     }
 
     public boolean isConnected() {
+      return true;
+    }
+
+    public boolean didConnect() {
       return true;
     }
 

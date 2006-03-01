@@ -42,6 +42,7 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.AbstractIncomingRvSessionHa
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.IncomingRvConnectionImpl;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionState;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvSessionConnectionInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.NextStateControllerInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectedController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectionCompleteEvent;
@@ -80,7 +81,7 @@ public class IncomingDirectimConnectionImpl
     return controller instanceof DirectimController;
   }
 
-  protected StateController getNextControllerFromSuccess(
+  protected NextStateControllerInfo getNextControllerFromSuccess(
       StateController oldController, StateInfo oldStateInfo) {
     if (oldController instanceof DirectimController) {
       LOGGER.fine("Changing from success of receive controller to "
@@ -99,12 +100,11 @@ public class IncomingDirectimConnectionImpl
     }
   }
 
-  protected StateController getNextControllerFromUnknownError(
+  protected NextStateControllerInfo getNextControllerFromUnknownError(
       StateController oldController, StateInfo oldState,
       RvConnectionEvent event) {
     if (oldController instanceof DirectimController) {
-      queueStateChange(RvConnectionState.FAILED, event);
-      return null;
+      return new NextStateControllerInfo(RvConnectionState.FAILED, event);
 
     } else {
       throw new IllegalStateException("Trying to change from error "

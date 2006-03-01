@@ -34,12 +34,11 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.dim;
 
-import junit.framework.TestCase;
-import net.kano.joustsim.TestHelper;
+import net.kano.joscar.BinaryTools;
+import net.kano.joscar.ByteBlock;
+import net.kano.joustsim.TestTools;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
-import net.kano.joscar.ByteBlock;
-import net.kano.joscar.BinaryTools;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -95,6 +94,13 @@ public class DirectimReceiverTest extends DirectimTest {
     }
   }
 
+  public void testAttachmentOver64k() throws IOException {
+    int alen = 65 * 1024;
+    String attch = makeString(alen);
+    runTestWithAttachment("<BINARY><DATA ID=\"a\" SIZE=\""
+        + alen + "\">" + attch + "</DATA></BINARY>", 1024, "", attch);
+  }
+
   public void testMessagesNearBufferSizeWithAttachment() throws IOException {
     for (int i = 0; i < 80; i++) {
       String str = makeString(i);
@@ -126,7 +132,7 @@ public class DirectimReceiverTest extends DirectimTest {
   private void runTestWithPlainMessage(String sent, int bufferSize,
       String expect) throws IOException {
     CollectingEventPost events = runTest(sent, bufferSize);
-    String recvd = TestHelper.findOnlyInstance(events.getEvents(),
+    String recvd = TestTools.findOnlyInstance(events.getEvents(),
         ReceivedMessageEvent.class).getMessage();
     // to make the output more useful we check for length first if it would be
     // hard to determine string difference
@@ -139,9 +145,9 @@ public class DirectimReceiverTest extends DirectimTest {
   private void runTestWithAttachment(String sent, int bufferSize,
       String expect, String... expectAttachAscii) throws IOException {
     CollectingEventPost events = runTest(sent, bufferSize);
-    String recvd = TestHelper.findOnlyInstance(events.getEvents(),
+    String recvd = TestTools.findOnlyInstance(events.getEvents(),
         ReceivedMessageEvent.class).getMessage();
-    assertEquals(expect, recvd);
+    assertTrue(expect.equals(recvd));
     int attcount = 0;
     for (RvConnectionEvent event : events.getEvents()) {
       if (event instanceof ReceivedAttachmentEvent) {

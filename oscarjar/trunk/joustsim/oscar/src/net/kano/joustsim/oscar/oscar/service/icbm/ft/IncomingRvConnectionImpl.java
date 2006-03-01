@@ -132,10 +132,7 @@ public abstract class IncomingRvConnectionImpl
         || oldController instanceof ConnectToProxyForIncomingController;
   }
 
-  protected abstract StateController getNextControllerFromSuccess(
-      StateController oldController, StateInfo oldStateInfo);
-
-  protected synchronized StateController getNextControllerFromError(
+  protected synchronized NextStateControllerInfo getNextControllerFromError(
       StateController oldController, StateInfo oldState) {
     RvConnectionEvent event;
     if (oldState instanceof FailureEventInfo) {
@@ -148,17 +145,18 @@ public abstract class IncomingRvConnectionImpl
       OutgoingConnectionController outController
           = (OutgoingConnectionController) oldController;
       if (outController.getTimeoutType() == ConnectionType.LAN) {
-        return new OutgoingConnectionController(ConnectionType.INTERNET);
+        return new NextStateControllerInfo(
+            new OutgoingConnectionController(ConnectionType.INTERNET));
 
       } else {
-        return new ConnectToProxyForIncomingController();
+        return new NextStateControllerInfo(new ConnectToProxyForIncomingController());
       }
 
     } else if (oldController instanceof ConnectToProxyForIncomingController) {
-      return new RedirectConnectionController();
+      return new NextStateControllerInfo(new RedirectConnectionController());
 
     } else if (oldController instanceof RedirectConnectionController) {
-      return new RedirectToProxyController();
+      return new NextStateControllerInfo(new RedirectToProxyController());
 
     } else if (oldController instanceof RedirectToProxyController) {
       queueStateChange(RvConnectionState.FAILED,
@@ -170,7 +168,7 @@ public abstract class IncomingRvConnectionImpl
     }
   }
 
-  protected abstract StateController getNextControllerFromUnknownError(
+  protected abstract NextStateControllerInfo getNextControllerFromUnknownError(
       StateController oldController, StateInfo oldState,
       RvConnectionEvent event);
 

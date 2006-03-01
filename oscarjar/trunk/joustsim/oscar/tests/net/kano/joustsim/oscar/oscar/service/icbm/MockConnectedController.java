@@ -48,6 +48,10 @@ public class MockConnectedController
     return true;
   }
 
+  public boolean didConnect() {
+    return true;
+  }
+
   public void start(RvConnection transfer, StateController last) {
     try {
       fireSucceeded(new SocketStreamInfo(null));

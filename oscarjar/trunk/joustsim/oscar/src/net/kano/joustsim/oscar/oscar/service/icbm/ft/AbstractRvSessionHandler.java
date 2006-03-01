@@ -134,6 +134,8 @@ public abstract class AbstractRvSessionHandler implements RendezvousSessionHandl
       AcceptRvCmd acceptCmd) {
     connection.getEventPost().fireEvent(new BuddyAcceptedEvent());
     ManualTimeoutController mtc = getManualTimeoutController();
+    //TODO(klea): I don't think this timer stuff works right. I think "startedTimer" needs to be a field
+    // so we can execute startTimeoutTimer() again if a new controller starts
     if (mtc != null) mtc.startTimeoutTimer();
   }
 

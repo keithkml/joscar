@@ -143,6 +143,10 @@ public abstract class TransferController extends AbstractStateController
     return connected;
   }
 
+  public boolean didConnect() {
+    return isConnected();
+  }
+
   protected abstract void transferInThread(
       RvConnection transfer)
       throws IOException, FailureEventException;

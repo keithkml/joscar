@@ -74,7 +74,7 @@ public abstract class OutgoingRvConnectionImpl extends RvConnectionImpl
     super(proxy, myScreenname, rvsessioninfo);
   }
 
-  protected StateController getNextControllerFromError(
+  protected NextStateControllerInfo getNextControllerFromError(
       StateController oldController, StateInfo endState) {
     RvConnectionEvent event = null;
     if (endState instanceof FailureEventInfo) {
@@ -92,28 +92,26 @@ public abstract class OutgoingRvConnectionImpl extends RvConnectionImpl
       restarter.handleRestart();
       if (oldController instanceof SendPassivelyController
           || oldController instanceof RedirectConnectionController) {
-        return new RedirectConnectionController();
+        return new NextStateControllerInfo(new RedirectConnectionController());
 
       } else if (oldController instanceof RedirectToProxyController
           || oldController instanceof SendOverProxyController) {
-        return new RedirectToProxyController();
+        return new NextStateControllerInfo(new RedirectToProxyController());
       }
     }
 
     if (isLanController(oldController)) {
-      if (event != null) queueEvent(event);
-      return new OutgoingConnectionController(ConnectionType.INTERNET);
+      return new NextStateControllerInfo(
+          new OutgoingConnectionController(ConnectionType.INTERNET), event);
 
     } else if (oldController instanceof SendPassivelyController
         || isInternetController(oldController)
         || oldController instanceof ConnectToProxyForOutgoingController) {
-      if (event != null) queueEvent(event);
-      return new RedirectToProxyController();
+      return new NextStateControllerInfo(new RedirectToProxyController(), event);
 
     } else if (oldController instanceof RedirectToProxyController) {
-      setState(RvConnectionState.FAILED,
+      return new NextStateControllerInfo(RvConnectionState.FAILED,
           event == null ? new UnknownErrorEvent() : event);
-      return null;
 
     } else {
       return getNextControllerFromUnknownError(oldController,
@@ -121,7 +119,7 @@ public abstract class OutgoingRvConnectionImpl extends RvConnectionImpl
     }
   }
 
-  protected abstract StateController getNextControllerFromUnknownError(
+  protected abstract NextStateControllerInfo getNextControllerFromUnknownError(
       StateController oldController, FailedStateInfo failedStateInfo,
       RvConnectionEvent event);
 
@@ -142,7 +140,8 @@ public abstract class OutgoingRvConnectionImpl extends RvConnectionImpl
     return restarter;
   }
 
-  public synchronized void setRestartConsultant(ControllerRestartConsultant restarter) {
+  public synchronized void setRestartConsultant(
+      ControllerRestartConsultant restarter) {
     this.restarter = restarter;
   }
 

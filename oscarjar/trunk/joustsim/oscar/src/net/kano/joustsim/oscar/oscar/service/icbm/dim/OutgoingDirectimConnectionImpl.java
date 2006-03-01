@@ -40,6 +40,7 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.OutgoingRvConnectionImpl;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionState;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvRequestMaker;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvSessionConnectionInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.NextStateControllerInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendOverProxyController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendPassivelyController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
@@ -68,14 +69,12 @@ public class OutgoingDirectimConnectionImpl
         .setMaker(new DirectimRequestMaker(this));
   }
 
-  protected StateController getNextControllerFromUnknownError(
+  protected NextStateControllerInfo getNextControllerFromUnknownError(
       StateController oldController, FailedStateInfo failedStateInfo,
       RvConnectionEvent event) {
     if (oldController instanceof DirectimController) {
-      //TODO: retry dim with other controllers like file receiver does
-      queueStateChange(RvConnectionState.FAILED,
+      return new NextStateControllerInfo(RvConnectionState.FAILED,
           event == null ? new UnknownErrorEvent() : event);
-      return null;
 
     } else {
       throw new IllegalStateException("unknown previous controller "
@@ -83,12 +82,11 @@ public class OutgoingDirectimConnectionImpl
     }
   }
 
-  protected StateController getNextControllerFromSuccess(
+  protected NextStateControllerInfo getNextControllerFromSuccess(
       StateController oldController, StateInfo endState) {
     if (oldController instanceof DirectimController) {
-      queueStateChange(RvConnectionState.FINISHED,
+      return new NextStateControllerInfo(RvConnectionState.FINISHED,
           new ConnectionCompleteEvent());
-      return null;
 
     } else {
       throw new IllegalStateException("unknown previous controller "

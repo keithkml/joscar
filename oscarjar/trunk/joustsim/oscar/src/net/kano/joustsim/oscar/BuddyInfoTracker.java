@@ -62,11 +62,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-//TODO: remove buddies from tracking loop if they're added to the buddylist
 public class BuddyInfoTracker {
   private static final Logger LOGGER = Logger
       .getLogger(BuddyInfoTracker.class.getName());
@@ -113,24 +111,24 @@ public class BuddyInfoTracker {
               public void groupAdded(BuddyList list, List<? extends Group> oldItems,
                   List<? extends Group> newItems, Group group,
                   List<? extends Buddy> buddies) {
-                setBuddiesUpdated();
+                handleBuddiesUpdated();
               }
 
               public void groupRemoved(BuddyList list, List<? extends Group> oldItems,
                   List<? extends Group> newItems, Group group) {
-                setBuddiesUpdated();
+                handleBuddiesUpdated();
               }
 
               public void buddyAdded(BuddyList list, Group group,
                   List<? extends Buddy> oldItems, List<? extends Buddy> newItems,
                   Buddy buddy) {
-                setBuddiesUpdated();
+                handleBuddiesUpdated();
               }
 
               public void buddyRemoved(BuddyList list, Group group,
                   List<? extends Buddy> oldItems, List<? extends Buddy> newItems,
                   Buddy buddy) {
-                setBuddiesUpdated();
+                handleBuddiesUpdated();
               }
 
               public void buddiesReordered(BuddyList list, Group group,
@@ -180,64 +178,7 @@ public class BuddyInfoTracker {
         }
       }
     });
-    thread = new Thread(new Runnable() {
-      public void run() {
-        while (conn.getState() != State.FAILED
-            && conn.getState() != State.DISCONNECTED) {
-          try {
-            becool();
-          } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Error running buddy tracker", e);
-          }
-          try {
-            Thread.sleep(10000);
-          } catch (InterruptedException ignored) {
-          }
-        }
-        LOGGER.fine("Shutting down buddy tracker thread for " + conn);
-      }
-
-      private void becool() {
-        InfoService infoService = conn.getInfoService();
-        if (infoService == null) return;
-
-        OscarConnection oscar = infoService.getOscarConnection();
-        ConnectionQueueMgr queueMgr = oscar.getRateManager()
-            .getQueueMgr(oscar.getSnacProcessor());
-        RateQueue infoQueue = queueMgr
-            .getRateQueue(new CmdType(FAMILY_LOC, CMD_NEW_GET_INFO));
-        if (infoQueue == null) return;
-
-        long now = System.currentTimeMillis();
-        List<Screenname> request;
-        synchronized (BuddyInfoTracker.this) {
-          Set<TrackedBuddyInfo> want = new TreeSet<TrackedBuddyInfo>(lastCheckedComparator);
-          for (TrackedBuddyInfo info : trackers.values()) {
-            if (now - info.lastChecked > minimumTrackInterval) {
-              want.add(info);
-            }
-          }
-          request = new ArrayList<Screenname>();
-          int possible = infoQueue.getRateClassMonitor().getPossibleCmdCount() - 1;
-          int i = 0;
-          for (Iterator<TrackedBuddyInfo> it = want.iterator(); it.hasNext();) {
-            if (i >= possible) break;
-            TrackedBuddyInfo info = it.next();
-            LOGGER.fine("Requesting tracked buddy " + info.screenname
-                + "'s awaymsg after " + (now - info.lastChecked / 1000)
-                + "sec");
-
-            it.remove();
-            info.lastChecked = now;
-            request.add(info.screenname);
-            i++;
-          }
-        }
-        for (Screenname screenname : request) {
-          infoService.requestAwayMessage(screenname);
-        }
-      }
-    });
+    thread = new Thread(new TrackingThread());
     thread.setDaemon(true);
     thread.start();
   }
@@ -268,7 +209,7 @@ public class BuddyInfoTracker {
     }
   }
 
-  private synchronized void setBuddiesUpdated() {
+  private synchronized void handleBuddiesUpdated() {
     SsiService ssi = conn.getSsiService();
     if (ssi != null) {
       Set<Screenname> old = new HashSet<Screenname>(buddies);
@@ -373,5 +314,73 @@ public class BuddyInfoTracker {
 
   private synchronized boolean isExplicitlyTracked(Screenname sn) {
     return trackers.containsKey(sn);
+  }
+
+  public synchronized long getMinimumTrackInterval() {
+    return minimumTrackInterval;
+  }
+
+  public synchronized void setMinimumTrackInterval(long minimumTrackInterval) {
+    this.minimumTrackInterval = minimumTrackInterval;
+  }
+
+  private class TrackingThread implements Runnable {
+    public void run() {
+      while (conn.getState() != State.FAILED
+          && conn.getState() != State.DISCONNECTED) {
+        try {
+          becool();
+        } catch (Exception e) {
+          LOGGER.log(Level.WARNING, "Error running buddy tracker", e);
+        }
+        try {
+          Thread.sleep(10000);
+        } catch (InterruptedException ignored) {
+        }
+      }
+      LOGGER.fine("Shutting down buddy tracker thread for " + conn);
+    }
+
+    private void becool() {
+      InfoService infoService = conn.getInfoService();
+      if (infoService == null) return;
+
+      OscarConnection oscar = infoService.getOscarConnection();
+      ConnectionQueueMgr queueMgr = oscar.getRateManager()
+          .getQueueMgr(oscar.getSnacProcessor());
+      RateQueue infoQueue = queueMgr
+          .getRateQueue(new CmdType(FAMILY_LOC, CMD_NEW_GET_INFO));
+      if (infoQueue == null) return;
+
+      long now = System.currentTimeMillis();
+      List<Screenname> request;
+      synchronized (BuddyInfoTracker.this) {
+        Set<TrackedBuddyInfo> want = new TreeSet<TrackedBuddyInfo>(
+            lastCheckedComparator);
+        for (TrackedBuddyInfo info : trackers.values()) {
+          if (!buddyInfoMgr.getBuddyInfo(info.screenname).isOnBuddyList()) {
+            if (now - info.lastChecked > minimumTrackInterval) {
+              want.add(info);
+            }
+          }
+        }
+        request = new ArrayList<Screenname>();
+        int possible = infoQueue.getRateClassMonitor().getPossibleCmdCount() - 1;
+        int i = 0;
+        for (TrackedBuddyInfo info : want) {
+          if (i >= possible) break;
+          LOGGER.fine("Requesting tracked buddy " + info.screenname
+              + "'s awaymsg after " + (now - info.lastChecked / 1000)
+              + "sec");
+
+          info.lastChecked = now;
+          request.add(info.screenname);
+          i++;
+        }
+      }
+      for (Screenname screenname : request) {
+        infoService.requestAwayMessage(screenname);
+      }
+    }
   }
 }

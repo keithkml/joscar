@@ -6,8 +6,8 @@ import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.oscar.service.icbm.RendezvousSessionHandler;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectedController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ControllerListener;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.OutgoingConnectionController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ChecksummingEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectedEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectingEvent;
@@ -26,6 +26,7 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
 import net.kano.joustsim.oscar.proxy.AimProxyInfo;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -36,6 +37,7 @@ public abstract class RvConnectionImpl
     implements RvConnection, StateBasedRvConnection {
   private static final Logger LOGGER = Logger
       .getLogger(FileTransferHelper.class.getName());
+  private @Nullable StateController lastConnectionController = null;
 
   public static boolean isLanController(StateController oldController) {
     return oldController instanceof OutgoingConnectionController
@@ -87,7 +89,6 @@ public abstract class RvConnectionImpl
       Screenname myScreenname, RvSessionConnectionInfo rvsessioninfo) {
     rvSessionHandler = createSessionHandler();
     settings.setProxyInfo(proxy);
-    settings.setPerConnectionTimeout(ConnectionType.LAN, 2000);
     sessionInfo = rvsessioninfo;
     this.screenname = myScreenname;
   }
@@ -135,10 +136,13 @@ public abstract class RvConnectionImpl
 
   protected boolean isValidNextController(StateController oldController,
       StateController newController) {
-    if (done) {
-      LOGGER.warning("Someone tried changing controller for " + this
-          + " to " + newController + ", but we are done so it is being ignored");
-      return false;
+    synchronized (this) {
+      if (done) {
+        LOGGER.warning("Someone tried changing controller for " + this
+            + " to " + newController + ", but we are done so it is being "
+            + "ignored");
+        return false;
+      }
     }
 
     if (isConnectedController(oldController)) {
@@ -171,7 +175,24 @@ public abstract class RvConnectionImpl
     StateController next;
     synchronized (this) {
       if (this.controller == oldController) {
-        next = getNextStateController();
+        NextStateControllerInfo nextInfo = getNextController();
+        if (nextInfo == null) {
+          next = null;
+        } else {
+          next = nextInfo.getController();
+          RvConnectionState state = nextInfo.getState();
+          RvConnectionEvent event = nextInfo.getEvent();
+          if (state != null) {
+            if (event == null) {
+              event = new RvConnectionEvent() {
+              };
+            }
+            queueStateChange(state, event);
+            
+          } else if (event != null) {
+            queueEvent(event);
+          }
+        }
         if (!isValidNextController(oldController, next)) return false;
         storeNextController(next);
 
@@ -190,6 +211,9 @@ public abstract class RvConnectionImpl
         + controller);
     StateController last = this.controller;
     this.controller = controller;
+    if (isSomeConnectionController(controller)) {
+      lastConnectionController = controller;
+    }
     if (controller != null) {
       controller.addControllerListener(controllerListener);
     }
@@ -268,9 +292,7 @@ public abstract class RvConnectionImpl
     listeners.remove(listener);
   }
 
-  public EventPost getEventPost() {
-    return eventPost;
-  }
+  public EventPost getEventPost() { return eventPost; }
 
   public Screenname getBuddyScreenname() {
     return new Screenname(sessionInfo.getRvSession().getScreenname());
@@ -308,30 +330,36 @@ public abstract class RvConnectionImpl
 
   public RvConnectionSettings getSettings() { return settings; }
 
-  public Screenname getMyScreenname() {
-    return screenname;
-  }
+  public Screenname getMyScreenname() { return screenname; }
 
-  public RvSessionConnectionInfo getRvSessionInfo() {
-    return sessionInfo;
-  }
+  public RvSessionConnectionInfo getRvSessionInfo() { return sessionInfo; }
 
   public String toString() {
     return MiscTools.getClassName(this) + " with " + getBuddyScreenname();
   }
 
-  public synchronized StateController getNextStateController() {
+  public synchronized NextStateControllerInfo getNextController() {
     StateController oldController = getStateController();
     StateInfo endState = oldController.getEndStateInfo();
     if (endState instanceof SuccessfulStateInfo) {
       if (isSomeConnectionController(oldController)) {
-        return createConnectedController(endState);
+        return new NextStateControllerInfo(createConnectedController(endState));
 
       } else {
         return getNextControllerFromSuccess(oldController, endState);
       }
 
     } else if (endState instanceof FailedStateInfo) {
+      if (isConnectedController(oldController)) {
+        if (!((ConnectedController) oldController).didConnect()) {
+          NextStateControllerInfo next = getNextControllerFromConnectedError(
+              oldController, endState, lastConnectionController);
+          LOGGER.fine("Connection controller " + oldController + " failed; "
+              + "moving from last connected controller "
+              + lastConnectionController + " to " + next);
+          return next;
+        }
+      }
       return getNextControllerFromError(oldController, endState);
 
     } else {
@@ -339,20 +367,30 @@ public abstract class RvConnectionImpl
     }
   }
 
+  protected NextStateControllerInfo getNextControllerFromConnectedError(
+      StateController oldController, StateInfo endState,
+      StateController lastConnectionController) {
+    return getNextControllerFromError(lastConnectionController,
+        new DummyFailedStateInfo());
+  }
+
   public boolean isOpen() {
     return getState().isOpen();
   }
 
-  protected abstract StateController getNextControllerFromError(
+  //TODO(klea): make these methods return a state controller, new state, and stateinfo
+  //TODO(klea): write tests for failed conn contyroller
+  protected abstract NextStateControllerInfo getNextControllerFromError(
       StateController oldController, StateInfo endState);
 
-  protected abstract StateController getNextControllerFromSuccess(
+  protected abstract NextStateControllerInfo getNextControllerFromSuccess(
       StateController oldController, StateInfo endState);
 
   protected abstract ConnectedController createConnectedController(
       StateInfo endState);
 
-  protected abstract boolean isSomeConnectionController(StateController oldController);
+  protected abstract boolean isSomeConnectionController(
+      StateController oldController);
 
   protected boolean canInterruptConnectedController(
       ConnectedController connected, StateController newController) {
@@ -418,4 +456,6 @@ public abstract class RvConnectionImpl
       }
     }
   }
+
+  private static class DummyFailedStateInfo extends FailedStateInfo { }
 }

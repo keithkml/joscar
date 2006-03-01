@@ -92,14 +92,13 @@ public class IncomingFileTransferImpl
     return controller instanceof ReceiveFileController;
   }
 
-  protected StateController getNextControllerFromSuccess(
+  protected NextStateControllerInfo getNextControllerFromSuccess(
       StateController oldController, StateInfo oldStateInfo) {
     if (oldController instanceof ReceiveFileController) {
       LOGGER.fine("Changing from success of receive controller to "
           + "completed");
-      queueStateChange(RvConnectionState.FINISHED,
+      return new NextStateControllerInfo(RvConnectionState.FINISHED,
           new ConnectionCompleteEvent());
-      return null;
 
     } else if (oldStateInfo instanceof StreamInfo) {
       throw new IllegalStateException("stream info here??");
@@ -110,12 +109,11 @@ public class IncomingFileTransferImpl
     }
   }
 
-  protected StateController getNextControllerFromUnknownError(
+  protected NextStateControllerInfo getNextControllerFromUnknownError(
       StateController oldController, StateInfo oldState,
       RvConnectionEvent event) {
     if (oldController instanceof ReceiveFileController) {
-      queueStateChange(RvConnectionState.FAILED, event);
-      return null;
+      return new NextStateControllerInfo(RvConnectionState.FAILED, event);
 
     } else {
       throw new IllegalStateException("Unknown controller " + oldController);

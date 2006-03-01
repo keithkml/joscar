@@ -36,7 +36,7 @@ package net.kano.joustsim.oscar.oscar.service.icbm;
 
 import net.kano.joscar.rvcmd.AcceptRvCmd;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
-import net.kano.joustsim.TestHelper;
+import net.kano.joustsim.TestTools;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.ControllerRestartConsultant;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.DefaultRvConnectionEventListener;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnection;
@@ -44,18 +44,27 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionEventListener;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionSettings;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionState;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.AbstractProxyConnectionController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.AbstractStateController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectToProxyForOutgoingController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectedController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.OutgoingConnectionController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.PassiveConnectionController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.RedirectToProxyController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendPassivelyController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.StartedControllerEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.StartingControllerEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.AbstractStreamInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.SelectableChannel;
+import java.nio.channels.WritableByteChannel;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -120,7 +129,7 @@ public class OutgoingRvConnectionFunctionalTests extends RvConnectionTestCase {
     conn.sendRequest();
     assertEndWasStream(conn.waitForCompletion());
     assertTrue(restarter.restarted());
-    assertEquals(2, TestHelper.findInstances(getConnection().getHitControllers(),
+    assertEquals(2, TestTools.findInstances(getConnection().getHitControllers(),
         PassiveConnectionController.class).size());
     assertSentRvs(2, 0, 0);
   }
@@ -345,6 +354,7 @@ public class OutgoingRvConnectionFunctionalTests extends RvConnectionTestCase {
     conn.getRvSessionHandler().handleIncomingAccept(null, new GenericAcceptRv());
     assertEndWasStream(conn.waitForCompletion());
     assertHit(PassiveConnectionController.class);
+    assertDidntHit(OutgoingConnectionController.class);
     assertSentRvs(1, 0, 0);
     conn.getRvSessionHandler().handleIncomingRequest(null, new GenericRequest(2,
         new RvConnectionInfo(InetAddress.getByName("1.2.3.4"),
@@ -379,6 +389,34 @@ public class OutgoingRvConnectionFunctionalTests extends RvConnectionTestCase {
     assertSame("Redirect while connected should not cause controller change",
         last, hit.get(hit.size() - 1));
     assertSentRvs(1, 0, 0);
+  }
+
+  public void testConnectionControllerRetry() {
+    conn.addEventListener(new DefaultRvConnectionEventListener() {
+      public void handleEvent(RvConnection transfer, RvConnectionEvent event) {
+        if (event instanceof StartingControllerEvent) {
+          StateController controller
+              = ((StartingControllerEvent) event).getController();
+          if (controller instanceof SendPassivelyController) {
+            ((SendPassivelyController) controller)
+                .setConnector(new PassiveNopConnector());
+
+          } else if (controller instanceof RedirectToProxyController) {
+            RedirectToProxyController redirectToProxyController
+                = (RedirectToProxyController) controller;
+            redirectToProxyController.setConnector(getInitiateProxyConnector());
+          }
+        }
+      }
+    });
+    conn.setConnectedController(new FailThenSucceedController(conn, false));
+    conn.sendRequest();
+//    conn.getRvSessionHandler().handleIncomingAccept(null, new GenericAcceptRv());
+    assertEndWasStream(conn.waitForCompletion());
+    assertEquals(2, TestTools.findInstances(conn.getHitControllers(),
+        FailThenSucceedController.class).size());
+    assertHit(SendPassivelyController.class);
+    assertHit(RedirectToProxyController.class);
   }
 
   private RvConnectionEventListener createOnlyUsingProxyEventListener() {
@@ -421,6 +459,60 @@ public class OutgoingRvConnectionFunctionalTests extends RvConnectionTestCase {
 
     public boolean restarted() {
       return restarted;
+    }
+  }
+
+  private static class FailThenSucceedController
+      extends AbstractStateController implements ConnectedController {
+    private final MockRvConnection connection;
+    private final boolean connected;
+
+    public FailThenSucceedController(MockRvConnection connection,
+        boolean connected) {
+      this.connection = connection;
+      this.connected = connected;
+    }
+
+    public void start(RvConnection transfer, StateController last) {
+      if (connected) {
+        fireSucceeded(new MyStreamInfo());
+
+      } else {
+        connection.setConnectedController(new FailThenSucceedController(
+            connection, true));
+        fireFailed(new FailedStateInfo() {
+        });
+      }
+    }
+
+    public void stop() {
+    }
+
+    public boolean isConnected() {
+      return connected;
+    }
+
+    public boolean didConnect() {
+      return connected;
+    }
+
+    public boolean equals(Object obj) {
+      return obj.getClass().equals(getClass());
+    }
+
+    private static class MyStreamInfo
+        extends AbstractStreamInfo implements StreamInfo {
+      public SelectableChannel getSelectableChannel() {
+        return null;
+      }
+
+      public WritableByteChannel getWritableChannel() {
+        return null;
+      }
+
+      public ReadableByteChannel getReadableChannel() {
+        return null;
+      }
     }
   }
 }

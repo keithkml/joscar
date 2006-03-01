@@ -234,8 +234,8 @@ public class BuddyInfoManager {
             SnacCommand sent = e.getRequest().getCommand();
             if (sent instanceof SingleBuddyRequest) {
               SingleBuddyRequest request = (SingleBuddyRequest) sent;
-              getBuddyInfoInstance(new Screenname(request.getScreenname())).
-                  setOnline(false);
+              BuddyInfo info = getBuddyInfoInstance(new Screenname(request.getScreenname()));
+              if (!info.isOnBuddyList()) info.setOnline(false);
             }
           }
         }

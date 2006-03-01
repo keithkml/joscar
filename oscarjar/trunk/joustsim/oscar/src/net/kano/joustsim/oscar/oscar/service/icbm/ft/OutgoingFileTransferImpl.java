@@ -193,14 +193,12 @@ public class OutgoingFileTransferImpl
     return new FileSendBlock(sendType, filename, numFiles, totalSize);
   }
 
-  protected StateController getNextControllerFromUnknownError(
+  protected NextStateControllerInfo getNextControllerFromUnknownError(
       StateController oldController, FailedStateInfo failedStateInfo,
       RvConnectionEvent event) {
     if (oldController instanceof SendFileController) {
-      //TODO(klea): retry send with other controllers like receiver does
-      queueStateChange(RvConnectionState.FAILED,
+      return new NextStateControllerInfo(RvConnectionState.FAILED,
           event == null ? new UnknownErrorEvent() : event);
-      return null;
 
     } else {
       throw new IllegalStateException("unknown previous controller "
@@ -208,12 +206,11 @@ public class OutgoingFileTransferImpl
     }
   }
 
-  protected StateController getNextControllerFromSuccess(
+  protected NextStateControllerInfo getNextControllerFromSuccess(
       StateController oldController, StateInfo endState) {
     if (oldController instanceof SendFileController) {
-      queueStateChange(RvConnectionState.FINISHED,
+      return new NextStateControllerInfo(RvConnectionState.FINISHED,
           new ConnectionCompleteEvent());
-      return null;
 
     } else if (oldController instanceof ChecksumController) {
       if (endState instanceof ComputedChecksumsInfo) {
@@ -221,9 +218,9 @@ public class OutgoingFileTransferImpl
         checksums.putAll(info.getChecksums());
       }
       if (getSettings().isOnlyUsingProxy()) {
-        return new SendOverProxyController();
+        return new NextStateControllerInfo(new SendOverProxyController());
       } else {
-        return new SendPassivelyController();
+        return new NextStateControllerInfo(new SendPassivelyController());
       }
 
     } else {

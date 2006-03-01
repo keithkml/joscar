@@ -40,7 +40,7 @@ import org.jetbrains.annotations.Nullable;
 public interface StateBasedRvConnection extends RvConnection {
   StateController getStateController();
 
-  @Nullable StateController getNextStateController();
+  @Nullable NextStateControllerInfo getNextController();
 
   boolean setState(RvConnectionState state, RvConnectionEvent event);
 }

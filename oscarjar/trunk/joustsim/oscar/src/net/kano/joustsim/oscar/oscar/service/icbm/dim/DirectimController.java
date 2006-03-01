@@ -125,6 +125,10 @@ public class DirectimController extends AbstractStateController
     return isIcbmIdConfirmed();
   }
 
+  public boolean didConnect() {
+    return isConnected();
+  }
+
   public void pauseTransfer() {
     pauseHelper.setPaused(true);
   }

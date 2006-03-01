@@ -188,8 +188,7 @@ public class RoomFinderService extends Service {
       conn.setCookie(flapCookie);
       conn.setServiceFactory(new ChatRoomServiceFactory(this.roomInfo));
       for (RoomFinderServiceListener listener : listeners) {
-        listener.handleNewChatRoom(RoomFinderService.this,
-            this.roomInfo, conn);
+        listener.handleNewChatRoom(RoomFinderService.this, this.roomInfo, conn);
       }
       conn.connect();
     }

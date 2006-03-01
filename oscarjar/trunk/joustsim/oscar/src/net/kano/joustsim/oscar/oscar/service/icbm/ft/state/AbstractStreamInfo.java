@@ -7,8 +7,8 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
-public abstract class AbstractStreamInfo extends SuccessfulStateInfo implements
-    StreamInfo {
+public abstract class AbstractStreamInfo
+    extends SuccessfulStateInfo implements StreamInfo {
   public InputStream getInputStream() {
     try {
       return new SelectorInputStream(getReadableChannel(),

@@ -39,6 +39,7 @@ import net.kano.joscar.rvproto.rvproxy.RvProxyErrorCmd;
 import net.kano.joscar.rvproto.rvproxy.RvProxyReadyCmd;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.ConnectionType;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FailureEventException;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.TimeoutHandler;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.AolProxyTimedOutEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownAolProxyErrorEvent;
 
@@ -109,7 +110,8 @@ public abstract class AbstractProxyConnectionController
 
     alreadyStartedTimer = true;
 
-    getRvConnection().getTimeoutHandler().startTimeout(this);
+    TimeoutHandler handler = getRvConnection().getTimeoutHandler();
+    handler.startTimeout(this);
     return true;
   }
 

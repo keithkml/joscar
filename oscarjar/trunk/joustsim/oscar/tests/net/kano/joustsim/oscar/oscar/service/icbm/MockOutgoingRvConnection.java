@@ -44,6 +44,8 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.OutgoingRvConnectionImpl;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnection;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionEventListener;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionState;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.ControllerRestartConsultant;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.NextStateControllerInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectedController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendPassivelyController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
@@ -71,7 +73,7 @@ public class MockOutgoingRvConnection
           RvConnectionState state, RvConnectionEvent event) {
         if (state == RvConnectionState.FAILED
             || state == RvConnectionState.FINISHED) {
-          end(null, null);
+          end(null);
         }
       }
 
@@ -82,6 +84,7 @@ public class MockOutgoingRvConnection
       }
     });
     setTimeoutHandler(new NullTimeoutHandler());
+    setRestartConsultant(new NeverRestartConsultant());
   }
 
   public ConnectedController getConnectedController() {
@@ -96,17 +99,17 @@ public class MockOutgoingRvConnection
     return (MockRvSessionConnectionInfo) super.getRvSessionInfo();
   }
 
-  protected StateController getNextControllerFromUnknownError(
+  protected NextStateControllerInfo getNextControllerFromUnknownError(
       StateController oldController, FailedStateInfo failedStateInfo,
       RvConnectionEvent event) {
-    end(failedStateInfo, RvConnectionState.FAILED);
+    end(failedStateInfo);
     return null;
   }
 
-  protected StateController getNextControllerFromSuccess(
+  protected NextStateControllerInfo getNextControllerFromSuccess(
       StateController oldController, StateInfo endState) {
-    end(endState, RvConnectionState.FINISHED);
-    return null;
+    end(endState);
+    return new NextStateControllerInfo(null, RvConnectionState.FINISHED, null);
   }
 
   protected ConnectedController createConnectedController(StateInfo endState) {
@@ -115,21 +118,18 @@ public class MockOutgoingRvConnection
   }
 
   protected boolean isConnectedController(StateController controller) {
-    return controller == connectedController;
+    return controller != null && controller.equals(connectedController);
   }
 
-  private void end(StateInfo oldStateInfo, RvConnectionState state) {
+  private void end(StateInfo oldStateInfo) {
     synchronized(completionLock) {
       if (!done) {
-        if (state != null) {
-          setState(state, new RvConnectionEvent() {
-          });
-        }
         if (oldStateInfo != null) endStateInfo = oldStateInfo;
         done = true;
         completionLock.notifyAll();
       }
     }
+    flushEventQueue();
   }
 
   public StateInfo waitForCompletion() {
@@ -161,6 +161,8 @@ public class MockOutgoingRvConnection
     startStateController(new SendPassivelyController());
   }
 
+
+
   private class MockOutgoingRvSessionHandler
       extends OutgoingRvSessionHandler implements MockRvSessionHandler {
     public void handleIncomingReject(RecvRvEvent event, RejectRvCmd rejectCmd) {
@@ -174,6 +176,16 @@ public class MockOutgoingRvConnection
     public void handleIncomingRequest(RecvRvEvent event,
         ConnectionRequestRvCmd reqCmd) {
       super.handleIncomingRequest(event, reqCmd);
+    }
+  }
+
+  private static class NeverRestartConsultant implements ControllerRestartConsultant {
+    public void handleRestart() {
+      throw new IllegalStateException();
+    }
+
+    public boolean shouldRestart() {
+      return false;
     }
   }
 }

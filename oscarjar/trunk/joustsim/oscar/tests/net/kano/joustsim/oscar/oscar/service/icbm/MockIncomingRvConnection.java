@@ -40,6 +40,7 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnection;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionEventListener;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionState;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.NewIncomingConnectionEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.NextStateControllerInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectedController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
@@ -65,7 +66,7 @@ public class MockIncomingRvConnection
       public void handleEventWithStateChange(RvConnection transfer,
           RvConnectionState state, RvConnectionEvent event) {
         if (state == RvConnectionState.FAILED || state == RvConnectionState.FINISHED) {
-          end(null, null);
+          end(null);
         }
       }
 
@@ -95,19 +96,15 @@ public class MockIncomingRvConnection
     return controller == connectedController;
   }
 
-  protected StateController getNextControllerFromSuccess(
+  protected NextStateControllerInfo getNextControllerFromSuccess(
       StateController oldController, StateInfo oldStateInfo) {
-    end(oldStateInfo, RvConnectionState.FINISHED);
-    return null;
+    end(oldStateInfo);
+    return new NextStateControllerInfo(RvConnectionState.FINISHED, null);
   }
 
-  private void end(StateInfo oldStateInfo, RvConnectionState state) {
+  private void end(StateInfo oldStateInfo) {
     synchronized(completionLock) {
       if (!done) {
-        if (state != null) {
-          setState(state, new RvConnectionEvent() {
-          });
-        }
         if (oldStateInfo != null) endStateInfo = oldStateInfo;
         done = true;
         completionLock.notifyAll();
@@ -128,10 +125,10 @@ public class MockIncomingRvConnection
     }
   }
 
-  protected StateController getNextControllerFromUnknownError(
+  protected NextStateControllerInfo getNextControllerFromUnknownError(
       StateController oldController, StateInfo oldState,
       RvConnectionEvent event) {
-    end(oldState, RvConnectionState.FAILED);
+    end(oldState);
     return null;
   }
 
