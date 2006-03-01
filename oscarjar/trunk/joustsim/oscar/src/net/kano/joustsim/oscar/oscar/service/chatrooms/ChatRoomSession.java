@@ -34,24 +34,24 @@
 package net.kano.joustsim.oscar.oscar.service.chatrooms;
 
 import net.kano.joscar.CopyOnWriteArrayList;
+import net.kano.joscar.net.ClientConn;
 import net.kano.joscar.rv.RvProcessor;
 import net.kano.joscar.rv.RvSession;
-import net.kano.joscar.rvcmd.chatinvite.ChatInvitationRvCmd;
 import net.kano.joscar.rvcmd.InvitationMessage;
-import net.kano.joscar.net.ClientConn;
+import net.kano.joscar.rvcmd.chatinvite.ChatInvitationRvCmd;
 import net.kano.joscar.snaccmd.FullRoomInfo;
 import net.kano.joscar.snaccmd.MiniRoomInfo;
-import net.kano.joscar.snaccmd.chat.ChatCommand;
+import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.oscar.oscar.BasicConnection;
 import net.kano.joustsim.oscar.oscar.OscarConnListener;
 import net.kano.joustsim.oscar.oscar.OscarConnStateEvent;
 import net.kano.joustsim.oscar.oscar.OscarConnection;
 import net.kano.joustsim.oscar.oscar.service.Service;
-import net.kano.joustsim.Screenname;
+import net.kano.joustsim.oscar.oscar.service.ServiceListener;
 
-import java.util.Set;
 import java.util.Collections;
+import java.util.Set;
 import java.util.logging.Logger;
 
 public class ChatRoomSession {
@@ -92,28 +92,9 @@ public class ChatRoomSession {
   }
 
   void setConnection(BasicConnection connection) {
-    connection.addOscarListener(new OscarConnListener() {
-      public void registeredSnacFamilies(OscarConnection conn) {
-      }
-
-      public void connStateChanged(OscarConnection conn,
-          OscarConnStateEvent event) {
-        ClientConn.State state = event.getClientConnEvent().getNewState();
-        if (state == ClientConn.STATE_FAILED) {
-          setState(ChatSessionState.FAILED);
-        } else if (state == ClientConn.STATE_NOT_CONNECTED) {
-          setState(ChatSessionState.CLOSED);
-        }
-      }
-
-      public void allFamiliesReady(OscarConnection conn) {
-        Service service = conn.getService(ChatCommand.FAMILY_CHAT);
-        if (!(service instanceof ChatRoomService)) {
-          LOGGER.severe("No chat service for chat connection " + conn + "! - "
-              + service);
-          conn.disconnect();
-
-        } else {
+    connection.addGlobalServiceListener(new ServiceListener() {
+      public void handleServiceReady(Service service) {
+        if (service instanceof ChatRoomService) {
           ChatRoomService chatService = (ChatRoomService) service;
           chatService.addChatRoomListener(new ChatRoomServiceListener() {
             public void handleUsersJoined(ChatRoomService service,
@@ -139,6 +120,26 @@ public class ChatRoomSession {
           });
           setState(ChatSessionState.INROOM);
         }
+      }
+
+      public void handleServiceFinished(Service service) {
+      }
+    });
+    connection.addOscarListener(new OscarConnListener() {
+      public void registeredSnacFamilies(OscarConnection conn) {
+      }
+
+      public void connStateChanged(OscarConnection conn,
+          OscarConnStateEvent event) {
+        ClientConn.State state = event.getClientConnEvent().getNewState();
+        if (state == ClientConn.STATE_FAILED) {
+          setState(ChatSessionState.FAILED);
+        } else if (state == ClientConn.STATE_NOT_CONNECTED) {
+          setState(ChatSessionState.CLOSED);
+        }
+      }
+
+      public void allFamiliesReady(OscarConnection conn) {
       }
     });
     this.connection = connection;
