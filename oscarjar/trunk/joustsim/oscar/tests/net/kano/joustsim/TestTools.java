@@ -38,7 +38,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.ArrayList;
 
-public class TestHelper {
+public final class TestTools {
+  private TestTools() { }
+
   public static <E> E findOnlyInstance(Collection<?> hit,
       Class<E> cls) {
     E inst = null;
