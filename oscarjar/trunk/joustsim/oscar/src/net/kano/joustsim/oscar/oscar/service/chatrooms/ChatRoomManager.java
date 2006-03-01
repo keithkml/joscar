@@ -288,7 +288,12 @@ public class ChatRoomManager {
   }
 
   private synchronized ChatRoomSession getSession(FullRoomInfo roomInfo) {
-    return sessions.get(new RoomDescriptor(roomInfo));
+    ChatRoomSession session = sessions.get(new RoomDescriptor(roomInfo));
+    if (session == null) {
+      session = sessions.get(new RoomDescriptor(roomInfo.getExchange(),
+          FullRoomInfo.INSTANCE_LAST, roomInfo.getName()));
+    }
+    return session;
   }
 
 
