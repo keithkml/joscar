@@ -69,8 +69,6 @@ import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import javax.swing.filechooser.FileFilter;
 import java.awt.Image;
 import java.awt.event.ActionEvent;
@@ -114,28 +112,16 @@ public class DummyOnlineWindow extends JFrame {
   private JButton changeIconButton;
   private JLabel myIconLabel;
   private JButton songButton;
+  private JTextField roomNameBox;
+  private JButton joinButton;
+
+  private AbstractAction joinChatAction;
 
   {
     getContentPane().add(mainPanel);
     openButton.setAction(openImAction);
     disconnectButton.setAction(disconnectAction);
-    snBox.getDocument().addDocumentListener(new DocumentListener() {
-      public void changedUpdate(DocumentEvent e) {
-        changed();
-      }
-
-      public void insertUpdate(DocumentEvent e) {
-        changed();
-      }
-
-      public void removeUpdate(DocumentEvent e) {
-        changed();
-      }
-
-      private void changed() {
-        updateButtons();
-      }
-    });
+    snBox.getDocument().addDocumentListener(new ScreennameChangedListener());
     memoryUseTimer.setInitialDelay(0);
     addWindowListener(new WindowAdapter() {
       public void windowOpened(WindowEvent e) {
@@ -285,6 +271,18 @@ public class DummyOnlineWindow extends JFrame {
         }
       }
     });
+    joinChatAction = new AbstractAction() {
+      {
+        putValue(NAME, "Join");
+      }
+      public void actionPerformed(ActionEvent e) {
+        String name = roomNameBox.getText();
+        roomNameBox.setText("");
+        conn.getChatRoomManager().joinRoom(name);
+      }
+    };
+    joinButton.setAction(joinChatAction);
+    roomNameBox.getDocument().addDocumentListener(new ScreennameChangedListener());
   }
 
   private void updateMemoryUse() {
@@ -375,6 +373,7 @@ public class DummyOnlineWindow extends JFrame {
     assert SwingUtilities.isEventDispatchThread();
 
     openImAction.setEnabled(snBox.getDocument().getLength() != 0);
+    joinChatAction.setEnabled(roomNameBox.getDocument().getLength() != 0);
   }
 
   private class OpenImAction extends AbstractAction {
@@ -415,6 +414,12 @@ public class DummyOnlineWindow extends JFrame {
 
     public void actionPerformed(ActionEvent e) {
       guiSession.openPrefsWindow(conn.getScreenname());
+    }
+  }
+
+  private class ScreennameChangedListener extends DocumentChangedListener {
+    protected void changed() {
+      updateButtons();
     }
   }
 }

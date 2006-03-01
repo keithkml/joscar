@@ -235,7 +235,7 @@ public class GuiSession {
     //TODO: dispose of other buddies' prefs windows
 
     conn = aimSession.openConnection(props);
-//    conn.setProxy(AimProxyInfo.forSocks5("kano.net", 10800, "test", "test"));
+//    conn.setProxy(AimProxyInfo.forHttp("kano.net", 9383, "test", "test"));
     conn.addStateListener(connStateListener);
     conn.connect();
   }
@@ -360,6 +360,7 @@ public class GuiSession {
 
                 public void handleUsersJoined(ChatRoomSession room,
                     Set<ChatRoomUser> joined) {
+                  System.out.println("user joined");
                 }
 
                 public void handleUsersLeft(ChatRoomSession room, Set<ChatRoomUser> left) {
