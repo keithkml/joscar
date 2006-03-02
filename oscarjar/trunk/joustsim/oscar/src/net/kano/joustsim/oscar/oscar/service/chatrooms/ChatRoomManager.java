@@ -40,7 +40,6 @@ import net.kano.joscar.rv.RecvRvEvent;
 import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rv.RvSnacResponseEvent;
 import net.kano.joscar.rvcmd.chatinvite.ChatInvitationRvCmd;
-import net.kano.joscar.rvcmd.chatinvite.ChatInviteRejectRvCmd;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.FullRoomInfo;
 import net.kano.joscar.snaccmd.MiniRoomInfo;
@@ -109,7 +108,7 @@ public class ChatRoomManager {
     ChatInvitationImpl invitation = ensureGoodInvitation(inv);
     boolean wasRejected = !invitation.setRejected();
     if (wasRejected) return;
-    invitation.getSession().sendRv(new ChatInviteRejectRvCmd());
+    invitation.getSession().sendResponse(RvCommand.RVSTATUS_DENY);
   }
 
   ChatRoomSession acceptInvitation(ChatInvitationImpl inv)
