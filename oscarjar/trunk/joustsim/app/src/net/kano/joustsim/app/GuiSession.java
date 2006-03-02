@@ -346,9 +346,9 @@ public class GuiSession {
               ChatInvitation inv) {
             int result = JOptionPane.showOptionDialog(dummyOnlineWindow,
                 inv.getScreenname() + " has invited you to " + inv.getRoomName(),
-                "Invitation", JOptionPane.YES_NO_OPTION,
+                "Invitation", JOptionPane.YES_NO_CANCEL_OPTION,
                 JOptionPane.QUESTION_MESSAGE, null,
-                new String[]{"Join Room", "Ignore"}, "Join Room");
+                new String[]{"Join Room", "Reject", "Ignore"}, "Join Room");
             if (result == JOptionPane.YES_OPTION) {
               ChatRoomSession session = inv.accept();
 
@@ -371,7 +371,7 @@ public class GuiSession {
 
                 }
               });
-            } else {
+            } else if (result == JOptionPane.NO_OPTION) {
               inv.reject();
             }
           }
