@@ -81,9 +81,7 @@ public abstract class AbstractRequestRvCmd
         reqIndex = chain.getUShort(TYPE_REQINDEX);
         fPresent = chain.hasTlv(TYPE_F);
 
-        getMutableTlvs().removeTlvs(new int[]{
-                TYPE_REQINDEX, TYPE_F
-        });
+        getMutableTlvs().removeTlvs(TYPE_REQINDEX, TYPE_F);
     }
 
     /**
