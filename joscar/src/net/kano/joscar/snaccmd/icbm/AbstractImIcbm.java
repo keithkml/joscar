@@ -82,12 +82,16 @@ public abstract class AbstractImIcbm extends AbstractIcbm {
     /** A TLV type containing an encryption code. */
     private static final int TYPE_ENCRYPTION_CODE = 0x0d01;
 
+    public static final ByteBlock FEATURES_OLD = ByteBlock.wrap(
+            new byte[] { 0x01, 0x01, 0x01, 0x02 /* FAILS , 0x01, 0x01 */}
+    );
+
     /**
      * A "features block" used by some versions of AIM that seems to be most
      * compatible with all AIM clients (including SMS cell phones).
      */
     public static final ByteBlock FEATURES_DEFAULT = ByteBlock.wrap(
-            new byte[] { 0x01, 0x01, 0x01, 0x02 /* FAILS , 0x01, 0x01 */}
+            new byte[] { 0x05, 0x01 }
     );
 
     /** The Instant Message. */
