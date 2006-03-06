@@ -60,7 +60,7 @@ public class VisibilityItem extends AbstractItemObj implements SsiItemObjectWith
      * A visibility settings flag indicating that the user's idle time should be
      * visible to other AIM users.
      */
-    public static final long MASK_SHOW_IDLE_TIME = 0x00000400L;
+    public static final long MASK_SHOW_IDLE_TIME =         0x00000400L;
     /**
      * A visibility settings flag indicating that the user's {@linkplain
      * net.kano.joscar.snaccmd.icbm.SendTypingNotification typing status}
@@ -68,7 +68,13 @@ public class VisibilityItem extends AbstractItemObj implements SsiItemObjectWith
      *
      * @see net.kano.joscar.snaccmd.icbm.SendTypingNotification
      */
-    public static final long MASK_SHOW_TYPING =    0x00400000L;
+    public static final long MASK_SHOW_TYPING =            0x00400000L;
+    /**
+     * A visibility settings flag indicating that buddies that you talk to who
+     * are not on your buddy list, are or are not automatically added to a group
+     * called Recent Buddies.
+     */
+    public static final long MASK_DISABLE_RECENT_BUDDIES = 0x00020000L;
 
     /** A TLV type containing a bitwise set of visibility flags. */
     private static final int TYPE_VIS_MASK = 0x00c9;
