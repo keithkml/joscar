@@ -45,7 +45,7 @@
         </fileset>
   </path>
 
-  <target name="build-oscar-jar-classes" description="Compiles common">
+  <target name="build-oscar-jar-classes" depends="init" description="Compiles common">
     <javac srcdir="common/src" source="1.5" destdir="${common.bin}">
         <classpath refid="path.compile"/>
     </javac>
@@ -55,12 +55,15 @@
     </javac>
   </target>
 
-  <target name="clean" description="Wipes compiled classes">
+  <target name="init" description="Sets up needed folders">
       <mkdir dir="${oscar.bin}" />
       <mkdir dir="${common.bin}" />
       <mkdir dir="${aolrtf.bin}" />
       <mkdir dir="${app.bin}" />
       <mkdir dir="dist" />
+  </target>
+
+  <target name="clean" depends="init" description="Wipes compiled classes">
       <delete includeEmptyDirs="true">
         <fileset dir="dist" file="oscar.jar" />
         <fileset dir="${oscar.bin}" includes="*" />
@@ -88,7 +91,7 @@
     </tar>
   </target>
 
-  <target name="compile-tests" depends="build-oscar-jar-classes">
+  <target name="compile-tests" depends="init, build-oscar-jar-classes">
     <mkdir dir="test-classes" />
     <javac destdir="test-classes" srcdir="oscar/tests">
       <classpath path="${oscar.bin}" />
