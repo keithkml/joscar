@@ -152,9 +152,8 @@ public class BuddyItem extends AbstractItemObj implements SsiItemObjectWithId {
 
         MutableTlvChain extraTlvs = TlvTools.getMutableCopy(chain);
 
-        extraTlvs.removeTlvs(new int[] {
-            TYPE_ALIAS, TYPE_COMMENT, TYPE_ALERT_SOUND, TYPE_ALERT_FLAGS
-        });
+        extraTlvs.removeTlvs(TYPE_ALIAS, TYPE_COMMENT, TYPE_ALERT_SOUND,
+                TYPE_ALERT_FLAGS);
 
         addExtraTlvs(extraTlvs);
     }
