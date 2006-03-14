@@ -220,8 +220,7 @@ public class RateMonitor {
 
                 RateClassInfo rateInfo = rc.getRateInfo();
                 if (rateInfo != null) {
-                    int code = rc.getChangeCode();
-                    updateRateClass(code, rateInfo);
+                    updateRateClass(rc.getChangeCode(), rateInfo);
                 }
             }
         }
