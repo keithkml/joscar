@@ -424,7 +424,11 @@ public final class BinaryTools {
      * @see #getUByte(ByteBlock, int)
      */
     public static byte[] getUByte(final int number) {
-        return new byte[] { (byte) (number & 0xff) };
+        return new byte[] { getSingleUByte(number) };
+    }
+
+    public static byte getSingleUByte(int number) {
+        return (byte) (number & 0xff);
     }
 
     /**
