@@ -86,6 +86,19 @@ public final class ByteBlock implements Writable, NioWritable, Serializable {
      */
     public static final ByteBlock EMPTY_BLOCK = new ByteBlock();
 
+    public static ByteBlock createFromUnsigned(int... bytes) {
+        byte[] real = new byte[bytes.length];
+        for (int i = 0; i < bytes.length; i++) {
+            int b = bytes[i];
+            if (b < 0 || b > 255) {
+                throw new IllegalArgumentException("bytes[" + i + "] is "
+                        + b + ", must be 0-255 inclusive");
+            }
+            real[i] = BinaryTools.getSingleUByte(b);
+        }
+        return wrap(real);
+    }
+
     /**
      * Returns a ByteBlock logically equivalent to the given byte array.
      * Calling this method is equivalent to calling {@link
@@ -107,7 +120,8 @@ public final class ByteBlock implements Writable, NioWritable, Serializable {
      *
      * @see #wrap(byte[], int, int)
      */
-    public static ByteBlock wrap(byte[] bytes) throws IllegalArgumentException {
+    public static ByteBlock wrap(byte[] bytes)
+            throws IllegalArgumentException {
         return new ByteBlock(bytes, 0, bytes.length);
     }
 
@@ -426,12 +440,6 @@ public final class ByteBlock implements Writable, NioWritable, Serializable {
         return getLength();
     }
 
-    /**
-     * Writes the contents of this <code>ByteBlock</code> to the given stream.
-     *
-     * @param stream the stream to which to write this block
-     * @throws IOException if an I/O error occurs
-     */
     public void write(OutputStream stream) throws IOException {
         DefensiveTools.checkNull(stream, "stream");
 
