@@ -116,7 +116,7 @@ public class RateClassMonitor {
         if (changeCode == RateChange.CODE_LIMITED) {
             if (logger.logWarningEnabled()) {
                 logger.logWarning("Rate class " + this.rateInfo.getRateClass()
-                        + ") is now rate-limited!");
+                        + " is now rate-limited!");
             }
             setLimited(true);
 
