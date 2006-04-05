@@ -178,7 +178,7 @@ public class BuddyInfoTracker {
         }
       }
     });
-    thread = new Thread(new TrackingThread());
+    thread = new Thread(new TrackingThread(), "Buddy info tracker");
     thread.setDaemon(true);
     thread.start();
   }

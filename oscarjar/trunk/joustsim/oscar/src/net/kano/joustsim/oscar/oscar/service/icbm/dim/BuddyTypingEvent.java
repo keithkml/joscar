@@ -36,6 +36,7 @@ package net.kano.joustsim.oscar.oscar.service.icbm.dim;
 
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.TypingState;
+import net.kano.joscar.MiscTools;
 
 public class BuddyTypingEvent extends RvConnectionEvent {
   private final TypingState state;
@@ -43,4 +44,8 @@ public class BuddyTypingEvent extends RvConnectionEvent {
   public BuddyTypingEvent(TypingState state) {this.state = state;}
 
   public TypingState getState() { return state; }
+
+  public String toString() {
+    return MiscTools.getClassName(this) + "<" + state + ">";
+  }
 }

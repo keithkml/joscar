@@ -202,7 +202,7 @@ public class OutgoingFileTransferImpl
 
     } else {
       throw new IllegalStateException("unknown previous controller "
-          + oldController);
+          + oldController + ": " + failedStateInfo + ", " + event);
     }
   }
 

@@ -63,7 +63,7 @@ class FileSender extends AbstractTransferrer {
     return SelectionKey.OP_WRITE;
   }
 
-  protected long transfer(ReadableByteChannel readable,
+  protected long transferChunk(ReadableByteChannel readable,
       WritableByteChannel writable, long transferred, long remaining)
       throws IOException {
     return fileChannel.transferTo(offset + transferred,

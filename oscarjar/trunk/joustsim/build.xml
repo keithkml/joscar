@@ -101,7 +101,7 @@
   </target>
 
   <target name="run-oscar-tests" depends="compile-tests">
-    <junit>
+    <junit haltonfailure="true">
       <formatter type="xml" />
       <assertions>
         <enable />

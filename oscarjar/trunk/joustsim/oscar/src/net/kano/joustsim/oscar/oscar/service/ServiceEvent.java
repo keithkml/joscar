@@ -33,8 +33,6 @@
 
 package net.kano.joustsim.oscar.oscar.service;
 
-import net.kano.joustsim.oscar.oscar.service.Service;
-
 public abstract class ServiceEvent {
     private final Service author;
 

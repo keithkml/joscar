@@ -39,7 +39,6 @@ import net.kano.joscar.rvproto.rvproxy.RvProxyErrorCmd;
 import net.kano.joscar.rvproto.rvproxy.RvProxyReadyCmd;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.ConnectionType;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.FailureEventException;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.TimeoutHandler;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.AolProxyTimedOutEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownAolProxyErrorEvent;
 
@@ -47,13 +46,9 @@ import java.io.IOException;
 import java.util.logging.Logger;
 
 public abstract class AbstractProxyConnectionController
-    extends AbstractOutgoingConnectionController
-    implements ManualTimeoutController {
+    extends AbstractOutgoingConnectionController {
   private static final Logger LOGGER = Logger
       .getLogger(AbstractProxyConnectionController.class.getName());
-
-  private boolean clientWantsTimer = false;
-  private boolean alreadyStartedTimer = false;
 
   public ConnectionType getTimeoutType() {
     return ConnectionType.PROXY;
@@ -61,14 +56,12 @@ public abstract class AbstractProxyConnectionController
 
   protected void initializeConnectionInThread()
       throws IOException, FailureEventException {
-
     initializeProxy();
 
     while (true) {
       RvProxyCmd cmd = getProxyConnection().readPacket();
       if (cmd instanceof RvProxyAckCmd) {
         RvProxyAckCmd ackCmd = (RvProxyAckCmd) cmd;
-        startTimerIfReady();
         stopConnectionTimer();
 
         handleAck(ackCmd);
@@ -96,23 +89,6 @@ public abstract class AbstractProxyConnectionController
 
   public RvProxyCmd readPacket() throws IOException {
     return getProxyConnection().readPacket();
-  }
-
-  public synchronized final void startTimeoutTimer() {
-    if (!clientWantsTimer) {
-      clientWantsTimer = true;
-      startTimerIfReady();
-    }
-  }
-
-  private synchronized boolean startTimerIfReady() {
-    if (!clientWantsTimer || alreadyStartedTimer) return false;
-
-    alreadyStartedTimer = true;
-
-    TimeoutHandler handler = getRvConnection().getTimeoutHandler();
-    handler.startTimeout(this);
-    return true;
   }
 
   protected final boolean shouldStartTimerAutomatically() {

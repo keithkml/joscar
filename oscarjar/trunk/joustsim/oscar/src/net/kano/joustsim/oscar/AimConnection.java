@@ -47,6 +47,10 @@ import net.kano.joscar.snaccmd.loc.LocCommand;
 import net.kano.joscar.snaccmd.ssi.SsiCommand;
 import net.kano.joustsim.JavaTools;
 import net.kano.joustsim.Screenname;
+import net.kano.joustsim.oscar.oscar.BasicConnection;
+import net.kano.joustsim.oscar.oscar.LoginConnection;
+import net.kano.joustsim.oscar.oscar.OscarConnListener;
+import net.kano.joustsim.oscar.oscar.OscarConnStateEvent;
 import net.kano.joustsim.oscar.oscar.OscarConnection;
 import net.kano.joustsim.oscar.oscar.service.Service;
 import net.kano.joustsim.oscar.oscar.service.ServiceArbiter;
@@ -54,8 +58,6 @@ import net.kano.joustsim.oscar.oscar.service.bos.MainBosService;
 import net.kano.joustsim.oscar.oscar.service.buddy.BuddyService;
 import net.kano.joustsim.oscar.oscar.service.chatrooms.ChatRoomManager;
 import net.kano.joustsim.oscar.oscar.service.icbm.IcbmService;
-import net.kano.joustsim.oscar.oscar.service.info.BuddyTrustAdapter;
-import net.kano.joustsim.oscar.oscar.service.info.BuddyTrustEvent;
 import net.kano.joustsim.oscar.oscar.service.info.BuddyTrustManager;
 import net.kano.joustsim.oscar.oscar.service.info.CertificateInfoTrustManager;
 import net.kano.joustsim.oscar.oscar.service.info.InfoService;
@@ -83,10 +85,10 @@ public class AimConnection {
 
   private final Screenname screenname;
 
-  private Map<Integer, List<Service>> snacfamilies
+  private final Map<Integer, List<Service>> snacfamilies
       = new HashMap<Integer, List<Service>>();
 
-  private CopyOnWriteArrayList<OpenedServiceListener> serviceListeners
+  private final CopyOnWriteArrayList<OpenedServiceListener> serviceListeners
       = new CopyOnWriteArrayList<OpenedServiceListener>();
 
   private final BuddyInfoManager buddyInfoManager;
@@ -143,6 +145,17 @@ public class AimConnection {
 
 
     connectionManager = new ConnectionManager(this, props);
+    connectionManager.addConnectionPreparer(new OscarConnectionPreparer() {
+      public void prepareMainBosConnection(ConnectionManager mgr,
+          BasicConnection conn) {
+        listenForSnacFamilies(conn);
+      }
+
+      public void prepareLoginConnection(ConnectionManager mgr,
+          LoginConnection conn) {
+        listenForSnacFamilies(conn);
+      }
+    });
     connectionManager.addStateListener(new StateListener() {
       public void handleStateChange(StateEvent event) {
         if (event.getNewState().isFinished()) {
@@ -164,27 +177,33 @@ public class AimConnection {
     this.certificateInfoTrustManager
         = new CertificateInfoTrustManager(trustedCertificatesTracker);
     this.buddyTrustManager = new BuddyTrustManager(this);
-    this.buddyTrustManager.addBuddyTrustListener(new BuddyTrustAdapter() {
-      public void buddyTrusted(BuddyTrustEvent event) {
-        LOGGER.fine(event.getBuddy() + " is trusted");
-      }
-
-      public void buddyTrustRevoked(BuddyTrustEvent event) {
-        LOGGER.fine(event.getBuddy() + " is no longer trusted");
-      }
-
-      public void gotTrustedCertificateChange(BuddyTrustEvent event) {
-        LOGGER.fine(event.getBuddy() + " has a trusted certificate");
-      }
-
-      public void gotUntrustedCertificateChange(BuddyTrustEvent event) {
-        LOGGER.fine(event.getBuddy() + " has an untrusted certificate");
-      }
-    });
 
     this.capabilityManager = createCapabilityManager();
     this.externalServiceMgr = new ExternalServiceManager(this);
     this.chatRoomManager = new ChatRoomManager(this);
+  }
+
+  private void listenForSnacFamilies(OscarConnection conn) {
+    conn.addOscarListener(new OscarConnListener() {
+      public void registeredSnacFamilies(OscarConnection conn) {
+        recordSnacFamilies(conn);
+      }
+
+      public void connStateChanged(OscarConnection conn,
+          OscarConnStateEvent event) {
+      }
+
+      public void allFamiliesReady(OscarConnection conn) {
+      }
+    });
+  }
+
+  private synchronized List<Service> getLocalServices() {
+    List<Service> list = new ArrayList<Service>();
+    for (Map.Entry<Integer,List<Service>> entry : snacfamilies.entrySet()) {
+      list.addAll(entry.getValue());
+    }
+    return list;
   }
 
   private CapabilityManager createCapabilityManager() {
@@ -240,13 +259,9 @@ public class AimConnection {
 
   public TrustPreferences getLocalPrefs() { return localPrefs; }
 
-  public BuddyTrustManager getBuddyTrustManager() {
-    return buddyTrustManager;
-  }
+  public BuddyTrustManager getBuddyTrustManager() { return buddyTrustManager; }
 
-  public CapabilityManager getCapabilityManager() {
-    return capabilityManager;
-  }
+  public CapabilityManager getCapabilityManager() { return capabilityManager; }
 
   public BuddyInfoTracker getBuddyInfoTracker() { return buddyInfoTracker; }
 
@@ -259,8 +274,17 @@ public class AimConnection {
   }
 
   public @Nullable synchronized Service getService(int family) {
+    return getMutableService(family);
+  }
+
+  private Service getMutableService(int family) {
     List<Service> list = getServiceListIfExists(family);
     return list == null ? null : list.get(0);
+  }
+
+  private synchronized List<Service> getServiceListIfExists(int family) {
+    List<Service> list = snacfamilies.get(family);
+    return list == null || list.isEmpty() ? null : list;
   }
 
   public LoginService getLoginService() {
@@ -299,7 +323,7 @@ public class AimConnection {
 
   public void sendSnac(SnacCommand snac) {
     int family = snac.getFamily();
-    Service service = getService(family);
+    Service service = getMutableService(family);
     if (service == null) {
       ServiceArbiter<?> arbiter = externalServiceMgr.getServiceArbiter(family);
       if (arbiter != null) {
@@ -307,7 +331,7 @@ public class AimConnection {
             + "is controlled by an arbiter: " + snac);
       }
     } else {
-      service.sendSnac(snac);
+      service.getOscarConnection().sendSnac(snac);
     }
   }
 
@@ -315,9 +339,7 @@ public class AimConnection {
     return externalServiceMgr;
   }
 
-  public ChatRoomManager getChatRoomManager() {
-    return chatRoomManager;
-  }
+  public ChatRoomManager getChatRoomManager() { return chatRoomManager; }
 
   public void addStateListener(StateListener l) {
     connectionManager.addStateListener(l);
@@ -331,23 +353,35 @@ public class AimConnection {
 
   public StateInfo getStateInfo() { return connectionManager.getStateInfo(); }
 
+  public boolean isOnline() { return getState() == State.ONLINE; }
+
   public boolean connect() { return connectionManager.connect(); }
 
-  public boolean getTriedConnecting() {
-    return connectionManager.getTriedConnecting();
+  /**
+   * Returns whether {@link #connect()} has been called.
+   */
+  public boolean triedConnecting() {
+    return connectionManager.triedConnecting();
   }
 
-  public void disconnect() { connectionManager.disconnect(); }
+  /**
+   * Disconnects {@linkplain #wantedDisconnect() on purpose}.
+   */
+  public void disconnect() { connectionManager.disconnect(true); }
 
   public void disconnect(boolean onPurpose) {
     connectionManager.disconnect(onPurpose);
   }
 
+  /**
+   * Returns whether this connection was disconnected on purpose. If the
+   * connection has not disconnected, this method will return {@code false}.
+   */
   public boolean wantedDisconnect() {
     return connectionManager.wantedDisconnect();
   }
 
-  void recordSnacFamilies(OscarConnection conn) {
+  private void recordSnacFamilies(OscarConnection conn) {
     List<Service> added = new ArrayList<Service>();
     synchronized (this) {
       for (int family : conn.getSnacFamilies()) {
@@ -379,28 +413,11 @@ public class AimConnection {
     return list;
   }
 
-  private synchronized List<Service> getServiceListIfExists(int family) {
-    List<Service> list = snacfamilies.get(family);
-    return list == null || list.isEmpty() ? null : list;
-  }
-
-  private synchronized List<Service> getLocalServices() {
-    List<Service> list = new ArrayList<Service>();
-    for (Map.Entry<Integer, List<Service>> entry : snacfamilies.entrySet()) {
-      list.addAll(entry.getValue());
-    }
-    return list;
-  }
-
   public AimProxyInfo getProxy() { return proxy; }
 
   public void setProxy(AimProxyInfo proxy) {
     DefensiveTools.checkNull(proxy, "proxy");
     
     this.proxy = proxy;
-  }
-
-  public boolean isOnline() {
-    return getState() == State.ONLINE;
   }
 }

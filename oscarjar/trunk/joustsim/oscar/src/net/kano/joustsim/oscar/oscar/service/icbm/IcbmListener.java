@@ -37,8 +37,14 @@ package net.kano.joustsim.oscar.oscar.service.icbm;
 
 import net.kano.joustsim.Screenname;
 
+import java.util.Set;
+
 public interface IcbmListener {
-    void newConversation(IcbmService service, Conversation conv);
-    void buddyInfoUpdated(IcbmService service, Screenname buddy,
-            IcbmBuddyInfo info);
+  void newConversation(IcbmService service, Conversation conv);
+
+  void buddyInfoUpdated(IcbmService service, Screenname buddy,
+      IcbmBuddyInfo info);
+
+  void sendAutomaticallyFailed(IcbmService service, Message message,
+      Set<Conversation> triedConversations);
 }

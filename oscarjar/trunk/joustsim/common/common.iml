@@ -12,7 +12,7 @@
     <orderEntry type="library" name="Bouncy Castle Mail" level="project" />
     <orderEntry type="library" name="Bouncy Castle Crypto" level="project" />
     <orderEntry type="library" exported="" name="Null annotations" level="project" />
-    <orderEntry type="library" exported="" name="joscar-cvs" level="project" />
+    <orderEntry type="library" exported="" name="joscar-svn" level="application" />
     <orderEntryProperties />
   </component>
   <component name="copyright">

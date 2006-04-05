@@ -12,6 +12,7 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ChecksummingEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectedEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectingEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectingToProxyEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectionTimedOutEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileCompleteEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.LocallyCancelledEvent;
@@ -37,7 +38,13 @@ public abstract class RvConnectionImpl
     implements RvConnection, StateBasedRvConnection {
   private static final Logger LOGGER = Logger
       .getLogger(FileTransferHelper.class.getName());
-  private @Nullable StateController lastConnectionController = null;
+  /**
+   * A list of states which must be entered in order (but skipping states is
+   * okay).
+   */
+  private static final List<RvConnectionState> COOL_STATES
+      = Arrays.asList(RvConnectionState.WAITING, RvConnectionState.PREPARING,
+      RvConnectionState.CONNECTING, RvConnectionState.CONNECTED);
 
   public static boolean isLanController(StateController oldController) {
     return oldController instanceof OutgoingConnectionController
@@ -55,22 +62,8 @@ public abstract class RvConnectionImpl
   private final CopyOnWriteArrayList<RvConnectionEventListener> listeners
       = new CopyOnWriteArrayList<RvConnectionEventListener>();
   private final EventPost eventPost = new EventPostImpl();
-  private final ControllerListener controllerListener = new ControllerListener() {
-    public void handleControllerSucceeded(StateController c,
-        SuccessfulStateInfo info) {
-      goNext(c);
-    }
-
-    public void handleControllerFailed(StateController c,
-        FailedStateInfo info) {
-      goNext(c);
-    }
-
-    private void goNext(StateController c) {
-      c.removeControllerListener(this);
-      changeStateControllerFrom(c);
-    }
-  };
+  private final ControllerListener controllerListener
+      = new InternalControllerListener();
   private final List<StateChangeEvent> eventQueue
       = new CopyOnWriteArrayList<StateChangeEvent>();
   private final RvConnectionSettings settings = new RvConnectionSettings();
@@ -78,12 +71,18 @@ public abstract class RvConnectionImpl
   private final Screenname screenname;
 
   private StateController controller = null;
+  private @Nullable StateController lastConnectionController = null;
+  /**
+   * The last controller that was {@link #tryRetry retried}.
+   */
+  private @Nullable StateController retried = null;
+  /** Whether we've retried the last controller or not. */
+  private boolean retriedLast = false;
+  private StateController previousController = null;
   private RvConnectionState state = RvConnectionState.WAITING;
   private boolean done = false;
-  private volatile TimeoutHandler timeoutHandler = new TimerTimeoutHandler(this);
-  private static final List<RvConnectionState> COOL_STATES
-      = Arrays.asList(RvConnectionState.WAITING, RvConnectionState.PREPARING,
-      RvConnectionState.CONNECTING, RvConnectionState.CONNECTED);
+  private volatile TimeoutHandler timeoutHandler
+      = new TimerTimeoutHandler(this);
 
   protected RvConnectionImpl(AimProxyInfo proxy,
       Screenname myScreenname, RvSessionConnectionInfo rvsessioninfo) {
@@ -122,15 +121,15 @@ public abstract class RvConnectionImpl
     return changeStateController(controller);
   }
 
-  protected boolean changeStateController(StateController controller) {
+  protected boolean changeStateController(StateController newController) {
     StateController last;
     synchronized (this) {
       StateController old = this.controller;
-      if (!isValidNextController(old, controller)) return false;
-      last = storeNextController(controller);
+      if (!isValidNextController(old, newController)) return false;
+      last = storeNextController(newController);
       assert last == old;
     }
-    stopThenStart(last, controller);
+    stopThenStart(last, newController);
     return true;
   }
 
@@ -176,22 +175,19 @@ public abstract class RvConnectionImpl
     synchronized (this) {
       if (this.controller == oldController) {
         NextStateControllerInfo nextInfo = getNextController();
-        if (nextInfo == null) {
-          next = null;
-        } else {
-          next = nextInfo.getController();
-          RvConnectionState state = nextInfo.getState();
-          RvConnectionEvent event = nextInfo.getEvent();
-          if (state != null) {
-            if (event == null) {
-              event = new RvConnectionEvent() {
-              };
+        next = nextInfo == null ? null : nextInfo.getController();
+        if (next == null) {
+          if (!retriedLast) {
+            retriedLast = true;
+            NextStateControllerInfo retryInfo
+                = getControllerForRetryingLast(oldController);
+            next = queueEventsForNextController(retryInfo);
+            if (next != null) {
+              LOGGER.fine("Retrying last state controller " + next);
             }
-            queueStateChange(state, event);
-            
-          } else if (event != null) {
-            queueEvent(event);
           }
+        } else {
+          next = queueEventsForNextController(nextInfo);
         }
         if (!isValidNextController(oldController, next)) return false;
         storeNextController(next);
@@ -205,11 +201,45 @@ public abstract class RvConnectionImpl
     return next != null;
   }
 
+  private StateController queueEventsForNextController(
+      NextStateControllerInfo nextInfo) {
+    StateController next;
+    if (nextInfo == null) {
+      next = null;
+
+    } else {
+      next = nextInfo.getController();
+      RvConnectionState state = nextInfo.getState();
+      RvConnectionEvent event = nextInfo.getEvent();
+      if (state != null) {
+        if (event == null) {
+          event = new RvConnectionEvent() {
+          };
+        }
+        queueStateChange(state, event);
+
+      } else if (event != null) {
+        queueEvent(event);
+      }
+    }
+    return next;
+  }
+
+  protected synchronized NextStateControllerInfo getControllerForRetryingLast(
+      StateController oldController) {
+    if (previousController == null) {
+      return null;
+    }
+    return getNextController(previousController,
+        previousController.getEndStateInfo());
+  }
+
   private synchronized StateController storeNextController(
       StateController controller) {
     LOGGER.info("Transfer " + this + " changing to state controller "
         + controller);
     StateController last = this.controller;
+    this.previousController = last;
     this.controller = controller;
     if (isSomeConnectionController(controller)) {
       lastConnectionController = controller;
@@ -249,10 +279,14 @@ public abstract class RvConnectionImpl
       this.state = state;
       if (state == RvConnectionState.FAILED
           || state == RvConnectionState.FINISHED) {
+        LOGGER.fine("New state for " + this + " is " + state
+            + ", so we're done (from event " + event + ")");
         done = true;
       }
       controller = this.controller;
     }
+    LOGGER.finer("Changing state of " + this + " to " + state + " because of "
+        + event);
     if (state == RvConnectionState.FAILED) {
       sessionInfo.getRequestMaker().sendRvReject();
     }
@@ -270,7 +304,7 @@ public abstract class RvConnectionImpl
 
     int oidx = COOL_STATES.indexOf(old);
     int nidx = COOL_STATES.indexOf(state);
-    if (nidx != -1 && oidx != -1) {
+    if (oidx != -1 && nidx != -1) {
       // if the states are in the cool states list, they must be in order (but
       // skipping states is okay)
       return nidx >= oidx;
@@ -334,13 +368,13 @@ public abstract class RvConnectionImpl
 
   public RvSessionConnectionInfo getRvSessionInfo() { return sessionInfo; }
 
-  public String toString() {
-    return MiscTools.getClassName(this) + " with " + getBuddyScreenname();
-  }
-
   public synchronized NextStateControllerInfo getNextController() {
     StateController oldController = getStateController();
-    StateInfo endState = oldController.getEndStateInfo();
+    return getNextController(oldController, oldController.getEndStateInfo());
+  }
+
+  private NextStateControllerInfo getNextController(
+      StateController oldController, StateInfo endState) {
     if (endState instanceof SuccessfulStateInfo) {
       if (isSomeConnectionController(oldController)) {
         return new NextStateControllerInfo(createConnectedController(endState));
@@ -378,8 +412,6 @@ public abstract class RvConnectionImpl
     return getState().isOpen();
   }
 
-  //TODO(klea): make these methods return a state controller, new state, and stateinfo
-  //TODO(klea): write tests for failed conn contyroller
   protected abstract NextStateControllerInfo getNextControllerFromError(
       StateController oldController, StateInfo endState);
 
@@ -399,13 +431,27 @@ public abstract class RvConnectionImpl
 
   protected abstract boolean isConnectedController(StateController controller);
 
+  protected @Nullable NextStateControllerInfo tryRetry(
+      StateController oldController, RvConnectionEvent event,
+      StateController newController) {
+    if (event instanceof ConnectionTimedOutEvent
+        && oldController != retried) {
+      retried = newController;
+      return new NextStateControllerInfo(newController);
+    } else {
+      return null;
+    }
+  }
+
+  public String toString() {
+    return MiscTools.getClassName(this) + " with " + getBuddyScreenname();
+  }
+
   protected static class StateChangeEvent {
     private RvConnectionState state;
     private RvConnectionEvent event;
 
-    public StateChangeEvent(RvConnectionState state,
-                            RvConnectionEvent event) {
-
+    public StateChangeEvent(RvConnectionState state, RvConnectionEvent event) {
       this.state = state;
       this.event = event;
     }
@@ -457,5 +503,20 @@ public abstract class RvConnectionImpl
     }
   }
 
-  private static class DummyFailedStateInfo extends FailedStateInfo { }
+  private class InternalControllerListener implements ControllerListener {
+    public void handleControllerSucceeded(StateController c,
+        SuccessfulStateInfo info) {
+      goNext(c);
+    }
+
+    public void handleControllerFailed(StateController c,
+        FailedStateInfo info) {
+      goNext(c);
+    }
+
+    private void goNext(StateController c) {
+      c.removeControllerListener(this);
+      changeStateControllerFrom(c);
+    }
+  }
 }

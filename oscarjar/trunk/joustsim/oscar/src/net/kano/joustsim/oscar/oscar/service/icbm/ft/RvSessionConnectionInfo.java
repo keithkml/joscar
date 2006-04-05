@@ -11,9 +11,15 @@ public interface RvSessionConnectionInfo  {
   RvConnectionInfo getConnectionInfo();
 
   int getRequestIndex();
+  /**
+   * Returns the new request index
+   */
   int increaseRequestIndex();
   void setRequestIndex(int requestIndex);
 
   void setInitiator(Initiator initiator);
   Initiator getInitiator();
+
+  boolean buddyAccepted();
+  void setBuddyAccepted(boolean accepted);
 }

@@ -65,6 +65,8 @@ import net.kano.joustsim.oscar.oscar.service.icbm.Conversation;
 import net.kano.joustsim.oscar.oscar.service.icbm.IcbmBuddyInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.IcbmListener;
 import net.kano.joustsim.oscar.oscar.service.icbm.IcbmService;
+import net.kano.joustsim.oscar.oscar.service.icbm.DirectimConversation;
+import net.kano.joustsim.oscar.oscar.service.icbm.Message;
 
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
@@ -183,14 +185,16 @@ public class GuiSession {
 
         box.handleConversation(service.getImConversation(sn));
         box.handleConversation(service.getSecureAimConversation(sn));
-        box.handleConversation(service.getDirectimConversation(sn));
+        for (DirectimConversation conv : service.getDirectimConversations(sn)) {
+          box.handleConversation(conv);
+        }
       }
     }
-    final ImBox fbox = box;
+    final ImBox boxTemp = box;
     SwingUtilities.invokeLater(new Runnable() {
       public void run() {
-        fbox.setVisible(true);
-        fbox.requestFocus();
+        boxTemp.setVisible(true);
+        boxTemp.requestFocus();
       }
     });
     return box;
@@ -331,6 +335,10 @@ public class GuiSession {
 
           public void buddyInfoUpdated(IcbmService service, Screenname buddy,
               IcbmBuddyInfo info) {
+          }
+
+          public void sendAutomaticallyFailed(IcbmService service, Message message,
+              Set<Conversation> triedConversations) {
           }
         });
         SwingUtilities.invokeLater(new Runnable() {

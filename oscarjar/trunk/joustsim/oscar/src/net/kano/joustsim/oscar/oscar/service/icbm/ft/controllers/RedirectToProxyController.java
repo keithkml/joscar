@@ -42,8 +42,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 
 /** 1. connect to ars.oscar.aol.com:5190 2. find ip of server 3. send rv */
-public class RedirectToProxyController extends InitiateProxyController
-    implements ManualTimeoutController {
+public class RedirectToProxyController extends InitiateProxyController {
   protected void handleAck(RvProxyAckCmd ackCmd) throws IOException {
     InetAddress addr = ackCmd.getProxyIpAddress();
     int port = ackCmd.getProxyPort();

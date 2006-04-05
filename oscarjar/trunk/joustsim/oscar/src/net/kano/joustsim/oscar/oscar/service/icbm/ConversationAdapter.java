@@ -35,7 +35,7 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm;
 
-public class ConversationAdapter implements ConversationListener {
+public abstract class ConversationAdapter implements ConversationListener {
     public void conversationOpened(Conversation c) {
     }
 

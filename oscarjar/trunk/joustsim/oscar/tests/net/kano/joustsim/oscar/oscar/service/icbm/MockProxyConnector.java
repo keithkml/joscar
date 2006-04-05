@@ -41,10 +41,12 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SocketStreamInfo;
 import java.io.IOException;
 import java.net.InetAddress;
 
-class MockProxyConnector implements ProxyConnector {
-  private MockProxyConnection connection;
+class MockProxyConnector implements ProxyConnector, MockConnector {
+  private ProxyConnection connection;
+  private boolean attempted = false;
+  private final Object attemptLock = new Object();
 
-  public MockProxyConnector(MockProxyConnection connection) {
+  public MockProxyConnector(ProxyConnection connection) {
     this.connection = connection;
   }
 
@@ -53,6 +55,10 @@ class MockProxyConnector implements ProxyConnector {
   }
 
   public SocketStreamInfo createStream() throws IOException {
+    synchronized(attemptLock) {
+      attempted = true;
+      attemptLock.notifyAll();
+    }
     return new SocketStreamInfo(null);
   }
 
@@ -68,5 +74,23 @@ class MockProxyConnector implements ProxyConnector {
 
   public int getConnectionPort() {
     return 7000;
+  }
+
+  public void waitForConnectionAttempt() {
+    synchronized(attemptLock) {
+      while (!attempted) {
+        try {
+          attemptLock.wait();
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
+        }
+      }
+    }
+  }
+
+  public boolean hasAttemptedConnection() {
+    synchronized (attemptLock) {
+      return attempted;
+    }
   }
 }

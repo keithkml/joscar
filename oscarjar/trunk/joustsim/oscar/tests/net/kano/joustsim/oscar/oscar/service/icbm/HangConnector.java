@@ -41,7 +41,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-class HangConnector implements PassiveConnector {
+class HangConnector implements PassiveConnector, MockConnector {
   private final Object lock = new Object();
   private boolean done = false;
 

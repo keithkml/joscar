@@ -43,7 +43,8 @@ import java.util.Map;
 public class RvConnectionSettings {
   private static final long DEFAULT_RV_CONNECTION_TIMEOUT = 10 * 1000;
   public static final long DEFAULT_LAN_TIMEOUT = 2000L;
-  public static final long DEFAULT_INCOMING_MODIFICATION = 3000L;
+  public static final long DEFAULT_INTERNET_TIMEOUT = 3000L;
+  public static final long DEFAULT_INCOMING_MODIFICATION = 2000L;
 
   private boolean onlyUsingProxy = false;
   private boolean proxyRequestTrusted = true;
@@ -56,6 +57,7 @@ public class RvConnectionSettings {
 
   {
     timeouts.put(ConnectionType.LAN, DEFAULT_LAN_TIMEOUT);
+    timeouts.put(ConnectionType.INTERNET, DEFAULT_INTERNET_TIMEOUT);
     timeoutModifications.put(Initiator.BUDDY, DEFAULT_INCOMING_MODIFICATION);
   }
 

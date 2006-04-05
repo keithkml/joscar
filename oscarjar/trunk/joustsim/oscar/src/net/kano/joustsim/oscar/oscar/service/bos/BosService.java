@@ -51,110 +51,118 @@ import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.oscar.oscar.OscarConnListener;
 import net.kano.joustsim.oscar.oscar.OscarConnStateEvent;
 import net.kano.joustsim.oscar.oscar.OscarConnection;
+import net.kano.joustsim.oscar.oscar.service.AbstractService;
 import net.kano.joustsim.oscar.oscar.service.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
-public abstract class BosService extends Service {
-    private static final Logger logger = Logger.getLogger(BosService.class.getName());
+public abstract class BosService extends AbstractService {
+  private static final Logger logger = Logger
+      .getLogger(BosService.class.getName());
 
-    private List<SnacFamilyInfo> snacFamilyInfos = null;
+  private List<SnacFamilyInfo> snacFamilyInfos = null;
 
-    private RateMonitor rateMonitor;
+  private RateMonitor rateMonitor;
 
-    protected BosService(AimConnection aimConnection,
-            OscarConnection oscarConnection) {
-        super(aimConnection, oscarConnection, ConnCommand.FAMILY_CONN);
+  protected BosService(AimConnection aimConnection,
+      OscarConnection oscarConnection) {
+    super(aimConnection, oscarConnection, ConnCommand.FAMILY_CONN);
 
-        OscarConnection oc = getOscarConnection();
-        rateMonitor = new RateMonitor(oc.getSnacProcessor());
-        oc.addOscarListener(new OscarConnListener() {
-            public void registeredSnacFamilies(OscarConnection conn) {
-            }
+    OscarConnection oc = getOscarConnection();
+    rateMonitor = new RateMonitor(oc.getSnacProcessor());
+    oc.addOscarListener(new OscarConnListener() {
+      public void registeredSnacFamilies(OscarConnection conn) {
+      }
 
-            public void connStateChanged(OscarConnection conn, OscarConnStateEvent event) {
-            }
+      public void connStateChanged(OscarConnection conn,
+          OscarConnStateEvent event) {
+      }
 
-            public void allFamiliesReady(OscarConnection conn) {
-                allReady();
-            }
-        });
+      public void allFamiliesReady(OscarConnection conn) {
+        allReady();
+      }
+    });
+  }
+
+  public SnacFamilyInfo getSnacFamilyInfo() {
+    return ConnCommand.FAMILY_INFO;
+  }
+
+  private void allReady() {
+    logger.fine("All families are ready, sending client ready");
+    sendSnac(new ClientReadyCmd(getSnacFamilyInfos()));
+  }
+
+  public void handleSnacPacket(SnacPacketEvent snacPacketEvent) {
+    SnacCommand snac = snacPacketEvent.getSnacCommand();
+
+    if (snac instanceof ServerReadyCmd) {
+      logger.fine("Server is ready");
+
+//            ServerReadyCmd src = (ServerReadyCmd) snac;
+
+      List<Service> services = getOscarConnection().getServices();
+      List<SnacFamilyInfo> familyInfos = new ArrayList<SnacFamilyInfo>(
+          services.size());
+      for (Service service : services) {
+        familyInfos.add(service.getSnacFamilyInfo());
+      }
+
+      setSnacFamilyInfos(familyInfos);
+
+      sendSnac(new ClientVersionsCmd(familyInfos));
+      sendSnac(new RateInfoRequest());
+
+      getOscarConnection().postServiceEvent(new ServerReadyEvent(this));
+      serverReady();
+
+    } else if (snac instanceof RateInfoCmd) {
+      RateInfoCmd ric = (RateInfoCmd) snac;
+
+      List<RateClassInfo> rateClasses = ric.getRateClassInfos();
+
+      int[] classes = new int[rateClasses.size()];
+      for (int i = 0; i < rateClasses.size(); i++) {
+        classes[i] = rateClasses.get(i).getRateClass();
+      }
+
+      sendSnac(new RateAck(classes));
+
+      trySetReady();
     }
+  }
 
-    public SnacFamilyInfo getSnacFamilyInfo() {
-        return ConnCommand.FAMILY_INFO;
-    }
+  protected void trySetReady() {
+    reallySetReady();
+  }
 
-    private void allReady() {
-        logger.fine("All families are ready, sending client ready");
-        sendSnac(new ClientReadyCmd(getSnacFamilyInfos()));
-    }
+  protected void reallySetReady() {
+    beforeClientReady();
 
-    public void handleSnacPacket(SnacPacketEvent snacPacketEvent) {
-        SnacCommand snac = snacPacketEvent.getSnacCommand();
+    setReady();
+  }
 
-        if (snac instanceof ServerReadyCmd) {
-            logger.fine("Server is ready");
+  protected void beforeClientReady() {
 
-            ServerReadyCmd src = (ServerReadyCmd) snac;
+  }
 
-            List<Service> services = getOscarConnection().getServices();
-            List<SnacFamilyInfo> familyInfos = new ArrayList<SnacFamilyInfo>(services.size());
-            for (Service service : services) {
-                familyInfos.add(service.getSnacFamilyInfo());
-            }
+  protected void serverReady() {
 
-            setSnacFamilyInfos(familyInfos);
+  }
 
-            sendSnac(new ClientVersionsCmd(familyInfos));
-            sendSnac(new RateInfoRequest());
+  @SuppressWarnings({"AssignmentToCollectionOrArrayFieldFromParameter"})
+  private synchronized void setSnacFamilyInfos(
+      List<SnacFamilyInfo> snacFamilyInfos) {
+    this.snacFamilyInfos = snacFamilyInfos;
+  }
 
-            getOscarConnection().postServiceEvent(new ServerReadyEvent(this));
-            serverReady();
+  private synchronized List<SnacFamilyInfo> getSnacFamilyInfos() {
+    return snacFamilyInfos;
+  }
 
-        } else if (snac instanceof RateInfoCmd) {
-            RateInfoCmd ric = (RateInfoCmd) snac;
-
-            List<RateClassInfo> rateClasses = ric.getRateClassInfos();
-
-            int[] classes = new int[rateClasses.size()];
-            for (int i = 0; i < rateClasses.size(); i++) {
-                classes[i] = rateClasses.get(i).getRateClass();
-            }
-
-            sendSnac(new RateAck(classes));
-
-            trySetReady();
-        }
-    }
-
-    protected void trySetReady() {
-        reallySetReady();
-    }
-
-    protected void reallySetReady() {
-        beforeClientReady();
-
-        setReady();
-    }
-
-    protected void beforeClientReady() {
-
-    }
-
-    protected void serverReady() {
-
-    }
-
-    private synchronized void setSnacFamilyInfos(
-            List<SnacFamilyInfo> snacFamilyInfos) {
-        this.snacFamilyInfos = snacFamilyInfos;
-    }
-
-    private synchronized List<SnacFamilyInfo> getSnacFamilyInfos() {
-        return snacFamilyInfos;
-    }
-
+  public RateMonitor getRateMonitor() {
+    return rateMonitor;
+  }
 }

@@ -38,8 +38,6 @@ import net.kano.joustsim.oscar.oscar.service.icbm.RendezvousSessionHandler;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ProxyRedirectDisallowedEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.BuddyCancelledEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ManualTimeoutController;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
 import net.kano.joscar.rv.RecvRvEvent;
 import net.kano.joscar.rv.RvSnacResponseEvent;
 import net.kano.joscar.snaccmd.icbm.RvCommand;
@@ -70,15 +68,6 @@ public abstract class AbstractRvSessionHandler implements RendezvousSessionHandl
       }
     }
     return error;
-  }
-
-  private synchronized ManualTimeoutController getManualTimeoutController() {
-    if (!(connection instanceof StateBasedRvConnection)) return null;
-    StateBasedRvConnection stateBasedRvConnection
-        = (StateBasedRvConnection) connection;
-    StateController controller = stateBasedRvConnection.getStateController();
-    if (!(controller instanceof ManualTimeoutController)) return null;
-    return (ManualTimeoutController) controller;
   }
 
   protected static enum HowToConnect { DONT, PROXY, NORMAL }
@@ -132,11 +121,8 @@ public abstract class AbstractRvSessionHandler implements RendezvousSessionHandl
 
   protected void handleIncomingAccept(RecvRvEvent event,
       AcceptRvCmd acceptCmd) {
+    connection.getRvSessionInfo().setBuddyAccepted(true);
     connection.getEventPost().fireEvent(new BuddyAcceptedEvent());
-    ManualTimeoutController mtc = getManualTimeoutController();
-    //TODO(klea): I don't think this timer stuff works right. I think "startedTimer" needs to be a field
-    // so we can execute startTimeoutTimer() again if a new controller starts
-    if (mtc != null) mtc.startTimeoutTimer();
   }
 
   protected abstract void handleIncomingRequest(RecvRvEvent event,
@@ -146,5 +132,4 @@ public abstract class AbstractRvSessionHandler implements RendezvousSessionHandl
   }
 
   protected RvConnection getRvConnection() { return connection; }
-
 }

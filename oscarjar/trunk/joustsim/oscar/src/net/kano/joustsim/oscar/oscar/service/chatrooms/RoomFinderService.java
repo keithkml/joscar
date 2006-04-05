@@ -52,8 +52,9 @@ import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.oscar.ExternalServiceManager;
 import net.kano.joustsim.oscar.oscar.BasicConnection;
 import net.kano.joustsim.oscar.oscar.OscarConnection;
-import net.kano.joustsim.oscar.oscar.service.Service;
+import net.kano.joustsim.oscar.oscar.service.AbstractService;
 import net.kano.joustsim.oscar.oscar.service.ServiceFactory;
+import net.kano.joustsim.oscar.oscar.service.MutableService;
 import net.kano.joustsim.oscar.oscar.service.bos.ExternalBosService;
 import net.kano.joustsim.oscar.oscar.service.bos.MainBosService;
 import net.kano.joustsim.oscar.oscar.service.bos.OpenedChatRoomServiceListener;
@@ -61,11 +62,11 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.logging.Logger;
 
-public class RoomFinderService extends Service {
+public class RoomFinderService extends AbstractService {
   private static final Logger LOGGER = Logger
       .getLogger(RoomFinderService.class.getName());
 
-  private Integer maxRoomsAllowed = null;
+  private @Nullable Integer maxRoomsAllowed = null;
 
   public RoomFinderService(AimConnection aimConnection,
       OscarConnection oscarConnection) {
@@ -79,14 +80,18 @@ public class RoomFinderService extends Service {
         if (cmd instanceof RoomResponse) {
           RoomResponse response = (RoomResponse) cmd;
           int max = response.getMaxRooms();
-          if (max != -1) maxRoomsAllowed = max;
+          if (max != -1) {
+            synchronized (RoomFinderService.this) {
+              maxRoomsAllowed = max;
+            }
+          }
           setReady();
         }
       }
     });
   }
 
-  public @Nullable Integer getMaxRoomsAllowed() {
+  public synchronized @Nullable Integer getMaxRoomsAllowed() {
     return maxRoomsAllowed;
   }
 
@@ -102,6 +107,7 @@ public class RoomFinderService extends Service {
           LOGGER.fine("Got join-room response for " + roominfo
               + "; connecting to chat room");
           joinChatRoom(roominfo);
+
         } else {
           LOGGER.warning("Got unknown response to JoinRoomCmd: " + cmd);
         }
@@ -118,9 +124,7 @@ public class RoomFinderService extends Service {
       = new CopyOnWriteArrayList<RoomFinderServiceListener>();
 
 
-  public SnacFamilyInfo getSnacFamilyInfo() {
-    return RoomCommand.FAMILY_INFO;
-  }
+  public SnacFamilyInfo getSnacFamilyInfo() { return RoomCommand.FAMILY_INFO; }
 
   public void addRoomManagerServiceListener(
       RoomFinderServiceListener listener) {
@@ -158,7 +162,7 @@ public class RoomFinderService extends Service {
       this.roomInfo = roomInfo;
     }
 
-    public Service getService(OscarConnection conn, int family) {
+    public MutableService getService(OscarConnection conn, int family) {
       if (family == ConnCommand.FAMILY_CONN) {
         return new ExternalBosService(getAimConnection(), conn);
       } else if (family == ChatCommand.FAMILY_CHAT) {

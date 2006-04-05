@@ -41,6 +41,9 @@ public interface ServerStoredSettingsListener {
     void handleIdleTimeShownChanged(ServerStoredSettings settings,
             boolean idleTimeShown);
 
-    void handletypingShownChanged(ServerStoredSettings settings,
+    void handleTypingShownChanged(ServerStoredSettings settings,
             boolean typingShown);
+
+    void handleRecentBuddiesUsedChanged(ServerStoredSettings settings,
+            boolean recentBuddiesUsed);
 }

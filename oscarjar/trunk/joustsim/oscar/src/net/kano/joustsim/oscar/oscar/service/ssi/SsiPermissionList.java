@@ -247,6 +247,7 @@ class SsiPermissionList implements PermissionList, SsiItemChangeListener {
         return allowed;
     }
 
+    @SuppressWarnings({"unchecked"})
     public synchronized Set<Screenname> getEffectiveBlockedBuddies() {
         if (getPrivacyMode() == PrivacyMode.BLOCK_BLOCKED) {
             return getBlockedBuddies();
@@ -255,6 +256,7 @@ class SsiPermissionList implements PermissionList, SsiItemChangeListener {
         }
     }
 
+    @SuppressWarnings({"unchecked"})
     public synchronized Set<Screenname> getEffectiveAllowedBuddies() {
         if (getPrivacyMode() == PrivacyMode.ALLOW_ALLOWED) {
             return getAllowedBuddies();

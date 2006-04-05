@@ -35,5 +35,16 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.dim;
 
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.Message;
 
-public class SentCompletePacketEvent extends RvConnectionEvent { }
+public class SentCompletePacketEvent extends RvConnectionEvent {
+  private final Message message;
+
+  public SentCompletePacketEvent(Message message) {
+    this.message = message;
+  }
+
+  public Message getMessage() {
+    return message;
+  }
+}

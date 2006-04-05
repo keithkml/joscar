@@ -36,6 +36,7 @@ package net.kano.joustsim.oscar.oscar.service.icbm;
 
 import net.kano.joscar.rvcmd.AcceptRvCmd;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
+import net.kano.joscar.rvproto.rvproxy.RvProxyCmd;
 import net.kano.joustsim.TestTools;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.ControllerRestartConsultant;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.DefaultRvConnectionEventListener;
@@ -43,29 +44,40 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnection;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionEventListener;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionSettings;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionState;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.TimeoutHandler;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.ConnectionType;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.AbstractConnectionController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.AbstractProxyConnectionController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.AbstractStateController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectToProxyForIncomingController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectToProxyForOutgoingController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectedController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.OutgoingConnectionController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.PassiveConnectionController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ProxyConnection;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.RedirectConnectionController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.RedirectToProxyController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendOverProxyController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendPassivelyController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.TimeoutableController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.StartedControllerEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.StartingControllerEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.AbstractStreamInfo;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
 
-import java.net.InetAddress;
+import java.io.IOException;
 import java.net.UnknownHostException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.WritableByteChannel;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 public class OutgoingRvConnectionFunctionalTests extends RvConnectionTestCase {
@@ -100,10 +112,8 @@ public class OutgoingRvConnectionFunctionalTests extends RvConnectionTestCase {
         }
       }
     });
-    conn.sendRequest();
-    conn.getRvSessionHandler().handleIncomingAccept(null, new GenericAcceptRv());
-    assertEndWasStream(conn.waitForCompletion());
-    assertHit(PassiveConnectionController.class);
+    sendAcceptWait();
+    assertHitOnce(PassiveConnectionController.class);
     assertSentRvs(1, 0, 0);
   }
 
@@ -166,11 +176,9 @@ public class OutgoingRvConnectionFunctionalTests extends RvConnectionTestCase {
         }
       }
     });
-    conn.sendRequest();
-    conn.getRvSessionHandler().handleIncomingAccept(null, new GenericAcceptRv());
-    assertEndWasStream(conn.waitForCompletion());
-    assertHit(PassiveConnectionController.class);
-    assertHit(RedirectToProxyController.class);
+    sendAcceptWait();
+    assertHitOnce(PassiveConnectionController.class);
+    assertHitOnce(RedirectToProxyController.class);
     assertSentRvs(2, 0, 0);
   }
 
@@ -202,12 +210,12 @@ public class OutgoingRvConnectionFunctionalTests extends RvConnectionTestCase {
     conn.getRvSessionHandler().handleIncomingAccept(null, new GenericAcceptRv());
     conn.getRvSessionHandler().handleIncomingRequest(null,
         new GenericRequest(2, new RvConnectionInfo(
-            InetAddress.getByName("1.2.3.4"), InetAddress.getByName("2.3.4.5"),
+            ip("1.2.3.4"), ip("2.3.4.5"),
             null, 5000, false, false)));
     StateInfo end = conn.waitForCompletion();
     assertEndWasStream(end);
-    assertHit(PassiveConnectionController.class);
-    assertHit(OutgoingConnectionController.class);
+    assertHitOnce(PassiveConnectionController.class);
+    assertHitOnce(OutgoingConnectionController.class);
     assertSentRvs(1, 1, 0);
   }
 
@@ -239,12 +247,12 @@ public class OutgoingRvConnectionFunctionalTests extends RvConnectionTestCase {
     conn.getRvSessionHandler().handleIncomingAccept(null, new GenericAcceptRv());
     conn.getRvSessionHandler().handleIncomingRequest(null,
         new GenericRequest(2, new RvConnectionInfo(
-            InetAddress.getByName("1.2.3.4"), InetAddress.getByName("2.3.4.5"),
-            InetAddress.getByName("4.5.6.7"), 5000, true, false)));
+            ip("1.2.3.4"), ip("2.3.4.5"),
+            ip("4.5.6.7"), 5000, true, false)));
     StateInfo end = conn.waitForCompletion();
     assertEndWasStream(end);
-    assertHit(PassiveConnectionController.class);
-    assertHit(ConnectToProxyForOutgoingController.class);
+    assertHitOnce(PassiveConnectionController.class);
+    assertHitOnce(ConnectToProxyForOutgoingController.class);
     assertSentRvs(1, 1, 0);
   }
 
@@ -274,8 +282,8 @@ public class OutgoingRvConnectionFunctionalTests extends RvConnectionTestCase {
     conn.getRvSessionHandler().handleIncomingAccept(null, new GenericAcceptRv());
     StateInfo end = conn.waitForCompletion();
     assertEndWasStream(end);
-    assertHit(PassiveConnectionController.class);
-    assertHit(RedirectToProxyController.class);
+    assertHitOnce(PassiveConnectionController.class);
+    assertHitOnce(RedirectToProxyController.class);
     assertSentRvs(2, 0, 0);
   }
 
@@ -287,13 +295,13 @@ public class OutgoingRvConnectionFunctionalTests extends RvConnectionTestCase {
     conn.getRvSessionHandler().handleIncomingAccept(null, new GenericAcceptRv());
     conn.getRvSessionHandler().handleIncomingRequest(null,
         new GenericRequest(2, new RvConnectionInfo(
-            InetAddress.getByName("1.2.3.4"), InetAddress.getByName("2.3.4.5"),
+            ip("1.2.3.4"), ip("2.3.4.5"),
             null, 5000, false, false)));
     StateInfo end = conn.waitForCompletion();
     assertEndWasStream(end);
-    assertHit(PassiveConnectionController.class);
+    assertHitOnce(PassiveConnectionController.class);
     assertDidntHit(OutgoingConnectionController.class);
-    assertHit(RedirectToProxyController.class);
+    assertHitOnce(RedirectToProxyController.class);
     assertSentRvs(2, 0, 0);
   }
 
@@ -308,11 +316,11 @@ public class OutgoingRvConnectionFunctionalTests extends RvConnectionTestCase {
     conn.getRvSessionHandler().handleIncomingRequest(null,
         new GenericRequest(2,
             RvConnectionInfo.createForOutgoingProxiedRequest(
-                InetAddress.getByName("4.5.6.7"), 5000)));
+                ip("4.5.6.7"), 5000)));
     StateInfo end = conn.waitForCompletion();
     assertEndWasStream(end);
-    assertHit(PassiveConnectionController.class);
-    assertHit(ConnectToProxyForOutgoingController.class);
+    assertHitOnce(PassiveConnectionController.class);
+    assertHitOnce(ConnectToProxyForOutgoingController.class);
     assertDidntHit(RedirectToProxyController.class);
     assertDidntHit(OutgoingConnectionController.class);
     assertSentRvs(1, 1, 0);
@@ -328,11 +336,11 @@ public class OutgoingRvConnectionFunctionalTests extends RvConnectionTestCase {
     conn.getRvSessionHandler().handleIncomingAccept(null, new GenericAcceptRv());
     conn.getRvSessionHandler().handleIncomingRequest(null,
         new GenericRequest(2, RvConnectionInfo.createForOutgoingProxiedRequest(
-            InetAddress.getByName("4.5.6.7"), 5000)));
+            ip("4.5.6.7"), 5000)));
     StateInfo end = conn.waitForCompletion();
     assertEndWasStream(end);
-    assertHit(PassiveConnectionController.class);
-    assertHit(RedirectToProxyController.class);
+    assertHitOnce(PassiveConnectionController.class);
+    assertHitOnce(RedirectToProxyController.class);
     assertDidntHit(OutgoingConnectionController.class);
     assertSentRvs(2, 0, 0);
   }
@@ -350,16 +358,20 @@ public class OutgoingRvConnectionFunctionalTests extends RvConnectionTestCase {
         }
       }
     });
-    conn.sendRequest();
-    conn.getRvSessionHandler().handleIncomingAccept(null, new GenericAcceptRv());
-    assertEndWasStream(conn.waitForCompletion());
-    assertHit(PassiveConnectionController.class);
+    sendAcceptWait();
+    assertHitOnce(PassiveConnectionController.class);
     assertDidntHit(OutgoingConnectionController.class);
     assertSentRvs(1, 0, 0);
     conn.getRvSessionHandler().handleIncomingRequest(null, new GenericRequest(2,
-        new RvConnectionInfo(InetAddress.getByName("1.2.3.4"),
-            InetAddress.getByName("2.3.4.5"), null, 500, false, true)));
+        new RvConnectionInfo(ip("1.2.3.4"),
+            ip("2.3.4.5"), null, 500, false, true)));
     assertDidntHit(OutgoingConnectionController.class);
+  }
+
+  private void sendAcceptWait() {
+    conn.sendRequest();
+    conn.getRvSessionHandler().handleIncomingAccept(null, new GenericAcceptRv());
+    assertEndWasStream(conn.waitForCompletion());
   }
 
   public void testRedirectDuringTransfer()
@@ -379,18 +391,27 @@ public class OutgoingRvConnectionFunctionalTests extends RvConnectionTestCase {
     conn.sendRequest();
     conn.getRvSessionHandler().handleIncomingAccept(null, new GenericAcceptRv());
     connectedWaiter.get();
-    assertHit(PassiveConnectionController.class);
+    assertHitOnce(PassiveConnectionController.class);
     assertSentRvs(1, 0, 0);
     List<StateController> hit = conn.getHitControllers();
     StateController last = hit.get(hit.size() - 1);
     conn.getRvSessionHandler().handleIncomingRequest(null, new GenericRequest(2,
-        new RvConnectionInfo(InetAddress.getByName("1.2.3.4"),
-            InetAddress.getByName("2.3.4.5"), null, 500, false, true)));
+        new RvConnectionInfo(ip("1.2.3.4"),
+            ip("2.3.4.5"), null, 500, false, true)));
     assertSame("Redirect while connected should not cause controller change",
         last, hit.get(hit.size() - 1));
     assertSentRvs(1, 0, 0);
   }
 
+  /**
+   * This test succeeds when the next connection controller is tried if the
+   * connected controller failed. This situation happens in practice when
+   * we connect to someone's LAN IP on the specified port, but we're on a
+   * different LAN than the buddy, BUT that port is open on that IP on our LAN,
+   * so we actually connected to some other service on some other computer. This
+   * will trigger the connected controller (for example SendFileController),
+   * which will either time out, or fail when it sees an incorrect ICBM ID.
+   */
   public void testConnectionControllerRetry() {
     conn.addEventListener(new DefaultRvConnectionEventListener() {
       public void handleEvent(RvConnection transfer, RvConnectionEvent event) {
@@ -411,12 +432,80 @@ public class OutgoingRvConnectionFunctionalTests extends RvConnectionTestCase {
     });
     conn.setConnectedController(new FailThenSucceedController(conn, false));
     conn.sendRequest();
-//    conn.getRvSessionHandler().handleIncomingAccept(null, new GenericAcceptRv());
     assertEndWasStream(conn.waitForCompletion());
-    assertEquals(2, TestTools.findInstances(conn.getHitControllers(),
-        FailThenSucceedController.class).size());
-    assertHit(SendPassivelyController.class);
-    assertHit(RedirectToProxyController.class);
+    assertHitMultiple(FailThenSucceedController.class, 2);
+    assertHitOnce(SendPassivelyController.class);
+    assertHitOnce(RedirectToProxyController.class);
+  }
+
+  public void testConnectionControllerRetryLast() {
+    conn.addEventListener(new DefaultRvConnectionEventListener() {
+      private boolean firstRedirect = true;
+
+      public void handleEvent(RvConnection transfer, RvConnectionEvent event) {
+        if (event instanceof StartingControllerEvent) {
+          StateController controller
+              = ((StartingControllerEvent) event).getController();
+          if (controller instanceof SendPassivelyController) {
+            ((SendPassivelyController) controller)
+                .setConnector(new FailConnector());
+
+          } else if (controller instanceof RedirectToProxyController) {
+            RedirectToProxyController redirectToProxyController
+                = (RedirectToProxyController) controller;
+            if (firstRedirect) {
+              firstRedirect = false;
+              redirectToProxyController.setConnector(new MockProxyConnector(
+                  new FailProxyConnection()));
+
+            } else {
+              redirectToProxyController.setConnector(
+                  getInitiateProxyConnector());
+            }
+          }
+        }
+      }
+    });
+    conn.sendRequest();
+    assertEndWasStream(conn.waitForCompletion());
+    assertHitOnce(SendPassivelyController.class);
+    assertHitMultiple(RedirectToProxyController.class, 2);
+  }
+
+  public void testControllersTimeout() throws IllegalAccessException,
+      InstantiationException, UnknownHostException {
+    conn.getRvSessionInfo().setConnectionInfo(new RvConnectionInfo(null, null,
+        ip("1.2.3.4"), 102, true, false));
+    RecordingTimeoutHandler timeouter = new RecordingTimeoutHandler();
+    conn.setTimeoutHandler(timeouter);
+    for (Class<? extends AbstractProxyConnectionController> proxy
+        : Arrays.asList(ConnectToProxyForIncomingController.class,
+        ConnectToProxyForOutgoingController.class,
+        RedirectToProxyController.class, SendOverProxyController.class)) {
+      checkForTimeout(proxy.newInstance(), new MockProxyConnector(
+          new HangProxyConnection()), timeouter);
+    }
+    conn.getRvSessionInfo().setConnectionInfo(new RvConnectionInfo(
+        ip("1.2.3.4"), ip("5.6.7.8"), null, 500, false, false));
+    for (Class<? extends AbstractConnectionController> normal
+        : Arrays.asList(RedirectConnectionController.class,
+        SendPassivelyController.class)) {
+      checkForTimeout(normal.newInstance(), new HangConnector(), timeouter);
+    }
+    checkForTimeout(new OutgoingConnectionController(ConnectionType.LAN),
+        new HangConnector(), timeouter);
+    checkForTimeout(new OutgoingConnectionController(ConnectionType.INTERNET),
+        new HangConnector(), timeouter);
+  }
+
+  private void checkForTimeout(AbstractConnectionController controller,
+      MockConnector connector, RecordingTimeoutHandler timeouter)
+      throws InstantiationException, IllegalAccessException {
+    controller.setConnector(connector);
+    controller.start(conn, null);
+    connector.waitForConnectionAttempt();
+    assertTrue(controller + " never called startTimeout",
+        timeouter.started(controller));
   }
 
   private RvConnectionEventListener createOnlyUsingProxyEventListener() {
@@ -515,4 +604,47 @@ public class OutgoingRvConnectionFunctionalTests extends RvConnectionTestCase {
       }
     }
   }
+
+  private static class HangProxyConnection implements ProxyConnection {
+    public RvProxyCmd readPacket() throws IOException {
+      hang();
+      throw new IOException("Hang interrupted");
+    }
+
+    private void hang() {
+      Object o = new Object();
+      synchronized(o) {
+        try {
+          o.wait();
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
+        }
+      }
+    }
+
+    public void sendProxyPacket(RvProxyCmd initCmd) throws IOException {
+      hang();
+      throw new IOException("Hang interrupted");
+    }
+  }
+
+  private static class RecordingTimeoutHandler implements TimeoutHandler {
+    private Set<TimeoutableController> started
+        = new HashSet<TimeoutableController>();
+
+    public void startTimeout(TimeoutableController controller) {
+      started.add(controller);
+    }
+
+    public void pauseTimeout(TimeoutableController controller) {
+    }
+
+    public void unpauseTimeout(TimeoutableController controller) {
+    }
+
+    public boolean started(TimeoutableController controller) {
+      return started.contains(controller);
+    }
+  }
+
 }

@@ -59,7 +59,7 @@ class FileReceiver extends AbstractTransferrer {
     return controller.waitUntilUnpause();
   }
 
-  protected long transfer(ReadableByteChannel readable,
+  protected long transferChunk(ReadableByteChannel readable,
       WritableByteChannel writable, long transferred, long remaining)
       throws IOException {
     return fileChannel.transferFrom(readable,

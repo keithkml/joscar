@@ -44,10 +44,7 @@ final class DirectimTools {
   public static @Nullable DirectimController getDirectimStateController(
       StateBasedRvConnection connection) {
     StateController controller = connection.getStateController();
-    if (controller instanceof DirectimController) {
-      return (DirectimController) controller;
-    } else {
-      return null;
-    }
+    if (!(controller instanceof DirectimController)) return null;
+    return (DirectimController) controller;
   }
 }

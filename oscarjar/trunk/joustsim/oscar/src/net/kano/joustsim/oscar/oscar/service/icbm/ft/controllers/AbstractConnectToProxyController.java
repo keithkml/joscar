@@ -46,8 +46,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 
 public abstract class AbstractConnectToProxyController
-    extends AbstractProxyConnectionController
-    implements ManualTimeoutController {
+    extends AbstractProxyConnectionController {
 
   {
     setConnector(new ConnectToProxyConnector());

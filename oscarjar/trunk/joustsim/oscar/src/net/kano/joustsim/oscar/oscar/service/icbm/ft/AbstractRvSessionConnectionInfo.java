@@ -37,31 +37,27 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
 
-public abstract class AbstractRvSessionConnectionInfo implements RvSessionConnectionInfo {
+public abstract class AbstractRvSessionConnectionInfo
+    implements RvSessionConnectionInfo {
   private final RvSession session;
   private RvConnectionInfo connInfo = null;
   private int requestIndex = 1;
   private Initiator initiator = null;
+  private boolean buddyAccepted = false;
 
   public AbstractRvSessionConnectionInfo(RvSession session) {
     this.session = session;
   }
 
-  public RvSession getRvSession() {
-    return session;
-  }
+  public RvSession getRvSession() { return session; }
 
   public synchronized void setConnectionInfo(RvConnectionInfo connInfo) {
     this.connInfo = connInfo;
   }
 
-  public synchronized RvConnectionInfo getConnectionInfo() {
-    return connInfo;
-  }
+  public synchronized RvConnectionInfo getConnectionInfo() { return connInfo; }
 
-  public synchronized int getRequestIndex() {
-    return requestIndex;
-  }
+  public synchronized int getRequestIndex() { return requestIndex; }
 
   public synchronized int increaseRequestIndex() {
     return ++requestIndex;
@@ -80,5 +76,13 @@ public abstract class AbstractRvSessionConnectionInfo implements RvSessionConnec
       throw new IllegalStateException("No initiator has been set");
     }
     return initiator;
+  }
+
+  public synchronized boolean buddyAccepted() {
+    return buddyAccepted;
+  }
+
+  public void setBuddyAccepted(boolean accepted) {
+    buddyAccepted = accepted;
   }
 }

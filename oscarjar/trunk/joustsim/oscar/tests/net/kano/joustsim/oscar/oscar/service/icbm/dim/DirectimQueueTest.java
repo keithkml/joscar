@@ -43,7 +43,10 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.AbstractStreamInfo;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
@@ -57,6 +60,25 @@ public class DirectimQueueTest extends DirectimTest {
   protected void setUp() throws Exception {
     bout = new ByteArrayOutputStream();
     processor = new MyDirectimQueueProcessor();
+  }
+
+  public void testLargeFileAttachment() throws IOException {
+    File file = new File(
+        DirectimQueueTest.class.getResource("large-test-image.jpg").getFile());
+    ByteArrayOutputStream bout = new ByteArrayOutputStream((int) file.length());
+    InputStream fin = new FileInputStream(file);
+    byte[] buf = new byte[1024];
+    while (true) {
+      int count = fin.read(buf);
+      if (count == -1) break;
+      bout.write(buf, 0, count);
+    }
+    this.bout = new ByteArrayOutputStream();
+    String str = makeString(3);
+    processor.processItem(new DirectMessage(str, false,
+        new FileAttachment(file, "1")));
+    assertData(str + "<BINARY><DATA ID=\"1\" SIZE=\"" + bout.size() + "\">"
+        + new String(bout.toByteArray(), "US-ASCII") + "</DATA></BINARY>");
   }
 
   public void testMessage() throws IOException {
@@ -92,6 +114,7 @@ public class DirectimQueueTest extends DirectimTest {
     for (int i = 10; i < 50; i++) {
       String msg = makeString(i);
       for (int j = 10; j < 50; j++) {
+        System.out.println("trying " + i + " and " + j);
         bout = new ByteArrayOutputStream();
         String attch = makeString(j);
         processor.processItem(new DirectMessage(msg, false, makeAttachment("1", attch)));

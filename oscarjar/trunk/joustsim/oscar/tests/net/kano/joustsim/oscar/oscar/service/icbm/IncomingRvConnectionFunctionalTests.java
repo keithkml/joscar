@@ -35,38 +35,34 @@
 package net.kano.joustsim.oscar.oscar.service.icbm;
 
 import net.kano.joscar.rvcmd.RvConnectionInfo;
-import net.kano.joscar.rvcmd.SegmentedFilename;
-import net.kano.joscar.rvproto.ft.FileTransferHeader;
-import net.kano.joscar.ByteBlock;
+import net.kano.joscar.rvproto.rvproxy.RvProxyCmd;
 import net.kano.joustsim.TestTools;
 import static net.kano.joustsim.TestTools.findInstances;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.Checksummer;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.ConnectionType;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.DefaultRvConnectionEventListener;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnection;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionEventListener;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionState;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.TimeoutHandler;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.AbstractConnectionController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectToProxyForIncomingController;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.IncomingFileTransferPlumber;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.OutgoingConnectionController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ProxyConnection;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ProxyConnector;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.RedirectConnectionController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.RedirectToProxyController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.TransferredFile;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.Transferrer;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.TimeoutableController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.StartingControllerEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SocketStreamInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ExecutionException;
 
 public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
@@ -86,11 +82,6 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
 
   protected int getBaseOutgoingRequestId() {
     return 2;
-  }
-
-  protected void assertHit(Class<?> cls) {
-    assertNotNull(TestTools.findOnlyInstance(
-        getConnection().getHitControllers(), cls));
   }
 
   public void testLanConnection() {
@@ -130,17 +121,6 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
     assertSentRvs(0, 1, 0);
   }
 
-  private void assertOnlyHit(ConnectionType... array) {
-    List<OutgoingConnectionController> controllers
-        = findInstances(conn.getHitControllers(),
-        OutgoingConnectionController.class);
-    assertEquals(array.length, controllers.size());
-    for (int i = 0; i < array.length; i++) {
-      assertEquals("Controller #" + (i+1), array[i],
-          controllers.get(i).getTimeoutType());
-    }
-  }
-
   public void testProxyConnection() {
     conn.addEventListener(new RvConnectionEventListener() {
       public void handleEventWithStateChange(RvConnection transfer,
@@ -170,6 +150,59 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
     assertSentRvs(0, 1, 0);
   }
 
+  public void testRetryLastController() {
+    final StateController[] second = new StateController[1];
+    conn.addEventListener(new DefaultRvConnectionEventListener() {
+      private boolean hadFirst = false;
+      public void handleEvent(RvConnection transfer, RvConnectionEvent event) {
+        if (event instanceof StartingControllerEvent) {
+          StateController controller = ((StartingControllerEvent) event).getController();
+          if (controller instanceof OutgoingConnectionController
+              || controller instanceof RedirectConnectionController) {
+            AbstractConnectionController oc
+                = (AbstractConnectionController) controller;
+            oc.setConnector(new HangConnector());
+            
+          } else if (controller instanceof RedirectToProxyController) {
+            RedirectToProxyController pc
+                = (RedirectToProxyController) controller;
+            if (hadFirst) {
+              second[0] = pc;
+              pc.setConnector(getInitiateProxyConnector());
+
+            } else {
+              hadFirst = true;
+              pc.setConnector(new HangProxyConnector());
+            }
+          }
+        }
+      }
+    });
+    conn.setTimeoutHandler(new TimeoutHandler() {
+      public void startTimeout(TimeoutableController controller) {
+        if (controller != second[0]) controller.cancelIfNotFruitful(0);
+      }
+
+      public void pauseTimeout(TimeoutableController controller) {
+      }
+
+      public void unpauseTimeout(TimeoutableController controller) {
+      }
+    });
+    assertEndWasStream(generateRequestAndRun());
+    assertNotNull(second[0]);
+    assertHitMultiple(OutgoingConnectionController.class, 2);
+    assertHitMultiple(RedirectToProxyController.class, 2);
+    MockRvRequestMaker maker = getConnection().getRvSessionInfo().getRequestMaker();
+    int reqs = maker.getSentRequests().size();
+    // there might be only 2 requests because the timeout happens in a different
+    // thread than the controller, so the controller might send the request
+    // before the timeout hits
+    assertTrue("Unexpected request count", reqs >= 2 && reqs <= 3);
+    assertEquals("Unexpected accept count", 1, maker.getAcceptCount());
+    assertEquals("Unexpected reject count", 0, maker.getRejectCount());
+  }
+
   public void testWeRedirect() {
     conn.addEventListener(new DefaultRvConnectionEventListener() {
       public void handleEvent(RvConnection transfer, RvConnectionEvent event) {
@@ -189,13 +222,11 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
         }
       }
     });
-    StateInfo end = generateRequestAndRun(conn);
+    StateInfo end = generateRequestAndRun();
 
     assertTrue("End was " + end, end instanceof StreamInfo);
-    List<StateController> hit = conn.getHitControllers();
     assertOnlyHit(ConnectionType.LAN, ConnectionType.INTERNET);
-    assertEquals(1, findInstances(hit,
-        RedirectConnectionController.class).size());
+    assertHitOnce(RedirectConnectionController.class);
     assertSentRvs(1, 1, 0);
   }
 
@@ -219,12 +250,12 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
         }
       }
     });
-    StateInfo end = generateRequestAndRun(conn);
+    StateInfo end = generateRequestAndRun();
 
     assertTrue("End was " + end, end instanceof StreamInfo);
     assertOnlyHit(ConnectionType.LAN, ConnectionType.INTERNET);
-    assertHit(RedirectConnectionController.class);
-    assertHit(RedirectToProxyController.class);
+    assertHitOnce(RedirectConnectionController.class);
+    assertHitOnce(RedirectToProxyController.class);
     assertSentRvs(2, 1, 0);
   }
 
@@ -242,7 +273,7 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
             try {
               InetAddress internalip = conn.getRvSessionInfo().getConnectionInfo()
                   .getInternalIP();
-              if (internalip.equals(InetAddress.getByName("40.40.40.40"))) {
+              if (internalip.equals(ip("40.40.40.40"))) {
                 ogc.setConnector(new NopConnector());
               } else {
                 ogc.setConnector(hangConnector);
@@ -255,8 +286,8 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
       }
     });
     RvConnectionInfo conninfo = new RvConnectionInfo(
-        InetAddress.getByName("40.40.40.40"),
-        InetAddress.getByName("41.41.41.41"), null, 10, false, false);
+        ip("40.40.40.40"),
+        ip("41.41.41.41"), null, 10, false, false);
     StateInfo end = simulateBuddyRedirectionAndWait(conn, hangConnector, conninfo);
 
     assertTrue("End was " + end, end instanceof StreamInfo);
@@ -275,7 +306,7 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
             AbstractConnectionController ogc
                 = (AbstractConnectionController) controller;
             try {
-              if (InetAddress.getByName("60.60.60.60").equals(
+              if (ip("60.60.60.60").equals(
                   conn.getRvSessionInfo().getConnectionInfo().getProxyIP())) {
                 ogc.setConnector(getDirectedToProxyConnector());
               } else {
@@ -289,7 +320,7 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
       }
     });
     RvConnectionInfo conninfo = RvConnectionInfo.createForOutgoingProxiedRequest(
-        InetAddress.getByName("60.60.60.60"), 10);
+        ip("60.60.60.60"), 10);
     StateInfo end = simulateBuddyRedirectionAndWait(conn, hangConnector, conninfo);
 
     assertTrue("End was " + end, end instanceof StreamInfo);
@@ -308,8 +339,8 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
     generateRequestAndWaitForStream();
     conn.getRvSessionHandler().handleIncomingRequest(null,
         new GenericRequest(2, new RvConnectionInfo(
-            InetAddress.getByName("1.2.3.4"),
-            InetAddress.getByName("5.6.7.8"), null, 500, false, false)));
+            ip("1.2.3.4"),
+            ip("5.6.7.8"), null, 500, false, false)));
     assertSentRvs(0, 1, 0);
   }
 
@@ -324,8 +355,8 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
     waiter.get();
     conn.getRvSessionHandler().handleIncomingRequest(null,
         new GenericRequest(2, new RvConnectionInfo(
-            InetAddress.getByName("1.2.3.4"),
-            InetAddress.getByName("5.6.7.8"), null, 500, false, false)));
+            ip("1.2.3.4"),
+            ip("5.6.7.8"), null, 500, false, false)));
     assertSame("Redirect during transfer should not change controller",
         last, hit.get(hit.size() - 1));
     assertSentRvs(0, 1, 0);
@@ -339,8 +370,8 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
     assertSentRvs(0, 0, 0);
     conn.getRvSessionHandler().handleIncomingRequest(null,
         new GenericRequest(2, new RvConnectionInfo(
-            InetAddress.getByName("1.2.3.4"),
-            InetAddress.getByName("5.6.7.8"), null, 500, false, false)));
+            ip("1.2.3.4"),
+            ip("5.6.7.8"), null, 500, false, false)));
     assertSentRvs(0, 0, 0);
     assertDidntHit(OutgoingConnectionController.class);
   }
@@ -363,7 +394,7 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
             if (addr.equals("1.1.1.1")) {
               fail[0] = true;
               throw new IllegalStateException("Should not connect to 1.1.1.1");
-              
+
             } else if (addr.equals("2.2.2.2")) {
               succeed[0] = true;
               ogc.setConnector(hanger);
@@ -373,14 +404,14 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
       }
     });
     conn.getRvSessionHandler().handleIncomingRequest(null, new GenericRequest(
-        new RvConnectionInfo(InetAddress.getByName("1.1.1.1"), null, null, 500,
+        new RvConnectionInfo(ip("1.1.1.1"), null, null, 500,
             false, false)));
     assertSentRvs(0, 0, 0);
     assertFalse(fail[0]);
     assertFalse(succeed[0]);
 
     conn.getRvSessionHandler().handleIncomingRequest(null, new GenericRequest(2,
-        new RvConnectionInfo(InetAddress.getByName("2.2.2.2"), null, null, 500,
+        new RvConnectionInfo(ip("2.2.2.2"), null, null, 500,
             false, false)));
     assertSentRvs(0, 0, 0);
     assertFalse(fail[0]);
@@ -403,7 +434,7 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
     handler.handleIncomingRequest(null, new GenericRequest());
     conn.reject();
     handler.handleIncomingRequest(null, new GenericRequest(2,
-        new RvConnectionInfo(InetAddress.getByName("2.2.2.2"), null, null, 500,
+        new RvConnectionInfo(ip("2.2.2.2"), null, null, 500,
             false, false)));
     assertTrue(conn.getHitControllers().isEmpty());
     assertSentRvs(0, 0, 1);
@@ -411,62 +442,64 @@ public class IncomingRvConnectionFunctionalTests extends RvConnectionTestCase {
 
   public void testWeImmediatelyReject() {
     conn.setAutoMode(AutoMode.REJECT);
-    StateInfo end = generateRequestAndRun(conn);
+    StateInfo end = generateRequestAndRun();
 
     assertNull(end);
     assertTrue(conn.getHitControllers().isEmpty());
     assertSentRvs(0, 0, 1);
   }
 
-  private static class MyIncomingFileTransferPlumber
-      implements IncomingFileTransferPlumber {
-    private List<FileTransferHeader> sent = new ArrayList<FileTransferHeader>();
-    private BlockingQueue<FileTransferHeader> toread
-        = new LinkedBlockingQueue<FileTransferHeader>();
-
-    @SuppressWarnings({"ReturnOfCollectionOrArrayField"})
-    public List<FileTransferHeader> getSentHeaders() {
-      return sent;
-    }
-
-    public void queueForReceipt(FileTransferHeader header) {
-      toread.add(header);
-    }
-
-    public TransferredFile getNativeFile(SegmentedFilename segName)
-        throws IOException {
-      return getNativeFile(segName, FileTransferHeader.MACFILEINFO_DEFAULT);
-    }
-
-    public TransferredFile getNativeFile(SegmentedFilename segName,
-        ByteBlock macFileInfo) throws IOException {
-      return new MockTransferredFile();
-    }
-
-    public boolean shouldAttemptResume(TransferredFile file) {
-      return false;
-    }
-
-    public Transferrer createTransferrer(TransferredFile file, long startedAt,
-        long toDownload) {
-      return new MockTransferrer(toDownload);
-    }
-
-    public Checksummer getChecksummer(TransferredFile file, long len) {
-      return new MockChecksummer(len);
-    }
-
-    public void sendHeader(FileTransferHeader outHeader) throws IOException {
-      sent.add(outHeader);
-    }
-
-    public FileTransferHeader readHeader() throws IOException {
-      try {
-        return toread.take();
-      } catch (InterruptedException e) {
-        throw new IllegalStateException(e);
-      }
+  private void assertOnlyHit(ConnectionType... array) {
+    List<OutgoingConnectionController> controllers = findInstances(
+        conn.getHitControllers(), OutgoingConnectionController.class);
+    assertEquals(array.length, controllers.size());
+    for (int i = 0; i < array.length; i++) {
+      assertEquals("Controller #" + (i+1), array[i],
+          controllers.get(i).getTimeoutType());
     }
   }
 
+  private class HangProxyConnector implements ProxyConnector {
+    private <E> E hang() {
+      Object o = new Object();
+      synchronized(o) {
+        try {
+          o.wait();
+        } catch (InterruptedException e) {
+        }
+      }
+      throw new IllegalStateException();
+    }
+
+    public ProxyConnection getProxyConnection() {
+      return new ProxyConnection() {
+        public RvProxyCmd readPacket() throws IOException {
+          return hang();
+        }
+
+        public void sendProxyPacket(RvProxyCmd initCmd)
+            throws IOException {
+          hang();
+        }
+      };
+    }
+
+    public InetAddress getIpAddress() throws IOException {
+      return InetAddress.getLocalHost();
+    }
+
+    public int getConnectionPort() {
+      return 343;
+    }
+
+    public SocketStreamInfo createStream() throws IOException {
+      return hang();
+    }
+
+    public void checkConnectionInfo() throws Exception {
+    }
+
+    public void prepareStream() throws IOException {
+    }
+  }
 }

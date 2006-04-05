@@ -35,6 +35,7 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.dim;
 
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
+import net.kano.joscar.MiscTools;
 
 public abstract class SendingAttachmentEvent extends RvConnectionEvent {
   protected final String id;
@@ -64,5 +65,11 @@ public abstract class SendingAttachmentEvent extends RvConnectionEvent {
 
   public int getAttachmentCount() {
     return total;
+  }
+
+
+  public String toString() {
+    return MiscTools.getClassName(this) + "<" + id + "> attachment " + number
+        + "/" + total + " at " + pos + "/" + len + " bytes";
   }
 }

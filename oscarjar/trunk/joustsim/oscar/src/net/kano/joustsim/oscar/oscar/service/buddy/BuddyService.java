@@ -46,60 +46,54 @@ import net.kano.joscar.snaccmd.conn.SnacFamilyInfo;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.oscar.oscar.OscarConnection;
-import net.kano.joustsim.oscar.oscar.service.Service;
+import net.kano.joustsim.oscar.oscar.service.AbstractService;
 
-import java.util.logging.Logger;
+public class BuddyService extends AbstractService {
+  private CopyOnWriteArrayList<BuddyServiceListener> listeners
+      = new CopyOnWriteArrayList<BuddyServiceListener>();
 
-public class BuddyService extends Service {
-    private static final Logger logger
-            = Logger.getLogger(BuddyService.class.getName());
+  public BuddyService(AimConnection aimConnection,
+      OscarConnection oscarConnection) {
+    super(aimConnection, oscarConnection, BuddyCommand.FAMILY_BUDDY);
+  }
 
-    private CopyOnWriteArrayList<BuddyServiceListener> listeners = new CopyOnWriteArrayList<BuddyServiceListener>();
+  public void addBuddyListener(BuddyServiceListener l) {
+    listeners.addIfAbsent(l);
+  }
 
-    public BuddyService(AimConnection aimConnection,
-            OscarConnection oscarConnection) {
-        super(aimConnection, oscarConnection, BuddyCommand.FAMILY_BUDDY);
-    }
+  public void removeBuddyListener(BuddyServiceListener l) {
+    listeners.remove(l);
+  }
 
-    public void addBuddyListener(BuddyServiceListener l) {
-        listeners.addIfAbsent(l);
-    }
+  public SnacFamilyInfo getSnacFamilyInfo() { return BuddyCommand.FAMILY_INFO; }
 
-    public void removeBuddyListener(BuddyServiceListener l) {
-        listeners.remove(l);
-    }
+  public void connected() {
+    setReady();
+  }
 
-    public SnacFamilyInfo getSnacFamilyInfo() {
-        return BuddyCommand.FAMILY_INFO;
-    }
+  public void handleSnacPacket(SnacPacketEvent snacPacketEvent) {
+    SnacCommand snac = snacPacketEvent.getSnacCommand();
 
-    public void connected() {
-        setReady();
-    }
-
-    public void handleSnacPacket(SnacPacketEvent snacPacketEvent) {
-        SnacCommand snac = snacPacketEvent.getSnacCommand();
-
-        if (snac instanceof BuddyStatusCmd) {
-            BuddyStatusCmd bsc = (BuddyStatusCmd) snac;
-            FullUserInfo userInfo = bsc.getUserInfo();
-            String snText = userInfo == null ? null : userInfo.getScreenname();
-            if (userInfo != null && snText != null) {
-                Screenname sn = new Screenname(snText);
-                for (BuddyServiceListener listener : listeners) {
-                    listener.gotBuddyStatus(this, sn, userInfo);
-                }
-            }
-
-        } else if (snac instanceof BuddyOfflineCmd) {
-            BuddyOfflineCmd boc = (BuddyOfflineCmd) snac;
-            String snText = boc.getScreenname();
-            if (snText != null) {
-                Screenname sn = new Screenname(snText);
-                for (BuddyServiceListener listener : listeners) {
-                    listener.buddyOffline(this, sn);
-                }
-            }
+    if (snac instanceof BuddyStatusCmd) {
+      BuddyStatusCmd bsc = (BuddyStatusCmd) snac;
+      FullUserInfo userInfo = bsc.getUserInfo();
+      String snText = userInfo == null ? null : userInfo.getScreenname();
+      if (userInfo != null && snText != null) {
+        Screenname sn = new Screenname(snText);
+        for (BuddyServiceListener listener : listeners) {
+          listener.gotBuddyStatus(this, sn, userInfo);
         }
+      }
+
+    } else if (snac instanceof BuddyOfflineCmd) {
+      BuddyOfflineCmd boc = (BuddyOfflineCmd) snac;
+      String snText = boc.getScreenname();
+      if (snText != null) {
+        Screenname sn = new Screenname(snText);
+        for (BuddyServiceListener listener : listeners) {
+          listener.buddyOffline(this, sn);
+        }
+      }
     }
+  }
 }

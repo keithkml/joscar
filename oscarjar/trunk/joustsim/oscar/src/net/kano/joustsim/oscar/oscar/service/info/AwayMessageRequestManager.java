@@ -41,20 +41,20 @@ import net.kano.joscar.snaccmd.InfoData;
 import net.kano.joscar.snaccmd.loc.GetInfoCmd;
 
 public class AwayMessageRequestManager extends UserInfoRequestManager {
-    public AwayMessageRequestManager(InfoService service) {
-        super(service);
-    }
+  public AwayMessageRequestManager(InfoService service) {
+    super(service);
+  }
 
-    protected SnacCommand generateSnacCommand(final Screenname sn) {
-        return new GetInfoCmd(GetInfoCmd.FLAG_AWAYMSG, sn.getFormatted());
-    }
+  protected SnacCommand generateSnacCommand(final Screenname sn) {
+    return new GetInfoCmd(GetInfoCmd.FLAG_AWAYMSG, sn.getFormatted());
+  }
 
-    protected void callListener(InfoResponseListener listener, Screenname sn,
-            Object value) {
-        listener.handleAwayMessage(getService(), sn, (String) value);
-    }
+  protected void callListener(InfoResponseListener listener, Screenname sn,
+      Object value) {
+    listener.handleAwayMessage(getService(), sn, (String) value);
+  }
 
-    protected Object getDesiredValue(InfoData infodata) {
-        return infodata.getAwayMessage();
-    }
+  protected Object getDesiredValue(InfoData infodata) {
+    return infodata.getAwayMessage();
+  }
 }

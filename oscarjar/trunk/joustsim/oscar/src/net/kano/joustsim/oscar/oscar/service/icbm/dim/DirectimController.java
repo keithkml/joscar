@@ -60,6 +60,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -171,7 +172,7 @@ public class DirectimController extends AbstractStateController
       if (datalen > 0) {
         LOGGER.fine("Read header; reading packet of " + datalen + " bytes");
         String charset = header.getEncoding().toCharsetName();
-        if (charset == null) charset = "US-ASCII";
+        if (charset == null) charset = "ISO-8859-1";
 
         DirectimReceiver receiver = new DirectimReceiver(stream, eventPost,
             getPauseHelper(), connection.getAttachmentSaver(), this, charset,
@@ -270,7 +271,6 @@ public class DirectimController extends AbstractStateController
   }
 
   private class DimQueue implements Runnable {
-
     public void run() {
       while (true) {
         if (!waitForIcbmIdConfirmation()) {
@@ -288,16 +288,30 @@ public class DirectimController extends AbstractStateController
           newItems = new ArrayList<Object>(queue);
           queue.clear();
         }
-        for (Object item : newItems) {
+        for (Iterator<Object> it = newItems.iterator(); it.hasNext();) {
+          Object item = it.next();
           try {
             queueProcessor.processItem(item);
-
-          } catch (IOException e) {
-            fireFailed(e);
+            it.remove();
 
           } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error while processing DIM queue", e);
+            fireItemsFailed(newItems);
+            fireFailed(e);
           }
+        }
+      }
+      synchronized(queue) {
+        fireItemsFailed(queue);
+      }
+    }
+
+    private void fireItemsFailed(List<Object> newItems) {
+      for (Object failed : newItems) {
+        if (failed instanceof Message) {
+          Message message = (Message) failed;
+          connection.getEventPost().fireEvent(
+              new SendingMessageFailedEvent(message));
         }
       }
     }

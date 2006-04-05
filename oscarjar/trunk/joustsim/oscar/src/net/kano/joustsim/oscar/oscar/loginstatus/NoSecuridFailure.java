@@ -39,4 +39,19 @@ import net.kano.joustsim.oscar.oscar.service.login.LoginService;
 /**
  * See {@link LoginService#setSecuridProvider} for details.
  */
-public class NoSecuridFailure extends LoginFailureInfo { }
+public class NoSecuridFailure extends LoginFailureInfo {
+  public NoSecuridFailure(Problem problem) {
+    this.problem = problem;
+  }
+
+  private final Problem problem;
+
+  public Problem getFailureType() { return problem; }
+
+
+  public String toString() {
+    return "NoSecuridFailure<" + problem + ">";
+  }
+
+  public static enum Problem { NO_PROVIDER, NULL_SECURID }
+}

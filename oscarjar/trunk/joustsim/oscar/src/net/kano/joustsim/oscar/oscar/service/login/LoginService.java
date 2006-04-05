@@ -67,13 +67,13 @@ import net.kano.joustsim.oscar.oscar.loginstatus.LoginSuccessInfo;
 import net.kano.joustsim.oscar.oscar.loginstatus.NoSecuridFailure;
 import net.kano.joustsim.oscar.oscar.loginstatus.SnacErrorFailureInfo;
 import net.kano.joustsim.oscar.oscar.loginstatus.TimeoutFailureInfo;
-import net.kano.joustsim.oscar.oscar.service.Service;
+import net.kano.joustsim.oscar.oscar.service.AbstractService;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.logging.Logger;
 
-public class LoginService extends Service {
-  private static final Logger logger = Logger
+public class LoginService extends AbstractService {
+  private static final Logger LOGGER = Logger
       .getLogger(LoginService.class.getName());
 
   public static final ClientVersionInfo VERSIONINFO_WINAIM
@@ -108,9 +108,7 @@ public class LoginService extends Service {
     setReady();
   }
 
-  public SnacFamilyInfo getSnacFamilyInfo() {
-    return AuthCommand.FAMILY_INFO;
-  }
+  public SnacFamilyInfo getSnacFamilyInfo() { return AuthCommand.FAMILY_INFO; }
 
   public void addLoginListener(LoginServiceListener l) {
     listeners.addIfAbsent(l);
@@ -126,16 +124,15 @@ public class LoginService extends Service {
     this.versionInfo = versionInfo;
   }
 
-  public SecuridProvider getSecuridProvider() {
-    return securidProvider;
-  }
+  public SecuridProvider getSecuridProvider() { return securidProvider; }
 
   public void setSecuridProvider(SecuridProvider securidProvider) {
+    LOGGER.finer("Using SecurID provider " + securidProvider);
     this.securidProvider = securidProvider;
   }
 
   private void fireLoginSucceeded(LoginSuccessInfo info) {
-    logger.fine("Login process succeeded: " + info);
+    LOGGER.fine("Login process succeeded: " + info);
 
     synchronized (this) {
       if (notified) return;
@@ -148,29 +145,32 @@ public class LoginService extends Service {
   }
 
   private void fireLoginFailed(LoginFailureInfo info) {
-    logger.fine("Login failed: " + info.getClass().getName()
-        + ": " + info);
-
     synchronized (this) {
       if (notified) return;
       notified = true;
     }
+    LOGGER.fine("Login failed: " + info.getClass().getName()
+        + ": " + info);
+
     for (LoginServiceListener listener : listeners) {
       listener.loginFailed(info);
     }
     setFinished();
   }
 
+  /**
+   * If login has not yet completed (or failed), this method cancels the login
+   * attempt and fires a failure with {@link TimeoutFailureInfo} with the given
+   * timeout.
+   */
   public void timeout(int timeout) {
-    if (!getNotified()) {
-      fireLoginFailed(new TimeoutFailureInfo(timeout));
-    }
+    fireLoginFailed(new TimeoutFailureInfo(timeout));
   }
 
   private synchronized boolean getNotified() { return notified; }
 
   public void connected() {
-    logger.fine("Sending key request");
+    LOGGER.fine("Sending key request on " + this);
 
     sendFlap(new LoginFlapCmd());
     sendSnac(new KeyRequest(screenname.getFormatted()));
@@ -181,8 +181,8 @@ public class LoginService extends Service {
       if (securidThread != null) securidThread.interrupt();
     }
     if (!getNotified()) {
-      fireLoginFailed(
-          new DisconnectedFailureInfo(getAimConnection().wantedDisconnect()));
+      boolean wanted = getAimConnection().wantedDisconnect();
+      fireLoginFailed(new DisconnectedFailureInfo(wanted));
     }
   }
 
@@ -205,7 +205,7 @@ public class LoginService extends Service {
     if (snac instanceof KeyResponse) {
       KeyResponse kr = (KeyResponse) snac;
 
-      logger.fine("Sending authorization request");
+      LOGGER.fine("Sending authorization request");
 
       sendSnac(new AuthRequest(screenname.getFormatted(), password,
           getVersionInfo(), kr.getKey()));
@@ -217,10 +217,12 @@ public class LoginService extends Service {
       } else {
         fireLoginSucceeded(new LoginSuccessInfo(ar));
       }
+
     } else if (snac instanceof SecuridRequest) {
       final SecuridProvider provider = securidProvider;
       if (provider == null) {
-        fireLoginFailed(new NoSecuridFailure());
+        LOGGER.warning("Login service has no SecurID provider; failing");
+        fireLoginFailed(new NoSecuridFailure(NoSecuridFailure.Problem.NO_PROVIDER));
 
       } else {
         // we start a new thread so this method can block, because it will
@@ -229,9 +231,11 @@ public class LoginService extends Service {
           public void run() {
             String securid = provider.getSecurid();
             if (securid == null) {
-              fireLoginFailed(new NoSecuridFailure());
+              LOGGER.warning("Provider " + provider + " returned null SecurID");
+              fireLoginFailed(new NoSecuridFailure(NoSecuridFailure.Problem.NULL_SECURID));
 
             } else {
+              LOGGER.info("Sending SecurID response from provider " + provider);
               sendSnac(new SecuridResponse(securid));
             }
           }
@@ -241,12 +245,12 @@ public class LoginService extends Service {
           if (securidThread != null) securidThread.interrupt();
           securidThread = thread;
         }
+        LOGGER.info("Starting SecurID UI blocker thread");
         thread.start();
       }
 
     } else if (snac instanceof SnacError) {
-      SnacError se = (SnacError) snac;
-      fireLoginFailed(new SnacErrorFailureInfo(se));
+      fireLoginFailed(new SnacErrorFailureInfo((SnacError) snac));
     }
   }
 }

@@ -53,11 +53,11 @@ import net.kano.joscar.snaccmd.icon.UploadIconCmd;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.oscar.oscar.OscarConnection;
-import net.kano.joustsim.oscar.oscar.service.Service;
+import net.kano.joustsim.oscar.oscar.service.AbstractService;
 
 import java.util.logging.Logger;
 
-public class IconService extends Service implements IconRequestHandler {
+public class IconService extends AbstractService implements IconRequestHandler {
   private static final Logger LOGGER = Logger
       .getLogger(IconService.class.getName());
 

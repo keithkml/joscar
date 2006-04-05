@@ -57,7 +57,6 @@ public abstract class AbstractConnectionController
   private SocketStreamInfo stream;
   private RvConnection rvConnection;
   private Thread thread = null;
-  private boolean timerStarted = false;
   private boolean connected = false;
   private Connector connector = null;
 
@@ -72,11 +71,6 @@ public abstract class AbstractConnectionController
         if (thread != null) thread.interrupt();
       }
     });
-  }
-
-  private long getConnectionTimeoutMillis() {
-    return rvConnection.getSettings().getPerConnectionTimeout(
-        rvConnection.getRvSessionInfo().getInitiator(), getTimeoutType());
   }
 
   public StreamInfo getStreamInfo() { return stream; }
@@ -128,20 +122,7 @@ public abstract class AbstractConnectionController
       }
     });
 
-    if (shouldStartTimerAutomatically()) startTimer();
     thread.start();
-  }
-
-  protected boolean shouldStartTimerAutomatically() {
-    return true;
-  }
-
-  protected void startTimer() {
-    synchronized (this) {
-      if (timerStarted) return;
-      timerStarted = true;
-    }
-    rvConnection.getTimeoutHandler().startTimeout(this);
   }
 
   public void cancelIfNotFruitful(long timeout) {
@@ -163,6 +144,8 @@ public abstract class AbstractConnectionController
     try {
       LOGGER.fine(this + " opening socket");
       prepareStream();
+      getRvConnection().getTimeoutHandler().startTimeout(this);
+
       stream = createStream();
       LOGGER.fine(this + " initializing connection in thread");
       initializeConnectionInThread();

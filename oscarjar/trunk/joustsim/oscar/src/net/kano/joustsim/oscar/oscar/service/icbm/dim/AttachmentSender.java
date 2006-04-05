@@ -45,8 +45,6 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.WritableByteChannel;
 
 class AttachmentSender extends AbstractTransferrer {
-  private ByteBuffer buf;
-  private ReadableByteChannel inchan;
   private final Attachment data;
   private final EventPost post;
   private final String id;
@@ -54,10 +52,12 @@ class AttachmentSender extends AbstractTransferrer {
   private final int numattachments;
   private Cancellable cancellable;
 
+  private ByteBuffer buf;
+  private ReadableByteChannel inchan;
+
   public AttachmentSender(StreamInfo stream, Attachment data,
       EventPost post, String id, int attachno, int numattachments,
-      Cancellable cancellable)
-      throws IOException {
+      Cancellable cancellable) throws IOException {
     super(stream, 0, data.getLength());
     this.data = data;
     this.post = post;
@@ -71,6 +71,7 @@ class AttachmentSender extends AbstractTransferrer {
 
   public void resizeBuffer(int size) {
     buf = ByteBuffer.allocate(size);
+    buf.limit(0);
   }
 
   protected int getSelectionKey() {
@@ -85,13 +86,16 @@ class AttachmentSender extends AbstractTransferrer {
     return false;
   }
 
-  protected long transfer(ReadableByteChannel readable,
+  protected long transferChunk(ReadableByteChannel readable,
       WritableByteChannel writable, long transferred, long remaining)
       throws IOException {
-    buf.rewind();
-    buf.limit((int) Math.min(buf.capacity(), remaining));
+    assert buf.position() == 0 : buf.position();
+    int leftoverBytes = buf.limit();
+    buf.position(leftoverBytes);
+    buf.limit(Math.max(0, (int) Math.min(buf.capacity(),
+        remaining - leftoverBytes)));
     int read = inchan.read(buf);
-    if (read == -1) {
+    if (read == -1 && leftoverBytes == 0) {
       // it looks like we need to fill the rest of the stream with nulls,
       // because the attachment stream didn't give us as many bytes as we were
       // told to transfer
@@ -99,12 +103,15 @@ class AttachmentSender extends AbstractTransferrer {
       buf.limit((int) Math.min(buf.capacity(), remaining));
       post.fireEvent(new SendingAttachmentNullPaddingEvent(id, transferred,
           data.getLength(), attachno, numattachments));
+
     } else {
       post.fireEvent(new SendingAttachmentDataEvent(id, transferred,
           data.getLength(), attachno, numattachments));
       buf.flip();
     }
     int wrote = writable.write(buf);
+    buf.compact();
+    buf.flip();
     return wrote;
   }
 }

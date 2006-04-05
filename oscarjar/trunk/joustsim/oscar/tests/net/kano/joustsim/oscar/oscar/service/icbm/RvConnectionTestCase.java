@@ -65,14 +65,15 @@ public abstract class RvConnectionTestCase extends TestCase {
   protected abstract MockRvConnection getConnection();
 
   protected void generateRequestAndWaitForStream() {
-    assertEndWasStream(generateRequestAndRun(getConnection()));
+    assertEndWasStream(generateRequestAndRun());
   }
 
   protected void assertEndWasStream(StateInfo end) {
     assertTrue("End was " + end, end instanceof StreamInfo);
   }
 
-  protected StateInfo generateRequestAndRun(MockRvConnection conn) {
+  protected StateInfo generateRequestAndRun() {
+    MockRvConnection conn = getConnection();
     conn.getRvSessionHandler().handleIncomingRequest(null, new GenericRequest());
     return conn.waitForCompletion();
   }
@@ -109,7 +110,7 @@ public abstract class RvConnectionTestCase extends TestCase {
   }
 
   protected StateInfo simulateBuddyRedirectionAndWait(
-      MockIncomingRvConnection conn, HangConnector hangConnector,
+      MockIncomingRvConnection conn, MockConnector hangConnector,
       RvConnectionInfo conninfo) {
     MockRvSessionHandler handler = conn.getRvSessionHandler();
     handler.handleIncomingRequest(null, new GenericRequest());
@@ -139,7 +140,7 @@ public abstract class RvConnectionTestCase extends TestCase {
     });
   }
 
-  protected void assertHit(Class<?> cls) {
+  protected void assertHitOnce(Class<?> cls) {
     assertNotNull(TestTools.findOnlyInstance(getConnection().getHitControllers(),
         cls));
   }
@@ -152,6 +153,16 @@ public abstract class RvConnectionTestCase extends TestCase {
 
   protected void assertDidntHit(Class<?> cls) {
     assertNull(TestTools.findOnlyInstance(getConnection().getHitControllers(), cls));
+  }
+
+  protected static InetAddress ip(String addr) throws UnknownHostException {
+    return InetAddress.getByName(addr);
+  }
+
+  protected void assertHitMultiple(Class<? extends StateController> cls,
+      int count) {
+    assertEquals(count, TestTools.findInstances(getConnection().getHitControllers(),
+        cls).size());
   }
 
   protected static class MyFutureTask extends FutureTask<Object> {

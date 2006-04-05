@@ -35,8 +35,8 @@
 
 package net.kano.joustsim.oscar.oscar;
 
-import net.kano.joustsim.oscar.oscar.service.Service;
 import net.kano.joustsim.oscar.oscar.service.login.LoginService;
+import net.kano.joustsim.oscar.oscar.service.Service;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.auth.AuthCommand;
 

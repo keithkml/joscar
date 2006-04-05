@@ -34,5 +34,5 @@
 package net.kano.joustsim.oscar.oscar.service;
 
 public interface ServiceArbitrationManager {
-    void openService(ServiceArbiter<? extends Service> arbiter);
+    void openService(ServiceArbiter<? extends MutableService> arbiter);
 }

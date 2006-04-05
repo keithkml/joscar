@@ -94,6 +94,7 @@ public abstract class InfoRequestManager {
     return set;
   }
 
+  @SuppressWarnings({"unchecked"})
   protected synchronized final Set<InfoResponseListener> clearListeners(
       Screenname sn) {
     DefensiveTools.checkNull(sn, "sn");

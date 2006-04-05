@@ -42,16 +42,17 @@ import net.kano.joscar.snaccmd.conn.ConnCommand;
 import net.kano.joscar.snaccmd.icbm.IcbmCommand;
 import net.kano.joscar.snaccmd.loc.LocCommand;
 import net.kano.joscar.snaccmd.ssi.SsiCommand;
+import net.kano.joscar.snaccmd.mailcheck.MailCheckCmd;
 import net.kano.joustsim.oscar.oscar.BasicConnection;
 import net.kano.joustsim.oscar.oscar.LoginConnection;
 import net.kano.joustsim.oscar.oscar.LoginServiceListener;
-import net.kano.joustsim.oscar.oscar.OscarConnListener;
 import net.kano.joustsim.oscar.oscar.OscarConnStateEvent;
 import net.kano.joustsim.oscar.oscar.OscarConnection;
 import net.kano.joustsim.oscar.oscar.loginstatus.LoginFailureInfo;
 import net.kano.joustsim.oscar.oscar.loginstatus.LoginSuccessInfo;
-import net.kano.joustsim.oscar.oscar.service.Service;
 import net.kano.joustsim.oscar.oscar.service.ServiceFactory;
+import net.kano.joustsim.oscar.oscar.service.MutableService;
+import net.kano.joustsim.oscar.oscar.service.mailcheck.MailCheckService;
 import net.kano.joustsim.oscar.oscar.service.bos.MainBosService;
 import net.kano.joustsim.oscar.oscar.service.buddy.BuddyService;
 import net.kano.joustsim.oscar.oscar.service.icbm.IcbmService;
@@ -60,8 +61,9 @@ import net.kano.joustsim.oscar.oscar.service.login.LoginService;
 import net.kano.joustsim.oscar.oscar.service.ssi.SsiService;
 
 import java.util.logging.Logger;
+import java.util.logging.Level;
 
-public class ConnectionManager {
+public final class ConnectionManager {
   private static final Logger LOGGER = Logger
       .getLogger(ConnectionManager.class.getName());
 
@@ -71,21 +73,31 @@ public class ConnectionManager {
   private boolean wantedDisconnect = false;
   private CopyOnWriteArrayList<StateListener> stateListeners
       = new CopyOnWriteArrayList<StateListener>();
+  private final CopyOnWriteArrayList<OscarConnectionPreparer> preparers
+      = new CopyOnWriteArrayList<OscarConnectionPreparer>();
 
   private final LoginConnection loginConn;
   private BasicConnection mainConn = null;
   private final AimConnection aimConnection;
   private String password;
 
-  public ConnectionManager(AimConnection aimConnection,
+  ConnectionManager(AimConnection conn,
       AimConnectionProperties props) {
-    this.aimConnection = aimConnection;
-    this.loginConn = new LoginConnection(props.getLoginHost(),
+    aimConnection = conn;
+    loginConn = new LoginConnection(props.getLoginHost(),
         props.getLoginPort());
     password = props.getPassword();
 
     loginConn.addOscarListener(new LoginConnListener());
     loginConn.setServiceFactory(new LoginServiceFactory());
+  }
+
+  public void addConnectionPreparer(OscarConnectionPreparer preparer) {
+    preparers.addIfAbsent(preparer);
+  }
+
+  public void removeConnectionPreparer(OscarConnectionPreparer preparer) {
+    preparers.remove(preparer);
   }
 
   public synchronized State getState() { return state; }
@@ -102,7 +114,7 @@ public class ConnectionManager {
     stateListeners.remove(l);
   }
 
-  public synchronized boolean getTriedConnecting() {
+  public synchronized boolean triedConnecting() {
     return triedConnecting;
   }
 
@@ -114,15 +126,15 @@ public class ConnectionManager {
 
   public boolean connect() {
     setTriedConnecting();
-    loginConn.getClientFlapConn().setSocketFactory(aimConnection.getProxy().getSocketFactory());
+    loginConn.getClientFlapConn().setSocketFactory(
+        aimConnection.getProxy().getSocketFactory());
+    for (OscarConnectionPreparer l : preparers) {
+      l.prepareLoginConnection(this, loginConn);
+    }
     loginConn.connect();
     setState(State.NOTCONNECTED, State.CONNECTINGAUTH,
         new AuthorizingStateInfo(loginConn));
     return true;
-  }
-
-  public void disconnect() {
-    disconnect(true);
   }
 
   public synchronized void disconnect(boolean onPurpose) {
@@ -177,10 +189,14 @@ public class ConnectionManager {
     }
     BasicConnection mainConn = new BasicConnection(info.getServer(),
         info.getPort());
-    mainConn.getClientFlapConn().setSocketFactory(aimConnection.getProxy().getSocketFactory());
+    mainConn.getClientFlapConn().setSocketFactory(
+        aimConnection.getProxy().getSocketFactory());
     mainConn.setCookie(info.getCookie());
     mainConn.addOscarListener(new MainBosConnListener());
     mainConn.setServiceFactory(new BasicServiceFactory());
+    for (OscarConnectionPreparer l : preparers) {
+      l.prepareMainBosConnection(this, mainConn);
+    }
     this.mainConn = mainConn;
     return mainConn;
   }
@@ -198,8 +214,10 @@ public class ConnectionManager {
   }
 
 
+  public LoginConnection getLoginConnection() { return loginConn; }
+
   private class LoginServiceFactory implements ServiceFactory {
-    public Service getService(OscarConnection conn, int family) {
+    public MutableService getService(OscarConnection conn, int family) {
       if (family == AuthCommand.FAMILY_AUTH) {
         return new LoginService(aimConnection, loginConn,
             aimConnection.getScreenname(), password);
@@ -211,7 +229,7 @@ public class ConnectionManager {
   }
 
   private class BasicServiceFactory implements ServiceFactory {
-    public Service getService(OscarConnection conn, int family) {
+    public MutableService getService(OscarConnection conn, int family) {
       if (family == ConnCommand.FAMILY_CONN) {
         return new MainBosService(aimConnection, conn);
       } else if (family == IcbmCommand.FAMILY_ICBM) {
@@ -222,6 +240,8 @@ public class ConnectionManager {
         return new InfoService(aimConnection, conn);
       } else if (family == SsiCommand.FAMILY_SSI) {
         return new SsiService(aimConnection, conn);
+      } else if (family == MailCheckCmd.FAMILY_MAILCHECK) {
+        return new MailCheckService(aimConnection, conn);
       } else {
         LOGGER.warning("No service for family 0x"
             + Integer.toHexString(family));
@@ -230,24 +250,12 @@ public class ConnectionManager {
     }
   }
 
-  private class DefaultConnListener implements OscarConnListener {
+  private class LoginConnListener extends AbstractConnListener {
     public void registeredSnacFamilies(OscarConnection conn) {
-      aimConnection.recordSnacFamilies(conn);
-    }
+      assert conn instanceof LoginConnection
+          : "Expected LoginConnection, got " + conn;
 
-    public void connStateChanged(OscarConnection conn,
-        OscarConnStateEvent event) {
-    }
-
-    public void allFamiliesReady(OscarConnection conn) {
-    }
-  }
-
-  private class LoginConnListener extends DefaultConnListener {
-    public void registeredSnacFamilies(OscarConnection conn) {
-      super.registeredSnacFamilies(conn);
-
-      LoginService ls = loginConn.getLoginService();
+      LoginService ls = ((LoginConnection) conn).getLoginService();
       ls.addLoginListener(new LoginProcessListener());
     }
 
@@ -271,14 +279,13 @@ public class ConnectionManager {
     }
   }
 
-  private class MainBosConnListener extends DefaultConnListener {
+  private class MainBosConnListener extends AbstractConnListener {
     public void allFamiliesReady(OscarConnection conn) {
-      super.allFamiliesReady(conn);
-
       // I don't know why this could happen
       if (getState() == State.CONNECTING) {
-        LOGGER.finer("State was CONNECTING, but now we're ONLINE. The "
-            + "state should've been SIGNINGON.");
+        LOGGER.log(Level.FINER,
+            "State was CONNECTING, but now we're ONLINE. The "
+            + "state should've been SIGNINGON.", new Throwable());
         setState(State.CONNECTING, State.SIGNINGON,
             new SigningOnStateInfo());
       }

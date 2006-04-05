@@ -159,7 +159,7 @@ public class DirectimReceiver extends AbstractTransferrer {
     }
   }
 
-  protected long transfer(ReadableByteChannel readable,
+  protected long transferChunk(ReadableByteChannel readable,
       WritableByteChannel writable, long transferred, long remaining)
       throws IOException {
     int origpos = buffer.position();

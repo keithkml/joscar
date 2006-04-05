@@ -119,13 +119,6 @@ public abstract class IncomingRvConnectionImpl
   }
 
   protected boolean isSomeConnectionController(StateController oldController) {
-//    return oldController instanceof SendPassivelyController
-//    || isLanController(oldController)
-//      || isInternetController(oldController)
-//      || oldController instanceof RedirectToProxyController
-//      || oldController instanceof ConnectToProxyForOutgoingController
-//      || oldController instanceof SendOverProxyController;
-
     return isLanController(oldController)
         || isInternetController(oldController)
         || oldController instanceof RedirectToProxyController
@@ -159,9 +152,11 @@ public abstract class IncomingRvConnectionImpl
       return new NextStateControllerInfo(new RedirectToProxyController());
 
     } else if (oldController instanceof RedirectToProxyController) {
-      queueStateChange(RvConnectionState.FAILED,
+      NextStateControllerInfo next = tryRetry(oldController, event,
+          new RedirectToProxyController());
+      if (next != null) return next;
+      return new NextStateControllerInfo(RvConnectionState.FAILED,
           new ConnectionFailedEvent(event));
-      return null;
 
     } else {
       return getNextControllerFromUnknownError(oldController, oldState, event);

@@ -47,6 +47,7 @@ import net.kano.joscar.rv.RvSessionListener;
 import net.kano.joscar.rv.RvSnacResponseEvent;
 import net.kano.joscar.rvcmd.DefaultRvCommandFactory;
 import net.kano.joscar.snac.SnacPacketEvent;
+import net.kano.joscar.snac.SnacRequestListener;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.FullUserInfo;
 import net.kano.joscar.snaccmd.WarningLevel;
@@ -71,35 +72,54 @@ import net.kano.joustsim.oscar.BuddyInfo;
 import net.kano.joustsim.oscar.BuddyInfoManager;
 import net.kano.joustsim.oscar.CapabilityHandler;
 import net.kano.joustsim.oscar.oscar.OscarConnection;
-import net.kano.joustsim.oscar.oscar.service.Service;
+import net.kano.joustsim.oscar.oscar.service.AbstractService;
+import net.kano.joustsim.oscar.oscar.service.icbm.dim.DirectimConnection;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.IncomingRvConnection;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionManager;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionManagerListener;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.IncomingRvConnection;
 import net.kano.joustsim.oscar.oscar.service.icbm.secureim.EncryptedAimMessage;
 import net.kano.joustsim.oscar.oscar.service.icbm.secureim.EncryptedAimMessageInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.secureim.InternalSecureTools;
 import net.kano.joustsim.oscar.oscar.service.icbm.secureim.SecureAimConversation;
-import net.kano.joustsim.oscar.oscar.service.icbm.dim.DirectimConnection;
 import net.kano.joustsim.trust.BuddyCertificateInfo;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class IcbmService extends Service {
+public class IcbmService extends AbstractService {
   private static final Logger LOGGER = Logger
       .getLogger(IcbmService.class.getName());
-  private RvProcessor rvProcessor;
-  private RvConnectionManager rvConnectionManager;
+  //TODO(klea): what is max message size?
+  private static final int MAX_MESSAGE_SIZE = 8000;
 
-  private CopyOnWriteArrayList<IcbmListener> listeners
+  private final RvProcessor rvProcessor;
+  private final RvConnectionManager rvConnectionManager;
+
+  private final CopyOnWriteArrayList<IcbmListener> listeners
       = new CopyOnWriteArrayList<IcbmListener>();
   private final BuddyInfoManager buddyInfoManager;
+
+  private final Map<Screenname, SecureAimConversation> secureAimConvs
+      = new HashMap<Screenname, SecureAimConversation>();
+
+  private final Map<Screenname, Set<DirectimConversation>> directimconvs
+      = new HashMap<Screenname, Set<DirectimConversation>>();
+
+  private final Map<Screenname, ImConversation> imconvs
+      = new HashMap<Screenname, ImConversation>();
+  private Map<Message,Set<DirectimConversation>> sentConversations
+      = new WeakHashMap<Message, Set<DirectimConversation>>();
+  private Map<Message, Set<DirectimConversation>> failedConversations
+      = new WeakHashMap<Message, Set<DirectimConversation>>();
 
   public IcbmService(AimConnection aimConnection,
       OscarConnection oscarConnection) {
@@ -110,19 +130,80 @@ public class IcbmService extends Service {
     rvConnectionManager = new RvConnectionManager(this);
     buddyInfoManager = getAimConnection().getBuddyInfoManager();
 
-    rvConnectionManager.addConnectionManagerListener(new RvConnectionManagerListener() {
+    rvConnectionManager.addConnectionManagerListener(
+        new RvConnectionManagerListener() {
       public void handleNewIncomingConnection(RvConnectionManager manager,
           IncomingRvConnection connection) {
         if (connection instanceof DirectimConnection) {
           DirectimConnection dim = (DirectimConnection) connection;
-          DirectimConversation conv = new DirectimConversation(getAimConnection(), dim);
+          DirectimConversation conv = new DirectimConversation(
+              getAimConnection(), dim);
+          initializeDirectimConv(conv);
           synchronized (IcbmService.this) {
-            directimconvs.put(dim.getBuddyScreenname(), conv);
+            getActualDirectimConversations(dim.getBuddyScreenname()).add(conv);
           }
-          initConversation(conv);
+          fireNewConversationEvent(conv);
         }
       }
     });
+  }
+
+  private void initializeDirectimConv(final DirectimConversation conv) {
+    conv.initialize();
+    conv.addConversationListener(new ConversationAdapter() {
+      public void sentOtherEvent(Conversation conversation,
+          ConversationEventInfo event) {
+        if (event instanceof MessageQueuedEvent) {
+          MessageQueuedEvent mqe = (MessageQueuedEvent) event;
+          synchronized (IcbmService.this) {
+            initializeMap(sentConversations, mqe.getMessage()).add(conv);
+          }
+
+        } else if (event instanceof SendFailedEvent) {
+          SendFailedEvent event1 = (SendFailedEvent) event;
+
+          Message msg = event1.getMessage();
+          boolean fire = false;
+          Set<Conversation> convs = null;
+          synchronized (IcbmService.this) {
+            Set<DirectimConversation> sent = sentConversations.get(msg);
+            if (sent != null && sent.contains(conv)) {
+              Set<DirectimConversation> failed = initializeMap(
+                  failedConversations, msg);
+              failed.add(conv);
+              if (failed.containsAll(sent)) {
+                // sending the message failed everywhere!
+                fire = true;
+                convs = DefensiveTools.<Conversation>getUnmodifiableSetCopy(
+                    failed);
+                sentConversations.remove(msg);
+                failedConversations.remove(msg);
+              }
+            }
+          }
+          if (fire) {
+            assert convs != null;
+            for (IcbmListener l : listeners) {
+              l.sendAutomaticallyFailed(IcbmService.this, msg, convs);
+            }
+          }
+        }
+      }
+    });
+  }
+
+  private Set<DirectimConversation> initializeMap(
+      Map<Message, Set<DirectimConversation>> map1, Message msg) {
+    Set<DirectimConversation> convs = map1.get(msg);
+    if (convs == null) {
+      convs = new HashSet<DirectimConversation>();
+      map1.put(msg, convs);
+    }
+    return convs;
+  }
+
+  private final Screenname getScreenname() {
+    return getAimConnection().getScreenname();
   }
 
   public RvConnectionManager getRvConnectionManager() {
@@ -167,9 +248,7 @@ public class IcbmService extends Service {
     }
   }
 
-  public RvProcessor getRvProcessor() {
-    return rvProcessor;
-  }
+  public RvProcessor getRvProcessor() { return rvProcessor; }
 
   private void handleParamInfo(ParamInfoCmd pic) {
     // we need to change from the default parameter infos to something
@@ -211,6 +290,7 @@ public class IcbmService extends Service {
     if (message.isEncrypted()) {
       SecureAimConversation conv = getSecureAimConversation(sender);
 
+      //noinspection Deprecation
       EncryptedAimMessage msg = InternalSecureTools
           .getEncryptedAimMessageInstance(icbm);
       if (msg == null) return;
@@ -222,6 +302,7 @@ public class IcbmService extends Service {
           getScreenname(), icbm, certInfo, new Date());
       if (minfo == null) return;
 
+      //noinspection RedundantCast
       ((Conversation) conv).handleIncomingEvent(minfo);
 
     } else {
@@ -244,7 +325,7 @@ public class IcbmService extends Service {
     }
   }
 
-  private @Nullable TypingState getTypingState(int typingState) {
+  private @Nullable static TypingState getTypingState(int typingState) {
     if (typingState == TypingCmd.STATE_TYPING) return TypingState.TYPING;
     if (typingState == TypingCmd.STATE_NO_TEXT) return TypingState.NO_TEXT;
     if (typingState == TypingCmd.STATE_PAUSED) return TypingState.PAUSED;
@@ -252,8 +333,13 @@ public class IcbmService extends Service {
     return null;
   }
 
-  private Map<Screenname, SecureAimConversation> secureAimConvs
-      = new HashMap<Screenname, SecureAimConversation>();
+  private static int getTypingStateCode(@NotNull TypingState typingState) {
+    if (typingState == TypingState.TYPING) return TypingCmd.STATE_TYPING;
+    if (typingState == TypingState.PAUSED) return TypingCmd.STATE_PAUSED;
+    if (typingState == TypingState.NO_TEXT) return TypingCmd.STATE_NO_TEXT;
+    throw new IllegalArgumentException(
+        "no code for typing state " + typingState);
+  }
 
   public SecureAimConversation getSecureAimConversation(Screenname sn) {
     boolean isnew = false;
@@ -262,38 +348,37 @@ public class IcbmService extends Service {
       conv = secureAimConvs.get(sn);
       if (conv == null) {
         isnew = true;
+        //noinspection Deprecation
         conv = InternalSecureTools.newSecureAimConversation(getAimConnection(), sn);
+      }
+    }
+    // we need to initialize this outside of the lock to prevent deadlocks
+    if (isnew) {
+      //noinspection RedundantCast
+      ((Conversation) conv).initialize();
+      synchronized(this) {
         secureAimConvs.put(sn, conv);
       }
+      fireNewConversationEvent(conv);
     }
-    // we need to initialize this outside of the lock to prevent deadlocks
-    if (isnew) initConversation(conv);
 
     return conv;
   }
 
-  public DirectimConversation getDirectimConversation(Screenname sn) {
-    boolean isnew = false;
-    DirectimConversation conv;
-    synchronized (this) {
-      conv = directimconvs.get(sn);
-      if (conv == null || conv.isClosed()) {
-        isnew = true;
-        conv = new DirectimConversation(getAimConnection(), sn);
-        directimconvs.put(sn, conv);
-      }
+  private synchronized Set<DirectimConversation> getActualDirectimConversations(
+      Screenname sn) {
+    Set<DirectimConversation> convs = directimconvs.get(sn);
+    if (convs == null) {
+      convs = new HashSet<DirectimConversation>();
+      directimconvs.put(sn, convs);
     }
-    // we need to initialize this outside of the lock to prevent deadlocks
-    if (isnew) initConversation(conv);
-
-    return conv;
+    return convs;
   }
 
-  private Map<Screenname, DirectimConversation> directimconvs
-      = new HashMap<Screenname, DirectimConversation>();
-
-  private Map<Screenname, ImConversation> imconvs
-      = new HashMap<Screenname, ImConversation>();
+  public synchronized Set<DirectimConversation> getDirectimConversations(
+      Screenname sn) {
+    return DefensiveTools.getUnmodifiableSetCopy(getActualDirectimConversations(sn));
+  }
 
   public ImConversation getImConversation(Screenname sn) {
     boolean isnew = false;
@@ -303,33 +388,91 @@ public class IcbmService extends Service {
       if (conv == null) {
         isnew = true;
         conv = new ImConversation(getAimConnection(), sn);
-        imconvs.put(sn, conv);
       }
     }
     // we need to initialize this outside of the lock to prevent deadlocks
-    if (isnew) initConversation(conv);
+    if (isnew) {
+      conv.initialize();
+      synchronized (this) {
+        imconvs.put(sn, conv);
+      }
+      fireNewConversationEvent(conv);
+    }
 
     return conv;
   }
 
-  private void initConversation(Conversation conv) {
-    assert !Thread.holdsLock(this);
+  /**
+   * This method sends to whichever conversation is appropriate.
+   * <ol>
+   * <li> If one or more direct IM conversations are pending or open, the message
+   *    is sent to each of them
+   * <li> If no DIM conversations are pending or open, but the message is a
+   *    {@code DirectMessage}, a new DIM conversation is opened and the message
+   *    is sent there
+   * <li> If no DIM conversations are pending or open and the message is not a
+   *    {@code DirectMessage}, the message is sent through the user's IM
+   *    conversation (and one is created if none is not currently open)
+   * </ol>
+   */
+  public void sendAutomatically(Screenname sn, Message message) {
+    DirectimConversation newConv = null;
+    synchronized (this) {
+      boolean sent = false;
+      for (DirectimConversation conv : getActualDirectimConversations(sn)) {
+        if (!conv.isClosed()) {
+          conv.sendMessage(message);
+          sent = true;
+        }
+      }
+      if (!sent) {
+        if (message instanceof DirectMessage
+            || message.getMessageBody().length() > MAX_MESSAGE_SIZE) {
+          newConv = new DirectimConversation(getAimConnection(), sn);
+          // we send the message later
 
-    conv.initialize();
+        } else {
+          getImConversation(sn).sendMessage(message);
+        }
+      }
+    }
+    if (newConv != null) {
+      // we don't want to initialize the conversation within the lock
+      initializeDirectimConv(newConv);
+      // we don't want to call the new conversation event without having added
+      // it to the list of dim conversations
+      synchronized(this) {
+        getActualDirectimConversations(sn).add(newConv);
+      }
+      fireNewConversationEvent(newConv);
+      newConv.sendMessage(message);
+    }
+  }
 
+  private void fireNewConversationEvent(Conversation conv) {
     for (IcbmListener listener : listeners) {
       listener.newConversation(this, conv);
     }
   }
 
   void sendIM(Screenname buddy, String body, boolean autoresponse) {
-    sendIM(buddy, new InstantMessage(body), autoresponse);
+    sendIM(buddy, body, autoresponse, null);
+  }
+
+  void sendIM(Screenname buddy, String body, boolean autoresponse,
+      SnacRequestListener listener) {
+    sendIM(buddy, new InstantMessage(body), autoresponse, listener);
   }
 
   void sendIM(Screenname buddy, InstantMessage im, boolean autoresponse) {
+    sendIM(buddy, im, autoresponse, null);
+  }
+
+  void sendIM(Screenname buddy, InstantMessage im, boolean autoresponse,
+      SnacRequestListener listener) {
     // ackRequested must be false if autoresponse is true
-    sendSnac(new SendImIcbm(buddy.getFormatted(), im, autoresponse, 0,
-        false, null, null, !autoresponse));
+    sendSnacRequest(new SendImIcbm(buddy.getFormatted(), im, autoresponse, 0,
+        false, null, null, !autoresponse), listener);
   }
 
   void sendTypingStatus(Screenname buddy, TypingState typingState) {
@@ -337,14 +480,6 @@ public class IcbmService extends Service {
 
     sendSnac(new SendTypingNotification(buddy.getFormatted(),
         getTypingStateCode(typingState)));
-  }
-
-  private int getTypingStateCode(@NotNull TypingState typingState) {
-    if (typingState == TypingState.TYPING) return TypingCmd.STATE_TYPING;
-    if (typingState == TypingState.PAUSED) return TypingCmd.STATE_PAUSED;
-    if (typingState == TypingState.NO_TEXT) return TypingCmd.STATE_NO_TEXT;
-    throw new IllegalArgumentException(
-        "no code for typing state " + typingState);
   }
 
   private class DelegatingRvProcessorListener implements RvProcessorListener {

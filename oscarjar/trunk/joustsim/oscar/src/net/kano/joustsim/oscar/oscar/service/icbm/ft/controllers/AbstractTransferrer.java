@@ -110,7 +110,7 @@ public abstract class AbstractTransferrer
 
         long remaining = length - totalTransferred;
         waitUntilReady();
-        long transferred = transfer(readable, writable, totalTransferred,
+        long transferred = transferChunk(readable, writable, totalTransferred,
             remaining);
 
         if (transferred == -1) {
@@ -158,7 +158,7 @@ public abstract class AbstractTransferrer
    * Returns the number of bytes transferred by this call, or -1 to cancel
    * transfer
    */
-  protected abstract long transfer(ReadableByteChannel readable,
+  protected abstract long transferChunk(ReadableByteChannel readable,
       WritableByteChannel writable, long transferred,
       long remaining) throws IOException;
 

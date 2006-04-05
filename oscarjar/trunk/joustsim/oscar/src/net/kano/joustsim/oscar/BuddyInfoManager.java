@@ -38,10 +38,12 @@ package net.kano.joustsim.oscar;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.MiscTools;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.snac.SnacRequestAdapter;
 import net.kano.joscar.snac.SnacResponseEvent;
 import net.kano.joscar.snac.ClientSnacProcessor;
+import net.kano.joscar.snac.SnacRequest;
 import net.kano.joscar.snaccmd.CapabilityBlock;
 import net.kano.joscar.snaccmd.CertificateInfo;
 import net.kano.joscar.snaccmd.DirInfo;
@@ -50,6 +52,7 @@ import net.kano.joscar.snaccmd.ExtraInfoData;
 import net.kano.joscar.snaccmd.FullUserInfo;
 import net.kano.joscar.snaccmd.ShortCapabilityBlock;
 import net.kano.joscar.snaccmd.WarningLevel;
+import net.kano.joscar.snaccmd.loc.GetInfoCmd;
 import net.kano.joscar.snaccmd.icbm.SingleBuddyRequest;
 import net.kano.joscar.snaccmd.error.SnacError;
 import net.kano.joustsim.Screenname;
@@ -88,7 +91,7 @@ public class BuddyInfoManager {
   private boolean initedInfoService = false;
   private boolean initedBosService = false;
 
-  private CopyOnWriteArrayList<GlobalBuddyInfoListener> listeners
+  private final CopyOnWriteArrayList<GlobalBuddyInfoListener> listeners
       = new CopyOnWriteArrayList<GlobalBuddyInfoListener>();
 
   private BuddyInfoChangeListener pcl = new BuddyInfoChangeListener() {
@@ -122,9 +125,7 @@ public class BuddyInfoManager {
     initBosService();
   }
 
-  public AimConnection getAimConnection() {
-    return conn;
-  }
+  public AimConnection getAimConnection() { return conn; }
 
   private synchronized void cacheCertInfo(BuddyCertificateInfo certInfo) {
     DefensiveTools.checkNull(certInfo, "certInfo");
@@ -224,21 +225,42 @@ public class BuddyInfoManager {
         }
       }
     });
-    ClientSnacProcessor processor = bos.getOscarConnection().getSnacProcessor();
+    final ClientSnacProcessor processor = bos.getOscarConnection()
+        .getSnacProcessor();
+    // mark people as offline when getting away msg fails twice in a row
     processor.addGlobalResponseListener(new SnacRequestAdapter() {
       public void handleResponse(SnacResponseEvent e) {
         SnacCommand cmd = e.getSnacCommand();
-        if (cmd instanceof SnacError) {
-          SnacError error = (SnacError) cmd;
-          if (error.getErrorCode() == SnacError.CODE_USER_UNAVAILABLE) {
-            SnacCommand sent = e.getRequest().getCommand();
-            if (sent instanceof SingleBuddyRequest) {
-              SingleBuddyRequest request = (SingleBuddyRequest) sent;
-              BuddyInfo info = getBuddyInfoInstance(new Screenname(request.getScreenname()));
-              if (!info.isOnBuddyList()) info.setOnline(false);
+        if (!(cmd instanceof SnacError)) return;
+        SnacError error = (SnacError) cmd;
+        if (error.getErrorCode() != SnacError.CODE_USER_UNAVAILABLE) return;
+        SnacCommand sent = e.getRequest().getCommand();
+        if (!(sent instanceof SingleBuddyRequest)) return;
+
+        SingleBuddyRequest request = (SingleBuddyRequest) sent;
+        final Screenname sn = new Screenname(request.getScreenname());
+        BuddyInfo info = getBuddyInfoInstance(sn);
+        if (info.isOnBuddyList() || !info.isOnline()) return;
+
+        LOGGER.info("I think " + sn + " might be offline after "
+            + MiscTools.getClassName(sent) + " returned 'user unvailable'; "
+            + "pinging user to make sure");
+        processor.sendSnac(new SnacRequest(new GetInfoCmd(
+            GetInfoCmd.FLAG_AWAYMSG, request.getScreenname()),
+            new SnacRequestAdapter() {
+          public void handleResponse(SnacResponseEvent snacResponseEvent) {
+            SnacCommand cmd = snacResponseEvent.getSnacCommand();
+            if (!(cmd instanceof SnacError)) return;
+
+            SnacError error = (SnacError) cmd;
+            if (error.getErrorCode() == SnacError.CODE_USER_UNAVAILABLE) {
+              LOGGER.warning("Got two 'user unavailable' responses for " + sn
+                  + ", marking as offline");
+              getBuddyInfoInstance(sn).setOnline(false);
             }
           }
-        }
+        }));
+        info.setOnline(false);
       }
     });
   }

@@ -59,12 +59,14 @@ public abstract class UserInfoRequestManager extends InfoRequestManager {
       public void handleResponse(SnacResponseEvent e) {
         SnacCommand snac = e.getSnacCommand();
 
-        synchronized (this) {
-          if (ran) return;
-          ran = true;
-        }
+        if (shouldRunListeners(snac)) {
+          synchronized (this) {
+            if (ran) return;
+            ran = true;
+          }
 
-        runListeners(sn, getDesiredValueFromSnac(snac));
+          runListeners(sn, getDesiredValueFromSnac(snac));
+        }
       }
 
       public void handleTimeout(SnacRequestTimeoutEvent event) {
@@ -75,6 +77,10 @@ public abstract class UserInfoRequestManager extends InfoRequestManager {
         runListeners(sn, null);
       }
     });
+  }
+
+  protected boolean shouldRunListeners(SnacCommand snac) {
+    return snac instanceof UserInfoCmd;
   }
 
   private void runListeners(Screenname sn, Object value) {

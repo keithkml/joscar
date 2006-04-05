@@ -42,19 +42,20 @@ import java.util.Map;
 import java.util.TreeMap;
 
 public final class ServiceManager {
-    private final Map<Integer,Service> services = new TreeMap<Integer, Service>();
+  private final Map<Integer, MutableService> services
+      = new TreeMap<Integer, MutableService>();
 
-    public synchronized void setService(int family, Service service) {
-        DefensiveTools.checkNull(service, "service");
+  public synchronized void setService(int family, MutableService service) {
+    DefensiveTools.checkNull(service, "service");
 
-        services.put(family, service);
-    }
+    services.put(family, service);
+  }
 
-    public synchronized Service getService(int family) {
-        return services.get(family);
-    }
+  public synchronized MutableService getService(int family) {
+    return services.get(family);
+  }
 
-    public synchronized List<Service> getServices() {
-        return DefensiveTools.getUnmodifiableCopy(services.values());
-    }
+  public synchronized List<MutableService> getServices() {
+    return DefensiveTools.getUnmodifiableCopy(services.values());
+  }
 }

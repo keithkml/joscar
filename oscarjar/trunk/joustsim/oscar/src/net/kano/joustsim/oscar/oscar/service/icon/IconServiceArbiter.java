@@ -45,7 +45,8 @@ import net.kano.joustsim.oscar.oscar.service.AbstractServiceArbiter;
 import net.kano.joustsim.oscar.oscar.service.ServiceArbiterRequest;
 import net.kano.joustsim.oscar.oscar.service.ServiceArbitrationManager;
 
-public class IconServiceArbiter extends AbstractServiceArbiter<IconService>
+public class IconServiceArbiter
+    extends AbstractServiceArbiter<IconService>
     implements IconRequestHandler {
   private CopyOnWriteArrayList<IconRequestListener> listeners
       = new CopyOnWriteArrayList<IconRequestListener>();

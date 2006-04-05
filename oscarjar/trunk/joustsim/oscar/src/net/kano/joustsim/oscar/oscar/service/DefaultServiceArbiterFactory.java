@@ -35,16 +35,20 @@ package net.kano.joustsim.oscar.oscar.service;
 
 import net.kano.joscar.snaccmd.icon.IconCommand;
 import net.kano.joscar.snaccmd.rooms.RoomCommand;
+import net.kano.joscar.snaccmd.mailcheck.MailCheckCmd;
 import net.kano.joustsim.oscar.oscar.service.icon.IconServiceArbiter;
 import net.kano.joustsim.oscar.oscar.service.chatrooms.RoomFinderServiceArbiter;
+import net.kano.joustsim.oscar.oscar.service.mailcheck.MailCheckServiceArbiter;
 
 public class DefaultServiceArbiterFactory implements ServiceArbiterFactory {
-  public ServiceArbiter<? extends Service> getInstance(
+  public ServiceArbiter<? extends MutableService> getInstance(
       ServiceArbitrationManager manager, int family) {
     if (family == IconCommand.FAMILY_ICON) {
       return new IconServiceArbiter(manager);
     } else if (family == RoomCommand.FAMILY_ROOM) {
       return new RoomFinderServiceArbiter(manager);
+    } else if (family == MailCheckCmd.FAMILY_MAILCHECK) {
+      return new MailCheckServiceArbiter(manager);
     } else {
       return null;
     }

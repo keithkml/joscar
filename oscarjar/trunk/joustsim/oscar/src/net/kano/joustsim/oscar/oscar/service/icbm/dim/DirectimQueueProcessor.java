@@ -173,7 +173,7 @@ public class DirectimQueueProcessor {
         throw new IOException("Failed to write to channel");
       }
     }
-    post.fireEvent(new SentMessageEvent(length));
+    post.fireEvent(new SentMessageTextEvent(message, length));
     if (!attachmentInfos.isEmpty()) {
       int attachno = 0;
       int numattachments = attachmentInfos.size();
@@ -194,7 +194,7 @@ public class DirectimQueueProcessor {
         attachno++;
       }
     }
-    post.fireEvent(new SentCompletePacketEvent());
+    post.fireEvent(new SentCompletePacketEvent(message));
   }
 
   protected void setupAttachmentSender(AttachmentSender sender) {

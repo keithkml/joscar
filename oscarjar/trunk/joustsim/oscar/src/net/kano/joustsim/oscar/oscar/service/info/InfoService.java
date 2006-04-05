@@ -51,224 +51,222 @@ import net.kano.joustsim.oscar.CapabilityListener;
 import net.kano.joustsim.oscar.CapabilityManager;
 import net.kano.joustsim.oscar.CapabilityManagerListener;
 import net.kano.joustsim.oscar.oscar.OscarConnection;
-import net.kano.joustsim.oscar.oscar.service.Service;
+import net.kano.joustsim.oscar.oscar.service.AbstractService;
 import net.kano.joustsim.trust.BuddyCertificateInfo;
 
-import java.util.Iterator;
 import java.util.List;
 
-public class InfoService extends Service {
-    private static final CertificateInfo CERTINFO_EMPTY
-            = new CertificateInfo(null);
+public class InfoService extends AbstractService {
+  private static final CertificateInfo CERTINFO_EMPTY
+      = new CertificateInfo(null);
 
-    private CopyOnWriteArrayList<InfoServiceListener> listeners
-            = new CopyOnWriteArrayList<InfoServiceListener>();
+  private CopyOnWriteArrayList<InfoServiceListener> listeners
+      = new CopyOnWriteArrayList<InfoServiceListener>();
 
-    private final InfoResponseListener infoRequestListener
-            = new InfoResponseAdapter() {
-        public void handleUserProfile(InfoService service, Screenname buddy,
-                String userInfo) {
-            assert InfoService.this == service;
+  private final InfoResponseListener infoRequestListener
+      = new InfoResponseAdapter() {
+    public void handleUserProfile(InfoService service, Screenname buddy,
+        String userInfo) {
+      assert InfoService.this == service;
 
-            for (Iterator<InfoServiceListener> it = listeners.iterator(); it.hasNext();) {
-                InfoServiceListener listener = it.next();
-                listener.handleUserProfile(service, buddy, userInfo);
-            }
-        }
-
-        public void handleAwayMessage(InfoService service, Screenname buddy,
-                String awayMessage) {
-            assert InfoService.this == service;
-
-            for (Iterator<InfoServiceListener> it = listeners.iterator(); it.hasNext();) {
-                InfoServiceListener listener = it.next();
-                listener.handleAwayMessage(service, buddy, awayMessage);
-            }
-        }
-
-        public void handleCertificateInfo(InfoService service, Screenname buddy,
-                BuddyCertificateInfo certInfo) {
-            assert InfoService.this == service;
-
-            for (Iterator<InfoServiceListener> it = listeners.iterator(); it.hasNext();) {
-                InfoServiceListener listener = it.next();
-                listener.handleCertificateInfo(service, buddy, certInfo);
-            }
-        }
-
-        public void handleDirectoryInfo(InfoService service, Screenname buddy,
-                DirInfo dirInfo) {
-            assert InfoService.this == service;
-
-            for (Iterator<InfoServiceListener> it = listeners.iterator(); it.hasNext();) {
-                InfoServiceListener listener = it.next();
-                listener.handleDirectoryInfo(service, buddy, dirInfo);
-            }
-        }
-    };
-    private final CapabilityManager capabilityManager;
-    private CapabilityListener individualCapListener = new CapabilityListener() {
-        public void capabilityEnabled(CapabilityHandler handler, boolean enabled) {
-            updateCaps();
-        }
-    };
-    private final CapabilityManagerListener capListener = new CapabilityManagerListener() {
-        public void capabilityHandlerAdded(CapabilityManager manager,
-                CapabilityBlock block, CapabilityHandler handler) {
-            handler.addCapabilityListener(individualCapListener);
-            updateCaps();
-        }
-
-        public void capabilityHandlerRemoved(CapabilityManager manager,
-                CapabilityBlock block, CapabilityHandler handler) {
-            handler.removeCapabilityListener(individualCapListener);
-            updateCaps();
-        }
-    };
-
-    private InfoRequestManager profileRequestManager = new UserProfileRequestManager(this);
-    private InfoRequestManager awayMsgRequestManager = new AwayMessageRequestManager(this);
-    private InfoRequestManager certInfoRequestManager = new CertificateInfoRequestManager(this);
-    private InfoRequestManager dirInfoRequestManager = new DirectoryInfoRequestManager(this);
-
-    private String awayMessage = null;
-    private String userProfile = null;
-    private CertificateInfo certificateInfo = null;
-
-    public InfoService(AimConnection aimConnection,
-            OscarConnection oscarConnection) {
-        super(aimConnection, oscarConnection, LocCommand.FAMILY_LOC);
-
-        capabilityManager = getAimConnection().getCapabilityManager();
-        capabilityManager.addCapabilityListener(capListener);
+      for (InfoServiceListener listener : listeners) {
+        listener.handleUserProfile(service, buddy, userInfo);
+      }
     }
 
-    public SnacFamilyInfo getSnacFamilyInfo() {
-        return LocCommand.FAMILY_INFO;
+    public void handleAwayMessage(InfoService service, Screenname buddy,
+        String awayMessage) {
+      assert InfoService.this == service;
+
+      for (InfoServiceListener listener : listeners) {
+        listener.handleAwayMessage(service, buddy, awayMessage);
+      }
     }
 
-    public void connected() {
-        InfoData infoData;
-        synchronized (this) {
-            List<CapabilityBlock> caps = capabilityManager.getEnabledCapabilities();
-            infoData = new InfoData(awayMessage, userProfile,
-                            caps,
-                            certificateInfo);
-        }
-        sendSnac(new SetInfoCmd(infoData));
+    public void handleCertificateInfo(InfoService service, Screenname buddy,
+        BuddyCertificateInfo certInfo) {
+      assert InfoService.this == service;
 
-        setReady();
+      for (InfoServiceListener listener : listeners) {
+        listener.handleCertificateInfo(service, buddy, certInfo);
+      }
     }
 
-    protected void finishUp() {
-        capabilityManager.removeCapabilityListener(capListener);
+    public void handleDirectoryInfo(InfoService service, Screenname buddy,
+        DirInfo dirInfo) {
+      assert InfoService.this == service;
+
+      for (InfoServiceListener listener : listeners) {
+        listener.handleDirectoryInfo(service, buddy, dirInfo);
+      }
+    }
+  };
+  private final CapabilityManager capabilityManager;
+  private CapabilityListener individualCapListener = new CapabilityListener() {
+    public void capabilityEnabled(CapabilityHandler handler, boolean enabled) {
+      updateCaps();
+    }
+  };
+  private final CapabilityManagerListener capListener
+      = new CapabilityManagerListener() {
+    public void capabilityHandlerAdded(CapabilityManager manager,
+        CapabilityBlock block, CapabilityHandler handler) {
+      handler.addCapabilityListener(individualCapListener);
+      updateCaps();
     }
 
-    public void addInfoListener(InfoServiceListener l) {
-        listeners.addIfAbsent(l);
+    public void capabilityHandlerRemoved(CapabilityManager manager,
+        CapabilityBlock block, CapabilityHandler handler) {
+      handler.removeCapabilityListener(individualCapListener);
+      updateCaps();
     }
+  };
 
-    public void removeInfoListener(InfoServiceListener l) {
-        listeners.remove(l);
+  private InfoRequestManager profileRequestManager
+      = new UserProfileRequestManager(this);
+  private InfoRequestManager awayMsgRequestManager
+      = new AwayMessageRequestManager(this);
+  private InfoRequestManager certInfoRequestManager
+      = new CertificateInfoRequestManager(this);
+  private InfoRequestManager dirInfoRequestManager
+      = new DirectoryInfoRequestManager(this);
+
+  private String awayMessage = null;
+  private String userProfile = null;
+  private CertificateInfo certificateInfo = null;
+
+  public InfoService(AimConnection aimConnection,
+      OscarConnection oscarConnection) {
+    super(aimConnection, oscarConnection, LocCommand.FAMILY_LOC);
+
+    capabilityManager = getAimConnection().getCapabilityManager();
+    capabilityManager.addCapabilityListener(capListener);
+  }
+
+  public SnacFamilyInfo getSnacFamilyInfo() {
+    return LocCommand.FAMILY_INFO;
+  }
+
+  public void connected() {
+    InfoData infoData;
+    synchronized (this) {
+      List<CapabilityBlock> caps = capabilityManager.getEnabledCapabilities();
+      infoData = new InfoData(awayMessage, userProfile, caps, certificateInfo);
     }
+    sendSnac(new SetInfoCmd(infoData));
 
-    public synchronized String getCurrentAwayMessage() {
-        return awayMessage;
+    setReady();
+  }
+
+  protected void finishUp() {
+    capabilityManager.removeCapabilityListener(capListener);
+  }
+
+  public void addInfoListener(InfoServiceListener l) {
+    listeners.addIfAbsent(l);
+  }
+
+  public void removeInfoListener(InfoServiceListener l) {
+    listeners.remove(l);
+  }
+
+  public synchronized String getLastSetAwayMessage() { return awayMessage; }
+
+  //TODO(klea): find max info length, throw exception if too long
+  //            or return the truncated version or something
+  public void setAwayMessage(String awayMessage) {
+    synchronized (this) {
+      // we don't want to waste time checking the strings for equality,
+      // but we can check the references for equality to catch some
+      // unnecessary cases
+      //noinspection StringEquality
+      if (this.awayMessage == awayMessage) return;
+
+      this.awayMessage = awayMessage;
     }
+    sendSnac(new SetInfoCmd(new InfoData(
+        null, awayMessage == null ? InfoData.NOT_AWAY : awayMessage,
+        null, null)));
+  }
 
-    public void setAwayMessage(String awayMessage) {
-        synchronized(this) {
-            // we don't want to waste time checking the strings for equality,
-            // but we can check the references for equality to catch some
-            // unnecessary cases
-            if (this.awayMessage == awayMessage) return;
+  public synchronized String getLastSetUserProfile() { return userProfile; }
 
-            this.awayMessage = awayMessage;
-        }
-        sendSnac(new SetInfoCmd(new InfoData(
-                null, awayMessage == null ? InfoData.NOT_AWAY : awayMessage,
-                null, null)));
+  public void setUserProfile(String userProfile) {
+    DefensiveTools.checkNull(userProfile, "userProfile");
+
+    synchronized (this) {
+      // we don't want to waste time checking the strings for equality,
+      // but we can check the references for equality to catch some
+      // unnecessary cases
+      //noinspection StringEquality
+      if (this.userProfile == userProfile) return;
+
+      this.userProfile = userProfile;
     }
+    sendSnac(new SetInfoCmd(new InfoData(
+        userProfile == null ? "" : userProfile,
+        null, null, null)));
+  }
 
-    public synchronized String getCurrentUserProfile() {
-        return userProfile;
+  public synchronized CertificateInfo getCurrentCertificateInfo() {
+    return certificateInfo;
+  }
+
+  public void setCertificateInfo(CertificateInfo certificateInfo) {
+    synchronized (this) {
+      // we don't want to waste time checking the info blocks for equality
+      // but we can check the references for equality to catch some
+      // unnecessary cases
+      if (this.certificateInfo == certificateInfo) return;
+
+      this.certificateInfo = certificateInfo;
     }
+    sendSnac(new SetInfoCmd(new InfoData(null, null, null,
+        certificateInfo == null ? CERTINFO_EMPTY : certificateInfo)));
+  }
 
-    public void setUserProfile(String userProfile) {
-        DefensiveTools.checkNull(userProfile, "userProfile");
+  public void requestUserProfile(Screenname buddy) {
+    profileRequestManager.request(buddy);
+  }
 
-        synchronized(this) {
-            // we don't want to waste time checking the strings for equality,
-            // but we can check the references for equality to catch some
-            // unnecessary cases
-            if (this.userProfile == userProfile) return;
+  public void requestUserProfile(Screenname buddy,
+      InfoResponseListener listener) {
+    profileRequestManager.request(buddy, listener);
+  }
 
-            this.userProfile = userProfile;
-        }
-        sendSnac(new SetInfoCmd(new InfoData(
-                userProfile == null ? "" : userProfile,
-                null, null, null)));
-    }
+  public void requestAwayMessage(Screenname buddy) {
+    awayMsgRequestManager.request(buddy);
+  }
 
-    public synchronized CertificateInfo getCurrentCertificateInfo() {
-        return certificateInfo;
-    }
+  public void requestAwayMessage(Screenname buddy,
+      InfoResponseListener listener) {
+    awayMsgRequestManager.request(buddy, listener);
+  }
 
-    public void setCertificateInfo(CertificateInfo certificateInfo) {
-        synchronized(this) {
-            // we don't want to waste time checking the info blocks for equality
-            // but we can check the references for equality to catch some
-            // unnecessary cases
-            if (this.certificateInfo == certificateInfo) return;
+  public void requestCertificateInfo(Screenname buddy) {
+    certInfoRequestManager.request(buddy);
+  }
 
-            this.certificateInfo = certificateInfo;
-        }
-        sendSnac(new SetInfoCmd(new InfoData(null, null, null,
-                certificateInfo == null ? CERTINFO_EMPTY : certificateInfo)));
-    }
+  public void requestCertificateInfo(Screenname buddy,
+      InfoResponseListener listener) {
+    certInfoRequestManager.request(buddy, listener);
+  }
 
-    public void requestUserProfile(Screenname buddy) {
-        profileRequestManager.request(buddy);
-    }
+  public void requestDirectoryInfo(Screenname buddy) {
+    dirInfoRequestManager.request(buddy);
+  }
 
-    public void requestUserProfile(Screenname buddy,
-            InfoResponseListener listener) {
-        profileRequestManager.request(buddy, listener);
-    }
+  public void requestDirectoryInfo(Screenname buddy,
+      InfoResponseListener listener) {
+    dirInfoRequestManager.request(buddy, listener);
+  }
 
-    public void requestAwayMessage(Screenname buddy) {
-        awayMsgRequestManager.request(buddy);
-    }
+  private void updateCaps() {
+    sendSnac(new SetInfoCmd(new InfoData(null, null,
+        capabilityManager.getEnabledCapabilities(), null)));
+  }
 
-    public void requestAwayMessage(Screenname buddy,
-            InfoResponseListener listener) {
-        awayMsgRequestManager.request(buddy, listener);
-    }
-
-    public void requestCertificateInfo(Screenname buddy) {
-        certInfoRequestManager.request(buddy);
-    }
-
-    public void requestCertificateInfo(Screenname buddy,
-            InfoResponseListener listener) {
-        certInfoRequestManager.request(buddy, listener);
-    }
-
-    public void requestDirectoryInfo(Screenname buddy) {
-        dirInfoRequestManager.request(buddy);
-    }
-
-    public void requestDirectoryInfo(Screenname buddy,
-            InfoResponseListener listener) {
-        dirInfoRequestManager.request(buddy, listener);
-    }
-
-    private void updateCaps() {
-        sendSnac(new SetInfoCmd(new InfoData(null, null,
-                capabilityManager.getEnabledCapabilities(), null)));
-    }
-
-    InfoResponseListener getInfoRequestListener() {
-        return infoRequestListener;
-    }
+  InfoResponseListener getInfoRequestListener() {
+    return infoRequestListener;
+  }
 }

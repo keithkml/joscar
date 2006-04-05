@@ -38,7 +38,6 @@ package net.kano.joustsim.oscar.oscar;
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.MiscTools;
-import net.kano.joscar.ratelim.RateLimitingQueueMgr;
 import net.kano.joscar.flap.ClientFlapConn;
 import net.kano.joscar.flap.FlapCommand;
 import net.kano.joscar.flap.FlapPacketEvent;
@@ -52,6 +51,7 @@ import net.kano.joscar.net.ClientConn;
 import net.kano.joscar.net.ClientConnEvent;
 import net.kano.joscar.net.ClientConnListener;
 import net.kano.joscar.net.ConnDescriptor;
+import net.kano.joscar.ratelim.RateLimitingQueueMgr;
 import net.kano.joscar.snac.ClientSnacProcessor;
 import net.kano.joscar.snac.FamilyVersionPreprocessor;
 import net.kano.joscar.snac.SnacPacketEvent;
@@ -63,13 +63,13 @@ import net.kano.joscar.snac.SnacResponseListener;
 import net.kano.joscar.snaccmd.DefaultClientFactoryList;
 import net.kano.joscar.snaccmd.error.SnacError;
 import net.kano.joustsim.JavaTools;
+import net.kano.joustsim.oscar.oscar.service.MutableService;
 import net.kano.joustsim.oscar.oscar.service.Service;
 import net.kano.joustsim.oscar.oscar.service.ServiceEvent;
 import net.kano.joustsim.oscar.oscar.service.ServiceFactory;
 import net.kano.joustsim.oscar.oscar.service.ServiceListener;
 import net.kano.joustsim.oscar.oscar.service.ServiceManager;
 
-import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
@@ -83,7 +83,7 @@ import java.util.logging.Logger;
 public class OscarConnection {
   private static final Logger LOGGER
       = Logger.getLogger(OscarConnection.class.getName());
-  private static final int CONNECTION_DEAD_TIMEOUT = 30000;
+//  private static final int CONNECTION_DEAD_TIMEOUT = 30000;
 
   private final ClientFlapConn conn;
   private final String host;
@@ -110,7 +110,7 @@ public class OscarConnection {
   private Set<Service> unready = new HashSet<Service>();
   private Set<Service> unfinished = new HashSet<Service>();
   private final RateLimitingQueueMgr rateManager = new RateLimitingQueueMgr();
-  private long lastPacketTime = 0;
+//  private long lastPacketTime = 0;
 
   public OscarConnection(String host, int port) {
     DefensiveTools.checkNull(host, "host");
@@ -217,19 +217,19 @@ public class OscarConnection {
 //      }
 //    }, 0, 10000);
 
-    for (Service service : getServices()) {
+    for (MutableService service : getMutableServices()) {
       service.connected();
     }
   }
 
-  private void updateLastPacketTime() {
-    lastPacketTime = System.currentTimeMillis();
-  }
+//  private void updateLastPacketTime() {
+//    lastPacketTime = System.currentTimeMillis();
+//  }
 
   private void internalDisconnected() {
     LOGGER.fine("Disconnected from " + host);
 
-    for (Service service : getServices()) service.disconnected();
+    for (MutableService service : getMutableServices()) service.disconnected();
   }
 
   private void stateChanged(ClientConnEvent clientConnEvent) {
@@ -366,24 +366,23 @@ public class OscarConnection {
   }
 
   protected void handleSnacPacket(SnacPacketEvent snacPacketEvent) {
-    Service service = getService(snacPacketEvent);
+    MutableService service = getService(snacPacketEvent);
     if (service != null) service.handleSnacPacket(snacPacketEvent);
   }
 
-  private Service getService(SnacPacketEvent snacPacketEvent) {
+  private MutableService getService(SnacPacketEvent snacPacketEvent) {
     int family = snacPacketEvent.getSnacPacket().getFamily();
-    return getService(family);
+    return getMutableService(family);
   }
 
   protected void handleSnacResponse(SnacResponseEvent snacResponseEvent) {
-    Service service = getService(snacResponseEvent);
+    MutableService service = getService(snacResponseEvent);
     if (service != null) service.handleSnacPacket(snacResponseEvent);
   }
 
-
   public final void setSnacFamilies(int... snacFamilies)
       throws IllegalStateException {
-    List<Service> services;
+    List<MutableService> services;
     synchronized (this) {
       // this isn't necessary
       if (this.snacFamilies != null) {
@@ -398,9 +397,9 @@ public class OscarConnection {
       Arrays.sort(families);
       this.snacFamilies = families;
 
-      services = new ArrayList<Service>(snacFamilies.length);
+      services = new ArrayList<MutableService>(snacFamilies.length);
       for (int family : families) {
-        Service service = serviceFactory.getService(this, family);
+        MutableService service = serviceFactory.getService(this, family);
 
         if (service == null) {
           LOGGER.finer("No service for family 0x"
@@ -427,7 +426,7 @@ public class OscarConnection {
     ClientConn.State state = conn.getState();
     boolean connected = state == ClientConn.STATE_CONNECTED;
     boolean disconnected = isDisconnected();
-    for (Service service : services) {
+    for (MutableService service : services) {
       service.addServiceListener(new ServiceListener() {
         public void handleServiceReady(Service service) {
           serviceReady(service);
@@ -496,7 +495,15 @@ public class OscarConnection {
     return serviceManager.getService(family);
   }
 
+  private MutableService getMutableService(int family) {
+    return serviceManager.getService(family);
+  }
+
   public List<Service> getServices() {
+    return new ArrayList<Service>(serviceManager.getServices());
+  }
+
+  private List<MutableService> getMutableServices() {
     return serviceManager.getServices();
   }
 
@@ -512,7 +519,7 @@ public class OscarConnection {
     synchronized (this) {
       eventLog.add(event);
     }
-    for (Service service : getServices()) {
+    for (MutableService service : getMutableServices()) {
       service.handleEvent(event);
     }
   }
@@ -530,11 +537,11 @@ public class OscarConnection {
     return DefensiveTools.getUnmodifiableCopy(eventLog);
   }
 
-  private static class KeepaliveFlapCommand extends FlapCommand {
-    public KeepaliveFlapCommand() {super(5);}
-
-    public void writeData(OutputStream out) {
-    }
-  }
+//  private static class KeepaliveFlapCommand extends FlapCommand {
+//    public KeepaliveFlapCommand() {super(5);}
+//
+//    public void writeData(OutputStream out) {
+//    }
+//  }
 
 }

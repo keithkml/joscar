@@ -75,9 +75,9 @@ public final class TestTools {
     return worked;
   }
 
-  public static <E> List<E> findInstances(List<? super E> hit, Class<E> cls) {
-    List<E> list = new ArrayList<E>();
-    for (Object controller : hit) {
+  public static <E,F extends E> List<F> findInstances(List<E> hit, Class<F> cls) {
+    List<F> list = new ArrayList<F>();
+    for (E controller : hit) {
       if (cls.isInstance(controller)) list.add(cls.cast(controller));
     }
     return list;

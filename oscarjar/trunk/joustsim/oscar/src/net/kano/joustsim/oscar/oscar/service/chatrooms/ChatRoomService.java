@@ -50,7 +50,7 @@ import net.kano.joscar.snaccmd.conn.SnacFamilyInfo;
 import net.kano.joustsim.JavaTools;
 import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.oscar.oscar.OscarConnection;
-import net.kano.joustsim.oscar.oscar.service.Service;
+import net.kano.joustsim.oscar.oscar.service.AbstractService;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -58,7 +58,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class ChatRoomService extends Service {
+public class ChatRoomService extends AbstractService {
   private Set<ChatRoomUser> users = new HashSet<ChatRoomUser>();
   private CopyOnWriteArrayList<ChatRoomServiceListener> listeners
       = new CopyOnWriteArrayList<ChatRoomServiceListener>();

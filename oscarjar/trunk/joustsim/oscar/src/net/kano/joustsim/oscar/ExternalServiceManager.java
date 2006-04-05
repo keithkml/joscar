@@ -37,13 +37,16 @@ import net.kano.joscar.ByteBlock;
 import net.kano.joscar.net.ClientConn;
 import net.kano.joscar.snaccmd.conn.ConnCommand;
 import net.kano.joscar.snaccmd.icon.IconCommand;
+import net.kano.joscar.snaccmd.mailcheck.MailCheckCmd;
 import net.kano.joscar.snaccmd.rooms.RoomCommand;
+import net.kano.joustsim.JavaTools;
 import net.kano.joustsim.oscar.oscar.BasicConnection;
+import net.kano.joustsim.oscar.oscar.ExternalConnection;
 import net.kano.joustsim.oscar.oscar.OscarConnListener;
 import net.kano.joustsim.oscar.oscar.OscarConnStateEvent;
 import net.kano.joustsim.oscar.oscar.OscarConnection;
-import net.kano.joustsim.oscar.oscar.ExternalConnection;
 import net.kano.joustsim.oscar.oscar.service.DefaultServiceArbiterFactory;
+import net.kano.joustsim.oscar.oscar.service.MutableService;
 import net.kano.joustsim.oscar.oscar.service.Service;
 import net.kano.joustsim.oscar.oscar.service.ServiceArbiter;
 import net.kano.joustsim.oscar.oscar.service.ServiceArbiterFactory;
@@ -53,52 +56,51 @@ import net.kano.joustsim.oscar.oscar.service.ServiceListener;
 import net.kano.joustsim.oscar.oscar.service.bos.ExternalBosService;
 import net.kano.joustsim.oscar.oscar.service.bos.MainBosService;
 import net.kano.joustsim.oscar.oscar.service.bos.OpenedExternalServiceListener;
-import net.kano.joustsim.oscar.oscar.service.icon.IconServiceArbiter;
 import net.kano.joustsim.oscar.oscar.service.chatrooms.RoomFinderServiceArbiter;
-import net.kano.joustsim.JavaTools;
+import net.kano.joustsim.oscar.oscar.service.icon.IconServiceArbiter;
+import net.kano.joustsim.oscar.oscar.service.mailcheck.MailCheckServiceArbiter;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.Collection;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.logging.Logger;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ExternalServiceManager {
   private static final Logger LOGGER = Logger
       .getLogger(ExternalServiceManager.class.getName());
   private static final int DEFAULT_SERVICE_TIMEOUT = 10 * 1000;
+  private Set<ServiceRequestInfo<? extends MutableService>> desiredServiceRequests
+      = new HashSet<ServiceRequestInfo<? extends MutableService>>();
+  private static final int SERVICE_REQUEST_INTERVAL = 15*1000;
 
   public static int fixPort(int port) {
-    int usePort;
-    if (port <= 0) {
-      usePort = 5190;
-    } else {
-      usePort = port;
-    }
-    return usePort;
+    if (port > 0 && port <= 65535) return port;
+    else return 5190;
   }
 
   private final AimConnection aimConnection;
 
   private final Object externalServicesLock = new Object();
-  private final Map<Integer, ServiceArbiter<? extends Service>> externalServices
-      = new HashMap<Integer, ServiceArbiter<? extends Service>>();
-  private final Map<ServiceArbiter<? extends Service>, OscarConnection> externalConnections
-      = new HashMap<ServiceArbiter<? extends Service>, OscarConnection>();
-  private final Map<Integer, ServiceRequestInfo<? extends Service>> pendingServiceRequests
-      = new HashMap<Integer, ServiceRequestInfo<? extends Service>>();
+  private final Map<Integer, ServiceArbiter<? extends MutableService>> externalServices
+      = new HashMap<Integer, ServiceArbiter<? extends MutableService>>();
+  private final Map<ServiceArbiter<? extends MutableService>, OscarConnection> externalConnections
+      = new HashMap<ServiceArbiter<? extends MutableService>, OscarConnection>();
+  private final Map<Integer, ServiceRequestInfo<? extends MutableService>> pendingServiceRequests
+      = new HashMap<Integer, ServiceRequestInfo<? extends MutableService>>();
+  private Map<Integer,Long> serviceRequestTimes = new HashMap<Integer, Long>();
 
   private final ServiceArbitrationManager arbitrationManager
       = new ServiceArbitrationManager() {
-    public void openService(ServiceArbiter<? extends Service> arbiter) {
+    public void openService(ServiceArbiter<? extends MutableService> arbiter) {
       int family = arbiter.getSnacFamily();
       if (getServiceArbiter(family) == arbiter) {
         requestService(family, arbiter);
@@ -135,10 +137,15 @@ public class ExternalServiceManager {
         MainBosService bos = conn.getBosService();
         if (bos == null) return;
 
+        // when the BOS service is ready, we dequeue pending service requests
         bos.addServiceListener(new ServiceListener() {
           public void handleServiceReady(Service service) {
-            for (ServiceRequestInfo<? extends Service> req : pendingServiceRequests.values()) {
-              updateServiceRequest(req);
+            Collection<ServiceRequestInfo<? extends MutableService>> infos;
+            synchronized (ExternalServiceManager.this) {
+              infos = new ArrayList<ServiceRequestInfo<? extends MutableService>>(pendingServiceRequests.values());
+            }
+            for (ServiceRequestInfo<? extends MutableService> req : infos) {
+              makeServiceRequest(req);
             }
           }
 
@@ -151,6 +158,8 @@ public class ExternalServiceManager {
           Collection<? extends Service> services) {
       }
     });
+    //TODO(klea): we need to come up with a better way to initialize arbiters
+//    assert getMailCheckServiceArbiter() != null;
   }
 
   public int getServiceConnectionTimeout() {
@@ -166,23 +175,24 @@ public class ExternalServiceManager {
     serviceTimer.scheduleAtFixedRate(new TimerTask() {
       public void run() {
         Set<Integer> retry = new HashSet<Integer>();
+        Set<ServiceRequestInfo<? extends MutableService>> torequest
+            = new HashSet<ServiceRequestInfo<? extends MutableService>>();
         synchronized (this) {
           long time = System.currentTimeMillis();
-          Set<Map.Entry<Integer, ServiceRequestInfo<? extends Service>>> entries
+          Set<Map.Entry<Integer,ServiceRequestInfo<? extends MutableService>>> entries
               = pendingServiceRequests.entrySet();
           boolean changed = true;
           while (changed) {
             changed = false;
-            for (Iterator<Map.Entry<Integer, ServiceRequestInfo<? extends Service>>> it
-                = entries.iterator(); it.hasNext();) {
-              Map.Entry<Integer, ServiceRequestInfo<? extends Service>> entry = it.next();
+            for (Iterator<Map.Entry<Integer,ServiceRequestInfo<? extends MutableService>>> it = entries.iterator(); it.hasNext();) {
+              Map.Entry<Integer,ServiceRequestInfo<? extends MutableService>> entry = it.next();
 
-              ServiceRequestInfo request = entry.getValue();
-              long diff = time - request.getStartTime();
+              ServiceRequestInfo<?> request = entry.getValue();
+              long diff = time - request.startTime;
               if (diff > serviceConnectionTimeout) {
                 LOGGER.info("External service for arbiter "
-                    + request.getArbiter() + "(0x"
-                    + Integer.toHexString(request.getFamily())
+                    + request.arbiter + "(0x"
+                    + Integer.toHexString(request.family)
                     + ") timed out after "
                     + (diff / 1000.0) + "s; retrying");
                 retry.add(entry.getKey());
@@ -193,9 +203,22 @@ public class ExternalServiceManager {
               }
             }
           }
+          for (Iterator<ServiceRequestInfo<? extends MutableService>> it
+              = desiredServiceRequests.iterator(); it.hasNext();) {
+            ServiceRequestInfo<? extends MutableService> s = it.next();
+            if (System.currentTimeMillis() - s.startTime
+                > SERVICE_REQUEST_INTERVAL) {
+              it.remove();
+              torequest.add(s);
+            }
+          }
+        }
+
+        for (ServiceRequestInfo<? extends MutableService> s : torequest) {
+          requestService(s.family, s.arbiter, true);
         }
         for (int service : retry) {
-          requestService(service, getServiceArbiter(service));
+          requestService(service, getMutableServiceArbiter(service));
         }
       }
     }, 5000, 5000);
@@ -204,7 +227,12 @@ public class ExternalServiceManager {
 
   public @Nullable ServiceArbiter<? extends Service> getServiceArbiter(
       int service) {
-    ServiceArbiter<? extends Service> arbiter;
+    return getMutableServiceArbiter(service);
+  }
+
+  private ServiceArbiter<? extends MutableService> getMutableServiceArbiter(
+      int service) {
+    ServiceArbiter<? extends MutableService> arbiter;
     synchronized (externalServicesLock) {
       arbiter = externalServices.get(service);
       if (arbiter != null) return arbiter;
@@ -228,6 +256,11 @@ public class ExternalServiceManager {
     return getArbiter(RoomCommand.FAMILY_ROOM, RoomFinderServiceArbiter.class);
   }
 
+  public MailCheckServiceArbiter getMailCheckServiceArbiter() {
+    return getArbiter(MailCheckCmd.FAMILY_MAILCHECK,
+        MailCheckServiceArbiter.class);
+  }
+
   private <A> A getArbiter(int family, Class<A> arbiterClass) {
     ServiceArbiter<?> arbiter = getServiceArbiter(family);
     if (arbiterClass.isInstance(arbiter)) {
@@ -238,7 +271,8 @@ public class ExternalServiceManager {
   }
 
   private void refreshServiceIfNecessary(int family) {
-    ServiceArbiter<? extends Service> arbiter;
+    // queue it up and let the timer deal with it (wriet that code)
+    ServiceArbiter<? extends MutableService> arbiter;
     synchronized (externalServicesLock) {
       arbiter = externalServices.get(family);
     }
@@ -246,133 +280,107 @@ public class ExternalServiceManager {
       LOGGER.warning("Someone requested refresh of 0x"
           + Integer.toHexString(family) + " but there's no arbiter");
       return;
-    } else if (!arbiter.shouldKeepAlive()) {
+    }
+
+    if (!arbiter.shouldKeepAlive()) {
       LOGGER.log(Level.INFO, "Someone requested a refresh of 0x"
           + Integer.toHexString(family) + " but the arbiter "
-          + arbiter + " says it doesn't want to live");
+          + arbiter + " keepalive = false");
       return;
     }
+
     requestService(family, arbiter);
   }
 
-  private <S extends Service> void requestService(int service,
+  private synchronized <S extends MutableService> void queueServiceRequest(
+      int family, ServiceArbiter<S> arbiter) {
+    desiredServiceRequests.add(new ServiceRequestInfo<S>(family, arbiter));
+  }
+
+  private synchronized boolean requestedRecently(int family) {
+    Long num = serviceRequestTimes.get(family);
+    return num == null
+        || System.currentTimeMillis() - num < SERVICE_REQUEST_INTERVAL;
+  }
+
+  private <S extends MutableService> void requestService(int family,
       ServiceArbiter<S> arbiter) {
+    requestService(family, arbiter, false);
+  }
+
+  /**
+   * If {@code definitely} is {@code false}, the request may not be made
+   * immediately, but instead it will be queued, for rate limiting purposes.
+   */
+  private <S extends MutableService> void requestService(int family,
+      ServiceArbiter<S> arbiter, boolean definitely) {
     ServiceRequestInfo<S> request;
     synchronized (this) {
-      if (pendingServiceRequests.containsKey(service)) return;
+      if (pendingServiceRequests.containsKey(family)) return;
       if (externalConnections.containsKey(arbiter)) {
-        LOGGER.finer("Someone requested 0x"
-            + Integer.toHexString(service) + " but there's "
-            + "already an external connection: "
+        LOGGER.finer("Someone requested 0x" + Integer.toHexString(family)
+            + " but there's already an external connection: "
             + externalConnections.get(arbiter));
         return;
       }
-      request = new ServiceRequestInfo<S>(service, arbiter);
-      pendingServiceRequests.put(service, request);
+
+      if (!definitely && requestedRecently(family)) {
+        queueServiceRequest(family, arbiter);
+        return;
+      }
+      request = new ServiceRequestInfo<S>(family, arbiter);
+      pendingServiceRequests.put(family, request);
+
+      serviceRequestTimes.put(family, System.currentTimeMillis());
     }
-    updateServiceRequest(request);
+    makeServiceRequest(request);
   }
 
-  private <S extends Service>void updateServiceRequest(
+  private <S extends MutableService> void makeServiceRequest(
       ServiceRequestInfo<S> request) {
-    int family = request.getFamily();
-    LOGGER.info("Requesting external service " + family + " for " + request.getArbiter());
+    int family = request.family;
+    LOGGER.info("Requesting external service " + family + " for "
+        + request.arbiter);
     MainBosService bosService = aimConnection.getBosService();
     if (bosService == null) return;
     bosService.requestService(family,
         new ArbitratedExternalServiceListener<S>(request));
   }
 
-  private synchronized <S extends Service> boolean clearRequest(
+  private synchronized <S extends MutableService> boolean clearRequest(
       ServiceRequestInfo<S> request) {
     boolean removed = pendingServiceRequests.values().remove(request);
     if (removed) {
-      LOGGER.info("External connection request " + request + " cleared");
+      LOGGER.fine("External connection request " + request + " cleared");
     } else {
-      LOGGER.info("External connection request " + request + " was not cleared "
+      LOGGER.fine("External connection request " + request + " was not cleared "
           + "because it is obsolete");
     }
     return removed;
   }
 
   private synchronized void clearExternalConnection(OscarConnection conn,
-      ServiceArbiter<? extends Service> arbiter) {
+      ServiceArbiter<? extends MutableService> arbiter) {
     if (getExternalConnection(arbiter) == conn) {
       externalConnections.remove(arbiter);
     }
   }
 
   private synchronized OscarConnection getExternalConnection(
-      ServiceArbiter<? extends Service> arbiter) {
+      ServiceArbiter<? extends MutableService> arbiter) {
     return externalConnections.get(arbiter);
   }
 
   private synchronized boolean storeExternalConnection(BasicConnection conn,
-      ServiceRequestInfo<? extends Service> request) {
-    if (!clearRequest(request)) return false;
-//        if (request.isChatRequest()) {
-//            chatConnections.put(request.getChatInfo())
-//        }
-    externalConnections.put(request.getArbiter(), conn);
+      ServiceRequestInfo<? extends MutableService> request) {
+    // we don't clear the request anymore until it actually connects
+//    if (!clearRequest(request)) return false;
+
+    externalConnections.put(request.arbiter, conn);
     return true;
   }
 
-  private static class ServiceRequestInfo<S extends Service> {
-    private long startTime = System.currentTimeMillis();
-    private int family;
-    private ServiceArbiter<S> arbiter;
-    private BasicConnection connection = null;
-    private boolean canceled = false;
-
-    public ServiceRequestInfo(int family, ServiceArbiter<S> arbiter) {
-      this.family = family;
-      this.arbiter = arbiter;
-    }
-
-    public long getStartTime() {
-      return startTime;
-    }
-
-    public ServiceArbiter<S> getArbiter() {
-      return arbiter;
-    }
-
-    public synchronized BasicConnection getConnection() {
-      return connection;
-    }
-
-    public synchronized void setConnection(BasicConnection connection) {
-      this.connection = connection;
-    }
-
-    public void cancel() {
-      canceled = true;
-      BasicConnection connection = getConnection();
-      if (connection != null) connection.disconnect();
-    }
-
-    public int getFamily() {
-      return family;
-    }
-
-    public boolean isCanceled() {
-      return canceled;
-    }
-
-    public String toString() {
-      return "<" + family + "> " + arbiter;
-    }
-//
-//        public boolean isChatRequest() {
-//            return chatRequest;
-//        }
-//
-//        public @Nullable ChatInfo getChatInfo() {
-//            return chatInfo;
-//        }
-  }
-
-  private class ExternalServiceFactory<S extends Service>
+  private class ExternalServiceFactory<S extends MutableService>
       implements ServiceFactory {
     private final int serviceFamily;
     private final ServiceArbiter<S> arbiter;
@@ -383,7 +391,7 @@ public class ExternalServiceManager {
       this.arbiter = arbiter;
     }
 
-    public Service getService(OscarConnection conn, int family) {
+    public MutableService getService(OscarConnection conn, int family) {
       if (family == ConnCommand.FAMILY_CONN) {
         return new ExternalBosService(aimConnection, conn);
 
@@ -398,7 +406,7 @@ public class ExternalServiceManager {
     }
   }
 
-  private class ExternalServiceConnListener<S extends Service>
+  private class ExternalServiceConnListener<S extends MutableService>
       implements OscarConnListener {
     private final int serviceFamily;
     private final ServiceRequestInfo<S> request;
@@ -420,17 +428,20 @@ public class ExternalServiceManager {
         LOGGER.info("External service connection died for service "
             + serviceFamily + " ( " + request + ")");
         conn.removeOscarListener(this);
-        clearExternalConnection(conn, request.getArbiter());
+        clearExternalConnection(conn, request.arbiter);
         refreshServiceIfNecessary(serviceFamily);
       }
     }
 
     public void allFamiliesReady(OscarConnection conn) {
+      LOGGER.info("External service connection for " + request.arbiter
+          + " is connected and ready");
+      clearRequest(request);
     }
   }
 
-  private class ArbitratedExternalServiceListener<S extends Service> implements
-      OpenedExternalServiceListener {
+  private class ArbitratedExternalServiceListener<S extends MutableService>
+      implements OpenedExternalServiceListener {
     private final ServiceRequestInfo<S> request;
 
     public ArbitratedExternalServiceListener(ServiceRequestInfo<S> request) {
@@ -442,11 +453,13 @@ public class ExternalServiceManager {
         ByteBlock flapCookie) {
       LOGGER.fine("Connecting to " + host + ":" + port + " for external "
           + "service " + serviceFamily);
-      BasicConnection conn = new ExternalConnection(host, fixPort(port), serviceFamily);
-      conn.getClientFlapConn().setSocketFactory(aimConnection.getProxy().getSocketFactory());
+      BasicConnection conn = new ExternalConnection(host, fixPort(port),
+          serviceFamily);
+      conn.getClientFlapConn().setSocketFactory(
+          aimConnection.getProxy().getSocketFactory());
       conn.setCookie(flapCookie);
       conn.setServiceFactory(new ExternalServiceFactory<S>(
-          serviceFamily, request.getArbiter()));
+          serviceFamily, request.arbiter));
       conn.addOscarListener(new ExternalServiceConnListener<S>(
           serviceFamily, request));
       boolean isnew = storeExternalConnection(conn, request);

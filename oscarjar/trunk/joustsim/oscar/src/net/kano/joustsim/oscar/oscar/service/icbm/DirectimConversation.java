@@ -36,8 +36,8 @@ package net.kano.joustsim.oscar.oscar.service.icbm;
 
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.AimConnection;
-import net.kano.joustsim.oscar.AimSessionListener;
 import net.kano.joustsim.oscar.AimSession;
+import net.kano.joustsim.oscar.AimSessionListener;
 import net.kano.joustsim.oscar.BuddyInfoTracker;
 import net.kano.joustsim.oscar.BuddyInfoTrackerListener;
 import net.kano.joustsim.oscar.oscar.service.icbm.dim.Attachment;
@@ -48,6 +48,7 @@ import net.kano.joustsim.oscar.oscar.service.icbm.dim.DoneReceivingEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.dim.OutgoingDirectimConnectionImpl;
 import net.kano.joustsim.oscar.oscar.service.icbm.dim.ReceivedAttachmentEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.dim.ReceivedMessageEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.dim.SentCompletePacketEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.IncomingRvConnection;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnection;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionEventListener;
@@ -58,6 +59,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -73,6 +75,7 @@ public class DirectimConversation extends Conversation
   private BuddyInfoTracker oldTracker = null;
   private final BuddyInfoTrackerListener trackListener = new BuddyInfoTrackerListener() {
   };
+  private LinkedList<Message> queue = new LinkedList<Message>();
 
   public DirectimConversation(AimConnection conn, DirectimConnection directim) {
     super(directim.getBuddyScreenname());
@@ -148,6 +151,12 @@ public class DirectimConversation extends Conversation
   private void updateState(RvConnectionState state,
       @Nullable RvConnectionEvent event) {
     if (state == RvConnectionState.CONNECTED) {
+      DirectimController controller = getDirectimConnection().getDirectimController();
+      assert controller != null;
+      synchronized (this) {
+        for (Message msg : queue) controller.sendMessage(msg);
+        queue.clear();
+      }
       super.open();
 
     } else if (state == RvConnectionState.FAILED
@@ -162,27 +171,36 @@ public class DirectimConversation extends Conversation
     }
   }
 
-  protected synchronized void closed() {
-    if (directim != null) {
-      directim.close();
-      directim = null;
+  protected void closed() {
+    List<Message> failed;
+    synchronized (this) {
+      if (directim != null) {
+        directim.close();
+        directim = null;
+      }
+      clearOldTracker();
+      failed = new ArrayList<Message>(queue);
+      queue.clear();
     }
-    clearOldTracker();
+    for (Message message : failed) {
+      fireOutgoingEvent(new SendFailedEvent(conn.getScreenname(), getBuddy(),
+          message));
+    }
   }
 
   public void sendMessage(Message msg) throws ConversationException {
-    DirectimConnection directim;
+    fireOutgoingEvent(new MessageQueuedEvent(msg, conn.getScreenname(),
+        DirectimConversation.this.getBuddy()));
+    DirectimController controller;
     synchronized (this) {
-      checkOpen();
-
-      directim = this.directim;
-      assert directim != null;
+      controller = directim == null ? null : directim.getDirectimController();
+      if (controller == null) {
+        LOGGER.info("Queueing message until DIM opens: " + msg);
+        queue.add(msg);
+        return;
+      }
     }
     LOGGER.fine("Sending message over dim: " + msg);
-    DirectimController controller = directim.getDirectimController();
-    if (controller == null) {
-      throw new ConversationNotOpenException(this);
-    }
     controller.sendMessage(msg);
     fireOutgoingEvent(ImMessageInfo.getInstance(conn.getScreenname(),
         getBuddy(), msg, new Date()));
@@ -248,6 +266,10 @@ public class DirectimConversation extends Conversation
             lastMsg.isAutoResponse(), buildAttachmentList(attachments));
         fireIncomingEvent(ImMessageInfo.getInstance(getBuddy(),
             conn.getScreenname(), msg, date));
+
+      } else if (event instanceof SentCompletePacketEvent) {
+        SentCompletePacketEvent scpe = (SentCompletePacketEvent) event;
+        fireMessageSentEvent(scpe.getMessage(), conn.getScreenname());
       }
     }
 
@@ -267,4 +289,5 @@ public class DirectimConversation extends Conversation
       return map;
     }
   }
+
 }

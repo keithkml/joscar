@@ -36,7 +36,7 @@ package net.kano.joustsim.oscar.oscar.service;
 import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.oscar.oscar.OscarConnection;
 
-public interface ServiceArbiter<S extends Service> {
+public interface ServiceArbiter<S extends MutableService> {
     int getSnacFamily();
     boolean shouldKeepAlive();
     S createService(AimConnection aimConnection, OscarConnection conn);

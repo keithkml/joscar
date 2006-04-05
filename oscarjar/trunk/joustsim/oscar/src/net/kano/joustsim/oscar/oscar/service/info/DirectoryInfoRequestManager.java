@@ -35,7 +35,6 @@
 
 package net.kano.joustsim.oscar.oscar.service.info;
 
-import net.kano.joustsim.Screenname;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.snac.SnacRequestAdapter;
 import net.kano.joscar.snac.SnacRequestTimeoutEvent;
@@ -43,51 +42,45 @@ import net.kano.joscar.snac.SnacResponseEvent;
 import net.kano.joscar.snaccmd.DirInfo;
 import net.kano.joscar.snaccmd.loc.DirInfoCmd;
 import net.kano.joscar.snaccmd.loc.GetDirInfoCmd;
-
-import java.util.Iterator;
-import java.util.Set;
+import net.kano.joustsim.Screenname;
 
 public class DirectoryInfoRequestManager extends InfoRequestManager {
-    public DirectoryInfoRequestManager(InfoService service) {
-        super(service);
-    }
+  public DirectoryInfoRequestManager(InfoService service) {
+    super(service);
+  }
 
-    protected void sendRequest(final Screenname sn) {
-        GetDirInfoCmd cmd = new GetDirInfoCmd(sn.getFormatted());
-        getService().sendSnacRequest(cmd, new SnacRequestAdapter() {
-            private boolean ran = false;
+  protected void sendRequest(final Screenname sn) {
+    GetDirInfoCmd cmd = new GetDirInfoCmd(sn.getFormatted());
+    getService().sendSnacRequest(cmd, new SnacRequestAdapter() {
+      private boolean ran = false;
 
-            public void handleResponse(SnacResponseEvent e) {
-                SnacCommand snac = e.getSnacCommand();
+      public void handleResponse(SnacResponseEvent e) {
+        SnacCommand snac = e.getSnacCommand();
 
-                synchronized(this) {
-                    if (ran) return;
-                    ran = true;
-                }
+        if (snac instanceof DirInfoCmd) {
+          synchronized (this) {
+            if (ran) return;
+            ran = true;
+          }
 
-                DirInfo dirInfo = null;
-                if (snac instanceof DirInfoCmd) {
-                    DirInfoCmd dic = (DirInfoCmd) snac;
-                    dirInfo = dic.getDirInfo();
-                }
-                fireListeners(dirInfo);
-            }
+          DirInfoCmd dic = (DirInfoCmd) snac;
+          fireListeners(dic.getDirInfo());
+        }
+      }
 
-            public void handleTimeout(SnacRequestTimeoutEvent event) {
-                synchronized(this) {
-                    if (ran) return;
-                    ran = true;
-                }
-                fireListeners(null);
-            }
+      public void handleTimeout(SnacRequestTimeoutEvent event) {
+        synchronized (this) {
+          if (ran) return;
+          ran = true;
+        }
+        fireListeners(null);
+      }
 
-            private void fireListeners(DirInfo info) {
-                Set listeners = clearListeners(sn);
-                for (Iterator it = listeners.iterator(); it.hasNext();) {
-                    InfoResponseListener listener = (InfoResponseListener) it.next();
-                    listener.handleDirectoryInfo(getService(), sn, info);
-                }
-            }
-        });
-    }
+      private void fireListeners(DirInfo info) {
+        for (InfoResponseListener listener : clearListeners(sn)) {
+          listener.handleDirectoryInfo(getService(), sn, info);
+        }
+      }
+    });
+  }
 }

@@ -47,13 +47,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 
-public abstract class AbstractServiceArbiter<S extends Service>
+public abstract class AbstractServiceArbiter<S extends MutableService>
     implements ServiceArbiter<S> {
   private static final Logger LOGGER = Logger
       .getLogger(AbstractServiceArbiter.class.getName());
 
   protected final ServiceArbitrationManager manager;
-  protected Set<ServiceArbiterRequest> requests
+  protected final Set<ServiceArbiterRequest> requests
       = new LinkedHashSet<ServiceArbiterRequest>();
   protected S currentService = null;
 
@@ -78,6 +78,10 @@ public abstract class AbstractServiceArbiter<S extends Service>
     handleRequestsDequeuedEvent(service);
   }
 
+  /**
+   * This is called after all requests have been dequeued due to a new service
+   * coming online. Most arbiters do not need to imlpement this method.
+   */
   protected abstract void handleRequestsDequeuedEvent(S service);
 
   protected abstract void processRequest(S service,
@@ -131,10 +135,9 @@ public abstract class AbstractServiceArbiter<S extends Service>
     S service;
     synchronized (this) {
       if (unique != null) {
-        for (Iterator<ServiceArbiterRequest> it = requests
-            .iterator(); it.hasNext();) {
+        for (Iterator<ServiceArbiterRequest> it = requests.iterator();
+            it.hasNext();) {
           if (unique.isInstance(it.next())) it.remove();
-          ;
         }
       }
       requests.add(req);

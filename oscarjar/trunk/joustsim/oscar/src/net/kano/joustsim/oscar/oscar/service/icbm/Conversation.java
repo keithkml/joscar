@@ -213,4 +213,12 @@ public abstract class Conversation {
       }
     }
   }
+
+  protected void fireMessageSentEvent(Message msg, Screenname mysn) {
+    ConversationEventInfo event = new MessageSentEvent(msg,
+        mysn, this.getBuddy());
+    for (ConversationListener l : getListeners()) {
+      l.gotOtherEvent(this, event);
+    }
+  }
 }

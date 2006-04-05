@@ -35,17 +35,17 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 
 import net.kano.joscar.rv.RecvRvEvent;
+import net.kano.joscar.rvcmd.AcceptRvCmd;
 import net.kano.joscar.rvcmd.ConnectionRequestRvCmd;
 import net.kano.joscar.rvcmd.RequestRvCmd;
-import net.kano.joscar.rvcmd.AcceptRvCmd;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.ConnectToProxyForOutgoingController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.OutgoingConnectionController;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.RedirectConnectionController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.RedirectToProxyController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendOverProxyController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.SendPassivelyController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.RedirectConnectionController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownErrorEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
@@ -109,9 +109,17 @@ public abstract class OutgoingRvConnectionImpl extends RvConnectionImpl
         || oldController instanceof ConnectToProxyForOutgoingController) {
       return new NextStateControllerInfo(new RedirectToProxyController(), event);
 
+    } else if (oldController instanceof RedirectConnectionController) {
+      return new NextStateControllerInfo(new RedirectToProxyController(), event);
+
     } else if (oldController instanceof RedirectToProxyController) {
-      return new NextStateControllerInfo(RvConnectionState.FAILED,
-          event == null ? new UnknownErrorEvent() : event);
+      NextStateControllerInfo ret = tryRetry(oldController, event,
+          new RedirectToProxyController());
+      if (ret == null) {
+        ret = new NextStateControllerInfo(RvConnectionState.FAILED,
+            event == null ? new UnknownErrorEvent() : event);
+      }
+      return ret;
 
     } else {
       return getNextControllerFromUnknownError(oldController,

@@ -42,8 +42,12 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Date;
+import java.util.logging.Logger;
 
 public class TimerTimeoutHandler implements TimeoutHandler {
+  private static final Logger LOGGER = Logger
+      .getLogger(TimerTimeoutHandler.class.getName());
+  
   private final Timer timer = new Timer(true);
   private final RvConnectionImpl conn;
   private Map<TimeoutableController, TimerInfo> tasks
@@ -53,7 +57,11 @@ public class TimerTimeoutHandler implements TimeoutHandler {
     this.conn = conn;
   }
 
-  public void startTimeout(TimeoutableController controller) {
+  public synchronized void startTimeout(TimeoutableController controller) {
+    if (getTimer(controller) != null) {
+      unpauseTimeout(controller);
+      return;
+    }
     ConnectionType type = controller.getTimeoutType();
     RvConnectionSettings settings = conn.getSettings();
     Initiator initiator = conn.getRvSessionInfo().getInitiator();
@@ -61,13 +69,9 @@ public class TimerTimeoutHandler implements TimeoutHandler {
         ? settings.getDefaultPerConnectionTimeout(initiator)
         : settings.getPerConnectionTimeout(initiator, type);
     TimerInfo task = new TimerInfo(controller, timeout);
-    storeTimer(controller, task);
-    task.start();
-  }
-
-  private synchronized void storeTimer(TimeoutableController controller,
-      TimerInfo task) {
     tasks.put(controller, task);
+    task.start();
+    LOGGER.fine("Started timeout for " + controller + ": " + timeout + "ms");
   }
 
   private synchronized @Nullable TimerInfo getTimer(TimeoutableController c) {
@@ -89,7 +93,7 @@ public class TimerTimeoutHandler implements TimeoutHandler {
   }
 
   private class TimerInfo {
-    private long started = -1;
+    private volatile long started = -1;
     private final TimeoutableController controller;
     private final long timeout;
     private long pausedSince = -1;

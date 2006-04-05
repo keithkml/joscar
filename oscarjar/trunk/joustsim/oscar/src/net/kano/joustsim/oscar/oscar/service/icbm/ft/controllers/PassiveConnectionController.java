@@ -47,8 +47,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.util.Arrays;
 
 public abstract class PassiveConnectionController
-    extends AbstractConnectionController
-    implements ManualTimeoutController {
+    extends AbstractConnectionController {
 
   {
     setConnector(new MyConnector());
@@ -71,14 +70,6 @@ public abstract class PassiveConnectionController
     RvConnectionInfo connInfo = getRvSessionInfo().getConnectionInfo();
     post.fireEvent(new WaitingForConnectionEvent(connInfo.getInternalIP(),
         connInfo.getPort()));
-  }
-
-  protected boolean shouldStartTimerAutomatically() {
-    return false;
-  }
-
-  public void startTimeoutTimer() {
-    super.startTimer();
   }
 
   protected void prepareStream() throws IOException {

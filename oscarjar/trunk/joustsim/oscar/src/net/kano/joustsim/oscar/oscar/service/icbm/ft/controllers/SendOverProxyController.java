@@ -41,7 +41,7 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.Initiator;
 import java.io.IOException;
 
 public class SendOverProxyController
-    extends InitiateProxyController implements ManualTimeoutController {
+    extends InitiateProxyController {
   protected void handleAck(RvProxyAckCmd ackCmd) throws IOException {
     RvConnectionInfo connInfo = RvConnectionInfo
         .createForOutgoingProxiedRequest(ackCmd.getProxyIpAddress(),

@@ -40,11 +40,15 @@ public interface ServerStoredSettings {
 
     boolean isTypingShown();
 
+    boolean isRecentBuddiesUsed();
+
     void changeMobileDeviceShown(boolean shown);
 
     void changeIdleTimeShown(boolean shown);
 
     void changeTypingShown(boolean shown);
+
+    void changeRecentBuddiesUsed(boolean shown);
 
     void addListener(ServerStoredSettingsListener listener);
 

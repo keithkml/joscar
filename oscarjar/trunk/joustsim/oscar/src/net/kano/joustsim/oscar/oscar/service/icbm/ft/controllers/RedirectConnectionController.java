@@ -43,7 +43,8 @@ import java.io.IOException;
 public class RedirectConnectionController extends PassiveConnectionController {
   protected void sendRequest() throws IOException {
     RvConnectionInfo connInfo = RvConnectionInfo
-        .createForOutgoingRequest(getConnector().getLocalHost(), getConnector().getLocalPort());
+        .createForOutgoingRequest(getConnector().getLocalHost(),
+            getConnector().getLocalPort());
     RvSessionConnectionInfo transfer = getRvSessionInfo();
     transfer.setConnectionInfo(connInfo);
     transfer.setInitiator(Initiator.ME);

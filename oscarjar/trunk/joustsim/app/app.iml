@@ -2,7 +2,7 @@
 <module version="4" relativePaths="false" type="JAVA_MODULE">
   <component name="BuildJarSettings">
     <containerInfo />
-    <setting name="jarPath" value="/Users/keithkml/Desktop/app.jar" />
+    <setting name="jarUrl" value="" />
     <setting name="buildJar" value="true" />
     <setting name="mainClass" value="" />
   </component>
@@ -19,7 +19,6 @@
     <orderEntry type="module" module-name="common" />
     <orderEntry type="module" module-name="oscar" />
     <orderEntry type="library" name="JGoodies Plastic L&amp;F" level="project" />
-    <orderEntry type="library" name="forms_rt" level="project" />
     <orderEntry type="library" name="Bouncy Castle Mail" level="project" />
     <orderEntry type="library" name="Bouncy Castle Crypto" level="project" />
     <orderEntry type="library" name="WinLAF" level="project" />

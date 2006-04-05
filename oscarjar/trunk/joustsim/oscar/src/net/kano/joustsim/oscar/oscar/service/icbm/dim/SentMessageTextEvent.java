@@ -35,11 +35,22 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.dim;
 
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.RvConnectionEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.Message;
 
-public class SentMessageEvent extends RvConnectionEvent {
+/**
+ * An event indicating that the message text, but no attachments, have been sent
+ * for a given message.
+ */
+public class SentMessageTextEvent extends RvConnectionEvent {
+  private final Message message;
   private final int length;
 
-  public SentMessageEvent(int length) {this.length = length;}
+  public SentMessageTextEvent(Message message, int length) {this.message = message;
+    this.length = length;}
 
   public int getLength() { return length; }
+
+  public Message getMessage() {
+    return message;
+  }
 }
