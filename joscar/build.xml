@@ -74,7 +74,7 @@
   <target name="-version">
     <mkdir dir="${tasks.bin}"/>
 
-    <javac destdir="${tasks.bin}">
+    <javac destdir="${tasks.bin}" debug="true">
       <src>
         <pathelement path="${joscar.src}"/>
         <pathelement path="${tools.src}"/>
@@ -105,7 +105,8 @@
           description="Compiles the joscar library only, outputting to the bin/ directory.">
     <mkdir dir="${joscar.bin}"/>
     <javac srcdir="${joscar.src}" includes="net/kano/joscar/"
-           destdir="${joscar.bin}" source="1.5" classpathref="joscar-lib">
+           destdir="${joscar.bin}" source="1.5" classpathref="joscar-lib"
+           debug="true">
     </javac>
   </target>
 
@@ -122,7 +123,7 @@
     <mkdir dir="${demo.bin}"/>
     <javac includes="net/kano/joscardemo/"
            srcdir="${demo.src}:${demoextras.src}"
-           destdir="${demo.bin}">
+           destdir="${demo.bin}" debug="true">
       <classpath>
         <pathelement id="joscar-lib" />
         <pathelement location="${joscar.bin}"/>
@@ -158,7 +159,7 @@
     <mkdir dir="${taglets.bin}"/>
     <javac srcdir="${tools.src}"
            includes="net/kano/joscartools/taglets/"
-           destdir="${taglets.bin}"/>
+           destdir="${taglets.bin}" debug="true"/>
   </target>
 
   <target name="javadoc" depends="-build-taglets"
@@ -228,7 +229,7 @@
 
   <target name="-build-tests" depends="joscar">
     <mkdir dir="${tests.bin}"/>
-    <javac srcdir="${tests.src}" destdir="${tests.bin}"
+    <javac srcdir="${tests.src}" destdir="${tests.bin}" debug="true"
            classpath="${joscar.bin}"/>
   </target>
 

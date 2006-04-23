@@ -496,7 +496,25 @@ public final class BinaryTools {
     public static String getAsciiString(ByteBlock data) {
         try {
             return ByteBlock.createString(data, "US-ASCII");
-        } catch (UnsupportedEncodingException impossible) { return null; }
+        } catch (UnsupportedEncodingException impossible) {
+            throw new IllegalStateException(impossible);
+        }
+    }
+
+    public static byte[] getUtf8Bytes(String string) {
+        try {
+            return string.getBytes("UTF-8");
+        } catch (UnsupportedEncodingException impossible) {
+            throw new IllegalStateException(impossible);
+        }
+    }
+
+    public static String getUtf8String(ByteBlock block) {
+        try {
+            return ByteBlock.createString(block, "UTF-8");
+        } catch (UnsupportedEncodingException impossible) {
+            throw new IllegalStateException(impossible);
+        }
     }
 
     /**

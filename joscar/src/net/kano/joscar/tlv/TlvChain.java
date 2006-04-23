@@ -171,4 +171,6 @@ public interface TlvChain extends Writable {
      * @return the total size, in bytes, of this chain
      */
     int getTotalSize();
+
+    String getUtf8String(int type);
 }

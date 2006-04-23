@@ -42,11 +42,10 @@ import net.kano.joscar.logging.LoggingSystem;
 import net.kano.joscar.snac.ClientSnacProcessor;
 import net.kano.joscar.snac.SnacRequest;
 
-import java.util.Iterator;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-import java.util.Collection;
-import java.util.ArrayList;
 
 /**
  * "Runs" a set of <code>RateQueue</code>s, dequeuing SNACs at appropriate
@@ -148,12 +147,10 @@ public final class QueueRunner {
 
                 if (queues.isEmpty()) continue;
 
-                for (Iterator<RateQueue> it = queues.iterator(); it.hasNext();) {
-                    RateQueue queue = it.next();
-
+                for (RateQueue queue : queues) {
                     boolean finished;
                     long wait = 0;
-                    synchronized(queue) {
+                    synchronized (queue) {
                         // if the queue is paused or there aren't any requests,
                         // we can skip it
                         if (queue.getParentMgr().isPaused()
@@ -187,7 +184,7 @@ public final class QueueRunner {
                     if (wait < 1) wait = 1;
 
                     // now change the minimum waiting time if necessary
-                    if (minWait == 0 || minWait > wait)  minWait = wait;
+                    if (minWait == 0 || minWait > wait) minWait = wait;
                 }
             }
         }
@@ -311,7 +308,9 @@ public final class QueueRunner {
         if (logger.logFineEnabled()) {
             logger.logFine("Starting queue runner due to activity");
         }
-        new Thread(r, "Queue Runner").start();
+        Thread thread = new Thread(r, "Queue Runner");
+        thread.setDaemon(true);
+        thread.start();
         while (!running) {
             try {
                 lock.wait();
