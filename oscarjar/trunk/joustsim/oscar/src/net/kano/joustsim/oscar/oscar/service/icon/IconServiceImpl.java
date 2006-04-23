@@ -41,6 +41,7 @@ import net.kano.joscar.snac.ClientSnacProcessor;
 import net.kano.joscar.snac.SnacRequestAdapter;
 import net.kano.joscar.snac.SnacResponseEvent;
 import net.kano.joscar.snac.SnacResponseListener;
+import net.kano.joscar.snac.SnacRequestTimeoutEvent;
 import net.kano.joscar.snaccmd.ExtraInfoBlock;
 import net.kano.joscar.snaccmd.ExtraInfoData;
 import net.kano.joscar.snaccmd.conn.SnacFamilyInfo;
@@ -57,9 +58,9 @@ import net.kano.joustsim.oscar.oscar.service.AbstractService;
 
 import java.util.logging.Logger;
 
-public class IconService extends AbstractService implements IconRequestHandler {
+public class IconServiceImpl extends AbstractService implements IconService {
   private static final Logger LOGGER = Logger
-      .getLogger(IconService.class.getName());
+      .getLogger(IconServiceImpl.class.getName());
 
   private CopyOnWriteArrayList<IconRequestListener> listeners
       = new CopyOnWriteArrayList<IconRequestListener>();
@@ -72,7 +73,7 @@ public class IconService extends AbstractService implements IconRequestHandler {
     listeners.remove(listener);
   }
 
-  protected IconService(AimConnection aimConnection,
+  protected IconServiceImpl(AimConnection aimConnection,
       OscarConnection oscarConnection) {
     super(aimConnection, oscarConnection, IconCommand.FAMILY_ICON);
 
@@ -89,11 +90,11 @@ public class IconService extends AbstractService implements IconRequestHandler {
           if ((data.getFlags() & ExtraInfoData.FLAG_HASH_PRESENT) == 0
               && hash.equals(ExtraInfoData.HASH_SPECIAL)) {
             for (IconRequestListener listener : listeners) {
-              listener.buddyIconCleared(IconService.this, sn, data);
+              listener.buddyIconCleared(IconServiceImpl.this, sn, data);
             }
           } else {
             for (IconRequestListener listener : listeners) {
-              listener.buddyIconUpdated(IconService.this, sn,
+              listener.buddyIconUpdated(IconServiceImpl.this, sn,
                   data, iconDataCmd.getIconData());
             }
           }
@@ -117,8 +118,24 @@ public class IconService extends AbstractService implements IconRequestHandler {
 //        requestIcon(sn, block);
 //    }
 
-  public void requestIcon(Screenname sn, ExtraInfoData block) {
-    sendSnac(new IconRequest(sn.getFormatted(), block));
+  public void requestIcon(final Screenname sn, ExtraInfoData block) {
+    IconRequest req = new IconRequest(sn.getFormatted(), block);
+    sendSnacRequest(req, new SnacRequestAdapter() {
+      private boolean gotResponse = false;
+      public void handleResponse(SnacResponseEvent e) {
+        gotResponse = true;
+        SnacCommand cmd = e.getSnacCommand();
+        if (!(cmd instanceof IconDataCmd)) {
+          LOGGER.info("Got response to icon request for " + sn + ": " + cmd);
+        }
+      }
+
+      public void handleTimeout(SnacRequestTimeoutEvent event) {
+        if (!gotResponse) {
+          LOGGER.info("Never received response for icon request for " + sn);
+        }
+      }
+    });
   }
 
   public void uploadIcon(Writable data) {
@@ -133,21 +150,19 @@ public class IconService extends AbstractService implements IconRequestHandler {
         if (cmd instanceof UploadIconAck) {
           UploadIconAck iconAck = (UploadIconAck) cmd;
           if (iconAck.getCode() != UploadIconAck.CODE_DEFAULT) {
-            LOGGER.fine("Got unknown code from UploadIconAck: "
-                + iconAck);
+            LOGGER.fine("Got unknown code from UploadIconAck: " + iconAck);
           }
           ExtraInfoBlock iconInfo = iconAck.getIconInfo();
           if (iconInfo == null) {
-            LOGGER.finer("Got icon ack with no iconInfo: "
-                + iconAck);
+            LOGGER.finer("Got icon ack with no iconInfo: " + iconAck);
           }
           if (listener != null) {
             LOGGER.fine("Successfully set icon " + data);
-            listener.handleIconSet(IconService.this, data, true);
+            listener.handleIconSet(IconServiceImpl.this, data, true);
           }
         } else if (cmd instanceof SnacError) {
           LOGGER.warning("Got SnacError while setting icon: " + cmd);
-          listener.handleIconSet(IconService.this, data, false);
+          listener.handleIconSet(IconServiceImpl.this, data, false);
         }
       }
     });

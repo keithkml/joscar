@@ -43,7 +43,7 @@ import net.kano.joustsim.Screenname;
 public final class InternalIcbmTools {
     private InternalIcbmTools() { }
 
-    public static void sendIM(IcbmService service, Screenname buddy, InstantMessage im,
+    public static void sendIM(MutableIcbmService service, Screenname buddy, InstantMessage im,
             boolean autoresponse) {
         service.sendIM(buddy, im, autoresponse);
     }

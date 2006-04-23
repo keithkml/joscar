@@ -37,8 +37,13 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft;
 import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
 
+import java.util.logging.Logger;
+
 public abstract class AbstractRvSessionConnectionInfo
     implements RvSessionConnectionInfo {
+  private static final Logger LOGGER
+      = Logger.getLogger(AbstractRvSessionConnectionInfo.class.getName());
+
   private final RvSession session;
   private RvConnectionInfo connInfo = null;
   private int requestIndex = 1;
@@ -68,6 +73,7 @@ public abstract class AbstractRvSessionConnectionInfo
   }
 
   public synchronized void setInitiator(Initiator initiator) {
+    LOGGER.fine("Setting initiator for " + session + " to " + initiator);
     this.initiator = initiator;
   }
 
@@ -82,7 +88,7 @@ public abstract class AbstractRvSessionConnectionInfo
     return buddyAccepted;
   }
 
-  public void setBuddyAccepted(boolean accepted) {
+  public synchronized void setBuddyAccepted(boolean accepted) {
     buddyAccepted = accepted;
   }
 }

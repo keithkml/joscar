@@ -36,23 +36,25 @@ package net.kano.joustsim.oscar.oscar.service.ssi;
 import net.kano.joustsim.Screenname;
 
 public interface Buddy {
-    BuddyList getBuddyList();
+  BuddyList getBuddyList();
 
-    boolean isActive();
+  boolean isActive();
 
-    Screenname getScreenname();
+  Screenname getScreenname();
 
-    String getAlias();
+  String getAlias();
 
-    int getAlertActionMask();
+  int getAlertActionMask();
 
-    String getAlertSound();
+  String getAlertSound();
 
-    int getAlertEventMask();
+  int getAlertEventMask();
 
-    String getBuddyComment();
+  String getBuddyComment();
 
-    void addBuddyListener(BuddyListener listener);
+  boolean isAwaitingAuthorization();
 
-    void removeBuddyListener(BuddyListener listener);
+  void addBuddyListener(BuddyListener listener);
+
+  void removeBuddyListener(BuddyListener listener);
 }

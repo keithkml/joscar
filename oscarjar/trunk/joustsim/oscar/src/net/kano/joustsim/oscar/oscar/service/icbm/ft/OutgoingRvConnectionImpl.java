@@ -131,13 +131,13 @@ public abstract class OutgoingRvConnectionImpl extends RvConnectionImpl
       StateController oldController, FailedStateInfo failedStateInfo,
       RvConnectionEvent event);
 
-  protected boolean isSomeConnectionController(StateController oldController) {
-    return oldController instanceof SendPassivelyController
-        || isLanController(oldController)
-        || isInternetController(oldController)
-        || oldController instanceof RedirectToProxyController
-        || oldController instanceof ConnectToProxyForOutgoingController
-        || oldController instanceof SendOverProxyController;
+  protected boolean isSomeConnectionController(StateController controller) {
+    return controller instanceof SendPassivelyController
+        || isLanController(controller)
+        || isInternetController(controller)
+        || controller instanceof RedirectToProxyController
+        || controller instanceof ConnectToProxyForOutgoingController
+        || controller instanceof SendOverProxyController;
   }
 
   protected AbstractRvSessionHandler createSessionHandler() {

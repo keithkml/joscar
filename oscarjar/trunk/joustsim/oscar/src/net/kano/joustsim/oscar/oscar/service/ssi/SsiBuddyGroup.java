@@ -64,12 +64,12 @@ class SsiBuddyGroup extends SimpleBuddyGroup implements MutableGroup {
     public void rename(String newName) {
         GroupItem item = new GroupItem(getItem());
         item.setGroupName(newName);
-        SsiService ssiService = getSsiService();
+        SsiServiceImpl ssiService = getSsiService();
         ssiService.sendSsiModification(new ModifyItemsCmd(item.toSsiItem()));
     }
 
     public void addBuddy(String screenname) {
-        SsiService service = getSsiService();
+        SsiServiceImpl service = getSsiService();
         int parentid = getItem().getId();
         int id = service.getUniqueItemId(SsiItem.TYPE_BUDDY, parentid);
         addBuddies(Arrays.asList(new BuddyItem(screenname,
@@ -77,7 +77,7 @@ class SsiBuddyGroup extends SimpleBuddyGroup implements MutableGroup {
     }
 
     public void copyBuddies(Collection<? extends Buddy> buddies) {
-        SsiService service = getSsiService();
+        SsiServiceImpl service = getSsiService();
         int parentid = getItem().getId();
         List<SsiItem> items = new ArrayList<SsiItem>();
         List<Integer> ids = new ArrayList<Integer>();
@@ -106,7 +106,7 @@ class SsiBuddyGroup extends SimpleBuddyGroup implements MutableGroup {
     }
 
     private void addBuddies(List<SsiItem> items) {
-        SsiService service = getSsiService();
+        SsiServiceImpl service = getSsiService();
         final List<Integer> ids = SsiTools.getIdsForItems(items);
         LOGGER.fine("Adding buddies " + items + " - ID's: " + ids);
         CreateItemsCmd cmd = new CreateItemsCmd(items);
@@ -163,7 +163,7 @@ class SsiBuddyGroup extends SimpleBuddyGroup implements MutableGroup {
         });
     }
 
-    private SsiService getSsiService() {
+    private SsiServiceImpl getSsiService() {
         return getBuddyList().getSsiService();
     }
 
@@ -177,7 +177,7 @@ class SsiBuddyGroup extends SimpleBuddyGroup implements MutableGroup {
         assert SsiTools.isOnlyBuddies(items);
 
         DeleteItemsCmd deleteCmd = new DeleteItemsCmd(items);
-        SsiService service = getSsiService();
+        SsiServiceImpl service = getSsiService();
         service.sendSsiModification(deleteCmd, new SnacRequestAdapter() {
             public void handleResponse(SnacResponseEvent e) {
                 if (e.getSnacCommand() instanceof SsiDataModResponse) {
@@ -211,7 +211,7 @@ class SsiBuddyGroup extends SimpleBuddyGroup implements MutableGroup {
                 // modify the root item
                 GroupItem newGroupItem = new GroupItem(groupItem);
                 newGroupItem.setBuddies(newIds);
-                SsiService service = getSsiService();
+                SsiServiceImpl service = getSsiService();
                 service.sendSsiModification(new ModifyItemsCmd(newGroupItem.toSsiItem()));
                 return true;
             }

@@ -64,9 +64,9 @@ import net.kano.joustsim.oscar.oscar.service.chatrooms.ChatSessionState;
 import net.kano.joustsim.oscar.oscar.service.icbm.Conversation;
 import net.kano.joustsim.oscar.oscar.service.icbm.IcbmBuddyInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.IcbmListener;
-import net.kano.joustsim.oscar.oscar.service.icbm.IcbmService;
 import net.kano.joustsim.oscar.oscar.service.icbm.DirectimConversation;
 import net.kano.joustsim.oscar.oscar.service.icbm.Message;
+import net.kano.joustsim.oscar.oscar.service.icbm.IcbmService;
 
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;

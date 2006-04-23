@@ -36,16 +36,20 @@ package net.kano.joustsim.oscar.oscar.service.ssi;
 import net.kano.joustsim.Screenname;
 
 public interface BuddyListener {
-    void screennameChanged(Buddy buddy, Screenname oldScreenname, Screenname newScreenname);
+  void screennameChanged(Buddy buddy, Screenname oldScreenname,
+      Screenname newScreenname);
 
-    void aliasChanged(Buddy buddy, String oldAlias, String newAlias);
+  void aliasChanged(Buddy buddy, String oldAlias, String newAlias);
 
-    void buddyCommentChanged(Buddy buddy, String oldComment, String newComment);
+  void buddyCommentChanged(Buddy buddy, String oldComment, String newComment);
 
-    void alertActionChanged(Buddy buddy, int oldAlertAction, int newAlertAction);
+  void alertActionChanged(Buddy buddy, int oldAlertAction, int newAlertAction);
 
-    void alertTimeChanged(Buddy buddy, int oldAlertEvent, int newAlertEvent);
+  void alertTimeChanged(Buddy buddy, int oldAlertEvent, int newAlertEvent);
 
-    void alertSoundChanged(Buddy buddy, String oldAlertSound,
-            String newAlertSound);
+  void alertSoundChanged(Buddy buddy, String oldAlertSound,
+      String newAlertSound);
+
+  void awaitingAuthChanged(Buddy simpleBuddy, boolean oldAwaitingAuth,
+      boolean newAwaitingAuth);
 }

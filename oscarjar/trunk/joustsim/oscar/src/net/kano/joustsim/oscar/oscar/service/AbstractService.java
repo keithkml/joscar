@@ -160,7 +160,6 @@ public abstract class AbstractService implements MutableService {
 
   }
 
-  //TODO(klea): extract this into a new interface or something
   public void handleSnacPacket(SnacPacketEvent snacPacketEvent) {
   }
 

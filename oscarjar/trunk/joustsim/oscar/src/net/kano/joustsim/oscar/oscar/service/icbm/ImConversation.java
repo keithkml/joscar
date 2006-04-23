@@ -74,8 +74,8 @@ public class ImConversation
     if (service == null) {
       throw new ConversationException("no ICBM service to send to", this);
     }
-    service.sendIM(getBuddy(), msg.getMessageBody(), msg.isAutoResponse(),
-        new SnacRequestAdapter() {
+    ((MutableIcbmService) service).sendIM(getBuddy(), msg.getMessageBody(),
+        msg.isAutoResponse(), new SnacRequestAdapter() {
       private boolean waitingForAck = false;
       public void handleSent(SnacRequestSentEvent e) {
         SnacCommand outCmd = e.getRequest().getCommand();
@@ -122,7 +122,8 @@ public class ImConversation
   }
 
   public void setTypingState(TypingState typingState) {
-    conn.getIcbmService().sendTypingStatus(getBuddy(), typingState);
+    ((MutableIcbmService) conn.getIcbmService()).sendTypingStatus(getBuddy(),
+        typingState);
     fireOutgoingEvent(new TypingInfo(conn.getScreenname(), getBuddy(),
         new Date(), typingState));
   }

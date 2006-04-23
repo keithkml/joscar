@@ -57,13 +57,13 @@ import net.kano.joscar.snaccmd.icbm.SingleBuddyRequest;
 import net.kano.joscar.snaccmd.error.SnacError;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.oscar.service.Service;
-import net.kano.joustsim.oscar.oscar.service.bos.MainBosService;
 import net.kano.joustsim.oscar.oscar.service.bos.MainBosServiceListener;
-import net.kano.joustsim.oscar.oscar.service.buddy.BuddyService;
+import net.kano.joustsim.oscar.oscar.service.bos.MainBosService;
 import net.kano.joustsim.oscar.oscar.service.buddy.BuddyServiceListener;
+import net.kano.joustsim.oscar.oscar.service.buddy.BuddyService;
 import net.kano.joustsim.oscar.oscar.service.info.BuddyHashHolder;
-import net.kano.joustsim.oscar.oscar.service.info.InfoService;
 import net.kano.joustsim.oscar.oscar.service.info.InfoServiceListener;
+import net.kano.joustsim.oscar.oscar.service.info.InfoService;
 import net.kano.joustsim.trust.BuddyCertificateInfo;
 import org.jetbrains.annotations.NotNull;
 

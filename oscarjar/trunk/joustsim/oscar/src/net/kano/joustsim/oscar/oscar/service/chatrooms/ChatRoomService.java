@@ -49,6 +49,8 @@ import net.kano.joscar.snaccmd.chat.UsersLeftCmd;
 import net.kano.joscar.snaccmd.conn.SnacFamilyInfo;
 import net.kano.joustsim.JavaTools;
 import net.kano.joustsim.oscar.AimConnection;
+import net.kano.joustsim.oscar.BuddyInfoTracker;
+import net.kano.joustsim.oscar.BuddyInfoTrackerListener;
 import net.kano.joustsim.oscar.oscar.OscarConnection;
 import net.kano.joustsim.oscar.oscar.service.AbstractService;
 import org.jetbrains.annotations.Nullable;
@@ -59,12 +61,13 @@ import java.util.List;
 import java.util.Set;
 
 public class ChatRoomService extends AbstractService {
-  private Set<ChatRoomUser> users = new HashSet<ChatRoomUser>();
-  private CopyOnWriteArrayList<ChatRoomServiceListener> listeners
+  private final Set<ChatRoomUser> users = new HashSet<ChatRoomUser>();
+  private final CopyOnWriteArrayList<ChatRoomServiceListener> listeners
       = new CopyOnWriteArrayList<ChatRoomServiceListener>();
-  private FullRoomInfo roomInfo;
+  private final FullRoomInfo roomInfo;
   private ChatRoomMessageFactory messageFactory;
   private String roomName;
+  private final BuddyInfoTrackerListener trackListener = new BuddyInfoTrackerListener() { };
 
   public ChatRoomService(AimConnection aimConnection,
       OscarConnection oscarConnection,
@@ -156,6 +159,11 @@ public class ChatRoomService extends AbstractService {
       ChatRoomUser user = new ChatRoomUser(userInfo);
       if (this.users.remove(user)) removed.add(user);
     }
+    BuddyInfoTracker tracker = getAimConnection().getBuddyInfoTracker();
+    for (ChatRoomUser user : removed) {
+      tracker.removeTracker(user.getScreenname(), trackListener);
+    }
+
     return removed;
   }
 
@@ -174,6 +182,10 @@ public class ChatRoomService extends AbstractService {
     for (FullUserInfo userInfo : users) {
       ChatRoomUser user = new ChatRoomUser(userInfo);
       if (this.users.add(user)) added.add(user);
+    }
+    BuddyInfoTracker tracker = getAimConnection().getBuddyInfoTracker();
+    for (ChatRoomUser user : added) {
+      tracker.addTracker(user.getScreenname(), trackListener);
     }
     return added;
   }

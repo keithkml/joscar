@@ -38,8 +38,8 @@ import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.ExtraInfoData;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.oscar.service.icon.IconRequestListener;
-import net.kano.joustsim.oscar.oscar.service.icon.IconService;
 import net.kano.joustsim.oscar.oscar.service.icon.IconServiceArbiter;
+import net.kano.joustsim.oscar.oscar.service.icon.IconService;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -51,26 +51,26 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 public class BuddyIconTracker {
-    private static final Logger LOGGER = Logger
-            .getLogger(BuddyIconTracker.class.getName());
+  private static final Logger LOGGER = Logger
+      .getLogger(BuddyIconTracker.class.getName());
 
-    private AimConnection conn;
-    private Map<ExtraInfoData, ByteBlock> cache
-            = new HashMap<ExtraInfoData, ByteBlock>();
-    private boolean enabled = true;
+  private AimConnection conn;
+  private Map<ExtraInfoData, ByteBlock> cache
+      = new HashMap<ExtraInfoData, ByteBlock>();
+  private boolean enabled = true;
 
-    private IconRequestListener iconRequestListener = new IconRequestListener() {
-        public void buddyIconCleared(IconService service,
-                Screenname screenname, ExtraInfoData data) {
-            if (!isEnabled()) return;
+  private IconRequestListener iconRequestListener = new IconRequestListener() {
+    public void buddyIconCleared(IconService service,
+        Screenname screenname, ExtraInfoData data) {
+      if (!isEnabled()) return;
 
-            LOGGER.fine("Buddy icon cleared for " + screenname + ": " + data);
-            storeBuddyIconData(screenname, data, null);
-        }
+      LOGGER.fine("Buddy icon cleared for " + screenname + ": " + data);
+      storeBuddyIconData(screenname, data, null);
+    }
 
-        public void buddyIconUpdated(IconService service, Screenname screenname,
-                ExtraInfoData hash, ByteBlock iconData) {
-            if (!isEnabled()) return;
+    public void buddyIconUpdated(IconService service, Screenname screenname,
+        ExtraInfoData hash, ByteBlock iconData) {
+      if (!isEnabled()) return;
 
 //            ByteBlock computedHash = cacheIcon(iconData);
 //            if (!hash.equals(computedHash)) {
@@ -78,74 +78,77 @@ public class BuddyIconTracker {
 //                LOGGER.warning("Computed hash " + computedHash + " does not "
 //                        + "match server hash " + hash + " for " + screenname);
 //            }
-            storeInCache(hash, iconData);
-            BuddyInfo buddyInfo = conn.getBuddyInfoManager().getBuddyInfo(screenname);
-            LOGGER.fine("Storing buddy icon for " + screenname);
-            if (!buddyInfo.setIconDataIfHashMatches(hash, iconData)) {
-                LOGGER.info("Buddy icon data for " + screenname + " set too "
-                        + "late - hash " + hash + " no longer matches");
-            }
-        }
-    };
-
-    public BuddyIconTracker(AimConnection aconn) {
-        this.conn = aconn;
-        BuddyInfoManager mgr = conn.getBuddyInfoManager();
-        mgr.addGlobalBuddyInfoListener(new GlobalBuddyInfoListener() {
-            public void newBuddyInfo(BuddyInfoManager manager, Screenname buddy,
-                    BuddyInfo info) {
-                if (!isEnabled()) return;
-                handleNewIconHashForBuddy(buddy, info.getIconHash());
-            }
-
-            public void buddyInfoChanged(BuddyInfoManager manager,
-                    Screenname buddy,BuddyInfo info,
-                    PropertyChangeEvent event) {
-                if (!isEnabled()) return;
-
-                if (event.getPropertyName().equals(BuddyInfo.PROP_ICON_HASH)) {
-                    ExtraInfoData newHash = (ExtraInfoData) event.getNewValue();
-                    handleNewIconHashForBuddy(buddy, newHash);
-                }
-            }
-
-            public void receivedStatusUpdate(BuddyInfoManager manager,
-                    Screenname buddy, BuddyInfo info) {
-            }
-        });
+      storeInCache(hash, iconData);
+      BuddyInfo buddyInfo = conn.getBuddyInfoManager().getBuddyInfo(screenname);
+      LOGGER.fine("Storing buddy icon for " + screenname);
+      if (!buddyInfo.setIconDataIfHashMatches(hash, iconData)) {
+        LOGGER.info("Buddy icon data for " + screenname + " set too "
+            + "late - hash " + hash + " no longer matches");
+      }
     }
+  };
 
-    private void handleNewIconHashForBuddy(Screenname buddy, ExtraInfoData newHash) {
-        LOGGER.fine("Got new icon hash for " + buddy + ": " + newHash);
-        if (newHash != null /* && !newHash.equals(ExtraInfoData.HASH_SPECIAL)*/) {
-            ByteBlock iconData = getIconDataForHash(newHash);
-            if (iconData == null) {
-                IconServiceArbiter iconArbiter =
-                        conn.getExternalServiceManager().getIconServiceArbiter();
-                if (iconArbiter != null) {
-                    LOGGER.info("Requesting buddy icon for " + buddy);
-                    iconArbiter.addIconRequestListener(iconRequestListener);
-                    iconArbiter.requestIcon(buddy, newHash);
-                } else {
-                    LOGGER.warning("icon arbiter is null!");
-                }
-            } else {
-                LOGGER.finer("Icon data was already cached for " + buddy);
-                storeBuddyIconData(buddy, newHash, iconData);
-            }
+  public BuddyIconTracker(AimConnection aconn) {
+    this.conn = aconn;
+    BuddyInfoManager mgr = conn.getBuddyInfoManager();
+    mgr.addGlobalBuddyInfoListener(new GlobalBuddyInfoListener() {
+      public void newBuddyInfo(BuddyInfoManager manager, Screenname buddy,
+          BuddyInfo info) {
+        if (!isEnabled()) return;
+        handleNewIconHashForBuddy(buddy, info.getIconHash());
+      }
+
+      public void buddyInfoChanged(BuddyInfoManager manager,
+          Screenname buddy, BuddyInfo info,
+          PropertyChangeEvent event) {
+        if (!isEnabled()) return;
+
+        if (event.getPropertyName().equals(BuddyInfo.PROP_ICON_HASH)) {
+          ExtraInfoData newHash = (ExtraInfoData) event.getNewValue();
+          handleNewIconHashForBuddy(buddy, newHash);
+        }
+      }
+
+      public void receivedStatusUpdate(BuddyInfoManager manager,
+          Screenname buddy, BuddyInfo info) {
+      }
+    });
+  }
+
+  private void handleNewIconHashForBuddy(Screenname buddy,
+      ExtraInfoData newHash) {
+    LOGGER.fine("Got new icon hash for " + buddy + ": " + newHash);
+    if (newHash != null /* && !newHash.equals(ExtraInfoData.HASH_SPECIAL)*/) {
+      ByteBlock iconData = getIconDataForHash(newHash);
+      if (iconData == null) {
+        IconServiceArbiter iconArbiter =
+            conn.getExternalServiceManager().getIconServiceArbiter();
+        if (iconArbiter != null) {
+          LOGGER.info("Requesting buddy icon for " + buddy);
+          iconArbiter.addIconRequestListener(iconRequestListener);
+          iconArbiter.requestIcon(buddy, newHash);
         } else {
-            storeBuddyIconData(buddy, newHash, null);
+          LOGGER.warning("icon arbiter is null!");
         }
+      } else {
+        LOGGER.finer("Icon data was already cached for " + buddy);
+        storeBuddyIconData(buddy, newHash, iconData);
+      }
+    } else {
+      storeBuddyIconData(buddy, newHash, null);
     }
+  }
 
-    private void storeBuddyIconData(Screenname buddy, ExtraInfoData iconInfo,
-            ByteBlock iconData) {
-        conn.getBuddyInfoManager().getBuddyInfo(buddy).setIconDataIfHashMatches(iconInfo, iconData);
-    }
+  private void storeBuddyIconData(Screenname buddy, ExtraInfoData iconInfo,
+      ByteBlock iconData) {
+    conn.getBuddyInfoManager().getBuddyInfo(buddy)
+        .setIconDataIfHashMatches(iconInfo, iconData);
+  }
 
-    public @Nullable synchronized ByteBlock getIconDataForHash(ExtraInfoData hash) {
-        return cache.get(hash);
-    }
+  public @Nullable synchronized ByteBlock getIconDataForHash(
+      ExtraInfoData hash) {
+    return cache.get(hash);
+  }
 
 //    public ByteBlock cacheIcon(ByteBlock iconData) {
 //        ByteBlock hash;
@@ -165,48 +168,48 @@ public class BuddyIconTracker {
 //        return hash;
 //    }
 
-    private synchronized void storeInCache(ExtraInfoData hash,
-            @NotNull ByteBlock iconData) {
-        LOGGER.fine("Cached icon data for " + hash);
-        cache.put(hash, ByteBlock.wrap(iconData.toByteArray()));
+  private synchronized void storeInCache(ExtraInfoData hash,
+      @NotNull ByteBlock iconData) {
+    LOGGER.fine("Cached icon data for " + hash);
+    cache.put(hash, ByteBlock.wrap(iconData.toByteArray()));
+  }
+
+  public synchronized boolean isEnabled() {
+    return enabled;
+  }
+
+  public synchronized void setEnabled(boolean enabled) {
+    this.enabled = enabled;
+    if (!enabled) cache.clear();
+  }
+
+  public @Nullable ByteBlock getBuddyIconData(Screenname screenname) {
+    BuddyInfo buddyInfo = conn.getBuddyInfoManager().getBuddyInfo(screenname);
+    if (buddyInfo == null) return null;
+
+    ExtraInfoData hash = buddyInfo.getIconHash();
+    if (hash == null) return null;
+
+    return getIconDataForHash(hash);
+  }
+
+  private static ByteBlock getIconHash(ByteBlock iconData) {
+    ByteBlock hash;
+    try {
+      MessageDigest digest = MessageDigest.getInstance("MD5");
+      hash = ByteBlock.wrap(digest.digest(iconData.toByteArray()));
+    } catch (NoSuchAlgorithmException e) {
+      throw new IllegalStateException(e);
     }
+    return hash;
+  }
 
-    public synchronized boolean isEnabled() {
-        return enabled;
-    }
+  public ExtraInfoData addToCache(Screenname screenname, ByteBlock iconData) {
+    DefensiveTools.checkNull(iconData, "iconData");
 
-    public synchronized void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-        if (!enabled) cache.clear();
-    }
-
-    public @Nullable ByteBlock getBuddyIconData(Screenname screenname) {
-        BuddyInfo buddyInfo = conn.getBuddyInfoManager().getBuddyInfo(screenname);
-        if (buddyInfo == null) return null;
-
-        ExtraInfoData hash = buddyInfo.getIconHash();
-        if (hash == null) return null;
-
-        return getIconDataForHash(hash);
-    }
-
-    private static ByteBlock getIconHash(ByteBlock iconData) {
-        ByteBlock hash;
-        try {
-            MessageDigest digest = MessageDigest.getInstance("MD5");
-            hash = ByteBlock.wrap(digest.digest(iconData.toByteArray()));
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException(e);
-        }
-        return hash;
-    }
-
-    public ExtraInfoData addToCache(Screenname screenname, ByteBlock iconData) {
-        DefensiveTools.checkNull(iconData, "iconData");
-
-        ExtraInfoData iconInfo = new ExtraInfoData(
-                ExtraInfoData.FLAG_HASH_PRESENT, getIconHash(iconData));
-        storeInCache(iconInfo, iconData);
-        return iconInfo;
-    }
+    ExtraInfoData iconInfo = new ExtraInfoData(
+        ExtraInfoData.FLAG_HASH_PRESENT, getIconHash(iconData));
+    storeInCache(iconInfo, iconData);
+    return iconInfo;
+  }
 }

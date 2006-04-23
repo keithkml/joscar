@@ -36,9 +36,9 @@ package net.kano.joustsim.oscar.oscar.service.bos;
 import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.oscar.oscar.OscarConnection;
 
-public class ExternalBosService extends BosService {
-    public ExternalBosService(AimConnection aimConnection,
-            OscarConnection oscarConnection) {
-        super(aimConnection, oscarConnection);
-    }
+public class ExternalBosServiceImpl extends AbstractBosService {
+  public ExternalBosServiceImpl(AimConnection aimConnection,
+      OscarConnection oscarConnection) {
+    super(aimConnection, oscarConnection);
+  }
 }

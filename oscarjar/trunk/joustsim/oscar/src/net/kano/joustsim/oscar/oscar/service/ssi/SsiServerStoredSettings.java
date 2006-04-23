@@ -49,7 +49,7 @@ import java.util.TreeSet;
 
 public class SsiServerStoredSettings
     implements ServerStoredSettings, SsiItemChangeListener {
-  private SsiService ssiService;
+  private SsiServiceImpl ssiService;
   private CopyOnWriteArrayList<ServerStoredSettingsListener> listeners
       = new CopyOnWriteArrayList<ServerStoredSettingsListener>();
 
@@ -59,7 +59,7 @@ public class SsiServerStoredSettings
   private SortedSet<VisibilityItem> visibilityItems
       = new TreeSet<VisibilityItem>(new ItemIdComparator());
 
-  public SsiServerStoredSettings(SsiService ssiService) {
+  SsiServerStoredSettings(SsiServiceImpl ssiService) {
     this.ssiService = ssiService;
     ssiService.addItemChangeListener(this);
   }

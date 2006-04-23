@@ -73,9 +73,9 @@ class SsiPermissionList implements PermissionList, SsiItemChangeListener {
             = new AllowedBuddyChangeListener();
     private BlockedBuddyChangeListener blockedBuddyChangeListener
             = new BlockedBuddyChangeListener();
-    private final SsiService ssiService;
+    private final SsiServiceImpl ssiService;
 
-    public SsiPermissionList(SsiService ssiService) {
+    public SsiPermissionList(SsiServiceImpl ssiService) {
         this.ssiService = ssiService;
         ssiService.addItemChangeListener(this);
     }

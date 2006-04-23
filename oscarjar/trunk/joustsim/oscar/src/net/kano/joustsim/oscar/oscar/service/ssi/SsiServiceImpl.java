@@ -35,21 +35,17 @@
 
 package net.kano.joustsim.oscar.oscar.service.ssi;
 
-import net.kano.joscar.MiscTools;
 import net.kano.joscar.CopyOnWriteArrayList;
-import net.kano.joscar.ssiitem.SsiItemObjectFactory;
-import net.kano.joscar.ssiitem.DefaultSsiItemObjFactory;
-import net.kano.joscar.ssiitem.SsiItemObj;
-import net.kano.joscar.ssiitem.GroupItem;
-import net.kano.joscar.ssiitem.RootItem;
+import net.kano.joscar.MiscTools;
 import net.kano.joscar.flapcmd.SnacCommand;
+import net.kano.joscar.snac.ClientSnacProcessor;
 import net.kano.joscar.snac.SnacPacketEvent;
 import net.kano.joscar.snac.SnacRequestListener;
 import net.kano.joscar.snac.SnacResponseEvent;
 import net.kano.joscar.snac.SnacResponseListener;
-import net.kano.joscar.snac.ClientSnacProcessor;
 import net.kano.joscar.snaccmd.conn.SnacFamilyInfo;
 import net.kano.joscar.snaccmd.ssi.ActivateSsiCmd;
+import net.kano.joscar.snaccmd.ssi.BuddyAuthRequest;
 import net.kano.joscar.snaccmd.ssi.CreateItemsCmd;
 import net.kano.joscar.snaccmd.ssi.DeleteItemsCmd;
 import net.kano.joscar.snaccmd.ssi.ItemsCmd;
@@ -60,28 +56,35 @@ import net.kano.joscar.snaccmd.ssi.SsiDataModResponse;
 import net.kano.joscar.snaccmd.ssi.SsiDataRequest;
 import net.kano.joscar.snaccmd.ssi.SsiItem;
 import net.kano.joscar.snaccmd.ssi.SsiRightsRequest;
+import net.kano.joscar.ssiitem.DefaultSsiItemObjFactory;
+import net.kano.joscar.ssiitem.GroupItem;
+import net.kano.joscar.ssiitem.RootItem;
+import net.kano.joscar.ssiitem.SsiItemObj;
+import net.kano.joscar.ssiitem.SsiItemObjectFactory;
+import net.kano.joustsim.JavaTools;
+import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.oscar.oscar.OscarConnection;
 import net.kano.joustsim.oscar.oscar.service.AbstractService;
 import net.kano.joustsim.oscar.oscar.service.ServiceEvent;
 import net.kano.joustsim.oscar.oscar.service.bos.ServerReadyEvent;
-import net.kano.joustsim.JavaTools;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.HashSet;
 import java.util.TreeSet;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.logging.Logger;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
-public class SsiService extends AbstractService {
+public class SsiServiceImpl extends AbstractService implements SsiService {
   private static final Logger LOGGER = Logger
-      .getLogger(SsiService.class.getName());
+      .getLogger(SsiServiceImpl.class.getName());
 
   private static final int NUM_IDS = 0x7fff + 1;
 
@@ -103,7 +106,7 @@ public class SsiService extends AbstractService {
 
   private boolean requestedList = false;
 
-  public SsiService(AimConnection aimConnection,
+  public SsiServiceImpl(AimConnection aimConnection,
       OscarConnection oscarConnection) {
     super(aimConnection, oscarConnection, SsiCommand.FAMILY_SSI);
   }
@@ -113,12 +116,10 @@ public class SsiService extends AbstractService {
   }
 
   public void connected() {
-    OscarConnection oscarConnection = getOscarConnection();
-    ClientSnacProcessor snacProcessor = oscarConnection.getSnacProcessor();
+    OscarConnection conn = getOscarConnection();
+    ClientSnacProcessor snacProcessor = conn.getSnacProcessor();
     snacProcessor.addGlobalResponseListener(new ItemsChangeListener());
-    boolean serverReady = !oscarConnection
-        .getServiceEvents(ServerReadyEvent.class)
-        .isEmpty();
+    boolean serverReady = !conn.hasServiceEvents(ServerReadyEvent.class);
     if (serverReady) requestList();
   }
 
@@ -134,6 +135,10 @@ public class SsiService extends AbstractService {
     }
     sendSnac(new SsiRightsRequest());
     sendSnac(new SsiDataRequest());
+  }
+
+  public void requestBuddyAuthorization(Screenname sn, @Nullable String msg) {
+    sendSnac(new BuddyAuthRequest(sn.getFormatted(), msg));
   }
 
   public void handleSnacPacket(SnacPacketEvent snacPacketEvent) {
@@ -402,12 +407,12 @@ public class SsiService extends AbstractService {
     return buddyIconItemManager;
   }
 
-  public void sendSsiModification(ItemsCmd cmd,
+  void sendSsiModification(ItemsCmd cmd,
       SnacRequestListener listener) {
     sendSnacRequest(cmd, listener);
   }
 
-  public void sendSsiModification(ItemsCmd cmd) {
+  void sendSsiModification(ItemsCmd cmd) {
     sendSnac(cmd);
   }
 

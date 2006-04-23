@@ -48,11 +48,11 @@ import net.kano.joustsim.oscar.AimConnection;
 import net.kano.joustsim.oscar.oscar.OscarConnection;
 import net.kano.joustsim.oscar.oscar.service.AbstractService;
 
-public class BuddyService extends AbstractService {
-  private CopyOnWriteArrayList<BuddyServiceListener> listeners
+public class BuddyServiceImpl extends AbstractService implements BuddyService {
+  private final CopyOnWriteArrayList<BuddyServiceListener> listeners
       = new CopyOnWriteArrayList<BuddyServiceListener>();
 
-  public BuddyService(AimConnection aimConnection,
+  public BuddyServiceImpl(AimConnection aimConnection,
       OscarConnection oscarConnection) {
     super(aimConnection, oscarConnection, BuddyCommand.FAMILY_BUDDY);
   }

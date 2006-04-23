@@ -120,7 +120,7 @@ public abstract class AbstractConnectionController
           fireFailed(e);
         }
       }
-    });
+    }, "RV connector: " + this);
 
     thread.start();
   }

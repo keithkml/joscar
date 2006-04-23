@@ -42,7 +42,7 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SocketStreamInfo;
 
 import java.io.IOException;
 
-public class MockConnectedController
+public class InstantlyConnectedController
     extends AbstractStateController implements ConnectedController {
   public boolean isConnected() {
     return true;

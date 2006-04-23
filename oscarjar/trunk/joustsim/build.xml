@@ -46,7 +46,7 @@
   </path>
 
   <target name="build-oscar-jar-classes" depends="init" description="Compiles common">
-    <javac srcdir="common/src" source="1.5" destdir="${common.bin}">
+    <javac srcdir="common/src" source="1.5" destdir="${common.bin}" debug="true">
         <classpath refid="path.compile"/>
     </javac>
     <javac srcdir="oscar/src" source="1.5" destdir="${oscar.bin}" debug="true" >
@@ -98,6 +98,9 @@
       <classpath path="${common.bin}" />
       <classpath refid="path.compile" />
     </javac>
+    <copy todir="test-classes">
+      <fileset dir="oscar/tests" includes="**/*.jpg"/>
+    </copy>
   </target>
 
   <target name="run-oscar-tests" depends="compile-tests">
@@ -110,6 +113,7 @@
       <test name="net.kano.joustsim.oscar.oscar.service.icbm.OutgoingRvConnectionFunctionalTests" />
       <test name="net.kano.joustsim.oscar.oscar.service.icbm.dim.DirectimReceiverTest" />
       <test name="net.kano.joustsim.oscar.oscar.service.icbm.dim.DirectimQueueTest" />
+      <test name="net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.TestTransferredFileImpl" />
       <classpath path="${oscar.bin}" />
       <classpath path="${common.bin}" />
       <classpath refid="path.compile" />

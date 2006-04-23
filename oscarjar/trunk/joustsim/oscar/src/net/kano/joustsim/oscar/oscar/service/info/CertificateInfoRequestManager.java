@@ -47,23 +47,22 @@ import net.kano.joustsim.trust.TrustTools;
 import java.security.cert.X509Certificate;
 import java.util.logging.Logger;
 
-public class CertificateInfoRequestManager extends UserInfoRequestManager {
+public class CertificateInfoRequestManager
+    extends UserInfoRequestManager<CertificateInfo> {
   private static final Logger LOGGER = Logger
       .getLogger(CertificateInfoRequestManager.class.getName());
 
-  public CertificateInfoRequestManager(InfoService service) {
+  public CertificateInfoRequestManager(MutableInfoService service) {
     super(service);
   }
 
-  protected SnacCommand generateSnacCommand(final Screenname sn) {
+  protected SnacCommand generateSnacCommand(Screenname sn) {
     LOGGER.fine("generating cert request for " + sn);
     return new GetInfoCmd(GetInfoCmd.FLAG_CERT, sn.getFormatted());
   }
 
   protected void callListener(InfoResponseListener listener, Screenname sn,
-      Object value) {
-    CertificateInfo certInfo = (CertificateInfo) value;
-
+      CertificateInfo certInfo) {
     BuddyCertificateInfo bci = extractBuddyCertificateInfo(sn, certInfo);
     listener.handleCertificateInfo(getService(), sn, bci);
   }
@@ -110,7 +109,7 @@ public class CertificateInfoRequestManager extends UserInfoRequestManager {
     }
   }
 
-  protected Object getDesiredValue(InfoData infodata) {
+  protected CertificateInfo getDesiredValue(InfoData infodata) {
     return infodata.getCertificateInfo();
   }
 }

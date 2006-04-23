@@ -106,6 +106,7 @@ public class AimConnection {
   private final ChatRoomManager chatRoomManager;
   private final ConnectionManager connectionManager;
   private volatile AimProxyInfo proxy = AimProxyInfo.forNoProxy();
+  private volatile String passwordUrl = null;
 
   public AimConnection(Screenname screenname, String password) {
     this(new AimConnectionProperties(screenname, password));
@@ -214,6 +215,8 @@ public class AimConnection {
         new DefaultEnabledCapabilityHandler());
     mgr.setCapabilityHandler(CapabilityBlock.BLOCK_SHORTCAPS,
         new DefaultEnabledCapabilityHandler());
+    mgr.setCapabilityHandler(CapabilityBlock.BLOCK_ICQ_UTF8, 
+        new DefaultEnabledCapabilityHandler());
     return mgr;
   }
 
@@ -273,18 +276,19 @@ public class AimConnection {
     serviceListeners.remove(l);
   }
 
-  public @Nullable synchronized Service getService(int family) {
+  public synchronized @Nullable Service getService(int family) {
     return getMutableService(family);
   }
 
-  private Service getMutableService(int family) {
+  private @Nullable Service getMutableService(int family) {
     List<Service> list = getServiceListIfExists(family);
     return list == null ? null : list.get(0);
   }
 
-  private synchronized List<Service> getServiceListIfExists(int family) {
+  private synchronized @Nullable List<Service> getServiceListIfExists(
+      int family) {
     List<Service> list = snacfamilies.get(family);
-    return list == null || list.isEmpty() ? null : list;
+    return (list == null || list.isEmpty()) ? null : list;
   }
 
   public LoginService getLoginService() {
@@ -419,5 +423,13 @@ public class AimConnection {
     DefensiveTools.checkNull(proxy, "proxy");
     
     this.proxy = proxy;
+  }
+
+  public void setPasswordUrl(String passwordUrl) {
+    this.passwordUrl = passwordUrl;
+  }
+
+  public String getChangePasswordUrl() {
+    return passwordUrl;
   }
 }

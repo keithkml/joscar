@@ -56,7 +56,8 @@ import net.kano.joustsim.trust.BuddyCertificateInfo;
 
 import java.util.List;
 
-public class InfoService extends AbstractService {
+public class InfoServiceImpl extends AbstractService implements
+    MutableInfoService {
   private static final CertificateInfo CERTINFO_EMPTY
       = new CertificateInfo(null);
 
@@ -67,7 +68,7 @@ public class InfoService extends AbstractService {
       = new InfoResponseAdapter() {
     public void handleUserProfile(InfoService service, Screenname buddy,
         String userInfo) {
-      assert InfoService.this == service;
+      assert InfoServiceImpl.this == service;
 
       for (InfoServiceListener listener : listeners) {
         listener.handleUserProfile(service, buddy, userInfo);
@@ -76,7 +77,7 @@ public class InfoService extends AbstractService {
 
     public void handleAwayMessage(InfoService service, Screenname buddy,
         String awayMessage) {
-      assert InfoService.this == service;
+      assert InfoServiceImpl.this == service;
 
       for (InfoServiceListener listener : listeners) {
         listener.handleAwayMessage(service, buddy, awayMessage);
@@ -85,7 +86,7 @@ public class InfoService extends AbstractService {
 
     public void handleCertificateInfo(InfoService service, Screenname buddy,
         BuddyCertificateInfo certInfo) {
-      assert InfoService.this == service;
+      assert InfoServiceImpl.this == service;
 
       for (InfoServiceListener listener : listeners) {
         listener.handleCertificateInfo(service, buddy, certInfo);
@@ -94,7 +95,7 @@ public class InfoService extends AbstractService {
 
     public void handleDirectoryInfo(InfoService service, Screenname buddy,
         DirInfo dirInfo) {
-      assert InfoService.this == service;
+      assert InfoServiceImpl.this == service;
 
       for (InfoServiceListener listener : listeners) {
         listener.handleDirectoryInfo(service, buddy, dirInfo);
@@ -135,7 +136,7 @@ public class InfoService extends AbstractService {
   private String userProfile = null;
   private CertificateInfo certificateInfo = null;
 
-  public InfoService(AimConnection aimConnection,
+  public InfoServiceImpl(AimConnection aimConnection,
       OscarConnection oscarConnection) {
     super(aimConnection, oscarConnection, LocCommand.FAMILY_LOC);
 
@@ -266,7 +267,7 @@ public class InfoService extends AbstractService {
         capabilityManager.getEnabledCapabilities(), null)));
   }
 
-  InfoResponseListener getInfoRequestListener() {
+  public InfoResponseListener getInfoRequestListener() {
     return infoRequestListener;
   }
 }

@@ -86,9 +86,8 @@ public class IncomingDirectimConnectionImpl
     if (oldController instanceof DirectimController) {
       LOGGER.fine("Changing from success of receive controller to "
           + "completed");
-      queueStateChange(RvConnectionState.FINISHED,
+      return new NextStateControllerInfo(RvConnectionState.FINISHED,
           new ConnectionCompleteEvent());
-      return null;
 
     } else if (oldStateInfo instanceof StreamInfo) {
       throw new IllegalStateException("stream info??");

@@ -40,21 +40,21 @@ import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.snaccmd.InfoData;
 import net.kano.joscar.snaccmd.loc.GetInfoCmd;
 
-public class UserProfileRequestManager extends UserInfoRequestManager {
-    public UserProfileRequestManager(InfoService service) {
-        super(service);
-    }
+public class UserProfileRequestManager extends UserInfoRequestManager<String> {
+  public UserProfileRequestManager(MutableInfoService service) {
+    super(service);
+  }
 
-    protected SnacCommand generateSnacCommand(final Screenname sn) {
-        return new GetInfoCmd(GetInfoCmd.FLAG_INFO, sn.getFormatted());
-    }
+  protected SnacCommand generateSnacCommand(Screenname sn) {
+    return new GetInfoCmd(GetInfoCmd.FLAG_INFO, sn.getFormatted());
+  }
 
-    protected void callListener(InfoResponseListener listener, Screenname sn,
-            Object value) {
-        listener.handleUserProfile(getService(), sn, (String) value);
-    }
+  protected void callListener(InfoResponseListener listener, Screenname sn,
+      String value) {
+    listener.handleUserProfile(getService(), sn, value);
+  }
 
-    protected Object getDesiredValue(InfoData infodata) {
-        return infodata.getUserProfile();
-    }
+  protected String getDesiredValue(InfoData infodata) {
+    return infodata.getUserProfile();
+  }
 }

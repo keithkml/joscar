@@ -55,6 +55,12 @@ public class DirectimReceiverTest extends DirectimTest {
     }
   }
 
+  public void testGarbageAfterBinaryTag() throws IOException {
+    String str = "hi";
+    runTestWithAttachment(
+        str + "<BINARY><DATA ID=\"1\" SIZE=\"1\">a</DATA></BINARY> ", 1024, str, "a");
+  }
+
   public void testMessagesNearBufferLength() throws IOException {
     int bufferSize = 30;
     for (int i = bufferSize -10; i < bufferSize +20; i++) {

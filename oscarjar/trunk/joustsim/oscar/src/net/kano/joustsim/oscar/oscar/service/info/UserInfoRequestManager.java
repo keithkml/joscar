@@ -46,14 +46,15 @@ import net.kano.joustsim.Screenname;
 
 import java.util.Set;
 
-public abstract class UserInfoRequestManager extends InfoRequestManager {
-  public UserInfoRequestManager(InfoService service) {
+public abstract class UserInfoRequestManager<V> extends InfoRequestManager {
+  public UserInfoRequestManager(MutableInfoService service) {
     super(service);
   }
 
   protected void sendRequest(final Screenname sn) {
     SnacCommand cmd = generateSnacCommand(sn);
-    getService().sendSnacRequest(cmd, new SnacRequestAdapter() {
+    getService().getOscarConnection().sendSnacRequest(cmd,
+        new SnacRequestAdapter() {
       private boolean ran = false;
 
       public void handleResponse(SnacResponseEvent e) {
@@ -83,7 +84,7 @@ public abstract class UserInfoRequestManager extends InfoRequestManager {
     return snac instanceof UserInfoCmd;
   }
 
-  private void runListeners(Screenname sn, Object value) {
+  private void runListeners(Screenname sn, V value) {
     Set<InfoResponseListener> listeners = clearListeners(sn);
     for (Object listener1 : listeners) {
       InfoResponseListener listener = (InfoResponseListener) listener1;
@@ -91,8 +92,8 @@ public abstract class UserInfoRequestManager extends InfoRequestManager {
     }
   }
 
-  private Object getDesiredValueFromSnac(SnacCommand snac) {
-    Object value = null;
+  private V getDesiredValueFromSnac(SnacCommand snac) {
+    V value = null;
     if (snac instanceof UserInfoCmd) {
       UserInfoCmd uic = (UserInfoCmd) snac;
 
@@ -108,8 +109,7 @@ public abstract class UserInfoRequestManager extends InfoRequestManager {
   protected abstract SnacCommand generateSnacCommand(Screenname sn);
 
   protected abstract void callListener(InfoResponseListener listener,
-      Screenname sn,
-      Object value);
+      Screenname sn, V value);
 
-  protected abstract Object getDesiredValue(InfoData infodata);
+  protected abstract V getDesiredValue(InfoData infodata);
 }

@@ -61,4 +61,8 @@ public class RvConnectionState {
   public boolean isOpen() {
     return open;
   }
+
+  public boolean isClosed() {
+    return !isOpen();
+  }
 }

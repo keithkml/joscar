@@ -39,6 +39,7 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnection;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectedEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectionTimedOutEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
 
 import java.io.IOException;
 import java.util.logging.Logger;
@@ -94,7 +95,9 @@ public abstract class TransferController extends AbstractStateController
 
   public void start(final RvConnection transfer, StateController last) {
     this.transfer = transfer;
-    stream = (StreamInfo) last.getEndStateInfo();
+    StateInfo lastinfo = last.getEndStateInfo();
+    assert lastinfo instanceof StreamInfo : last;
+    stream = (StreamInfo) lastinfo;
     transferThread = new Thread(new Runnable() {
       public void run() {
         try {

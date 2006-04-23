@@ -53,6 +53,7 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectedEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ConnectionTimedOutEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownErrorEvent;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.LocallyCancelledEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
 import org.jetbrains.annotations.Nullable;
 
@@ -139,12 +140,14 @@ public class DirectimController extends AbstractStateController
   }
 
   private void receiveInThread() throws IOException {
+    LOGGER.fine("Starting DIM receiver for " + DirectimController.this);
     connection.getEventPost().fireEvent(new ConnectedEvent());
 
     InputStream is = stream.getInputStream();
     while (true) {
       DirectImHeader header = DirectImHeader.readDirectIMHeader(is);
       if (header == null) {
+        LOGGER.info("Could not read header in " + this);
         fireFailed(new UnknownErrorEvent());
         break;
       }
@@ -166,7 +169,7 @@ public class DirectimController extends AbstractStateController
           LOGGER.warning("Buddy sent wrong confirmation ICBM ID: "
               + header.getMessageId() + " should be " + realid);
           fireFailed(new UnknownErrorEvent());
-          return;
+          break;
         }
       }
       if (datalen > 0) {
@@ -176,7 +179,7 @@ public class DirectimController extends AbstractStateController
 
         DirectimReceiver receiver = new DirectimReceiver(stream, eventPost,
             getPauseHelper(), connection.getAttachmentSaver(), this, charset,
-            datalen, DirectimReceiver.isAutoResponse(header));
+            datalen, isAutoResponse(header));
         long transferred = receiver.transfer();
 
         if (transferred != datalen) {
@@ -189,6 +192,7 @@ public class DirectimController extends AbstractStateController
         eventPost.fireEvent(new DoneReceivingEvent());
       }
     }
+    LOGGER.fine("Done with DIM receiver for " + this);
   }
 
   private void setIcbmIdConfirmed() {
@@ -260,6 +264,11 @@ public class DirectimController extends AbstractStateController
     cancelled = true;
     if (recvThread != null) recvThread.interrupt();
     if (sendThread != null) sendThread.interrupt();
+    if (didConnect()) {
+      fireSucceeded(new DirectimEndedInfo());
+    } else {
+      fireFailed(new LocallyCancelledEvent());
+    }
   }
 
   public boolean isCancelled() {
@@ -270,8 +279,13 @@ public class DirectimController extends AbstractStateController
     return pauseHelper;
   }
 
+  public static boolean isAutoResponse(DirectImHeader header) {
+    return (header.getFlags() & DirectImHeader.FLAG_AUTORESPONSE) != 0;
+  }
+
   private class DimQueue implements Runnable {
     public void run() {
+      LOGGER.fine("Starting DIM queue thread for " + DirectimController.this);
       while (true) {
         if (!waitForIcbmIdConfirmation()) {
           return;
@@ -304,6 +318,7 @@ public class DirectimController extends AbstractStateController
       synchronized(queue) {
         fireItemsFailed(queue);
       }
+      LOGGER.fine("Done with DIM queue for " + DirectimController.this);
     }
 
     private void fireItemsFailed(List<Object> newItems) {
@@ -320,4 +335,5 @@ public class DirectimController extends AbstractStateController
       queueProcessor.processItem(item);
     }
   }
+
 }

@@ -45,13 +45,13 @@ import net.kano.joscar.snaccmd.loc.GetDirInfoCmd;
 import net.kano.joustsim.Screenname;
 
 public class DirectoryInfoRequestManager extends InfoRequestManager {
-  public DirectoryInfoRequestManager(InfoService service) {
+  public DirectoryInfoRequestManager(MutableInfoService service) {
     super(service);
   }
 
   protected void sendRequest(final Screenname sn) {
     GetDirInfoCmd cmd = new GetDirInfoCmd(sn.getFormatted());
-    getService().sendSnacRequest(cmd, new SnacRequestAdapter() {
+    getService().getOscarConnection().sendSnacRequest(cmd, new SnacRequestAdapter() {
       private boolean ran = false;
 
       public void handleResponse(SnacResponseEvent e) {

@@ -55,9 +55,9 @@ import net.kano.joustsim.oscar.oscar.OscarConnection;
 import net.kano.joustsim.oscar.oscar.service.AbstractService;
 import net.kano.joustsim.oscar.oscar.service.ServiceFactory;
 import net.kano.joustsim.oscar.oscar.service.MutableService;
-import net.kano.joustsim.oscar.oscar.service.bos.ExternalBosService;
-import net.kano.joustsim.oscar.oscar.service.bos.MainBosService;
+import net.kano.joustsim.oscar.oscar.service.bos.ExternalBosServiceImpl;
 import net.kano.joustsim.oscar.oscar.service.bos.OpenedChatRoomServiceListener;
+import net.kano.joustsim.oscar.oscar.service.bos.MainBosService;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.logging.Logger;
@@ -164,7 +164,7 @@ public class RoomFinderService extends AbstractService {
 
     public MutableService getService(OscarConnection conn, int family) {
       if (family == ConnCommand.FAMILY_CONN) {
-        return new ExternalBosService(getAimConnection(), conn);
+        return new ExternalBosServiceImpl(getAimConnection(), conn);
       } else if (family == ChatCommand.FAMILY_CHAT) {
         return new ChatRoomService(getAimConnection(), conn, roomInfo);
       } else {

@@ -43,4 +43,6 @@ public interface MutableBuddy extends Buddy {
     void changeAlertActionMask(int alertActionMask);
 
     void changeAlertSound(String alertSound);
+
+  void changeAwaitingAuthorization(boolean awaiting);
 }

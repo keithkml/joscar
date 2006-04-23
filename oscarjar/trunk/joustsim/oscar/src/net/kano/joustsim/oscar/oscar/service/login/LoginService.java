@@ -212,6 +212,7 @@ public class LoginService extends AbstractService {
 
     } else if (snac instanceof AuthResponse) {
       AuthResponse ar = (AuthResponse) snac;
+      getAimConnection().setPasswordUrl(ar.getPasswordUrl());
       if (ar.getErrorCode() != -1) {
         fireLoginFailed(new AuthFailureInfo(ar));
       } else {
@@ -239,7 +240,7 @@ public class LoginService extends AbstractService {
               sendSnac(new SecuridResponse(securid));
             }
           }
-        });
+        }, "SecurID waiter");
         thread.setDaemon(true);
         synchronized (this) {
           if (securidThread != null) securidThread.interrupt();

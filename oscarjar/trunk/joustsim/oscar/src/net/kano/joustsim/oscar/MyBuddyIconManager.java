@@ -40,8 +40,8 @@ import net.kano.joscar.snaccmd.ExtraInfoData;
 import net.kano.joscar.snaccmd.FullUserInfo;
 import net.kano.joustsim.oscar.oscar.service.Service;
 import net.kano.joustsim.oscar.oscar.service.icon.IconServiceArbiter;
-import net.kano.joustsim.oscar.oscar.service.bos.MainBosService;
 import net.kano.joustsim.oscar.oscar.service.bos.MainBosServiceListener;
+import net.kano.joustsim.oscar.oscar.service.bos.MainBosService;
 
 import java.util.Collection;
 import java.util.List;

@@ -49,9 +49,9 @@ import net.kano.joustsim.oscar.GlobalBuddyInfoListener;
 import net.kano.joustsim.oscar.oscar.service.icbm.Conversation;
 import net.kano.joustsim.oscar.oscar.service.icbm.ConversationEventInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ConversationException;
-import net.kano.joustsim.oscar.oscar.service.icbm.IcbmService;
 import net.kano.joustsim.oscar.oscar.service.icbm.InternalIcbmTools;
 import net.kano.joustsim.oscar.oscar.service.icbm.Message;
+import net.kano.joustsim.oscar.oscar.service.icbm.MutableIcbmService;
 import net.kano.joustsim.oscar.oscar.NoBuddyKeysException;
 import net.kano.joustsim.trust.BuddyCertificateInfo;
 import net.kano.joustsim.trust.PrivateKeys;
@@ -246,7 +246,7 @@ public class SecureAimConversation extends Conversation {
 
   public void sendMessage(Message msg)
       throws ConversationException {
-    IcbmService icbmService = conn.getIcbmService();
+    MutableIcbmService icbmService = (MutableIcbmService) conn.getIcbmService();
     if (icbmService == null) {
       throw new ConversationException("no ICBM service present to "
           + "send through", this);

@@ -41,9 +41,9 @@ import java.util.List;
 
 class SsiSyntheticGroup extends SyntheticGroup
         implements RenameMutableGroup, DeleteMutableGroup {
-    private final SsiService ssiService;
+    private final SsiServiceImpl ssiService;
 
-    protected SsiSyntheticGroup(SsiService ssiService, SimpleBuddyList buddyList) {
+    protected SsiSyntheticGroup(SsiServiceImpl ssiService, SimpleBuddyList buddyList) {
         super(buddyList);
         this.ssiService = ssiService;
     }

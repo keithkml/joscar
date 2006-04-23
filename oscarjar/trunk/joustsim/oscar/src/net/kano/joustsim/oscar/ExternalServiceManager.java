@@ -53,9 +53,9 @@ import net.kano.joustsim.oscar.oscar.service.ServiceArbiterFactory;
 import net.kano.joustsim.oscar.oscar.service.ServiceArbitrationManager;
 import net.kano.joustsim.oscar.oscar.service.ServiceFactory;
 import net.kano.joustsim.oscar.oscar.service.ServiceListener;
-import net.kano.joustsim.oscar.oscar.service.bos.ExternalBosService;
-import net.kano.joustsim.oscar.oscar.service.bos.MainBosService;
+import net.kano.joustsim.oscar.oscar.service.bos.ExternalBosServiceImpl;
 import net.kano.joustsim.oscar.oscar.service.bos.OpenedExternalServiceListener;
+import net.kano.joustsim.oscar.oscar.service.bos.MainBosService;
 import net.kano.joustsim.oscar.oscar.service.chatrooms.RoomFinderServiceArbiter;
 import net.kano.joustsim.oscar.oscar.service.icon.IconServiceArbiter;
 import net.kano.joustsim.oscar.oscar.service.mailcheck.MailCheckServiceArbiter;
@@ -393,7 +393,7 @@ public class ExternalServiceManager {
 
     public MutableService getService(OscarConnection conn, int family) {
       if (family == ConnCommand.FAMILY_CONN) {
-        return new ExternalBosService(aimConnection, conn);
+        return new ExternalBosServiceImpl(aimConnection, conn);
 
       } else if (family == serviceFamily) {
         return arbiter.createService(aimConnection, conn);

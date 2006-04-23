@@ -53,12 +53,12 @@ import net.kano.joustsim.oscar.oscar.loginstatus.LoginSuccessInfo;
 import net.kano.joustsim.oscar.oscar.service.ServiceFactory;
 import net.kano.joustsim.oscar.oscar.service.MutableService;
 import net.kano.joustsim.oscar.oscar.service.mailcheck.MailCheckService;
-import net.kano.joustsim.oscar.oscar.service.bos.MainBosService;
-import net.kano.joustsim.oscar.oscar.service.buddy.BuddyService;
-import net.kano.joustsim.oscar.oscar.service.icbm.IcbmService;
-import net.kano.joustsim.oscar.oscar.service.info.InfoService;
+import net.kano.joustsim.oscar.oscar.service.bos.MainBosServiceImpl;
+import net.kano.joustsim.oscar.oscar.service.buddy.BuddyServiceImpl;
+import net.kano.joustsim.oscar.oscar.service.icbm.IcbmServiceImpl;
+import net.kano.joustsim.oscar.oscar.service.info.InfoServiceImpl;
 import net.kano.joustsim.oscar.oscar.service.login.LoginService;
-import net.kano.joustsim.oscar.oscar.service.ssi.SsiService;
+import net.kano.joustsim.oscar.oscar.service.ssi.SsiServiceImpl;
 
 import java.util.logging.Logger;
 import java.util.logging.Level;
@@ -231,15 +231,15 @@ public final class ConnectionManager {
   private class BasicServiceFactory implements ServiceFactory {
     public MutableService getService(OscarConnection conn, int family) {
       if (family == ConnCommand.FAMILY_CONN) {
-        return new MainBosService(aimConnection, conn);
+        return new MainBosServiceImpl(aimConnection, conn);
       } else if (family == IcbmCommand.FAMILY_ICBM) {
-        return new IcbmService(aimConnection, conn);
+        return new IcbmServiceImpl(aimConnection, conn);
       } else if (family == BuddyCommand.FAMILY_BUDDY) {
-        return new BuddyService(aimConnection, conn);
+        return new BuddyServiceImpl(aimConnection, conn);
       } else if (family == LocCommand.FAMILY_LOC) {
-        return new InfoService(aimConnection, conn);
+        return new InfoServiceImpl(aimConnection, conn);
       } else if (family == SsiCommand.FAMILY_SSI) {
-        return new SsiService(aimConnection, conn);
+        return new SsiServiceImpl(aimConnection, conn);
       } else if (family == MailCheckCmd.FAMILY_MAILCHECK) {
         return new MailCheckService(aimConnection, conn);
       } else {

@@ -69,17 +69,17 @@ import java.util.logging.Logger;
 
 //TOLATER: many commands send back a YourInfoCmd. we should make this more MVC so setIdleSince does not write to a field, but an incoming YourInfoCmd does not
 
-public class MainBosService extends BosService {
+public class MainBosServiceImpl
+    extends AbstractBosService implements MainBosService {
   private static final Logger LOGGER = Logger
-      .getLogger(MainBosService.class.getName());
+      .getLogger(MainBosServiceImpl.class.getName());
 
   private CopyOnWriteArrayList<MainBosServiceListener> listeners
       = new CopyOnWriteArrayList<MainBosServiceListener>();
   private Date idleSince = null;
   private boolean visibleStatus = true;
-  private String availMsg = null;
 
-  public MainBosService(AimConnection aimConnection,
+  public MainBosServiceImpl(AimConnection aimConnection,
       OscarConnection oscarConnection) {
     super(aimConnection, oscarConnection);
   }
@@ -221,7 +221,7 @@ public class MainBosService extends BosService {
 //                    LOGGER.warning("server returned service "
 //                            + returnedFamily + " when we requested " + service);
 //                }
-        listener.handleServiceRedirect(MainBosService.this,
+        listener.handleServiceRedirect(MainBosServiceImpl.this,
             returnedFamily, redirect.getRedirectHost(),
             redirect.getRedirectPort(),
             redirect.getCookie());

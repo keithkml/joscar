@@ -38,6 +38,7 @@ import net.kano.joscar.rvcmd.AcceptRvCmd;
 import net.kano.joscar.rvcmd.RvConnectionInfo;
 import net.kano.joscar.rvproto.rvproxy.RvProxyCmd;
 import net.kano.joustsim.TestTools;
+import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.ControllerRestartConsultant;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.DefaultRvConnectionEventListener;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnection;
@@ -46,6 +47,8 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionSettings;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionState;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.TimeoutHandler;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.ConnectionType;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.RvConnectionImpl;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.NextStateControllerInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.AbstractConnectionController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.AbstractProxyConnectionController;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.AbstractStateController;
@@ -68,6 +71,8 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.AbstractStreamInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.FailedStateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StateInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.StreamInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.SuccessfulStateInfo;
+import net.kano.joustsim.oscar.proxy.AimProxyInfo;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
@@ -163,7 +168,7 @@ public class OutgoingRvConnectionFunctionalTests extends RvConnectionTestCase {
                 = (RedirectToProxyController) controller;
             redirect.setConnector(getInitiateProxyConnector());
 
-          } else if (!(controller instanceof MockConnectedController)) {
+          } else if (!(controller instanceof InstantlyConnectedController)) {
             throw new IllegalStateException("Unknown controller " + controller);
           }
         }
@@ -498,6 +503,40 @@ public class OutgoingRvConnectionFunctionalTests extends RvConnectionTestCase {
         new HangConnector(), timeouter);
   }
 
+  /**
+   * Ensures that the "old controller" passed to a retried last controller in
+   * start() is the previous controller, not the previous instance of the
+   * retried controller.
+   */
+  public void testLastControllerOnRetry() throws InterruptedException {
+    RetryLastTestConnection connection = new RetryLastTestConnection();
+    final Object lock = new Object();
+    class MyDefaultRvConnectionEventListener
+        extends DefaultRvConnectionEventListener {
+      private volatile boolean done = false;
+
+      public void handleEventWithStateChange(RvConnection transfer,
+          RvConnectionState state, RvConnectionEvent event) {
+        if (state.isClosed()) {
+          synchronized (lock) {
+            done = true;
+            lock.notifyAll();
+          }
+        }
+      }
+    }
+    MyDefaultRvConnectionEventListener listener
+        = new MyDefaultRvConnectionEventListener();
+    connection.addEventListener(listener);
+    connection.start();
+    synchronized(lock) {
+      while (!listener.done) lock.wait();
+    }
+    StateController last = connection.getSecondLastController();
+    assertNotNull(last);
+    assertSame(connection.getFirstController(), last);
+  }
+
   private void checkForTimeout(AbstractConnectionController controller,
       MockConnector connector, RecordingTimeoutHandler timeouter)
       throws InstantiationException, IllegalAccessException {
@@ -646,5 +685,99 @@ public class OutgoingRvConnectionFunctionalTests extends RvConnectionTestCase {
       return started.contains(controller);
     }
   }
+
+  private static class RetryLastTestConnection extends RvConnectionImpl {
+    private StateController first = new AbstractStateController() {
+      public void start(RvConnection transfer, StateController last) {
+        System.out.println("Doing first");
+        fireFailed(new FailedStateInfo() {
+        });
+      }
+
+      public void stop() {
+      }
+    };
+    private boolean didSecond = false;
+    private StateController secondLast = null;
+
+    public RetryLastTestConnection() {
+      super(AimProxyInfo.forNoProxy(), new Screenname("me"),
+          new MockRvSessionConnectionInfo());
+    }
+
+    protected RendezvousSessionHandler createSessionHandler() {
+      return null;
+    }
+
+    protected NextStateControllerInfo getNextControllerFromError(
+        StateController oldController, StateInfo endState) {
+      if (oldController == first) {
+        return new NextStateControllerInfo(new SecondController());
+      }
+      return new NextStateControllerInfo(RvConnectionState.FAILED, new RvConnectionEvent() {
+      });
+    }
+
+    protected NextStateControllerInfo getNextControllerFromSuccess(
+        StateController oldController, StateInfo endState) {
+      return new NextStateControllerInfo(RvConnectionState.FINISHED, new RvConnectionEvent() {
+      });
+    }
+
+    protected ConnectedController createConnectedController(StateInfo endState) {
+      return new InstantlyConnectedController();
+    }
+
+    protected boolean isSomeConnectionController(StateController controller) {
+      return controller == first || controller instanceof SecondController;
+    }
+
+    protected boolean isConnectedController(StateController controller) {
+      return controller instanceof InstantlyConnectedController;
+    }
+
+    public void start() {
+      startStateController(first);
+    }
+
+    public StateController getSecondLastController() {
+      return secondLast;
+    }
+
+    public StateController getFirstController() {
+      return first;
+    }
+
+    private class SecondController extends AbstractStateController {
+      private boolean started = false;
+
+      public void start(RvConnection transfer, StateController last) {
+        if (started) {
+          throw new IllegalStateException("started already");
+        }
+        started = true;
+        if (didSecond) {
+          if (secondLast != null) {
+            System.out.println("Did second 3 times?? secondLast is "
+                + secondLast);
+            fireFailed(new FailedStateInfo() { });
+            return;
+          }
+          System.out.println("Setting secondLast to " + last);
+          secondLast = last;
+          fireSucceeded(new SuccessfulStateInfo() {
+          });
+        } else {
+          System.out.println("Doing second for the first time");
+          didSecond = true;
+          fireFailed(new FailedStateInfo() { });
+        }
+      }
+
+      public void stop() {
+      }
+    }
+  }
+
 
 }

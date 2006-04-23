@@ -36,51 +36,63 @@ package net.kano.joustsim.oscar.oscar.service.ssi;
 import net.kano.joscar.ssiitem.BuddyItem;
 import net.kano.joscar.snaccmd.ssi.ModifyItemsCmd;
 
+//TODO(klea): multiple changes to a buddy could overwrite each other
+//            this would happen if two changes were made before the response was
+//            received for the first one. the solution is to make a queue of
+//            changes to be made, and execute them serially waiting for
+//            responses
+
 class SsiBuddy extends SimpleBuddy implements MutableBuddy {
-    public SsiBuddy(SsiBuddyList list, BuddyItem item) {
-        super(list, item);
-    }
+  public SsiBuddy(SsiBuddyList list, BuddyItem item) {
+    super(list, item);
+  }
 
-    public void changeAlias(String alias) {
-        BuddyItem item = getItemCopy();
-        item.setAlias(alias);
-        sendItemModification(item);
-    }
+  public void changeAlias(String alias) {
+    BuddyItem item = getItemCopy();
+    item.setAlias(alias);
+    sendItemModification(item);
+  }
 
-    public void changeBuddyComment(String comment) {
-        BuddyItem item = getItemCopy();
-        item.setComment(comment);
-        sendItemModification(item);
-    }
+  public void changeBuddyComment(String comment) {
+    BuddyItem item = getItemCopy();
+    item.setComment(comment);
+    sendItemModification(item);
+  }
 
-    public void changeAlertEventMask(int alertEventMask) {
-        BuddyItem item = getItemCopy();
-        item.setAlertWhenMask(alertEventMask);
-        sendItemModification(item);
-    }
+  public void changeAlertEventMask(int alertEventMask) {
+    BuddyItem item = getItemCopy();
+    item.setAlertWhenMask(alertEventMask);
+    sendItemModification(item);
+  }
 
-    public void changeAlertActionMask(int alertActionMask) {
-        BuddyItem item = getItemCopy();
-        item.setAlertActionMask(alertActionMask);
-        sendItemModification(item);
-    }
+  public void changeAlertActionMask(int alertActionMask) {
+    BuddyItem item = getItemCopy();
+    item.setAlertActionMask(alertActionMask);
+    sendItemModification(item);
+  }
 
-    public void changeAlertSound(String alertSound) {
-        BuddyItem item = getItemCopy();
-        item.setAlertSound(alertSound);
-        sendItemModification(item);
-    }
+  public void changeAlertSound(String alertSound) {
+    BuddyItem item = getItemCopy();
+    item.setAlertSound(alertSound);
+    sendItemModification(item);
+  }
 
-    private BuddyItem getItemCopy() {
-        return new BuddyItem(getItem());
-    }
+  public void changeAwaitingAuthorization(boolean awaiting) {
+    BuddyItem item = getItemCopy();
+    item.setAwaitingAuth(awaiting);
+    sendItemModification(item);
+  }
 
-    private void sendItemModification(BuddyItem item) {
-        SsiService ssiService = getBuddyList().getSsiService();
-        ssiService.sendSsiModification(new ModifyItemsCmd(item.toSsiItem()));
-    }
+  private BuddyItem getItemCopy() {
+    return new BuddyItem(getItem());
+  }
 
-    public SsiBuddyList getBuddyList() {
-        return (SsiBuddyList) super.getBuddyList();
-    }
+  private void sendItemModification(BuddyItem item) {
+    SsiServiceImpl ssiService = getBuddyList().getSsiService();
+    ssiService.sendSsiModification(new ModifyItemsCmd(item.toSsiItem()));
+  }
+
+  public SsiBuddyList getBuddyList() {
+    return (SsiBuddyList) super.getBuddyList();
+  }
 }

@@ -34,9 +34,8 @@
 
 package net.kano.joustsim.oscar.oscar.service.icbm.dim;
 
-import net.kano.joscar.DynAsciiCharSequence;
 import net.kano.joscar.ByteBlock;
-import net.kano.joscar.rvproto.directim.DirectImHeader;
+import net.kano.joscar.DynAsciiCharSequence;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.AbstractTransferrer;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.PauseHelper;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
@@ -72,11 +71,8 @@ public class DirectimReceiver extends AbstractTransferrer {
    */
   private static final Pattern PATTERN_SIZE
       = Pattern.compile("SIZE=['\"]*(\\w+)[\"']*", Pattern.CASE_INSENSITIVE);
-  private boolean autoResponse;
 
-  public static boolean isAutoResponse(DirectImHeader header) {
-    return (header.getFlags() & DirectImHeader.FLAG_AUTORESPONSE) != 0;
-  }
+  private boolean autoResponse;
 
   private final String charset;
   private final AttachmentSaver saver;
@@ -268,10 +264,14 @@ public class DirectimReceiver extends AbstractTransferrer {
           return remaining;
         }*/
       }
+      // if we're at the end of the packet, and we couldn't read a tag just now,
+      // we want to quit
+      if (!checkbuffer && actuallyRead == 0 && origpos >= remaining) {
+        return remaining;
+      }
       // if we read some data from the socket, but we buffered it and it's in
       // the compacted part of the buffer, it hasn't been processed yet
-      int transferredNow = actuallyRead + origpos - buffer.position();
-      return transferredNow;
+      return actuallyRead + origpos - buffer.position();
 
     } else if (mode == Mode.DATA) {
       buffer.flip();

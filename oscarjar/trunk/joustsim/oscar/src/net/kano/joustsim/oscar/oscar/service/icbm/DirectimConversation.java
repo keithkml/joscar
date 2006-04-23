@@ -73,9 +73,10 @@ public class DirectimConversation extends Conversation
   private DirectimConnection directim = null;
   private @Nullable RvConnectionEvent closingState = null;
   private BuddyInfoTracker oldTracker = null;
-  private final BuddyInfoTrackerListener trackListener = new BuddyInfoTrackerListener() {
-  };
+  private final BuddyInfoTrackerListener trackListener
+      = new BuddyInfoTrackerListener() { };
   private LinkedList<Message> queue = new LinkedList<Message>();
+  private TypingState typingState = TypingState.NO_TEXT;
 
   public DirectimConversation(AimConnection conn, DirectimConnection directim) {
     super(directim.getBuddyScreenname());
@@ -151,12 +152,13 @@ public class DirectimConversation extends Conversation
   private void updateState(RvConnectionState state,
       @Nullable RvConnectionEvent event) {
     if (state == RvConnectionState.CONNECTED) {
-      DirectimController controller = getDirectimConnection().getDirectimController();
+      DirectimController controller = getDirectimController();
       assert controller != null;
       synchronized (this) {
         for (Message msg : queue) controller.sendMessage(msg);
         queue.clear();
       }
+      controller.setTypingState(typingState);
       super.open();
 
     } else if (state == RvConnectionState.FAILED
@@ -169,6 +171,10 @@ public class DirectimConversation extends Conversation
       }
       super.close();
     }
+  }
+
+  private DirectimController getDirectimController() {
+    return getDirectimConnection().getDirectimController();
   }
 
   protected void closed() {
@@ -209,13 +215,13 @@ public class DirectimConversation extends Conversation
   public void setTypingState(TypingState typingState) {
     DirectimConnection directim;
     synchronized (this) {
-      checkOpen();
+      this.typingState = typingState;
+      if (!isOpen()) return;
       directim = this.directim;
     }
     DirectimController controller = directim.getDirectimController();
-    if (controller == null) {
-      throw new ConversationNotOpenException(this);
-    }
+    if (controller == null) return;
+
     controller.setTypingState(typingState);
     fireOutgoingEvent(new TypingInfo(conn.getScreenname(), getBuddy(),
         new Date(), typingState));
@@ -289,5 +295,4 @@ public class DirectimConversation extends Conversation
       return map;
     }
   }
-
 }

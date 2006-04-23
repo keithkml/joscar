@@ -36,6 +36,7 @@
 package net.kano.joustsim.trust;
 
 import net.kano.joustsim.Screenname;
+import org.jetbrains.annotations.Nullable;
 
 import java.beans.PropertyChangeListener;
 
@@ -48,5 +49,5 @@ public interface PrivateKeysPreferences {
 
     void removePropertyChangeListener(PropertyChangeListener l);
 
-    PrivateKeys getKeysInfo();
+    @Nullable PrivateKeys getKeysInfo();
 }

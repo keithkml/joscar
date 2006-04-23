@@ -169,15 +169,17 @@ public abstract class RvConnectionImpl
     }
   }
 
-  protected boolean changeStateControllerFrom(StateController oldController) {
+  protected boolean changeStateControllerFrom(StateController oldController,
+      boolean succeeded) {
     LOGGER.finer("Changing state controller from " + oldController);
+    StateController virtualOldController = oldController;
     StateController next;
     synchronized (this) {
       if (this.controller == oldController) {
         NextStateControllerInfo nextInfo = getNextController();
         next = nextInfo == null ? null : nextInfo.getController();
-        if (next == null) {
-          if (!retriedLast) {
+        if (!succeeded && next == null) {
+          if (!retriedLast && isSomeConnectionController(oldController)) {
             retriedLast = true;
             NextStateControllerInfo retryInfo
                 = getControllerForRetryingLast(oldController);
@@ -185,6 +187,10 @@ public abstract class RvConnectionImpl
             if (next != null) {
               LOGGER.fine("Retrying last state controller " + next);
             }
+            virtualOldController = previousController;
+          } else {
+            //TODO(klea): we can't queue events before we know the controller is valid
+            next = queueEventsForNextController(nextInfo);
           }
         } else {
           next = queueEventsForNextController(nextInfo);
@@ -197,7 +203,7 @@ public abstract class RvConnectionImpl
       }
     }
     flushEventQueue();
-    stopThenStart(oldController, next);
+    stopThenStart(virtualOldController, next);
     return next != null;
   }
 
@@ -375,6 +381,8 @@ public abstract class RvConnectionImpl
 
   private NextStateControllerInfo getNextController(
       StateController oldController, StateInfo endState) {
+    LOGGER.finer("Getting next controller for " + oldController
+        + " (ended with " + endState + ")");
     if (endState instanceof SuccessfulStateInfo) {
       if (isSomeConnectionController(oldController)) {
         return new NextStateControllerInfo(createConnectedController(endState));
@@ -422,7 +430,7 @@ public abstract class RvConnectionImpl
       StateInfo endState);
 
   protected abstract boolean isSomeConnectionController(
-      StateController oldController);
+      StateController controller);
 
   protected boolean canInterruptConnectedController(
       ConnectedController connected, StateController newController) {
@@ -506,17 +514,17 @@ public abstract class RvConnectionImpl
   private class InternalControllerListener implements ControllerListener {
     public void handleControllerSucceeded(StateController c,
         SuccessfulStateInfo info) {
-      goNext(c);
+      goNext(c, true);
     }
 
     public void handleControllerFailed(StateController c,
         FailedStateInfo info) {
-      goNext(c);
+      goNext(c, false);
     }
 
-    private void goNext(StateController c) {
+    private void goNext(StateController c, boolean succeeded) {
       c.removeControllerListener(this);
-      changeStateControllerFrom(c);
+      changeStateControllerFrom(c, succeeded);
     }
   }
 }

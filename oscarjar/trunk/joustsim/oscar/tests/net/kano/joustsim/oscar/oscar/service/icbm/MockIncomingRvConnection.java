@@ -57,7 +57,7 @@ public class MockIncomingRvConnection
   private boolean done = false;
   private List<StateController> hit = new ArrayList<StateController>();
   private volatile AutoMode autoMode = AutoMode.ACCEPT;
-  private ConnectedController connectedController = new MockConnectedController();
+  private ConnectedController connectedController = new InstantlyConnectedController();
 
   public MockIncomingRvConnection() {
     super(new Screenname("me"), new MockRvSessionConnectionInfo());

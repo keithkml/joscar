@@ -68,6 +68,12 @@ public class DefaultTransferredFileFactory implements TransferredFileFactory {
   public TransferredFile getTransferredFileFromRoot(File file, File root,
       @Nullable String folderName)
       throws IOException, IllegalArgumentException {
+    String path = getRelativePath(file, root, folderName);
+    return createTransferredFile(file, path);
+  }
+
+  public static String getRelativePath(File file, File root,
+      String folderName) {
     if (file.equals(root)) {
       throw new IllegalArgumentException("File cannot be root: " + file);
     }
@@ -93,7 +99,8 @@ public class DefaultTransferredFileFactory implements TransferredFileFactory {
         string.insert(0, folderName + File.separator);
       }
     }
-    return createTransferredFile(file, string.toString());
+    String path = string.toString();
+    return path;
   }
 
   protected void initializeFile(TransferredFileImpl tfile) {

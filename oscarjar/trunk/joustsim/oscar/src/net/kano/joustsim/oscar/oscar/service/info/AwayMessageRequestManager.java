@@ -40,21 +40,21 @@ import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.snaccmd.InfoData;
 import net.kano.joscar.snaccmd.loc.GetInfoCmd;
 
-public class AwayMessageRequestManager extends UserInfoRequestManager {
-  public AwayMessageRequestManager(InfoService service) {
+public class AwayMessageRequestManager extends UserInfoRequestManager<String> {
+  public AwayMessageRequestManager(MutableInfoService service) {
     super(service);
   }
 
-  protected SnacCommand generateSnacCommand(final Screenname sn) {
+  protected SnacCommand generateSnacCommand(Screenname sn) {
     return new GetInfoCmd(GetInfoCmd.FLAG_AWAYMSG, sn.getFormatted());
   }
 
   protected void callListener(InfoResponseListener listener, Screenname sn,
-      Object value) {
-    listener.handleAwayMessage(getService(), sn, (String) value);
+      String value) {
+    listener.handleAwayMessage(getService(), sn, value);
   }
 
-  protected Object getDesiredValue(InfoData infodata) {
+  protected String getDesiredValue(InfoData infodata) {
     return infodata.getAwayMessage();
   }
 }

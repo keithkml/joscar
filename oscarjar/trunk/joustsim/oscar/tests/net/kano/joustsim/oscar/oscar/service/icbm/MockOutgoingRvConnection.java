@@ -63,7 +63,7 @@ public class MockOutgoingRvConnection
   private StateInfo endStateInfo = null;
   private boolean done = false;
   private List<StateController> hit = new ArrayList<StateController>();
-  private ConnectedController connectedController = new MockConnectedController();
+  private ConnectedController connectedController = new InstantlyConnectedController();
 
   public MockOutgoingRvConnection() {
     super(new Screenname("me"), new MockRvSessionConnectionInfo());

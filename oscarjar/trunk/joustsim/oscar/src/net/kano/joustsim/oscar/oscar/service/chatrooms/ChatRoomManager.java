@@ -53,9 +53,9 @@ import net.kano.joustsim.oscar.oscar.BasicConnection;
 import net.kano.joustsim.oscar.oscar.NoBuddyKeysException;
 import net.kano.joustsim.oscar.oscar.service.ServiceListener;
 import net.kano.joustsim.oscar.oscar.service.Service;
-import net.kano.joustsim.oscar.oscar.service.icbm.IcbmService;
 import net.kano.joustsim.oscar.oscar.service.icbm.RendezvousCapabilityHandler;
 import net.kano.joustsim.oscar.oscar.service.icbm.RendezvousSessionHandler;
+import net.kano.joustsim.oscar.oscar.service.icbm.IcbmService;
 import org.jetbrains.annotations.NotNull;
 
 import javax.crypto.SecretKey;
@@ -370,6 +370,7 @@ public class ChatRoomManager {
 
       connection.addGlobalServiceListener(new MyServiceListener(session));
     }
+
     public void handleRoomInfo(RoomFinderService service, MiniRoomInfo mini,
         FullRoomInfo info) {
       LOGGER.fine("Got room info for pending invitation: " + info);

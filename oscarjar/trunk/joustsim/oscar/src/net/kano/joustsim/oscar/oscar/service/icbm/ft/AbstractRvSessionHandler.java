@@ -111,11 +111,15 @@ public abstract class AbstractRvSessionHandler implements RendezvousSessionHandl
 
     } else if (cmd instanceof RejectRvCmd) {
       handleIncomingReject(event, (RejectRvCmd) cmd);
+
+    } else {
+      LOGGER.warning("Got unknown RV command " + cmd + " on " + connection);
     }
   }
 
   protected void handleIncomingReject(RecvRvEvent event,
       RejectRvCmd rejectCmd) {
+    LOGGER.fine("Got reject on " + connection + "; closing");
     connection.close(new BuddyCancelledEvent(rejectCmd.getRejectCode()));
   }
 

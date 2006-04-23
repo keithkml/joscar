@@ -53,10 +53,10 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 class SsiBuddyList extends SimpleBuddyList implements MutableBuddyList {
-    private final SsiService service;
+    private final SsiServiceImpl service;
     private final SsiSyntheticGroup syntheticGroup;
 
-    protected SsiBuddyList(SsiService service) {
+    protected SsiBuddyList(SsiServiceImpl service) {
         this.service = service;
         syntheticGroup = new SsiSyntheticGroup(service, this);
         service.addItemChangeListener(this);
@@ -220,7 +220,7 @@ class SsiBuddyList extends SimpleBuddyList implements MutableBuddyList {
         });
     }
 
-    public SsiService getSsiService() {
+    public SsiServiceImpl getSsiService() {
         return service;
     }
 }

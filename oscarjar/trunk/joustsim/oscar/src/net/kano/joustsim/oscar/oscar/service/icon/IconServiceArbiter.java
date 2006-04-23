@@ -46,7 +46,7 @@ import net.kano.joustsim.oscar.oscar.service.ServiceArbiterRequest;
 import net.kano.joustsim.oscar.oscar.service.ServiceArbitrationManager;
 
 public class IconServiceArbiter
-    extends AbstractServiceArbiter<IconService>
+    extends AbstractServiceArbiter<IconServiceImpl>
     implements IconRequestHandler {
   private CopyOnWriteArrayList<IconRequestListener> listeners
       = new CopyOnWriteArrayList<IconRequestListener>();
@@ -79,10 +79,10 @@ public class IconServiceArbiter
     addUniqueRequest(new UploadIconRequest(data), UploadIconRequest.class);
   }
 
-  protected void handleRequestsDequeuedEvent(IconService service) {
+  protected void handleRequestsDequeuedEvent(IconServiceImpl service) {
   }
 
-  protected void processRequest(IconService service,
+  protected void processRequest(IconServiceImpl service,
       ServiceArbiterRequest request) {
     if (request instanceof RequestedIconInfo) {
       RequestedIconInfo iconInfo = (RequestedIconInfo) request;
@@ -106,9 +106,9 @@ public class IconServiceArbiter
     }
   }
 
-  protected IconService createServiceInstance(AimConnection aimConnection,
+  protected IconServiceImpl createServiceInstance(AimConnection aimConnection,
       OscarConnection conn) {
-    IconService service = new IconService(aimConnection, conn);
+    IconServiceImpl service = new IconServiceImpl(aimConnection, conn);
     service.addIconRequestListener(delegatingListener);
     return service;
   }

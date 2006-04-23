@@ -118,11 +118,11 @@ public abstract class IncomingRvConnectionImpl
     close();
   }
 
-  protected boolean isSomeConnectionController(StateController oldController) {
-    return isLanController(oldController)
-        || isInternetController(oldController)
-        || oldController instanceof RedirectToProxyController
-        || oldController instanceof ConnectToProxyForIncomingController;
+  protected boolean isSomeConnectionController(StateController controller) {
+    return isLanController(controller)
+        || isInternetController(controller)
+        || controller instanceof RedirectToProxyController
+        || controller instanceof ConnectToProxyForIncomingController;
   }
 
   protected synchronized NextStateControllerInfo getNextControllerFromError(

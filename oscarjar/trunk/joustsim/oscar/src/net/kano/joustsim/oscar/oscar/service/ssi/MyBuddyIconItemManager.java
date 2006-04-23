@@ -55,13 +55,13 @@ public class MyBuddyIconItemManager {
   private static final Logger LOGGER = Logger
       .getLogger(MyBuddyIconItemManager.class.getName());
 
-  private SsiService service;
+  private SsiServiceImpl service;
   private List<IconItem> items = new ArrayList<IconItem>();
   private SsiItemObjectFactory factory = new DefaultSsiItemObjFactory();
   private CopyOnWriteArrayList<MyBuddyIconItemListener> listeners
       = new CopyOnWriteArrayList<MyBuddyIconItemListener>();
 
-  public MyBuddyIconItemManager(SsiService service) {
+  public MyBuddyIconItemManager(SsiServiceImpl service) {
     this.service = service;
     service.addItemChangeListener(new SsiItemChangeListener() {
       public void handleItemCreated(SsiItem item) {

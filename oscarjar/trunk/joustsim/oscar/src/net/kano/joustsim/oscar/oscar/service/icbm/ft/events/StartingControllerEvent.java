@@ -37,7 +37,7 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.StateController;
 
 public class StartingControllerEvent extends ControllerEvent {
-  public StartingControllerEvent(StateController last) {
-    super(last);
+  public StartingControllerEvent(StateController controller) {
+    super(controller);
   }
 }

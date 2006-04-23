@@ -31,7 +31,6 @@ public class MailCheckService extends AbstractService {
     SnacCommand cmd = snacPacketEvent.getSnacCommand();
     if (cmd instanceof MailUpdate) {
       MailUpdate update = (MailUpdate) cmd;
-      //TODO(klea): store unread message count, fire listeners
       System.out.println("got mail update");
     }
   }

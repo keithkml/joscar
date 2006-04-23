@@ -533,6 +533,10 @@ public class OscarConnection {
     return matches;
   }
 
+  public boolean hasServiceEvents(Class<? extends ServiceEvent> cls) {
+    return !getServiceEvents(cls).isEmpty();
+  }
+
   public synchronized List<ServiceEvent> getEventLog() {
     return DefensiveTools.getUnmodifiableCopy(eventLog);
   }
@@ -543,5 +547,4 @@ public class OscarConnection {
 //    public void writeData(OutputStream out) {
 //    }
 //  }
-
 }

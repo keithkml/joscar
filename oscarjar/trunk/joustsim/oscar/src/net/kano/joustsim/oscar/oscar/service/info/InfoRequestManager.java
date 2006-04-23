@@ -45,11 +45,11 @@ import java.util.Map;
 import java.util.Set;
 
 public abstract class InfoRequestManager {
-  private final InfoService service;
+  private final MutableInfoService service;
   private final Map<Screenname, Set<InfoResponseListener>> listenerMap
       = new HashMap<Screenname, Set<InfoResponseListener>>();
 
-  protected InfoRequestManager(InfoService service) {
+  protected InfoRequestManager(MutableInfoService service) {
     this.service = service;
   }
 
@@ -107,7 +107,5 @@ public abstract class InfoRequestManager {
     }
   }
 
-  public InfoService getService() {
-    return service;
-  }
+  public InfoService getService() { return service; }
 }

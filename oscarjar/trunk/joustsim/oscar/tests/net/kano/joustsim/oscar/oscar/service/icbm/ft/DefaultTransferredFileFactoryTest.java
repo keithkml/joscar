@@ -43,33 +43,34 @@ import java.io.IOException;
 
 public class DefaultTransferredFileFactoryTest extends TestCase {
   private DefaultTransferredFileFactory factory;
+  private static final String SLASH = File.separator;
 
   public void testDirectChild() throws IOException {
     TransferredFile file = factory.getTransferredFileFromRoot(
-        new File("x" + File.separator + "y"),
+        new File("x" + SLASH + "y"),
         new File("x"), null);
     assertEquals("y", file.getTransferredName());
   }
 
   public void testDirectChildWithFolderName() throws IOException {
     TransferredFile file = factory.getTransferredFileFromRoot(
-        new File("x" + File.separator + "y"),
+        new File("x" + SLASH + "y"),
         new File("x"), "d/c");
     assertEquals("d/c/y", file.getTransferredName());
   }
 
   public void testDirectChildWithFolderNameTrailingSlash() throws IOException {
     TransferredFile file = factory.getTransferredFileFromRoot(
-        new File("x" + File.separator + "y"),
+        new File("x" + SLASH + "y"),
         new File("x"), "d/c/");
     assertEquals("d/c/y", file.getTransferredName());
   }
 
   public void testSecondChild() throws IOException {
     TransferredFile file = factory.getTransferredFileFromRoot(
-        new File("x" + File.separator + "y" + File.separator + "z"),
+        new File("x" + SLASH + "y" + SLASH + "z"),
         new File("x"), null);
-    assertEquals("y" + File.separator + "z", file.getTransferredName());
+    assertEquals("y" + SLASH + "z", file.getTransferredName());
   }
 
   public void testNotChild() throws IOException {
