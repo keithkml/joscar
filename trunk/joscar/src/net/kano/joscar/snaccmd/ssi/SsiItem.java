@@ -120,7 +120,7 @@ public class SsiItem implements LiveWritable, Serializable {
         if (block.getLength() < 2 + nameLen) return null;
 
         ByteBlock nameBlock = block.subBlock(2, nameLen);
-        String name = BinaryTools.getAsciiString(nameBlock);
+        String name = BinaryTools.getUtf8String(nameBlock);
 
         ByteBlock rest = block.subBlock(2 + nameLen);
         if (rest.getLength() < 8) return null;
@@ -283,7 +283,7 @@ public class SsiItem implements LiveWritable, Serializable {
     }
 
     public void write(OutputStream out) throws IOException {
-        byte[] namebytes = BinaryTools.getAsciiBytes(name);
+        byte[] namebytes = BinaryTools.getUtf8Bytes(name);
         BinaryTools.writeUShort(out, namebytes.length);
         out.write(namebytes);
 

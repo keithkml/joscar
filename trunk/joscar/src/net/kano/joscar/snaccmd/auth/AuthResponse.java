@@ -154,6 +154,7 @@ public class AuthResponse extends AuthCommand {
     private static final int TYPE_ERRURL = 0x0004;
     /** A TLV type containing a "registration status' code. */
     private static final int TYPE_REGSTATUS = 0x0013;
+    private static final int TYPE_PASSWORD_URL = 0x0054;
 
     /** The user's screenname. */
     private final String sn;
@@ -173,6 +174,8 @@ public class AuthResponse extends AuthCommand {
     private final int errorCode;
     /** A URL providing more information on the error code, if sent. */
     private final String errorUrl;
+
+    private final String passwordUrl;
 
     /**
      * Generates an authorization response command from the given incoming SNAC
@@ -216,6 +219,8 @@ public class AuthResponse extends AuthCommand {
 
         errorCode = chain.getUShort(TYPE_ERRCODE);
         errorUrl = chain.getString(TYPE_ERRURL);
+
+        passwordUrl = chain.getString(TYPE_PASSWORD_URL);
     }
 
     /**
@@ -231,8 +236,8 @@ public class AuthResponse extends AuthCommand {
      * @param email the user's registered email address
      */
     public AuthResponse(String sn, String server, int port, ByteBlock cookie,
-            int regStatus, String email) {
-        this(sn, server, port, cookie, regStatus, email, -1, null);
+            int regStatus, String email, String passwordUrl) {
+        this(sn, server, port, cookie, regStatus, email, -1, null, passwordUrl);
     }
 
     /**
@@ -244,7 +249,7 @@ public class AuthResponse extends AuthCommand {
      *        <code>null</code> for none
      */
     public AuthResponse(int errorCode, String errorUrl) {
-        this(null, null, -1, null, -1, null, errorCode, errorUrl);
+        this(null, null, -1, null, -1, null, errorCode, errorUrl, null);
     }
 
     /**
@@ -267,7 +272,8 @@ public class AuthResponse extends AuthCommand {
      *        <code>null</code> for none
      */
     public AuthResponse(String sn, String server, int port, ByteBlock cookie,
-            int regStatus, String email, int errorCode, String errorUrl) {
+            int regStatus, String email, int errorCode, String errorUrl,
+            String passwordUrl) {
         super(CMD_AUTH_RESP);
 
         DefensiveTools.checkRange(port, "port", -1);
@@ -282,6 +288,7 @@ public class AuthResponse extends AuthCommand {
         this.email = email;
         this.errorCode = errorCode;
         this.errorUrl = errorUrl;
+        this.passwordUrl = passwordUrl;
     }
 
     /**
@@ -366,6 +373,10 @@ public class AuthResponse extends AuthCommand {
      */
     public final String getErrorUrl() {
         return errorUrl;
+    }
+
+    public String getPasswordUrl() {
+        return passwordUrl;
     }
 
     public void writeData(OutputStream out) throws IOException {

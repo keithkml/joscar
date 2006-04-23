@@ -186,6 +186,9 @@ public final class CapabilityBlock implements Writable {
     public static final CapabilityBlock BLOCK_HIPTOP
             = ShortCapabilityBlock.getCapFromShortBytes(0x13, 0x23);
 
+    public static final CapabilityBlock BLOCK_ICQ_UTF8
+            = ShortCapabilityBlock.getCapFromShortBytes(0x13, 0x4e);
+
     /**
      * Converts the given list of capabilities to a block of bytes, suitable for
      * sending in a {@link InfoData} structure.

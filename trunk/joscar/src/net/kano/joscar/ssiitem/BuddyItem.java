@@ -96,6 +96,7 @@ public class BuddyItem extends AbstractItemObj implements SsiItemObjectWithId {
     private static final int TYPE_ALERT_SOUND = 0x013e;
     /** A TLV type containing a set of buddy alert flags. */
     private static final int TYPE_ALERT_FLAGS = 0x13d;
+    private static final int TYPE_AWAITING_AUTH = 0x0066;
 
     /** The buddy's screenname. */
     private final String sn;
@@ -115,6 +116,7 @@ public class BuddyItem extends AbstractItemObj implements SsiItemObjectWithId {
     private int alertWhenMask;
     /** A sound to play when an alert is activated. */
     private String alertSound;
+    private boolean awaitingAuth;
 
     /**
      * Creates a new buddy item object from the given SSI item.
@@ -131,8 +133,8 @@ public class BuddyItem extends AbstractItemObj implements SsiItemObjectWithId {
 
         TlvChain chain = TlvTools.readChain(item.getData());
 
-        alias = chain.getString(TYPE_ALIAS);
-        comment = chain.getString(TYPE_COMMENT);
+        alias = chain.getUtf8String(TYPE_ALIAS);
+        comment = chain.getUtf8String(TYPE_COMMENT);
         alertSound = chain.getString(TYPE_ALERT_SOUND);
 
         Tlv alertTlv = chain.getLastTlv(TYPE_ALERT_FLAGS);
@@ -150,10 +152,12 @@ public class BuddyItem extends AbstractItemObj implements SsiItemObjectWithId {
             alertWhenMask = 0;
         }
 
+        awaitingAuth = chain.hasTlv(TYPE_AWAITING_AUTH);
+
         MutableTlvChain extraTlvs = TlvTools.getMutableCopy(chain);
 
         extraTlvs.removeTlvs(TYPE_ALIAS, TYPE_COMMENT, TYPE_ALERT_SOUND,
-                TYPE_ALERT_FLAGS);
+                TYPE_ALERT_FLAGS, TYPE_AWAITING_AUTH);
 
         addExtraTlvs(extraTlvs);
     }
@@ -164,9 +168,10 @@ public class BuddyItem extends AbstractItemObj implements SsiItemObjectWithId {
      * @param other a buddy item object to copy
      */
     public BuddyItem(BuddyItem other) {
-        this(other.sn, other.groupid, other.id, other.alias, other.comment,
+        this(other.sn, other.getGroupId(), other.getId(), other.getAlias(),
+                other.getBuddyComment(),
                 other.alertWhenMask, other.alertActionMask, other.alertSound,
-                other.copyExtraTlvs());
+                other.awaitingAuth, other.copyExtraTlvs());
     }
 
     /**
@@ -208,7 +213,7 @@ public class BuddyItem extends AbstractItemObj implements SsiItemObjectWithId {
             String comment, int alertWhenMask, int alertActionMask,
             String alertSound) {
         this(sn, groupid, id, alias, comment, alertWhenMask, alertActionMask,
-                alertSound, null);
+                alertSound, false, null);
     }
 
     /**
@@ -236,7 +241,7 @@ public class BuddyItem extends AbstractItemObj implements SsiItemObjectWithId {
      */
     public BuddyItem(String sn, int groupid, int id, String alias,
             String comment, int alertWhenMask, int alertActionMask,
-            String alertSound, TlvChain extraTlvs) {
+            String alertSound, boolean awaitingAuth, TlvChain extraTlvs) {
         super(extraTlvs);
 
         DefensiveTools.checkNull(sn, "sn");
@@ -253,6 +258,7 @@ public class BuddyItem extends AbstractItemObj implements SsiItemObjectWithId {
         this.alertActionMask = alertActionMask;
         this.alertWhenMask = alertWhenMask;
         this.alertSound = alertSound;
+        this.awaitingAuth = awaitingAuth;
     }
 
     /**
@@ -267,20 +273,19 @@ public class BuddyItem extends AbstractItemObj implements SsiItemObjectWithId {
      *
      * @return the ID of this buddy's parent group
      */
-    public final int getGroupId() { return groupid; }
+    public final synchronized int getGroupId() { return groupid; }
 
     /**
      * Returns the ID of this buddy in its parent group.
      *
      * @return this buddy's "buddy ID"
      */
-    public final int getId() { return id; }
+    public final synchronized int getId() { return id; }
 
 
     /**
-     * Returns this buddy's "alias" or "display name." Currently this feature
-     * is only supported by joscar and gaim, but it's conceivable that WinAIM
-     * will begin supporting it in the future.
+     * Returns this buddy's "alias" or "display name." This is only supported by
+     * some clients.
      *
      * @return this buddy's "alias" or "display name," or <code>null</code> if
      *         this buddy has no alias
@@ -291,8 +296,8 @@ public class BuddyItem extends AbstractItemObj implements SsiItemObjectWithId {
      * Returns this buddy's "buddy comment." A buddy comment is a string of text
      * normally edited by the user to store some brief information about the
      * buddy. WinAIM puts a limit of 84 characters on this value, but there is
-     * no hard (server-side) limit. Note that this value is stored as ASCII
-     * text.
+     * no hard (server-side) limit. Note that this value is stored as UTF-8
+     * text, although some clients may read it as ASCII.
      *
      * @return this buddy's "buddy comment," or <code>null</code> if this buddy
      *         has no buddy comment
@@ -350,11 +355,14 @@ if ((buddyItem.getAlertWhenMask() & BuddyItem.MASK_WHEN_ONLINE) != 0) {
      */
     public synchronized final String getAlertSound() { return alertSound; }
 
-    public void setGroupid(int groupid) {
+
+    public synchronized boolean isAwaitingAuth() { return awaitingAuth; }
+
+    public synchronized void setGroupid(int groupid) {
         this.groupid = groupid;
     }
 
-    public void setId(int id) {
+    public synchronized void setId(int id) {
         this.id = id;
     }
 
@@ -412,15 +420,18 @@ if ((buddyItem.getAlertWhenMask() & BuddyItem.MASK_WHEN_ONLINE) != 0) {
         this.alertSound = alertSound;
     }
 
+    public synchronized void setAwaitingAuth(boolean awaitingAuth) {
+        this.awaitingAuth = awaitingAuth;
+    }
 
     public synchronized SsiItem toSsiItem() {
         MutableTlvChain chain = TlvTools.createMutableChain();
 
         if (alias != null) {
-            chain.addTlv(Tlv.getStringInstance(TYPE_ALIAS, alias));
+            chain.addTlv(Tlv.getUtf8Instance(TYPE_ALIAS, alias));
         }
         if (comment != null) {
-            chain.addTlv(Tlv.getStringInstance(TYPE_COMMENT, comment));
+            chain.addTlv(Tlv.getUtf8Instance(TYPE_COMMENT, comment));
         }
         if (alertActionMask != 0 || alertWhenMask != 0) {
             // this is the most elegant statement I've ever written.
@@ -432,6 +443,10 @@ if ((buddyItem.getAlertWhenMask() & BuddyItem.MASK_WHEN_ONLINE) != 0) {
         }
         if (alertSound != null) {
             chain.addTlv(Tlv.getStringInstance(TYPE_ALERT_SOUND, alertSound));
+        }
+
+        if (awaitingAuth) {
+            chain.addTlv(new Tlv(TYPE_AWAITING_AUTH));
         }
 
         return generateItem(sn, groupid, id, SsiItem.TYPE_BUDDY, chain);
@@ -446,8 +461,9 @@ if ((buddyItem.getAlertWhenMask() & BuddyItem.MASK_WHEN_ONLINE) != 0) {
         boolean alertOnBack = (alertWhenMask & MASK_WHEN_UNAWAY) != 0;
 
         return "BuddyItem for " + sn + " (buddy 0x" + Integer.toHexString(id)
-                + " in group 0x" + Integer.toHexString(groupid) + "): alias="
-                + alias + ", comment=\"" + comment + "\", alerts: "
+                + " in group 0x" + Integer.toHexString(groupid) + "): "
+                + (awaitingAuth ? "awaiting auth - " : "")
+                + "alias=" + alias + ", comment=\"" + comment + "\", alerts: "
                 + (popupAlert ? "[popup alert] " : "")
                 + (playSound ? "[play " + alertSound + "] " : "")
                 + (alertOnSignon ? "[on signon] " : "")

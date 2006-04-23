@@ -207,6 +207,12 @@ public abstract class AbstractTlvChain implements TlvChain {
         return hasTlv(type) ? getLastTlv(type).getDataAsString() : null;
     }
 
+    public String getUtf8String(int type) {
+        DefensiveTools.checkRange(type, "type", 0);
+
+        return hasTlv(type) ? getLastTlv(type).getDataAsUtf8() : null;
+    }
+
     public @Nullable String getString(int type, String charset) {
         DefensiveTools.checkRange(type, "type", 0);
         DefensiveTools.checkNull(charset, "charset");

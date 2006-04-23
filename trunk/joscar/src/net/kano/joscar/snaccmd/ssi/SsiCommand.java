@@ -74,6 +74,8 @@ public abstract class SsiCommand extends SnacCommand {
 
     public static final int CMD_REMOVE_ME = 0x0016;
 
+    public static final int CMD_AUTH_REQ = 0x0018;
+
     /**
      * A command subtype for sending the client a list of SSI-related "rights."
      */

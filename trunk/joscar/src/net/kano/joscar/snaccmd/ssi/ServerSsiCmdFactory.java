@@ -42,7 +42,6 @@ import net.kano.joscar.snac.SnacCmdFactory;
 import net.kano.joscar.DefensiveTools;
 
 import java.util.List;
-import java.util.Arrays;
 
 /**
  * A SNAC command factory for the server-bound commands provided in this
@@ -50,7 +49,8 @@ import java.util.Arrays;
  */
 public class ServerSsiCmdFactory implements SnacCmdFactory {
     /** The SNAC command types supported by this factory. */
-    protected static final List<CmdType> SUPPORTED_TYPES = DefensiveTools.asUnmodifiableList(
+    protected static final List<CmdType> SUPPORTED_TYPES
+            = DefensiveTools.asUnmodifiableList(
         new CmdType(SsiCommand.FAMILY_SSI, SsiCommand.CMD_RIGHTS_REQ),
         new CmdType(SsiCommand.FAMILY_SSI, SsiCommand.CMD_DATA_REQ),
         new CmdType(SsiCommand.FAMILY_SSI, SsiCommand.CMD_DATA_CHECK),
@@ -60,7 +60,8 @@ public class ServerSsiCmdFactory implements SnacCmdFactory {
         new CmdType(SsiCommand.FAMILY_SSI, SsiCommand.CMD_DELETE_ITEMS),
         new CmdType(SsiCommand.FAMILY_SSI, SsiCommand.CMD_PRE_MOD),
         new CmdType(SsiCommand.FAMILY_SSI, SsiCommand.CMD_POST_MOD),
-        new CmdType(SsiCommand.FAMILY_SSI, SsiCommand.CMD_REMOVE_ME));
+        new CmdType(SsiCommand.FAMILY_SSI, SsiCommand.CMD_REMOVE_ME),
+        new CmdType(SsiCommand.FAMILY_SSI, SsiCommand.CMD_AUTH_REQ));
 
     public List<CmdType> getSupportedTypes() {
         return SUPPORTED_TYPES;
@@ -91,6 +92,8 @@ public class ServerSsiCmdFactory implements SnacCmdFactory {
             return new PostModCmd(packet);
         } else if (command == SsiCommand.CMD_REMOVE_ME) {
             return new RemoveMeCmd(packet);
+        } else if (command == SsiCommand.CMD_AUTH_REQ) {
+            return new BuddyAuthRequest(packet);
         } else {
             return null;
         }

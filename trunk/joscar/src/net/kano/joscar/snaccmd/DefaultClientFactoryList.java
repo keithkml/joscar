@@ -50,6 +50,7 @@ import net.kano.joscar.snaccmd.popup.ClientPopupCmdFactory;
 import net.kano.joscar.snaccmd.rooms.ClientRoomCmdFactory;
 import net.kano.joscar.snaccmd.search.ClientSearchCmdFactory;
 import net.kano.joscar.snaccmd.ssi.ClientSsiCmdFactory;
+import net.kano.joscar.snaccmd.mailcheck.ClientMailCheckCmdFactory;
 
 import java.util.Arrays;
 
@@ -78,6 +79,7 @@ public class DefaultClientFactoryList extends DefaultSnacCmdFactoryList {
             new ClientIconCmdFactory(),
             new ClientSsiCmdFactory(),
             new ClientIcbmCmdFactory(),
+            new ClientMailCheckCmdFactory(),
             new ClientSnacErrorFactory()));
     }
 }

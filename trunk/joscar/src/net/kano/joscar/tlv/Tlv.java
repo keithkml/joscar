@@ -66,6 +66,10 @@ public final class Tlv implements Writable {
     /** An object used to write the TLV data to a stream. */
     private final Writable writer;
 
+    public Tlv(int type, byte[] data) {
+        this(type, ByteBlock.wrap(data));
+    }
+
     /**
      * Returns a new TLV of the given type containing the given string encoded
      * to bytes with the US-ASCII encoder. In other words, creates a TLV
@@ -104,6 +108,10 @@ public final class Tlv implements Writable {
 
     public static Tlv getUIntInstance(int type, long number) {
         return new Tlv(type, ByteBlock.wrap(BinaryTools.getUInt(number)));
+    }
+
+    public static Tlv getUtf8Instance(int type, String string) {
+        return new Tlv(type, BinaryTools.getUtf8Bytes(string));
     }
 
     /**
@@ -225,6 +233,10 @@ public final class Tlv implements Writable {
      */
     public final String getDataAsString() {
         return BinaryTools.getAsciiString(data);
+    }
+
+    public String getDataAsUtf8() {
+        return BinaryTools.getUtf8String(data);
     }
 
     /**
