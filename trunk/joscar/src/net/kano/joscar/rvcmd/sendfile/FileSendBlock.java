@@ -42,6 +42,7 @@ import net.kano.joscar.LiveWritable;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Arrays;
 
 /**
  * A data structure containing information about a file or directory of files
@@ -89,7 +90,7 @@ public class FileSendBlock implements LiveWritable {
         }
 
         String name = null;
-        name = BinaryTools.getAsciiString(filenameBlock.subBlock(0,
+        name = BinaryTools.getUtf8String(filenameBlock.subBlock(0,
                 firstNull));
 
         return new FileSendBlock(type, name, count, size);
@@ -178,7 +179,11 @@ public class FileSendBlock implements LiveWritable {
         BinaryTools.writeUShort(out, sendType);
         BinaryTools.writeUShort(out, fileCount);
         BinaryTools.writeUInt(out, totalFileSize);
-        out.write(BinaryTools.getAsciiBytes(filename));
+        byte[] bytes = BinaryTools.getUtf8Bytes(filename);
+        if (Arrays.binarySearch(bytes, (byte) 0) >= 0) {
+          bytes = BinaryTools.getLatinBytes(filename);
+        }
+        out.write(bytes);
 
         // we write 46 nulls here. fun fun.
         out.write(new byte[46]);
