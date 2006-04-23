@@ -229,6 +229,9 @@
 
   <target name="-build-tests" depends="joscar">
     <mkdir dir="${tests.bin}"/>
+    <copy todir="${tests.bin}">
+      <fileset dir="tests/res" includes="**/*" />
+    </copy>
     <javac srcdir="${tests.src}" destdir="${tests.bin}" debug="true"
            classpath="${joscar.bin}"/>
   </target>
