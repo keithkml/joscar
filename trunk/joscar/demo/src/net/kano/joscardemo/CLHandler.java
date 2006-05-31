@@ -56,6 +56,9 @@ import net.kano.joscar.snaccmd.ExtraInfoBlock;
 import net.kano.joscar.snaccmd.ExtraInfoData;
 import net.kano.joscar.snaccmd.FullRoomInfo;
 import net.kano.joscar.snaccmd.MiniRoomInfo;
+import net.kano.joscar.snaccmd.icq.MetaShortInfoRequest;
+import net.kano.joscar.snaccmd.icq.OfflineMsgIcqRequest;
+import net.kano.joscar.snaccmd.icq.OfflineMsgIcqAckCmd;
 import net.kano.joscar.snaccmd.acct.AcctInfoRequest;
 import net.kano.joscar.snaccmd.acct.AcctModCmd;
 import net.kano.joscar.snaccmd.acct.ConfirmAcctCmd;
@@ -1642,6 +1645,63 @@ public class CLHandler {
             public void handle(JoscarTester tester, String line, String cmd,
                     List<String> args) {
                 tester.request(new SendImIcbm(args.get(0), "test\ntest"));
+            }
+        });
+        cmdMap.put("icqshortinfo", new CLCommand() {
+            public String getExampleArgs() {
+                return "1234";
+            }
+
+            public String getDescription() {
+                return "Requests the short user info for the specified ICQ contact";
+            }
+
+            public String getArgumentsUsage() {
+                return "<UIN>";
+            }
+
+            public void handle(JoscarTester tester, String line, String cmd,
+                    List<String> args) {
+                tester.request(new MetaShortInfoRequest(tester.getUIN(),
+                        (int) tester.nextIcqId(), Integer.parseInt(args.get(0))));
+            }
+        });
+        cmdMap.put("icqoffline", new CLCommand() {
+            public String getExampleArgs() {
+                return "";
+            }
+
+            public String getDescription() {
+                return "Requests offline messages from the ICQ server";
+            }
+
+            public String getArgumentsUsage() {
+                return "";
+            }
+
+            public void handle(JoscarTester tester, String line, String cmd,
+                    List<String> args) {
+                tester.request(new OfflineMsgIcqRequest(tester.getUIN(),
+                        (int) tester.nextIcqId()));
+            }
+        });
+        cmdMap.put("icqofflineack", new CLCommand() {
+            public String getExampleArgs() {
+                return "";
+            }
+
+            public String getDescription() {
+                return "Deletes offline messages from the ICQ server";
+            }
+
+            public String getArgumentsUsage() {
+                return "";
+            }
+
+            public void handle(JoscarTester tester, String line, String cmd,
+                    List<String> args) {
+                tester.request(new OfflineMsgIcqAckCmd(tester.getUIN(),
+                        (int) tester.nextIcqId()));
             }
         });
         cmdMap.put("help", new CLCommand() {
