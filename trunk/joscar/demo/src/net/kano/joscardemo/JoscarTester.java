@@ -37,6 +37,7 @@ package net.kano.joscardemo;
 
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.OscarTools;
+import net.kano.joscar.SeqNum;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.net.ConnDescriptor;
 import net.kano.joscar.snac.SnacRequest;
@@ -108,6 +109,8 @@ public class JoscarTester implements CmdLineListener, ServiceListener {
 
     private String sn = null;
     private String pass = null;
+    private int uin = -1;
+    private SeqNum icqSeqNum = new SeqNum(0, Integer.MAX_VALUE);
 
     private LoginConn loginConn = null;
     private BosFlapConn bosConn = null;
@@ -144,11 +147,26 @@ public class JoscarTester implements CmdLineListener, ServiceListener {
         new CmdLineReader(this);
         this.sn = sn;
         this.pass = pass;
+        try {
+            this.uin = Integer.parseInt(this.sn);
+        }
+        catch(NumberFormatException ex) {
+            this.uin = -1;
+        }
     }
 
     public String getScreenname() { return sn; }
 
     public String getPassword() { return pass; }
+
+    public int getUIN() {
+        if (uin == -1) {
+            throw new IllegalStateException("Not connected to ICQ");
+        }
+        return uin;
+    }
+
+    public long nextIcqId() { return icqSeqNum.next(); }
 
     public void connect() {
         ConnDescriptor cd = new ConnDescriptor("login.oscar.aol.com",
