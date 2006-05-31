@@ -51,6 +51,7 @@ import net.kano.joscar.snaccmd.rooms.ServerRoomCmdFactory;
 import net.kano.joscar.snaccmd.search.ServerSearchCmdFactory;
 import net.kano.joscar.snaccmd.ssi.ServerSsiCmdFactory;
 import net.kano.joscar.snaccmd.mailcheck.ServerMailCheckCmdFactory;
+import net.kano.joscar.snaccmd.icq.ServerIcqCmdFactory;
 
 import java.util.Arrays;
 
@@ -81,6 +82,7 @@ public class DefaultServerFactoryList extends DefaultSnacCmdFactoryList {
             new ServerSsiCmdFactory(),
             new ServerIcbmCmdFactory(),
             new ServerMailCheckCmdFactory(),
+            new ServerIcqCmdFactory(),
             new ServerSnacErrorFactory()));
     }
 }
