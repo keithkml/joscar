@@ -35,6 +35,10 @@
 
 package net.kano.joscar.snac;
 
+import org.jetbrains.annotations.Nullable;
+import net.kano.joscar.flapcmd.SnacCommand;
+import net.kano.joscar.flapcmd.SnacPacket;
+
 /**
  * Provides a central means of producing <code>SnacCommand</code>s from
  * <code>SnacPacket</code>s by merging a "default factory list" with the
@@ -75,7 +79,7 @@ public final class CmdFactoryMgr extends SnacCmdFactoryList {
      *
      * @see #setDefaultFactoryList
      */
-    CmdFactoryMgr() { }
+    public CmdFactoryMgr() { }
 
     /**
      * Sets the default factory list for this factory manager. See {@linkplain
@@ -143,6 +147,24 @@ public final class CmdFactoryMgr extends SnacCmdFactoryList {
 
         // it doesn't matter if it's null anymore, man. it just doesn't matter.
         return factory;
+    }
+
+    /**
+     * Generates a <code>SnacCommand</code> from the given
+     * <code>SnacPacket</code> using the user-registered and default factories.
+     *
+     * @param packet the packet from which the <code>SnacCommand</code> should
+     *        be generated
+     * @return an appropriate <code>SnacCommand</code> for the given packet
+     */
+    public @Nullable SnacCommand generateSnacCommand(SnacPacket packet) {
+        CmdType type = new CmdType(packet.getFamily(), packet.getCommand());
+
+        SnacCmdFactory factory = findFactory(type);
+
+        if (factory == null) return null;
+
+        return factory.genSnacCommand(packet);
     }
 
     public String toString() {

@@ -36,6 +36,7 @@
 package net.kano.joscar;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 
 /**
@@ -111,7 +112,7 @@ public final class LEBinaryTools {
      * cannot exist.
      */
     private LEBinaryTools() { }
- 
+
     /**
      * Returns the unsigned integer stored in the given data block. The
      * returned integer is extracted from the first four bytes of the given
@@ -166,6 +167,40 @@ public final class LEBinaryTools {
         if (data.getLength() - pos < 2) return -1;
 
         return ((data.get(pos+1) & 0xff) << 8) | (data.get(pos) & 0xff);
+    }
+
+    /**
+     * Reads a little-endian unsigned short from the specified stream.
+     *
+     * @param is the stream to read the number from.
+     * @return the read value, or -1 if there is not enough data in the stream
+     * @throws IOException
+     */
+    public static int readUShort(final InputStream is) throws IOException {
+        if (is.available() < 2) return -1;
+
+        int b1 = is.read();
+        int b2 = is.read();
+        return ((b2 & 0xff) << 8) | (b1 & 0xff);
+    }
+
+    /**
+     * Reads a string prefixed with a little-endian word length specifier from
+     * the specified stream.
+     *
+     * @param is    the stream to read the string from.
+     * @param charset the character set of the string.
+     * @return the string, or null if there was not enough data in the stream.
+     * @throws IOException
+     */
+    public static String readUShortLengthString(final InputStream is,
+            final String charset) throws IOException {
+        int length = readUShort(is);
+        if (length < 0 || is.available() < length) return null;
+        byte[] data = new byte[length-1];
+        is.read(data);
+        is.read();     // skip nul
+        return new String(data, charset);
     }
 
     /**
@@ -240,6 +275,13 @@ public final class LEBinaryTools {
     public static void writeUByte(final OutputStream out, final int number)
             throws IOException {
         out.write(getUByte(number));
+    }
+
+    public static void writeUShortLengthString(OutputStream out, String value)
+            throws IOException {
+        writeUShort(out, value.length() + 1); // Plus an ending NUL.
+        byte[] bytes = BinaryTools.getAsciiBytes(value + '\0');
+        out.write(bytes);
     }
 
     /**

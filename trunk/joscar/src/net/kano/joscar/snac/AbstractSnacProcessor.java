@@ -46,7 +46,6 @@ import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.logging.Logger;
 import net.kano.joscar.logging.LoggingSystem;
 import net.kano.joscar.net.ConnProcessor;
-import org.jetbrains.annotations.Nullable;
 
 
 /**
@@ -436,7 +435,7 @@ public abstract class AbstractSnacProcessor {
                 snacPacket = mutablePacket.toSnacPacket();
             }
 
-            SnacCommand cmd = generateSnacCommand(snacPacket);
+            SnacCommand cmd = factories.generateSnacCommand(snacPacket);
 
             if (logFine) {
                 logger.logFine("Converted Snac packet " + snacPacket + " to "
@@ -481,24 +480,6 @@ public abstract class AbstractSnacProcessor {
 
             if (logFiner) logger.logFiner("Finished processing Snac");
         }
-    }
-
-    /**
-     * Generates a <code>SnacCommand</code> from the given
-     * <code>SnacPacket</code> using the user-registered and default factories.
-     *
-     * @param packet the packet from which the <code>SnacCommand</code> should
-     *        be generated
-     * @return an appropriate <code>SnacCommand</code> for the given packet
-     */
-    private @Nullable SnacCommand generateSnacCommand(SnacPacket packet) {
-        CmdType type = new CmdType(packet.getFamily(), packet.getCommand());
-
-        SnacCmdFactory factory = factories.findFactory(type);
-
-        if (factory == null) return null;
-
-        return factory.genSnacCommand(packet);
     }
 
     /**

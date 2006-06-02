@@ -61,6 +61,9 @@ public class ServerIcqCmdFactory implements SnacCmdFactory {
             if (type.equals(AbstractIcqCmd.CMD_META_SHORT_INFO_REQ)) {
                 return new MetaShortInfoRequest(packet);
             }
+            if (type.equals(AbstractIcqCmd.CMD_META_FULL_INFO_REQ)) {
+                return new MetaFullInfoRequest(packet);
+            }
             if (type.equals(AbstractIcqCmd.CMD_OFFLINE_MSG_REQ)) {
                 return new OfflineMsgIcqRequest(packet);
             }

@@ -61,6 +61,30 @@ public class ClientIcqCmdFactory implements SnacCmdFactory {
             if (type.equals(AbstractIcqCmd.CMD_META_SHORT_INFO_CMD)) {
                 return new MetaShortInfoCmd(packet);
             }
+            if (type.equals(AbstractIcqCmd.CMD_META_BASIC_INFO_CMD)) {
+                return new MetaBasicInfoCmd(packet);
+            }
+            if (type.equals(AbstractIcqCmd.CMD_META_WORK_INFO_CMD)) {
+                return new MetaWorkInfoCmd(packet);
+            }
+            if (type.equals(AbstractIcqCmd.CMD_META_MORE_INFO_CMD)) {
+                return new MetaMoreInfoCmd(packet);
+            }
+            if (type.equals(AbstractIcqCmd.CMD_META_NOTES_INFO_CMD)) {
+                return new MetaNotesInfoCmd(packet);
+            }
+            if (type.equals(AbstractIcqCmd.CMD_META_EMAIL_INFO_CMD)) {
+                return new MetaEmailInfoCmd(packet);
+            }
+            if (type.equals(AbstractIcqCmd.CMD_META_INTERESTS_INFO_CMD)) {
+                return new MetaInterestsInfoCmd(packet);
+            }
+            if (type.equals(AbstractIcqCmd.CMD_META_AFFILIATIONS_INFO_CMD)) {
+                return new MetaAffiliationsInfoCmd(packet);
+            }
+            if (type.equals(AbstractIcqCmd.CMD_META_HOMEPAGE_CATEGORY_INFO_CMD)) {
+                return new MetaHomepageCategoryInfoCmd(packet);
+            }
             if (type.equals(AbstractIcqCmd.CMD_OFFLINE_MSG)) {
                 return new OfflineMsgIcqCmd(packet);
             }

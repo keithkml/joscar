@@ -61,10 +61,28 @@ public abstract class AbstractIcqCmd extends IcqSnacCommand {
 	/** A command subtype for marking the end of the offline messages. */
 	public static final IcqType CMD_OFFLINE_MSG_DONE = new IcqType(66);
 
-	/** A command subtype for requesting short information about another user. */
+	/** A command subtype for requesting full information about another user. */
+    public static final IcqType CMD_META_FULL_INFO_REQ = new IcqType(2000, 1202);
+    /** A command subtype for requesting short information about another user. */
 	public static final IcqType CMD_META_SHORT_INFO_REQ = new IcqType(2000, 1210);
-	/** A command subtype for sending short information about a user. */
-	public static final IcqType CMD_META_SHORT_INFO_CMD = new IcqType(2010, 260);
+    /** A command subtype for sending basic information about a user. */
+    public static final IcqType CMD_META_BASIC_INFO_CMD = new IcqType(2010, 0xC8);
+    /** A command subtype for sending information about a user's job. */
+    public static final IcqType CMD_META_WORK_INFO_CMD = new IcqType(2010, 0xD2);
+    /** A command subtype for sending additional information about a user. */
+    public static final IcqType CMD_META_MORE_INFO_CMD = new IcqType(2010, 0xDC);
+    /** A command subtype for sending user's notes (about) information. */
+    public static final IcqType CMD_META_NOTES_INFO_CMD = new IcqType(2010, 0xE6);
+    /** A command subtype for sending user's additional e-mail addresses. */
+    public static final IcqType CMD_META_EMAIL_INFO_CMD = new IcqType(2010, 0xEB);
+    /** A command subtype for sending user's interests. */
+    public static final IcqType CMD_META_INTERESTS_INFO_CMD = new IcqType(2010, 0xF0);
+    /** A command subtype for sending user's background and affiliations. */
+    public static final IcqType CMD_META_AFFILIATIONS_INFO_CMD = new IcqType(2010, 0xFA);
+    /** A command subtype for sending short information about a user. */
+	public static final IcqType CMD_META_SHORT_INFO_CMD = new IcqType(2010, 0x104);
+    /** A command subtype for sending user's homepage category. */
+    public static final IcqType CMD_META_HOMEPAGE_CATEGORY_INFO_CMD = new IcqType(2010, 0x10E);
 
 	/** A command subtype for setting additional security information about the user. */
 	public static final IcqType CMD_META_SECURITY_CMD = new IcqType(2000, 1060);
