@@ -59,6 +59,7 @@ import net.kano.joscar.snaccmd.MiniRoomInfo;
 import net.kano.joscar.snaccmd.icq.MetaShortInfoRequest;
 import net.kano.joscar.snaccmd.icq.OfflineMsgIcqRequest;
 import net.kano.joscar.snaccmd.icq.OfflineMsgIcqAckCmd;
+import net.kano.joscar.snaccmd.icq.MetaFullInfoRequest;
 import net.kano.joscar.snaccmd.acct.AcctInfoRequest;
 import net.kano.joscar.snaccmd.acct.AcctModCmd;
 import net.kano.joscar.snaccmd.acct.ConfirmAcctCmd;
@@ -1663,6 +1664,25 @@ public class CLHandler {
             public void handle(JoscarTester tester, String line, String cmd,
                     List<String> args) {
                 tester.request(new MetaShortInfoRequest(tester.getUIN(),
+                        (int) tester.nextIcqId(), Integer.parseInt(args.get(0))));
+            }
+        });
+        cmdMap.put("icqinfo", new CLCommand() {
+            public String getExampleArgs() {
+                return "1234";
+            }
+
+            public String getDescription() {
+                return "Requests the full user info for the specified ICQ contact";
+            }
+
+            public String getArgumentsUsage() {
+                return "<UIN>";
+            }
+
+            public void handle(JoscarTester tester, String line, String cmd,
+                    List<String> args) {
+                tester.request(new MetaFullInfoRequest(tester.getUIN(),
                         (int) tester.nextIcqId(), Integer.parseInt(args.get(0))));
             }
         });
