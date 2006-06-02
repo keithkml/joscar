@@ -90,7 +90,7 @@ public final class SnacPacket implements LiveWritable {
      * @throws IllegalArgumentException if the given data block does not contain
      *         a valid SNAC packet
      */
-    static @Nullable SnacPacket readSnacPacket(ByteBlock flapData) {
+    public static @Nullable SnacPacket readSnacPacket(ByteBlock flapData) {
         if (!isValidSnacPacket(flapData)) return null;
 
         int family = BinaryTools.getUShort(flapData, 0);

@@ -1,63 +1,61 @@
 package net.kano.joscar.snaccmd.icq;
 
-import net.kano.joscar.flapcmd.SnacPacket;
-import net.kano.joscar.ByteBlock;
 import net.kano.joscar.LEBinaryTools;
-import net.kano.joscar.OscarTools;
-import net.kano.joscar.BinaryTools;
+import net.kano.joscar.flapcmd.SnacPacket;
 
-import java.io.OutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 /**
  * @author jkohen
  * @author yole
  */
-public class MetaShortInfoCmd extends FromIcqCmd {
+public class MetaShortInfoCmd extends AbstractInfoCmd {
     private static final int NDX_NICKNAME = 0;
     private static final int NDX_FNAME = 1;
     private static final int NDX_LNAME = 2;
     private static final int NDX_EMAIL = 3;
 
-    private String[] s = new String[4];
+    private String[] s;
+    private byte authorizationFlag;
+    private byte gender;
+
     public MetaShortInfoCmd(SnacPacket packet) {
         super(packet);
-        ByteBlock block = getIcqData();
-
-        if (block.get(0) != 0x0A) {
-            return;
-        }
-        int offset = 1;
-        for (int i = 0; i < s.length; i++) {
-            final int textlen = LEBinaryTools.getUShort(block, offset) - 1; // Don't include the ending NUL.
-            offset += 2;
-
-            if (textlen > 0) {
-                ByteBlock field = block.subBlock(offset, textlen);
-                s[i] = OscarTools.getString(field, "US-ASCII");
-                offset += textlen;
-            }
-            offset++; // Skip trailing NUL.
-        }
     }
 
-    public MetaShortInfoCmd(int uin, int id, String nickname, String fname, String lname, String email) {
+    public MetaShortInfoCmd(int uin, int id, String nickname, String fname,
+            String lname, String email, byte authorizationFlag, byte gender) {
         super(uin, AbstractIcqCmd.CMD_META_SHORT_INFO_CMD, id);
 
+        s = new String[4];
         s[NDX_NICKNAME] = nickname;
         s[NDX_FNAME] = fname;
         s[NDX_LNAME] = lname;
         s[NDX_EMAIL] = email;
+        this.authorizationFlag = authorizationFlag;
+        this.gender = gender;
     }
 
-    public void writeIcqData(OutputStream out) throws IOException {
-        LEBinaryTools.writeUByte(out, 0x0a); // Unknown.
-        for (String value : s) {
-            LEBinaryTools.writeUShort(out,
-                    value.length() + 1); // Plus an ending NUL.
-            byte[] bytes = BinaryTools.getAsciiBytes(value + '\0');
-            out.write(bytes);
+    protected void readInfo(InputStream is) throws IOException {
+        s = new String[4];
+        for (int i = 0; i < s.length; i++) {
+            s [i] = LEBinaryTools.readUShortLengthString(is, "US-ASCII");
+            if (s [i] == null) break;
         }
+        authorizationFlag = (byte) is.read();
+        is.read();  // unknown
+        gender = (byte) is.read();
+    }
+
+    protected void writeInfo(OutputStream out) throws IOException {
+        for (String value : s) {
+            LEBinaryTools.writeUShortLengthString(out, value);
+        }
+        LEBinaryTools.writeUByte(out, authorizationFlag);
+        LEBinaryTools.writeUByte(out, 0);
+        LEBinaryTools.writeUByte(out, gender);
     }
 
     /**
@@ -100,11 +98,21 @@ public class MetaShortInfoCmd extends FromIcqCmd {
         return s[NDX_EMAIL];
     }
 
+    public byte getAuthorizationFlag() {
+        return authorizationFlag;
+    }
+
+    public byte getGender() {
+        return gender;
+    }
 
     public String toString() {
         return "MetaShortInfoCmd: nick=" + getNickname() +
                 " firstname=" + getFirstName() +
                 " lastname=" + getLastName() +
-                " email=" + getEmail() + " in: " + super.toString();
+                " email=" + getEmail() +
+                " authorizationFlag=" + getAuthorizationFlag() +
+                " gender=" + getGender() +
+                " in: " + super.toString();
     }
 }
