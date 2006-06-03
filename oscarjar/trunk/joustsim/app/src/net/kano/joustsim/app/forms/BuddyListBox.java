@@ -171,8 +171,9 @@ public class BuddyListBox extends JPanel {
             public Component getTreeCellRendererComponent(JTree tree, Object value,
                     boolean sel, boolean expanded, boolean leaf, int row,
                     boolean hasFocus) {
-                assert super.getTreeCellRendererComponent(tree, value, sel, expanded,
-                        leaf, row, hasFocus) == this;
+                Component baseRenderer = super.getTreeCellRendererComponent(tree, value, sel, expanded,
+                        leaf, row, hasFocus);
+                assert baseRenderer == this;
                 if (value instanceof BuddyListModel.BuddyHolder) {
                     BuddyListModel.BuddyHolder buddyHolder = (BuddyListModel.BuddyHolder) value;
                     AimConnection conn = guiSession.getAimConnection();
