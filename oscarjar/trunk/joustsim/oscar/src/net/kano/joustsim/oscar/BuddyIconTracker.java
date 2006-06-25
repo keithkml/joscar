@@ -38,24 +38,30 @@ import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.snaccmd.ExtraInfoData;
 import net.kano.joustsim.Screenname;
 import net.kano.joustsim.oscar.oscar.service.icon.IconRequestListener;
-import net.kano.joustsim.oscar.oscar.service.icon.IconServiceArbiter;
 import net.kano.joustsim.oscar.oscar.service.icon.IconService;
+import net.kano.joustsim.oscar.oscar.service.icon.IconServiceArbiter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.beans.PropertyChangeEvent;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.logging.Logger;
 
 public class BuddyIconTracker {
   private static final Logger LOGGER = Logger
       .getLogger(BuddyIconTracker.class.getName());
 
-  private AimConnection conn;
-  private Map<ExtraInfoData, ByteBlock> cache
+  private final Map<ExtraInfoData,Long> pendingRequests
+      = new HashMap<ExtraInfoData, Long>();
+  private final AimConnection conn;
+  private final Map<ExtraInfoData, ByteBlock> cache
       = new HashMap<ExtraInfoData, ByteBlock>();
   private boolean enabled = true;
 
@@ -87,6 +93,8 @@ public class BuddyIconTracker {
       }
     }
   };
+  private Timer timer = new Timer(true);
+  private static final long RE_REQUEST_INTERVAL = 60000;
 
   public BuddyIconTracker(AimConnection aconn) {
     this.conn = aconn;
@@ -113,6 +121,22 @@ public class BuddyIconTracker {
           Screenname buddy, BuddyInfo info) {
       }
     });
+    timer.schedule(new TimerTask() {
+      public void run() {
+        List<ExtraInfoData> rereq = new ArrayList<ExtraInfoData>();
+        synchronized (BuddyIconTracker.this) {
+          for (Map.Entry<ExtraInfoData, Long> entry : pendingRequests.entrySet()) {
+            if (System.currentTimeMillis() - entry.getValue() > RE_REQUEST_INTERVAL) {
+              rereq.add(entry.getKey());
+            }
+          }
+        }
+        for (ExtraInfoData data : rereq) {
+          LOGGER.fine("Re-requesting buddy icon " + data);
+          requestIcon(data, null);
+        }
+      }
+    }, 5000, 5000);
   }
 
   private void handleNewIconHashForBuddy(Screenname buddy,
@@ -121,15 +145,7 @@ public class BuddyIconTracker {
     if (newHash != null /* && !newHash.equals(ExtraInfoData.HASH_SPECIAL)*/) {
       ByteBlock iconData = getIconDataForHash(newHash);
       if (iconData == null) {
-        IconServiceArbiter iconArbiter =
-            conn.getExternalServiceManager().getIconServiceArbiter();
-        if (iconArbiter != null) {
-          LOGGER.info("Requesting buddy icon for " + buddy);
-          iconArbiter.addIconRequestListener(iconRequestListener);
-          iconArbiter.requestIcon(buddy, newHash);
-        } else {
-          LOGGER.warning("icon arbiter is null!");
-        }
+        requestIcon(newHash, buddy);
       } else {
         LOGGER.finer("Icon data was already cached for " + buddy);
         storeBuddyIconData(buddy, newHash, iconData);
@@ -139,10 +155,38 @@ public class BuddyIconTracker {
     }
   }
 
+  private void requestIcon(ExtraInfoData newHash, @Nullable Screenname buddy) {
+    IconServiceArbiter iconArbiter =
+        conn.getExternalServiceManager().getIconServiceArbiter();
+    if (iconArbiter != null) {
+      if (buddy != null) {
+        LOGGER.info("Requesting buddy icon for " + buddy);
+      }
+      iconArbiter.addIconRequestListener(iconRequestListener);
+      updateRequestTime(newHash);
+      iconArbiter.requestIcon(buddy, newHash);
+    } else {
+      LOGGER.warning("icon arbiter is null!");
+    }
+  }
+
   private void storeBuddyIconData(Screenname buddy, ExtraInfoData iconInfo,
       ByteBlock iconData) {
     conn.getBuddyInfoManager().getBuddyInfo(buddy)
         .setIconDataIfHashMatches(iconInfo, iconData);
+  }
+
+  private synchronized void removeRequestTime(ExtraInfoData block) {
+    pendingRequests.remove(block);
+  }
+
+  private synchronized void updateRequestTime(ExtraInfoData block) {
+    pendingRequests.put(block, System.currentTimeMillis());
+  }
+
+  public synchronized long getRequestTime(ExtraInfoData block) {
+    Long time = pendingRequests.get(block);
+    return time == null ? 0 : time;
   }
 
   public @Nullable synchronized ByteBlock getIconDataForHash(
@@ -171,6 +215,7 @@ public class BuddyIconTracker {
   private synchronized void storeInCache(ExtraInfoData hash,
       @NotNull ByteBlock iconData) {
     LOGGER.fine("Cached icon data for " + hash);
+    removeRequestTime(hash);
     cache.put(hash, ByteBlock.wrap(iconData.toByteArray()));
   }
 
