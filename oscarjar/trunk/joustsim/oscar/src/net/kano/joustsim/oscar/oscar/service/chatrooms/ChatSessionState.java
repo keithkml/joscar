@@ -35,5 +35,9 @@
 package net.kano.joustsim.oscar.oscar.service.chatrooms;
 
 public enum ChatSessionState {
-  INITIALIZING, CONNECTING, FAILED, INROOM, CLOSED
+  INITIALIZING, CONNECTING, FAILED, INROOM, CLOSED;
+
+  public boolean isClosed() {
+    return this == CLOSED || this == FAILED;
+  }
 }
