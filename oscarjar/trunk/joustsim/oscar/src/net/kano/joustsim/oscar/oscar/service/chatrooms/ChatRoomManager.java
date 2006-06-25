@@ -126,7 +126,7 @@ public class ChatRoomManager {
       RoomDescriptor descriptor = new RoomDescriptor(
           chatInvitation.getRoomInfo());
       session = sessions.get(descriptor);
-      if (session != null) return session;
+      if (session != null && !session.getState().isClosed()) return session;
       session = new ChatRoomSession(aimConnection);
       session.setRoomInfo(info);
       session.setInvitation(chatInvitation);
@@ -193,34 +193,17 @@ public class ChatRoomManager {
   }
 
   private static class InvitationRecord {
-    private Screenname inviter;
-    private int exchange;
-    private String roomName;
-    private int instance;
+    public final Screenname inviter;
+    public final int exchange;
+    public final String roomName;
+    public final int instance;
 
     public InvitationRecord(Screenname screenname, int exchange,
-        String roomName,
-        int instance) {
+        String roomName, int instance) {
       this.inviter = screenname;
       this.exchange = exchange;
       this.roomName = roomName;
       this.instance = instance;
-    }
-
-    public Screenname getInviter() {
-      return inviter;
-    }
-
-    public int getExchange() {
-      return exchange;
-    }
-
-    public String getRoomName() {
-      return roomName;
-    }
-
-    public int getInstance() {
-      return instance;
     }
 
     public boolean equals(Object o) {
@@ -232,6 +215,7 @@ public class ChatRoomManager {
       if (exchange != that.exchange) return false;
       if (instance != that.instance) return false;
       if (!roomName.equals(that.roomName)) return false;
+      //noinspection RedundantIfStatement
       if (!inviter.equals(that.inviter)) return false;
 
       return true;
