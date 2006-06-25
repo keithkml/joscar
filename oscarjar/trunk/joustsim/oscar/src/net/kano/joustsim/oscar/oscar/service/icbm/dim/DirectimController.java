@@ -161,13 +161,18 @@ public class DirectimController extends AbstractStateController
       RvSessionConnectionInfo rvinfo = connection.getRvSessionInfo();
       if (!isIcbmIdConfirmed() && rvinfo.getInitiator() == Initiator.ME) {
         long realid = rvinfo.getRvSession().getRvSessionId();
-        if ((flags & DirectImHeader.FLAG_CONFIRMATION) != 0
-            && header.getMessageId() == realid) {
+        boolean confirmation = (flags & DirectImHeader.FLAG_CONFIRMATION) != 0;
+        if (confirmation && header.getMessageId() == realid) {
           setIcbmIdConfirmed();
 
         } else {
-          LOGGER.warning("Buddy sent wrong confirmation ICBM ID: "
-              + header.getMessageId() + " should be " + realid);
+          if (confirmation) {
+            LOGGER.warning("Buddy sent wrong confirmation ICBM ID: "
+                + header.getMessageId() + " should be " + realid);
+          } else {
+            LOGGER.warning("Buddy didn't send confirmation ICBM ID (should be "
+                + realid + ")");
+          }
           fireFailed(new UnknownErrorEvent());
           break;
         }
