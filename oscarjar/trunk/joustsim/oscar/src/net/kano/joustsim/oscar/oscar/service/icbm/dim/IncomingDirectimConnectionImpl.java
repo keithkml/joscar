@@ -70,7 +70,8 @@ public class IncomingDirectimConnectionImpl
   public IncomingDirectimConnectionImpl(AimProxyInfo proxy,
       Screenname screenname, RvSession session) {
     this(proxy, screenname, new MutableSessionConnectionInfo(session));
-    ((MutableSessionConnectionInfo) getRvSessionInfo()).setMaker(new DirectimRequestMaker(this));
+    DirectimRequestMaker requestMaker = new DirectimRequestMaker(this);
+    ((MutableSessionConnectionInfo) getRvSessionInfo()).setMaker(requestMaker);
   }
 
   protected ConnectedController createConnectedController(StateInfo endState) {
@@ -90,7 +91,8 @@ public class IncomingDirectimConnectionImpl
           new ConnectionCompleteEvent());
 
     } else if (oldStateInfo instanceof StreamInfo) {
-      throw new IllegalStateException("stream info??");
+      throw new IllegalStateException("stream info?? for " + oldController
+          + " - " + oldStateInfo);
 
     } else {
       throw new IllegalStateException("Trying to change from success "
