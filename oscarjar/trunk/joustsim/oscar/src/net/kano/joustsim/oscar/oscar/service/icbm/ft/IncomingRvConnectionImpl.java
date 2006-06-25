@@ -121,6 +121,7 @@ public abstract class IncomingRvConnectionImpl
   protected boolean isSomeConnectionController(StateController controller) {
     return isLanController(controller)
         || isInternetController(controller)
+        || controller instanceof RedirectConnectionController
         || controller instanceof RedirectToProxyController
         || controller instanceof ConnectToProxyForIncomingController;
   }
