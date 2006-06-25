@@ -42,8 +42,12 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
+import java.util.logging.Logger;
 
 public class TransferredFileImpl implements TransferredFile {
+  private static final Logger LOGGER
+      = Logger.getLogger(TransferredFileImpl.class.getName());
+
   private final @Nullable RandomAccessFile raf;
   private final long size;
   private final File file;
@@ -74,7 +78,13 @@ public class TransferredFileImpl implements TransferredFile {
   }
 
   public void close() throws IOException {
-    if (raf != null) raf.close();
+    if (raf == null) {
+      LOGGER.fine("Couldn't close " + file + " because there's no " +
+          "RandomAccessFile set");
+    } else {
+      LOGGER.fine("Closing RandomAccessFile for " + file);
+      raf.close();
+    }
   }
 
   public String getTransferredName() {
