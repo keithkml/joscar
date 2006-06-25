@@ -34,11 +34,11 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
 public class FileCompleteEvent extends RvConnectionEvent {
-    private final TransferredFileInfo info;
+    private final TransferringFileInfo info;
 
-    public FileCompleteEvent(TransferredFileInfo info) {this.info = info;}
+    public FileCompleteEvent(TransferringFileInfo info) {this.info = info;}
 
-    public TransferredFileInfo getFileInfo() { return info; }
+    public TransferringFileInfo getFileInfo() { return info; }
 
     public String toString() {
         return "FileCompleteEvent: " +

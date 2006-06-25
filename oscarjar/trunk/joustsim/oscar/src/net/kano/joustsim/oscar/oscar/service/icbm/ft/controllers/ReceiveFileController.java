@@ -51,7 +51,7 @@ import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.CorruptTransferEvent
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.EventPost;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.FileCompleteEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.ResumeChecksumFailedEvent;
-import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferredFileInfo;
+import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferringFileInfo;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.TransferringFileEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.events.UnknownErrorEvent;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.state.TransferSucceededInfo;
@@ -168,8 +168,8 @@ public class ReceiveFileController extends TransferController {
       long startedAt = fileChannel.position();
       Transferrer receiver = plumber
           .createTransferrer(destFile, startedAt, toDownload);
-      TransferredFileInfo info = new TransferredFileInfo(destFile,
-          startedAt + toDownload, startedAt);
+      TransferringFileInfo info = new TransferringFileInfo(destFile,
+          startedAt, startedAt + toDownload);
       eventpost.fireEvent(new TransferringFileEvent(info, receiver));
       long downloaded = receiver.transfer();
       if (downloaded != toDownload) {

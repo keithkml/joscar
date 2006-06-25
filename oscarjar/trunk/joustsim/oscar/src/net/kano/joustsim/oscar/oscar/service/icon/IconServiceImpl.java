@@ -39,9 +39,9 @@ import net.kano.joscar.Writable;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.snac.ClientSnacProcessor;
 import net.kano.joscar.snac.SnacRequestAdapter;
+import net.kano.joscar.snac.SnacRequestTimeoutEvent;
 import net.kano.joscar.snac.SnacResponseEvent;
 import net.kano.joscar.snac.SnacResponseListener;
-import net.kano.joscar.snac.SnacRequestTimeoutEvent;
 import net.kano.joscar.snaccmd.ExtraInfoBlock;
 import net.kano.joscar.snaccmd.ExtraInfoData;
 import net.kano.joscar.snaccmd.conn.SnacFamilyInfo;
@@ -87,11 +87,13 @@ public class IconServiceImpl extends AbstractService implements IconService {
           ExtraInfoData data = iconInfo.getExtraData();
           ByteBlock hash = data.getData();
           Screenname sn = new Screenname(iconDataCmd.getScreenname());
+
           if ((data.getFlags() & ExtraInfoData.FLAG_HASH_PRESENT) == 0
               && hash.equals(ExtraInfoData.HASH_SPECIAL)) {
             for (IconRequestListener listener : listeners) {
               listener.buddyIconCleared(IconServiceImpl.this, sn, data);
             }
+
           } else {
             for (IconRequestListener listener : listeners) {
               listener.buddyIconUpdated(IconServiceImpl.this, sn,

@@ -36,15 +36,15 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.ProgressStatusProvider;
 
 public class TransferringFileEvent extends RvConnectionEvent {
-    private final TransferredFileInfo info;
+    private final TransferringFileInfo info;
     private final ProgressStatusProvider provider;
 
-    public TransferringFileEvent(TransferredFileInfo info, ProgressStatusProvider provider) {
+    public TransferringFileEvent(TransferringFileInfo info, ProgressStatusProvider provider) {
         this.info = info;
         this.provider = provider;
     }
 
-    public TransferredFileInfo getFileInfo() { return info; }
+    public TransferringFileInfo getFileInfo() { return info; }
 
     public ProgressStatusProvider getProgressProvider() { return provider; }
 

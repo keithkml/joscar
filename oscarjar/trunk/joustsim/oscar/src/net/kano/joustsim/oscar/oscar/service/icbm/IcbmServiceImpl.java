@@ -378,7 +378,8 @@ public class IcbmServiceImpl extends AbstractService implements
 
   public synchronized Set<DirectimConversation> getDirectimConversations(
       Screenname sn) {
-    return DefensiveTools.getUnmodifiableSetCopy(getActualDirectimConversations(sn));
+    return DefensiveTools.getUnmodifiableSetCopy(
+        getActualDirectimConversations(sn));
   }
 
   public ImConversation getImConversation(Screenname sn) {
@@ -404,36 +405,43 @@ public class IcbmServiceImpl extends AbstractService implements
   }
 
   public void sendAutomatically(Screenname sn, Message message) {
-    DirectimConversation newConv = null;
+    boolean sentDirectly = sendDirectlyIfPossible(sn, message);
+    if (!sentDirectly) {
+      getImConversation(sn).sendMessage(message);
+    }
+  }
+
+  private boolean sendDirectlyIfPossible(Screenname sn, Message message) {
+    DirectimConversation newConv;
     synchronized (this) {
-      boolean sent = false;
       for (DirectimConversation conv : getActualDirectimConversations(sn)) {
         if (!conv.isClosed()) {
           conv.sendMessage(message);
-          sent = true;
+          return true;
         }
       }
-      if (!sent) {
-        if (supportsDirectim(sn) && mustBeDirect(message)) {
-          newConv = new DirectimConversation(getAimConnection(), sn);
-          // we send the message later in this method
 
-        } else {
-          getImConversation(sn).sendMessage(message);
-        }
+      if (!(supportsDirectim(sn) && mustBeDirect(message))) {
+        return false;
       }
+      newConv = new DirectimConversation(getAimConnection(), sn);
+      // we send the message outside this lock...
     }
-    if (newConv != null) {
-      // we don't want to initialize the conversation within the lock
-      initializeDirectimConv(newConv);
-      // we don't want to call the new conversation event without having added
-      // it to the list of dim conversations
-      synchronized(this) {
-        getActualDirectimConversations(sn).add(newConv);
-      }
-      fireNewConversationEvent(newConv);
-      newConv.sendMessage(message);
+    // send the message outside the lock
+    initializeDirectimConv(newConv);
+
+    // add the conversation to the list of dim conversations
+    synchronized(this) {
+      getActualDirectimConversations(sn).add(newConv);
     }
+    // and then fire the event (now that the conversation is in the list)
+    fireNewConversationEvent(newConv);
+
+    // and then send the message (now that the new conversation event has been
+    // fired)
+    newConv.sendMessage(message);
+
+    return true;
   }
 
   private boolean supportsDirectim(Screenname sn) {
@@ -442,24 +450,28 @@ public class IcbmServiceImpl extends AbstractService implements
   }
 
 
-  private boolean mustBeDirect(Message message) {
+  private static boolean mustBeDirect(Message message) {
     return message instanceof DirectMessage
         || message.getMessageBody().length() > MAX_MESSAGE_SIZE;
   }
 
   public void sendTypingAutomatically(Screenname sn, TypingState state) {
-    boolean set = false;
-    for (DirectimConversation dim : getActualDirectimConversations(sn)) {
-      if (!dim.isClosed()) {
-        if (dim.isOpen()) {
-          set = true;
-        }
-        dim.setTypingState(state);
-      }
-    }
+    boolean set = setTypingStatusDirectlyIfPossible(sn, state);
     if (!set) {
       getImConversation(sn).setTypingState(state);
     }
+  }
+
+  private boolean setTypingStatusDirectlyIfPossible(Screenname sn,
+                                                    TypingState state) {
+    boolean setSuccessfully = false;
+    for (DirectimConversation dim : getActualDirectimConversations(sn)) {
+      if (dim.isClosed()) continue;
+      
+      if (dim.isOpen()) setSuccessfully = true;
+      dim.setTypingState(state);
+    }
+    return setSuccessfully;
   }
 
   private void fireNewConversationEvent(Conversation conv) {
@@ -503,7 +515,6 @@ public class IcbmServiceImpl extends AbstractService implements
         session.addListener(new SessionListenerDelegate(session));
       }
     }
-
   }
 
   private class SessionListenerDelegate implements RvSessionListener {
@@ -519,8 +530,7 @@ public class IcbmServiceImpl extends AbstractService implements
       if (sessionHandler == null) {
         RvCommand rvCommand = event.getRvCommand();
         if (rvCommand == null) {
-          LOGGER.warning("unknown rv command: "
-              + event.getSnacCommand());
+          LOGGER.warning("unknown rv command: " + event.getSnacCommand());
           return;
         }
         CapabilityBlock cap = rvCommand.getCapabilityBlock();

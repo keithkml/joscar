@@ -57,6 +57,7 @@ import java.util.logging.Logger;
 
 public abstract class OutgoingRvConnectionImpl extends RvConnectionImpl
     implements OutgoingRvConnection {
+
   private static final Logger LOGGER = Logger
       .getLogger(OutgoingRvConnectionImpl.class.getName());
 
@@ -76,55 +77,72 @@ public abstract class OutgoingRvConnectionImpl extends RvConnectionImpl
 
   protected NextStateControllerInfo getNextControllerFromError(
       StateController oldController, StateInfo endState) {
-    RvConnectionEvent event = null;
-    if (endState instanceof FailureEventInfo) {
-      FailureEventInfo failureEventInfo = (FailureEventInfo) endState;
-      event = failureEventInfo.getEvent();
-    }
-
     boolean gotAccept;
     ControllerRestartConsultant restarter;
     synchronized (this) {
       gotAccept = this.gotAccept;
       restarter = this.restarter;
     }
+    NextStateControllerInfo controller
+        = getRestartControllerIfNecessary(oldController, restarter, gotAccept);
+    if (controller != null) return controller;
+
+    RvConnectionEvent failureEvent = getFailureEvent(endState);
+    if (isLanController(oldController)) {
+      return new NextStateControllerInfo(
+          new OutgoingConnectionController(ConnectionType.INTERNET), failureEvent);
+
+    } else if (oldController instanceof SendPassivelyController
+        || isInternetController(oldController)
+        || oldController instanceof ConnectToProxyForOutgoingController
+        || oldController instanceof RedirectConnectionController) {
+      return new NextStateControllerInfo(new RedirectToProxyController(), failureEvent);
+
+    } else if (oldController instanceof RedirectToProxyController) {
+      return retryProxyIfPossible(oldController, failureEvent);
+
+    } else {
+      return getNextControllerFromUnknownError(oldController,
+          (FailedStateInfo) endState, failureEvent);
+    }
+  }
+
+  private NextStateControllerInfo retryProxyIfPossible(
+      StateController oldController, RvConnectionEvent failureEvent) {
+    NextStateControllerInfo ret = tryRetry(oldController, failureEvent,
+        new RedirectToProxyController());
+    if (ret != null) return ret;
+
+    RvConnectionEvent event = failureEvent;
+    if (event == null) event = new UnknownErrorEvent();
+    return new NextStateControllerInfo(RvConnectionState.FAILED, event);
+  }
+
+  private RvConnectionEvent getFailureEvent(StateInfo endState) {
+    RvConnectionEvent event = null;
+    if (endState instanceof FailureEventInfo) {
+      FailureEventInfo failureEventInfo = (FailureEventInfo) endState;
+      event = failureEventInfo.getEvent();
+    }
+    return event;
+  }
+
+  private NextStateControllerInfo getRestartControllerIfNecessary(
+      StateController oldController, ControllerRestartConsultant restarter,
+      boolean gotAccept) {
+    NextStateControllerInfo x = null;
     if (!gotAccept && isOpen() && restarter.shouldRestart()) {
       restarter.handleRestart();
       if (oldController instanceof SendPassivelyController
           || oldController instanceof RedirectConnectionController) {
-        return new NextStateControllerInfo(new RedirectConnectionController());
+        x = new NextStateControllerInfo(new RedirectConnectionController());
 
       } else if (oldController instanceof RedirectToProxyController
           || oldController instanceof SendOverProxyController) {
-        return new NextStateControllerInfo(new RedirectToProxyController());
+        x = new NextStateControllerInfo(new RedirectToProxyController());
       }
     }
-
-    if (isLanController(oldController)) {
-      return new NextStateControllerInfo(
-          new OutgoingConnectionController(ConnectionType.INTERNET), event);
-
-    } else if (oldController instanceof SendPassivelyController
-        || isInternetController(oldController)
-        || oldController instanceof ConnectToProxyForOutgoingController) {
-      return new NextStateControllerInfo(new RedirectToProxyController(), event);
-
-    } else if (oldController instanceof RedirectConnectionController) {
-      return new NextStateControllerInfo(new RedirectToProxyController(), event);
-
-    } else if (oldController instanceof RedirectToProxyController) {
-      NextStateControllerInfo ret = tryRetry(oldController, event,
-          new RedirectToProxyController());
-      if (ret == null) {
-        ret = new NextStateControllerInfo(RvConnectionState.FAILED,
-            event == null ? new UnknownErrorEvent() : event);
-      }
-      return ret;
-
-    } else {
-      return getNextControllerFromUnknownError(oldController,
-          (FailedStateInfo) endState, event);
-    }
+    return x;
   }
 
   protected abstract NextStateControllerInfo getNextControllerFromUnknownError(
@@ -169,32 +187,32 @@ public abstract class OutgoingRvConnectionImpl extends RvConnectionImpl
     protected void handleIncomingRequest(RecvRvEvent event,
         ConnectionRequestRvCmd reqCmd) {
       int reqType = reqCmd.getRequestIndex();
-      if (reqType > RequestRvCmd.REQINDEX_FIRST) {
-        HowToConnect how = processRedirect(reqCmd);
-        if (isOpen()) {
-          if (how == HowToConnect.PROXY || how == HowToConnect.NORMAL) {
-            boolean worked;
-            if (how == HowToConnect.PROXY) {
-              worked = changeStateController(
-                  new ConnectToProxyForOutgoingController());
+      if (reqType <= RequestRvCmd.REQINDEX_FIRST) {
+        LOGGER.warning("Got strange RV connection request index in outgoing "
+            + "transfer: " + reqType);
+        return;
+      }
+      HowToConnect how = processRedirect(reqCmd);
+      if (!isOpen()) return;
 
-            } else {
-              //noinspection ConstantConditions
-              assert how == HowToConnect.NORMAL;
-              worked = changeStateController(
-                  new OutgoingConnectionController(ConnectionType.LAN));
-            }
-            if (worked) {
-              getRvSessionInfo().getRequestMaker().sendRvAccept();
-            }
-          } else if (how == HowToConnect.DONT) {
-            changeStateController(new RedirectToProxyController());
-          }
+      if (how == HowToConnect.PROXY || how == HowToConnect.NORMAL) {
+        boolean worked;
+        if (how == HowToConnect.PROXY) {
+          worked = changeStateController(
+              new ConnectToProxyForOutgoingController());
+
+        } else {
+          //noinspection ConstantConditions
+          assert how == HowToConnect.NORMAL;
+          worked = changeStateController(
+              new OutgoingConnectionController(ConnectionType.LAN));
+        }
+        if (worked) {
+          getRvSessionInfo().getRequestMaker().sendRvAccept();
         }
 
-      } else {
-        LOGGER.warning("got unknown rv connection request type in outgoing "
-            + "transfer: " + reqType);
+      } else if (how == HowToConnect.DONT) {
+        changeStateController(new RedirectToProxyController());
       }
     }
   }

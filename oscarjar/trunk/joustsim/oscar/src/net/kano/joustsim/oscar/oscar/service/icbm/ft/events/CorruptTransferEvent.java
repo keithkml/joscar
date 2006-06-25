@@ -34,13 +34,13 @@
 package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
 public class CorruptTransferEvent extends RvConnectionEvent {
-    private TransferredFileInfo info;
+    private TransferringFileInfo info;
 
-    public CorruptTransferEvent(TransferredFileInfo info) {
+    public CorruptTransferEvent(TransferringFileInfo info) {
         this.info = info;
     }
 
-    public TransferredFileInfo getInfo() {
+    public TransferringFileInfo getInfo() {
         return info;
     }
 

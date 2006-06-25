@@ -35,32 +35,40 @@ package net.kano.joustsim.oscar.oscar.service.icbm.ft.events;
 
 import net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.TransferredFile;
 
-public class TransferredFileInfo {
+public class TransferringFileInfo {
   private TransferredFile file;
-  private long fileSize;
   private long resumedAt;
+  private long fileSize;
 
-  public TransferredFileInfo(TransferredFile file, long fileSize,
-      long resumedAt) {
+  public TransferringFileInfo(TransferredFile file, long resumePosition) {
+    this(file, resumePosition, file.getSize());
+  }
+
+  public TransferringFileInfo(TransferredFile file, long resumePosition,
+                              long fileSize) {
+    if (resumePosition > fileSize) {
+      throw new IllegalArgumentException("resume position (" + resumePosition
+          + ") was greater than file size (" + fileSize + ")!");
+    }
     this.file = file;
+    this.resumedAt = resumePosition;
     this.fileSize = fileSize;
-    this.resumedAt = resumedAt;
   }
 
   public TransferredFile getFile() {
     return file;
   }
 
+  public long getResumePosition() {
+    return resumedAt;
+  }
+
   public long getFileSize() {
     return fileSize;
   }
 
-  public long getResumedAt() {
-    return resumedAt;
-  }
-
   public String toString() {
-    return "TransferredFileInfo: " +
+    return "TransferringFileInfo: " +
         "resumedAt=" + resumedAt +
         ", fileSize=" + fileSize +
         ", file=" + file;

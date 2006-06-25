@@ -101,8 +101,7 @@ public abstract class AbstractIncomingRvSessionHandler extends AbstractRvSession
       }
 
     } else {
-      LOGGER.warning("Got unknown request index " + index + " for "
-          + reqCmd);
+      LOGGER.warning("Got unknown request index " + index + " for " + reqCmd);
     }
   }
 
