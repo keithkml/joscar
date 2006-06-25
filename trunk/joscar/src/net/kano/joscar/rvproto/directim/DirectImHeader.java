@@ -457,7 +457,7 @@ if ((directImHeader.getFlags() & DirectImHeader.FLAG_AUTORESPONSE) != 0) {
      *
      * @param headerSize the size of this header, in bytes
      */
-    private synchronized final void setHeaderSize(int headerSize) {
+    private synchronized void setHeaderSize(int headerSize) {
         this.headerSize = headerSize;
     }
 
@@ -491,7 +491,6 @@ header.setScreenname("");
     private synchronized void checkValidity() throws IllegalArgumentException {
         DefensiveTools.checkNull(dcVersion, "dcVersion");
         DefensiveTools.checkRange(dataLength, "dataLength", 0);
-        DefensiveTools.checkNull(encoding, "encoding");
         DefensiveTools.checkRange(flags, "flags", 0);
         DefensiveTools.checkNull(sn, "sn");
     }
