@@ -58,8 +58,8 @@ public class BuddyIconTracker {
   private static final Logger LOGGER = Logger
       .getLogger(BuddyIconTracker.class.getName());
 
-  private final Map<ExtraInfoData,Long> pendingRequests
-      = new HashMap<ExtraInfoData, Long>();
+  private final Map<HashMap,Long> pendingRequests
+      = new HashMap<HashMap, Long>();
   private final AimConnection conn;
   private final Map<ExtraInfoData, ByteBlock> cache
       = new HashMap<ExtraInfoData, ByteBlock>();
@@ -74,21 +74,21 @@ public class BuddyIconTracker {
       storeBuddyIconData(screenname, data, null);
     }
 
-    public void buddyIconUpdated(IconService service, Screenname screenname,
+    public void buddyIconUpdated(IconService service, Screenname buddy,
         ExtraInfoData hash, ByteBlock iconData) {
       if (!isEnabled()) return;
 
 //            ByteBlock computedHash = cacheIcon(iconData);
 //            if (!hash.equals(computedHash)) {
-//                storeInCache(hash, iconData);
+//                storeInCache(hash, buddy, iconData);
 //                LOGGER.warning("Computed hash " + computedHash + " does not "
 //                        + "match server hash " + hash + " for " + screenname);
 //            }
-      storeInCache(hash, iconData);
-      BuddyInfo buddyInfo = conn.getBuddyInfoManager().getBuddyInfo(screenname);
-      LOGGER.fine("Storing buddy icon for " + screenname);
+      storeInCache(hash, buddy, iconData);
+      BuddyInfo buddyInfo = conn.getBuddyInfoManager().getBuddyInfo(buddy);
+      LOGGER.fine("Storing buddy icon for " + buddy);
       if (!buddyInfo.setIconDataIfHashMatches(hash, iconData)) {
-        LOGGER.info("Buddy icon data for " + screenname + " set too "
+        LOGGER.info("Buddy icon data for " + buddy + " set too "
             + "late - hash " + hash + " no longer matches");
       }
     }
@@ -123,17 +123,17 @@ public class BuddyIconTracker {
     });
     timer.schedule(new TimerTask() {
       public void run() {
-        List<ExtraInfoData> rereq = new ArrayList<ExtraInfoData>();
+        List<HashMap> rereq = new ArrayList<HashMap>();
         synchronized (BuddyIconTracker.this) {
-          for (Map.Entry<ExtraInfoData, Long> entry : pendingRequests.entrySet()) {
+          for (Map.Entry<HashMap, Long> entry : pendingRequests.entrySet()) {
             if (System.currentTimeMillis() - entry.getValue() > RE_REQUEST_INTERVAL) {
               rereq.add(entry.getKey());
             }
           }
         }
-        for (ExtraInfoData data : rereq) {
-          LOGGER.fine("Re-requesting buddy icon " + data);
-          requestIcon(data, null);
+        for (HashMap map : rereq) {
+          LOGGER.fine("Re-requesting buddy icon " + map);
+          requestIcon((ExtraInfoData)(map.get("ExtraInfoData")), (Screenname)(map.get("Screenname")));
         }
       }
     }, 5000, 5000);
@@ -155,7 +155,7 @@ public class BuddyIconTracker {
     }
   }
 
-  private void requestIcon(ExtraInfoData newHash, @Nullable Screenname buddy) {
+  private void requestIcon(ExtraInfoData newHash, Screenname buddy) {
     IconServiceArbiter iconArbiter =
         conn.getExternalServiceManager().getIconServiceArbiter();
     if (iconArbiter != null) {
@@ -163,7 +163,7 @@ public class BuddyIconTracker {
         LOGGER.info("Requesting buddy icon for " + buddy);
       }
       iconArbiter.addIconRequestListener(iconRequestListener);
-      updateRequestTime(newHash);
+      updateRequestTime(newHash, buddy);
       iconArbiter.requestIcon(buddy, newHash);
     } else {
       LOGGER.warning("icon arbiter is null!");
@@ -176,16 +176,28 @@ public class BuddyIconTracker {
         .setIconDataIfHashMatches(iconInfo, iconData);
   }
 
-  private synchronized void removeRequestTime(ExtraInfoData block) {
-    pendingRequests.remove(block);
+  private synchronized void removeRequestTime(ExtraInfoData block, Screenname buddy) {
+	HashMap map = new HashMap();
+	map.put("Screenname", buddy);
+	map.put("ExtraInfoData", block);
+	  
+    pendingRequests.remove(map);
   }
 
-  private synchronized void updateRequestTime(ExtraInfoData block) {
-    pendingRequests.put(block, System.currentTimeMillis());
+  private synchronized void updateRequestTime(ExtraInfoData block, Screenname buddy) {
+    HashMap map = new HashMap();
+	map.put("Screenname", buddy);
+	map.put("ExtraInfoData", block);
+	  
+    pendingRequests.put(map, System.currentTimeMillis());
   }
 
-  public synchronized long getRequestTime(ExtraInfoData block) {
-    Long time = pendingRequests.get(block);
+  public synchronized long getRequestTime(ExtraInfoData block, Screenname buddy) {
+	HashMap map = new HashMap();
+	map.put("Screenname", buddy);
+	map.put("ExtraInfoData", block);
+	  
+    Long time = pendingRequests.get(map);
     return time == null ? 0 : time;
   }
 
@@ -202,7 +214,7 @@ public class BuddyIconTracker {
 //        } catch (NoSuchAlgorithmException e) {
 //            throw new IllegalStateException(e);
 //        }
-//        storeInCache(hash, iconData);
+//        storeInCache(hash, buddy, iconData);
 //        for (BuddyInfo info : conn.getBuddyInfoManager().getKnownBuddyInfos()) {
 //            ExtraInfoBlock buddyHash = info.getIconHash();
 //            if (buddyHash != null && buddyHash.equals(hash)) {
@@ -212,10 +224,10 @@ public class BuddyIconTracker {
 //        return hash;
 //    }
 
-  private synchronized void storeInCache(ExtraInfoData hash,
+  private synchronized void storeInCache(ExtraInfoData hash, Screenname buddy,
       @NotNull ByteBlock iconData) {
     LOGGER.fine("Cached icon data for " + hash);
-    removeRequestTime(hash);
+    removeRequestTime(hash, buddy);
     cache.put(hash, ByteBlock.wrap(iconData.toByteArray()));
   }
 
@@ -249,12 +261,12 @@ public class BuddyIconTracker {
     return hash;
   }
 
-  public ExtraInfoData addToCache(Screenname screenname, ByteBlock iconData) {
+  public ExtraInfoData addToCache(Screenname buddy, ByteBlock iconData) {
     DefensiveTools.checkNull(iconData, "iconData");
 
     ExtraInfoData iconInfo = new ExtraInfoData(
         ExtraInfoData.FLAG_HASH_PRESENT, getIconHash(iconData));
-    storeInCache(iconInfo, iconData);
+    storeInCache(iconInfo, buddy, iconData);
     return iconInfo;
   }
 }

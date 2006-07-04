@@ -45,6 +45,9 @@ import net.kano.joustsim.oscar.oscar.service.AbstractServiceArbiter;
 import net.kano.joustsim.oscar.oscar.service.ServiceArbiterRequest;
 import net.kano.joustsim.oscar.oscar.service.ServiceArbitrationManager;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 public class IconServiceArbiter
     extends AbstractServiceArbiter<IconServiceImpl>
     implements IconRequestHandler {
@@ -72,7 +75,16 @@ public class IconServiceArbiter
   }
 
   public void requestIcon(Screenname sn, ExtraInfoData hashBlock) {
-    addRequest(new RequestedIconInfo(sn, hashBlock));
+	  if (sn != null) {
+		  addRequest(new RequestedIconInfo(sn, hashBlock));
+	  } else {
+		  Logger LOGGER = Logger
+		  .getLogger(IconServiceArbiter.class.getName());
+
+		  LOGGER.warning("Arbiter "
+						 + this + "was told to requestIcon with no screenname; hashBlock is"
+						 + hashBlock);  
+	  }
   }
 
   public void uploadIcon(Writable data) {
@@ -136,9 +148,19 @@ public class IconServiceArbiter
     }
 
     public int hashCode() {
-      int result = screenname.hashCode();
-      result = 29 * result + iconHash.hashCode();
-      return result;
+		if (screenname != null) {
+			int result = screenname.hashCode();
+			result = 29 * result + iconHash.hashCode();
+			return result;
+		} else {
+			Logger LOGGER = Logger
+			.getLogger(IconServiceArbiter.class.getName());
+			
+			LOGGER.warning("Arbiter "
+						   + this + "was asked for a hashCode with no screenname.");			
+			
+			return 0;
+		}
     }
   }
 
