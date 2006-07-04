@@ -119,7 +119,7 @@ public class SsiServiceImpl extends AbstractService implements SsiService {
     OscarConnection conn = getOscarConnection();
     ClientSnacProcessor snacProcessor = conn.getSnacProcessor();
     snacProcessor.addGlobalResponseListener(new ItemsChangeListener());
-    boolean serverReady = !conn.hasServiceEvents(ServerReadyEvent.class);
+    boolean serverReady = conn.hasServiceEvents(ServerReadyEvent.class);
     if (serverReady) requestList();
   }
 
