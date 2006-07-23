@@ -74,7 +74,17 @@ public final class QueueRunner {
 
     private boolean running = false;
 
-    private final Runnable r = new Runnable() {
+    class QueueRunnerT extends Thread {
+        public QueueRunnerT() {
+            super("Queue Runner");
+        }
+
+        long  actualWait;
+
+        public String getString() {
+            return "Queue Runner@" + hashCode() + " actualWait: " + actualWait + " stop:" + stop + " running:" + running + " queue size:" + queues.size();
+        }
+
         public void run() {
             synchronized(lock) {
                 running = true;
@@ -96,8 +106,12 @@ public final class QueueRunner {
                                 if (lastActivity == -1) sincelast = 0;
                                 else sincelast = current - lastActivity;
 
-                                lock.wait(Math.max(1, timeout - sincelast));
+                                actualWait = Math.max(1, timeout - sincelast);
+                                setName(getString());
+                                lock.wait(actualWait);
                             } else {
+                                actualWait = minWait;
+                                setName(getString());
                                 lock.wait(minWait);
                             }
                         } catch (InterruptedException nobigdeal) { }
@@ -188,7 +202,7 @@ public final class QueueRunner {
                 }
             }
         }
-    };
+    }
 
     /**
      * Ensures that queue runners cannot be instantiated from outside the
@@ -308,7 +322,7 @@ public final class QueueRunner {
         if (logger.logFineEnabled()) {
             logger.logFine("Starting queue runner due to activity");
         }
-        Thread thread = new Thread(r, "Queue Runner");
+        Thread thread = new QueueRunnerT();
         thread.setDaemon(true);
         thread.start();
         while (!running) {
