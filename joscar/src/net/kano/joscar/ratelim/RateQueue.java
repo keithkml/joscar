@@ -38,11 +38,14 @@ package net.kano.joscar.ratelim;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.logging.Logger;
 import net.kano.joscar.logging.LoggingSystem;
+import net.kano.joscar.snac.ClientSnacProcessor;
 import net.kano.joscar.snac.SnacRequest;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.List;
 
 
 /**
@@ -166,5 +169,60 @@ public class RateQueue {
         return "RateQueue: "
                 + "rateMonitor=" + rateMonitor
                 + ", queued: " + queue.size();
+    }
+
+    public boolean isOpen() {
+        return hasRequests() && !getParentMgr().isPaused();
+    }
+
+    /**
+     * Returns whether the queue is "ready" to send the next request. (A
+     * rate queue is "ready" if its {@linkplain #getOptimalWaitTime() wait
+     * time} is zero.
+     */
+    public boolean isReady() {
+        return getOptimalWaitTime() <= 0;
+    }
+
+    /**
+     * Returns the {@linkplain RateClassMonitor#getOptimalWaitTime()
+     * "optimal wait time"} for this queue.
+     */
+    public long getOptimalWaitTime() {
+        return getRateClassMonitor().getOptimalWaitTime();
+    }
+
+    /**
+     * Dequeues all "ready" requests. Returns whether the queue has been
+     * cleared; returns false if there are still commands left in the queue.
+     */
+    public synchronized boolean sendAndDequeueReadyRequestsIfPossible() {
+        if (!isOpen()) {
+            return true;
+        }
+        if (isReady()) {
+            sendAndDequeueReadyRequests();
+        }
+
+        return !hasRequests();
+    }
+
+    private void sendAndDequeueReadyRequests() {
+        List<SnacRequest> requests;
+        synchronized(this) {
+            requests = new ArrayList<SnacRequest>(queue.size());
+            while (hasRequests() && isReady()) {
+                requests.add(dequeue());
+            }
+        }
+        if (requests.isEmpty()) {
+            return;
+        }
+        ConnectionQueueMgr connMgr = getParentMgr();
+        RateLimitingQueueMgr rateMgr = connMgr.getParentQueueMgr();
+        ClientSnacProcessor processor = connMgr.getSnacProcessor();
+        for (SnacRequest request : requests) {
+            rateMgr.sendSnac(processor, request);
+        }
     }
 }

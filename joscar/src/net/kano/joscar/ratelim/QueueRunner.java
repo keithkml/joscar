@@ -35,316 +35,46 @@
 
 package net.kano.joscar.ratelim;
 
-import net.kano.joscar.CopyOnWriteArraySet;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.logging.Logger;
 import net.kano.joscar.logging.LoggingSystem;
-import net.kano.joscar.snac.ClientSnacProcessor;
-import net.kano.joscar.snac.SnacRequest;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * "Runs" a set of <code>RateQueue</code>s, dequeuing SNACs at appropriate
  * times. This class will create and destroy threads on its own based on
  * activity.
- * TODO: document QueueRunner thread management
  */
-public final class QueueRunner {
+@SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
+public final class QueueRunner<Q extends FutureEventQueue> {
     public static final long TIMEOUT_DEFAULT = 5*60*1000;
 
     private static final Logger logger
             = LoggingSystem.getLogger("net.kano.joscar.ratelim.QueueRunner");
 
-    private long timeout = TIMEOUT_DEFAULT;
 
-    /** A lock used in synchronizing updates with the running thread. */
+    public static <Q extends FutureEventQueue> QueueRunner<Q> create(Q queue) {
+        return new QueueRunner<Q>(queue);
+    }
+
     private final Object lock = new Object();
 
-    /** Whether or not this queue has been updated. */
-    private boolean updated = true;
+    private final Q queue;
 
-    /** The list of queues to "run." */
-    private final Set<RateQueue> queues = new CopyOnWriteArraySet<RateQueue>();
+    private long timeout = TIMEOUT_DEFAULT;
 
-    private boolean stop = false;
+    private boolean shouldCheckQueues = true;
+    private boolean shouldStop = false;
+    private @Nullable QueueRunnerThread thread = null;
 
-    private boolean running = false;
-
-    class QueueRunnerT extends Thread {
-        public QueueRunnerT() {
-            super("Queue Runner");
-        }
-
-        long  actualWait;
-
-        public String getString() {
-            return "Queue Runner@" + hashCode() + " actualWait: " + actualWait + " stop:" + stop + " running:" + running + " queue size:" + queues.size();
-        }
-
-        public void run() {
-            synchronized(lock) {
-                running = true;
-                lock.notifyAll();
-            }
-            long minWait = 0;
-            long lastActivity = -1;
-            long current = System.currentTimeMillis();
-            for (;;) {
-                synchronized(lock) {
-                    if (!updated) {
-                        // if we haven't been updated, we need to wait until a
-                        // call to update() or until we need to send the next
-                        // command (this time is specified in minWait, if non-
-                        // zero)
-                        try {
-                            if (minWait == 0) {
-                                long sincelast;
-                                if (lastActivity == -1) sincelast = 0;
-                                else sincelast = current - lastActivity;
-
-                                actualWait = Math.max(1, timeout - sincelast);
-                                setName(getString());
-                                lock.wait(actualWait);
-                            } else {
-                                actualWait = minWait;
-                                setName(getString());
-                                lock.wait(minWait);
-                            }
-                        } catch (InterruptedException nobigdeal) { }
-                    }
-
-                    // and set this flag back to off while we're in the lock
-                    updated = false;
-
-                    if (stop) {
-                        if (logger.logFineEnabled()) {
-                            logger.logFine("Stopping queue runner cycle due to "
-                                    + "stopCurrentRun() call");
-                        }
-                        stop = false;
-                        running = false;
-                        break;
-                    }
-
-                    // now we see if we've done something useful in the past n
-                    // seconds, where n is the user-specified timeout. if we
-                    // haven't, we stop the thread. this must be done inside
-                    // this lock or else it would be possible to miss queue
-                    // updates.
-                    current = System.currentTimeMillis();
-                    if (lastActivity != -1 && minWait == 0) {
-                        // determine how long ago it was since we did something
-                        // useful
-                        long since = current - lastActivity;
-                        if (since > timeout) {
-                            // we haven't been useful in too long; let's shut
-                            // down
-                            if (logger.logFineEnabled()) {
-                                logger.logFine("Stopping queue runner cycle "
-                                        + "due to inactivity: " + since + "ms");
-                            }
-                            running = false;
-                            break;
-                        }
-                    }
-                    lastActivity = current;
-                }
-
-                // now we go through the queues to send any "ready" commands and
-                // figure out when the next command should be sent (so we can
-                // wait that long in the next iteration of the outer loop)
-                minWait = 0;
-
-                if (queues.isEmpty()) continue;
-
-                for (RateQueue queue : queues) {
-                    boolean finished;
-                    long wait = 0;
-                    synchronized (queue) {
-                        // if the queue is paused or there aren't any requests,
-                        // we can skip it
-                        if (queue.getParentMgr().isPaused()
-                                || !queue.hasRequests()) {
-                            continue;
-                        }
-
-                        // if there are one or more commands that can be sent
-                        // right now, dequeue them
-                        if (isReady(queue)) dequeueReady(queue);
-
-                        // see whether the queue needs to be waited upon (if it
-                        // doesn't have any queued commands, there's nothing to
-                        // wait for -- we'll be notified with a call to
-                        // update() if any are added)
-                        finished = !queue.hasRequests();
-
-                        // and, if necessary, compute how long we need to wait
-                        // for this queue (the time until the next command can
-                        // be sent)
-                        if (!finished) wait = getWaitTime(queue);
-                    }
-
-                    // and if there's nothing more to wait for, move on to the
-                    // next queue
-                    if (finished) continue;
-
-                    // we make sure wait isn't zero, because that would cause us
-                    // to wait forever, which we don't want to do unless we
-                    // explicitly decide to do so.
-                    if (wait < 1) wait = 1;
-
-                    // now change the minimum waiting time if necessary
-                    if (minWait == 0 || minWait > wait) minWait = wait;
-                }
-            }
-        }
+    private QueueRunner(Q queue) {
+        DefensiveTools.checkNull(queue, "queue");
+        this.queue = queue;
+        queue.registerQueueRunner(this);
+        update();
     }
 
-    /**
-     * Ensures that queue runners cannot be instantiated from outside the
-     * package.
-     */
-    QueueRunner() { }
-
-    /**
-     * Returns the "optimal wait time" for the given queue.
-     *
-     * @param queue a rate queue
-     * @return the optimal wait time for the given queue
-     *
-     * @see RateClassMonitor#getOptimalWaitTime()
-     */
-    private long getWaitTime(RateQueue queue) {
-        return queue.getRateClassMonitor().getOptimalWaitTime();
-    }
-
-    /**
-     * Returns whether the given queue is "ready" to send the next request. (A
-     * rate queue is "ready" if its {@linkplain #getWaitTime(RateQueue) wait
-     * time} is zero.
-     *
-     * @param queue a rate queue
-     * @return whether the given queue is "ready"
-     */
-    private boolean isReady(RateQueue queue) {
-        return getWaitTime(queue) <= 0;
-    }
-
-    /**
-     * Dequeues all "ready" requests in the given rate queue. This is only
-     * executed from the QueueRunner thread.
-     *
-     * @param queue a rate queue
-     */
-    private void dequeueReady(RateQueue queue) {
-        ConnectionQueueMgr connMgr = queue.getParentMgr();
-        RateLimitingQueueMgr rateMgr = connMgr.getParentQueueMgr();
-
-        List<SnacRequest> requests = new ArrayList<SnacRequest>();
-        synchronized(queue) {
-            while (queue.hasRequests() && isReady(queue)) {
-                requests.add(queue.dequeue());
-            }
-        }
-        ClientSnacProcessor processor = connMgr.getSnacProcessor();
-        for (SnacRequest request : requests) {
-            rateMgr.sendSnac(processor, request);
-        }
-    }
-
-    /**
-     * Tells the queue runner thread that the given connection queue manager has
-     * been updated. (This indicates to the queue runner that it should
-     * recalculate when to next send SNAC requests in queues under the given
-     * queue manager.)
-     *
-     * @param updated the connection queue manager that has been updated
-     */
-    void update(ConnectionQueueMgr updated) {
-        forceUpdate();
-    }
-
-    /**
-     * Tells the queue runner that the given rate queue has been updated. (This
-     * indicates to the queue runner that it should recalculate when to next
-     * send SNAC requests in the given queue.)
-     *
-     * @param updated the rate queue that has been updated
-     */
-    void update(RateQueue updated) {
-        forceUpdate();
-    }
-
-    /**
-     * Tells the queue runner thread that a major change has taken place. This
-     * indicates to the queue runner that it should recalculate when to next
-     * send SNAC requests in all registered queues.
-     */
-    void update() {
-        forceUpdate();
-    }
-
-    /**
-     * Tells the queue runner to recalculate SNAC queue wait times.
-     */
-    private void forceUpdate() {
-        synchronized(lock) {
-            updated = true;
-            updateLock();
-        }
-    }
-
-    /**
-     * This method must be called while holding a lock on {@link #lock}.
-     * TODO: document updateLock
-     */
-    private void updateLock() {
-        assert Thread.holdsLock(lock);
-
-        checkThread();
-        lock.notifyAll();
-    }
-
-    /**
-     * This method must be called while holding a lock on {@link #lock}.
-     * TODO: document checkThread
-     */
-    private void checkThread() {
-        assert Thread.holdsLock(lock);
-
-        if (running) return;
-        if (queues.isEmpty()) return;
-
-        if (logger.logFineEnabled()) {
-            logger.logFine("Starting queue runner due to activity");
-        }
-        Thread thread = new QueueRunnerT();
-        thread.setDaemon(true);
-        thread.start();
-        while (!running) {
-            try {
-                lock.wait();
-            } catch (InterruptedException e) {
-                // this is okay, we just might need to keep waiting
-            }
-        }
-    }
-
-    public boolean stopCurrentRun() {
-        synchronized(lock) {
-            if (!running) return false;
-
-            // leave a message for the thread to stop and then wake it up
-            stop = true;
-            lock.notifyAll();
-
-            return true;
-        }
-    }
+    public Q getQueue() { return queue; }
 
     public long getTimeout() {
         synchronized(lock) {
@@ -355,65 +85,190 @@ public final class QueueRunner {
     public void setTimeout(long timeout) {
         synchronized(lock) {
             this.timeout = timeout;
-            // we don't call updateLock because we don't want the thread to be
-            // re-started no matter what
             lock.notifyAll();
         }
     }
 
     /**
-     * Adds the given queue to this queue runner's queue list.
-     *
-     * @param queue the queue to add
+     * Indicates that a major change has taken place. This
+     * indicates to the queue runner that it should recalculate when to next
+     * send SNAC requests in all registered queues.
      */
-    void addQueue(RateQueue queue) {
-        DefensiveTools.checkNull(queue, "queue");
-
-        queues.add(queue);
-
-        update(queue);
+    public void update() {
+        synchronized(lock) {
+            shouldCheckQueues = true;
+            startThreadIfNecessary();
+            lock.notifyAll();
+        }
     }
 
     /**
-     * Adds the given queues to this queue runner's queue list.
-     *
-     * @param rateQueues the queues to add
+     * Ensures that a thread is running to process the queues, if necessary.
+     * This method must be called while holding a lock on {@link #lock}.
      */
-    void addQueues(Collection<RateQueue> rateQueues) {
-        // we need to copy these, because the elements may be set to null
-        // between a null check and the addAll
-        List<RateQueue> safeRateQueues =
-                DefensiveTools.getSafeNonnullListCopy(
-                        rateQueues, "rateQueues");
-        queues.addAll(safeRateQueues);
+    private void startThreadIfNecessary() {
+        assert Thread.holdsLock(lock);
 
-        update();
+        if ((thread != null && thread.running) || !queue.hasQueues()) {
+            return;
+        }
+
+        if (logger.logFineEnabled()) {
+            logger.logFine("Starting queue runner due to activity");
+        }
+        startThread();
     }
 
-    /**
-     * Removes the given queue, if present, from this queue runner's queue list.
-     *
-     * @param queue the queue to remove
-     */
-    void removeQueue(RateQueue queue) {
-        DefensiveTools.checkNull(queue, "queue");
-
-        queues.remove(queue);
+    private void startThread() {
+        QueueRunnerThread thread = new QueueRunnerThread();
+        thread.setDaemon(true);
+        thread.start();
+        while (!thread.running) {
+            try {
+                lock.wait();
+            } catch (InterruptedException e) {
+                // this is okay, we just might need to keep waiting
+            }
+        }
+        this.thread = thread;
     }
 
-    /**
-     * Removes the given queues, if present, from this queue runner's queue
-     * list.
-     *
-     * @param rateQueues the queues to remove
-     */
-    void removeQueues(Collection<RateQueue> rateQueues) {
-        DefensiveTools.checkNull(rateQueues, "rateQueues");
+    public boolean stopCurrentRun() {
+        synchronized(lock) {
+            if (thread == null || !thread.running) return false;
 
-        queues.removeAll(rateQueues);
+            // leave a message for the thread to stop and then wake it up
+            shouldStop = true;
+            lock.notifyAll();
+
+            return true;
+        }
+    }
+
+    protected void waitForLock(long wait) {
+        assert wait != 0;
+        try {
+            lock.wait(wait);
+        } catch (InterruptedException nobigdeal) {
+            // this is okay, there's no harm in getting out early
+        }
     }
 
     public String toString() {
-        return "QueueRunner: queues=" + queues;
+        return "QueueRunner: queue=" + queue;
+    }
+
+    public boolean isRunning() {
+        return thread != null && thread.running;
+    }
+
+    private class QueueRunnerThread extends Thread {
+        private volatile boolean running = false;
+
+        public QueueRunnerThread() {
+            super("Queue Runner");
+        }
+
+        public void run() {
+            try {
+                setRunning(true);
+
+                long nextDequeueTime = -1;
+                long lastActivity = System.currentTimeMillis();
+                for (;;) {
+                    synchronized(lock) {
+                        waitForUpdate(nextDequeueTime, lastActivity);
+
+                        if (shouldStop) {
+                            if (logger.logFineEnabled()) {
+                                logger.logFine("Stopping queue runner due to "
+                                        + "stopCurrentRun() call");
+                            }
+                            shouldStop = false;
+                            break;
+                        }
+
+                        if (nextDequeueTime == -1) {
+                            if (shouldStopDueToInactivity(lastActivity)) {
+                                if (logger.logFineEnabled()) {
+                                    logger.logFine("Stopping queue runner due to "
+                                            + "inactivity: "
+                                            + (System.currentTimeMillis()
+                                            - lastActivity) + "ms");
+                                }
+                                break;
+                            }
+                        } else {
+                            lastActivity = System.currentTimeMillis();
+                        }
+                    }
+
+                    nextDequeueTime = queue.flushQueues();
+                }
+            } finally {
+                setRunning(false);
+            }
+        }
+
+        private void setRunning(boolean running) {
+            synchronized(lock) {
+                this.running = running;
+                lock.notifyAll();
+            }
+        }
+
+        private boolean shouldStopDueToInactivity(long lastActivity) {
+            assert Thread.holdsLock(lock);
+
+            if (lastActivity == -1) return false;
+
+            long inactiveTime = System.currentTimeMillis() - lastActivity;
+            return inactiveTime > timeout;
+
+        }
+
+        private void waitForUpdate(long minWait, long lastActivity) {
+            assert Thread.holdsLock(lock);
+
+            if (shouldCheckQueues) {
+                // we were updated.
+                shouldCheckQueues = false;
+                return;
+            }
+
+            long wait;
+            if (minWait == -1) {
+                wait = computeWaitTime(lastActivity);
+            } else {
+                wait = minWait;
+            }
+            wait = Math.max(1, Math.min(timeout, wait));
+            setName(makeStatusString(wait));
+            waitForLock(wait);
+
+            // it doesn't matter if update was called while we were waiting,
+            // because we're going to check the queues anyway
+            shouldCheckQueues = false;
+        }
+
+        private long computeWaitTime(long lastActivity) {
+            assert Thread.holdsLock(lock);
+
+            long sincelast;
+            if (lastActivity == -1) {
+                sincelast = 0;
+            } else {
+                sincelast = System.currentTimeMillis() - lastActivity;
+            }
+
+            return Math.max(1, timeout - sincelast);
+        }
+
+        private String makeStatusString(long wait) {
+            assert Thread.holdsLock(lock);
+
+            return "Queue Runner@" + hashCode() + " currentWait: " + wait
+                    + " shouldStop:" + shouldStop + " running:" + running;
+        }
     }
 }

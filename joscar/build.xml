@@ -246,6 +246,7 @@
         <pathelement location="${joscar.bin}"/>
       </classpath>
       <test name="net.kano.joscar.rvproto.ft.FileTransferHeaderTest" />
+      <test name="net.kano.joscar.ratelim.QueueRunnerTest" />
       <batchtest>
         <fileset dir="${tests.bin}">
           <include name="**/SelfTest.*"/>
