@@ -41,8 +41,8 @@ import net.kano.joscar.snac.SnacQueueManager;
 import net.kano.joscar.snac.SnacRequest;
 
 import java.util.IdentityHashMap;
-import java.util.Map;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A SNAC queue manager which uses a <code>RateMonitor</code> to determine when
@@ -96,26 +96,20 @@ public class RateLimitingQueueMgr implements SnacQueueManager {
             = new IdentityHashMap<ClientSnacProcessor, ConnectionQueueMgr>();
 
     /** A thread to "run" the SNAC queues controlled by this queue manager. */
-    private final QueueRunner runner = new QueueRunner();
+    private final QueueRunner<RateLimitingEventQueue> runner
+            = QueueRunner.create(new RateLimitingEventQueue());
 
     /**
      * Returns this rate manager's "queue runner."
      *
      * @return this rate manager's queue runner thread object
      */
-    public final QueueRunner getRunner() { return runner; }
+    public final QueueRunner<RateLimitingEventQueue> getRunner() { 
+        return runner;
+    }
 
     public void stop() {
         runner.stopCurrentRun();
-    }
-
-    protected void finalize() throws Throwable {
-        super.finalize();
-
-        //TOLATER: should finalize() kill the queue runner? Should we add a connlistener?
-        // if we're not referenced anymore, I don't think there's a reason for
-        // the queue to be running.
-        stop();
     }
 
     /**

@@ -92,14 +92,12 @@ public final class ConnectionQueueMgr {
 
         public void rateClassUpdated(RateMonitor monitor,
                 RateClassMonitor classMonitor, RateClassInfo rateInfo) {
-            RateQueue queue = getRateQueue(classMonitor);
-
-            queueMgr.getRunner().update(queue);
+            queueMgr.getRunner().update();
         }
 
         public void rateClassLimited(RateMonitor rateMonitor,
                 RateClassMonitor rateClassMonitor, boolean limited) {
-            queueMgr.getRunner().update(getRateQueue(rateClassMonitor));
+            queueMgr.getRunner().update();
         }
     };
 
@@ -213,7 +211,7 @@ connQueueMgr.getRateMonitor().addListener(myRateListener);
 
         } else {
             queue.enqueue(request);
-            queueMgr.getRunner().update(queue);
+            queueMgr.getRunner().update();
         }
     }
 
@@ -254,7 +252,7 @@ connQueueMgr.getRateMonitor().addListener(myRateListener);
         // we turn the paused flag off and tell the thread to wake up, in
         // case there are some commands queued up that can be sent now
         paused = false;
-        queueMgr.getRunner().update(this);
+        queueMgr.getRunner().update();
     }
 
     /**
@@ -276,26 +274,27 @@ connQueueMgr.getRateMonitor().addListener(myRateListener);
     private synchronized void updateRateClasses() {
         List<RateClassMonitor> monitors = monitor.getMonitors();
 
-        // clear the list of queues
         Collection<RateQueue> queueArray = clearQueues();
 
         List<SnacRequest> reqs = new LinkedList<SnacRequest>();
 
         // gather up all of the pending SNAC requests
-        for (RateQueue queue : queueArray) queue.dequeueAll(reqs);
+        for (RateQueue queue : queueArray) {
+            queue.dequeueAll(reqs);
+        }
 
         // create new rate queues
-        for (RateClassMonitor monitor1 : monitors) {
-            queues.put(monitor1, new RateQueue(this, monitor1));
+        for (RateClassMonitor monitor : monitors) {
+            queues.put(monitor, new RateQueue(this, monitor));
         }
 
         // and re-queue all of the pending SNACs
-        for (SnacRequest req : reqs) queueSnac(req);
+        for (SnacRequest req : reqs) {
+            queueSnac(req);
+        }
 
-        Collection<RateQueue> vals = queues.values();
-        QueueRunner runner = queueMgr.getRunner();
-        runner.addQueues(vals);
-        runner.update(this);
+        QueueRunner<RateLimitingEventQueue> runner = queueMgr.getRunner();
+        runner.getQueue().addQueues(queues.values());
     }
 
     /**
@@ -305,7 +304,7 @@ connQueueMgr.getRateMonitor().addListener(myRateListener);
      */
     private synchronized Collection<RateQueue> clearQueues() {
         Collection<RateQueue> vals = queues.values();
-        queueMgr.getRunner().removeQueues(vals);
+        queueMgr.getRunner().getQueue().removeQueues(vals);
         queues.clear();
 
         return DefensiveTools.getUnmodifiableCopy(vals);
@@ -321,8 +320,7 @@ connQueueMgr.getRateMonitor().addListener(myRateListener);
     }
 
     public String toString() {
-        return "ConnectionQueueMgr: "
-                + "paused=" + paused
-                + ", queues=" + (queues.keySet());
+        return "ConnectionQueueMgr: " + "paused=" + paused
+                + ", queues=" + queues.keySet();
     }
 }
