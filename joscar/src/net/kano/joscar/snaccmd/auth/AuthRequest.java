@@ -35,9 +35,9 @@
 
 package net.kano.joscar.snaccmd.auth;
 
+import net.kano.joscar.BinaryTools;
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.BinaryTools;
 import net.kano.joscar.flapcmd.SnacPacket;
 import net.kano.joscar.tlv.Tlv;
 import net.kano.joscar.tlv.TlvChain;
@@ -45,10 +45,10 @@ import net.kano.joscar.tlv.TlvTools;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 /**
  * A SNAC command used to log into the OSCAR server.
@@ -92,81 +92,13 @@ public class AuthRequest extends AuthCommand {
      */
     private static final int TYPE_HASHEDPASS = 0x4c;
 
+    private static final String AIMSM_STRING = "AOL Instant Messenger (SM)";
+
     /** The string "AOL Instant Messenger (SM)" encoded as US-ASCII. */
-    private static final byte[] AIMSM_BYTES;
+    private static final byte[] AIMSM_BYTES
+            = BinaryTools.getAsciiBytes(AIMSM_STRING);
 
-    static { // initialization
-        byte[] bytes = null;
-        try {
-            bytes = "AOL Instant Messenger (SM)".getBytes("US-ASCII");
-        } catch (UnsupportedEncodingException impossible) { }
-        AIMSM_BYTES = bytes;
-    }
-
-    /**
-     * Encrypts the given password with the given key into a format suitable
-     * for sending in an auth request packet. Note that the password string must
-     * contain only US-ASCII characters.
-     *
-     * @param pass the user's password
-     * @param key a "key" provided by the server
-     * @param hashedPass whether the password should be sent as its MD5 hash
-     *        like newer clients do using the <code>0x4c</code> TLV
-     * @return the user's password, encrypted
-     */
-    private static byte[] encryptPassword(String pass, ByteBlock key,
-            boolean hashedPass) {
-        byte[] passBytes = BinaryTools.getAsciiBytes(pass);
-
-        if (hashedPass) {
-            MessageDigest digest;
-            try {
-                digest = MessageDigest.getInstance("MD5");
-            } catch (NoSuchAlgorithmException impossible) { return null; }
-            passBytes = digest.digest(passBytes);
-            return getPassHash(digest, key, ByteBlock.wrap(passBytes));
-        } else {
-            return getPassHash(key, ByteBlock.wrap(passBytes));
-        }
-    }
-
-    /**
-     * Returns the MD5 sum of the given key, the given block of password data,
-     * and the string "AOL Instant Messenger (SM)".
-     *
-     * @param key a block of data
-     * @param passBytes another block of data
-     * @return the MD5 sum of the given key, password data, and {@link
-     *         #AIMSM_BYTES}
-     */
-    private static byte[] getPassHash(ByteBlock key, ByteBlock passBytes) {
-        MessageDigest md5;
-        try {
-            md5 = MessageDigest.getInstance("MD5");
-        } catch (NoSuchAlgorithmException impossible) { return null; }
-
-        return getPassHash(md5, key, passBytes);
-
-    }
-
-    /**
-     * Returns the MD5 sum of the given key, the given block of password data,
-     * and the string "AOL Instant Messenger (SM)".
-     *
-     * @param md5 a message digest object to use
-     * @param key a block of data
-     * @param passBytes another block of data
-     * @return the MD5 sum of the given key, password data, and {@link
-     *         #AIMSM_BYTES}
-     */
-    private static byte[] getPassHash(MessageDigest md5,
-            ByteBlock key, ByteBlock passBytes) {
-        md5.update(key.toByteArray());
-        md5.update(passBytes.toByteArray());
-        md5.update(AIMSM_BYTES);
-
-        return md5.digest();
-    }
+    private static final Pattern PATTERN_NUMBER = Pattern.compile("^\\d+$");
 
     /** The user's screenname. */
     private final String sn;
@@ -246,13 +178,108 @@ public class AuthRequest extends AuthCommand {
      */
     public AuthRequest(String sn, String pass, ClientVersionInfo version,
             Locale locale, ByteBlock key) {
+        this(sn, pass, version, locale, key, isIcqNumber(sn));
+    }
+
+    /**
+     * Creates an outgoing authorization request command with the given
+     * screenname, password, client version, locale, and authorization key.
+     *
+     * @param sn the user's screenname
+     * @param pass the user's password
+     * @param version a client information block
+     * @param locale the user's locale
+     * @param key an authorization key block provided by the server in a
+     *        {@link KeyResponse}
+     * @param xorPassword whether to XOR the password. Normally this is only
+     *        done for ICQ users.
+     */
+    public AuthRequest(String sn, String pass, ClientVersionInfo version,
+            Locale locale, ByteBlock key, boolean xorPassword) {
         super(CMD_AUTH_REQ);
 
         this.sn = sn;
         this.version = version;
         this.locale = locale;
-        this.hashedPass = true;
-        this.encryptedPass = ByteBlock.wrap(encryptPassword(pass, key, true));
+        if (xorPassword) {
+            this.hashedPass = false;
+            this.encryptedPass = ByteBlock.wrap(
+                    encryptPassword(pass, key, false));
+        } else {
+            this.hashedPass = true;
+            this.encryptedPass = ByteBlock.wrap(
+                    encryptPassword(pass, key, true));
+        }
+    }
+
+    private static boolean isIcqNumber(String sn) {
+        return PATTERN_NUMBER.matcher(sn).matches();
+    }
+
+    /**
+     * Encrypts the given password with the given key into a format suitable
+     * for sending in an auth request packet. Note that the password string must
+     * contain only US-ASCII characters.
+     *
+     * @param pass the user's password
+     * @param key a "key" provided by the server
+     * @param hashedPass whether the password should be sent as its MD5 hash
+     *        like newer clients do using the <code>0x4c</code> TLV
+     * @return the user's password, encrypted
+     */
+    private byte[] encryptPassword(String pass, ByteBlock key,
+            boolean hashedPass) {
+        byte[] passBytes = BinaryTools.getAsciiBytes(pass);
+
+        if (hashedPass) {
+            MessageDigest digest = createMd5Hasher();
+            passBytes = digest.digest(passBytes);
+            return getPassHash(digest, key, ByteBlock.wrap(passBytes));
+        } else {
+            return getPassHash(key, ByteBlock.wrap(passBytes));
+        }
+    }
+
+    private MessageDigest createMd5Hasher() {
+        MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance("MD5");
+        } catch (NoSuchAlgorithmException impossible) {
+            throw new IllegalStateException(impossible);
+        }
+        return digest;
+    }
+
+    /**
+     * Returns the MD5 sum of the given key, the given block of password data,
+     * and the string "AOL Instant Messenger (SM)".
+     *
+     * @param key a block of data
+     * @param passBytes another block of data
+     * @return the MD5 sum of the given key, password data, and {@link
+     *         #AIMSM_BYTES}
+     */
+    private byte[] getPassHash(ByteBlock key, ByteBlock passBytes) {
+        return getPassHash(createMd5Hasher(), key, passBytes);
+    }
+
+    /**
+     * Returns the MD5 sum of the given key, the given block of password data,
+     * and the string "AOL Instant Messenger (SM)".
+     *
+     * @param md5 a message digest object to use
+     * @param key a block of data
+     * @param passBytes another block of data
+     * @return the MD5 sum of the given key, password data, and {@link
+     *         #AIMSM_BYTES}
+     */
+    private byte[] getPassHash(MessageDigest md5,
+            ByteBlock key, ByteBlock passBytes) {
+        md5.update(key.toByteArray());
+        md5.update(passBytes.toByteArray());
+        md5.update(AIMSM_BYTES);
+
+        return md5.digest();
     }
 
     /**
@@ -320,9 +347,7 @@ public class AuthRequest extends AuthCommand {
     }
 
     public String toString() {
-        return "AuthRequest: " +
-                "sn='" + sn + "'" +
-                ", version='" + version + "'" +
-                ", locale=" + locale;
+        return "AuthRequest: " + "sn='" + sn + "'" +
+                ", version='" + version + "'" + ", locale=" + locale;
     }
 }
