@@ -148,7 +148,7 @@ public class BuddyIconTracker {
         conn.getExternalServiceManager().getIconServiceArbiter();
     if (iconArbiter != null) {
       if (buddy != null) {
-        LOGGER.info("Requesting buddy icon for " + buddy);
+        LOGGER.fine("Requesting buddy icon for " + buddy);
       }
       iconArbiter.addIconRequestListener(iconRequestListener);
       updateRequestTime(newHash, buddy);
