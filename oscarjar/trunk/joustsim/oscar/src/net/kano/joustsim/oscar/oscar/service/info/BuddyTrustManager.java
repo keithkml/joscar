@@ -196,9 +196,9 @@ public class BuddyTrustManager {
       // trust status changed
       oldStatus = buddyTrustInfo.getTrustedStatus();
 
-      LOGGER.info("updating buddy hash for " + sn);
+      LOGGER.fine("updating buddy hash for " + sn);
       newStatus = updateBuddyHash(sn, certInfo);
-      LOGGER.info("new status for " + sn + " is " + newStatus);
+      LOGGER.fine("new status for " + sn + " is " + newStatus);
       if (newStatus == null) {
         // the status did not change, so there's nothing left for us to
         // do here
