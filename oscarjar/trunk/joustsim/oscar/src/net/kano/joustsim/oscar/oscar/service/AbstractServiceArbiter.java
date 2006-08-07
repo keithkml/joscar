@@ -96,7 +96,7 @@ public abstract class AbstractServiceArbiter<S extends MutableService>
 
       public void connStateChanged(OscarConnection conn,
           OscarConnStateEvent event) {
-        LOGGER.info("Conn state changed for " + AbstractServiceArbiter.this + ": "
+        LOGGER.fine("Conn state changed for " + AbstractServiceArbiter.this + ": "
             + event.getClientConnEvent().getNewState());
       }
 
