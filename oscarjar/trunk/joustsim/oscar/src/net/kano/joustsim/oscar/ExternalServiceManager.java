@@ -339,7 +339,7 @@ public class ExternalServiceManager {
   private <S extends MutableService> void makeServiceRequest(
       ServiceRequestInfo<S> request) {
     int family = request.family;
-    LOGGER.info("Requesting external service " + family + " for "
+    LOGGER.fine("Requesting external service " + family + " for "
         + request.arbiter);
     MainBosService bosService = aimConnection.getBosService();
     if (bosService == null) return;
@@ -434,7 +434,7 @@ public class ExternalServiceManager {
     }
 
     public void allFamiliesReady(OscarConnection conn) {
-      LOGGER.info("External service connection for " + request.arbiter
+      LOGGER.fine("External service connection for " + request.arbiter
           + " is connected and ready");
       clearRequest(request);
     }
