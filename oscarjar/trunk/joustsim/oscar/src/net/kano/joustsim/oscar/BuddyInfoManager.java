@@ -191,7 +191,7 @@ public class BuddyInfoManager {
 
       public void handleCertificateInfo(InfoService service, Screenname buddy,
           BuddyCertificateInfo certInfo) {
-        LOGGER.info("BuddyInfoManager got cert info for " + buddy);
+        LOGGER.fine("BuddyInfoManager got cert info for " + buddy);
         BuddyInfo buddyInfo = getBuddyInfoInstance(buddy);
         buddyInfo.setOnline(true);
         if (certInfo != null) cacheCertInfo(certInfo);
