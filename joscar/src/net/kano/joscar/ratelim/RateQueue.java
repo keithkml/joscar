@@ -209,20 +209,42 @@ public class RateQueue {
 
     private void sendAndDequeueReadyRequests() {
         List<SnacRequest> requests;
+
         synchronized(this) {
+			int possibleCmdCount = getRateClassMonitor().getPossibleCmdCount();
+			
+			/* XXX getPossibleCmdCount() returns 0 while isReady() is true. Which one is right???
+			 * We will always send at least one cmd for now... since otherwise we get stuck in an infinite loop
+			 * because the calling function thinks it's immediately time to try again.
+			 */
+			if (possibleCmdCount == 0) possibleCmdCount = 1;
+
+			int i = 0;
             requests = new ArrayList<SnacRequest>(queue.size());
-            while (hasRequests() && isReady()) {
-                requests.add(dequeue());
+
+            while (hasRequests() && isReady() && (i < possibleCmdCount)) {
+				requests.add(dequeue());
+				i++;
             }
         }
-        if (requests.isEmpty()) {
-            return;
-        }
+		logger.logFine("sendAndDequeueReadyRequests(): " + this.toString() + " will attempt to send " + requests.size());
+
         ConnectionQueueMgr connMgr = getParentMgr();
         RateLimitingQueueMgr rateMgr = connMgr.getParentQueueMgr();
         ClientSnacProcessor processor = connMgr.getSnacProcessor();
-        for (SnacRequest request : requests) {
-            rateMgr.sendSnac(processor, request);
+		while(!requests.isEmpty() && isReady()) {
+			rateMgr.sendSnac(processor, requests.get(0));
+			requests.remove(0);
+			getRateClassMonitor().updateRate(System.currentTimeMillis());
         }
+
+		/* Some requests not sent. Requeue for later. */
+		if (!requests.isEmpty()) {
+			logger.logFine("re-enqueuing " + requests.size() + " SnacRequests for " + this.toString());
+            synchronized(this) {
+				/* Add all the remaining requests to the start of the queue */
+				queue.addAll(0, requests);
+			}
+		}
     }
 }
