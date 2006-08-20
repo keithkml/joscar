@@ -55,7 +55,7 @@ import java.net.Socket;
  */
 public class ClientFlapConn extends ClientConn {
     /** The FLAP processor that this object uses. */
-    private FlapProcessor flapProcessor = new FlapProcessor();
+    private FlapProcessor flapProcessor = new AsynchronousFlapProcessor();
 
     /**
      * Creates a client FLAP connection. The given host and port will be
