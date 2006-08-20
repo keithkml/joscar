@@ -32,7 +32,7 @@
     POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<project name="joscar" default="joscar" basedir=".">
+<project name="joscar" default="jar" basedir=".">
 
   <description>joscar build file</description>
 
