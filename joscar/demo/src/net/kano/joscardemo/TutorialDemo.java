@@ -35,6 +35,7 @@
 
 package net.kano.joscardemo;
 
+import net.kano.joscar.flap.AsynchronousFlapProcessor;
 import net.kano.joscar.flap.FlapCommand;
 import net.kano.joscar.flap.FlapPacketEvent;
 import net.kano.joscar.flap.FlapPacketListener;
@@ -87,7 +88,7 @@ public class TutorialDemo {
         socket = new Socket("login.oscar.aol.com", 5190);
 
         // create SNAC and FLAP handlers
-        flapProcessor = new FlapProcessor(socket);
+        flapProcessor = new AsynchronousFlapProcessor(socket);
         snacProcessor = new ClientSnacProcessor(flapProcessor);
 
         // these are important but not worth explaining now
