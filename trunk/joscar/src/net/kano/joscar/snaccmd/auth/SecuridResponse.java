@@ -35,13 +35,13 @@
 
 package net.kano.joscar.snaccmd.auth;
 
-import net.kano.joscar.flapcmd.SnacPacket;
-import net.kano.joscar.ByteBlock;
 import net.kano.joscar.BinaryTools;
+import net.kano.joscar.ByteBlock;
 import net.kano.joscar.DefensiveTools;
+import net.kano.joscar.flapcmd.SnacPacket;
 
-import java.io.OutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 
 public class SecuridResponse extends AuthCommand {
     private final String securid;
@@ -50,8 +50,8 @@ public class SecuridResponse extends AuthCommand {
         super(CMD_SECURID_RESPONSE);
 
         ByteBlock data = packet.getData();
-        int len = BinaryTools.getUByte(data, 0);
-        securid = BinaryTools.getAsciiString(data.subBlock(1, len));
+        int len = BinaryTools.getUShort(data, 0);
+        securid = BinaryTools.getAsciiString(data.subBlock(2, len));
     }
 
     public SecuridResponse(String securid) {
@@ -64,7 +64,7 @@ public class SecuridResponse extends AuthCommand {
 
     public void writeData(OutputStream out) throws IOException {
         DefensiveTools.checkNull(securid, "securid");
-        BinaryTools.writeUByte(out, securid.length());
+        BinaryTools.writeUShort(out, securid.length());
         out.write(BinaryTools.getAsciiBytes(securid));
     }
 
