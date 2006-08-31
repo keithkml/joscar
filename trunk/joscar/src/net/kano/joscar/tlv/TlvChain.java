@@ -36,6 +36,7 @@
 package net.kano.joscar.tlv;
 
 import net.kano.joscar.Writable;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Iterator;
 import java.util.List;
@@ -134,7 +135,7 @@ public interface TlvChain extends Writable {
      *
      * @see #getLastTlv
      */
-    String getString(int type, String charset);
+    String getString(int type, @Nullable String charset);
 
     /**
      * Returns an unsigned two-byte integer read from the value of the
