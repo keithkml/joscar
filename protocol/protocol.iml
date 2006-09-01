@@ -15,6 +15,8 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" exported="" name="Null annotations" level="project" />
+    <orderEntry type="library" name="JUnit" level="project" />
+    <orderEntry type="module" module-name="common" />
     <orderEntryProperties />
   </component>
   <component name="copyright">

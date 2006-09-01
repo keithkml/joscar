@@ -37,7 +37,6 @@ package net.kano.joscar.rv;
 
 import net.kano.joscar.CopyOnWriteArrayList;
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.OscarTools;
 import net.kano.joscar.SeqNum;
 import net.kano.joscar.flap.FlapProcessor;
 import net.kano.joscar.flapcmd.SnacCommand;
@@ -57,6 +56,7 @@ import net.kano.joscar.snaccmd.icbm.RecvRvIcbm;
 import net.kano.joscar.snaccmd.icbm.RvCommand;
 import net.kano.joscar.snaccmd.icbm.RvResponse;
 import net.kano.joscar.snaccmd.icbm.SendRvIcbm;
+import net.kano.joustsim.Screenname;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
@@ -733,7 +733,7 @@ public class RvProcessor {
          */
         private RvSessionMapKey(long sessionId, String sn) {
             this.sessionId = sessionId;
-            this.sn = OscarTools.normalize(sn);
+            this.sn = Screenname.normalize(sn);
         }
 
         public int hashCode() {
