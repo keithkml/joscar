@@ -33,30 +33,21 @@
 -->
 
 <project name="joscar-protocol" default="jar">
-  <property name="joscar.ver" value="0.9.4"/>
-
-  <path id="lib">
-    <pathelement path="../lib/annotations.jar" />
-  </path>
-
-  <target name="compile"
-          description="Compiles the joscar library only, outputting to the bin/ directory.">
+  <target name="compile">
     <mkdir dir="classes"/>
     <javac srcdir="src" includes="net/kano/joscar/"
            destdir="classes" source="1.5" classpathref="joscar-lib"
-           debug="true">
-    </javac>
+           debug="true"/>
   </target>
 
-  <target name="jar" depends="compile"
-          description="Places joscar library classes in a jar file.">
-    <jar jarfile="../dist/protocol.jar"
+  <target name="jar" depends="compile">
+    <jar jarfile="${dist}/protocol.jar"
          basedir="classes"
          includes="net/kano/joscar/**/*.class"/>
   </target>
+<!--
 
-  <target name="demo" depends="compile"
-          description="Compiles the JoscarTester demo classes to demo/bin/.">
+  <target name="demo" depends="compile">
     <mkdir dir="demo/classes"/>
     <javac includes="net/kano/joscardemo/"
            srcdir="demo/src:demo/extras/src"
@@ -71,6 +62,7 @@
       </classpath>
     </javac>
   </target>
+-->
 
   <target name="-build-taglets">
     <mkdir dir="tools/classes"/>
@@ -79,8 +71,7 @@
            destdir="tools/classes" debug="true"/>
   </target>
 
-  <target name="javadoc" depends="-build-taglets"
-          description="Generates javadoc for the joscar library.">
+  <target name="javadoc" depends="-build-taglets">
     <mkdir dir="docs/api"/>
     <javadoc sourcepath="src"
              packagenames="net.kano.joscar, net.kano.joscar.*"
@@ -130,15 +121,14 @@
     </javadoc>
   </target>
 
-  <target name="clean"
-          description="Removes all files generated or compiled by this buildfile.">
+  <target name="clean">
     <delete dir="classes"/>
     <delete dir="demo/classes"/>
     <delete dir="tests/classes"/>
     <delete dir="tests/reports"/>
     <delete dir="docs/api"/>
     <delete dir="tools/classes"/>
-    <delete file="../dist/protocol.jar"/>
+    <delete file="${dist}/protocol.jar"/>
   </target>
 
   <target name="-build-tests" depends="compile">
@@ -150,8 +140,7 @@
            classpath="classes"/>
   </target>
 
-  <target name="test" depends="-build-tests"
-          description="Runs the joscar library's JUnit tests.">
+  <target name="test" depends="-build-tests">
     <mkdir dir="tests/reports"/>
     <junit>
       <formatter type="xml"/>
@@ -168,7 +157,5 @@
       </batchtest>
     </junit>
   </target>
-
-  <target name="nightly" depends="test" />
 
 </project>
