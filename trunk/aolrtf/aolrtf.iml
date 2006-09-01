@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module version="4" relativePaths="false" type="JAVA_MODULE">
   <component name="ModuleRootManager" />
-  <component name="NewModuleRootManager">
+  <component name="NewModuleRootManager" inherit-compiler-output="true">
     <output url="file://$MODULE_DIR$/bin" />
     <exclude-output />
     <output-test url="file://$MODULE_DIR$/tests/bin" />
@@ -12,8 +12,6 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="common" />
-    <orderEntry type="library" name="JUnit" level="application" />
-    <orderEntry type="library" name="joscar current" level="project" />
     <orderEntryProperties />
   </component>
   <component name="copyright">

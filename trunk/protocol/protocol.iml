@@ -5,7 +5,7 @@
     <option name="LOCAL_VCS_PURGING_PERIOD" value="259200000" />
   </component>
   <component name="ModuleRootManager" />
-  <component name="NewModuleRootManager">
+  <component name="NewModuleRootManager" inherit-compiler-output="true">
     <output url="file://$MODULE_DIR$/bin" />
     <output-test url="file://$MODULE_DIR$/tests/bin" />
     <content url="file://$MODULE_DIR$">
@@ -13,9 +13,8 @@
       <sourceFolder url="file://$MODULE_DIR$/tests/src" isTestSource="true" />
     </content>
     <orderEntry type="inheritedJdk" />
-    <orderEntry type="library" name="JUnit" level="application" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="Nullness annotations" level="project" />
+    <orderEntry type="library" exported="" name="Null annotations" level="project" />
     <orderEntryProperties />
   </component>
   <component name="copyright">
