@@ -7,7 +7,7 @@
     <setting name="mainClass" value="" />
   </component>
   <component name="ModuleRootManager" />
-  <component name="NewModuleRootManager">
+  <component name="NewModuleRootManager" inherit-compiler-output="true">
     <output url="file://$MODULE_DIR$/bin" />
     <exclude-output />
     <content url="file://$MODULE_DIR$">
@@ -16,14 +16,13 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="common" />
-    <orderEntry type="module" module-name="oscar" />
-    <orderEntry type="library" name="JGoodies Plastic L&amp;F" level="project" />
     <orderEntry type="library" name="Bouncy Castle Mail" level="project" />
     <orderEntry type="library" name="Bouncy Castle Crypto" level="project" />
-    <orderEntry type="library" name="WinLAF" level="project" />
-    <orderEntry type="module" module-name="aolrtf" />
     <orderEntry type="library" name="Null annotations" level="project" />
+    <orderEntry type="module" module-name="aolrtf" />
+    <orderEntry type="module" module-name="client" />
+    <orderEntry type="module" module-name="common" />
+    <orderEntry type="module" module-name="protocol" />
     <orderEntryProperties />
   </component>
   <component name="copyright">

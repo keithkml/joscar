@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module version="4" relativePaths="false" type="JAVA_MODULE">
   <component name="ModuleRootManager" />
-  <component name="NewModuleRootManager">
+  <component name="NewModuleRootManager" inherit-compiler-output="true">
     <output url="file://$MODULE_DIR$/bin" />
     <exclude-output />
     <content url="file://$MODULE_DIR$">
@@ -12,7 +12,6 @@
     <orderEntry type="library" name="Bouncy Castle Mail" level="project" />
     <orderEntry type="library" name="Bouncy Castle Crypto" level="project" />
     <orderEntry type="library" exported="" name="Null annotations" level="project" />
-    <orderEntry type="library" exported="" name="joscar-svn" level="application" />
     <orderEntryProperties />
   </component>
   <component name="copyright">

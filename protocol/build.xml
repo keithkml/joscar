@@ -50,8 +50,7 @@
 
   <target name="jar" depends="compile"
           description="Places joscar library classes in a jar file.">
-    <mkdir dir="dist"/>
-    <jar jarfile="dist/protocol.jar"
+    <jar jarfile="../dist/protocol.jar"
          basedir="classes"
          includes="net/kano/joscar/**/*.class"/>
   </target>
@@ -139,7 +138,7 @@
     <delete dir="tests/reports"/>
     <delete dir="docs/api"/>
     <delete dir="tools/classes"/>
-    <delete file="dist/protocol.jar"/>
+    <delete file="../dist/protocol.jar"/>
   </target>
 
   <target name="-build-tests" depends="compile">
