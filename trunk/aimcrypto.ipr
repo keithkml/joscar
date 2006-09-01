@@ -421,11 +421,14 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/aolrtf/aolrtf.iml" filepath="$PROJECT_DIR$/aolrtf/aolrtf.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" group="Application" />
+      <module fileurl="file://$PROJECT_DIR$/protocol/tools/build-tools.iml" filepath="$PROJECT_DIR$/protocol/tools/build-tools.iml" group="protocol" />
       <module fileurl="file://$PROJECT_DIR$/client/client.iml" filepath="$PROJECT_DIR$/client/client.iml" />
       <module fileurl="file://$PROJECT_DIR$/common/common.iml" filepath="$PROJECT_DIR$/common/common.iml" />
       <module fileurl="file://$PROJECT_DIR$/demo/demo.iml" filepath="$PROJECT_DIR$/demo/demo.iml" />
       <module fileurl="file://$PROJECT_DIR$/oscar/oscar.iml" filepath="$PROJECT_DIR$/oscar/oscar.iml" group="Core" />
-      <module fileurl="file://$PROJECT_DIR$/protocol/protocol.iml" filepath="$PROJECT_DIR$/protocol/protocol.iml" />
+      <module fileurl="file://$PROJECT_DIR$/protocol/protocol.iml" filepath="$PROJECT_DIR$/protocol/protocol.iml" group="protocol" />
+      <module fileurl="file://$PROJECT_DIR$/protocol/demo/protocol-demo.iml" filepath="$PROJECT_DIR$/protocol/demo/protocol-demo.iml" group="protocol/demo" />
+      <module fileurl="file://$PROJECT_DIR$/protocol/demo/extras/protocol-demo-extras.iml" filepath="$PROJECT_DIR$/protocol/demo/extras/protocol-demo-extras.iml" group="protocol/demo" />
     </modules>
   </component>
   <component name="ProjectRootManager" version="2" assert-keyword="true" jdk-15="true" project-jdk-name="1.5" project-jdk-type="JavaSDK">
@@ -686,6 +689,13 @@
     <library name="jsocks-klea">
       <CLASSES>
         <root url="jar://$PROJECT_DIR$/lib/jsocks-klea.jar!/" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+    </library>
+    <library name="JUnit">
+      <CLASSES>
+        <root url="jar://$PROJECT_DIR$/lib/junit.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
