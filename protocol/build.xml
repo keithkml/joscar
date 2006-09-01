@@ -33,10 +33,14 @@
 -->
 
 <project name="joscar-protocol" default="jar">
+  <path id="protocol-lib">
+    <path refid="joscar-lib"/>
+    <path path="${dist}/common.jar"/>
+  </path>
   <target name="compile">
     <mkdir dir="classes"/>
     <javac srcdir="src" includes="net/kano/joscar/"
-           destdir="classes" source="1.5" classpathref="joscar-lib"
+           destdir="classes" source="1.5" classpathref="protocol-lib"
            debug="true"/>
   </target>
 
