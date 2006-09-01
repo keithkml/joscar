@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<jnlp spec="1.0+"
+    codebase="http://joust.kano.net/jsim/run/"
+    href="bc.jnlp" 
+	version="1.21">
+    <information>
+        <title>Bouncy Castle Cryptography Components</title>
+        <vendor>Bouncy Castle</vendor>
+        <homepage href="http://bouncycastle.org/" />
+        <offline-allowed/>
+    </information>
+	<security>
+	    <all-permissions />
+    </security>
+    <resources>
+		<jar href="bcmail-jdk14-121.jar" />
+		<jar href="bcprov-jdk14-121.jar" />
+    </resources>
+    <component-desc />
+</jnlp>
