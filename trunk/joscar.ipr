@@ -35,8 +35,11 @@
   <component name="Build editor project-level loader">
     <settings>
       <class-settings class="com.google.devtools.intellig.configcheck.ProjectPathChecker" />
+      <class-settings class="com.google.devtools.intellig.configcheck.ProjectJdkChecker">
+        <setting name="getProjectJdk" value="$JDK$" />
+        <setting name="getModuleJdks" value="rO0ABXNyABFqYXZhLnV0aWwuSGFzaFNldLpEhZWWuLc0AwAAeHB3DAAAABA/QAAAAAAAAHg=" />
+      </class-settings>
       <class-settings class="com.google.devtools.intellig.configcheck.PythonSdkChecker" />
-      <class-settings class="com.google.devtools.intellig.configcheck.ProjectJdkChecker" />
       <class-settings class="com.google.devtools.intellig.configcheck.ClearOutputChecker" />
     </settings>
   </component>
@@ -420,12 +423,10 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/aolrtf/aolrtf.iml" filepath="$PROJECT_DIR$/aolrtf/aolrtf.iml" />
-      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" group="Application" />
       <module fileurl="file://$PROJECT_DIR$/protocol/tools/build-tools.iml" filepath="$PROJECT_DIR$/protocol/tools/build-tools.iml" group="protocol" />
       <module fileurl="file://$PROJECT_DIR$/client/client.iml" filepath="$PROJECT_DIR$/client/client.iml" />
       <module fileurl="file://$PROJECT_DIR$/common/common.iml" filepath="$PROJECT_DIR$/common/common.iml" />
       <module fileurl="file://$PROJECT_DIR$/demo/demo.iml" filepath="$PROJECT_DIR$/demo/demo.iml" />
-      <module fileurl="file://$PROJECT_DIR$/oscar/oscar.iml" filepath="$PROJECT_DIR$/oscar/oscar.iml" group="Core" />
       <module fileurl="file://$PROJECT_DIR$/protocol/protocol.iml" filepath="$PROJECT_DIR$/protocol/protocol.iml" group="protocol" />
       <module fileurl="file://$PROJECT_DIR$/protocol/demo/protocol-demo.iml" filepath="$PROJECT_DIR$/protocol/demo/protocol-demo.iml" group="protocol/demo" />
       <module fileurl="file://$PROJECT_DIR$/protocol/demo/extras/protocol-demo-extras.iml" filepath="$PROJECT_DIR$/protocol/demo/extras/protocol-demo-extras.iml" group="protocol/demo" />
@@ -434,7 +435,38 @@
   <component name="ProjectRootManager" version="2" assert-keyword="true" jdk-15="true" project-jdk-name="1.5" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/classes" />
   </component>
-  <component name="ProjectRunConfigurationManager" />
+  <component name="ProjectRunConfigurationManager">
+    <configuration default="false" name="GUI demo" type="Application" factoryName="Application" enabled="false" merge="false">
+      <option name="MAIN_CLASS_NAME" value="net.kano.joustsim.app.JoustSIM" />
+      <option name="VM_PARAMETERS" value="-ea" />
+      <option name="PROGRAM_PARAMETERS" value="" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$" />
+      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
+      <option name="ALTERNATIVE_JRE_PATH" value="" />
+      <option name="ENABLE_SWING_INSPECTOR" value="false" />
+      <module name="demo" />
+      <RunnerSettings RunnerId="Run" />
+      <ConfigurationWrapper RunnerId="Run" />
+      <method>
+        <option name="Make" value="true" />
+      </method>
+    </configuration>
+    <configuration default="false" name="Command line demo" type="Application" factoryName="Application" enabled="false" merge="false">
+      <option name="MAIN_CLASS_NAME" value="net.kano.joscardemo.JoscarTester" />
+      <option name="VM_PARAMETERS" value="-ea" />
+      <option name="PROGRAM_PARAMETERS" value="" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$" />
+      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
+      <option name="ALTERNATIVE_JRE_PATH" value="" />
+      <option name="ENABLE_SWING_INSPECTOR" value="false" />
+      <module name="protocol-demo-extras" />
+      <RunnerSettings RunnerId="Run" />
+      <ConfigurationWrapper RunnerId="Run" />
+      <method>
+        <option name="Make" value="true" />
+      </method>
+    </configuration>
+  </component>
   <component name="RmicSettings">
     <option name="IS_EANABLED" value="false" />
     <option name="DEBUGGING_INFO" value="true" />
@@ -665,20 +697,6 @@
     </LanguageOptions>
   </component>
   <component name="libraryTable">
-    <library name="Bouncy Castle Mail">
-      <CLASSES>
-        <root url="jar://$PROJECT_DIR$/lib/bcmail-jdk14-121.jar!/" />
-      </CLASSES>
-      <JAVADOC />
-      <SOURCES />
-    </library>
-    <library name="Bouncy Castle Crypto">
-      <CLASSES>
-        <root url="jar://$PROJECT_DIR$/lib/bcprov-jdk14-121.jar!/" />
-      </CLASSES>
-      <JAVADOC />
-      <SOURCES />
-    </library>
     <library name="Null annotations">
       <CLASSES>
         <root url="jar://$PROJECT_DIR$/lib/annotations.jar!/" />
@@ -696,6 +714,14 @@
     <library name="JUnit">
       <CLASSES>
         <root url="jar://$PROJECT_DIR$/lib/junit.jar!/" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+    </library>
+    <library name="BouncyCastle">
+      <CLASSES>
+        <root url="jar://$PROJECT_DIR$/lib/bcmail-jdk14-121.jar!/" />
+        <root url="jar://$PROJECT_DIR$/lib/bcprov-jdk14-121.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
