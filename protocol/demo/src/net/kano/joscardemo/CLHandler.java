@@ -2,31 +2,31 @@
  *  Copyright (c) 2003, The Joust Project
  *  All rights reserved.
  *
- *  Redistribution and use in source and binary forms, with or without 
- *  modification, are permitted provided that the following conditions 
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
  *  are met:
  *
- *  - Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
- *  - Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in 
- *    the documentation and/or other materials provided with the 
- *    distribution. 
- *  - Neither the name of the Joust Project nor the names of its 
- *    contributors may be used to endorse or promote products derived 
- *    from this software without specific prior written permission. 
+ *  - Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  - Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  - Neither the name of the Joust Project nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
  *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS 
- *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT 
- *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS 
- *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE 
- *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
- *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, 
- *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER 
- *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN 
- *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  *  File created by keith @ Dec 28, 2003
@@ -37,7 +37,6 @@ package net.kano.joscardemo;
 
 import net.kano.joscar.ByteBlock;
 import net.kano.joscar.FileWritable;
-import net.kano.joscar.OscarTools;
 import net.kano.joscar.flapcmd.SnacCommand;
 import net.kano.joscar.rv.RvSession;
 import net.kano.joscar.rvcmd.InvitationMessage;
@@ -56,10 +55,6 @@ import net.kano.joscar.snaccmd.ExtraInfoBlock;
 import net.kano.joscar.snaccmd.ExtraInfoData;
 import net.kano.joscar.snaccmd.FullRoomInfo;
 import net.kano.joscar.snaccmd.MiniRoomInfo;
-import net.kano.joscar.snaccmd.icq.MetaShortInfoRequest;
-import net.kano.joscar.snaccmd.icq.OfflineMsgIcqRequest;
-import net.kano.joscar.snaccmd.icq.OfflineMsgIcqAckCmd;
-import net.kano.joscar.snaccmd.icq.MetaFullInfoRequest;
 import net.kano.joscar.snaccmd.acct.AcctInfoRequest;
 import net.kano.joscar.snaccmd.acct.AcctModCmd;
 import net.kano.joscar.snaccmd.acct.ConfirmAcctCmd;
@@ -68,6 +63,10 @@ import net.kano.joscar.snaccmd.conn.SetIdleCmd;
 import net.kano.joscar.snaccmd.icbm.InstantMessage;
 import net.kano.joscar.snaccmd.icbm.SendImIcbm;
 import net.kano.joscar.snaccmd.icon.UploadIconCmd;
+import net.kano.joscar.snaccmd.icq.MetaFullInfoRequest;
+import net.kano.joscar.snaccmd.icq.MetaShortInfoRequest;
+import net.kano.joscar.snaccmd.icq.OfflineMsgIcqAckCmd;
+import net.kano.joscar.snaccmd.icq.OfflineMsgIcqRequest;
 import net.kano.joscar.snaccmd.invite.InviteFriendCmd;
 import net.kano.joscar.snaccmd.loc.GetDirInfoCmd;
 import net.kano.joscar.snaccmd.loc.GetInfoCmd;
@@ -81,9 +80,9 @@ import net.kano.joscar.snaccmd.search.SearchBuddiesCmd;
 import net.kano.joscar.snaccmd.ssi.CreateItemsCmd;
 import net.kano.joscar.snaccmd.ssi.DeleteItemsCmd;
 import net.kano.joscar.snaccmd.ssi.ModifyItemsCmd;
-import net.kano.joscar.snaccmd.ssi.RemoveMeCmd;
-import net.kano.joscar.snaccmd.ssi.PreModCmd;
 import net.kano.joscar.snaccmd.ssi.PostModCmd;
+import net.kano.joscar.snaccmd.ssi.PreModCmd;
+import net.kano.joscar.snaccmd.ssi.RemoveMeCmd;
 import net.kano.joscar.snaccmd.ssi.SsiCommand;
 import net.kano.joscar.ssiitem.BuddyItem;
 import net.kano.joscar.ssiitem.DenyItem;
@@ -99,10 +98,11 @@ import net.kano.joscardemo.rv.SendFileThread;
 import net.kano.joscardemo.rv.TrillianEncSession;
 import net.kano.joscardemo.security.SecureSession;
 import net.kano.joscardemo.security.SecureSessionException;
+import net.kano.joustsim.Screenname;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -1189,7 +1189,7 @@ public class CLHandler {
 
                 TrillianEncSession encSession = new TrillianEncSession(session);
                 encSession.init();
-                tester.getBosConn().trillianEncSessions.put(OscarTools.normalize(args.get(0)),
+                tester.getBosConn().trillianEncSessions.put(Screenname.normalize(args.get(0)),
                         encSession);
             }
         });
@@ -1212,7 +1212,7 @@ public class CLHandler {
             public void handle(JoscarTester tester, String line, String cmd, List<String> args) {
                 System.out.println("sending secure IM to " + args.get(0));
                 TrillianEncSession encSession = tester.getBosConn().trillianEncSessions.get(
-                        OscarTools.normalize(args.get(0)));
+                        Screenname.normalize(args.get(0)));
 
                 encSession.sendMsg(args.get(1));
 

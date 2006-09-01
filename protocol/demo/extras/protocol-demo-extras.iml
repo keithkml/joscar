@@ -1,62 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module version="4" relativePaths="false" type="JAVA_MODULE">
-  <component name="BuildJarSettings">
-    <containerInfo />
-    <setting name="jarUrl" value="" />
-    <setting name="buildJar" value="true" />
-    <setting name="mainClass" value="" />
+  <component name="LvcsConfiguration">
+    <option name="LOCAL_VCS_ENABLED" value="true" />
+    <option name="LOCAL_VCS_PURGING_PERIOD" value="259200000" />
   </component>
   <component name="ModuleRootManager" />
   <component name="NewModuleRootManager" inherit-compiler-output="true">
-    <output url="file://$MODULE_DIR$/bin" />
-    <exclude-output />
+    <output url="file://$MODULE_DIR$/demo/extras/bin" />
     <content url="file://$MODULE_DIR$">
-      <sourceFolder url="file://$MODULE_DIR$/res" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="Null annotations" level="project" />
-    <orderEntry type="module" module-name="aolrtf" />
-    <orderEntry type="module" module-name="client" />
-    <orderEntry type="module" module-name="common" />
     <orderEntry type="module" module-name="protocol" />
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib/winlaf-native.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib/winlaf-0.4.1.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib/plastic-1.2.0.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib/forms_rt.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
+    <orderEntry type="module" module-name="protocol-demo" />
+    <orderEntry type="library" name="BouncyCastle" level="project" />
     <orderEntryProperties />
   </component>
   <component name="copyright">
@@ -223,7 +181,7 @@
           <option name="filler" value=" " />
         </value>
       </option>
-      <option name="notice" value="Copyright (c) &amp;#36;today.year, The Joust Project&#10;All rights reserved.&#10;&#10;Redistribution and use in source and binary forms, with or without &#10;modification, are permitted provided that the following conditions &#10;are met:&#10;&#10;- Redistributions of source code must retain the above copyright &#10;  notice, this list of conditions and the following disclaimer. &#10;- Redistributions in binary form must reproduce the above copyright &#10;  notice, this list of conditions and the following disclaimer in &#10;  the documentation and/or other materials provided with the &#10;  distribution. &#10;- Neither the name of the Joust Project nor the names of its&#10;  contributors may be used to endorse or promote products derived &#10;  from this software without specific prior written permission. &#10;&#10;THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &#10;&quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT &#10;LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS &#10;FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE &#10;COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, &#10;INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, &#10;BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; &#10;LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER &#10;CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT &#10;LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN &#10;ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE &#10;POSSIBILITY OF SUCH DAMAGE.&#10;&#10;File created by &amp;#36;username" />
+      <option name="notice" value="Copyright (c) &amp;#36;today.year, Your Corporation. All Rights Reserved." />
       <option name="keyword" value="Copyright" />
       <option name="fileTypeOverride" value="4" />
       <option name="relativeBefore" value="true" />
