@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="us-ascii"?>
 
 <!--
-    Copyright (c) 2002-2003 The Joust Project
+    Copyright (c) 2006 The Joust Project
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -32,142 +32,60 @@
     POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<project name="joscar" default="jar" basedir=".">
+<project name="joscar-protocol" default="jar">
+  <property name="joscar.ver" value="0.9.4"/>
 
-  <description>joscar build file</description>
-
-  <property name="project" value="${ant.project.name}"/>
-
-
-  <property name="src.dir" value="src"/>
-  <property name="bin.dir" value="bin"/>
-  <property name="docs.dir" value="docs"/>
-  <property name="apidocs.dir" value="${docs.dir}/api"/>
-  <property name="tests.dir" value="tests"/>
-  <property name="dist" location="dist"/>
-
-
-  <property name="joscar.src" location="${src.dir}"/>
-  <property name="joscar.bin" location="${bin.dir}"/>
-  <property name="joscar.lib" value="lib"/>
-
-  <property name="docs.home" location="${docs.dir}"/>
-  <property name="apidocs.home" location="${apidocs.dir}"/>
-
-  <property name="tests.home" location="${tests.dir}"/>
-  <property name="tests.src" location="${tests.home}/${src.dir}"/>
-  <property name="tests.bin" location="${tests.home}/${bin.dir}"/>
-  <property name="tests.reports" location="${tests.home}/reports"/>
-
-  <property name="tools.src" location="tools/src"/>
-  <property name="taglets.bin" location="tools/bin"/>
-  <property name="tasks.bin" location="tools/bin"/>
-
-  <property name="demo.bin" location="demo/bin"/>
-  <property name="demo.src" location="demo/src"/>
-
-  <property name="demoextras.bin" location="demo/extras/bin"/>
-  <property name="demoextras.src" location="demo/extras/src"/>
-  <property name="demoextras.lib" location="demo/extras/lib"/>
-
-
-  <target name="-version">
-    <mkdir dir="${tasks.bin}"/>
-
-    <javac destdir="${tasks.bin}" debug="true">
-      <src>
-        <pathelement path="${joscar.src}"/>
-        <pathelement path="${tools.src}"/>
-      </src>
-      <include name="net/kano/joscar/JoscarTools.java"/>
-      <include name="net/kano/joscartools/ant/JoscarVersionTask.java"/>
-    </javac>
-
-    <taskdef name="joscar-version" classpath="${tasks.bin}"
-             classname="net.kano.joscartools.ant.JoscarVersionTask"/>
-
-    <joscar-version property="joscar.ver"/>
-    <property name="fullpkg" value="${project}-${joscar.ver}"/>
-    <property name="dist.pkgname" value="${dist}/${fullpkg}-src"/>
-    <property name="dist.extrasname" value="${dist}/${project}-extras-${joscar.ver}"/>
-    <property name="dist.home" location="${dist}/${fullpkg}"/>
-    <property name="distextras.dir" value="${dist}/${fullpkg}"/>
-    <property name="distextras.home" location="${distextras.dir}"/>
-
-    <!-- <echo message="joscar is at version ${joscar.ver}" /> -->
-  </target>
-
-  <path id="joscar-lib">
-    <pathelement path="${joscar.lib}/annotations.jar" />
+  <path id="lib">
+    <pathelement path="../lib/annotations.jar" />
   </path>
 
-  <target name="joscar"
+  <target name="compile"
           description="Compiles the joscar library only, outputting to the bin/ directory.">
-    <mkdir dir="${joscar.bin}"/>
-    <javac srcdir="${joscar.src}" includes="net/kano/joscar/"
-           destdir="${joscar.bin}" source="1.5" classpathref="joscar-lib"
+    <mkdir dir="classes"/>
+    <javac srcdir="src" includes="net/kano/joscar/"
+           destdir="classes" source="1.5" classpathref="joscar-lib"
            debug="true">
     </javac>
   </target>
 
-  <target name="jar" depends="joscar,-version"
+  <target name="jar" depends="compile"
           description="Places joscar library classes in a jar file.">
-    <mkdir dir="${dist}"/>
-    <jar jarfile="${dist}/${fullpkg}-bin.jar"
-         basedir="${joscar.bin}"
+    <mkdir dir="dist"/>
+    <jar jarfile="dist/protocol.jar"
+         basedir="classes"
          includes="net/kano/joscar/**/*.class"/>
   </target>
 
-  <target name="demo" depends="joscar"
+  <target name="demo" depends="compile"
           description="Compiles the JoscarTester demo classes to demo/bin/.">
-    <mkdir dir="${demo.bin}"/>
+    <mkdir dir="demo/classes"/>
     <javac includes="net/kano/joscardemo/"
-           srcdir="${demo.src}:${demoextras.src}"
-           destdir="${demo.bin}" debug="true">
+           srcdir="demo/src:demo/extras/src"
+           destdir="demo/classes" debug="true">
       <classpath>
         <pathelement id="joscar-lib" />
-        <pathelement location="${joscar.bin}"/>
-        <pathelement location="${demo.bin}"/>
-        <fileset dir="${demoextras.lib}">
+        <pathelement location="classes"/>
+        <pathelement location="demo/classes"/>
+        <fileset dir="demo/extras/lib">
           <include name="*.jar"/>
         </fileset>
       </classpath>
     </javac>
   </target>
 
-
-  <target name="run-demo" depends="demo"
-          description="Runs the JoscarTester demo.">
-    <input message="Type AIM Screenname to log in with and press Enter"
-           addproperty="demo.sn"/>
-    <input message="Type password for ${demo.sn} and press Enter"
-           addproperty="demo.pass"/>
-    <java fork="true" classname="net.kano.joscardemo.JoscarTester">
-      <classpath>
-        <pathelement location="${joscar.bin}"/>
-        <pathelement location="${demo.bin}"/>
-        <fileset dir="${demoextras.lib}">
-          <include name="*.jar"/>
-        </fileset>
-      </classpath>
-      <arg value="${demo.sn}"/>
-      <arg value="${demo.pass}"/>
-    </java>
-  </target>
-
   <target name="-build-taglets">
-    <mkdir dir="${taglets.bin}"/>
-    <javac srcdir="${tools.src}"
+    <mkdir dir="tools/classes"/>
+    <javac srcdir="tools/src"
            includes="net/kano/joscartools/taglets/"
-           destdir="${taglets.bin}" debug="true"/>
+           destdir="tools/classes" debug="true"/>
   </target>
 
   <target name="javadoc" depends="-build-taglets"
           description="Generates javadoc for the joscar library.">
-    <mkdir dir="${apidocs.home}"/>
-    <javadoc sourcepath="${joscar.src}"
+    <mkdir dir="docs/api"/>
+    <javadoc sourcepath="src"
              packagenames="net.kano.joscar, net.kano.joscar.*"
-             destdir="${apidocs.home}"
+             destdir="docs/api"
              windowtitle="joscar API Documentation"
              source="1.5"
              author="true"
@@ -203,170 +121,55 @@
       </group>
 
       <taglet name="net.kano.joscartools.taglets.FlapChannelTaglet"
-              path="${taglets.bin}"/>
+              path="tools/classes"/>
       <taglet name="net.kano.joscartools.taglets.SnacSourceTaglet"
-              path="${taglets.bin}"/>
+              path="tools/classes"/>
       <taglet name="net.kano.joscartools.taglets.SnacCommandTaglet"
-              path="${taglets.bin}"/>
+              path="tools/classes"/>
       <taglet name="net.kano.joscartools.taglets.RvProxySourceTaglet"
-              path="${taglets.bin}"/>
+              path="tools/classes"/>
     </javadoc>
   </target>
 
-
-  <target name="clean" depends="-version"
+  <target name="clean"
           description="Removes all files generated or compiled by this buildfile.">
-    <delete dir="${joscar.bin}"/>
-    <delete dir="${demo.bin}"/>
-    <delete dir="${tests.bin}"/>
-    <delete dir="${tests.reports}"/>
-    <delete dir="${apidocs.home}"/>
-    <delete dir="${taglets.bin}"/>
-    <delete dir="${tasks.bin}"/>
-    <delete file="${dist}/${fullpkg}-bin.jar"/>
+    <delete dir="classes"/>
+    <delete dir="demo/classes"/>
+    <delete dir="tests/classes"/>
+    <delete dir="tests/reports"/>
+    <delete dir="docs/api"/>
+    <delete dir="tools/classes"/>
+    <delete file="dist/protocol.jar"/>
   </target>
 
-
-  <target name="-build-tests" depends="joscar">
-    <mkdir dir="${tests.bin}"/>
-    <copy todir="${tests.bin}">
+  <target name="-build-tests" depends="compile">
+    <mkdir dir="tests/classes"/>
+    <copy todir="tests/classes">
       <fileset dir="tests/res" includes="**/*" />
     </copy>
-    <javac srcdir="${tests.src}" destdir="${tests.bin}" debug="true"
-           classpath="${joscar.bin}"/>
+    <javac srcdir="tests/src" destdir="tests/classes" debug="true"
+           classpath="classes"/>
   </target>
 
   <target name="test" depends="-build-tests"
           description="Runs the joscar library's JUnit tests.">
-    <mkdir dir="${tests.reports}"/>
+    <mkdir dir="tests/reports"/>
     <junit>
       <formatter type="xml"/>
       <classpath>
-        <pathelement location="${tests.bin}"/>
-        <pathelement location="${joscar.bin}"/>
+        <pathelement location="classes"/>
+        <pathelement location="tests/classes"/>
       </classpath>
       <test name="net.kano.joscar.rvproto.ft.FileTransferHeaderTest" />
       <test name="net.kano.joscar.ratelim.QueueRunnerTest" />
       <batchtest>
-        <fileset dir="${tests.bin}">
+        <fileset dir="tests/classes">
           <include name="**/SelfTest.*"/>
         </fileset>
       </batchtest>
     </junit>
   </target>
 
-
-  <target name="dist-clean" depends="-version"
-          description="Deletes all files created by the 'dist' target of this buildfile.">
-    <delete dir="${dist.home}"/>
-    <delete file="${dist.pkgname}.tar.gz"/>
-    <delete file="${dist.pkgname}.tar.bz2"/>
-    <delete file="${dist.pkgname}.zip"/>
-  </target>
-
-  <target name="-dist-init" depends="-version">
-    <mkdir dir="${dist.home}"/>
-  </target>
-
-  <target name="dist-src" depends="-dist-init"
-          description="Copies all help files and source code to the joscar-x.x.x distribution directory.">
-    <copy todir="${dist.home}">
-      <fileset file="${ant.file}"/>
-      <fileset dir="${basedir}">
-        <include name="README"/>
-        <include name="RELNOTES"/>
-        <include name="LICENSE"/>
-        <include name="UPDATING"/>
-        <include name="BUILDING"/>
-        <include name="USING"/>
-        <include name="CHANGELOG"/>
-      </fileset>
-    </copy>
-
-    <mkdir dir="${dist.home}/src"/>
-    <copy todir="${dist.home}/src">
-      <fileset dir="${joscar.src}">
-        <exclude name="**/*~"/>
-        <exclude name="**/#*#"/>
-        <exclude name="**/CVS"/>
-      </fileset>
-    </copy>
-
-    <mkdir dir="${dist.home}/tests/src"/>
-    <copy todir="${dist.home}/tests/src">
-      <fileset dir="tests/src/" includes="**/*.java"/>
-    </copy>
-
-    <mkdir dir="${dist.home}/tools/src"/>
-    <copy todir="${dist.home}/tools/src">
-      <fileset dir="tools/src/"/>
-    </copy>
-
-    <mkdir dir="${dist.home}/demo/src"/>
-    <copy todir="${dist.home}/demo/src">
-      <fileset dir="demo/src/"/>
-    </copy>
-
-    <!-- this is stupid -->
-    <mkdir dir="${dist.home}/demo/extras/lib"/>
-    <mkdir dir="${dist.home}/demo/extras/src"/>
-  </target>
-
-  <target name="dist-doc" depends="-dist-init"
-          description="Copies all joscar documentation to the joscar-x.x.x distribution directory.">
-    <mkdir dir="${dist.home}/${docs.dir}"/>
-    <copy todir="${dist.home}/${docs.dir}">
-      <fileset dir="${docs.home}/"/>
-    </copy>
-  </target>
-
-  <target name="dist-package" depends="-version"
-          description="Creates compressed bzip2, gzip, and zip archives of the
-                       joscar-x.x.x distribution directory.">
-    <tar destfile="${dist.pkgname}.tar.gz" basedir="${dist}"
-         longfile="gnu" compression="gzip" includes="${fullpkg}/"/>
-    <tar destfile="${dist.pkgname}.tar.bz2" basedir="${dist}"
-         longfile="gnu" compression="bzip2" includes="${fullpkg}/"/>
-    <zip destfile="${dist.pkgname}.zip" basedir="${dist}"
-         includes="${fullpkg}/"/>
-  </target>
-
-  <target name="dist-extras-src" depends="-version"
-          description="Copies all joscar demo extras to the
-                       joscar-x.x.x distribution directory.">
-    <mkdir dir="${distextras.home}/demo/extras/"/>
-
-    <copy todir="${distextras.home}/demo/extras">
-      <fileset dir="demo/extras" includes="src/,lib/"/>
-    </copy>
-  </target>
-
-  <target name="dist-extras-package" depends="dist-extras-src"
-          description="Creates compressed bzip2, gzip, and zip archives of
-                       the joscar-x.x.x distribution directory.">
-    <tar destfile="${dist.extrasname}.tar.gz" basedir="${basedir}"
-         longfile="gnu" compression="gzip" includes="${distextras.dir}/"/>
-    <tar destfile="${dist.extrasname}.tar.bz2" basedir="${basedir}"
-         longfile="gnu" compression="bzip2" includes="${distextras.dir}/"/>
-    <zip destfile="${dist.extrasname}.zip" basedir="${basedir}"
-         includes="${distextras.dir}/"/>
-  </target>
-
-  <target name="dist-extras-clean" depends="-version"
-          description="Removes all compressed archives of the joscar demo extras.">
-    <delete dir="${distextras.home}"/>
-    <delete file="${dist.extrasname}.tar.gz"/>
-    <delete file="${dist.extrasname}.tar.bz2"/>
-    <delete file="${dist.extrasname}.zip"/>
-  </target>
-
-  <target name="dist-extras"
-          depends="dist-extras-clean,dist-extras-src,dist-extras-package"
-          description="Packages the joscar demo extras in compressed archives."/>
-
-  <target name="dist" depends="jar,dist-clean,dist-src,dist-doc,dist-package"
-          description="Packages joscar for a release in compressed archives." />
-
-  <target name="nightly" depends="test, dist" />
+  <target name="nightly" depends="test" />
 
 </project>
