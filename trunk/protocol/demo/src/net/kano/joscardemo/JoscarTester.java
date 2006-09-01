@@ -53,9 +53,11 @@ import net.kano.joscardemo.security.SecureSession;
 import net.kano.joscardemo.security.SecureSessionException;
 import net.kano.joustsim.Screenname;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.URI;
@@ -423,35 +425,48 @@ public class JoscarTester implements CmdLineListener, ServiceListener {
 
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
+        String screenname;
+        String password;
+        if (args.length != 2) {
+            BufferedReader reader = new BufferedReader(
+                new InputStreamReader(System.in));
+            System.out.print("Screenname: ");
+            screenname = reader.readLine();
+            System.out.print("Password: ");
+            password = reader.readLine();
+        } else {
+            screenname = args[0];
+            password = args[1];
+        }
         String levelstr = "fine";
-        System.out.println("Connecting to AIM as " + args[0] + "...");
+        System.out.println("Connecting to AIM as " + screenname + "...");
 
         ConsoleHandler handler = new ConsoleHandler();
         handler.setFormatter(new Formatter() {
-            private String lineSeparator = System.getProperty("line.separator");
+          private String lineSeparator = System.getProperty("line.separator");
 
-            public String format(LogRecord record) {
-                StringBuffer sb = new StringBuffer();
-                sb.append("[");
-                sb.append(record.getLevel().getLocalizedName());
-                sb.append("] ");
-                sb.append(record.getMessage());
-                sb.append(lineSeparator);
+          public String format(LogRecord record) {
+            StringBuffer sb = new StringBuffer();
+            sb.append("[");
+            sb.append(record.getLevel().getLocalizedName());
+            sb.append("] ");
+            sb.append(record.getMessage());
+            sb.append(lineSeparator);
 
-                if (record.getThrown() != null) {
-                    try {
-                        StringWriter sw = new StringWriter();
-                        PrintWriter pw = new PrintWriter(sw);
-                        record.getThrown().printStackTrace(pw);
-                        pw.close();
-                        sb.append(sw.toString());
-                    } catch (Exception ex) {
-                        // SimpleFormatter in the JDK does this, so I do too
-                    }
-                }
-                return sb.toString();
+            if (record.getThrown() != null) {
+              try {
+                StringWriter sw = new StringWriter();
+                PrintWriter pw = new PrintWriter(sw);
+                record.getThrown().printStackTrace(pw);
+                pw.close();
+                sb.append(sw.toString());
+              } catch (Exception ex) {
+                // SimpleFormatter in the JDK does this, so I do too
+              }
             }
+            return sb.toString();
+          }
         });
         Level level = Level.parse(levelstr.toUpperCase());
         handler.setLevel(level);
@@ -459,23 +474,14 @@ public class JoscarTester implements CmdLineListener, ServiceListener {
         logger.addHandler(handler);
         logger.setLevel(Level.ALL);
 
-        final JoscarTester tester = new JoscarTester(args[0], args[1]);
+        final JoscarTester tester = new JoscarTester(screenname, password);
         tester.connect();
 
         new Timer(true).scheduleAtFixedRate(new TimerTask() {
-            public void run() {
-                tester.printMemUsage();
-            }
+          public void run() {
+            tester.printMemUsage();
+          }
         },
-                30*1000, 5*60*1000);
+                30 * 1000, 5 * 60 * 1000);
     }
-
-//    static void something(int x, ByteBuffer buffer) {}
-//    static void something(int x, String buffer) {}
-//
-//    private static void x() {
-//        byte[] x = null;
-//        something(5, x)
-//
-//    }
 }
