@@ -33,51 +33,44 @@
 -->
 
 <project name="joscar-client" default="jar">
-  <path id="path.compile">
-    <fileset dir="../lib">
-      <include name="*.jar"/>
-    </fileset>
-    <fileset dir="lib">
-      <include name="*.jar"/>
-    </fileset>
-  </path>
-
-  <target name="init">
+  <target name="-init">
     <mkdir dir="classes"/>
   </target>
 
-  <target name="clean" depends="init">
+  <target name="clean" depends="-init">
     <delete includeEmptyDirs="true">
-      <include name="../dist/client.jar"/>
+      <include name="${dist}/client.jar"/>
       <fileset dir="classes" includes="*"/>
     </delete>
   </target>
 
-  <target name="compile" depends="init">
+  <target name="compile" depends="-init">
     <javac srcdir="src" source="1.5" destdir="classes" debug="true">
-      <classpath refid="path.compile"/>
+      <classpath refid="joscar-lib"/>
+      <classpath path="${dist}/common.jar"/>
     </javac>
   </target>
 
   <target name="jar" depends="compile">
-    <delete file="../dist/oscar.jar"/>
-    <jar file="../dist/oscar.jar">
+    <delete file="${dist}/client.jar"/>
+    <jar file="${dist}/client.jar">
       <fileset dir="classes" includes="**/*.class"/>
     </jar>
   </target>
 
-  <target name="compile-tests" depends="compile">
+  <target name="-compile-tests" depends="compile">
     <mkdir dir="test-classes"/>
-    <javac destdir="test-classes" srcdir="oscar/tests">
+    <javac destdir="test-classes" srcdir="tests">
       <classpath path="classes"/>
-      <classpath refid="path.compile"/>
+      <classpath refid="joscar-lib"/>
+      <classpath path="${dist}/common.jar"/>
     </javac>
     <copy todir="test-classes">
-      <fileset dir="oscar/tests" includes="**/*.jpg"/>
+      <fileset dir="tests" includes="**/*.jpg"/>
     </copy>
   </target>
 
-  <target name="run-tests" depends="compile-tests">
+  <target name="test" depends="-compile-tests">
     <junit haltonfailure="true">
       <formatter type="xml"/>
       <assertions>
@@ -88,12 +81,12 @@
       <test name="net.kano.joustsim.oscar.oscar.service.icbm.dim.DirectimReceiverTest"/>
       <test name="net.kano.joustsim.oscar.oscar.service.icbm.dim.DirectimQueueTest"/>
       <test name="net.kano.joustsim.oscar.oscar.service.icbm.ft.controllers.TestTransferredFileImpl"/>
-      <classpath refid="path.compile"/>
+
+      <classpath refid="joscar-lib"/>
+      <classpath path="${dist}/common.jar"/>
       <classpath path="classes"/>
       <classpath path="test-classes"/>
     </junit>
   </target>
-
-  <target name="nightly" depends="clean, run-tests, jar"/>
 </project>
 
