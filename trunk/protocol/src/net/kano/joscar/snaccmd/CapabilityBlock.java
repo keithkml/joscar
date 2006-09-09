@@ -188,7 +188,90 @@ public final class CapabilityBlock implements Writable {
 
     public static final CapabilityBlock BLOCK_ICQ_UTF8
             = ShortCapabilityBlock.getCapFromShortBytes(0x13, 0x4e);
-
+    
+    /**
+     * Indicates that the client supports "Live Video" which is
+     * available in Windows AIM 5.5.3501 or iChat AV2.1 and newer
+     */
+    public static final CapabilityBlock BLOCK_LIVEVIDEO
+            = ShortCapabilityBlock.getCapFromShortBytes(0x01, 0x01);
+    
+    /**
+     * Indicates that there is Camera Hardware Present
+     */
+    public static final CapabilityBlock BLOCK_CAMERA_PRESENT
+            = ShortCapabilityBlock.getCapFromShortBytes(0x01, 0x02);
+    
+    /**
+     * Indicates that there is Microphone Hardware Present
+     */
+    public static final CapabilityBlock BLOCK_MIC_PRESENT
+            = ShortCapabilityBlock.getCapFromShortBytes(0x01, 0x03);
+    
+    /**
+     * Currently unknkown, but quite probably related to the capability
+     * of handling multi-user voice/video chats introduced in iChat 3.0
+     */
+    public static final CapabilityBlock BLOCK_UNKNOWN_AV1
+            = ShortCapabilityBlock.getCapFromShortBytes(0x01, 0x04);
+    
+    /**
+     * Set to indicate that the client is an iChat AV client
+     */
+    public static final CapabilityBlock BLOCK_ICHATAV_OLD =
+        new CapabilityBlock(
+                            0x09, 0x46, 0x01, 0x05, 0x4c, 0x7f, 0x11, 0xd1,
+                            0x82, 0x22, 0x44, 0x45, 0x45, 0x53, 0x54, 0x00);    
+    
+    /**
+     * Set to indicate that the client is an iChat AV client
+     * This fixed a typo so it could be abbreviated and is used
+     * by iChat 3.0 and newer
+     */
+    public static final CapabilityBlock BLOCK_ICHATAV
+            = ShortCapabilityBlock.getCapFromShortBytes(0x01, 0x05);
+    
+    /**
+      * Indicates that the attached camera is available for use
+      * Used with {@link BLOCK_CAMERA_PRESENT}
+      */
+    public static final CapabilityBlock BLOCK_CAMERA_AVAIL
+            = ShortCapabilityBlock.getCapFromShortBytes(0x0f, 0x02);
+    
+    /**
+     * Indicates that the attached microphone is available for use
+     * Used with {@link BLOCK_MIC_PRESENT}
+     */
+    public static final CapabilityBlock BLOCK_MIC_AVAIL
+            = ShortCapabilityBlock.getCapFromShortBytes(0x0f, 0x03);
+    
+    /**
+      * Indicates that the client is capable of AV communications
+      */
+    public static final CapabilityBlock BLOCK_AV_CAPABLE
+            = ShortCapabilityBlock.getCapFromShortBytes(0x0f, 0x04);
+    
+    /**
+     * Indicates that the AV capabilities are available for use
+     * Used with {@link BLOCK_AV_CAPABLE}
+     */
+    public static final CapabilityBlock BLOCK_AV_AVAIL
+            = ShortCapabilityBlock.getCapFromShortBytes(0x0f, 0x05);
+    
+    /**
+     * Currently unknkown, but quite probably related to the capability
+     * of handling multi-user voice/video chats introduced in iChat 3.0
+     */
+    public static final CapabilityBlock BLOCK_UNKNOWN_AV2
+            = ShortCapabilityBlock.getCapFromShortBytes(0x0f, 0x07);
+    
+    /**
+     * Currently unknkown, but quite probably related to the capability
+     * of handling multi-user voice/video chats introduced in iChat 3.0
+     */
+    public static final CapabilityBlock BLOCK_UNKNOWN_AV3
+            = ShortCapabilityBlock.getCapFromShortBytes(0x0f, 0x08);
+        
     /**
      * Converts the given list of capabilities to a block of bytes, suitable for
      * sending in a {@link InfoData} structure.
