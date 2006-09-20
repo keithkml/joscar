@@ -37,6 +37,7 @@
     <path refid="joscar-lib"/>
     <path path="${dist}/common.jar"/>
   </path>
+
   <target name="compile">
     <mkdir dir="classes"/>
     <javac srcdir="src" includes="net/kano/joscar/"
@@ -49,24 +50,6 @@
          basedir="classes"
          includes="net/kano/joscar/**/*.class"/>
   </target>
-<!--
-
-  <target name="demo" depends="compile">
-    <mkdir dir="demo/classes"/>
-    <javac includes="net/kano/joscardemo/"
-           srcdir="demo/src:demo/extras/src"
-           destdir="demo/classes" debug="true">
-      <classpath>
-        <pathelement id="joscar-lib" />
-        <pathelement location="classes"/>
-        <pathelement location="demo/classes"/>
-        <fileset dir="demo/extras/lib">
-          <include name="*.jar"/>
-        </fileset>
-      </classpath>
-    </javac>
-  </target>
--->
 
   <target name="-build-taglets">
     <mkdir dir="tools/classes"/>
@@ -140,23 +123,26 @@
     <copy todir="tests/classes">
       <fileset dir="tests/res" includes="**/*" />
     </copy>
-    <javac srcdir="tests/src" destdir="tests/classes" debug="true"
-           classpath="classes"/>
+    <javac srcdir="tests/src" destdir="tests/classes" debug="true">
+      <classpath>
+        <path refid="protocol-lib"/>
+        <path path="classes"/>
+      </classpath>
+    </javac>
   </target>
 
   <target name="test" depends="-build-tests">
     <mkdir dir="tests/reports"/>
-    <junit>
+    <junit fork="true">
       <formatter type="xml"/>
       <classpath>
-        <pathelement location="classes"/>
-        <pathelement location="tests/classes"/>
+        <path refid="protocol-lib"/>
+        <path path="classes"/>
+        <path location="tests/classes"/>
       </classpath>
-      <test name="net.kano.joscar.rvproto.ft.FileTransferHeaderTest" />
-      <test name="net.kano.joscar.ratelim.QueueRunnerTest" />
       <batchtest>
-        <fileset dir="tests/classes">
-          <include name="**/SelfTest.*"/>
+        <fileset dir="tests/src">
+          <include name="**/*.java"/>
         </fileset>
       </batchtest>
     </junit>
