@@ -35,8 +35,8 @@
 <project name="joscar-client" default="jar">
   <path id="client-lib">
     <path refid="joscar-lib"/>
-    <path path="${dist}/protocol.jar"/>
-    <path path="${dist}/common.jar"/>
+    <path path="${dist}/joscar-protocol.jar"/>
+    <path path="${dist}/joscar-common.jar"/>
   </path>
 
   <target name="-init">
@@ -45,7 +45,7 @@
 
   <target name="clean" depends="-init">
     <delete includeEmptyDirs="true">
-      <include name="${dist}/client.jar"/>
+      <include name="${dist}/joscar-client.jar"/>
       <fileset dir="classes" includes="*"/>
     </delete>
   </target>
@@ -56,8 +56,8 @@
   </target>
 
   <target name="jar" depends="compile">
-    <delete file="${dist}/client.jar"/>
-    <jar file="${dist}/client.jar">
+    <delete file="${dist}/joscar-client.jar"/>
+    <jar file="${dist}/joscar-client.jar">
       <fileset dir="classes" includes="**/*.class"/>
     </jar>
   </target>
