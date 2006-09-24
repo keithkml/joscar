@@ -35,7 +35,7 @@
 <project name="joscar-protocol" default="jar">
   <path id="protocol-lib">
     <path refid="joscar-lib"/>
-    <path path="${dist}/common.jar"/>
+    <path path="${dist}/joscar-common.jar"/>
   </path>
 
   <target name="compile">
@@ -46,7 +46,7 @@
   </target>
 
   <target name="jar" depends="compile">
-    <jar jarfile="${dist}/protocol.jar"
+    <jar jarfile="${dist}/joscar-protocol.jar"
          basedir="classes"
          includes="net/kano/joscar/**/*.class"/>
   </target>
@@ -115,7 +115,7 @@
     <delete dir="tests/reports"/>
     <delete dir="docs/api"/>
     <delete dir="tools/classes"/>
-    <delete file="${dist}/protocol.jar"/>
+    <delete file="${dist}/joscar-protocol.jar"/>
   </target>
 
   <target name="-build-tests" depends="compile">

@@ -40,12 +40,12 @@
   </target>
 
   <target name="jar" depends="compile">
-    <jar jarfile="${dist}/common.jar" basedir="classes" includes="**/*.class"/>
+    <jar jarfile="${dist}/joscar-common.jar" basedir="classes" includes="**/*.class"/>
   </target>
 
   <target name="clean">
     <delete dir="classes"/>
-    <delete file="${dist}/common.jar"/>
+    <delete file="${dist}/joscar-common.jar"/>
   </target>
 
   <target name="test">
