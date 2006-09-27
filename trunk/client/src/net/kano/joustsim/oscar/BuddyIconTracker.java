@@ -77,7 +77,7 @@ public class BuddyIconTracker {
     this.conn = aconn;
     BuddyInfoManager mgr = conn.getBuddyInfoManager();
     mgr.addGlobalBuddyInfoListener(new MyGlobalBuddyInfoListener());
-    timer.schedule(new RerequestIconsTask(), 5000, 5000);
+    timer.schedule(new RerequestIconsTask(), 30000, 30000);
   }
 
   public synchronized boolean isEnabled() {
