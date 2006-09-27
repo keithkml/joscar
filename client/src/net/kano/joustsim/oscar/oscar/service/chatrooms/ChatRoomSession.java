@@ -192,6 +192,9 @@ public class ChatRoomSession {
   }
 
   public void invite(Screenname screenname, String message) {
+	DefensiveTools.checkNull(screenname, "screenname");
+	DefensiveTools.checkNull(roomInfo, "roomInfo");
+
     RvProcessor rvProcessor = aimConnection.getIcbmService().getRvProcessor();
     RvSession session = rvProcessor.createRvSession(screenname.getNormal());
     session.sendRv(new ChatInvitationRvCmd(new MiniRoomInfo(roomInfo),
