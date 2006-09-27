@@ -1,0 +1,130 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 42;
+	objects = {
+
+/* Begin PBXAggregateTarget section */
+		34BCADB90ACAFB8100562745 /* joscar */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 34BCADCE0ACAFBA600562745 /* Build configuration list for PBXAggregateTarget "joscar" */;
+			buildPhases = (
+				34BCADB80ACAFB8100562745 /* ShellScript */,
+			);
+			dependencies = (
+			);
+			name = joscar;
+			productName = joscar;
+		};
+/* End PBXAggregateTarget section */
+
+/* Begin PBXFileReference section */
+		34BCA2070ACAFAE400562745 /* src */ = {isa = PBXFileReference; lastKnownFileType = folder; name = src; path = protocol/src; sourceTree = "<group>"; };
+		34BCABDE0ACAFB6D00562745 /* src */ = {isa = PBXFileReference; lastKnownFileType = folder; name = src; path = client/src; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		34AA2CE5095C190B003B56DB = {
+			isa = PBXGroup;
+			children = (
+				34BCABDE0ACAFB6D00562745 /* src */,
+				34BCA2070ACAFAE400562745 /* src */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXProject section */
+		34AA2CE7095C190B003B56DB /* Project object */ = {
+			isa = PBXProject;
+			buildConfigurationList = 34AA2CE8095C190B003B56DB /* Build configuration list for PBXProject "joscar" */;
+			hasScannedForEncodings = 0;
+			mainGroup = 34AA2CE5095C190B003B56DB;
+			projectDirPath = "";
+			targets = (
+				34BCADB90ACAFB8100562745 /* joscar */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		34BCADB80ACAFB8100562745 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "ant
+";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		34AA2CE9095C190B003B56DB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+			};
+			name = Debug;
+		};
+		34AA2CEA095C190B003B56DB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+			};
+			name = Release;
+		};
+		34BCADCF0ACAFBA600562745 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				PRODUCT_NAME = joscar;
+			};
+			name = Debug;
+		};
+		34BCADD00ACAFBA600562745 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				PRODUCT_NAME = joscar;
+				ZERO_LINK = NO;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		34AA2CE8095C190B003B56DB /* Build configuration list for PBXProject "joscar" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				34AA2CE9095C190B003B56DB /* Debug */,
+				34AA2CEA095C190B003B56DB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		34BCADCE0ACAFBA600562745 /* Build configuration list for PBXAggregateTarget "joscar" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				34BCADCF0ACAFBA600562745 /* Debug */,
+				34BCADD00ACAFBA600562745 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 34AA2CE7095C190B003B56DB /* Project object */;
+}
