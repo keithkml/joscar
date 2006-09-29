@@ -69,7 +69,7 @@ public class BuddyIconTracker {
 
   private final IconRequestListener iconRequestListener
       = new MyIconRequestListener();
-  private final Timer timer = new Timer(true);
+  private Timer rerequestIconsTimer;
 
   private boolean enabled = true;
 
@@ -77,7 +77,6 @@ public class BuddyIconTracker {
     this.conn = aconn;
     BuddyInfoManager mgr = conn.getBuddyInfoManager();
     mgr.addGlobalBuddyInfoListener(new MyGlobalBuddyInfoListener());
-    timer.schedule(new RerequestIconsTask(), 30000, 30000);
   }
 
   public synchronized boolean isEnabled() {
@@ -91,9 +90,19 @@ public class BuddyIconTracker {
 
   private synchronized void clearRequest(BuddyIconRequest iconRequest) {
 	pendingRequests.remove(iconRequest);
+
+	if ((rerequestIconsTimer != null) && pendingRequests.isEmpty()) {
+		rerequestIconsTimer.cancel();
+		rerequestIconsTimer = null;
+	}
   }
-  
+
   private synchronized void updateRequestTime(BuddyIconRequest iconRequest) {
+	if ((rerequestIconsTimer == null) && pendingRequests.isEmpty()) {
+		rerequestIconsTimer = new Timer(true);
+		rerequestIconsTimer.schedule(new RerequestIconsTask(), 15000, 15000);
+	}
+
     pendingRequests.put(iconRequest, System.currentTimeMillis());
   }
 
