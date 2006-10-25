@@ -23,12 +23,14 @@
 /* Begin PBXFileReference section */
 		34BCA2070ACAFAE400562745 /* src */ = {isa = PBXFileReference; lastKnownFileType = folder; name = src; path = protocol/src; sourceTree = "<group>"; };
 		34BCABDE0ACAFB6D00562745 /* src */ = {isa = PBXFileReference; lastKnownFileType = folder; name = src; path = client/src; sourceTree = "<group>"; };
+		34BCADD80ACAFC1E00562745 /* src */ = {isa = PBXFileReference; lastKnownFileType = folder; name = src; path = common/src; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
 		34AA2CE5095C190B003B56DB = {
 			isa = PBXGroup;
 			children = (
+				34BCADD80ACAFC1E00562745 /* src */,
 				34BCABDE0ACAFB6D00562745 /* src */,
 				34BCA2070ACAFAE400562745 /* src */,
 			);
