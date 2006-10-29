@@ -547,4 +547,13 @@ public class OscarConnection {
 //    public void writeData(OutputStream out) {
 //    }
 //  }
+  
+  protected void finalize() throws Throwable {
+	  try {
+		  LOGGER.fine("OscarConnection ** finalize() **");
+	  } finally {
+		  super.finalize();
+	  }
+	  
+  }  
 }
