@@ -83,7 +83,6 @@ import java.util.logging.Logger;
 public class OscarConnection {
   private static final Logger LOGGER
       = Logger.getLogger(OscarConnection.class.getName());
-//  private static final int CONNECTION_DEAD_TIMEOUT = 30000;
 
   private final ClientFlapConn conn;
   private final String host;
@@ -110,7 +109,6 @@ public class OscarConnection {
   private Set<Service> unready = new HashSet<Service>();
   private Set<Service> unfinished = new HashSet<Service>();
   private final RateLimitingQueueMgr rateManager = new RateLimitingQueueMgr();
-//  private long lastPacketTime = 0;
 
   public OscarConnection(String host, int port) {
     DefensiveTools.checkNull(host, "host");
@@ -171,6 +169,7 @@ public class OscarConnection {
         OscarConnection.this.stateChanged(clientConnEvent);
       }
     });
+    KeepaliveSender.start(this);
   }
 
   public RateLimitingQueueMgr getRateManager() {
@@ -188,43 +187,10 @@ public class OscarConnection {
   private void internalConnected() {
     LOGGER.fine("Connected to " + host);
 
-//    flapProcessor.addVetoablePacketListener(new VetoableFlapPacketListener() {
-//      public VetoResult handlePacket(FlapPacketEvent event) {
-//        if (event.getFlapPacket().getChannel() == 5) {
-//          LOGGER.finest("Got FLAP keepalive response from server");
-//        }
-//        updateLastPacketTime();
-//        return VetoableFlapPacketListener.VetoResult.CONTINUE_PROCESSING;
-//      }
-//    });
-//    Timer timer = new Timer("Connection timeout checker", true);
-//    timer.scheduleAtFixedRate(new TimerTask() {
-//      public void run() {
-//        if (!isDisconnected()) {
-//          sendFlap(new KeepaliveFlapCommand());
-//
-//          long last = lastPacketTime;
-//          if (last != 0) {
-//            long sinceLast = System.currentTimeMillis() - last;
-//            if (sinceLast >= CONNECTION_DEAD_TIMEOUT) {
-//              LOGGER.warning("Connection to " + getClientFlapConn()
-//                  + " timed out after " + sinceLast
-//                  + " ms; disconnecting");
-//              disconnect();
-//            }
-//          }
-//        }
-//      }
-//    }, 0, 10000);
-
     for (MutableService service : getMutableServices()) {
       service.connected();
     }
   }
-
-//  private void updateLastPacketTime() {
-//    lastPacketTime = System.currentTimeMillis();
-//  }
 
   private void internalDisconnected() {
     LOGGER.fine("Disconnected from " + host);
@@ -540,13 +506,6 @@ public class OscarConnection {
   public synchronized List<ServiceEvent> getEventLog() {
     return DefensiveTools.getUnmodifiableCopy(eventLog);
   }
-
-//  private static class KeepaliveFlapCommand extends FlapCommand {
-//    public KeepaliveFlapCommand() {super(5);}
-//
-//    public void writeData(OutputStream out) {
-//    }
-//  }
   
   protected void finalize() throws Throwable {
 	  try {

@@ -130,6 +130,10 @@ public class SnacRequest {
      */
     private boolean storingResponses = false;
 
+    public SnacRequest(SnacCommand command) {
+        this(command, null);
+    }
+
     /**
      * Creates a new <code>SnacRequest</code> for the given command and adds the
      * given event listener to its listener list.

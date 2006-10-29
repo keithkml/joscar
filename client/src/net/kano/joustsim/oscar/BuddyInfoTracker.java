@@ -36,7 +36,7 @@
 package net.kano.joustsim.oscar;
 
 import net.kano.joscar.DefensiveTools;
-import net.kano.joscar.ratelim.ConnectionQueueMgr;
+import net.kano.joscar.ratelim.ConnectionQueueMgrImpl;
 import net.kano.joscar.ratelim.RateQueue;
 import net.kano.joscar.snac.CmdType;
 import static net.kano.joscar.snaccmd.loc.LocCommand.CMD_NEW_GET_INFO;
@@ -346,7 +346,7 @@ public class BuddyInfoTracker {
       if (infoService == null) return;
 
       OscarConnection oscar = infoService.getOscarConnection();
-      ConnectionQueueMgr queueMgr = oscar.getRateManager()
+      ConnectionQueueMgrImpl queueMgr = oscar.getRateManager()
           .getQueueMgr(oscar.getSnacProcessor());
       RateQueue infoQueue = queueMgr
           .getRateQueue(new CmdType(FAMILY_LOC, CMD_NEW_GET_INFO));

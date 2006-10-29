@@ -42,8 +42,6 @@ package net.kano.joscar.snac;
  * mechanism.
  */
 public interface SnacQueueManager {
-    //TOLATER: allow clients to see if a SNAC queue is empty, and to listen for it
-
     /**
      * Called when this SNAC queue manager has been set as the SNAC queue
      * manager for the given processor. This will always be the first method
