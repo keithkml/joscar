@@ -44,6 +44,9 @@ import net.kano.joscar.net.ConnDescriptor;
 import java.io.IOException;
 import java.net.Socket;
 
+import net.kano.joscar.logging.Logger;
+import net.kano.joscar.logging.LoggingSystem;
+
 /**
  * A simpler interface to using an outgoing clientside FLAP connection. This
  * class essentially runs a {@link FlapProcessor} atop a {@link ClientConn}; you
@@ -55,7 +58,7 @@ import java.net.Socket;
  */
 public class ClientFlapConn extends ClientConn {
     /** The FLAP processor that this object uses. */
-    private FlapProcessor flapProcessor = new AsynchronousFlapProcessor();
+    private AsynchronousFlapProcessor flapProcessor;
 
     /**
      * Creates a client FLAP connection. The given host and port will be
@@ -76,7 +79,9 @@ public class ClientFlapConn extends ClientConn {
      * listener and setting the stream handler.
      */
     private final void init() {
-        setStreamHandler(new ClientConnStreamHandler() {
+        flapProcessor = new AsynchronousFlapProcessor();
+		
+		setStreamHandler(new ClientConnStreamHandler() {
             public void handleStream(ClientConn conn, Socket socket)
                     throws IOException {
                 flapProcessor.runFlapLoop();
@@ -87,7 +92,12 @@ public class ClientFlapConn extends ClientConn {
             public void stateChanged(ClientConnEvent e) {
                 State newState = e.getNewState();
                 if (newState == ClientConn.STATE_CONNECTED) {
+					LoggingSystem.getLogger(ClientFlapConn.class.getName()).logFine(newState.toString());
+
                     try {
+						if (flapProcessor == null)
+							flapProcessor = new AsynchronousFlapProcessor();
+
                         flapProcessor.attachToSocket(getSocket());
                     } catch (IOException e1) {
                         processError(e1);
@@ -96,12 +106,24 @@ public class ClientFlapConn extends ClientConn {
                     }
                 } else if (newState == ClientConn.STATE_NOT_CONNECTED
                         || newState == ClientConn.STATE_FAILED) {
-                    flapProcessor.detach();
+					LoggingSystem.getLogger(ClientFlapConn.class.getName()).logFine(newState.toString());
+
+					/* Breaking down the flapProcessor will also detach it */
+					flapProcessor.breakdown();
+					flapProcessor = null;
                 }
             }
         });
     }
 
+	protected void finalize() throws Throwable {
+		try {
+			LoggingSystem.getLogger(ClientFlapConn.class.getName()).logFine("finalize()");
+		} finally {
+			super.finalize();
+		}
+	}
+	
     /**
      * Returns the FLAP processor that is running on this connection.
      *

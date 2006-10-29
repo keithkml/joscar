@@ -351,6 +351,13 @@ public abstract class AbstractFlapProcessor extends ConnProcessorImpl
         }
     }
 
+	public void breakdown() {
+		this.detach();
+
+		packetListeners.clear();
+		vetoablePacketListeners.clear();
+	}
+
     public String toString() {
         return "FlapProcessor: "
                 + "seqNum=" + seqNum;
