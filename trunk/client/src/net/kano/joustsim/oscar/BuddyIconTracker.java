@@ -77,6 +77,22 @@ public class BuddyIconTracker {
     this.conn = aconn;
     BuddyInfoManager mgr = conn.getBuddyInfoManager();
     mgr.addGlobalBuddyInfoListener(new MyGlobalBuddyInfoListener());
+	
+	/* Cancel the rerequest timer and pending requests if the connection is disconnected */
+	conn.addStateListener(new StateListener() {
+		public void handleStateChange(StateEvent event) {
+			if (event.getNewState().isFinished()) {
+				if ((rerequestIconsTimer != null)) {
+					rerequestIconsTimer.cancel();
+					rerequestIconsTimer = null;
+				}
+				
+				synchronized (BuddyIconTracker.this) {
+					pendingRequests.clear();
+				}
+			}
+		}
+    });	
   }
 
   public synchronized boolean isEnabled() {
@@ -100,7 +116,7 @@ public class BuddyIconTracker {
   private synchronized void updateRequestTime(BuddyIconRequest iconRequest) {
 	if ((rerequestIconsTimer == null) && pendingRequests.isEmpty()) {
 		rerequestIconsTimer = new Timer(true);
-		rerequestIconsTimer.schedule(new RerequestIconsTask(), 15000, 15000);
+		rerequestIconsTimer.schedule(new RerequestIconsTask(), RE_REQUEST_INTERVAL, RE_REQUEST_INTERVAL);
 	}
 
     pendingRequests.put(iconRequest, System.currentTimeMillis());
@@ -169,21 +185,20 @@ public class BuddyIconTracker {
   }
 
   private void requestIcon(BuddyIconRequest iconRequest) {
-    IconServiceArbiter iconArbiter =
-        conn.getExternalServiceManager().getIconServiceArbiter();
-    if (iconArbiter != null) {
 	  if (updateRequestTimeIfPossible(iconRequest)) {
-		  if (iconRequest.screenname != null) {
-			  LOGGER.fine("Requesting buddy icon for " + iconRequest.screenname);
+		  IconServiceArbiter iconArbiter =
+		  conn.getExternalServiceManager().getIconServiceArbiter();
+		  if (iconArbiter != null) {
+			  if (iconRequest.screenname != null) {
+				  LOGGER.fine("Requesting buddy icon for " + iconRequest.screenname);
+			  }
+			  
+			  iconArbiter.addIconRequestListener(iconRequestListener);
+			  iconArbiter.requestIcon(iconRequest.screenname, iconRequest.data);
+		  } else {
+			  LOGGER.warning("icon arbiter is null!");
 		  }
-
-		  iconArbiter.addIconRequestListener(iconRequestListener);
-		  iconArbiter.requestIcon(iconRequest.screenname, iconRequest.data);
 	  }
-
-    } else {
-      LOGGER.warning("icon arbiter is null!");
-    }
   }
 
   private void storeBuddyIconData(Screenname buddy, ExtraInfoData iconInfo,
@@ -274,11 +289,11 @@ public class BuddyIconTracker {
 
       List<BuddyIconRequest> rereq = new ArrayList<BuddyIconRequest>();
       synchronized (BuddyIconTracker.this) {
-        for (Map.Entry<BuddyIconRequest,Long> entry : pendingRequests.entrySet()) {
-          if (System.currentTimeMillis() - entry.getValue() > RE_REQUEST_INTERVAL) {
-            rereq.add(entry.getKey());
-          }
-        }
+		for (Map.Entry<BuddyIconRequest,Long> entry : pendingRequests.entrySet()) {
+		  if (System.currentTimeMillis() - entry.getValue() > RE_REQUEST_INTERVAL) {
+			rereq.add(entry.getKey());
+		  }
+		 }
       }
       for (BuddyIconRequest iconRequest : rereq) {
         LOGGER.fine("Re-requesting buddy icon for " + iconRequest.screenname
