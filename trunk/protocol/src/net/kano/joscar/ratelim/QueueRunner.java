@@ -47,7 +47,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
 public final class QueueRunner<Q extends FutureEventQueue> {
-    public static final long TIMEOUT_DEFAULT = 5*60*1000;
+    public static final long TIMEOUT_DEFAULT = 3*60*1000;
 
     private static final Logger logger
             = LoggingSystem.getLogger("net.kano.joscar.ratelim.QueueRunner");
@@ -182,7 +182,7 @@ public final class QueueRunner<Q extends FutureEventQueue> {
                         if (shouldStop) {
                             if (logger.logFineEnabled()) {
                                 logger.logFine("Stopping queue runner due to "
-                                        + "stopCurrentRun() call");
+                                        + "stopCurrentRun() call; queue is " + queue.toString());
                             }
                             shouldStop = false;
                             break;
@@ -194,7 +194,7 @@ public final class QueueRunner<Q extends FutureEventQueue> {
                                     logger.logFine("Stopping queue runner due to "
                                             + "inactivity: "
                                             + (System.currentTimeMillis()
-                                            - lastActivity) + "ms");
+                                            - lastActivity) + "ms; queue is " + queue.toString());
                                 }
                                 break;
                             }
