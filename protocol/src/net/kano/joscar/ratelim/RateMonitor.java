@@ -54,7 +54,6 @@ import net.kano.joscar.snac.SnacResponseListener;
 import net.kano.joscar.snaccmd.conn.RateChange;
 import net.kano.joscar.snaccmd.conn.RateClassInfo;
 import net.kano.joscar.snaccmd.conn.RateInfoCmd;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -114,7 +113,7 @@ RateMonitor monitor = new RateMonitor(snacProcessor);
  * <br>
  * <br>
  * Once rate class information has been received from the server, a {@link
- * RateClassMonitor} is created for each rate class. For more information on
+ * RateClassMonitorImpl} is created for each rate class. For more information on
  * what exactly a rate class is, see {@link RateClassInfo}. After the initial
  * rate class information is received, rate classes are never added or removed,
  * and the SNAC commands which each rate class contains cannot be changed, so it
@@ -133,7 +132,7 @@ RateMonitor monitor = new RateMonitor(snacProcessor);
  * <br>
  * <br>
  * Most of the interesting rate limiting information is provided by the child of
- * this class, {@link RateClassMonitor}. To access rate information for IM's,
+ * this class, {@link RateClassMonitorImpl}. To access rate information for IM's,
  * one could use code such as the following:
  * <pre>
 CmdType cmd = new CmdType(IcbmCommand.FAMILY_ICBM,
@@ -173,16 +172,16 @@ public class RateMonitor {
     private final Object listenerEventLock = new Object();
 
     /** A map from rate class numbers to rate class monitors. */
-    private Map<Integer,RateClassMonitor> classToMonitor
-            = new HashMap<Integer, RateClassMonitor>(10);
+    private Map<Integer, RateClassMonitorImpl> classToMonitor
+            = new HashMap<Integer, RateClassMonitorImpl>(10);
     /** A map from SNAC command types to rate class monitors. */
-    private Map<CmdType,RateClassMonitor> typeToMonitor
-            = new HashMap<CmdType, RateClassMonitor>(500);
+    private Map<CmdType, RateClassMonitorImpl> typeToMonitor
+            = new HashMap<CmdType, RateClassMonitorImpl>(500);
     /**
      * The default rate class monitor (for commands which are not a member of a
      * specific rate class).
       */
-    private RateClassMonitor defaultMonitor = null;
+    private RateClassMonitorImpl defaultMonitor = null;
 
     /** The current error margin for this rate monitor. */
     private int errorMargin = ERRORMARGIN_DEFAULT;
@@ -366,7 +365,8 @@ public class RateMonitor {
     private synchronized void setRateClass(RateClassInfo rateInfo) {
         DefensiveTools.checkNull(rateInfo, "rateInfo");
 
-        RateClassMonitor monitor = new RateClassMonitor(this, rateInfo);
+        RateClassMonitorImpl monitor = new RateClassMonitorImpl(this, rateInfo,
+                new MyRateClassListener());
         classToMonitor.put(rateInfo.getRateClass(), monitor);
 
         List<CmdType> cmdTypes = rateInfo.getCommands();
@@ -404,7 +404,7 @@ public class RateMonitor {
         DefensiveTools.checkNull(rateInfo, "rateInfo");
 
         int rateClass = rateInfo.getRateClass();
-        RateClassMonitor monitor = getMonitor(rateClass);
+        RateClassMonitorImpl monitor = getMonitor(rateClass);
 
         if (monitor == null) {
             LOGGER.logWarning("updateRateClass called with unknown rate class "
@@ -462,30 +462,11 @@ public class RateMonitor {
     private void updateRate(SnacRequestSentEvent e) {
         CmdType cmdType = CmdType.ofCmd(e.getRequest().getCommand());
 
-        RateClassMonitor monitor = getMonitor(cmdType);
+        RateClassMonitorImpl monitor = getMonitor(cmdType);
 
         if (monitor == null) return;
 
         monitor.updateRate(e.getSentTime());
-    }
-
-    /**
-     * Fires a rate limit status event to all registered listeners.
-     *
-     * @param monitor the rate class monitor whose rate class's limited state
-     *        has changed
-     * @param limited whether or not the associated rate class is rate-limited
-     */
-    void fireLimitedEvent(RateClassMonitor monitor, boolean limited) {
-        synchronized(listenerEventLock) {
-            for (RateListener listener : listeners) {
-                try {
-                    listener.rateClassLimited(this, monitor, limited);
-                } catch (Throwable t) {
-                    handleException(ERRTYPE_RATE_LISTENER, t, listener);
-                }
-            }
-        }
     }
 
     /**
@@ -511,15 +492,7 @@ public class RateMonitor {
      */
     public final synchronized int getErrorMargin() { return errorMargin; }
 
-    /**
-     * Returns the rate class monitor for the rate class identified by the given
-     * rate class ID number.
-     *
-     * @param rateClass a rate class ID number
-     * @return the rate class monitor associated with the given rate class ID
-     *         number
-     */
-    private synchronized @Nullable RateClassMonitor getMonitor(int rateClass) {
+    private RateClassMonitorImpl getMonitor(int rateClass) {
         return classToMonitor.get(rateClass);
     }
 
@@ -533,10 +506,10 @@ public class RateMonitor {
      *        be returned
      * @return the rate class monitor associated with the given command type
      */
-    public final synchronized RateClassMonitor getMonitor(CmdType type) {
+    public final synchronized RateClassMonitorImpl getMonitor(CmdType type) {
         DefensiveTools.checkNull(type, "type");
 
-        RateClassMonitor queue = typeToMonitor.get(type);
+        RateClassMonitorImpl queue = typeToMonitor.get(type);
 
         if (queue == null) queue = defaultMonitor;
 
@@ -549,7 +522,8 @@ public class RateMonitor {
      * @return all of the rate class monitors in use in this rate monitor
      */
     public final synchronized List<RateClassMonitor> getMonitors() {
-        return DefensiveTools.getUnmodifiableCopy(classToMonitor.values());
+        return DefensiveTools.<RateClassMonitor>getUnmodifiableCopy(
+            classToMonitor.values());
     }
 
     public String toString() {
@@ -559,5 +533,19 @@ public class RateMonitor {
                 + ", snacProcessor=" + snacProcessor;
     }
 
-
+    private class MyRateClassListener implements RateClassListener {
+        public void handleLimitedEvent(RateClassMonitor monitor,
+                boolean limited) {
+            synchronized(listenerEventLock) {
+                for (RateListener listener : listeners) {
+                    try {
+                        listener.rateClassLimited(RateMonitor.this, monitor,
+                                limited);
+                    } catch (Throwable t) {
+                        handleException(ERRTYPE_RATE_LISTENER, t, listener);
+                    }
+                }
+            }
+        }
+    }
 }

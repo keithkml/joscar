@@ -67,7 +67,7 @@ import java.util.Map;
  * <br>
  * <code> RateMonitor mon = rateLimitingQueueMgr.{@linkplain
  * #getQueueMgr(ClientSnacProcessor) getQueueMgr}(snacProcessor).{@linkplain
- * ConnectionQueueMgr#getRateMonitor getRateMonitor}() </code></li>
+ * ConnectionQueueMgrImpl#getRateMonitor getRateMonitor}() </code></li>
  * </ul>
  *
  * One may also wish to note that each instance of
@@ -83,7 +83,7 @@ import java.util.Map;
  * <br>
  * <br>
  * A <code>RateLimitingQueueMgr</code> delegates most actual functionality to
- * a set of "child" {@link ConnectionQueueMgr}s. See {@link #getQueueMgr
+ * a set of "child" {@link ConnectionQueueMgrImpl}s. See {@link #getQueueMgr
  * getQueueMgr} and {@link #getQueueMgrs getQueueMgrs} for information on how
  * to use these after assigning the <code>RateLimitingQueueMgr</code> to a SNAC
  * processor.
@@ -92,8 +92,8 @@ import java.util.Map;
  */
 public class RateLimitingQueueMgr implements SnacQueueManager {
     /** A map from SNAC processors to connection managers. */
-    private final Map<ClientSnacProcessor,ConnectionQueueMgr> connMgrs
-            = new IdentityHashMap<ClientSnacProcessor, ConnectionQueueMgr>();
+    private final Map<ClientSnacProcessor, ConnectionQueueMgrImpl> connMgrs
+            = new IdentityHashMap<ClientSnacProcessor, ConnectionQueueMgrImpl>();
 
     /** A thread to "run" the SNAC queues controlled by this queue manager. */
     private final QueueRunner<RateLimitingEventQueue> runner
@@ -133,7 +133,7 @@ public class RateLimitingQueueMgr implements SnacQueueManager {
      * @return a list of all single-SNAC-processor queue managers currently in
      *         use
      */
-    public final List<ConnectionQueueMgr> getQueueMgrs() {
+    public final List<ConnectionQueueMgrImpl> getQueueMgrs() {
         synchronized(connMgrs) {
             return DefensiveTools.getUnmodifiableCopy(connMgrs.values());
         }
@@ -150,7 +150,7 @@ public class RateLimitingQueueMgr implements SnacQueueManager {
      *         processor, or <code>null</code> if none is in use for the given
      *         SNAC processor
      */
-    public final ConnectionQueueMgr getQueueMgr(ClientSnacProcessor processor) {
+    public final ConnectionQueueMgrImpl getQueueMgr(ClientSnacProcessor processor) {
         DefensiveTools.checkNull(processor, "processor");
 
         synchronized(connMgrs) {
@@ -160,12 +160,12 @@ public class RateLimitingQueueMgr implements SnacQueueManager {
 
     public void attached(ClientSnacProcessor processor) {
         synchronized(connMgrs) {
-            connMgrs.put(processor, new ConnectionQueueMgr(this, processor));
+            connMgrs.put(processor, new ConnectionQueueMgrImpl(this, processor));
         }
     }
 
     public void detached(ClientSnacProcessor processor) {
-        ConnectionQueueMgr mgr;
+        ConnectionQueueMgrImpl mgr;
         synchronized(connMgrs) {
             mgr = connMgrs.remove(processor);
         }

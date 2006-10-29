@@ -182,8 +182,8 @@ public class RateClassInfo implements Writable {
     /** The maximum rate average. */
     private final long max;
 
-    /** The last time */
-    private final long lastTime;
+    /** The last time a command was sent */
+    private final long timeSinceLastCommand;
 
     /** The current state */
     private final int currentState;
@@ -223,15 +223,15 @@ public class RateClassInfo implements Writable {
         currentAvg    = BinaryTools.getUInt  (block, 22);
         max           = BinaryTools.getUInt  (block, 26);
         if (block.getLength() >= 34) {
-            lastTime      = BinaryTools.getUInt  (block, 30);
+            timeSinceLastCommand = BinaryTools.getUInt  (block, 30);
             if (block.getLength() >= 35) {
                 currentState  = BinaryTools.getUByte (block, 34);
             } else {
-                currentState = 0;
+                currentState = -1;
             }
         } else {
-            lastTime = 0;
-            currentState = 0;
+            timeSinceLastCommand = 0;
+            currentState = -1;
         }
     }
 
@@ -246,7 +246,7 @@ public class RateClassInfo implements Writable {
 
     public RateClassInfo(int rateClass, long windowSize, long clearAvg,
             long warnAvg, long limitedAvg, long disconnectAvg, long currentAvg,
-            long max, long lastTime, int currentState) {
+            long max, long timeSinceLastCommand, int currentState) {
         DefensiveTools.checkRange(rateClass, "rateClass", 0);
         DefensiveTools.checkRange(windowSize, "windowSize", 0);
         DefensiveTools.checkRange(clearAvg, "clearAvg", 0);
@@ -255,8 +255,9 @@ public class RateClassInfo implements Writable {
         DefensiveTools.checkRange(disconnectAvg, "disconnectAvg", 0);
         DefensiveTools.checkRange(currentAvg, "currentAvg", 0);
         DefensiveTools.checkRange(max, "max", 0);
-        DefensiveTools.checkRange(max, "lastTime", 0);
-        DefensiveTools.checkRange(max, "currentState", 0);
+        DefensiveTools.checkRange(timeSinceLastCommand,
+            "timeSinceLastCommand", -1);
+        DefensiveTools.checkRange(currentState, "currentState", -1);
 
         this.rateClass = rateClass;
         this.windowSize = windowSize;
@@ -266,7 +267,7 @@ public class RateClassInfo implements Writable {
         this.disconnectAvg = disconnectAvg;
         this.currentAvg = currentAvg;
         this.max = max;
-        this.lastTime = lastTime;
+        this.timeSinceLastCommand = timeSinceLastCommand;
         this.currentState = currentState;
     }
 
@@ -404,8 +405,13 @@ public class RateClassInfo implements Writable {
         return currentState;
     }
 
-    public long getLastTime() {
-        return lastTime;
+    /**
+     * Returns the number of milliseconds that have elapsed since the server
+     * recorded the last command sent in this rate class. This method returns
+     * -1 if this value was not sent by the server.
+     */
+    public long getTimeSinceLastCommand() {
+        return timeSinceLastCommand;
     }
 
     /**
@@ -431,8 +437,12 @@ public class RateClassInfo implements Writable {
         BinaryTools.writeUInt(out, disconnectAvg);
         BinaryTools.writeUInt(out, currentAvg);
         BinaryTools.writeUInt(out, max);
-        BinaryTools.writeUInt(out, lastTime);
-        BinaryTools.writeUByte(out, currentState);
+        if (timeSinceLastCommand != -1) {
+          BinaryTools.writeUInt(out, timeSinceLastCommand);
+          if (currentState != -1) {
+            BinaryTools.writeUByte(out, currentState);
+          }
+        }
     }
 
     public synchronized String toString() {
@@ -444,7 +454,7 @@ public class RateClassInfo implements Writable {
                 ", limitedAvg=" + limitedAvg +
                 ", disconnectAvg=" + disconnectAvg +
                 ", max=" + max +
-                ", lastTime=" + lastTime +
+                ", timeSinceLastCommand=" + timeSinceLastCommand +
                 ", currentState=" + currentState +
                 ", families: "
                 + (commands == null ? "none" : "" + commands.size());

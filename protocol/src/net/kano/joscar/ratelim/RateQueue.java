@@ -38,14 +38,17 @@ package net.kano.joscar.ratelim;
 import net.kano.joscar.DefensiveTools;
 import net.kano.joscar.logging.Logger;
 import net.kano.joscar.logging.LoggingSystem;
-import net.kano.joscar.snac.ClientSnacProcessor;
 import net.kano.joscar.snac.SnacRequest;
-import org.jetbrains.annotations.Nullable;
+import net.kano.joscar.snac.SnacRequestAdapter;
+import net.kano.joscar.snac.SnacRequestSentEvent;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Set;
 
 
 /**
@@ -59,8 +62,7 @@ public class RateQueue {
     private static final Logger logger
             = LoggingSystem.getLogger("net.kano.joscar.ratelim");
 
-    /** The "parent" connection manager for this rate queue. */
-    private final ConnectionQueueMgr parentMgr;
+    private final ConnectionQueueMgr connectionManager;
 
     /** The actual request queue. */
     private final LinkedList<SnacRequest> queue = new LinkedList<SnacRequest>();
@@ -69,26 +71,22 @@ public class RateQueue {
     private final RateClassMonitor rateMonitor;
 
     /**
-     * Creates a new rate queue with the given "parent" connection queue manager
-     * using the given rate monitor.
-     *
-     * @param parentMgr this rate queue's parent connection queue manager
-     * @param monitor the rate class monitor to use for this rate queue
+     * Requests which have been dequeued but not yet sent.
      */
-    RateQueue(ConnectionQueueMgr parentMgr, RateClassMonitor monitor) {
-        DefensiveTools.checkNull(parentMgr, "parentMgr");
+    private final Set<SnacRequest> pendingRequests = new HashSet<SnacRequest>();
+
+    private final SnacRequestSender requestSender;
+
+    RateQueue(ConnectionQueueMgr connectionManager, RateClassMonitor monitor,
+              SnacRequestSender requestSender) {
+        DefensiveTools.checkNull(connectionManager, "connectionManager");
         DefensiveTools.checkNull(monitor, "monitor");
+        DefensiveTools.checkNull(requestSender, "requestSender");
 
-        this.parentMgr = parentMgr;
+        this.connectionManager = connectionManager;
         this.rateMonitor = monitor;
+        this.requestSender = requestSender;
     }
-
-    /**
-     * Returns this rate queue's "parent" connection queue manager.
-     *
-     * @return this rate queue's "parent" connection queue manager
-     */
-    public ConnectionQueueMgr getParentMgr() { return parentMgr; }
 
     /**
      * Returns the rate class monitor associated with this rate queue.
@@ -133,9 +131,7 @@ public class RateQueue {
      *
      * @return the request that was removed
      */
-    synchronized @Nullable SnacRequest dequeue() {
-        if (queue.isEmpty()) return null;
-
+    synchronized SnacRequest dequeueNextRequest() throws NoSuchElementException {
         SnacRequest request = queue.removeFirst();
 
         if (logger.logFineEnabled()) {
@@ -165,14 +161,8 @@ public class RateQueue {
         queue.clear();
     }
 
-    public String toString() {
-        return "RateQueue: "
-                + "rateMonitor=" + rateMonitor
-                + ", queued: " + queue.size();
-    }
-
     public boolean isOpen() {
-        return hasRequests() && !getParentMgr().isPaused();
+        return hasRequests() && !connectionManager.isPaused();
     }
 
     /**
@@ -181,7 +171,7 @@ public class RateQueue {
      * time} is zero.
      */
     public boolean isReady() {
-        return getOptimalWaitTime() <= 0;
+        return rateMonitor.getPossibleCmdCount() > 0;
     }
 
     /**
@@ -189,7 +179,7 @@ public class RateQueue {
      * "optimal wait time"} for this queue.
      */
     public long getOptimalWaitTime() {
-        return getRateClassMonitor().getOptimalWaitTime();
+        return rateMonitor.getOptimalWaitTime();
     }
 
     /**
@@ -208,43 +198,79 @@ public class RateQueue {
     }
 
     private void sendAndDequeueReadyRequests() {
-        List<SnacRequest> requests;
+        List<SnacRequest> toSend = dequeueReadyRequests();
 
-        synchronized(this) {
-			int possibleCmdCount = getRateClassMonitor().getPossibleCmdCount();
-			
-			/* XXX getPossibleCmdCount() returns 0 while isReady() is true. Which one is right???
-			 * We will always send at least one cmd for now... since otherwise we get stuck in an infinite loop
-			 * because the calling function thinks it's immediately time to try again.
-			 */
-			if (possibleCmdCount == 0) possibleCmdCount = 1;
-
-			int i = 0;
-            requests = new ArrayList<SnacRequest>(queue.size());
-
-            while (hasRequests() && isReady() && (i < possibleCmdCount)) {
-				requests.add(dequeue());
-				i++;
-            }
+        if (toSend.isEmpty()) {
+            return;
         }
-		logger.logFine("sendAndDequeueReadyRequests(): " + this.toString() + " will attempt to send " + requests.size());
+        requestSender.sendRequests(toSend);
+    }
 
-        ConnectionQueueMgr connMgr = getParentMgr();
-        RateLimitingQueueMgr rateMgr = connMgr.getParentQueueMgr();
-        ClientSnacProcessor processor = connMgr.getSnacProcessor();
-		while(!requests.isEmpty() && isReady()) {
-			rateMgr.sendSnac(processor, requests.get(0));
-			requests.remove(0);
-			getRateClassMonitor().updateRate(System.currentTimeMillis());
+  /**
+   * Dequeues as many requests as possible without being rate limited. A
+   * {@linkplain #pendingRequests list of unsent dequeued requests} is kept to 
+   * prevent the case where {@code sendAndDequeueReadyRequests} is called once,
+   * then called again by another thread before the dequeued requests from the
+   * first call are actually sent. This would result in sending twice as many
+   * requests as desired, and would probably end up rate-limiting the user (see
+   * example below).
+   * <br><br>
+   * When the request is recorded as "sent" by the SNAC processor, it is
+   * {@linkplain #removePending removed} from the unsent dequeued requests list.
+   * <br><br>
+   * An example: assume there are 5 SNAC commands queued.
+   * <ol>
+   * <li>Thread 1 calls {@code sendAndDequeueReadyRequests}
+   * <ol>
+   * <li>The rate monitor says 2 SNAC commands can be sent before being rate
+   *     limited</li>
+   * <li>Two commands are removed from the queue and passed to the SNAC
+   *     processor to be sent</li>
+   * </ol>
+   * </li>
+   * <li>Thread 2 calls {@code sendAndDequeueReadyRequests}
+   * <ol>
+   * <li>The rate monitor has not yet seen the 2 commands that Thread 1 passed
+   *     to the SNAC processor, because the SNAC processor has not sent them
+   *     yet. So, it still says that 2 SNAC commands can be sent before being
+   *     rate limited.</li>
+   * <li>Two more commands are removed from the queue and passed to the SNAC
+   *     processor to be sent</li>
+   * </ol>
+   * </li>
+   * <li>The SNAC processor sends the first of the 2 commands passed to it from
+   *     Thread 1</li>
+   * <li>The SNAC processor sends the second of the 2 commands passed to it from
+   *     Thread 1</li>
+   * <li>The SNAC processor sends the first of the 2 commands passed to it from
+   *     Thread 2</li>
+   * <li>The user is now rate-limited!</li>
+   * </ol>
+   */
+    private synchronized List<SnacRequest> dequeueReadyRequests() {
+        List<SnacRequest> toSend = new ArrayList<SnacRequest>(queue.size());
+        int max = rateMonitor.getPossibleCmdCount() - pendingRequests.size();
+        for (int i = 0; i < max && hasRequests(); i++) {
+            SnacRequest request = dequeueNextRequest();
+
+            request.addListener(new SnacRequestAdapter() {
+                public void handleSent(SnacRequestSentEvent e) {
+                    removePending(e.getRequest());
+                }
+            });
+            toSend.add(request);
         }
+        pendingRequests.addAll(toSend);
+        return toSend;
+    }
 
-		/* Some requests not sent. Requeue for later. */
-		if (!requests.isEmpty()) {
-			logger.logFine("re-enqueuing " + requests.size() + " SnacRequests for " + this.toString());
-            synchronized(this) {
-				/* Add all the remaining requests to the start of the queue */
-				queue.addAll(0, requests);
-			}
-		}
+    // package-private for testing
+    synchronized void removePending(SnacRequest request) {
+        pendingRequests.remove(request);
+    }
+
+    public String toString() {
+        return "RateQueue: rateMonitor=" + rateMonitor
+            + ", queued: " + queue.size();
     }
 }
