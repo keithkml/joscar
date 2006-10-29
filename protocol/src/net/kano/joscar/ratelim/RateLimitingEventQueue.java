@@ -68,4 +68,8 @@ public class RateLimitingEventQueue extends AbstractFutureEventQueue {
         updateQueueRunners();
     }
 
+	public String toString() {
+        return "RateLimitingEventQueue: "
+		+ "queues=" + queues;
+    }
 }
