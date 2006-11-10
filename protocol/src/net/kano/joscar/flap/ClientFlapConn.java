@@ -95,9 +95,11 @@ public class ClientFlapConn extends ClientConn {
 					LoggingSystem.getLogger(ClientFlapConn.class.getName()).logFine(newState.toString());
 
                     try {
-						if (flapProcessor == null)
+						if (flapProcessor == null) {
 							flapProcessor = new AsynchronousFlapProcessor();
-
+							LoggingSystem.getLogger(ClientFlapConn.class.getName()).logFine("Created " + flapProcessor);
+						}
+						
                         flapProcessor.attachToSocket(getSocket());
                     } catch (IOException e1) {
                         processError(e1);
@@ -106,7 +108,7 @@ public class ClientFlapConn extends ClientConn {
                     }
                 } else if (newState == ClientConn.STATE_NOT_CONNECTED
                         || newState == ClientConn.STATE_FAILED) {
-					LoggingSystem.getLogger(ClientFlapConn.class.getName()).logFine(newState.toString());
+					LoggingSystem.getLogger(ClientFlapConn.class.getName()).logFine(newState.toString() + "so breaking down " + flapProcessor);
 
 					/* Breaking down the flapProcessor will also detach it */
 					flapProcessor.breakdown();
