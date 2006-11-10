@@ -154,7 +154,7 @@ public final class BuddyInfo {
     return certificateInfo;
   }
 
-  private void clearOnlineInfo(void) {
+  private void clearOnlineInfo() {
 	  this.onlineSince = null;
 	  this.idleSince = null;
 	  this.statusMessage = null;
