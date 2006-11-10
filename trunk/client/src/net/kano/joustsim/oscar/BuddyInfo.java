@@ -154,6 +154,14 @@ public final class BuddyInfo {
     return certificateInfo;
   }
 
+  private void clearOnlineInfo(void) {
+	  this.onlineSince = null;
+	  this.idleSince = null;
+	  this.statusMessage = null;
+	  this.itunesUrl = null;
+	  this.awayMessage = null;
+  }
+  
   void setOnline(boolean online) {
     boolean old;
     synchronized (this) {
@@ -161,6 +169,9 @@ public final class BuddyInfo {
       this.online = online;
     }
     pcs.firePropertyChange(PROP_ONLINE, old, online);
+	
+	if (!online)
+		this.clearOnlineInfo();
   }
 
   public synchronized boolean isOnline() { return online; }
