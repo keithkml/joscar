@@ -60,6 +60,42 @@ public final class OscarTools {
     /** A logger for errors caused in the methods this class. */
     private static final Logger logger = LoggingSystem.getLogger("net.kano.joscar");
 
+    /** A regular expression that only matches valid names for charsets. */
+    private static final Pattern charsetPattern
+            = Pattern.compile("[A-Za-z0-9][A-Za-z0-9-.:_]*");
+
+    /**
+     * A regular expression for processing AIM info content type strings. See
+     * {@link #parseContentTypeString parseContentTypeString} for details.
+     */
+    private static final Pattern typePattern = Pattern.compile(
+        "[;=\\s]*+" + // any leading semicolons, equals signs, and space
+            "(\\S+?)" + // the key name, without spaces (like "charset")
+            "\\s*" + // any whitespace after the key name
+            "(?:=\\s*" + // an equals sign, followed by possible whitespace
+            "(?:" +
+            "\"(.*?)\"" + // a value after the equals sign, in quotes
+            "|(\\S*?)" + // a single-word value not in quotes
+            ")" +
+            "\\s*" + // any more whitespace after the value
+            ")?" +
+            "(?:" +
+            "[=\\s]*;[=\\s]*" + // a semicolon surrounded by whitespace or
+            // stray equals signs
+            "|\\z" + // or the end of the input
+            ")");
+
+    /** A regular expression that matches the name of a UCS-2 charset. */
+    private static final Pattern ucsPattern = Pattern.compile("ucs-2([bl]e)?");
+
+    private static String defaultCharset = null;
+    private static Charset defaultCharsetObject = null;
+    private static final Object defaultCharsetLock = new Object();
+
+    static {
+        resetDefaultCharset();
+    }
+
     /**
      * A private constructor that is never called ensures that this class cannot
      * be instantiated.
@@ -105,27 +141,6 @@ public final class OscarTools {
     }
 
     /**
-     * A regular expression for processing AIM info content type strings. See
-     * {@link #parseContentTypeString parseContentTypeString} for details.
-     */
-    private static final Pattern typePattern = Pattern.compile(
-            "[;=\\s]*+" + // any leading semicolons, equals signs, and space
-            "(\\S+?)" + // the key name, without spaces (like "charset")
-            "\\s*" + // any whitespace after the key name
-            "(?:=\\s*" + // an equals sign, followed by possible whitespace
-            "(?:" +
-            "\"(.*?)\"" + // a value after the equals sign, in quotes
-            "|(\\S*?)" + // a single-word value not in quotes
-            ")" +
-            "\\s*" + // any more whitespace after the value
-            ")?" +
-            "(?:" +
-            "[=\\s]*;[=\\s]*" + // a semicolon surrounded by whitespace or
-                                // stray equals signs
-            "|\\z" + // or the end of the input
-            ")");
-
-    /**
      * Converts a string like <code>text/x-aolrtf;
      * charset=us-ascii</code> to a <code>Map</code> with two keys:
      * <code>text/x-aolrtf</code> (value <code>null</code>) and
@@ -166,10 +181,6 @@ public final class OscarTools {
         return entries;
     }
 
-    /** A regular expression that only matches valid names for charsets. */
-    private static final Pattern charsetPattern
-            = Pattern.compile("[A-Za-z0-9][A-Za-z0-9-.:_]*");
-
     /**
      * Returns <code>true</code> if the given charset name is a valid charset
      * name. Note that this method does not check to see whether the given
@@ -183,21 +194,84 @@ public final class OscarTools {
         return charsetPattern.matcher(charset).matches();
     }
 
-    /** A regular expression that matches the name of a UCS-2 charset. */
-    private static final Pattern ucsPattern = Pattern.compile("ucs-2([bl]e)?");
+    /**
+     * Sets the default charset to ISO8859-1 if available, otherwise to US-ASCII
+     * (which is guaranteed on all JVM's).
+     */
+    public static void resetDefaultCharset() {
+        if (Charset.isSupported("ISO8859-1")) {
+            setDefaultCharset("ISO8859-1");
+        } else {
+            setDefaultCharset("US-ASCII");
+        }
+    }
+
+    /**
+     * Sets a private static <code>defaultCharset</code> value that
+     * can be accessed by {@link #getDefaultCharsetName getDefaultCharsetName}
+     *
+     * @throws IllegalArgumentException if the charset is not available
+     */
+    public static void setDefaultCharset(String charset)
+            throws IllegalArgumentException {
+        if (isValidCharset(charset)) {
+            if (Charset.isSupported(charset)) {
+                synchronized (defaultCharsetLock) {
+                    defaultCharset = charset;
+                    // reset charset object for lazy initialization
+                    defaultCharsetObject = null;
+                }
+            } else {
+                throw new IllegalArgumentException(
+                        "Unsupported charset: " + charset);
+            }
+        } else {
+            throw new IllegalArgumentException(
+                    "Invalid charset name: " + charset);
+        }
+    }
+
+    /**
+     * Returns a name of the default charset. Returns a
+     * <code>defaultCharset</code> value if it was
+     * set and accepted by setDefaultCharset(), or ISO8859-1 (if supported),
+     * or US-ASCII after all.
+     */
+    public static String getDefaultCharsetName() {
+        synchronized (defaultCharsetLock) {
+            return defaultCharset;
+        }
+    }
+
+    /**
+     * Returns the charset identified by {@link #getDefaultCharsetName()}
+     */
+    public static Charset getDefaultCharset() {
+        synchronized (defaultCharsetLock) {
+          Charset object = defaultCharsetObject;
+          if (object != null) {
+              return object;
+          }
+          Charset newCharset = Charset.forName(defaultCharset);
+          defaultCharsetObject = newCharset;
+          return newCharset;
+        }
+    }
 
     /**
      * Returns a valid, hopefully compatible charset name from the given charset
      * name. For example, attempts to convert such names as "unicode-2.0" to
      * "UTF-16BE". The returned charset name is guaranteed to be supported by
      * the JVM; that is, the returned charset can always be used to encode
-     * without further processing.
+     * without further processing. This method falls back to the
+     * {@linkplain #getDefaultCharsetName() default charset} if no charset can be
+     * deciphered from {@code charset}.
      *
      * @param charset the possibly invalid charset, or <code>null</code>
      * @return a valid charset derived from the given charset name
      */
     private static String fixCharset(String charset) {
-        if (charset == null) return "US-ASCII";
+        if (charset == null) return getDefaultCharsetName();
 
         // sigh. ok, first attempt to hax0r unicode 2.0, since java doesn't
         // support it yet, and iChat, well, does.
@@ -217,7 +291,7 @@ public final class OscarTools {
             }
         }
 
-        // okay, none of those were true. check for UCS-2, which is just UTF-16
+        // okay, none of those was true. check for UCS-2, which is just UTF-16
         Matcher matcher = ucsPattern.matcher(charset);
         if (matcher.matches()) {
             // it's UCS-2! get the type, LE or BE (or null if neither)
@@ -231,13 +305,16 @@ public final class OscarTools {
             return newCharset;
         }
 
-        // okay. none of those worked. let's use ascii. :/
-        return "US-ASCII";
+        // okay. none of those worked. let's use the default one. :/
+        return getDefaultCharsetName();
     }
 
     /**
      * Returns a string given its binary representation and one of AIM's
-     * <code>text/x-aolrtf; charset=us-ascii</code> content-type strings.
+     * <code>text/x-aolrtf; charset=us-ascii</code> content-type strings. This
+     * method falls back on the
+     * {@linkplain #getDefaultCharsetName() default charset} if it cannot figure out
+     * which charset was intended by the sender.
      *
      * @param infoData the binary representation of the string
      * @param infoType an AIM content-type string
@@ -257,8 +334,8 @@ public final class OscarTools {
 
             charset = getValidCharset(charset);
         } else {
-            // there's no encoding given! so just use ASCII.
-            charset = "US-ASCII";
+            // there's no encoding given! so just use the default.
+            charset = getDefaultCharsetName();
         }
 
         try {
@@ -279,11 +356,12 @@ public final class OscarTools {
      *         from the given name
      */
     public static String getValidCharset(String charset) {
-        // use US-ASCII if there's no charset or if the name isn't a valid
+        // use defaultCharset if there's no charset or if the name isn't a valid
         // charset name according to the isSupported javadoc (if there's a
         // method like isValidCharsetName(), please someone email me, but
         // I'm pretty sure there isn't)
         String goodCharset = charset;
+
         if (goodCharset == null || !isValidCharset(goodCharset)) {
             goodCharset = fixCharset(goodCharset);
         } else {
@@ -298,7 +376,7 @@ public final class OscarTools {
                 logger.logWarning("Illegal charset name: " + goodCharset + ": "
                         + e.getMessage());
 
-                // and default to ASCII
+                // and default after all
                 goodCharset = fixCharset(goodCharset);
             }
         }
@@ -327,7 +405,7 @@ public final class OscarTools {
 
   /**
      * Returns whether the given strings are equal when compared as screennames.
-     * For details, see {@link net.kano.joscar.Screenname#normalize}.
+     * For details, see {@link net.kano.joustsim.Screenname#normalize}.
      * <br><br>
      * For example, <code>equalScreennames("Joustacular", "j o ust
      * acular")</code> will return <code>true</code>.

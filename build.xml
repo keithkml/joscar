@@ -47,7 +47,7 @@
     <ant dir="client" inheritrefs="true" target="jar"/>
   </target>
 
-  <target name="test">
+  <target name="test" depends="jars">
     <ant dir="common" inheritrefs="true" target="test"/>
     <ant dir="protocol" inheritrefs="true" target="test"/>
     <ant dir="client" inheritrefs="true" target="test"/>
