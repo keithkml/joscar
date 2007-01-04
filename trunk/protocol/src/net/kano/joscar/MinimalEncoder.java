@@ -170,6 +170,13 @@ public final class MinimalEncoder {
         encoder = getCharset(str, ISO88591, ENCODING_ISO);
         if (encoder != null) return encoder;
 
+        String name = OscarTools.getDefaultCharsetName();
+        if (!name.equalsIgnoreCase(ENCODING_ASCII)
+            && !name.equalsIgnoreCase(ENCODING_ISO)) {
+          encoder = getCharset(str, Charset.forName(name), name);
+          if (encoder != null) return encoder;
+        }
+
         encoder = ENCODING_UTF16;
 
         return encoder;
