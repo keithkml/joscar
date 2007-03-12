@@ -1,8 +1,6 @@
+#labels Featured
 == The OSCAR protocol documentation project ==
-This is the OSCAR documentation project, where KeithLea, DavidWalluck, and [wiki:Hoov Hoov] (and anyone else who wants to ContributeToOscarDocWiki) plan to write an extensive set of documentation for using AOL Instant Messenger's OSCAR protocol (also known as AIM/OSCAR). There are a set of OscarDocWikiStandards that are followed in this wiki.
-
-'''UPDATE March 2005'''
- This wiki has had lots of problems with spam. I've set it up so you need to be ''logged in'' to edit a page. To log in, visit the UserPreferences page. Anyone can create an account.
+This is the OSCAR documentation project, where KeithLea, DavidWalluck, and [Hoov] (and anyone else who wants to ContributeToOscarDocWiki) plan to write an extensive set of documentation for using AOL Instant Messenger's OSCAR protocol (also known as AIM/OSCAR). There are a set of OscarDocWikiStandards that are followed in this wiki.
 
 '''UPDATE Dec 2003'''
  I (KeithLea) have been busy with other projects and school lately, and have not had time to document many aspects of the protocol. A few big parts that are done are pretty complete, though: AimSecureIm, InitialAuthentication, and LoggingIn.
@@ -19,29 +17,14 @@ Topics we want to document: (pages starting with a ? have not been written yet)
      * FlapConnection
      * SnacCommand
      * DataRepresentation
-       * UnsignedByte
-       * UnsignedShort
-       * UnsignedInt
-       * UnixDate
-       * AsciiString
-       * AsciiStringBlock
-       * EncodedString
      * CoreStructures
-       * TlvChain
-       * TlvBlock
-       * ExtraInfoBlock
    * BasicProtocolActions
      * InitialAuthentication
      * LoggingIn
      * InstantMessages
        * InterClientBasicMsg
-         * IncomingIcbmSnac
-         * OutgoingIcbmSnac
-         * ImAckSnac
        * WarningBuddies
        * TypingNotification
-       * IcbmParamInfoSnac
-       * IcbmParamRequestSnac
        * IcbmParameterInfo
      * Locate
        * GetDirectoryInfo
@@ -63,9 +46,6 @@ Topics we want to document: (pages starting with a ? have not been written yet)
      * BuddyList
    * AdvancedProtocolActions
      * RateLimiting
-       * RateAckSnac
-       * RateInfoRequestSnac
-       * RateInfoSnac
      * AdvancedBuddyList
        * ModifyingBuddyList
        * BuddyListValidity
