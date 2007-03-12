@@ -1,0 +1,2 @@
+ * UnsignedByte: {{{len}}}
+ * AsciiString: {{{string}}}

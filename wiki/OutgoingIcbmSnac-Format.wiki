@@ -1,0 +1,6 @@
+* SnacCommand Family 0x0004 Subtype 0x0006
+  * IcbmId: {{{cookie}}}
+  * UnsignedShort: {{{channel}}}
+  * AsciiStringBlock: {{{screenname}}}
+  * TlvChain: {{{tlvs}}}
+    * MessageBlock (0x0002 TLV): {{{message}}} or RendezvousBlock (0x0005 TLV): {{{rendezvous}}}

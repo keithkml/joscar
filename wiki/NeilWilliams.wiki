@@ -1,0 +1,1 @@
+Neil Williams is studying Computer Science of UC Santa Cruz. He has worked with the AIM TOC protocol in the past and has spent the last few months working on a C++ implementation of the Oscar protocol named [http://aim.spladug.net/ spOscar].

@@ -1,0 +1,7 @@
+Other OSCAR documentation is available:
+
+ * [http://aimdoc.sourceforge.net/OSCARdoc/ Adam Fritzler's documentation] (also available [http://www.oilcan.org/oscar/ here]): most detailed of all OSCAR documentation, but many parts are out of date (it was last updated in April 2000)
+ * [http://kingant.net/oscar/ Mark Doliner's documentation]: briefly documents some newer OSCAR features
+ * [http://iserverd1.khstu.ru/oscar/ Alexandr Shutko's documentation]: somewhat ICQ-specific, and the author is not a native English speaker, so it can be hard to read
+ * [http://www.aim.aol.com/javadev/terminology.html AOL's old Java client terminology page]: not very useful
+ * [http://www.stud.uni-karlsruhe.de/~uck4/ICQ/ Rüdiger Kuhlmann and Douglas McLaughlin's ICQ documentation]: very ICQ-specific, somewhat hard to read

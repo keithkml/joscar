@@ -1,0 +1,1 @@
+A long capability block is a series of 16 bytes that describe a CapabilityBlock. For details, see the CapabilityBlock documentation.

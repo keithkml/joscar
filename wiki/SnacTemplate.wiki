@@ -1,0 +1,5 @@
+The <insert name> SNAC is sent by the OSCAR <client|server> in response to <WikiNameOfSnac>. The [client|server] normally responds to this packet with a <WikiNameOfSnac>. <Insert other information about command.> The format of this packet is:
+
+[[Include(/Format)]]
+
+<Briefly describe the fields/values in the packet>

@@ -1,0 +1,33 @@
+ * Open-source OSCAR libraries
+   * [http://daim.dev.java.net daim] is a Java OSCAR library by DavidWalluck
+   * [http://joust.kano.net joscar] is a Java OSCAR library by KeithLea
+   * [http://search.cpan.org/dist/Net-OSCAR/ Net::OSCAR] is a Perl OSCAR library ([http://www.zevils.com/programs/net-oscar/ Homepage])
+   * [http://twistedmatrix.com/products/twisted Twisted] is a Python networking library that includes OSCAR support
+   * [http://www.ithilien.tk TOSCARClient] is a AIM/OSCAR component for Borland Delphi/C++ Builder
+   * [http://aim.spladug.net/ spOscar] is a C++ OSCAR library
+   * [http://libaim.sourceforge.net/ libaim] is a C++ OSCAR library
+   * [http://www.cgorski.org/mloscar mlOscar] is an OCaml OSCAR library
+   * [http://www.danielgrunwald.de/coding/NOscar/ NOscar] is a C# OSCAR library for the .NET Framework
+ * Official IM applications using OSCAR
+   * [http://www.aim.com/download.adp AOL's AIM clients]
+   * [http://www.apple.com/ichat/ iChat], Apple's own client for OSX
+   * [http://icq.com/ ICQ]
+   * [http://www.ibm.com/lotus/ Lotus Sametime's client] supports AIM
+ * "Unauthorized" IM clients using OSCAR
+   * [http://fire.sourceforge.net/ Fire], a multiprotocol application for Mac OS X
+   * [http://trillian.cc/ Trillian], a mostly shareware client for Windows
+   * [http://gaim.sourceforge.net gaim], a great client for Unix/Linux and Windows
+   * [http://www.adiumx.com Adium] for Mac OS X (based on gaim's OSCAR code)
+   * [http://www.fifthace.com/beaim/ BeAIM], for BeOS
+   * [http://staticky.com/prog.html BSFlite], a unix console client
+   * [http://dev.ojnk.net/ pork], another console client
+   * [http://deekoo.net/technocracy/yeemp/ yeemp], an encrypted IM program that also supports (without encryption) ICQ and AIM
+   * [http://kopete.kde.org Kopete], KDE's multi protocol client
+   * [http://konst.org.ua/eng/software/centericq/ CenterICQ], a nice console client
+   * [http://www.zionsoftware.com/products/messenger/ JBuddy Messenger]
+   * [http://mamodeo.dyndns.org/mrmessage/ Mr. Message], a native OS/2 and [http://www.ecomstation.com eCS] open source client with a Spaceballs theme
+ * Other uses of OSCAR
+   * [http://www.jabber.org Jabber] has an OSCAR gateway, allowing Jabber users to sign onto AIM
+   * [http://iserverd.khstu.ru/ IServerd] is an open-source ICQ/OSCAR server
+ * Proprietary OSCAR software
+   * [http://www.zionsoftware.com/products/jbuddy JBuddy] is a commercial Java library supporting AIM
