@@ -6,7 +6,7 @@ Encrypted direct IM, file transfer, and Get File is simply performed over an SSL
 
 Due to what must be a bug in AOL's implementation, when an AIM 5.2 client is the SSL server, he sends a list of "trusted certificate authorities" that contains only ''his'' identity. Normally this would mean that he would only accept client certificates which were signed by his own certificate; in AIM's case, however, it means nothing, and must be ignored. Unfortunately, in Java, it takes some work to ignore it. When connecting as a client, you must define your own {{{KeyManager}}} like so:
 
-{{{#!code java
+{{{
 // we assume these are defined
 SSLContext context;
 KeyManagerFactory kmf;
@@ -62,7 +62,7 @@ Notice how the list of trusted certificate authorities (principals) is ignored, 
 
 To require client authorization when acting as the SSL server in Java, one can use code like this:
 
-{{{#!code java
+{{{
 // we assume this is defined
 SSLServerSocket sss;
 
