@@ -4,7 +4,7 @@ An unsigned short cannot be stored in Java's {{{short}}} type because {{{short}}
 
 To read an unsigned short from a byte array into Java's {{{int}}} type, you can use code like the following:
 
-{{{#!code java
+{{{
 // we assume this is defined
 byte[] data;
 
@@ -13,7 +13,7 @@ int ushortValue = (data[0] & 0xff) << 8) | (data[1] & 0xff);
 
 To write an unsigned short from Java's {{{int}}} type to an output stream, you can use code like the following:
 
-{{{#!code java
+{{{
 // we assume these are defined
 OutputStream out;
 int number;
