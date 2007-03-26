@@ -41,7 +41,7 @@ OpenSSL's ASN1 parser describes an encrypted IM structure as follows:
 
 Java developers (and probably users of other libraries and languages) don't need to parse the ASN.1 structure by hand. To extract the enveloped data (which contains the PKCS7 signed data), code like the following will work:
 
-{{{#!code java
+{{{
 // we assume these are imported, along with some other obvious imports
 import org.bouncycastle.cms.CMSEnvelopedData;
 import org.bouncycastle.cms.KeyTransRecipientInformation;
@@ -93,7 +93,7 @@ Simple string parsing can then extract the message from the HTTP-style stream us
 
 Code like the following will create the data to be signed:
 
-{{{#!code java
+{{{
 // we assume these are defined
 String msg; // the message to be sent
 
@@ -113,7 +113,7 @@ byte[] dataToSign = bout.toByteArray();
 
 {{{dataToSign}}} then needs to be placed in a PKCS7 signed data block (as specified in Pkcs7SignedData). This needs to be wrapped in another HTTP-style structure and then inside a PKCS7 enveloped data structure:
 
-{{{#!code java
+{{{
 // we assume these are imported
 import org.bouncycastle.cms.CMSEnvelopedData;
 import org.bouncycastle.cms.CMSEnvelopedDataGenerator;
