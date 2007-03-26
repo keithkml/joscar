@@ -10,7 +10,7 @@ Symmetric encryption algorithms like AES use a single key to encrypt and decrypt
 
 To create a secure chat room, you must generate an AES key. To do this in Java, you can use code like the following:
 
-{{{#!code java
+{{{
 // we assume these are defined
 SecureRandom srandom; // this could be a new SecureRandom()
 
@@ -92,7 +92,7 @@ The structure contains the distinguished name (DN) of the receiver as well as th
 
 The root sequence of the ASN.1 object contains another sequence (at index 0). That inner sequence is a [http://www.faqs.org/rfcs/rfc2630.html KeyTransRecipientInfo object]. To extract the key transport recipient information object from the entire ASN.1 block in Java, you could use code like the following:
 
-{{{#!code java
+{{{
 // we assume these are imported
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1Sequence;
@@ -110,7 +110,7 @@ KeyTransRecipientInfo ktr = KeyTransRecipientInfo.getInstance(seq);
 
 We now need to extract and decrypt the chat room key data, which is stored inside {{{ktr}}}. The chat room key was encrypted using our public certificate, so we need to use our private key to decrypt it.
 
-{{{#!code java
+{{{
 // we assume these are imported
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.cms.KeyTransRecipientInfo;
@@ -145,7 +145,7 @@ Building the {{{securityBlock}}} is a somewhat tedious process.
 
 First, you need to encrypt the chat room key with the receiver's public X.509 certificate.
 
-{{{#!code java
+{{{
 // we assume these are defined
 SecretKey key; // the chat room key
 X509Certificate receiverCert; // the receiver's public certificate
@@ -160,7 +160,7 @@ byte[] encryptedKey = c.doFinal(keyData);
 
 {{{encryptedKey}}} now contains the encrypted chat room key. Next we need to place it in a key transport recipient information object:
 
-{{{#!code java
+{{{
 // we assume these are imported
 import org.bouncycastle.asn1.cms.IssuerAndSerialNumber;
 import org.bouncycastle.asn1.cms.KeyTransRecipientInfo;
@@ -184,7 +184,7 @@ KeyTransRecipientInfo ktr = new KeyTransRecipientInfo(
 
 Next, we have to create the custom ASN.1 structure. It contains a sequence which contains another sequence which contains the key transport recipient information object and the key cipher object ID.
 
-{{{#!code java
+{{{
 // we assume these are imported
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1OutputStream;
@@ -226,7 +226,7 @@ The structure contains a BER sequence which contains a the OID of the [http://ww
 
 To decode the encrypted chat message in Java, you could use code like the following:
 
-{{{#!code java
+{{{
 // we assume these are imported
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.BERTaggedObject;
@@ -251,7 +251,7 @@ byte[] encryptedData = enci.getEncryptedContent().getOctets();
 
 Now {{{alg}}} is an algorithm identifier that describes the encryption algorithm (normally 2.16.840.1.101.3.4.1.42, which is AES256-CBC), and {{{encryptedData}}} is the encrypted data. Next we need to decrypt the data:
 
-{{{#!code java
+{{{
 // extract the initialization vector from the algorithm
 // identifier object
 byte[] iv = ((ASN1OctetString) alg.getParameters()).getOctets();
@@ -291,7 +291,7 @@ To encode a message for a Secure Chat Room, it must first be wrapped in a PKCS7 
 
 Code like the following will create the data that needs to be signed:
 
-{{{#!code java
+{{{
 // we assume these are defined
 String msg; // the message to be sent
 
@@ -311,7 +311,7 @@ byte[] dataToSign = bout.toByteArray();
 
 The data then needs to be signed as described in Pkcs7SignedData. That signed data block then needs to be encrypted with AES.
 
-{{{#!code java
+{{{
 // we assume these are defined
 Random random;
 SecretKey chatkey; // the chat room's key
@@ -330,7 +330,7 @@ byte[] encryptedData = c.doFinal(dataToEncrypt);
 
 Next, you need to create a PKCS7 encrypted data object containing the encrypted data (as a BER octet string) as well as information about the encryption method:
 
-{{{#!code java
+{{{
 // we assume these are imported
 import org.bouncycastle.asn1.cms.EncryptedContentInfo;
 import org.bouncycastle.asn1.cms.EncryptedData;
@@ -350,7 +350,7 @@ EncryptedData ed = new EncryptedData(eci, null);
 
 Next you need to build the custom ASN.1 structure. It consists of a BER sequence which contains two elements: the OID of the [http://www.alvestrand.no/objectid/1.2.840.113549.1.7.6.html PKCS7 encrypted data structure] and a BER tagged object containing the encrypted content object.
 
-{{{#!code java
+{{{
 // we assume these are imported
 import org.bouncycastle.asn1.BERSequence;
 import org.bouncycastle.asn1.BERTaggedObject;
