@@ -1,5 +1,0 @@
-The [insert data structure here] is used to [insert purpose]. [insert other details]. The format of this data structure is as follows:
-
-[[Include(/Format)]]
-
-[insert (brief) description of fields, invariant properties of the data structure, and so on]
