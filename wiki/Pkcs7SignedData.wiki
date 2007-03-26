@@ -89,7 +89,7 @@ Content-Transfer-Encoding: binary
 
 Extracting the signed data from a PKCS7 signed data block is easy in Java:
 
-{{{#!code java
+{{{
 // we assume these are imported
 import org.bouncycastle.cms.CMSSignedData;
 import org.bouncycastle.cms.CMSProcessableByteArray;
@@ -104,7 +104,7 @@ byte[] signedContent = (byte[]) cpb.getContent();
 
 At the end of that code block, {{{signedContent}}} will contain the data that was signed. To verify that the data was signed by the sender (and not tampered with in transit), you could use code like the following:
 
-{{{#!code java
+{{{
 // we assume this is imported
 import org.bouncycastle.cms.CMSSignedData;
 
@@ -124,7 +124,7 @@ for (Iterator sit = signers.iterator(); sit.hasNext();) {
 
 Signing data and placing it in a PKCS7 signed data block in Java is easy as well:
 
-{{{#!code java
+{{{
 // we assume these are imported
 import org.bouncycastle.cms.CMSProcessableByteArray;
 import org.bouncycastle.cms.CMSSignedData;
