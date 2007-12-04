@@ -69,7 +69,7 @@ public class KeepaliveSender {
   private synchronized void handleConnectionState(ClientConn.State newState) {
     if (timer == null && newState == ClientConn.STATE_CONNECTED) {
       LOGGER.fine("Starting KeepaliveSender for " + connection);
-      timer = new Timer("KeepaliveSender for " + connection, true);
+      timer = new Timer(true);
       timer.scheduleAtFixedRate(new TimerTask() {
         public void run() {
           if (!connection.isDisconnected()) {

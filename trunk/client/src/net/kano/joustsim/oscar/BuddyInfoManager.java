@@ -283,6 +283,9 @@ public class BuddyInfoManager {
     Boolean awayStatus = info.getAwayStatus();
     if (awayStatus != null) buddyInfo.setAway(awayStatus);
 
+    long icqStatus = info.getIcqStatus();
+    if (icqStatus != -1) buddyInfo.setIcqStatus(icqStatus);
+
     boolean mobile = false;
     List<CapabilityBlock> caps = info.getCapabilityBlocks();
     List<ShortCapabilityBlock> shortCaps = info.getShortCapabilityBlocks();

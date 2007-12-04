@@ -11,10 +11,16 @@ public interface MutableIcbmService extends MutableService, IcbmService {
   void sendIM(Screenname buddy, String body, boolean autoresponse,
       SnacRequestListener listener);
 
+  void sendIM(Screenname buddy, String body, boolean autoresponse,
+      SnacRequestListener listener, boolean isOffline);
+
   void sendIM(Screenname buddy, InstantMessage im, boolean autoresponse);
 
   void sendIM(Screenname buddy, InstantMessage im, boolean autoresponse,
       SnacRequestListener listener);
+
+  void sendIM(Screenname buddy, InstantMessage im, boolean autoresponse,
+      SnacRequestListener listener, boolean isOffline);
 
   void sendTypingStatus(Screenname buddy, TypingState typingState);
 }

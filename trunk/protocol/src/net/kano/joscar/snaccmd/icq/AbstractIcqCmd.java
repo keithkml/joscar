@@ -2,31 +2,31 @@
  *  Copyright (c) 2003, The Joust Project
  *  All rights reserved.
  *
- *  Redistribution and use in source and binary forms, with or without 
- *  modification, are permitted provided that the following conditions 
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
  *  are met:
  *
- *  - Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
- *  - Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in 
- *    the documentation and/or other materials provided with the 
- *    distribution. 
+ *  - Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  - Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
  *  - Neither the name of the Joust Project nor the names of its
- *    contributors may be used to endorse or promote products derived 
- *    from this software without specific prior written permission. 
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
  *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS 
- *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT 
- *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS 
- *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE 
- *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
- *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, 
- *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER 
- *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN 
- *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  *  File created by jkohen @ Oct 13, 2003
@@ -84,6 +84,11 @@ public abstract class AbstractIcqCmd extends IcqSnacCommand {
     /** A command subtype for sending user's homepage category. */
     public static final IcqType CMD_META_HOMEPAGE_CATEGORY_INFO_CMD = new IcqType(2010, 0x10E);
 
+    /** A command subtype for marking setting full info information. */
+    public static final IcqType CMD_META_SET_ACK = new IcqType(0x07DA, 0x0C3F);
+    /** A command subtype for changing user's homepage category. */
+    public static final IcqType CMD_META_SET_CMD = new IcqType(0x07D0, 0x0c3a);
+
 	/** A command subtype for setting additional security information about the user. */
 	public static final IcqType CMD_META_SECURITY_CMD = new IcqType(2000, 1060);
 	/** A command subtype for replying to {@link #CMD_META_SECURITY_CMD}. */
@@ -96,7 +101,7 @@ public abstract class AbstractIcqCmd extends IcqSnacCommand {
 	 * For ToIcqCmd packets this is the destination UIN;
 	 * for FromIcqCmd, this is the sender's UIN.
 	 */
-	private long icqUIN; 
+	private long icqUIN;
     /** The command subtype. */
     private IcqType icqType;
     /** The sequence id for this command. */
@@ -142,7 +147,7 @@ public abstract class AbstractIcqCmd extends IcqSnacCommand {
 
     /**
      * Returns the UIN of the user associated with this command.
-     * 
+     *
      * @return an ICQ UIN as an integer value
      */
     public final long getUIN() {
@@ -151,7 +156,7 @@ public abstract class AbstractIcqCmd extends IcqSnacCommand {
 
     /**
      * Returns this ICQ-specific command's subtype.
-     * 
+     *
      * @return the old ICQ command subtype.
      */
     public final IcqType getType() {
@@ -160,7 +165,7 @@ public abstract class AbstractIcqCmd extends IcqSnacCommand {
 
     /**
      * Returns the sequence ID for this command.
-     * 
+     *
      * @return the sequence ID.
      */
     public final int getId() {
@@ -242,10 +247,11 @@ public abstract class AbstractIcqCmd extends IcqSnacCommand {
         LEBinaryTools.writeUShort(icqout, length);
         LEBinaryTools.writeUInt(icqout, icqUIN);
 		LEBinaryTools.writeUShort(icqout, primary);
-		LEBinaryTools.writeUShort(icqout, icqID);
+        LEBinaryTools.writeUShort(icqout, icqID);
 		if (0 != secondary)
-			LEBinaryTools.writeUShort(icqout, secondary);
-        writeIcqData(icqout);
+            LEBinaryTools.writeUShort(icqout, secondary);
+
+        icqDataOut.writeTo(icqout);
 
         new Tlv(TYPE_ICQ_DATA, ByteBlock.wrap(icqout.toByteArray())).write(out);
     }

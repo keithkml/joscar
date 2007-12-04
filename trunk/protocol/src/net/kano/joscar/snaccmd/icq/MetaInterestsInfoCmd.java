@@ -57,4 +57,13 @@ public class MetaInterestsInfoCmd extends AbstractInfoCmd {
         result.append(" } in ").append(super.toString());
         return result.toString();
     }
+
+    public String[] getInterests(){
+        return interests;
+    }
+
+    public int[] getCategories(){
+        return categoryCodes;
+    }
+
 }
