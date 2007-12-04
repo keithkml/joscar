@@ -2,31 +2,31 @@
  *  Copyright (c) 2004, The Joust Project
  *  All rights reserved.
  *
- *  Redistribution and use in source and binary forms, with or without 
- *  modification, are permitted provided that the following conditions 
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
  *  are met:
  *
- *  - Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer. 
- *  - Redistributions in binary form must reproduce the above copyright 
- *    notice, this list of conditions and the following disclaimer in 
- *    the documentation and/or other materials provided with the 
- *    distribution. 
- *  - Neither the name of the Joust Project nor the names of its 
- *    contributors may be used to endorse or promote products derived 
- *    from this software without specific prior written permission. 
+ *  - Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  - Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  - Neither the name of the Joust Project nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
  *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS 
- *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT 
- *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS 
- *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE 
- *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
- *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, 
- *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER 
- *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
- *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN 
- *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  *  File created by keith @ Feb 6, 2004
@@ -81,6 +81,10 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import net.kano.joscar.ssiitem.*;
+import java.util.*;
+import net.kano.joscar.snaccmd.ssi.AuthReplyCmd;
+import net.kano.joscar.snaccmd.ssi.*;
 
 public class SsiServiceImpl extends AbstractService implements SsiService {
   private static final Logger LOGGER = Logger
@@ -93,6 +97,8 @@ public class SsiServiceImpl extends AbstractService implements SsiService {
   private final Collection<Integer> prospectiveGroupIds = new ArrayList<Integer>();
   private final CopyOnWriteArrayList<SsiItemChangeListener> listeners
       = new CopyOnWriteArrayList<SsiItemChangeListener>();
+  private final CopyOnWriteArrayList<BuddyAuthorizationListener> buddyAuthorizationListeners
+      = new CopyOnWriteArrayList<BuddyAuthorizationListener>();
 
   private final Map<ItemId, SsiItem> items = new HashMap<ItemId, SsiItem>();
 
@@ -139,6 +145,14 @@ public class SsiServiceImpl extends AbstractService implements SsiService {
 
   public void requestBuddyAuthorization(Screenname sn, @Nullable String msg) {
     sendSnac(new BuddyAuthRequest(sn.getFormatted(), msg));
+  }
+
+  public void replyBuddyAuthorization(Screenname sn, boolean accept, @Nullable String msg){
+      sendSnac(new AuthReplyCmd(sn.getFormatted(), msg, accept));
+  }
+
+  public void sendFutureBuddyAuthorization(Screenname sn, @Nullable String msg) {
+      sendSnac(new AuthFutureCmd(sn.getFormatted(), msg));
   }
 
   public void handleSnacPacket(SnacPacketEvent snacPacketEvent) {
@@ -211,7 +225,83 @@ public class SsiServiceImpl extends AbstractService implements SsiService {
           exceptions.add(e);
         }
       }
+    } else if (snac instanceof AuthReplyCmd) {
+        AuthReplyCmd cmd = (AuthReplyCmd)snac;
+
+        for (BuddyAuthorizationListener listener : buddyAuthorizationListeners) {
+            try{
+
+                if(cmd.isAccepted())
+                    listener.authorizationAccepted(
+                        new Screenname(cmd.getSender()), cmd.getReason());
+                else
+                    listener.authorizationDenied(
+                        new Screenname(cmd.getSender()), cmd.getReason());
+            } catch(Exception ex){
+                LOGGER.log(Level.SEVERE,
+                           "Exception thrown by buddyAuthorizationListeners listener "
+                           + listener, ex);
+            }
+        }
     }
+    else if(snac instanceof BuddyAuthRequest)
+    {
+        BuddyAuthRequest cmd = (BuddyAuthRequest)snac;
+
+        for(BuddyAuthorizationListener listener : buddyAuthorizationListeners)
+        {
+            try
+            {
+                listener.authorizationRequestReceived(
+                    new Screenname(cmd.getScreenname()), cmd.getMessage());
+            }
+            catch(Exception ex)
+            {
+                LOGGER.log(Level.SEVERE,
+                           "Exception thrown by buddyAuthorizationListeners listener "
+                           + listener, ex);
+            }
+        }
+    }
+    else if(snac instanceof AuthFutureCmd)
+    {
+        AuthFutureCmd cmd = (AuthFutureCmd)snac;
+
+        for(BuddyAuthorizationListener listener : buddyAuthorizationListeners)
+        {
+            try
+            {
+                listener.futureAuthorizationGranted(
+                    new Screenname(cmd.getUin()), cmd.getReason());
+            }
+            catch(Exception ex)
+            {
+                LOGGER.log(Level.SEVERE,
+                           "Exception thrown by buddyAuthorizationListeners listener "
+                           + listener, ex);
+            }
+        }
+    }
+    else if(snac instanceof BuddyAddedYouCmd)
+    {
+        BuddyAddedYouCmd cmd = (BuddyAddedYouCmd)snac;
+
+        for(BuddyAuthorizationListener listener : buddyAuthorizationListeners)
+        {
+            try
+            {
+                listener.youWereAdded(new Screenname(cmd.getUin()));
+            }
+            catch(Exception ex)
+            {
+                LOGGER.log(Level.SEVERE,
+                           "Exception thrown by buddyAuthorizationListeners listener "
+                           + listener, ex);
+            }
+        }
+    }
+
+
     JavaTools.throwExceptions(exceptions, "Exception while processing SSI "
         + "packets");
   }
@@ -424,6 +514,14 @@ public class SsiServiceImpl extends AbstractService implements SsiService {
     listeners.remove(listener);
   }
 
+  public void addBuddyAuthorizationListener(BuddyAuthorizationListener listener){
+      buddyAuthorizationListeners.addIfAbsent(listener);
+  }
+
+  public void removeBuddyAuthorizationListener(BuddyAuthorizationListener listener){
+      buddyAuthorizationListeners.remove(listener);
+  }
+
   private static class ItemId {
     private final int type;
     private final int parent;
@@ -520,6 +618,29 @@ public class SsiServiceImpl extends AbstractService implements SsiService {
             LOGGER.warning("ID: " + id + " of possible ID's: "
                 + possible);
 
+          } else if (result == SsiDataModResponse.RESULT_ICQ_AUTH_REQUIRED){
+
+              for (BuddyAuthorizationListener listener : buddyAuthorizationListeners) {
+                  try {
+                      if(listener.authorizationRequired(new Screenname(item.getName())))
+                      {
+                          Vector buddiesToBeAdded = new Vector();
+                          BuddyItem newBuddy = new BuddyItem(item);
+                          newBuddy.setAwaitingAuth(true);
+                          buddiesToBeAdded.add(newBuddy.toSsiItem());
+
+                          CreateItemsCmd addCMD = new CreateItemsCmd(
+                              buddiesToBeAdded);
+
+                          LOGGER.info("Adding buddy as awaiting authorization");
+
+                          getOscarConnection().sendSnac(addCMD);
+                      }
+                  } catch (Exception ex) {
+                      LOGGER.log(Level.SEVERE, "Exception thrown by buddyAuthorizationListeners listener "
+                                 + listener, ex);
+                  }
+              }
           } else {
             LOGGER.warning(
                 "SSI error 0x" + Integer.toHexString(result)

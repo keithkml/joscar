@@ -64,6 +64,7 @@ public final class BuddyInfo {
   public static final String PROP_WARNING_LEVEL = "warningLevel";
   public static final String PROP_AWAY_MESSAGE = "awayMessage";
   public static final String PROP_STATUS_MESSAGE = "statusMessage";
+  public static final String PROP_ICQ_STATUS = "icqStatus";
   public static final String PROP_USER_PROFILE = "userProfile";
   public static final String PROP_OLD_ICON_INFO = "oldIconInfo";
   public static final String PROP_LAST_AIM_EXPRESSION = "lastAimExpression";
@@ -95,6 +96,7 @@ public final class BuddyInfo {
   private String awayMessage = null;
   private String userProfile = null;
   private String statusMessage = null;
+  private long icqStatus = -1;
   private String itunesUrl = null;
   private ExtraInfoData iconHash = null;
   private ByteBlock iconData = null;
@@ -319,6 +321,19 @@ public final class BuddyInfo {
 
   public synchronized @Nullable String getStatusMessage() {
     return statusMessage;
+  }
+
+  void setIcqStatus(long icqStatus) {
+    long old;
+    synchronized (this) {
+      old = this.icqStatus;
+      this.icqStatus = icqStatus;
+    }
+    fireObjectChange(PROP_ICQ_STATUS, old, icqStatus);
+  }
+
+  public synchronized @Nullable long getIcqStatus() {
+    return icqStatus;
   }
 
   void setItunesUrl(String itunesUrl) {

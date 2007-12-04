@@ -59,4 +59,12 @@ public class MetaEmailInfoCmd extends AbstractInfoCmd {
         result.append(" } in ").append(super.toString());
         return result.toString();
     }
+
+    public String[] getEmails(){
+        return emails;
+    }
+
+    public boolean[] getEmailsPublished(){
+        return emailsPublished;
+    }
 }

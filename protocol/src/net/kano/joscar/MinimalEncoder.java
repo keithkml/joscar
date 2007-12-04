@@ -98,7 +98,8 @@ public final class MinimalEncoder {
 
         Charset iso = null;
         try {
-            iso = Charset.forName("ISO-8859-1");
+            //iso = Charset.forName("ISO-8859-1");
+            iso = Charset.forName(OscarTools.getDefaultCharsetName());
         } catch (UnsupportedCharsetException ohwell) { }
         ISO88591 = iso;
 

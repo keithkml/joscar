@@ -14,22 +14,29 @@ public class BuddyAuthRequest extends SsiCommand {
     private final String screenname;
     private final @Nullable String message;
 
-    protected BuddyAuthRequest(SnacPacket packet) {
-        super(CMD_AUTH_REQ);
+    /**
+     * Incoming Command Requesting our authorization
+     * @param packet SnacPacket incoming packet
+     */
+    public BuddyAuthRequest(SnacPacket packet) {
+        super(CMD_AUTH_REQUEST_RECV);
         ByteBlock data = packet.getData();
         StringBlock sn = OscarTools.readScreenname(data);
         if (sn != null) {
             screenname = sn.getString();
             ByteBlock rest = data.subBlock(sn.getTotalSize());
             int msglen = BinaryTools.getUShort(rest, 0);
-            message = BinaryTools.getUtf8String(data.subBlock(2, msglen));
-            
+            message = BinaryTools.getUtf8String(rest.subBlock(2, msglen));
         } else {
             screenname = null;
             message = null;
         }
     }
-
+    /**
+     * Command requesting authorization
+     * @param sn screenname
+     * @param msg the request reason
+     */
     public BuddyAuthRequest(String sn, @Nullable String msg) {
         super(CMD_AUTH_REQ);
         this.screenname = sn;
@@ -46,5 +53,15 @@ public class BuddyAuthRequest extends SsiCommand {
         // it ends with 3 nulls
         BinaryTools.writeUByte(out, 0);
         BinaryTools.writeUShort(out, 0);
+    }
+
+    public String getMessage()
+    {
+        return message;
+    }
+
+    public String getScreenname()
+    {
+        return screenname;
     }
 }

@@ -18,6 +18,8 @@ public interface MainBosService extends BosService {
 
   void setStatusMessage(@Nullable String msg);
 
+  void setIcqStatus(long icqStatus);
+
   void setStatusMessageSong(@Nullable String msg,
       @Nullable String band, @Nullable String album, @Nullable String song);
 

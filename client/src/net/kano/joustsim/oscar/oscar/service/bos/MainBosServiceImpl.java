@@ -153,6 +153,10 @@ public class MainBosServiceImpl
     setStatusMessageSong(msg, null);
   }
 
+  public synchronized void setIcqStatus(long icqStatus) {
+    sendSnac(new SetExtraInfoCmd(icqStatus));
+  }
+
   private ExtraInfoBlock buildStatusMsgBlock(int type, @Nullable String msg) {
     String useMsg = msg == null ? "" : msg;
     return new ExtraInfoBlock(type,

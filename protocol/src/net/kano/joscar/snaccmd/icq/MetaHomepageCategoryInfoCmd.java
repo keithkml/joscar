@@ -42,4 +42,12 @@ public class MetaHomepageCategoryInfoCmd extends AbstractInfoCmd {
                 " keywords=" + keywords +
                 " in " + super.toString();
     }
+
+    public int getCategory(){
+        return categoryCode;
+    }
+
+    public String getKeywords(){
+        return keywords;
+    }
 }

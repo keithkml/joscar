@@ -57,6 +57,15 @@ public class UploadIconAck extends IconCommand {
     /** A default value for the acknowledgement code sent in this command. */
     public static final int CODE_DEFAULT = 0x0000;
 
+    /** Indication of successful icon upload. */
+    public static final int CODE_SUCCESS = 0x0001;
+
+    /** The upload icon was too large.  Max size is around 8K. */
+    public static final int CODE_TOO_LARGE = 0x0004;
+
+    /** The upload icon was not in an accepted format. (gif, jpeg, etc) */
+    public static final int CODE_BAD_FORMAT = 0x0005;
+
     /** The acknowledgement code. */
     private final int code;
     /** An icon information block corresponding to the uploaded icon. */
@@ -100,7 +109,7 @@ public class UploadIconAck extends IconCommand {
      * Creates a new outgoing icon upload acknowledgement command with the given
      * icon information block and the given code.
      *
-     * @param code some sort of code, normally {@link #CODE_DEFAULT}
+     * @param code result code, normally {@link #CODE_DEFAULT}
      * @param iconInfo an icon information block corresponding to the uploaded
      *        icon
      */

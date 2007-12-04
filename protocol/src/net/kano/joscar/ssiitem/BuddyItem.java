@@ -156,8 +156,9 @@ public class BuddyItem extends AbstractItemObj implements SsiItemObjectWithId {
 
         MutableTlvChain extraTlvs = TlvTools.getMutableCopy(chain);
 
-        extraTlvs.removeTlvs(TYPE_ALIAS, TYPE_COMMENT, TYPE_ALERT_SOUND,
-                TYPE_ALERT_FLAGS, TYPE_AWAITING_AUTH);
+        //Why?
+        //extraTlvs.removeTlvs(TYPE_ALIAS, TYPE_COMMENT, TYPE_ALERT_SOUND,
+        //        TYPE_ALERT_FLAGS, TYPE_AWAITING_AUTH);
 
         addExtraTlvs(extraTlvs);
     }
@@ -425,13 +426,17 @@ if ((buddyItem.getAlertWhenMask() & BuddyItem.MASK_WHEN_ONLINE) != 0) {
     }
 
     public synchronized SsiItem toSsiItem() {
-        MutableTlvChain chain = TlvTools.createMutableChain();
+        MutableTlvChain chain = (MutableTlvChain)copyExtraTlvs();
 
         if (alias != null) {
-            chain.addTlv(Tlv.getUtf8Instance(TYPE_ALIAS, alias));
+            chain.replaceTlv(Tlv.getUtf8Instance(TYPE_ALIAS, alias));
+        } else {
+            chain.removeTlvs(TYPE_ALIAS);
         }
         if (comment != null) {
-            chain.addTlv(Tlv.getUtf8Instance(TYPE_COMMENT, comment));
+            chain.replaceTlv(Tlv.getUtf8Instance(TYPE_COMMENT, comment));
+        } else {
+            chain.removeTlvs(TYPE_COMMENT);
         }
         if (alertActionMask != 0 || alertWhenMask != 0) {
             // this is the most elegant statement I've ever written.
@@ -439,17 +444,24 @@ if ((buddyItem.getAlertWhenMask() & BuddyItem.MASK_WHEN_ONLINE) != 0) {
                 BinaryTools.getUByte(alertActionMask)[0],
                 BinaryTools.getUByte(alertWhenMask)[0]
             });
-            chain.addTlv(new Tlv(TYPE_ALERT_FLAGS, block));
+            chain.replaceTlv(new Tlv(TYPE_ALERT_FLAGS, block));
+        } else {
+            chain.removeTlvs(TYPE_ALERT_FLAGS);
         }
         if (alertSound != null) {
-            chain.addTlv(Tlv.getStringInstance(TYPE_ALERT_SOUND, alertSound));
+            chain.replaceTlv(Tlv.getStringInstance(TYPE_ALERT_SOUND, alertSound));
+        } else {
+            chain.removeTlvs(TYPE_ALERT_SOUND);
         }
 
         if (awaitingAuth) {
-            chain.addTlv(new Tlv(TYPE_AWAITING_AUTH));
+            chain.replaceTlv(new Tlv(TYPE_AWAITING_AUTH));
+        } else {
+            chain.removeTlvs(TYPE_AWAITING_AUTH);
         }
 
-        return generateItem(sn, groupid, id, SsiItem.TYPE_BUDDY, chain);
+        return new SsiItem(sn, groupid, id, SsiItem.TYPE_BUDDY,
+                ByteBlock.createByteBlock(chain));
     }
 
     public synchronized String toString() {
