@@ -11,7 +11,7 @@ public interface BuddyAuthorizationListener
     void authorizationAccepted(Screenname screenname, String reason);
     void authorizationRequestReceived(Screenname screenname, String reason);
     // return whether to create buddy as awaiting authorization
-    boolean authorizationRequired(Screenname screenname);
+    boolean authorizationRequired(Screenname screenname, Group parentGroup);
 
     void futureAuthorizationGranted(Screenname screenname, String reason);
     void youWereAdded(Screenname screenname);

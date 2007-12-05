@@ -47,14 +47,14 @@ public class MetaAffiliationsInfoCmd extends AbstractInfoCmd {
         backgroundCategoryCodes = new int[count];
         for(int i=0; i<count; i++) {
             backgroundCategoryCodes [i] = LEBinaryTools.readUShort(is);
-            backgrounds [i] = LEBinaryTools.readUShortLengthString(is, "US-ASCII");
+            backgrounds [i] = LEBinaryTools.readUShortLengthString(is);
         }
         count = is.read();
         affiliations = new String[count];
         affiliationCategoryCodes = new int[count];
         for(int i=0; i<count; i++) {
             affiliationCategoryCodes [i] = LEBinaryTools.readUShort(is);
-            affiliations [i] = LEBinaryTools.readUShortLengthString(is, "US-ASCII");
+            affiliations [i] = LEBinaryTools.readUShortLengthString(is);
         }
     }
 

@@ -282,7 +282,7 @@ public class BuddyInfoManager {
 
     Boolean awayStatus = info.getAwayStatus();
     if (awayStatus != null) buddyInfo.setAway(awayStatus);
-
+    
     long icqStatus = info.getIcqStatus();
     if (icqStatus != -1) buddyInfo.setIcqStatus(icqStatus);
 
@@ -351,6 +351,10 @@ public class BuddyInfoManager {
   private void handleExtraInfoBlocks(Screenname buddy,
       List<ExtraInfoBlock> extraBlocks) {
     BuddyInfo buddyInfo = getBuddyInfo(buddy);
+    
+    // reset away message
+    buddyInfo.setAwayMessage(null);
+    
     for (ExtraInfoBlock block : extraBlocks) {
       int type = block.getType();
       ExtraInfoData data = block.getExtraData();

@@ -23,7 +23,7 @@ public class MetaNotesInfoCmd extends AbstractInfoCmd {
     }
 
     protected void readInfo(InputStream is) throws IOException {
-        notes = LEBinaryTools.readUShortLengthString(is, "US-ASCII");
+        notes = LEBinaryTools.readUShortLengthString(is);
     }
 
     protected void writeInfo(OutputStream out) throws IOException {

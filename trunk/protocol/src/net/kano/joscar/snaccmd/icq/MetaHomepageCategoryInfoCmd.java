@@ -26,7 +26,7 @@ public class MetaHomepageCategoryInfoCmd extends AbstractInfoCmd {
         int enabled = is.read();
         if (enabled != 0) {
             categoryCode = LEBinaryTools.readUShort(is);
-            keywords = LEBinaryTools.readUShortLengthString(is, "US-ASCII");
+            keywords = LEBinaryTools.readUShortLengthString(is);
         }
     }
 

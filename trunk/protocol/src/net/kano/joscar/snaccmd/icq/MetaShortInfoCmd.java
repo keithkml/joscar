@@ -41,7 +41,7 @@ public class MetaShortInfoCmd extends AbstractInfoCmd {
     protected void readInfo(InputStream is) throws IOException {
         s = new String[4];
         for (int i = 0; i < s.length; i++) {
-            s [i] = LEBinaryTools.readUShortLengthString(is, "US-ASCII");
+            s [i] = LEBinaryTools.readUShortLengthString(is);
             if (s [i] == null) break;
         }
         authorizationFlag = (byte) is.read();

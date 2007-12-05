@@ -38,7 +38,7 @@ public class MetaBasicInfoCmd extends AbstractInfoCmd {
     protected void readInfo(InputStream is) throws IOException {
         s = new String[11];
         for (int i = 0; i < s.length; i++) {
-            s [i] = LEBinaryTools.readUShortLengthString(is, "US-ASCII");
+            s [i] = LEBinaryTools.readUShortLengthString(is);
             if (s [i] == null) break;
         }
         countryCode = LEBinaryTools.readUShort(is);

@@ -202,6 +202,20 @@ public final class LEBinaryTools {
         is.read();     // skip nul
         return new String(data, charset);
     }
+    
+    /**
+     * Reads a string prefixed with a little-endian word length specifier from
+     * the specified stream.
+     *
+     * @param is    the stream to read the string from.
+     * @return the string, or null if there was not enough data in the stream.
+     * @throws IOException
+     */
+    public static String readUShortLengthString(final InputStream is) 
+            throws IOException 
+    {
+        return readUShortLengthString(is, OscarTools.getDefaultCharsetName());
+    }
 
     /**
      * Returns an unsigned one-byte integer stored in the given block. The

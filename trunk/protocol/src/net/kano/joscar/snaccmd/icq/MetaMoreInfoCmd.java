@@ -35,7 +35,7 @@ public class MetaMoreInfoCmd extends AbstractInfoCmd {
     protected void readInfo(InputStream is) throws IOException {
         age = LEBinaryTools.readUShort(is);
         gender = is.read();
-        homepage = LEBinaryTools.readUShortLengthString(is, "US-ASCII");
+        homepage = LEBinaryTools.readUShortLengthString(is);
         int year = LEBinaryTools.readUShort(is);
         int month = is.read();
         int day = is.read();
@@ -45,8 +45,8 @@ public class MetaMoreInfoCmd extends AbstractInfoCmd {
             speakingLanguages [i] = is.read();
         }
         is.skip(2); // unknown
-        originalCity = LEBinaryTools.readUShortLengthString(is, "US-ASCII");
-        originalState = LEBinaryTools.readUShortLengthString(is, "US-ASCII");
+        originalCity = LEBinaryTools.readUShortLengthString(is);
+        originalState = LEBinaryTools.readUShortLengthString(is);
         originalCountryCode = LEBinaryTools.readUShort(is);
         timeZone = is.read();
     }
