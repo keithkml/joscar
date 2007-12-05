@@ -45,8 +45,8 @@
 
   <target name="clean" depends="-init">
     <delete includeEmptyDirs="true">
-      <include name="${dist}/joscar-client.jar"/>
-      <fileset dir="classes" includes="*"/>
+	<fileset dir="${dist}" includes="joscar-client.jar"/>
+	<fileset dir="classes" />
     </delete>
   </target>
 

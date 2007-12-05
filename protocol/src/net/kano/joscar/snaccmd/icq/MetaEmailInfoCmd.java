@@ -31,7 +31,7 @@ public class MetaEmailInfoCmd extends AbstractInfoCmd {
             emailsPublished = new boolean[emailCount];
             for(int i=0; i<emailCount; i++) {
                 emailsPublished [i] = (is.read() > 0);
-                emails [i] = LEBinaryTools.readUShortLengthString(is, "US-ASCII");
+                emails [i] = LEBinaryTools.readUShortLengthString(is);
             }
         }
     }

@@ -34,7 +34,7 @@ public class MetaInterestsInfoCmd extends AbstractInfoCmd {
         categoryCodes = new int[count];
         for(int i=0; i<count; i++) {
             categoryCodes [i] = LEBinaryTools.readUShort(is);
-            interests [i] = LEBinaryTools.readUShortLengthString(is, "US-ASCII");
+            interests [i] = LEBinaryTools.readUShortLengthString(is);
         }
     }
 

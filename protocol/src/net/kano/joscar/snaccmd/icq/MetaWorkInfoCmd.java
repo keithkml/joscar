@@ -33,19 +33,18 @@ public class MetaWorkInfoCmd extends AbstractInfoCmd {
     }
 
     protected void readInfo(InputStream is) throws IOException {
-        String charset = "US-ASCII";
-        workCity = LEBinaryTools.readUShortLengthString(is, charset);
-        workState = LEBinaryTools.readUShortLengthString(is, charset);
-        workPhone = LEBinaryTools.readUShortLengthString(is, charset);
-        workFax = LEBinaryTools.readUShortLengthString(is, charset);
-        workAddress = LEBinaryTools.readUShortLengthString(is, charset);
-        workZipCode = LEBinaryTools.readUShortLengthString(is, charset);
+        workCity = LEBinaryTools.readUShortLengthString(is);
+        workState = LEBinaryTools.readUShortLengthString(is);
+        workPhone = LEBinaryTools.readUShortLengthString(is);
+        workFax = LEBinaryTools.readUShortLengthString(is);
+        workAddress = LEBinaryTools.readUShortLengthString(is);
+        workZipCode = LEBinaryTools.readUShortLengthString(is);
         workCountryCode = LEBinaryTools.readUShort(is);
-        workCompany = LEBinaryTools.readUShortLengthString(is, charset);
-        workDepartment = LEBinaryTools.readUShortLengthString(is, charset);
-        workPosition = LEBinaryTools.readUShortLengthString(is, charset);
+        workCompany = LEBinaryTools.readUShortLengthString(is);
+        workDepartment = LEBinaryTools.readUShortLengthString(is);
+        workPosition = LEBinaryTools.readUShortLengthString(is);
         workOccupationCode = LEBinaryTools.readUShort(is);
-        workWebPage = LEBinaryTools.readUShortLengthString(is, charset);
+        workWebPage = LEBinaryTools.readUShortLengthString(is);
     }
 
     protected void writeInfo(OutputStream out) throws IOException {

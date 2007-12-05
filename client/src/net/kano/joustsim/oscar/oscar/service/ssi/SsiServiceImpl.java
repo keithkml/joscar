@@ -522,6 +522,20 @@ public class SsiServiceImpl extends AbstractService implements SsiService {
       buddyAuthorizationListeners.remove(listener);
   }
 
+  private Group findGroupById(int groupID)
+  {
+        List groups = getBuddyList().getGroups();
+        Iterator iter = groups.iterator();
+        while (iter.hasNext())
+        {
+            SsiBuddyGroup item = (SsiBuddyGroup) iter.next();
+            if(item.getItem().getId() == groupID)
+                return item;
+        }
+
+        return null;
+  }
+  
   private static class ItemId {
     private final int type;
     private final int parent;
@@ -622,7 +636,7 @@ public class SsiServiceImpl extends AbstractService implements SsiService {
 
               for (BuddyAuthorizationListener listener : buddyAuthorizationListeners) {
                   try {
-                      if(listener.authorizationRequired(new Screenname(item.getName())))
+                      if(listener.authorizationRequired(new Screenname(item.getName()), findGroupById(item.getParentId())))
                       {
                           Vector buddiesToBeAdded = new Vector();
                           BuddyItem newBuddy = new BuddyItem(item);
