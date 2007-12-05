@@ -17,7 +17,7 @@ public class MetaShortInfoCmd extends AbstractInfoCmd {
     private static final int NDX_LNAME = 2;
     private static final int NDX_EMAIL = 3;
 
-    private String[] s;
+    private String[] s;   
     private byte authorizationFlag;
     private byte gender;
 
@@ -65,6 +65,7 @@ public class MetaShortInfoCmd extends AbstractInfoCmd {
      * @return the nick name, or <code>null</code>.
      */
     public String getNickname() {
+        if (s == null) return null;
         return s[NDX_NICKNAME];
     }
 
@@ -75,6 +76,7 @@ public class MetaShortInfoCmd extends AbstractInfoCmd {
      * @return the first name, or <code>null</code>.
      */
     public String getFirstName() {
+        if (s == null) return null;
         return s[NDX_FNAME];
     }
 
@@ -85,6 +87,7 @@ public class MetaShortInfoCmd extends AbstractInfoCmd {
      * @return the last name, or <code>null</code>.
      */
     public String getLastName() {
+        if (s == null) return null;
         return s[NDX_LNAME];
     }
 
@@ -95,6 +98,7 @@ public class MetaShortInfoCmd extends AbstractInfoCmd {
      * @return the email address, or <code>null</code>.
      */
     public String getEmail() {
+        if (s == null) return null;
         return s[NDX_EMAIL];
     }
 
