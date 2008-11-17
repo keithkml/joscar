@@ -144,7 +144,7 @@ public class InfoData implements LiveWritable {
 
         MutableTlvChain copy = TlvTools.getMutableCopy(chain);
         copy.removeTlvs(TYPE_AWAY_FMT, TYPE_AWAY, TYPE_INFO_FMT, TYPE_INFO,
-                TYPE_CAPS, TYPE_CERTIFICATE_INFO);
+                TYPE_CAPS, TYPE_CERTIFICATE_INFO, TYPE_UNKNOWN1);
         if (copy.getTlvCount() > 0) {
             LOGGER.logWarning("Unknown TLV's in InfoData: " + copy);
         }
@@ -181,6 +181,9 @@ public class InfoData implements LiveWritable {
 
     /** A TLV type containing a certificate information block. */
     private static final int TYPE_CERTIFICATE_INFO = 0x0006;
+
+    /** A TLV type containing a some new information block. */
+    private static final int TYPE_UNKNOWN1 = 0x000b; // TODO: find out what this really is.
 
     /**
      * The user info text in this structure.
