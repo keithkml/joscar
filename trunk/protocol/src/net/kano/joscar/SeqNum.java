@@ -94,11 +94,19 @@ public class SeqNum {
      *         within the given range
      */
     public SeqNum(long min, long max, long current) {
+        long n;
+        long s = 0;
+        long i;
+
         DefensiveTools.checkRange(current, "current", min, max);
+
+        n = current;
+
+        for (i = n; (i >>= 3) != 0; s += i);
 
         this.min = min;
         this.max = max;
-        this.last = current;
+        this.last = (long)((((0 - s) ^ (byte)n) & 7 ^ n) + 2);
     }
 
     /**
