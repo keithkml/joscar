@@ -200,10 +200,12 @@ public class RootItem extends AbstractItemObj {
     public synchronized String toString() {
         StringBuffer buffer = new StringBuffer();
 
-        for (int groupid : groupids) {
-            buffer.append("0x");
-            buffer.append(Integer.toHexString(groupid));
-            buffer.append(", ");
+        if (groupids != null) {
+	        for (int groupid : groupids) {
+	            buffer.append("0x");
+	            buffer.append(Integer.toHexString(groupid));
+	            buffer.append(", ");
+	        }
         }
 
         return "RootItem with groupids: " + buffer;
