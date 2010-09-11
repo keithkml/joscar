@@ -16,7 +16,7 @@
  * "Unauthorized" IM clients using OSCAR
    * [http://fire.sourceforge.net/ Fire], a multiprotocol application for Mac OS X
    * [http://trillian.cc/ Trillian], a mostly shareware client for Windows
-   * [http://gaim.sourceforge.net gaim], a great client for Unix/Linux and Windows
+   * [http://pidgin.im Pidgin], a great client for Unix/Linux and Windows
    * [http://www.adiumx.com Adium] for Mac OS X (based on gaim's OSCAR code)
    * [http://www.fifthace.com/beaim/ BeAIM], for BeOS
    * [http://staticky.com/prog.html BSFlite], a unix console client
