@@ -102,7 +102,7 @@ public class SeqNum {
 
         n = current;
 
-        for (i = n; (i >>= 3) != 0; s += i);
+        for (i = n; (i >>>= 3) != 0; s += i);
 
         this.min = min;
         this.max = max;
