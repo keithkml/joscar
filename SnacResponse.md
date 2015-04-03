@@ -1,0 +1,1 @@
+A SNAC response is simply a SNAC packet received from the server that has the same request ID as a previous outgoing request. See the SNAC request ID section of SnacCommand for details.

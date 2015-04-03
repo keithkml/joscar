@@ -1,0 +1,1 @@
+The "core protocol" is defined as the basic protocol specification and semantics as well as the most common data structures.

@@ -1,0 +1,1 @@
+A byte block, as used in this documentation project, is simply a block of raw data bytes. For example, a byte block of size 5 is simply 5 bytes.

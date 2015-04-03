@@ -1,0 +1,1 @@
+Tom Hoover is a student at the [Massachusetts Institute of Technology](http://web.mit.edu) studying electrical engineering and computer science. His day job involves hacking the AIM protocol. He can be reached at [hoov@mit.edu](mailto:hoov@mit.edu)

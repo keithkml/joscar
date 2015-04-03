@@ -1,0 +1,3 @@
+joscar is an easy-to-use, robust library for connecting to AOL Instant Messenger and ICQ from Java. The library provides a simple, coherent API to connect to the AIM/ICQ server, send and receive IM's (including direct IM & secure IM), transfer files, and join chat rooms. The API's event model allows for tight integration with a GUI to provide a cool user experience.
+
+Those looking for a simple multi-protocol library, see [JClaim](http://sourceforge.net/projects/jclaim/), which uses joscar to connect to AIM and ICQ.

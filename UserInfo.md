@@ -1,0 +1,1 @@
+User information in general will be documented here, but for now, the only documentation is in UserInfoBlock..

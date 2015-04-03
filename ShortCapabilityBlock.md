@@ -1,0 +1,1 @@
+A short capability block is a means of representing a CapabilityBlock using only two bytes. For details, see CapabilityBlock.
